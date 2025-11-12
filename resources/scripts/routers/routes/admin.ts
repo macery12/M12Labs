@@ -2,6 +2,10 @@ import { lazy } from 'react';
 import * as Icon from '@heroicons/react/outline';
 import { route, type AdminRouteDefinition } from '@/routers/routes/utils';
 
+import ServerPresetContainer from '@/components/admin/management/servers/presets/ServerPresetContainer';
+import ServerPresetViewContainer from '@/components/admin/management/servers/presets/ServerPresetViewContainer';
+// todo(jex): lazy load these
+
 const OverviewContainer = lazy(() => import('@/components/admin/general/overview/OverviewContainer'));
 const SettingsRouter = lazy(() => import('@/components/admin/general/settings/SettingsRouter'));
 const ActivityContainer = lazy(() => import('@/components/admin/general/ActivityContainer'));
@@ -85,6 +89,8 @@ const admin: AdminRouteDefinition[] = [
     route('nodes/:id/*', NodeRouter),
     route('servers', ServersContainer, { name: 'Servers', icon: Icon.TerminalIcon, category: 'management' }),
     route('servers/new', NewServerContainer),
+    route('servers/presets', ServerPresetContainer),
+    route('servers/presets/:id/*', ServerPresetViewContainer),
     route('servers/:id/*', ServerRouter),
     route('users', AdminUsersContainer, { name: 'Users', icon: Icon.UserIcon, category: 'management' }),
     route('users/new', NewUserContainer),

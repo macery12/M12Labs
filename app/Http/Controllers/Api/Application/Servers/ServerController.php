@@ -2,9 +2,12 @@
 
 namespace Everest\Http\Controllers\Api\Application\Servers;
 
+use Everest\Models\Egg;
 use Everest\Models\Server;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
+use Everest\Models\Allocation;
+use Everest\Models\ServerPreset;
 use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Services\Servers\ServerCreationService;
@@ -19,6 +22,7 @@ use Everest\Http\Requests\Api\Application\Servers\StoreServerRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Servers\DeleteServerRequest;
 use Everest\Http\Requests\Api\Application\Servers\UpdateServerRequest;
+use Everest\Http\Requests\Api\Application\Servers\StoreServerWithPresetRequest;
 
 class ServerController extends ApplicationApiController
 {
@@ -71,6 +75,48 @@ class ServerController extends ApplicationApiController
         Activity::event('admin:servers:create')
             ->property('server', $server)
             ->description('A server was created')
+            ->log();
+
+        return $this->fractal->item($server)
+            ->transformWith(ServerTransformer::class)
+            ->respond(Response::HTTP_CREATED);
+    }
+
+    /**
+     * Create a new server via a server preseton the system.
+     *
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Everest\Exceptions\DisplayException
+     * @throws \Everest\Exceptions\Repository\RecordNotFoundException
+     * @throws \Everest\Exceptions\Service\Deployment\NoViableAllocationException
+     * @throws \Everest\Exceptions\Service\Deployment\NoViableNodeException
+     */
+    public function storeWithPreset(StoreServerWithPresetRequest $request): JsonResponse
+    {
+        $preset = ServerPreset::findOrFail($request->input('preset_id'));
+        $egg = Egg::findOrFail($preset->egg_id ?? 1);
+        $allocation = Allocation::where('node_id', $request->input('node_id'))->where('server_id', null)->first();
+
+        $data = [
+            'owner_id' => $request->user()->id,
+            'name' => $preset->name . ' server',
+            'node_id' => (int) $request->input('node_id'),
+            'cpu' => (int) $request->input('cpu'),
+            'memory' => (int) $request->input('memory'),
+            'disk' => (int) $request->input('disk'),
+            'nest_id' => $preset->node_id ?? 1,
+            'egg_id' => $preset->egg_id ?? 1,
+            'allocation_id' => $allocation->id,
+            'image' => current($egg->docker_images),
+        ];
+
+        $server = $this->creationService->handle($data);
+
+        Activity::event('admin:servers:create')
+            ->property('server', $server)
+            ->property('server_preset', $preset)
+            ->description('A server was created via a server preset')
             ->log();
 
         return $this->fractal->item($server)

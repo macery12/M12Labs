@@ -4,9 +4,9 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import ServersTable from '@admin/management/servers/ServersTable';
 import { Button } from '@/elements/button';
-import { ChipIcon, AdjustmentsIcon, TerminalIcon } from '@heroicons/react/outline';
+import { AdjustmentsIcon, TerminalIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
-import { useStoreState } from '@/state/hooks';
+import PresetCreationDialog from './PresetCreationDialog';
 
 export default () => (
     <AdminContentBlock title={'Servers'}>
@@ -20,12 +20,13 @@ export default () => (
                 </p>
             </div>
 
-            <div css={tw`flex ml-auto pl-4`}>
+            <div css={tw`flex ml-auto pl-4 space-x-4`}>
                 <NavLink to={`/admin/servers/new`}>
-                    <Button type={'button'} size={Button.Sizes.Large} css={tw`h-10 px-4 py-0 whitespace-nowrap`}>
-                        New Server
-                    </Button>
+                    <Button.Text type={'button'} size={Button.Sizes.Large} css={tw`h-10 px-4 py-0 whitespace-nowrap`}>
+                        Create Server
+                    </Button.Text>
                 </NavLink>
+                <PresetCreationDialog />
             </div>
         </div>
 
