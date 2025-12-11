@@ -16,10 +16,14 @@ return new class () extends Migration {
      *
      * Set a default renewal date for servers that have null renewal_date.
      * This ensures all servers have a valid renewal date for billing purposes.
+     * 
+     * Note: Uses Carbon::now() to set renewal dates relative to migration execution time.
+     * This is intentional - all existing servers get the same renewal period from when
+     * the migration runs, ensuring consistent billing cycles.
      */
     public function up(): void
     {
-        // Update servers with null renewal_date to have a renewal date 30 days from now
+        // Update servers with null renewal_date to have a renewal date 30 days from migration run
         DB::table('servers')
             ->whereNull('renewal_date')
             ->update(['renewal_date' => Carbon::now()->addDays(self::DEFAULT_RENEWAL_DAYS)->toDateTimeString()]);
