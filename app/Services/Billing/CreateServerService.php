@@ -20,6 +20,11 @@ use Everest\Exceptions\Service\Deployment\NoViableAllocationException;
 class CreateServerService
 {
     /**
+     * Default renewal period in days for new servers.
+     */
+    private const DEFAULT_RENEWAL_DAYS = 30;
+
+    /**
      * CreateServerService constructor.
      */
     public function __construct(
@@ -55,7 +60,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
-                'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
+                'renewal_date' => Carbon::now()->addDays(self::DEFAULT_RENEWAL_DAYS)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
                 'allocation_limit' => $product->allocation_limit,
@@ -102,7 +107,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
-                'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
+                'renewal_date' => Carbon::now()->addDays(self::DEFAULT_RENEWAL_DAYS)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
                 'allocation_limit' => $product->allocation_limit,

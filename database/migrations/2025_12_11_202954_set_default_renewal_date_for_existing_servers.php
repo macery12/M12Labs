@@ -16,7 +16,7 @@ return new class () extends Migration {
         // Update servers with null renewal_date to have a renewal date 30 days from now
         DB::table('servers')
             ->whereNull('renewal_date')
-            ->update(['renewal_date' => Carbon::now()->addDays(30)->toDateString()]);
+            ->update(['renewal_date' => Carbon::now()->addDays(30)->toDateTimeString()]);
     }
 
     /**
