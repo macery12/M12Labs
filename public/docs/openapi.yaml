@@ -55,12 +55,36 @@ tags:
     description: Server management
   - name: Application - Nests & Eggs
     description: Nest and egg management
+  - name: Application - Roles
+    description: Role management
+  - name: Application - Locations
+    description: Location management
   - name: Client - Account
     description: User account management
   - name: Client - Servers
     description: Server operations
   - name: Client - Billing
     description: Billing and purchases
+  - name: Client - Server Groups
+    description: Server group management
+  - name: Client - Support
+    description: Support tickets
+  - name: Client - Server Files
+    description: File management operations
+  - name: Client - Server Databases
+    description: Database management
+  - name: Client - Server Schedules
+    description: Task scheduling
+  - name: Client - Server Backups
+    description: Backup management
+  - name: Client - Server Users
+    description: Subuser management
+  - name: Client - Server Network
+    description: Network allocation management
+  - name: Client - Server Startup
+    description: Startup configuration
+  - name: Client - Server Settings
+    description: Server settings
   - name: Remote
     description: Daemon communication
 
@@ -1205,3 +1229,861 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Node'
+  
+  # Client API - Server Groups
+  /client/groups:
+    get:
+      tags:
+        - Client - Server Groups
+      summary: List server groups
+      description: Get all server groups for the authenticated user
+      operationId: listServerGroups
+      responses:
+        '200':
+          description: List of server groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+    post:
+      tags:
+        - Client - Server Groups
+      summary: Create server group
+      description: Create a new server group
+      operationId: createServerGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Server group created
+  
+  # Client API - SSH Keys
+  /client/account/ssh-keys:
+    get:
+      tags:
+        - Client - Account
+      summary: List SSH keys
+      description: Get all SSH keys for the account
+      operationId: listSSHKeys
+      responses:
+        '200':
+          description: List of SSH keys
+    post:
+      tags:
+        - Client - Account
+      summary: Add SSH key
+      description: Add a new SSH key to the account
+      operationId: addSSHKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                public_key:
+                  type: string
+      responses:
+        '201':
+          description: SSH key added
+  
+  # Client API - Tickets
+  /client/account/tickets:
+    get:
+      tags:
+        - Client - Support
+      summary: List tickets
+      description: Get all support tickets for the account
+      operationId: listTickets
+      responses:
+        '200':
+          description: List of tickets
+    post:
+      tags:
+        - Client - Support
+      summary: Create ticket
+      description: Create a new support ticket
+      operationId: createTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Ticket created
+  
+  # Client API - Server Details
+  /client/servers/{server}:
+    get:
+      tags:
+        - Client - Servers
+      summary: Get server details
+      description: Get detailed information about a specific server
+      operationId: getServerDetails
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+  
+  # Client API - Server Power
+  /client/servers/{server}/power:
+    post:
+      tags:
+        - Client - Servers
+      summary: Send power action
+      description: Send a power signal to the server (start, stop, restart, kill)
+      operationId: serverPower
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                signal:
+                  type: string
+                  enum: [start, stop, restart, kill]
+      responses:
+        '204':
+          description: Power signal sent
+  
+  # Client API - Server Command
+  /client/servers/{server}/command:
+    post:
+      tags:
+        - Client - Servers
+      summary: Send command
+      description: Send a console command to the server
+      operationId: sendCommand
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+      responses:
+        '204':
+          description: Command sent
+  
+  # Client API - Server Files
+  /client/servers/{server}/files/list:
+    get:
+      tags:
+        - Client - Server Files
+      summary: List files
+      description: Get a directory listing
+      operationId: listFiles
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: directory
+          in: query
+          schema:
+            type: string
+            default: /
+      responses:
+        '200':
+          description: File listing
+  
+  /client/servers/{server}/files/contents:
+    get:
+      tags:
+        - Client - Server Files
+      summary: Get file contents
+      description: Read the contents of a file
+      operationId: getFileContents
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: file
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File contents
+  
+  /client/servers/{server}/files/write:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Write file
+      description: Write or update a file
+      operationId: writeFile
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '204':
+          description: File written
+  
+  # Client API - Server Databases
+  /client/servers/{server}/databases:
+    get:
+      tags:
+        - Client - Server Databases
+      summary: List databases
+      description: Get all databases for a server
+      operationId: listServerDatabases
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of databases
+    post:
+      tags:
+        - Client - Server Databases
+      summary: Create database
+      description: Create a new database for the server
+      operationId: createServerDatabase
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                database:
+                  type: string
+                remote:
+                  type: string
+                  default: '%'
+      responses:
+        '201':
+          description: Database created
+  
+  # Client API - Server Schedules
+  /client/servers/{server}/schedules:
+    get:
+      tags:
+        - Client - Server Schedules
+      summary: List schedules
+      description: Get all schedules for a server
+      operationId: listSchedules
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of schedules
+    post:
+      tags:
+        - Client - Server Schedules
+      summary: Create schedule
+      description: Create a new schedule
+      operationId: createSchedule
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                is_active:
+                  type: boolean
+                minute:
+                  type: string
+                hour:
+                  type: string
+                day_of_week:
+                  type: string
+                day_of_month:
+                  type: string
+      responses:
+        '201':
+          description: Schedule created
+  
+  # Client API - Server Backups
+  /client/servers/{server}/backups:
+    get:
+      tags:
+        - Client - Server Backups
+      summary: List backups
+      description: Get all backups for a server
+      operationId: listBackups
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of backups
+    post:
+      tags:
+        - Client - Server Backups
+      summary: Create backup
+      description: Create a new backup
+      operationId: createBackup
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                ignored:
+                  type: string
+      responses:
+        '201':
+          description: Backup created
+  
+  /client/servers/{server}/backups/{backup}/restore:
+    post:
+      tags:
+        - Client - Server Backups
+      summary: Restore backup
+      description: Restore a backup to the server
+      operationId: restoreBackup
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: backup
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Backup restore initiated
+  
+  # Client API - Server Users (Subusers)
+  /client/servers/{server}/users:
+    get:
+      tags:
+        - Client - Server Users
+      summary: List subusers
+      description: Get all subusers for a server
+      operationId: listSubusers
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of subusers
+    post:
+      tags:
+        - Client - Server Users
+      summary: Create subuser
+      description: Add a new subuser to the server
+      operationId: createSubuser
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Subuser created
+  
+  # Client API - Server Network
+  /client/servers/{server}/network/allocations:
+    get:
+      tags:
+        - Client - Server Network
+      summary: List allocations
+      description: Get all network allocations for a server
+      operationId: listAllocations
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of allocations
+    post:
+      tags:
+        - Client - Server Network
+      summary: Create allocation
+      description: Assign a new allocation to the server
+      operationId: createAllocation
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Allocation created
+  
+  # Client API - Server Startup
+  /client/servers/{server}/startup:
+    get:
+      tags:
+        - Client - Server Startup
+      summary: Get startup configuration
+      description: Get server startup variables
+      operationId: getStartup
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Startup configuration
+  
+  /client/servers/{server}/startup/variable:
+    put:
+      tags:
+        - Client - Server Startup
+      summary: Update startup variable
+      description: Update a startup variable value
+      operationId: updateStartupVariable
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                value:
+                  type: string
+      responses:
+        '200':
+          description: Variable updated
+  
+  # Client API - Server Settings
+  /client/servers/{server}/settings/rename:
+    post:
+      tags:
+        - Client - Server Settings
+      summary: Rename server
+      description: Change the server name
+      operationId: renameServer
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Server renamed
+  
+  /client/servers/{server}/settings/reinstall:
+    post:
+      tags:
+        - Client - Server Settings
+      summary: Reinstall server
+      description: Trigger a server reinstallation
+      operationId: reinstallServer
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Reinstall initiated
+  
+  # Application API - Servers (expanded)
+  /application/servers:
+    get:
+      tags:
+        - Application - Servers
+      summary: List all servers
+      description: Get all servers in the system
+      operationId: listAllServers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of servers
+    post:
+      tags:
+        - Application - Servers
+      summary: Create server
+      description: Create a new server
+      operationId: createServer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - user
+                - egg
+                - docker_image
+                - startup
+                - environment
+                - limits
+                - feature_limits
+                - allocation
+              properties:
+                name:
+                  type: string
+                user:
+                  type: integer
+                egg:
+                  type: integer
+                docker_image:
+                  type: string
+                startup:
+                  type: string
+                environment:
+                  type: object
+                limits:
+                  type: object
+                  properties:
+                    memory:
+                      type: integer
+                    swap:
+                      type: integer
+                    disk:
+                      type: integer
+                    io:
+                      type: integer
+                    cpu:
+                      type: integer
+                feature_limits:
+                  type: object
+                  properties:
+                    databases:
+                      type: integer
+                    allocations:
+                      type: integer
+                    backups:
+                      type: integer
+                allocation:
+                  type: object
+                  properties:
+                    default:
+                      type: integer
+      responses:
+        '201':
+          description: Server created
+  
+  /application/servers/{server}:
+    get:
+      tags:
+        - Application - Servers
+      summary: Get server
+      description: Get server details
+      operationId: getApplicationServer
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Server details
+    patch:
+      tags:
+        - Application - Servers
+      summary: Update server
+      description: Update server configuration
+      operationId: updateServer
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                user:
+                  type: integer
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Server updated
+  
+  /application/servers/{server}/suspend:
+    post:
+      tags:
+        - Application - Servers
+      summary: Suspend server
+      description: Suspend a server
+      operationId: suspendServer
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Server suspended
+  
+  /application/servers/{server}/unsuspend:
+    post:
+      tags:
+        - Application - Servers
+      summary: Unsuspend server
+      description: Unsuspend a server
+      operationId: unsuspendServer
+      parameters:
+        - name: server
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Server unsuspended
+  
+  # Application API - Nests
+  /application/nests:
+    get:
+      tags:
+        - Application - Nests & Eggs
+      summary: List nests
+      description: Get all nests
+      operationId: listNests
+      responses:
+        '200':
+          description: List of nests
+    post:
+      tags:
+        - Application - Nests & Eggs
+      summary: Create nest
+      description: Create a new nest
+      operationId: createNest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Nest created
+  
+  /application/nests/{nest}/eggs:
+    get:
+      tags:
+        - Application - Nests & Eggs
+      summary: List eggs in nest
+      description: Get all eggs in a nest
+      operationId: listEggsInNest
+      parameters:
+        - name: nest
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of eggs
+  
+  # Application API - Roles
+  /application/roles:
+    get:
+      tags:
+        - Application - Roles
+      summary: List roles
+      description: Get all roles
+      operationId: listRoles
+      responses:
+        '200':
+          description: List of roles
+    post:
+      tags:
+        - Application - Roles
+      summary: Create role
+      description: Create a new role
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Role created
+  
+  # Application API - Locations
+  /application/locations:
+    get:
+      tags:
+        - Application - Locations
+      summary: List locations
+      description: Get all locations
+      operationId: listLocations
+      responses:
+        '200':
+          description: List of locations
+    post:
+      tags:
+        - Application - Locations
+      summary: Create location
+      description: Create a new location
+      operationId: createLocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                short:
+                  type: string
+                long:
+                  type: string
+      responses:
+        '201':
+          description: Location created
