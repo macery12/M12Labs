@@ -14,8 +14,7 @@ fi
 
 # Validate YAML syntax
 if command -v python3 &> /dev/null; then
-    python3 -c "import yaml; yaml.safe_load(open('$OPENAPI_FILE'))" 2>&1
-    if [ $? -eq 0 ]; then
+    if python3 -c "import yaml; yaml.safe_load(open('$OPENAPI_FILE'))" 2>&1; then
         echo "✓ YAML syntax is valid"
     else
         echo "❌ YAML syntax error"

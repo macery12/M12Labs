@@ -25,6 +25,8 @@ Once your Jexpanel instance is running, you can access the API documentation at:
 - **ReDoc**: `https://your-panel-domain.com/docs/redoc.html`
 - **Raw OpenAPI Spec**: `https://your-panel-domain.com/docs/openapi.yaml`
 
+**Note**: The OpenAPI specification uses `https://panel.example.com/api` as the default server URL. When testing with Swagger UI, you can change this to your actual panel domain in the "Servers" dropdown at the top of the page.
+
 ## Documentation Viewers
 
 ### Swagger UI (index.html)

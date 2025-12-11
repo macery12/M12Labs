@@ -27,14 +27,14 @@ info:
   version: 4.0.0
   contact:
     name: Jexpanel Support
-    url: https://jexpanel.com
+    url: https://github.com/Jexactyl/Jexactyl
   license:
     name: MIT
     url: https://github.com/Jexactyl/Jexactyl/blob/main/LICENSE.md
 
 servers:
   - url: https://panel.example.com/api
-    description: Production server
+    description: Production server (replace with your domain)
   - url: http://localhost/api
     description: Local development server
 
