@@ -3,7 +3,7 @@ import ContentBox from '@/elements/ContentBox';
 import CreateApiKeyForm from '@account/forms/CreateApiKeyForm';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faKey, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faTrashAlt, faBook } from '@fortawesome/free-solid-svg-icons';
 import { getApiKeys, deleteApiKey } from '@/api/routes/account/api-keys';
 import { type ApiKey } from '@definitions/user';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -14,6 +14,7 @@ import GreyRowBox from '@/elements/GreyRowBox';
 import { Dialog } from '@/elements/dialog';
 import { useFlashKey } from '@/plugins/useFlash';
 import Code from '@/elements/Code';
+import { Button } from '@/elements/button';
 
 export default () => {
     const [deleteIdentifier, setDeleteIdentifier] = useState('');
@@ -48,6 +49,18 @@ export default () => {
             description={'Create, edit and delete API keys to access the Panel.'}
         >
             <FlashMessageRender byKey={'account'} />
+            <div css={tw`mb-6`}>
+                <Button
+                    as={'a'}
+                    href={'/docs'}
+                    target={'_blank'}
+                    rel={'noopener noreferrer'}
+                    css={tw`inline-flex items-center`}
+                >
+                    <FontAwesomeIcon icon={faBook} css={tw`mr-2`} />
+                    View API Documentation
+                </Button>
+            </div>
             <div css={tw`md:flex flex-nowrap my-10`}>
                 <ContentBox title={'Create API Key'} css={tw`flex-none w-full md:w-1/2`}>
                     <CreateApiKeyForm onKeyCreated={key => setKeys(s => [...s!, key])} />
