@@ -2,11 +2,20 @@
 
 This directory contains the OpenAPI (formerly Swagger) documentation for the Jexpanel API.
 
-## Files
+## 📚 Documentation Files
 
-- **openapi.yaml** - The OpenAPI 3.0 specification file that defines all API endpoints
-- **index.html** - Swagger UI interface for interactive API documentation
-- **redoc.html** - ReDoc interface for a clean, three-panel documentation layout
+### Core Documentation
+- **[openapi.yaml](openapi.yaml)** - The OpenAPI 3.0 specification file that defines all API endpoints
+- **[index.html](index.html)** - Swagger UI interface for interactive API documentation
+- **[redoc.html](redoc.html)** - ReDoc interface for a clean, three-panel documentation layout
+
+### Guides
+- **[QUICKSTART.md](QUICKSTART.md)** - ⭐ Start here! Quick start guide with examples
+- **[POSTMAN.md](POSTMAN.md)** - How to use the API with Postman
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guide for maintaining and updating the documentation
+
+### Tools
+- **[validate.sh](validate.sh)** - Script to validate the OpenAPI specification
 
 ## Accessing the Documentation
 
