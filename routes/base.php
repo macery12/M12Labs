@@ -10,4 +10,4 @@ Route::get('/account', [Base\IndexController::class, 'index'])
     ->name('account');
 
 Route::get('/{react}', [Base\IndexController::class, 'index'])
-    ->where('react', '^(?!(\/)?(api|auth|admin|daemon|docs)).+');
+    ->where('react', '^(?!(\/)?(api|auth|admin|daemon)).+');

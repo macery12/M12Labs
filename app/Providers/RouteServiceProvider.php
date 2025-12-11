@@ -36,6 +36,31 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->routes(function () {
             Route::middleware('web')->group(function () {
+                // Public API documentation routes (no authentication required)
+                Route::prefix('/docs')->group(function () {
+                    Route::get('/', function () {
+                        return response()->file(public_path('docs/index.html'));
+                    });
+                    Route::get('/index.html', function () {
+                        return response()->file(public_path('docs/index.html'));
+                    });
+                    Route::get('/redoc.html', function () {
+                        return response()->file(public_path('docs/redoc.html'));
+                    });
+                    Route::get('/openapi.yaml', function () {
+                        return response()->file(public_path('docs/openapi.yaml'), [
+                            'Content-Type' => 'text/yaml'
+                        ]);
+                    });
+                    Route::get('/{file}', function ($file) {
+                        $path = public_path('docs/' . $file);
+                        if (file_exists($path) && is_file($path)) {
+                            return response()->file($path);
+                        }
+                        abort(404);
+                    })->where('file', '.*');
+                });
+
                 Route::middleware(['auth.session', RequireTwoFactorAuthentication::class])
                     ->group(base_path('routes/base.php'));
 
