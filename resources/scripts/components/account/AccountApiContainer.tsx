@@ -14,13 +14,14 @@ import GreyRowBox from '@/elements/GreyRowBox';
 import { Dialog } from '@/elements/dialog';
 import { useFlashKey } from '@/plugins/useFlash';
 import Code from '@/elements/Code';
-import { Button } from '@/elements/button';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const [deleteIdentifier, setDeleteIdentifier] = useState('');
     const [keys, setKeys] = useState<ApiKey[]>([]);
     const [loading, setLoading] = useState(true);
     const { clearAndAddHttpError } = useFlashKey('account');
+    const { primary } = useStoreState(state => state.theme.data!.colors);
 
     useEffect(() => {
         getApiKeys()
@@ -50,16 +51,16 @@ export default () => {
         >
             <FlashMessageRender byKey={'account'} />
             <div css={tw`mb-6`}>
-                <Button
-                    as={'a'}
+                <a
                     href={'/docs'}
                     target={'_blank'}
                     rel={'noopener noreferrer'}
-                    css={tw`inline-flex items-center`}
+                    css={tw`px-4 py-2 inline-flex items-center justify-center rounded text-base font-semibold transition-all duration-300 focus:ring-[3px] focus:ring-offset-2 focus:ring-offset-slate-700 focus:ring-opacity-50 text-slate-50 no-underline`}
+                    style={{ backgroundColor: primary }}
                 >
                     <FontAwesomeIcon icon={faBook} css={tw`mr-2`} />
                     View API Documentation
-                </Button>
+                </a>
             </div>
             <div css={tw`md:flex flex-nowrap my-10`}>
                 <ContentBox title={'Create API Key'} css={tw`flex-none w-full md:w-1/2`}>
