@@ -57,11 +57,13 @@ class FreeProductController extends ClientApiController
                 'status' => $server->isSuspended() ? null : $server->status,
             ]);
         } else {
+            $variables = $request->input('variables', []);
             $server = $this->serverCreation->processFree(
                 $request,
                 $product,
                 $request->input('node'),
-                $order
+                $order,
+                $variables
             );
         }
 
