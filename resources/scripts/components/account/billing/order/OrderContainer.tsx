@@ -65,7 +65,8 @@ export default () => {
 
     const createFree = () => {
         if (product) {
-            processUnpaidOrder(product.id, selectedNode)
+            const variables = Array.from(vars, ([key, value]) => ({ key, value }));
+            processUnpaidOrder(product.id, selectedNode, undefined, variables)
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
         }
