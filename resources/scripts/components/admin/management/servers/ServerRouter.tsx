@@ -4,13 +4,13 @@ import tw from 'twin.macro';
 
 import ServerManageContainer from '@admin/management/servers/manage/ServerManageContainer';
 import ServerStartupContainer from '@admin/management/servers/ServerStartupContainer';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import Spinner from '@elements/Spinner';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import Spinner from '@/elements/Spinner';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import ServerSettingsContainer from '@admin/management/servers/ServerSettingsContainer';
 import useFlash from '@/plugins/useFlash';
-import { useServerFromRoute } from '@/api/admin/server';
+import { useServerFromRoute } from '@/api/routes/admin/server';
 import {
     AdjustmentsIcon,
     CogIcon,
@@ -24,13 +24,12 @@ import {
 import { useStoreState } from '@/state/hooks';
 import ServerDatabases from './ServerDatabases';
 import ServerBillingContainer from './billing/ServerBillingContainer';
-import Pill from '@/components/elements/Pill';
+import Pill from '@/elements/Pill';
 
 export default () => {
     const params = useParams<'id'>();
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const theme = useStoreState(state => state.theme.data!);
     const { billing } = useStoreState(state => state.everest.data!);
     const { data: server, error, isValidating, mutate } = useServerFromRoute();
 
@@ -80,7 +79,7 @@ export default () => {
 
             <FlashMessageRender byKey={'server'} css={tw`mb-4`} />
 
-            <SubNavigation theme={theme}>
+            <SubNavigation>
                 <SubNavigationLink to={`/admin/servers/${params.id}`} name={'Settings'} icon={CogIcon} base />
                 <SubNavigationLink to={`/admin/servers/${params.id}/startup`} name={'Startup'} icon={AdjustmentsIcon} />
                 <SubNavigationLink

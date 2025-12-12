@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import * as React from 'react';
-import { Button } from '@elements/button/index';
-import Can from '@elements/Can';
+import { Button } from '@/elements/button/index';
+import Can from '@/elements/Can';
 import { ServerContext } from '@/state/server';
-import { PowerAction } from '@/components/server/console/ServerConsoleContainer';
-import { Dialog } from '@elements/dialog';
+import { PowerAction } from '@server/console/ServerConsoleContainer';
+import { Dialog } from '@/elements/dialog';
 import { PlayIcon, StopIcon, BanIcon, RefreshIcon } from '@heroicons/react/outline';
-import SaveButton from '@/components/server/console/SaveButton';
+import SaveButton from '@server/console/SaveButton';
 
 interface PowerButtonProps {
     className?: string;

@@ -106,7 +106,7 @@ class TwoFactorControllerTest extends ClientApiIntegrationTestCase
         // value on them.
         //
         // @see https://github.com/pterodactyl/panel/issues/3163
-        $this->assertNotNull($tokens[0]->created_at);
+        $this->assertNotNull($tokens[0]->created_at->toIso8601String());
 
         $tokens = $tokens->pluck('token')->toArray();
 
@@ -149,7 +149,7 @@ class TwoFactorControllerTest extends ClientApiIntegrationTestCase
         $user = $user->refresh();
         $this->assertFalse($user->use_totp);
         $this->assertNotNull($user->totp_authenticated_at);
-        $this->assertSame(Carbon::now()->toAtomString(), $user->totp_authenticated_at->toAtomString());
+        $this->assertSame(Carbon::now(), $user->totp_authenticated_at);
     }
 
     /**

@@ -1,16 +1,16 @@
 import { Form, Formik } from 'formik';
 import tw from 'twin.macro';
-import AdminBox from '@elements/AdminBox';
-import Field from '@elements/Field';
-import { Button } from '@elements/button';
-import { AlertSettings, updateAlertSettings } from '@/api/admin/alerts';
+import AdminBox from '@/elements/AdminBox';
+import Field from '@/elements/Field';
+import { Button } from '@/elements/button';
+import { AlertSettings, updateAlertSettings } from '@/api/routes/admin/alerts';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import { faEye, faList, faPaintBrush } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import { useEffect, useState } from 'react';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import Label from '@elements/Label';
-import Select from '@elements/Select';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import Label from '@/elements/Label';
+import Select from '@/elements/Select';
 import { AlertType } from '@/state/everest';
 
 export default () => {

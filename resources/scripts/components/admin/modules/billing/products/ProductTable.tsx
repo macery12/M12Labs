@@ -8,8 +8,8 @@ import AdminTable, {
     TableHeader,
     TableRow,
     useTableHooks,
-} from '@elements/AdminTable';
-import CopyOnClick from '@elements/CopyOnClick';
+} from '@/elements/AdminTable';
+import CopyOnClick from '@/elements/CopyOnClick';
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import { NavLink, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
@@ -17,8 +17,8 @@ import { useStoreState } from '@/state/hooks';
 import { useContext, useEffect } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { ShoppingBagIcon } from '@heroicons/react/outline';
-import { getProducts, Context as ProductContext } from '@/api/admin/billing/products';
-import { ProductFilters } from '@/api/admin/billing/types';
+import { getProducts, Context as ProductContext } from '@/api/routes/admin/billing/products';
+import { ProductFilters } from '@/api/routes/admin/billing/types';
 
 function ProductTable() {
     const params = useParams<'id'>();

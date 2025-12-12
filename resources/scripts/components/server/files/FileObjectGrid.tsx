@@ -7,14 +7,14 @@ import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
 import { join } from 'pathe';
 
-import { type FileObject } from '@/api/definitions/server';
-import FileDropdownMenu from '@/components/server/files/FileDropdownMenu';
-import SelectFileCheckbox from '@/components/server/files/SelectFileCheckbox';
-import { encodePathSegments } from '@/helpers';
+import { type FileObject } from '@definitions/server';
+import FileDropdownMenu from '@server/files/FileDropdownMenu';
+import SelectFileCheckbox from '@server/files/SelectFileCheckbox';
 import { usePermissions } from '@/plugins/usePermissions';
 import { ServerContext } from '@/state/server';
 import styles from './style.module.css';
 import { useStoreState } from '@/state/hooks';
+import { encodePathSegments } from '@/lib/helpers';
 
 function Clickable({ file, children }: { file: FileObject; children: ReactNode }) {
     const [canRead] = usePermissions(['file.read']);

@@ -1,10 +1,10 @@
 import { CloudUploadIcon, XIcon } from '@heroicons/react/solid';
 import { useContext, useEffect, useState } from 'react';
 
-import { Button } from '@elements/button/index';
-import { Dialog, DialogWrapperContext } from '@elements/dialog';
-import Tooltip from '@elements/tooltip/Tooltip';
-import Code from '@elements/Code';
+import { Button } from '@/elements/button/index';
+import { Dialog, DialogWrapperContext } from '@/elements/dialog';
+import Tooltip from '@/elements/tooltip/Tooltip';
+import Code from '@/elements/Code';
 import asDialog from '@/hoc/asDialog';
 import { ServerContext } from '@/state/server';
 

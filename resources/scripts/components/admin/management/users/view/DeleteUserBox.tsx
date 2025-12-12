@@ -1,12 +1,12 @@
 import tw from 'twin.macro';
-import AdminBox from '@elements/AdminBox';
-import { Button } from '@elements/button';
+import AdminBox from '@/elements/AdminBox';
+import { Button } from '@/elements/button';
 import { faUserSlash } from '@fortawesome/free-solid-svg-icons';
-import { Dialog } from '@elements/dialog';
+import { Dialog } from '@/elements/dialog';
 import { useState } from 'react';
 import useFlash from '@/plugins/useFlash';
-import { Context } from '../UserRouter';
-import { deleteUser } from '@/api/admin/users';
+import { Context } from '@admin/management/users/UserRouter';
+import { deleteUser } from '@/api/routes/admin/users';
 import { useNavigate } from 'react-router-dom';
 
 export default () => {

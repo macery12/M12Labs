@@ -2,11 +2,11 @@ import { useField } from 'formik';
 import type { ChangeEvent } from 'react';
 import { useEffect, useState } from 'react';
 
-import type { WithRelationships } from '@/api/admin';
-import type { Egg } from '@/api/admin/egg';
-import { searchEggs } from '@/api/admin/egg';
-import Label from '@elements/Label';
-import Select from '@elements/Select';
+import type { WithRelationships } from '@/api/routes/admin';
+import type { Egg } from '@/api/routes/admin/egg';
+import { searchEggs } from '@/api/routes/admin/egg';
+import Label from '@/elements/Label';
+import Select from '@/elements/Select';
 
 interface Props {
     nestId?: number;

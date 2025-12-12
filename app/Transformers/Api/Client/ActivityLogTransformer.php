@@ -33,7 +33,7 @@ class ActivityLogTransformer extends Transformer
             'description' => $model->description,
             'properties' => $this->properties($model),
             'has_additional_metadata' => $this->hasAdditionalMetadata($model),
-            'timestamp' => $model->timestamp->toAtomString(),
+            'timestamp' => $model->timestamp,
         ];
     }
 

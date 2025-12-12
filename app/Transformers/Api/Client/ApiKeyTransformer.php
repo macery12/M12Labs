@@ -24,8 +24,8 @@ class ApiKeyTransformer extends Transformer
             'identifier' => $model->identifier,
             'description' => $model->memo,
             'allowed_ips' => $model->allowed_ips,
-            'last_used_at' => $model->last_used_at ? $model->last_used_at->toAtomString() : null,
-            'created_at' => $model->created_at->toAtomString(),
+            'last_used_at' => $model->last_used_at ? $model->last_used_at : null,
+            'created_at' => $model->created_at->toIso8601String(),
         ];
     }
 }

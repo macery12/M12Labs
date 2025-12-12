@@ -3,13 +3,13 @@
 namespace Everest\Http\Controllers\Api\Application\Tickets;
 
 use Everest\Models\Ticket;
-use Illuminate\Http\Request;
+use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
+use Everest\Http\Requests\Api\Application\Tickets;
 use Everest\Transformers\Api\Application\TicketTransformer;
-use Everest\Contracts\Repository\SettingsRepositoryInterface;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
@@ -18,16 +18,15 @@ class TicketController extends ApplicationApiController
     /**
      * TicketController constructor.
      */
-    public function __construct(
-        private SettingsRepositoryInterface $settings
-    ) {
+    public function __construct()
+    {
         parent::__construct();
     }
 
     /**
      * Return all the tickets urrently registered on the Panel.
      */
-    public function index(Request $request): array
+    public function index(Tickets\GetTicketsRequest $request): array
     {
         $perPage = (int) $request->query('per_page', '20');
         if ($perPage < 1 || $perPage > 100) {
@@ -47,7 +46,7 @@ class TicketController extends ApplicationApiController
     /**
      * Add a new ticket to the Panel.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Tickets\StoreTicketRequest $request): JsonResponse
     {
         $ticket = Ticket::create([
             'title' => $request['title'],
@@ -69,7 +68,7 @@ class TicketController extends ApplicationApiController
     /**
      * View an existing ticket.
      */
-    public function view(Request $request, Ticket $ticket): array
+    public function view(Tickets\ViewTicketRequest $request, Ticket $ticket): array
     {
         return $this->fractal->item($ticket)
             ->transformWith(TicketTransformer::class)
@@ -79,7 +78,7 @@ class TicketController extends ApplicationApiController
     /**
      * Update an existing ticket.
      */
-    public function update(Request $request, Ticket $ticket)
+    public function update(Tickets\UpdateTicketRequest $request, Ticket $ticket)
     {
         $ticket->update($request->all());
 
@@ -99,9 +98,9 @@ class TicketController extends ApplicationApiController
      *
      * @throws \Throwable
      */
-    public function settings(Request $request): Response
+    public function settings(Tickets\UpdateTicketSettingsRequest $request): Response
     {
-        $this->settings->set('settings::modules:tickets:' . $request->input('key'), $request->input('value'));
+        Setting::set('settings::modules:tickets:' . $request->input('key'), $request->input('value'));
 
         Activity::event('admin:tickets:settings')
             ->property('settings', $request->all())
@@ -114,7 +113,7 @@ class TicketController extends ApplicationApiController
     /**
      * Delete a ticket.
      */
-    public function delete(Ticket $ticket, Request $request): Response
+    public function delete(Ticket $ticket, Tickets\DeleteTicketRequest $request): Response
     {
         $ticket->messages()->delete();
 

@@ -105,4 +105,12 @@ class Ticket extends Model
     {
         return $this->hasMany(TicketMessage::class, 'ticket_id');
     }
+
+    /**
+     * Get the validation rules for incoming requests.
+     */
+    public static function rules(): array
+    {
+        return self::$validationRules;
+    }
 }

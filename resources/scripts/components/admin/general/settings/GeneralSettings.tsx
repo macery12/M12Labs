@@ -1,16 +1,16 @@
 import { Form, Formik } from 'formik';
 import tw from 'twin.macro';
 
-import AdminBox from '@elements/AdminBox';
-import Field from '@elements/Field';
-import { Button } from '@elements/button';
-import { GeneralSettings, updateGeneralSettings } from '@/api/admin/settings';
+import AdminBox from '@/elements/AdminBox';
+import Field from '@/elements/Field';
+import { Button } from '@/elements/button';
+import { GeneralSettings, updateGeneralSettings } from '@/api/routes/admin/settings';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import { faPaintBrush, faPlusCircle, faRecycle, faShapes } from '@fortawesome/free-solid-svg-icons';
+import { faPaintBrush, faPlusCircle, faRecycle, faShapes, faImage, faEye } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import { useEffect } from 'react';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import Label from '@elements/Label';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import Label from '@/elements/Label';
 
 export default () => {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
@@ -48,9 +48,17 @@ export default () => {
             onSubmit={submit}
             initialValues={{
                 name: settings.name,
+                logo: settings.logo,
                 indicators: settings.indicators,
                 auto_update: settings.auto_update,
                 speed_dial: settings.speed_dial,
+                activity: {
+                    enabled: {
+                        account: settings.activity.enabled.account,
+                        server: settings.activity.enabled.server,
+                        admin: settings.activity.enabled.admin,
+                    },
+                },
             }}
         >
             <Form>
@@ -60,6 +68,12 @@ export default () => {
                         <Field id={'name'} name={'name'} type={'text'} description={''} />
                         <p className={'text-gray-400 text-xs mt-1.5'}>
                             Configure the name of this Panel to suit your needs.
+                        </p>
+                    </AdminBox>
+                    <AdminBox title={'Application Logo'} icon={faImage}>
+                        <Field id={'logo'} name={'logo'} type={'url'} description={''} />
+                        <p className={'text-gray-400 text-xs mt-1.5'}>
+                            Configure the logo of this Panel to suit your needs.
                         </p>
                     </AdminBox>
                     <AdminBox title={'Automatic Updates'} icon={faRecycle}>
@@ -110,6 +124,42 @@ export default () => {
                             <p className={'text-gray-400 text-xs mt-1.5'}>
                                 If enabled, a component will show to admins in the client-side UI for quick actions -
                                 such as creating a server or user.
+                            </p>
+                        </div>
+                    </AdminBox>
+                    <AdminBox title={'Activity Logging'} icon={faEye}>
+                        <div>
+                            <div className={'bg-black/50 rounded-lg p-2 grid lg:grid-cols-3 gap-4 place-items-center'}>
+                                <div className={'inline-flex'}>
+                                    <Label className={'mt-1 mr-2'}>Account</Label>
+                                    <Field
+                                        id={'activity.enabled.account'}
+                                        name={'activity.enabled.account'}
+                                        type={'checkbox'}
+                                        defaultChecked={settings.activity.enabled.account}
+                                    />
+                                </div>
+                                <div className={'inline-flex'}>
+                                    <Label className={'mt-1 mr-2'}>Server</Label>
+                                    <Field
+                                        id={'activity.enabled.server'}
+                                        name={'activity.enabled.server'}
+                                        type={'checkbox'}
+                                        defaultChecked={settings.activity.enabled.server}
+                                    />
+                                </div>
+                                <div className={'inline-flex'}>
+                                    <Label className={'mt-1 mr-2'}>Admin</Label>
+                                    <Field
+                                        id={'activity.enabled.admin'}
+                                        name={'activity.enabled.admin'}
+                                        type={'checkbox'}
+                                        defaultChecked={settings.activity.enabled.admin}
+                                    />
+                                </div>
+                            </div>
+                            <p className={'text-gray-400 text-xs mt-1.5'}>
+                                Check the boxes you wish to log activity for. By default, all of these are enabled.
                             </p>
                         </div>
                     </AdminBox>

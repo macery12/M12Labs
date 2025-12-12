@@ -1,15 +1,15 @@
 import { useStoreState } from 'easy-peasy';
 import { NavLink, Route, Routes } from 'react-router-dom';
-import Avatar from '@/components/Avatar';
-import Sidebar from '@elements/Sidebar';
+import Avatar from '@/elements/Avatar';
+import Sidebar from '@/elements/Sidebar';
 import AdminIndicators from '@admin/AdminIndicators';
 import { usePersistedState } from '@/plugins/usePersistedState';
-import MobileSidebar from '@elements/MobileSidebar';
-import Pill from '@/components/elements/Pill';
-import ErrorBoundary from '@/components/elements/ErrorBoundary';
+import MobileSidebar from '@/elements/MobileSidebar';
+import Pill from '@/elements/Pill';
+import ErrorBoundary from '@/elements/ErrorBoundary';
 import routes from './routes';
-import Spinner from '@/components/elements/Spinner';
-import { NotFound } from '@/components/elements/ScreenBlock';
+import Spinner from '@/elements/Spinner';
+import { NotFound } from '@/elements/ScreenBlock';
 import { PuzzleIcon, ReplyIcon } from '@heroicons/react/outline';
 import { Fragment } from 'react';
 
@@ -17,6 +17,8 @@ function AdminRouter() {
     const theme = useStoreState(state => state.theme.data!);
     const user = useStoreState(state => state.user.data!);
     const settings = useStoreState(state => state.settings.data!);
+
+    const activityEnabled: boolean = settings.activity.enabled.admin;
 
     const categories = ['general', 'modules', 'appearance', 'management', 'services'] as const;
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_admin_${user.uuid}`, false);
@@ -27,7 +29,7 @@ function AdminRouter() {
             <MobileSidebar>
                 <MobileSidebar.Home />
                 {routes.admin
-                    .filter(x => x.name)
+                    .filter(route => route.name && (!route.condition || route.condition({ activityEnabled })))
                     .map(route => (
                         <MobileSidebar.Link
                             key={route.route}
@@ -47,7 +49,7 @@ function AdminRouter() {
                         <h1 className={'text-2xl text-neutral-50 whitespace-nowrap font-medium'}>{settings.name}</h1>
                     ) : (
                         <img
-                            src={'https://avatars.githubusercontent.com/u/91636558'}
+                            src={settings.logo?.toString() || 'https://avatars.githubusercontent.com/u/91636558'}
                             className={'mt-4 w-12'}
                             alt={'Logo'}
                         />
@@ -65,12 +67,17 @@ function AdminRouter() {
                         return (
                             <Fragment key={category}>
                                 <Sidebar.Section>{category[0]!.toUpperCase() + category.slice(1)}</Sidebar.Section>
-                                {categoryRoutes.map(route => (
-                                    <NavLink to={route.path} key={route.path} end={route.end}>
-                                        <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
-                                        <span>{route.name}</span>
-                                    </NavLink>
-                                ))}
+                                {categoryRoutes
+                                    .filter(
+                                        route =>
+                                            route.name && (!route.condition || route.condition({ activityEnabled })),
+                                    )
+                                    .map(route => (
+                                        <NavLink to={route.path} key={route.path} end={route.end}>
+                                            <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
+                                            <span>{route.name}</span>
+                                        </NavLink>
+                                    ))}
                             </Fragment>
                         );
                     })}

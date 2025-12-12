@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getSchedule } from '@/api/server/schedules';
-import Spinner from '@elements/Spinner';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import EditScheduleModal from '@/components/server/schedules/EditScheduleModal';
-import NewTaskButton from '@/components/server/schedules/NewTaskButton';
-import DeleteScheduleButton from '@/components/server/schedules/DeleteScheduleButton';
-import Can from '@elements/Can';
+import { getSchedule } from '@/api/routes/server/schedules';
+import Spinner from '@/elements/Spinner';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import EditScheduleModal from '@server/schedules/EditScheduleModal';
+import NewTaskButton from '@server/schedules/NewTaskButton';
+import DeleteScheduleButton from '@server/schedules/DeleteScheduleButton';
+import Can from '@/elements/Can';
 import useFlash from '@/plugins/useFlash';
 import { ServerContext } from '@/state/server';
-import PageContentBlock from '@elements/PageContentBlock';
+import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
-import { Button } from '@elements/button/index';
-import ScheduleTaskRow from '@/components/server/schedules/ScheduleTaskRow';
+import { Button } from '@/elements/button/index';
+import ScheduleTaskRow from '@server/schedules/ScheduleTaskRow';
 import isEqual from 'react-fast-compare';
 import { format } from 'date-fns';
-import ScheduleCronRow from '@/components/server/schedules/ScheduleCronRow';
-import RunScheduleButton from '@/components/server/schedules/RunScheduleButton';
+import ScheduleCronRow from '@server/schedules/ScheduleCronRow';
+import RunScheduleButton from '@server/schedules/RunScheduleButton';
 import { useStoreState } from '@/state/hooks';
 
 const CronBox = ({ title, value, color }: { title: string; value: string; color: string }) => (

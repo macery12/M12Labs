@@ -1,8 +1,8 @@
 import { PureComponent } from 'react';
 import isEqual from 'react-fast-compare';
 
-import PortaledModal, { ModalProps } from '@elements/Modal';
-import ModalContext, { ModalContextValues } from '@/context/ModalContext';
+import PortaledModal, { ModalProps } from '@/elements/Modal';
+import ModalContext, { ModalContextValues } from '@/elements/ModalContext';
 
 export interface AsModalProps {
     visible: boolean;

@@ -31,4 +31,12 @@ return [
         'symbol' => '$',
         'code' => 'usd',
     ],
+
+    /*
+     * Configure URLs for legal documentation.
+     */
+    'links' => [
+        'terms' => '',
+        'privacy' => '',
+    ],
 ];

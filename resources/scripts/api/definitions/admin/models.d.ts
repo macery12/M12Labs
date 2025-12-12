@@ -1,6 +1,6 @@
-import { ModelWithRelationships, Model, UUID } from '@/api/definitions';
-import { Server } from '@/api/admin/server';
-import { OrderType } from '@/api/billing/orders/types';
+import { ModelWithRelationships, Model, UUID } from '@definitions';
+import { Server } from '@/api/routes/admin/server';
+import { OrderType } from '@/api/routes/account/billing/orders/types';
 
 type BillingExceptionType = 'payment' | 'deployment' | 'storefront';
 type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
@@ -156,4 +156,19 @@ interface Category extends Model {
 interface AdminRolePermission extends Model {
     key: string;
     description: string;
+}
+
+interface ServerPreset extends Model {
+    id: number;
+    name: string;
+    description: string;
+
+    cpu: number;
+    memory: number;
+    disk: number;
+    nest_id?: number;
+    egg_id?: number;
+
+    created_at: Date;
+    updated_at?: Date | null;
 }

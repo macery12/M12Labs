@@ -1,12 +1,12 @@
 import tw from 'twin.macro';
-import AdminBox from '@elements/AdminBox';
-import { Button } from '@elements/button';
+import AdminBox from '@/elements/AdminBox';
+import { Button } from '@/elements/button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faWrench, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
-import { Dialog } from '@elements/dialog';
+import { Dialog } from '@/elements/dialog';
 import { useState } from 'react';
-import reinstallServer from '@/api/admin/servers/manage/reinstallServer';
-import { useServerFromRoute } from '@/api/admin/server';
+import reinstallServer from '@/api/routes/admin/servers/manage/reinstallServer';
+import { useServerFromRoute } from '@/api/routes/admin/server';
 import useFlash from '@/plugins/useFlash';
 
 export default () => {

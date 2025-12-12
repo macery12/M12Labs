@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import AdminBox from '@elements/AdminBox';
-import { Button } from '@elements/button';
+import AdminBox from '@/elements/AdminBox';
+import { Button } from '@/elements/button';
 import ToggleFeatureButton from './ToggleFeatureButton';
-import { faDollar, faExchange, faKey, faPowerOff } from '@fortawesome/free-solid-svg-icons';
+import { faDollar, faExchange, faGavel, faKey, faPowerOff } from '@fortawesome/free-solid-svg-icons';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import { faPaypal, faStripe } from '@fortawesome/free-brands-svg-icons';
 import SetupPayPal from './guides/SetupPayPal';
 import SetupLink from './guides/SetupLink';
-import Label from '@elements/Label';
-import Select from '@elements/Select';
+import Label from '@/elements/Label';
+import Select from '@/elements/Select';
 import currencyDictionary from '@/assets/currency';
 import SetupStripe from './guides/SetupStripe';
 import ExportConfigButton from './config/ExportConfigButton';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import ImportConfigButton from './config/ImportConfigButton';
-import { deleteStripeKeys, updateSettings } from '@/api/admin/billing';
+import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
+import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
 export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'none';
 
@@ -145,6 +146,10 @@ export default () => {
                     </div>
                 </AdminBox>
             )}
+            <AdminBox title={'Legal Document Links'} icon={faGavel}>
+                Provide a link to your business&apos; ToS or privacy policy that users must accept before purchase.
+                <BillingLinksForm />
+            </AdminBox>
             <AdminBox title={'Disable Billing Module'} icon={faPowerOff}>
                 Clicking the button below will disable all modules of the billing system - such as subscriptions, server
                 purchasing and more. Make sure that this will not impact your users before disabling.

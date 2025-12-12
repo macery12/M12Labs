@@ -28,8 +28,8 @@ class OrderTransformer extends Transformer
             'status' => $model->status,
             'product_id' => $model->product_id,
             'type' => $model->type ?? '?',
-            'created_at' => $model->created_at,
-            'updated_at' => $model->updated_at,
+            'created_at' => $model->created_at->toIso8601String(),
+            'updated_at' => $model->updated_at->toIso8601String(),
         ];
     }
 }

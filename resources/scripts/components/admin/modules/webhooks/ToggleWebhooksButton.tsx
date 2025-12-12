@@ -1,6 +1,6 @@
 import { useStoreState } from '@/state/hooks';
-import { Button } from '@elements/button';
-import { update } from '@/api/admin/webhooks';
+import { Button } from '@/elements/button';
+import { update } from '@/api/routes/admin/webhooks';
 import { useNavigate } from 'react-router-dom';
 
 export default () => {

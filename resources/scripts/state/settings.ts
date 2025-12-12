@@ -4,6 +4,7 @@ export type PanelMode = 'standard' | 'personal' | undefined;
 
 export interface SiteSettings {
     name: string;
+    logo: URL | null;
     mode: PanelMode;
     debug: boolean;
     locale: string;
@@ -14,6 +15,13 @@ export interface SiteSettings {
     recaptcha: {
         enabled: boolean;
         siteKey: string;
+    };
+    activity: {
+        enabled: {
+            account: boolean;
+            server: boolean;
+            admin: boolean;
+        };
     };
 }
 

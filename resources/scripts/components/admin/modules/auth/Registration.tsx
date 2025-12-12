@@ -1,12 +1,12 @@
 import useFlash from '@/plugins/useFlash';
-import Label from '@elements/Label';
-import Select from '@elements/Select';
-import AdminBox from '@elements/AdminBox';
+import Label from '@/elements/Label';
+import Select from '@/elements/Select';
+import AdminBox from '@/elements/AdminBox';
 import { faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
-import { Alert } from '@elements/alert';
+import { Alert } from '@/elements/alert';
 import useStatus from '@/plugins/useStatus';
-import { updateModule } from '@/api/admin/auth/module';
+import { updateModule } from '@/api/routes/admin/auth/module';
 
 export default () => {
     const { status, setStatus } = useStatus();
@@ -31,7 +31,12 @@ export default () => {
         <AdminBox title={'Registration Module'} icon={faUserPlus} byKey={'auth:registration'} status={status}>
             <div>
                 <Label>Allow User Registration</Label>
-                <Select id={'enabled'} name={'enabled'} onChange={e => update('enabled', e.target.value)}>
+                <Select
+                    id={'enabled'}
+                    name={'enabled'}
+                    onChange={e => update('enabled', e.target.value)}
+                    autoComplete={'off'}
+                >
                     <option value={1} selected={settings.enabled}>
                         Enabled
                     </option>

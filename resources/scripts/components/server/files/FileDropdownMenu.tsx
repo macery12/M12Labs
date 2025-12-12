@@ -1,21 +1,21 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import RenameFileModal from '@/components/server/files/RenameFileModal';
+import RenameFileModal from '@server/files/RenameFileModal';
 import { ServerContext } from '@/state/server';
 import { join } from 'pathe';
-import { deleteFiles, copyFile, getFileDownloadUrl, compressFiles, decompressFiles } from '@/api/server/files';
-import Can from '@elements/Can';
-import { type FileObject } from '@/api/definitions/server';
+import { deleteFiles, copyFile, getFileDownloadUrl, compressFiles, decompressFiles } from '@/api/routes/server/files';
+import Can from '@/elements/Can';
+import { type FileObject } from '@definitions/server';
 import useFlash from '@/plugins/useFlash';
 import tw from 'twin.macro';
 import useFileManagerSwr from '@/plugins/useFileManagerSwr';
-import DropdownMenu from '@elements/DropdownMenu';
+import DropdownMenu from '@/elements/DropdownMenu';
 import useEventListener from '@/plugins/useEventListener';
 import isEqual from 'react-fast-compare';
-import ChmodFileModal from '@/components/server/files/ChmodFileModal';
-import { Dialog } from '@elements/dialog';
-import { Button } from '@elements/button';
+import ChmodFileModal from '@server/files/ChmodFileModal';
+import { Dialog } from '@/elements/dialog';
+import { Button } from '@/elements/button';
 import {
     ArchiveIcon,
     ArrowUpIcon,

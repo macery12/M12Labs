@@ -1,8 +1,8 @@
 import type { Actions } from 'easy-peasy';
 import { useStoreActions } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
-import type { UpdateUserValues } from '@/api/admin/users';
-import { updateUser } from '@/api/admin/users';
+import type { UpdateUserValues } from '@/api/routes/admin/users';
+import { updateUser } from '@/api/routes/admin/users';
 import { Context } from '@admin/management/users/UserRouter';
 import type { ApplicationStore } from '@/state';
 import UserForm from './UserForm';

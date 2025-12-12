@@ -1,6 +1,6 @@
 import * as React from 'react';
 import classNames from 'classnames';
-import styles from '@/components/server/console/style.module.css';
+import styles from '@server/console/style.module.css';
 import { useStoreState } from '@/state/hooks';
 
 interface ChartBlockProps {

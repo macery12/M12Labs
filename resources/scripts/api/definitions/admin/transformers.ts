@@ -1,12 +1,12 @@
 /* eslint-disable camelcase */
-import { Allocation, Node } from '@/api/admin/node';
-import { Server, ServerVariable } from '@/api/admin/server';
+import { Allocation, Node } from '@/api/routes/admin/node';
+import { Server, ServerVariable } from '@/api/routes/admin/server';
 import { FractalResponseData, FractalResponseList } from '@/api/http';
 import * as Models from '@definitions/admin/models';
-import { Egg, EggVariable } from '@/api/admin/egg';
-import { Nest } from '@/api/admin/nest';
+import { Egg, EggVariable } from '@/api/routes/admin/egg';
+import { Nest } from '@/api/routes/admin/nest';
 import { type Database } from '@definitions/server';
-import { WebhookEvent } from '@/api/admin/webhooks';
+import { WebhookEvent } from '@/api/routes/admin/webhooks';
 
 const isList = (data: FractalResponseList | FractalResponseData): data is FractalResponseList => data.object === 'list';
 
@@ -120,7 +120,6 @@ export default class Transformers {
         description: attributes.description,
         permissions: attributes.permissions,
         color: attributes.color,
-        relationships: {},
     });
 
     static toAdminRolePermission = ({ attributes }: FractalResponseData): Models.AdminRolePermission => ({
@@ -348,5 +347,21 @@ export default class Transformers {
         enabled: attributes.enabled,
         createdAt: new Date(attributes.created_at),
         updatedAt: attributes.updated_at ? new Date(attributes.updated_at) : null,
+    });
+
+    static toServerPreset = ({ attributes }: FractalResponseData): Models.ServerPreset => ({
+        id: attributes.id,
+        name: attributes.name,
+        description: attributes.description,
+
+        cpu: attributes.cpu,
+        memory: attributes.memory,
+        disk: attributes.disk,
+
+        nest_id: attributes.nest_id,
+        egg_id: attributes.egg_id,
+
+        created_at: attributes.created_at,
+        updated_at: attributes.updated_at,
     });
 }

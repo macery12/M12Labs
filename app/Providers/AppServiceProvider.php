@@ -2,6 +2,7 @@
 
 namespace Everest\Providers;
 
+use Carbon\Carbon;
 use Everest\Models;
 use Everest\Models\User;
 use Illuminate\Support\Str;
@@ -49,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
             'link' => Models\CustomLink::class,
             'user' => Models\User::class,
         ]);
+
+        Carbon::serializeUsing(fn ($carbon) => $carbon->utc()->toIso8601ZuluString());
     }
 
     /**

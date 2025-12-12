@@ -2,8 +2,8 @@ import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import { useFitText } from '@flyyer/use-fit-text';
-import CopyOnClick from '@elements/CopyOnClick';
-import Icon from '@elements/Icon';
+import CopyOnClick from '@/elements/CopyOnClick';
+import Icon from '@/elements/Icon';
 import styles from './style.module.css';
 import { useStoreState } from '@/state/hooks';
 

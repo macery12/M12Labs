@@ -2,8 +2,8 @@ import { forwardRef, useEffect, useState } from 'react';
 import * as React from 'react';
 import { Form } from 'formik';
 import styled from 'styled-components';
-import { breakpoint } from '@/theme';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import { breakpoint } from '@/assets/theme';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import tw from 'twin.macro';
 
 type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, HTMLFormElement> & {
@@ -41,8 +41,8 @@ export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => 
 
     return (
         <Container isVisible={visible}>
-            <div className={'w-full grid lg:grid-cols-2'}>
-                <div className={'lg:w-1/2 lg:mx-auto'}>
+            <div className={'w-full grid 2xl:grid-cols-2'}>
+                <div className={'w-full lg:w-1/2 lg:mx-auto'}>
                     {title && <h2 css={tw`text-3xl text-center text-neutral-100 font-medium py-4`}>{title}</h2>}
                     <FlashMessageRender css={tw`mb-2 px-1`} />
                     <Form {...props} ref={ref}>

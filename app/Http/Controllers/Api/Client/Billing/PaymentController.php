@@ -15,20 +15,16 @@ use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
-use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
 class PaymentController extends ClientApiController
 {
     public function __construct(
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
-        private SettingsRepositoryInterface $settings,
     ) {
         parent::__construct();
 
-        $this->stripe = new StripeClient(
-            $this->settings->get('settings::modules:billing:keys:secret')
-        );
+        $this->stripe = new StripeClient(config('modules.billing.keys.secret'));
     }
 
     /**
@@ -36,7 +32,7 @@ class PaymentController extends ClientApiController
      */
     public function publicKey(Request $request, int $id): JsonResponse
     {
-        $publicKey = $this->settings->get('settings::modules:billing:keys:publishable') ?? null;
+        $publicKey = (string) config('modules.billing.keys.publishable') ?? null;
 
         if (!$publicKey) {
             BillingException::create([
@@ -46,9 +42,7 @@ class PaymentController extends ClientApiController
             ]);
         }
 
-        return response()->json([
-            'key' => $this->settings->get('settings::modules:billing:keys:publishable'),
-        ]);
+        return response()->json(['key' => $publicKey]);
     }
 
     /**
@@ -59,20 +53,19 @@ class PaymentController extends ClientApiController
         $paymentMethodTypes = ['card'];
         $product = Product::findOrFail($id);
 
-        if ($this->settings->get('settings::modules:billing:paypal')) {
+        if (config('modules.billing.paypal')) {
             $paymentMethodTypes[] = 'paypal';
         }
 
-        if ($this->settings->get('settings::modules:billing:link')) {
+        if (config('modules.billing.link')) {
             $paymentMethodTypes[] = 'link';
         }
 
-        // Create payment intent with manual capture
         $paymentIntent = $this->stripe->paymentIntents->create([
             'amount' => $product->price * 100,
             'currency' => strtolower(config('modules.billing.currency.code')),
             'payment_method_types' => array_values($paymentMethodTypes),
-            'capture_method' => 'manual', // Prevent immediate capture
+            'capture_method' => 'manual',
         ]);
 
         if (!$paymentIntent->client_secret) {
@@ -97,7 +90,7 @@ class PaymentController extends ClientApiController
         $product = Product::findOrFail($id);
         $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
 
-        if (config('modules.billing.enabled') !== '1') {
+        if (!config('modules.billing.enabled')) {
             throw new DisplayException('The billing module is not enabled.');
         }
 
@@ -147,7 +140,7 @@ class PaymentController extends ClientApiController
         $order = Order::where('user_id', $request->user()->id)->latest()->first();
         $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
 
-        if (!$this->settings->get('settings::modules:billing:enabled')) {
+        if (!config('modules.billing.enabled')) {
             if (!$intent) {
                 throw new DisplayException('Unable to fetch payment intent from Stripe.');
                 BillingException::create([
@@ -178,7 +171,7 @@ class PaymentController extends ClientApiController
             $server = Server::findOrFail((int) $intent->metadata->server_id);
 
             $server->update([
-                'renewal_date' => $server->renewal_date->addDays(30),
+                'renewal_date' => $server->renewal_date->addDays(30)->toDateTimeString(),
                 'status' => $server->isSuspended() ? null : $server->status,
             ]);
         } else {
@@ -211,10 +204,7 @@ class PaymentController extends ClientApiController
         }
 
         // Mark the order as processed
-        $order->update([
-            'status' => Order::STATUS_PROCESSED,
-            'name' => $order->name . substr($server->uuid, 0, 8),
-        ]);
+        $order->update(['status' => Order::STATUS_PROCESSED, 'name' => $order->name]);
 
         return $this->returnNoContent();
     }

@@ -1,25 +1,25 @@
-import TransferListener from '@/components/server/TransferListener';
+import TransferListener from '@server/TransferListener';
 import { Fragment, useEffect, useState } from 'react';
 import { NavLink, Route, Routes, useParams } from 'react-router-dom';
-import WebsocketHandler from '@/components/server/WebsocketHandler';
+import WebsocketHandler from '@server/WebsocketHandler';
 import { ServerContext, ServerStatus } from '@/state/server';
-import Spinner from '@elements/Spinner';
-import { NotFound, ServerError, Suspended } from '@elements/ScreenBlock';
+import Spinner from '@/elements/Spinner';
+import { NotFound, ServerError, Suspended } from '@/elements/ScreenBlock';
 import { httpErrorToHuman } from '@/api/http';
 import { useStoreState } from 'easy-peasy';
-import InstallListener from '@/components/server/InstallListener';
-import ErrorBoundary from '@elements/ErrorBoundary';
+import InstallListener from '@server/InstallListener';
+import ErrorBoundary from '@/elements/ErrorBoundary';
 import { useLocation } from 'react-router-dom';
-import ConflictStateRenderer from '@/components/server/ConflictStateRenderer';
-import MobileSidebar from '@elements/MobileSidebar';
-import PermissionRoute from '@elements/PermissionRoute';
+import ConflictStateRenderer from '@server/ConflictStateRenderer';
+import MobileSidebar from '@/elements/MobileSidebar';
+import PermissionRoute from '@/elements/PermissionRoute';
 import routes from '@/routers/routes';
-import Sidebar from '@elements/Sidebar';
+import Sidebar from '@/elements/Sidebar';
 import { usePersistedState } from '@/plugins/usePersistedState';
 import { CogIcon, DesktopComputerIcon, PuzzleIcon, ReplyIcon } from '@heroicons/react/outline';
-import SidebarControls from '@/components/server/console/SidebarControls';
+import SidebarControls from '@server/console/SidebarControls';
 import classNames from 'classnames';
-import NavigationBar from '@/components/NavigationBar';
+import NavigationBar from '@/elements/NavigationBar';
 
 function statusToColor(status: ServerStatus): string {
     switch (status) {
@@ -46,11 +46,13 @@ function ServerRouter() {
     const user = useStoreState(state => state.user.data!);
     const theme = useStoreState(state => state.theme.data!);
     const name = useStoreState(state => state.settings.data!.name);
+    const logo = useStoreState(state => state.settings.data!.logo);
     const inConflictState = ServerContext.useStoreState(state => state.server.inConflictState);
     const getServer = ServerContext.useStoreActions(actions => actions.server.getServer);
     const clearServerState = ServerContext.useStoreActions(actions => actions.clearServerState);
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
     const server = ServerContext.useStoreState(state => state.server.data);
+    const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.server);
     const billable = server?.billingProductId;
     const status = ServerContext.useStoreState(state => state.status.value);
 
@@ -86,7 +88,9 @@ function ServerRouter() {
                 <MobileSidebar>
                     <MobileSidebar.Home />
                     {routes.server
-                        .filter(route => route.name && (!route.condition || route.condition({ billable })))
+                        .filter(
+                            route => route.name && (!route.condition || route.condition({ billable, activityEnabled })),
+                        )
                         .map(route => (
                             <MobileSidebar.Link
                                 key={route.route}
@@ -111,7 +115,7 @@ function ServerRouter() {
                             <h1 className={'text-2xl text-neutral-50 whitespace-nowrap font-medium'}>{name}</h1>
                         ) : (
                             <img
-                                src={'https://avatars.githubusercontent.com/u/91636558'}
+                                src={logo?.toString() || 'https://avatars.githubusercontent.com/u/91636558'}
                                 className={'mt-4 w-12'}
                                 alt={'Logo'}
                             />
@@ -128,7 +132,7 @@ function ServerRouter() {
                                 route =>
                                     !route.category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable })),
+                                    (!route.condition || route.condition({ billable, activityEnabled })),
                             )
                             .map(route => (
                                 <NavLink to={route.path} key={route.path} end={route.end}>

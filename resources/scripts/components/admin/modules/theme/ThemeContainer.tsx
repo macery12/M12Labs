@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import useFlash from '@/plugins/useFlash';
-import { Button } from '@elements/button';
-import { Dialog } from '@elements/dialog';
-import resetTheme from '@/api/admin/theme/resetTheme';
+import { Button } from '@/elements/button';
+import { Dialog } from '@/elements/dialog';
 import Preview from '@admin/modules/theme/Preview';
-import AdminContentBlock from '@elements/AdminContentBlock';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import ColorSelect from '@admin/modules/theme/ColorSelect';
+import resetTheme from '@/api/routes/admin/theme/resetTheme';
 
 export default () => {
     const [reload, setReload] = useState<boolean>(false);

@@ -27,7 +27,7 @@ class SuspendBillableServersCommand extends Command
     {
         $now = now();
 
-        foreach (Server::whereNotNull('product_id')->get() as $server) {
+        foreach (Server::whereNotNull('billing_product_id')->get() as $server) {
             $renewalDate = $server->renewal_date;
 
             if ($renewalDate === null) {

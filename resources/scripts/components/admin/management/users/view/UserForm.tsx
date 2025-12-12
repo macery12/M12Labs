@@ -5,22 +5,22 @@ import { Form, Formik } from 'formik';
 import tw from 'twin.macro';
 import { bool, object, string } from 'yup';
 
-import type { UpdateUserValues } from '@/api/admin/users';
-import AdminBox from '@elements/AdminBox';
-import CopyOnClick from '@elements/CopyOnClick';
-import FormikSwitch from '@elements/FormikSwitch';
-import Input from '@elements/Input';
-import Label from '@elements/Label';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
-import { Button } from '@elements/button';
-import Field, { FieldRow } from '@elements/Field';
+import type { UpdateUserValues } from '@/api/routes/admin/users';
+import AdminBox from '@/elements/AdminBox';
+import CopyOnClick from '@/elements/CopyOnClick';
+import FormikSwitch from '@/elements/FormikSwitch';
+import Input from '@/elements/Input';
+import Label from '@/elements/Label';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import { Button } from '@/elements/button';
+import Field, { FieldRow } from '@/elements/Field';
 import { UserRole, type User } from '@definitions/admin';
 import { faIdBadge, faToggleOn } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import RoleSelect from './RoleSelect';
 import { useEffect, useState } from 'react';
-import { getRole } from '@/api/admin/roles';
-import { Alert } from '@/components/elements/alert';
+import { getRole } from '@/api/routes/admin/roles';
+import { Alert } from '@/elements/alert';
 
 interface ctx {
     user: User | undefined;

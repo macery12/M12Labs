@@ -1,5 +1,5 @@
-import Pill, { PillStatus } from '@elements/Pill';
-import { useGetOrders, Context as OrderContext } from '@/api/admin/billing/orders';
+import Pill, { PillStatus } from '@/elements/Pill';
+import { useGetOrders, Context as OrderContext } from '@/api/routes/admin/billing/orders';
 import AdminTable, {
     ContentWrapper,
     Pagination,
@@ -10,14 +10,14 @@ import AdminTable, {
     Loading,
     NoItems,
     useTableHooks,
-} from '@/components/elements/AdminTable';
-import CopyOnClick from '@/components/elements/CopyOnClick';
+} from '@/elements/AdminTable';
+import CopyOnClick from '@/elements/CopyOnClick';
 import tw from 'twin.macro';
 import { useContext, useEffect } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { formatDistanceToNowStrict } from 'date-fns';
-import Spinner from '@/components/elements/Spinner';
-import { OrderFilters } from '@/api/admin/billing/types';
+import Spinner from '@/elements/Spinner';
+import { OrderFilters } from '@/api/routes/admin/billing/types';
 
 export function format(date: number): string {
     let prefix = 'th';

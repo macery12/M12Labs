@@ -27,7 +27,7 @@ class UserTransformer extends Transformer
             'email' => $model->email,
             'image' => $model->avatar_url,
             '2fa_enabled' => $model->use_totp,
-            'created_at' => self::formatTimestamp($model->created_at),
+            'created_at' => $model->created_at->toIso8601String(),
         ];
     }
 }

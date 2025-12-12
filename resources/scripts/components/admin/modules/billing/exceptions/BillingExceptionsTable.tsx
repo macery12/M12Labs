@@ -1,4 +1,4 @@
-import { BillingExceptionFilters } from '@/api/admin/billing/types';
+import { BillingExceptionFilters } from '@/api/routes/admin/billing/types';
 import AdminTable, {
     ContentWrapper,
     Loading,
@@ -9,20 +9,20 @@ import AdminTable, {
     TableHeader,
     TableRow,
     useTableHooks,
-} from '@/components/elements/AdminTable';
+} from '@/elements/AdminTable';
 import { useContext, useState } from 'react';
 import {
     Context as BillingExceptionContext,
     resolveBillingException,
     useGetBillingExceptions,
-} from '@/api/admin/billing/exceptions';
-import CopyOnClick from '@/components/elements/CopyOnClick';
+} from '@/api/routes/admin/billing/exceptions';
+import CopyOnClick from '@/elements/CopyOnClick';
 import tw from 'twin.macro';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { Button } from '@/components/elements/button';
+import { Button } from '@/elements/button';
 import { CheckCircleIcon } from '@heroicons/react/outline';
-import Pill, { PillStatus } from '@/components/elements/Pill';
-import { BillingExceptionType } from '@/api/definitions/admin';
+import Pill, { PillStatus } from '@/elements/Pill';
+import { BillingExceptionType } from '@definitions/admin';
 
 function getColor(type: BillingExceptionType): PillStatus {
     switch (type) {

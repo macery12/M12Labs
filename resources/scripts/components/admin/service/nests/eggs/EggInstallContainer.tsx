@@ -5,13 +5,13 @@ import type { FormikHelpers } from 'formik';
 import { Form, Formik } from 'formik';
 import tw from 'twin.macro';
 
-import { useEggFromRoute } from '@/api/admin/egg';
-import updateEgg from '@/api/admin/eggs/updateEgg';
-import AdminBox from '@elements/AdminBox';
-import { Button } from '@elements/button';
-import { Editor } from '@elements/editor';
-import Field from '@elements/Field';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
+import { useEggFromRoute } from '@/api/routes/admin/egg';
+import updateEgg from '@/api/routes/admin/eggs/updateEgg';
+import AdminBox from '@/elements/AdminBox';
+import { Button } from '@/elements/button';
+import { Editor } from '@/elements/editor';
+import Field from '@/elements/Field';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {

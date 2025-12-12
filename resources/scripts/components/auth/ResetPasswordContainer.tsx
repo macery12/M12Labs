@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { performPasswordReset } from '@/api/auth/password-reset';
+import { performPasswordReset } from '@/api/routes/auth/password-reset';
 import { httpErrorToHuman } from '@/api/http';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import { Actions, useStoreActions } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import { Formik, FormikHelpers } from 'formik';
 import { object, ref, string } from 'yup';
-import Field from '@elements/Field';
-import Input from '@elements/Input';
+import Field from '@/elements/Field';
+import Input from '@/elements/Input';
 import tw from 'twin.macro';
-import { Button } from '@elements/button';
-import Label from '@elements/Label';
+import { Button } from '@/elements/button';
+import Label from '@/elements/Label';
 
 interface Values {
     password: string;

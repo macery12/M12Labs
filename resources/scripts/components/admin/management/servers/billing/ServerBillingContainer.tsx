@@ -1,9 +1,9 @@
-import { useServerFromRoute } from '@/api/admin/server';
+import { useServerFromRoute } from '@/api/routes/admin/server';
 import OrdersTable from '@/components/admin/modules/billing/orders/OrdersTable';
-import AdminBox from '@/components/elements/AdminBox';
-import { Alert } from '@/components/elements/alert';
-import Label from '@/components/elements/Label';
-import Spinner from '@/components/elements/Spinner';
+import AdminBox from '@/elements/AdminBox';
+import { Alert } from '@/elements/alert';
+import Label from '@/elements/Label';
+import Spinner from '@/elements/Spinner';
 import { useStoreState } from '@/state/hooks';
 import { faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import EditServerBillingDialog from './EditServerBillingDialog';

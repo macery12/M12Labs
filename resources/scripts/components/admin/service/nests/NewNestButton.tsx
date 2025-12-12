@@ -4,13 +4,13 @@ import { useState } from 'react';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 
-import createNest from '@/api/admin/nests/createNest';
-import getNests from '@/api/admin/nests/getNests';
-import { Button } from '@elements/button';
-import { Size, Variant } from '@elements/button/types';
-import Field from '@elements/Field';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import Modal from '@elements/Modal';
+import createNest from '@/api/routes/admin/nests/createNest';
+import getNests from '@/api/routes/admin/nests/getNests';
+import { Button } from '@/elements/button';
+import { Size, Variant } from '@/elements/button/types';
+import Field from '@/elements/Field';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import Modal from '@/elements/Modal';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {

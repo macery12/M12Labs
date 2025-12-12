@@ -1,5 +1,5 @@
 import { action, Action } from 'easy-peasy';
-import { ServerDatabase } from '@/api/server/databases/getServerDatabases';
+import { ServerDatabase } from '@/api/routes/server/databases/getServerDatabases';
 
 export interface ServerDatabaseStore {
     data: ServerDatabase[];

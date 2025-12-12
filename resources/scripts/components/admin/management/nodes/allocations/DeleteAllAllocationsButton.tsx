@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Dialog } from '@elements/dialog';
-import { Button } from '@elements/button';
-import { deleteAllAllocations } from '@/api/admin/nodes/allocations/deleteAllocation';
+import { Dialog } from '@/elements/dialog';
+import { Button } from '@/elements/button';
+import { deleteAllAllocations } from '@/api/routes/admin/nodes/allocations/deleteAllocation';
 import useFlash from '@/plugins/useFlash';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 
 export default ({ nodeId }: { nodeId: number }) => {
     const [open, setOpen] = useState<boolean>(false);

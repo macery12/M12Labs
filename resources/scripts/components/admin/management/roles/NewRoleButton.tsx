@@ -2,13 +2,13 @@ import { Form, Formik, FormikHelpers } from 'formik';
 import { useState } from 'react';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
-import { getRoles, createRole } from '@/api/admin/roles';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import { Button } from '@/components/elements/button';
-import Field from '@/components/elements/Field';
+import { getRoles, createRole } from '@/api/routes/admin/roles';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import { Button } from '@/elements/button';
+import Field from '@/elements/Field';
 import useFlash from '@/plugins/useFlash';
-import { Dialog } from '@/components/elements/dialog';
-import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
+import { Dialog } from '@/elements/dialog';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 
 interface Values {
     name: string;

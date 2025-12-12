@@ -110,7 +110,7 @@ class LoginController extends AbstractLoginController
             throw new DisplayException('The passwords entered do not match.');
         }
 
-        $this->createAccount($this->settings, ['email' => $email, 'username' => $username, 'password' => $password]);
+        $this->createAccount(['email' => $email, 'username' => $username, 'password' => $password]);
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

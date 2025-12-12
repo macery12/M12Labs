@@ -4,14 +4,14 @@ import { useStoreActions } from 'easy-peasy';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '@elements/button';
-import deleteServer from '@/api/admin/servers/deleteServer';
-import { useServerFromRoute } from '@/api/admin/server';
+import { Button } from '@/elements/button';
+import deleteServer from '@/api/routes/admin/servers/deleteServer';
+import { useServerFromRoute } from '@/api/routes/admin/server';
 import type { ApplicationStore } from '@/state';
-import { Dialog } from '@/components/elements/dialog';
-import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
-import Checkbox from '@/components/elements/inputs/Checkbox';
-import { Alert } from '@/components/elements/alert';
+import { Dialog } from '@/elements/dialog';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import Checkbox from '@/elements/inputs/Checkbox';
+import { Alert } from '@/elements/alert';
 
 export default () => {
     const navigate = useNavigate();

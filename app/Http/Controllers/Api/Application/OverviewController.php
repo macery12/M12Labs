@@ -7,6 +7,7 @@ use Everest\Models\Server;
 use Everest\Models\Ticket;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Helpers\SoftwareVersionService;
+use Everest\Http\Requests\Api\Application\OverviewRequest;
 
 class OverviewController extends ApplicationApiController
 {
@@ -22,7 +23,7 @@ class OverviewController extends ApplicationApiController
     /**
      * Returns version information.
      */
-    public function version(): JsonResponse
+    public function version(OverviewRequest $request): JsonResponse
     {
         return new JsonResponse($this->softwareVersionService->getVersionData());
     }
@@ -30,7 +31,7 @@ class OverviewController extends ApplicationApiController
     /**
      * Returns metrics relating to server count, user count & more.
      */
-    public function metrics(): JsonResponse
+    public function metrics(OverviewRequest $request): JsonResponse
     {
         $nodes = Node::query()->count();
         $servers = Server::query()->count();

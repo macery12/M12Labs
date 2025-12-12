@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { type Schedule, type Task } from '@/api/definitions/server';
+import { type Schedule, type Task } from '@definitions/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowCircleDown,
@@ -10,16 +10,16 @@ import {
     faToggleOn,
     faTrashAlt,
 } from '@fortawesome/free-solid-svg-icons';
-import { deleteTask } from '@/api/server/tasks';
+import { deleteTask } from '@/api/routes/server/tasks';
 import { httpErrorToHuman } from '@/api/http';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
-import TaskDetailsModal from '@/components/server/schedules/TaskDetailsModal';
-import Can from '@elements/Can';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import TaskDetailsModal from '@server/schedules/TaskDetailsModal';
+import Can from '@/elements/Can';
 import useFlash from '@/plugins/useFlash';
 import { ServerContext } from '@/state/server';
 import tw from 'twin.macro';
-import ConfirmationModal from '@elements/ConfirmationModal';
-import Icon from '@elements/Icon';
+import ConfirmationModal from '@/elements/ConfirmationModal';
+import Icon from '@/elements/Icon';
 import { useStoreState } from '@/state/hooks';
 
 interface Props {

@@ -26,8 +26,8 @@ class FileObjectTransformer extends Transformer
             'is_file' => Arr::get($model, 'file', true),
             'is_symlink' => Arr::get($model, 'symlink', false),
             'mimetype' => Arr::get($model, 'mime', 'application/octet-stream'),
-            'created_at' => Carbon::parse(Arr::get($model, 'created', ''))->toAtomString(),
-            'modified_at' => Carbon::parse(Arr::get($model, 'modified', ''))->toAtomString(),
+            'created_at' => Carbon::parse(Arr::get($model, 'created', '')),
+            'modified_at' => Carbon::parse(Arr::get($model, 'modified', '')),
         ];
     }
 }

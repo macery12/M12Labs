@@ -1,17 +1,18 @@
-import AdminContentBlock from '@elements/AdminContentBlock';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { useEffect, useState } from 'react';
-import { ActivityLogFilters, useActivityLogs } from '@/api/admin/activity';
 import { useFlashKey } from '@/plugins/useFlash';
 import { Link } from 'react-router-dom';
-import PaginationFooter from '@elements/table/PaginationFooter';
+import PaginationFooter from '@/elements/table/PaginationFooter';
 import { DesktopComputerIcon, XCircleIcon } from '@heroicons/react/solid';
-import Spinner from '@elements/Spinner';
-import { styles as btnStyles } from '@elements/button/index';
+import Spinner from '@/elements/Spinner';
+import { styles as btnStyles } from '@/elements/button/index';
 import classNames from 'classnames';
-import ActivityLogEntry from '@elements/activity/ActivityLogEntry';
-import Tooltip from '@elements/tooltip/Tooltip';
+import ActivityLogEntry from '@/elements/activity/ActivityLogEntry';
+import Tooltip from '@/elements/tooltip/Tooltip';
 import useLocationHash from '@/plugins/useLocationHash';
+import { ActivityLogFilters, useActivityLogs } from '@/api/routes/admin/activity';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const { hash } = useLocationHash();
@@ -21,6 +22,10 @@ export default () => {
         revalidateOnMount: true,
         revalidateOnFocus: false,
     });
+
+    const enabled: boolean = useStoreState(state => state.settings.data!.activity.enabled.admin);
+
+    if (!enabled) return <></>;
 
     useEffect(() => {
         setFilters(value => ({ ...value, filters: { ip: hash.ip, event: hash.event } }));

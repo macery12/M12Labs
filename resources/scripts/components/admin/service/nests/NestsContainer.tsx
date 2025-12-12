@@ -1,9 +1,9 @@
 import { useContext, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
-import type { Filters } from '@/api/admin/nests/getNests';
-import getNests, { Context as NestsContext } from '@/api/admin/nests/getNests';
-import AdminContentBlock from '@elements/AdminContentBlock';
+import type { Filters } from '@/api/routes/admin/nests/getNests';
+import getNests, { Context as NestsContext } from '@/api/routes/admin/nests/getNests';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import AdminTable, {
     TableBody,
     TableHead,
@@ -14,10 +14,10 @@ import AdminTable, {
     NoItems,
     ContentWrapper,
     useTableHooks,
-} from '@elements/AdminTable';
-import CopyOnClick from '@elements/CopyOnClick';
+} from '@/elements/AdminTable';
+import CopyOnClick from '@/elements/CopyOnClick';
 import NewNestButton from '@admin/service/nests/NewNestButton';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 

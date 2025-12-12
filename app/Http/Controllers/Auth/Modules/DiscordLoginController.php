@@ -36,7 +36,7 @@ class DiscordLoginController extends AbstractLoginController
         }
 
         return 'https://discord.com/api/oauth2/authorize?'
-            . 'client_id=' . $this->settings->get('settings::modules:auth:discord:client_id')
+            . 'client_id=' . config('modules.auth.discord.client_id')
             . '&redirect_uri=' . route('auth.modules.discord.authenticate')
             . '&response_type=code&scope=identify%20email'
             . '&state=' . encrypt($request->ip());
@@ -48,8 +48,8 @@ class DiscordLoginController extends AbstractLoginController
     public function authenticate(Request $request): RedirectResponse
     {
         $response = Http::asForm()->post('https://discord.com/api/oauth2/token', [
-            'client_id' => $this->settings->get('settings::modules:auth:discord:client_id'),
-            'client_secret' => $this->settings->get('settings::modules:auth:discord:client_secret'),
+            'client_id' => config('modules.auth.discord.client_id'),
+            'client_secret' => config('modules.auth.discord.client_secret'),
             'grant_type' => 'authorization_code',
             'code' => $request->input('code'),
             'redirect_uri' => route('auth.modules.discord.authenticate'),
@@ -70,7 +70,7 @@ class DiscordLoginController extends AbstractLoginController
 
             return redirect('/');
         } else {
-            $user = $this->createAccount($this->settings, ['email' => $account->email, 'username' => 'null_user_' . $this->randStr(16)]);
+            $user = $this->createAccount(['email' => $account->email, 'username' => 'null_user_' . $this->randStr(16)]);
 
             $this->sendLoginResponse($user, $request);
 

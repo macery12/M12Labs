@@ -8,20 +8,20 @@ import tw from 'twin.macro';
 import { object, string } from 'yup';
 
 import ImportEggButton from '@admin/service/nests/ImportEggButton';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import Spinner from '@elements/Spinner';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import type { Nest } from '@/api/admin/nests/getNests';
-import getNest from '@/api/admin/nests/getNest';
-import updateNest from '@/api/admin/nests/updateNest';
-import { Button } from '@elements/button';
-import { Size } from '@elements/button/types';
-import Field from '@elements/Field';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
-import AdminBox from '@elements/AdminBox';
-import CopyOnClick from '@elements/CopyOnClick';
-import Input from '@elements/Input';
-import Label from '@elements/Label';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import Spinner from '@/elements/Spinner';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import type { Nest } from '@/api/routes/admin/nests/getNests';
+import getNest from '@/api/routes/admin/nests/getNest';
+import updateNest from '@/api/routes/admin/nests/updateNest';
+import { Button } from '@/elements/button';
+import { Size } from '@/elements/button/types';
+import Field from '@/elements/Field';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import AdminBox from '@/elements/AdminBox';
+import CopyOnClick from '@/elements/CopyOnClick';
+import Input from '@/elements/Input';
+import Label from '@/elements/Label';
 import NestDeleteButton from '@admin/service/nests/NestDeleteButton';
 import NestEggTable from '@admin/service/nests/NestEggTable';
 import type { ApplicationStore } from '@/state';
@@ -81,7 +81,7 @@ const EditInformationContainer = () => {
     const submit = ({ name, description }: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes('nest');
 
-        updateNest(nest.id, name, description)
+        updateNest(nest.id, name, description, nest.author)
             .then(() => setNest({ ...nest, name, description }))
             .catch(error => {
                 console.error(error);

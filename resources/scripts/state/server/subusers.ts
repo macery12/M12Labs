@@ -1,4 +1,4 @@
-import { Subuser } from '@/api/definitions/server';
+import { Subuser } from '@definitions/server';
 import { action, Action } from 'easy-peasy';
 
 export type SubuserPermission =

@@ -1,9 +1,9 @@
 import { faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import { Field as FormikField, useFormikContext } from 'formik';
 import tw from 'twin.macro';
-import AdminBox from '@elements/AdminBox';
-import Label from '@elements/Label';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
+import AdminBox from '@/elements/AdminBox';
+import Label from '@/elements/Label';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 
 export default () => {
     const { isSubmitting } = useFormikContext();

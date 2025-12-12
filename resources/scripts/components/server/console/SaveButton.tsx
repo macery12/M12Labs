@@ -2,8 +2,8 @@ import stripAnsi from 'strip-ansi';
 import useFlash from '@/plugins/useFlash';
 import { useEffect, useState } from 'react';
 import { ServerContext } from '@/state/server';
-import { SocketEvent } from '@/components/server/events';
-import { saveFileContents } from '@/api/server/files';
+import { SocketEvent } from '@server/events';
+import { saveFileContents } from '@/api/routes/server/files';
 import classNames from 'classnames';
 import { DownloadIcon } from '@heroicons/react/outline';
 

@@ -2,8 +2,8 @@ import { Fragment, useEffect, useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
-import { encodePathSegments } from '@/helpers';
 import { ServerContext } from '@/state/server';
+import { encodePathSegments } from '@/lib/helpers';
 
 interface Props {
     renderLeft?: JSX.Element;
@@ -48,9 +48,9 @@ export default ({ renderLeft, withinFileEditor, isNewFile }: Props) => {
 
     return (
         <div css={tw`flex flex-grow-0 items-center text-sm text-neutral-500 overflow-x-hidden`}>
-            {renderLeft || <div css={tw`w-12`} />}/<span css={tw`px-1 text-neutral-300`}>home</span>/
+            {renderLeft || <div css={tw`w-12`} />}/
             <NavLink to={`/server/${id}/files`} css={tw`px-1 text-neutral-200 no-underline hover:text-neutral-100`}>
-                container
+                root
             </NavLink>
             /
             {breadcrumbs().map((crumb, index) =>

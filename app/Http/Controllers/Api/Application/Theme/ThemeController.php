@@ -3,9 +3,9 @@
 namespace Everest\Http\Controllers\Api\Application\Theme;
 
 use Everest\Models\Theme;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Contracts\Repository\ThemeRepositoryInterface;
+use Everest\Http\Requests\Api\Application\Theme\UpdateThemeRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
 class ThemeController extends ApplicationApiController
@@ -24,9 +24,9 @@ class ThemeController extends ApplicationApiController
      *
      * @throws \Throwable
      */
-    public function colors(Request $request): Response
+    public function colors(UpdateThemeRequest $request): Response
     {
-        $this->settings->set('theme::colors:' . $request->input('key'), $request->input('value'));
+        $this->theme->set('theme::colors:' . $request->input('key'), $request->input('value'));
 
         return $this->returnNoContent();
     }
@@ -34,9 +34,9 @@ class ThemeController extends ApplicationApiController
     /**
      * Reset all of the theme keys to factory defaults.
      */
-    public function reset(): Response
+    public function reset(UpdateThemeRequest $request): Response
     {
-        foreach ($this->settings->all() as $setting) {
+        foreach ($this->theme->all() as $setting) {
             $setting->delete();
         }
 

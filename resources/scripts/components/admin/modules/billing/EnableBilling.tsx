@@ -1,5 +1,5 @@
 import { useStoreState } from '@/state/hooks';
-import FeatureContainer from '@elements/FeatureContainer';
+import FeatureContainer from '@/elements/FeatureContainer';
 import BillingSvg from '@/assets/images/themed/BillingSvg';
 import { faMoneyBillWave } from '@fortawesome/free-solid-svg-icons';
 import ToggleFeatureButton from '@admin/modules/billing/ToggleFeatureButton';

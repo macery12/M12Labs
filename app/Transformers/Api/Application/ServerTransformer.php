@@ -2,6 +2,7 @@
 
 namespace Everest\Transformers\Api\Application;
 
+use Carbon\Carbon;
 use Everest\Models\Server;
 use League\Fractal\Resource\Item;
 use Everest\Services\Acl\Api\AdminAcl;
@@ -85,9 +86,9 @@ class ServerTransformer extends Transformer
                 'environment' => $this->environmentService->handle($model),
             ],
             'billing_product_id' => $model->billing_product_id,
-            'renewal_date' => self::formatTimestamp($model->renewal_date),
-            'created_at' => self::formatTimestamp($model->created_at),
-            'updated_at' => self::formatTimestamp($model->updated_at),
+            'renewal_date' => $this->formatDate($model->renewal_date),
+            'created_at' => $model->created_at->toIso8601String(),
+            'updated_at' => $model->updated_at->toIso8601String(),
         ];
     }
 
@@ -201,5 +202,18 @@ class ServerTransformer extends Transformer
         }
 
         return $this->item($server->product, new ProductTransformer());
+    }
+
+    protected function formatDate($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toAtomString(); // ISO8601 e.g. 2025-09-09T20:00:00Z
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

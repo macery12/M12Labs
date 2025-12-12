@@ -1,9 +1,9 @@
-import { Server } from '@/api/admin/server';
-import updateServer, { Values } from '@/api/admin/servers/updateServer';
-import { Button } from '@/components/elements/button';
-import { Dialog } from '@/components/elements/dialog';
-import Input from '@/components/elements/Input';
-import Label from '@/components/elements/Label';
+import { Server } from '@/api/routes/admin/server';
+import updateServer, { Values } from '@/api/routes/admin/servers/updateServer';
+import { Button } from '@/elements/button';
+import { Dialog } from '@/elements/dialog';
+import Input from '@/elements/Input';
+import Label from '@/elements/Label';
 import { CashIcon, ClockIcon, PencilAltIcon } from '@heroicons/react/outline';
 import classNames from 'classnames';
 import { Form, Formik } from 'formik';

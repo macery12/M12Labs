@@ -2,10 +2,10 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
-use Illuminate\Http\Request;
 use Everest\Models\ActivityLog;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
+use Everest\Http\Requests\Api\Application\ActivityRequest;
 use Everest\Transformers\Api\Application\ActivityLogTransformer;
 
 class ActivityLogController extends ApplicationApiController
@@ -13,7 +13,7 @@ class ActivityLogController extends ApplicationApiController
     /**
      * Returns a paginated set of administrative activity logs.
      */
-    public function __invoke(Request $request): array
+    public function __invoke(ActivityRequest $request): array
     {
         $activityQuery = ActivityLog::where('is_admin', true)
             ->whereNotIn('event', ActivityLog::DISABLED_EVENTS);

@@ -2,22 +2,20 @@ import { useEffect } from 'react';
 import { Route, Routes, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
-import { useEggFromRoute } from '@/api/admin/egg';
+import { useEggFromRoute } from '@/api/routes/admin/egg';
 import EggInstallContainer from '@admin/service/nests/eggs/EggInstallContainer';
 import EggVariablesContainer from '@admin/service/nests/eggs/EggVariablesContainer';
 import useFlash from '@/plugins/useFlash';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import Spinner from '@elements/Spinner';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import Spinner from '@/elements/Spinner';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import EggSettingsContainer from '@admin/service/nests/eggs/EggSettingsContainer';
-import { useStoreState } from '@/state/hooks';
 
 const EggRouter = () => {
     const { id, nestId } = useParams<'nestId' | 'id'>();
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const theme = useStoreState(state => state.theme.data!);
     const { data: egg, error, isValidating, mutate } = useEggFromRoute();
 
     useEffect(() => {
@@ -52,7 +50,7 @@ const EggRouter = () => {
 
             <FlashMessageRender byKey={'egg'} css={tw`mb-4`} />
 
-            <SubNavigation theme={theme}>
+            <SubNavigation>
                 <SubNavigationLink to={`/admin/nests/${nestId ?? ''}/eggs/${id ?? ''}`} name={'About'} base>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path

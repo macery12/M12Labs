@@ -1,5 +1,5 @@
 import { useStoreState } from '@/state/hooks';
-import Tooltip from '@elements/tooltip/Tooltip';
+import Tooltip from '@/elements/tooltip/Tooltip';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDollar, faKey, faRecycle, faTicket, IconDefinition } from '@fortawesome/free-solid-svg-icons';
 

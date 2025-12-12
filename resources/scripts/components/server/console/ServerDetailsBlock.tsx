@@ -2,9 +2,9 @@ import { faClock, faHdd, faMemory, faMicrochip, faWifi } from '@fortawesome/free
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { SocketEvent, SocketRequest } from '@/components/server/events';
-import UptimeDuration from '@/components/server/UptimeDuration';
-import StatBlock from '@/components/server/console/StatBlock';
+import { SocketEvent, SocketRequest } from '@server/events';
+import UptimeDuration from '@server/UptimeDuration';
+import StatBlock from '@server/console/StatBlock';
 import { bytesToString, ip, mbToBytes } from '@/lib/formatters';
 import { capitalize } from '@/lib/strings';
 import { ServerContext } from '@/state/server';

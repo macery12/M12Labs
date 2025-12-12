@@ -142,7 +142,7 @@ class ProcessScheduleServiceTest extends IntegrationTestCase
         $this->assertDatabaseHas('schedules', [
             'id' => $schedule->id,
             'is_processing' => false,
-            'last_run_at' => CarbonImmutable::now()->toAtomString(),
+            'last_run_at' => CarbonImmutable::now(),
         ]);
 
         $this->assertDatabaseHas('tasks', ['id' => $task->id, 'is_queued' => false]);

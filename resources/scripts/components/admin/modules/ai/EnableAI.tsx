@@ -1,6 +1,6 @@
 import { useStoreState } from '@/state/hooks';
 import AISvg from '@/assets/images/themed/AISvg';
-import FeatureContainer from '@elements/FeatureContainer';
+import FeatureContainer from '@/elements/FeatureContainer';
 import { faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import ToggleFeatureButton from '@admin/modules/ai/ToggleFeatureButton';
 

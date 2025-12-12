@@ -1,21 +1,21 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileAlt, faFileArchive, faFileImport, faFolder } from '@fortawesome/free-solid-svg-icons';
-import { encodePathSegments } from '@/helpers';
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import { memo, ReactNode } from 'react';
-import FileDropdownMenu from '@/components/server/files/FileDropdownMenu';
+import FileDropdownMenu from '@server/files/FileDropdownMenu';
 import { ServerContext } from '@/state/server';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
 import isEqual from 'react-fast-compare';
-import SelectFileCheckbox from '@/components/server/files/SelectFileCheckbox';
+import SelectFileCheckbox from '@server/files/SelectFileCheckbox';
 import { usePermissions } from '@/plugins/usePermissions';
 import { join } from 'pathe';
 import { bytesToString } from '@/lib/formatters';
 import styles from './style.module.css';
-import { FileObject } from '@/api/definitions/server';
+import { FileObject } from '@definitions/server';
 import { useStoreState } from '@/state/hooks';
 import classNames from 'classnames';
+import { encodePathSegments } from '@/lib/helpers';
 
 function Clickable({ file, children }: { file: FileObject; children: ReactNode }) {
     const [canRead] = usePermissions(['file.read']);

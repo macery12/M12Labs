@@ -1,7 +1,7 @@
-import AdminContentBlock from '@elements/AdminContentBlock';
-import { resolveAllBillingExceptions } from '@/api/admin/billing/exceptions';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import { resolveAllBillingExceptions } from '@/api/routes/admin/billing/exceptions';
 import BillingExceptionsTable from './BillingExceptionsTable';
-import { Button } from '@elements/button';
+import { Button } from '@/elements/button';
 import { CheckCircleIcon } from '@heroicons/react/outline';
 
 export default () => {

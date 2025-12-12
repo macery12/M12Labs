@@ -1,5 +1,5 @@
 import http from '@/api/http';
-import { CustomLink, rawDataToLink } from '@/api/admin/links';
+import { CustomLink, rawDataToLink } from './routes/admin/links';
 
 export const getLinks = (): Promise<CustomLink[]> => {
     return new Promise((resolve, reject) => {

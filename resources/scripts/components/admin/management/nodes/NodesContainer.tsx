@@ -1,11 +1,11 @@
 import { useContext, useEffect, useState } from 'react';
-import type { Filters } from '@/api/admin/servers/getServers';
-import getNodes, { Context as NodesContext } from '@/api/admin/nodes/getNodes';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import type { Filters } from '@/api/routes/admin/servers/getServers';
+import getNodes, { Context as NodesContext } from '@/api/routes/admin/nodes/getNodes';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
-import AdminContentBlock from '@elements/AdminContentBlock';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import AdminTable, {
     TableBody,
     TableHead,
@@ -16,12 +16,12 @@ import AdminTable, {
     NoItems,
     ContentWrapper,
     useTableHooks,
-} from '@elements/AdminTable';
-import { Button } from '@elements/button';
-import CopyOnClick from '@elements/CopyOnClick';
+} from '@/elements/AdminTable';
+import { Button } from '@/elements/button';
+import CopyOnClick from '@/elements/CopyOnClick';
 import { bytesToString, mbToBytes } from '@/lib/formatters';
 import { useStoreState } from '@/state/hooks';
-import { Dialog } from '@/components/elements/dialog';
+import { Dialog } from '@/elements/dialog';
 import NewNodeContainer from './NewNodeContainer';
 
 const NodesContainer = () => {

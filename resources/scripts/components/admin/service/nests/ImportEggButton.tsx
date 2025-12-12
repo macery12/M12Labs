@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
-import getEggs from '@/api/admin/nests/getEggs';
-import importEgg from '@/api/admin/nests/importEgg';
+import getEggs from '@/api/routes/admin/nests/getEggs';
+import importEgg from '@/api/routes/admin/nests/importEgg';
 import useFlash from '@/plugins/useFlash';
-import { Button } from '@elements/button';
-import { Size, Variant } from '@elements/button/types';
-import { Editor } from '@elements/editor';
-import Modal from '@elements/Modal';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import { Button } from '@/elements/button';
+import { Size, Variant } from '@/elements/button/types';
+import { Editor } from '@/elements/editor';
+import Modal from '@/elements/Modal';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 export default ({ className }: { className?: string }) => {
     const [visible, setVisible] = useState(false);

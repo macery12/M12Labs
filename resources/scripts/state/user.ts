@@ -1,4 +1,4 @@
-import { updateAccountEmail } from '@/api/account';
+import { updateAccountEmail } from '@/api/routes/account';
 import { Action, action, Thunk, thunk } from 'easy-peasy';
 
 export interface UserData {

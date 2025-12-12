@@ -1,8 +1,8 @@
-import Spinner from '@elements/Spinner';
+import Spinner from '@/elements/Spinner';
 import { Link } from 'react-router-dom';
-import { Button } from '@elements/button';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import { useCategoryFromRoute } from '@/api/admin/billing/categories';
+import { Button } from '@/elements/button';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import { useCategoryFromRoute } from '@/api/routes/admin/billing/categories';
 import CategoryForm from '@admin/modules/billing/products/CategoryForm';
 import ProductTable from '@admin/modules/billing/products/ProductTable';
 

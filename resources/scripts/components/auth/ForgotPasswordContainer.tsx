@@ -1,16 +1,16 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
-import { requestPasswordReset } from '@/api/auth/password-reset';
+import { requestPasswordReset } from '@/api/routes/auth/password-reset';
 import { httpErrorToHuman } from '@/api/http';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
-import { Button } from '@elements/button';
-import Field from '@elements/Field';
+import { Button } from '@/elements/button';
+import Field from '@/elements/Field';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {
@@ -22,7 +22,7 @@ interface Values {
 
 function ForgotPasswordContainer() {
     const ref = useRef<Reaptcha>(null);
-    const [token, setToken] = useState('');
+    const token = useRef('');
 
     const { clearFlashes, addFlash } = useFlash();
     const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
@@ -50,7 +50,7 @@ function ForgotPasswordContainer() {
             return;
         }
 
-        requestPasswordReset(email, code, password, password_confirm, token)
+        requestPasswordReset(email, code, password, password_confirm, token.current)
             .then(response => {
                 resetForm();
                 addFlash({ type: 'success', title: 'Success', message: response });
@@ -60,7 +60,7 @@ function ForgotPasswordContainer() {
                 addFlash({ type: 'error', title: 'Error', message: httpErrorToHuman(error) });
             })
             .then(() => {
-                setToken('');
+                token.current = '';
                 if (ref.current !== null) {
                     void ref.current.reset();
                 }
@@ -125,12 +125,12 @@ function ForgotPasswordContainer() {
                             size={'invisible'}
                             sitekey={siteKey || '_invalid_key'}
                             onVerify={response => {
-                                setToken(response);
+                                token.current = response;
                                 void submitForm();
                             }}
                             onExpire={() => {
                                 setSubmitting(false);
-                                setToken('');
+                                token.current = '';
                             }}
                         />
                     )}

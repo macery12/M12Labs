@@ -1,7 +1,7 @@
 import tw from 'twin.macro';
 import { Link, NavLink } from 'react-router-dom';
 import { useContext } from 'react';
-import AdminContentBlock from '@elements/AdminContentBlock';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import AdminTable, {
     ContentWrapper,
     Loading,
@@ -12,15 +12,15 @@ import AdminTable, {
     TableHeader,
     TableRow,
     useTableHooks,
-} from '@elements/AdminTable';
-import { Button } from '@elements/button';
-import CopyOnClick from '@elements/CopyOnClick';
+} from '@/elements/AdminTable';
+import { Button } from '@/elements/button';
+import CopyOnClick from '@/elements/CopyOnClick';
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import classNames from 'classnames';
 import { useStoreState } from '@/state/hooks';
-import Avatar from '@/components/Avatar';
-import { getTickets, Context as TicketsContext } from '@/api/admin/tickets';
-import { TicketFilters, type TicketStatus } from '@/api/admin/tickets/types';
+import Avatar from '@/elements/Avatar';
+import { getTickets, Context as TicketsContext } from '@/api/routes/admin/tickets';
+import { TicketFilters, type TicketStatus } from '@/api/routes/admin/tickets/types';
 
 export const statusToColor = (status: TicketStatus): string => {
     switch (status) {

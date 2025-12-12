@@ -44,8 +44,8 @@ class ServerDatabaseTransformer extends Transformer
             'username' => $model->username,
             'remote' => $model->remote,
             'max_connections' => $model->max_connections,
-            'created_at' => self::formatTimestamp($model->created_at),
-            'updated_at' => self::formatTimestamp($model->updated_at),
+            'created_at' => $model->created_at->toIso8601String(),
+            'updated_at' => $model->updated_at->toIso8601String(),
         ];
     }
 

@@ -31,8 +31,8 @@ class NestTransformer extends Transformer
     {
         $response = $model->toArray();
 
-        $response['created_at'] = self::formatTimestamp($model->created_at);
-        $response['updated_at'] = self::formatTimestamp($model->updated_at);
+        $response['created_at'] = $model->created_at->toIso8601String();
+        $response['updated_at'] = $model->updated_at->toIso8601String();
 
         return $response;
     }

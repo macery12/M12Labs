@@ -1,14 +1,14 @@
-import { deleteProduct } from '@/api/admin/billing/products';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import Input from '@elements/Input';
-import { Button } from '@elements/button';
-import { Dialog } from '@elements/dialog';
+import { deleteProduct } from '@/api/routes/admin/billing/products';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import Input from '@/elements/Input';
+import { Button } from '@/elements/button';
+import { Dialog } from '@/elements/dialog';
 import useFlash from '@/plugins/useFlash';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Product } from '@/api/definitions/admin';
+import { Product } from '@definitions/admin';
 
 export default ({ product }: { product: Product }) => {
     const navigate = useNavigate();

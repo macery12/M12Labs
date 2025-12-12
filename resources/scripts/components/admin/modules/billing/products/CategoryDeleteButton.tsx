@@ -1,12 +1,12 @@
-import { deleteCategory } from '@/api/admin/billing/categories';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import Input from '@elements/Input';
-import { Button } from '@elements/button';
-import { Dialog } from '@elements/dialog';
+import { deleteCategory } from '@/api/routes/admin/billing/categories';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import Input from '@/elements/Input';
+import { Button } from '@/elements/button';
+import { Dialog } from '@/elements/dialog';
 import useFlash from '@/plugins/useFlash';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Category } from '@/api/definitions/admin';
+import { Category } from '@definitions/admin';
 
 export default ({ category }: { category: Category }) => {
     const navigate = useNavigate();

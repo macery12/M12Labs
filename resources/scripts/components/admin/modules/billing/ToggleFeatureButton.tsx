@@ -1,6 +1,6 @@
-import { Button } from '@elements/button';
+import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
-import { updateSettings } from '@/api/admin/billing';
+import { updateSettings } from '@/api/routes/admin/billing';
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.billing.enabled);

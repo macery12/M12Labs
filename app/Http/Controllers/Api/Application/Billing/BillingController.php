@@ -2,12 +2,12 @@
 
 namespace Everest\Http\Controllers\Api\Application\Billing;
 
+use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
-use Everest\Contracts\Repository\SettingsRepositoryInterface;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Billing\DeleteStripeKeysRequest;
 use Everest\Http\Requests\Api\Application\Billing\GetBillingAnalyticsRequest;
@@ -18,9 +18,8 @@ class BillingController extends ApplicationApiController
     /**
      * BillingController constructor.
      */
-    public function __construct(
-        private SettingsRepositoryInterface $settings
-    ) {
+    public function __construct()
+    {
         parent::__construct();
     }
 
@@ -31,7 +30,8 @@ class BillingController extends ApplicationApiController
      */
     public function settings(UpdateBillingSettingsRequest $request): Response
     {
-        $this->settings->set('settings::modules:billing:' . $request->input('key'), $request->input('value'));
+        // todo(jex): use normalized request with foreach key value pairs
+        Setting::set('settings::modules:billing:' . $request->input('key'), $request->input('value'));
 
         if (strpos($request['key'], 'keys:') !== 0) {
             Activity::event('admin:billing:update')
@@ -60,8 +60,8 @@ class BillingController extends ApplicationApiController
      */
     public function resetKeys(DeleteStripeKeysRequest $request): Response
     {
-        $this->settings->forget('settings::modules:billing:keys:publishable');
-        $this->settings->forget('settings:modules:billing:keys:secret');
+        Setting::forget('settings::modules:billing:keys:publishable');
+        Setting::forget('settings:modules:billing:keys:secret');
 
         Activity::event('admin:billing:reset-keys')
             ->description('Stripe API keys for billing were reset')

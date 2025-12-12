@@ -1,12 +1,12 @@
 import { useContext, useEffect } from 'react';
-import { getRoles, Context as RolesContext, Filters } from '@/api/admin/roles';
+import { getRoles, Context as RolesContext, Filters } from '@/api/routes/admin/roles';
 import { AdminContext } from '@/state/admin';
 import NewRoleButton from '@/components/admin/management/roles/NewRoleButton';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
-import AdminContentBlock from '@elements/AdminContentBlock';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import AdminTable, {
     TableBody,
     TableHead,
@@ -17,8 +17,8 @@ import AdminTable, {
     NoItems,
     ContentWrapper,
     useTableHooks,
-} from '@elements/AdminTable';
-import CopyOnClick from '@/components/elements/CopyOnClick';
+} from '@/elements/AdminTable';
+import CopyOnClick from '@/elements/CopyOnClick';
 import { useStoreState } from '@/state/hooks';
 
 const RolesContainer = () => {

@@ -1,12 +1,12 @@
-import Input from '@elements/Input';
+import Input from '@/elements/Input';
 import { useStoreState } from '@/state/hooks';
-import { Dialog } from '@elements/dialog';
+import { Dialog } from '@/elements/dialog';
 import { faExclamationTriangle, faCheckCircle, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Tooltip from '@elements/tooltip/Tooltip';
+import Tooltip from '@/elements/tooltip/Tooltip';
 import { useEffect, useState } from 'react';
-import { Button } from '@elements/button';
-import { updateSettings } from '@/api/admin/billing';
+import { Button } from '@/elements/button';
+import { updateSettings } from '@/api/routes/admin/billing';
 
 interface StripeKeys {
     publishable?: string;

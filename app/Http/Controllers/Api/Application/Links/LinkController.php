@@ -2,12 +2,12 @@
 
 namespace Everest\Http\Controllers\Api\Application\Links;
 
-use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Models\CustomLink;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
+use Everest\Http\Requests\Api\Application\Links;
 use Everest\Transformers\Api\Application\LinkTransformer;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
@@ -25,7 +25,7 @@ class LinkController extends ApplicationApiController
     /**
      * Get all links.
      */
-    public function index(Request $request): array
+    public function index(Links\GetLinksRequest $request): array
     {
         $perPage = (int) $request->query('per_page', '20');
         if ($perPage < 1 || $perPage > 100) {
@@ -50,7 +50,7 @@ class LinkController extends ApplicationApiController
     /**
      * Create a new link.
      */
-    public function store(Request $request): array
+    public function store(Links\StoreLinkRequest $request): array
     {
         $link = CustomLink::create([
             'url' => $request['url'],
@@ -72,7 +72,7 @@ class LinkController extends ApplicationApiController
     /**
      * Update a selected link.
      */
-    public function update(Request $request, int $id): Response
+    public function update(Links\UpdateLinkRequest $request, int $id): Response
     {
         $link = CustomLink::findOrFail($id);
 
@@ -94,7 +94,7 @@ class LinkController extends ApplicationApiController
     /**
      * Delete a selected link.
      */
-    public function delete(Request $request, int $id): Response
+    public function delete(Links\DeleteLinkRequest $request, int $id): Response
     {
         $link = CustomLink::findOrFail($id);
 

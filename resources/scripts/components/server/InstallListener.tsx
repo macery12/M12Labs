@@ -1,6 +1,6 @@
 import useWebsocketEvent from '@/plugins/useWebsocketEvent';
 import { ServerContext } from '@/state/server';
-import { SocketEvent } from '@/components/server/events';
+import { SocketEvent } from '@server/events';
 import { mutate } from 'swr';
 import { getDirectorySwrKey } from '@/plugins/useFileManagerSwr';
 

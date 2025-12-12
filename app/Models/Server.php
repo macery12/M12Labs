@@ -398,4 +398,22 @@ class Server extends Model
             throw new ServerStateConflictException($this);
         }
     }
+
+    /**
+     * Manually validate the renewal date and set it to nullable if necessary.
+     */
+    public function setRenewalDateAttribute($value): void
+    {
+        if (empty($value) || $value === '0000-00-00') {
+            $this->attributes['renewal_date'] = null;
+
+            return;
+        }
+
+        try {
+            $this->attributes['renewal_date'] = Carbon::parse($value)->toDateString();
+        } catch (\Throwable $e) {
+            $this->attributes['renewal_date'] = null;
+        }
+    }
 }

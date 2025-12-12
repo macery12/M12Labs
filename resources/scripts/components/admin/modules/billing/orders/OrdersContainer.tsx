@@ -1,6 +1,6 @@
-import AdminContentBlock from '@elements/AdminContentBlock';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import OrdersTable from './OrdersTable';
-import TitledGreyBox from '@elements/TitledGreyBox';
+import TitledGreyBox from '@/elements/TitledGreyBox';
 import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 export default () => (

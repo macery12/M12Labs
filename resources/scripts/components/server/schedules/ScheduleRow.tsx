@@ -1,10 +1,10 @@
-import { type Schedule } from '@/api/definitions/server';
+import { type Schedule } from '@definitions/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { format } from 'date-fns';
 import tw from 'twin.macro';
-import ScheduleCronRow from '@/components/server/schedules/ScheduleCronRow';
-import GreyRowBox from '@elements/GreyRowBox';
+import ScheduleCronRow from '@server/schedules/ScheduleCronRow';
+import GreyRowBox from '@/elements/GreyRowBox';
 import { Link } from 'react-router-dom';
 
 export default ({ schedule, to }: { schedule: Schedule; to: string }) => (

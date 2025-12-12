@@ -1,8 +1,8 @@
 import EventBox from './EventBox';
-import Spinner from '@elements/Spinner';
-import { WebhookEvent } from '@/api/admin/webhooks';
+import Spinner from '@/elements/Spinner';
+import { WebhookEvent } from '@/api/routes/admin/webhooks';
 import usePagination from '@/plugins/usePagination';
-import { PaginatedFooter } from '@elements/Table';
+import { PaginatedFooter } from '@/elements/Table';
 
 export default ({ events }: { events?: WebhookEvent[] }) => {
     if (!events) return <Spinner size={'large'} centered />;

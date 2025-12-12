@@ -4,19 +4,18 @@ import { useEffect, useState } from 'react';
 import { Route, Routes, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
-import type { Node } from '@/api/admin/nodes/getNodes';
-import getNode from '@/api/admin/nodes/getNode';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import AdminContentBlock from '@elements/AdminContentBlock';
+import type { Node } from '@/api/routes/admin/nodes/getNodes';
+import getNode from '@/api/routes/admin/nodes/getNode';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import NodeEditContainer from '@admin/management/nodes/NodeEditContainer';
-import Spinner from '@elements/Spinner';
+import Spinner from '@/elements/Spinner';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import NodeAboutContainer from '@admin/management/nodes/NodeAboutContainer';
 import NodeConfigurationContainer from '@admin/management/nodes/NodeConfigurationContainer';
 import NodeAllocationContainer from '@admin/management/nodes/NodeAllocationContainer';
 import NodeServers from '@admin/management/nodes/NodeServers';
 import type { ApplicationStore } from '@/state';
-import { useStoreState } from '@/state/hooks';
 import NodeStatus from './NodeStatus';
 import { CodeIcon, OfficeBuildingIcon, ServerIcon, WifiIcon } from '@heroicons/react/outline';
 import { CogIcon } from '@heroicons/react/solid';
@@ -36,8 +35,6 @@ export const Context = createContextStore<ctx>({
 
 const NodeRouter = () => {
     const params = useParams<'id'>();
-
-    const theme = useStoreState(state => state.theme.data!);
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
@@ -88,7 +85,7 @@ const NodeRouter = () => {
 
             <FlashMessageRender byKey={'admin:nodes'} css={tw`mb-4`} />
 
-            <SubNavigation theme={theme}>
+            <SubNavigation>
                 <SubNavigationLink to={`/admin/nodes/${node.id}`} name={'About'} base>
                     <OfficeBuildingIcon />
                 </SubNavigationLink>

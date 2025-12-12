@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { ServerContext } from '@/state/server';
-import Modal from '@elements/Modal';
+import Modal from '@/elements/Modal';
 import tw from 'twin.macro';
-import { Button } from '@elements/button';
-import { setImage, getServerStartup } from '@/api/server/startup';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import { Button } from '@/elements/button';
+import { setImage, getServerStartup } from '@/api/routes/server/startup';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
-import { SocketEvent, SocketRequest } from '@/components/server/events';
-import Select from '@elements/Select';
+import { SocketEvent, SocketRequest } from '@server/events';
+import Select from '@/elements/Select';
 import useWebsocketEvent from '@/plugins/useWebsocketEvent';
-import Can from '@elements/Can';
-import InputSpinner from '@elements/InputSpinner';
+import Can from '@/elements/Can';
+import InputSpinner from '@/elements/InputSpinner';
 
 const MATCH_ERRORS = [
     'minecraft 1.17 requires running the server with java 16 or above',

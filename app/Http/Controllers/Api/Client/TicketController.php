@@ -10,13 +10,11 @@ use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Transformers\Api\Client\TicketTransformer;
-use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
 class TicketController extends ClientApiController
 {
-    public function __construct(
-        private SettingsRepositoryInterface $settings,
-    ) {
+    public function __construct()
+    {
         parent::__construct();
     }
 
@@ -36,8 +34,8 @@ class TicketController extends ClientApiController
      */
     public function store(Request $request): array
     {
-        $enabled = $this->settings->get('settings::modules:tickets:enabled');
-        $max_count = $this->settings->get('settings::modules:tickets:max_count');
+        $enabled = config('modules.tickets.enabled');
+        $max_count = (int) config('modules.tickets.max_count') ?? 0;
 
         if (!boolval($enabled)) {
             throw new DisplayException('You cannot create a ticket as the module is disabled.');

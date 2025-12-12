@@ -1,15 +1,15 @@
-import AdminBox from '@elements/AdminBox';
+import AdminBox from '@/elements/AdminBox';
 import ToggleFeatureButton from '@admin/modules/ai/ToggleFeatureButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
-import Input from '@elements/Input';
+import Input from '@/elements/Input';
 import { SparklesIcon, XCircleIcon } from '@heroicons/react/outline';
 import { useStoreState } from '@/state/hooks';
 import { KeyboardEvent as ReactKeyboardEvent, useState } from 'react';
-import { handleQuery } from '@/api/admin/ai/handleQuery';
+import { handleQuery } from '@/api/routes/admin/ai/handleQuery';
 import { useFlashKey } from '@/plugins/useFlash';
-import Spinner from '@elements/Spinner';
-import { Alert } from '@elements/alert';
+import Spinner from '@/elements/Spinner';
+import { Alert } from '@/elements/alert';
 
 interface Props {
     primary: string;

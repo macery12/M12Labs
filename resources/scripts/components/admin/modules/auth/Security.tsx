@@ -1,12 +1,12 @@
-import Label from '@elements/Label';
-import Select from '@elements/Select';
-import AdminBox from '@elements/AdminBox';
+import Label from '@/elements/Label';
+import Select from '@/elements/Select';
+import AdminBox from '@/elements/AdminBox';
 import { faLock } from '@fortawesome/free-solid-svg-icons';
-import Input from '@elements/Input';
+import Input from '@/elements/Input';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
-import { updateModule } from '@/api/admin/auth/module';
+import { updateModule } from '@/api/routes/admin/auth/module';
 
 export default () => {
     const { status, setStatus } = useStatus();
@@ -29,7 +29,12 @@ export default () => {
         <AdminBox title={'Security Module'} icon={faLock} byKey={'auth:security'} status={status}>
             <div>
                 <Label>Force Two-Factor Authentication</Label>
-                <Select id={'force2fa'} name={'force2fa'} onChange={e => update('force2fa', e.target.value)}>
+                <Select
+                    id={'force2fa'}
+                    name={'force2fa'}
+                    onChange={e => update('force2fa', e.target.value)}
+                    autoComplete={'off'}
+                >
                     <option value={1} selected={settings.force2fa}>
                         Enabled
                     </option>
@@ -46,6 +51,7 @@ export default () => {
                     id={'attempts'}
                     type={'number'}
                     name={'attempts'}
+                    autoComplete={'off'}
                     onChange={e => update('attempts', e.target.value)}
                 />
                 <p className={'text-xs text-gray-400 mt-1'}>

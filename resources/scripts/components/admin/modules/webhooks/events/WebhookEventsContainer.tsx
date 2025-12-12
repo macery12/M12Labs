@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import Spinner from '@elements/Spinner';
-import { getEvents, sendTestEvent, toggleEventStatus, WebhookEvent } from '@/api/admin/webhooks';
+import Spinner from '@/elements/Spinner';
+import { getEvents, sendTestEvent, toggleEventStatus, WebhookEvent } from '@/api/routes/admin/webhooks';
 import EventsTable from './EventsTable';
-import { Button } from '@elements/button';
+import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
 import useFlash from '@/plugins/useFlash';
-import Input from '@elements/Input';
+import Input from '@/elements/Input';
 
 export default () => {
     const { colors } = useStoreState(s => s.theme.data!);

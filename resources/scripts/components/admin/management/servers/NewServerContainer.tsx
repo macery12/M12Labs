@@ -6,11 +6,11 @@ import { useNavigate } from 'react-router-dom';
 import tw from 'twin.macro';
 import { object } from 'yup';
 
-import type { Egg } from '@/api/admin/egg';
-import type { CreateServerRequest } from '@/api/admin/servers/createServer';
-import createServer from '@/api/admin/servers/createServer';
-import type { Node } from '@/api/admin/node';
-import AdminBox from '@elements/AdminBox';
+import type { Egg } from '@/api/routes/admin/egg';
+import type { CreateServerRequest } from '@/api/routes/admin/servers/createServer';
+import createServer from '@/api/routes/admin/servers/createServer';
+import type { Node } from '@/api/routes/admin/node';
+import AdminBox from '@/elements/AdminBox';
 import NodeSelect from '@admin/management/servers/NodeSelect';
 import {
     ServerImageContainer,
@@ -20,19 +20,19 @@ import {
 import BaseSettingsBox from '@admin/management/servers/settings/BaseSettingsBox';
 import FeatureLimitsBox from '@admin/management/servers/settings/FeatureLimitsBox';
 import ServerResourceBox from '@admin/management/servers/settings/ServerResourceBox';
-import { Button } from '@elements/button';
-import Field from '@elements/Field';
-import FormikSwitch from '@elements/FormikSwitch';
-import Label from '@elements/Label';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import { Button } from '@/elements/button';
+import Field from '@/elements/Field';
+import FormikSwitch from '@/elements/FormikSwitch';
+import Label from '@/elements/Label';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import { WithRelationships } from '@/api/admin';
-import { AsyncSelectField } from '@/components/elements/SelectField';
-import type { Option } from '@elements/SelectField';
-import getAllocations from '@/api/admin/nodes/getAllocations';
-import { Alert } from '@/components/elements/alert';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import { WithRelationships } from '@/api/routes/admin';
+import { AsyncSelectField } from '@/elements/SelectField';
+import type { Option } from '@/elements/SelectField';
+import getAllocations from '@/api/routes/admin/nodes/getAllocations';
+import { Alert } from '@/elements/alert';
 
 function InternalForm() {
     const {

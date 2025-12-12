@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import tw from 'twin.macro';
-import Icon from '@elements/Icon';
+import Icon from '@/elements/Icon';
 import { ServerContext } from '@/state/server';
-import { deleteAllocation, getAllocations } from '@/api/server/allocations';
+import { deleteAllocation, getAllocations } from '@/api/routes/server/allocations';
 import { useFlashKey } from '@/plugins/useFlash';
-import { Dialog } from '@elements/dialog';
-import { Button } from '@elements/button/index';
+import { Dialog } from '@/elements/dialog';
+import { Button } from '@/elements/button/index';
 
 interface Props {
     allocation: number;

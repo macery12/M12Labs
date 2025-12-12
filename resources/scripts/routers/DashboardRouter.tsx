@@ -1,23 +1,23 @@
 import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
-import DashboardContainer from '@/components/dashboard/DashboardContainer';
-import { NotFound } from '@elements/ScreenBlock';
-import Spinner from '@elements/Spinner';
+import { NotFound } from '@/elements/ScreenBlock';
+import Spinner from '@/elements/Spinner';
 import routes from '@/routers/routes';
 import { useStoreState } from '@/state/hooks';
 import { usePersistedState } from '@/plugins/usePersistedState';
-import Sidebar from '@elements/Sidebar';
+import Sidebar from '@/elements/Sidebar';
 import { CogIcon, DesktopComputerIcon, ExternalLinkIcon, LogoutIcon, PuzzleIcon } from '@heroicons/react/outline';
-import Avatar from '@/components/Avatar';
-import MobileSidebar from '@elements/MobileSidebar';
-import { CustomLink } from '@/api/admin/links';
+import Avatar from '@/elements/Avatar';
+import MobileSidebar from '@/elements/MobileSidebar';
+import { CustomLink } from '@/api/routes/admin/links';
 import { getLinks } from '@/api/getLinks';
 import http from '@/api/http';
-import NavigationBar from '@/components/NavigationBar';
+import NavigationBar from '@/elements/NavigationBar';
+import DashboardContainer from '@account/DashboardContainer';
 
 function DashboardRouter() {
     const user = useStoreState(s => s.user.data!);
-    const { name } = useStoreState(s => s.settings.data!);
+    const { name, logo } = useStoreState(s => s.settings.data!);
     const theme = useStoreState(state => state.theme.data!);
     const [links, setLinks] = useState<CustomLink[] | null>();
     const flags = useStoreState(state => state.everest.data!);
@@ -65,7 +65,7 @@ function DashboardRouter() {
                         <h1 className={'text-2xl text-neutral-50 whitespace-nowrap font-medium'}>{name}</h1>
                     ) : (
                         <img
-                            src={'https://avatars.githubusercontent.com/u/91636558'}
+                            src={logo?.toString() || 'https://avatars.githubusercontent.com/u/91636558'}
                             className={'mt-4 w-12'}
                             alt={'Logo'}
                         />

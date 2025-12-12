@@ -1,15 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { ServerContext } from '@/state/server';
-import { SocketEvent } from '@/components/server/events';
+import { SocketEvent } from '@server/events';
 import useWebsocketEvent from '@/plugins/useWebsocketEvent';
 import { Line } from 'react-chartjs-2';
-import { useChart, useChartTickLabel } from '@/components/server/console/chart';
+import { useChart, useChartTickLabel } from '@server/console/chart';
 import { hexToRgba } from '@/lib/helpers';
 import { bytesToString } from '@/lib/formatters';
 import { CloudDownloadIcon, CloudUploadIcon } from '@heroicons/react/solid';
 import { theme } from 'twin.macro';
-import ChartBlock from '@/components/server/console/ChartBlock';
-import Tooltip from '@elements/tooltip/Tooltip';
+import ChartBlock from '@server/console/ChartBlock';
+import Tooltip from '@/elements/tooltip/Tooltip';
 import { useStoreState } from '@/state/hooks';
 
 export default () => {

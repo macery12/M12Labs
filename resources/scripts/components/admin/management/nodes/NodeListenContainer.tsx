@@ -2,9 +2,9 @@ import { faNetworkWired } from '@fortawesome/free-solid-svg-icons';
 import { useFormikContext } from 'formik';
 import tw from 'twin.macro';
 
-import AdminBox from '@elements/AdminBox';
-import Field from '@elements/Field';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
+import AdminBox from '@/elements/AdminBox';
+import Field from '@/elements/Field';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 
 export default () => {
     const { isSubmitting } = useFormikContext();

@@ -48,8 +48,8 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
                     'avatar_url' => $this->getApiUser()->avatar_url,
                     'role_name' => $this->getApiUser()->admin_role_name,
                     'state' => $this->getApiUser()->state,
-                    'created_at' => $this->formatTimestamp($this->getApiUser()->created_at),
-                    'updated_at' => $this->formatTimestamp($this->getApiUser()->updated_at),
+                    'created_at' => $this->getApiUser()->created_at->toIso8601String(),
+                    'updated_at' => $this->getApiUser()->updated_at->toIso8601String(),
                 ],
             ])
             ->assertJsonFragment([
@@ -67,8 +67,8 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
                     'avatar_url' => $user->avatar_url,
                     'role_name' => $user->admin_role_name,
                     'state' => $user->state,
-                    'created_at' => $this->formatTimestamp($user->created_at),
-                    'updated_at' => $this->formatTimestamp($user->updated_at),
+                    'created_at' => $user->created_at->toIso8601String(),
+                    'updated_at' => $user->updated_at->toIso8601String(),
                 ],
             ]);
     }
@@ -103,8 +103,8 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
                 'avatar_url' => $user->avatar_url,
                 'role_name' => $user->admin_role_name,
                 'state' => $user->state,
-                'created_at' => $this->formatTimestamp($user->created_at),
-                'updated_at' => $this->formatTimestamp($user->updated_at),
+                'created_at' => $user->created_at->toIso8601String(),
+                'updated_at' => $user->updated_at->toIso8601String(),
             ],
         ]);
     }

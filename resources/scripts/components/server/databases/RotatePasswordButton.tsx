@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { rotateDatabasePassword } from '@/api/server/databases';
+import { rotateDatabasePassword } from '@/api/routes/server/databases';
 import { Actions, useStoreActions } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import { ServerContext } from '@/state/server';
-import { type Database } from '@/api/definitions/server';
+import { type Database } from '@definitions/server';
 import { httpErrorToHuman } from '@/api/http';
-import { Button } from '@elements/button';
+import { Button } from '@/elements/button';
 import tw from 'twin.macro';
 
 export default ({ databaseId, onUpdate }: { databaseId: string; onUpdate: (database: Database) => void }) => {

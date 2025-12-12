@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import { getSchedules } from '@/api/server/schedules';
+import { getSchedules } from '@/api/routes/server/schedules';
 import { ServerContext } from '@/state/server';
-import Spinner from '@elements/Spinner';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import ScheduleRow from '@/components/server/schedules/ScheduleRow';
+import Spinner from '@/elements/Spinner';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import ScheduleRow from '@server/schedules/ScheduleRow';
 import { httpErrorToHuman } from '@/api/http';
-import EditScheduleModal from '@/components/server/schedules/EditScheduleModal';
-import Can from '@elements/Can';
+import EditScheduleModal from '@server/schedules/EditScheduleModal';
+import Can from '@/elements/Can';
 import useFlash from '@/plugins/useFlash';
 import tw from 'twin.macro';
-import { Button } from '@elements/button/index';
-import PageContentBlock from '@/components/elements/PageContentBlock';
+import { Button } from '@/elements/button/index';
+import PageContentBlock from '@/elements/PageContentBlock';
 
 function ScheduleContainer() {
     const server = ServerContext.useStoreState(state => state.server.data!);

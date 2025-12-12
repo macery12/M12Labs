@@ -2,11 +2,11 @@ import type { Actions } from 'easy-peasy';
 import { useStoreActions } from 'easy-peasy';
 import { useNavigate } from 'react-router-dom';
 import type { ApplicationStore } from '@/state';
-import { Dialog } from '@elements/dialog';
+import { Dialog } from '@/elements/dialog';
 import { useState } from 'react';
-import { Button } from '@elements/button';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import { deleteTicket } from '@/api/admin/tickets';
+import { Button } from '@/elements/button';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import { deleteTicket } from '@/api/routes/admin/tickets';
 
 export default ({ ticketId }: { ticketId: number }) => {
     const navigate = useNavigate();

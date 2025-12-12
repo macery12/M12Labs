@@ -1,6 +1,6 @@
-import { toggleEventStatus, WebhookEvent } from '@/api/admin/webhooks';
-import AdminBox from '@elements/AdminBox';
-import Pill from '@elements/Pill';
+import { toggleEventStatus, WebhookEvent } from '@/api/routes/admin/webhooks';
+import AdminBox from '@/elements/AdminBox';
+import Pill from '@/elements/Pill';
 import useStatus from '@/plugins/useStatus';
 import { faXmarkCircle, faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';

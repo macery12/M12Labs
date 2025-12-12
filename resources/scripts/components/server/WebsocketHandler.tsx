@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
-import getWebsocketToken from '@/api/server/websocket';
-import ContentContainer from '@elements/ContentContainer';
-import Spinner from '@elements/Spinner';
-import FadeTransition from '@elements/transitions/FadeTransition';
+import getWebsocketToken from '@/api/routes/server/websocket';
+import ContentContainer from '@/elements/ContentContainer';
+import Spinner from '@/elements/Spinner';
+import FadeTransition from '@/elements/transitions/FadeTransition';
 import { Websocket } from '@/plugins/Websocket';
 import { ServerContext } from '@/state/server';
 

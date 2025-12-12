@@ -1,10 +1,10 @@
 import { useFormikContext } from 'formik';
 import { useState } from 'react';
 
-import { searchUserAccounts } from '@/api/admin/users';
-import SearchableSelect, { Option } from '@elements/SearchableSelect';
+import { searchUserAccounts } from '@/api/routes/admin/users';
+import SearchableSelect, { Option } from '@/elements/SearchableSelect';
 import type { User } from '@definitions/admin';
-import Avatar from '@/components/Avatar';
+import Avatar from '@/elements/Avatar';
 
 export default ({ selected, isAdmin }: { selected?: User; isAdmin?: boolean }) => {
     const { setFieldValue } = useFormikContext();

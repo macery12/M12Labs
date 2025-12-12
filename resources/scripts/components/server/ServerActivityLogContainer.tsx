@@ -1,27 +1,31 @@
 import { useEffect, useState } from 'react';
-import { useActivityLogs } from '@/api/server/activity';
+import { useActivityLogs } from '@/api/routes/server/activity';
 import { useFlashKey } from '@/plugins/useFlash';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import Spinner from '@elements/Spinner';
-import ActivityLogEntry from '@elements/activity/ActivityLogEntry';
-import PaginationFooter from '@elements/table/PaginationFooter';
-import { ActivityLogFilters } from '@/api/account/activity';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import Spinner from '@/elements/Spinner';
+import ActivityLogEntry from '@/elements/activity/ActivityLogEntry';
+import PaginationFooter from '@/elements/table/PaginationFooter';
+import { ActivityLogFilters } from '@/api/routes/account/activity';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames';
-import { styles as btnStyles } from '@elements/button/index';
+import { styles as btnStyles } from '@/elements/button/index';
 import { XCircleIcon } from '@heroicons/react/solid';
 import useLocationHash from '@/plugins/useLocationHash';
-import PageContentBlock from '../elements/PageContentBlock';
+import PageContentBlock from '@/elements/PageContentBlock';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const { hash } = useLocationHash();
     const { clearAndAddHttpError } = useFlashKey('server:activity');
     const [filters, setFilters] = useState<ActivityLogFilters>({ page: 1, sorts: { timestamp: -1 } });
+    const enabled = useStoreState(state => state.settings.data!.activity.enabled.server);
 
     const { data, isValidating, error } = useActivityLogs(filters, {
         revalidateOnMount: true,
         revalidateOnFocus: false,
     });
+
+    if (!enabled) return <></>;
 
     useEffect(() => {
         setFilters(value => ({ ...value, filters: { ip: hash.ip, event: hash.event } }));

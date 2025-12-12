@@ -1,16 +1,15 @@
 import { useStoreState } from '@/state/hooks';
 import { Route, Routes } from 'react-router-dom';
-import { NotFound } from '@elements/ScreenBlock';
+import { NotFound } from '@/elements/ScreenBlock';
 import { CalendarIcon, CogIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import EnableWebhooks from './EnableWebhooks';
 import WebhookSettings from './WebhookSettings';
 import WebhookEventsContainer from './events/WebhookEventsContainer';
 
 export default () => {
-    const theme = useStoreState(state => state.theme.data!);
     const enabled = useStoreState(state => state.everest.data!.webhooks.enabled);
 
     if (!enabled) return <EnableWebhooks />;
@@ -30,7 +29,7 @@ export default () => {
                     </p>
                 </div>
             </div>
-            <SubNavigation theme={theme}>
+            <SubNavigation>
                 <SubNavigationLink to={'/admin/webhooks'} name={'Settings'} base>
                     <CogIcon />
                 </SubNavigationLink>

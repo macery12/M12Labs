@@ -3,17 +3,14 @@ import type { Actions } from 'easy-peasy';
 import { useStoreActions } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import type { ApplicationStore } from '@/state';
-import { Dialog } from '@elements/dialog';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
+import { Dialog } from '@/elements/dialog';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { useState } from 'react';
-import { Button } from '@elements/button';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import { TextareaField } from '@elements/Field';
-import { createMessage } from '@/api/admin/tickets/messages';
-
-const initialValues: { message: string } = {
-    message: '',
-};
+import { Button } from '@/elements/button';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import { TextareaField } from '@/elements/Field';
+import { createMessage } from '@/api/routes/admin/tickets/messages';
+import { CreateTicketMessageValues as Values } from '@/api/routes/admin/tickets/types';
 
 export default ({ ticketId }: { ticketId: number }) => {
     const [open, setOpen] = useState<boolean>(false);
@@ -24,10 +21,10 @@ export default ({ ticketId }: { ticketId: number }) => {
 
     if (!ticketId) return <></>;
 
-    const submit = (values: { message: string }, { setSubmitting }: FormikHelpers<{ message: string }>) => {
+    const submit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes('ticket:message:create');
 
-        createMessage(ticketId, values)
+        createMessage({ ...values, ticket_id: ticketId })
             .then(() => {
                 // @ts-expect-error quit your whining
                 window.location = `/admin/tickets/${ticketId}`;
@@ -42,7 +39,7 @@ export default ({ ticketId }: { ticketId: number }) => {
     return (
         <>
             <Button.Info onClick={() => setOpen(true)}>New Message</Button.Info>
-            <Formik onSubmit={submit} initialValues={initialValues}>
+            <Formik onSubmit={submit} initialValues={{ ticket_id: ticketId, message: '' }} enableReinitialize>
                 {({ isSubmitting, isValid, submitForm }) => (
                     <Form>
                         <SpinnerOverlay visible={isSubmitting} />

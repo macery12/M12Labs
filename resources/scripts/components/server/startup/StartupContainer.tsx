@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as React from 'react';
-import TitledGreyBox from '@elements/TitledGreyBox';
+import TitledGreyBox from '@/elements/TitledGreyBox';
 import tw from 'twin.macro';
-import VariableBox from '@/components/server/startup/VariableBox';
-import Spinner from '@elements/Spinner';
-import { ServerError } from '@elements/ScreenBlock';
+import VariableBox from '@server/startup/VariableBox';
+import Spinner from '@/elements/Spinner';
+import { ServerError } from '@/elements/ScreenBlock';
 import { httpErrorToHuman } from '@/api/http';
 import { ServerContext } from '@/state/server';
 import { useDeepCompareEffect } from '@/plugins/useDeepCompareEffect';
-import Select from '@elements/Select';
+import Select from '@/elements/Select';
 import isEqual from 'react-fast-compare';
-import Input from '@elements/Input';
-import { setImage, getServerStartup } from '@/api/server/startup';
-import InputSpinner from '@elements/InputSpinner';
+import Input from '@/elements/Input';
+import { setImage, getServerStartup } from '@/api/routes/server/startup';
+import InputSpinner from '@/elements/InputSpinner';
 import useFlash from '@/plugins/useFlash';
-import PageContentBlock from '@/components/elements/PageContentBlock';
+import PageContentBlock from '@/elements/PageContentBlock';
 
 const StartupContainer = () => {
     const [loading, setLoading] = useState(false);

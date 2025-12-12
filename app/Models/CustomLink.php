@@ -55,4 +55,12 @@ class CustomLink extends Model
         'name' => 'required|string|min:3',
         'visible' => 'required|bool',
     ];
+
+    /**
+     * Get the validation rules for incoming requests.
+     */
+    public static function rules(): array
+    {
+        return self::$validationRules;
+    }
 }

@@ -1,20 +1,19 @@
 import { useContext, useEffect, useState } from 'react';
 import { ServerContext } from '@/state/server';
 import { Form, Formik, FormikHelpers } from 'formik';
-import Field from '@elements/Field';
+import Field from '@/elements/Field';
 import { join } from 'pathe';
 import { object, string } from 'yup';
-import { createDirectory } from '@/api/server/directories';
+import { createDirectory } from '@/api/routes/server/directories';
 import tw from 'twin.macro';
-import { Button } from '@elements/button/index';
+import { Button } from '@/elements/button/index';
 import { useFlashKey } from '@/plugins/useFlash';
 import useFileManagerSwr from '@/plugins/useFileManagerSwr';
-import { WithClassname } from '@/components/types';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import { Dialog, DialogWrapperContext } from '@elements/dialog';
-import Code from '@elements/Code';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import { Dialog, DialogWrapperContext } from '@/elements/dialog';
+import Code from '@/elements/Code';
 import asDialog from '@/hoc/asDialog';
-import { FileObject } from '@/api/definitions/server';
+import { FileObject } from '@definitions/server';
 
 interface Values {
     directoryName: string;
@@ -96,7 +95,7 @@ const NewDirectoryDialog = asDialog({
     );
 });
 
-export default ({ className }: WithClassname) => {
+export default ({ className }: { className?: string }) => {
     const [open, setOpen] = useState(false);
 
     return (

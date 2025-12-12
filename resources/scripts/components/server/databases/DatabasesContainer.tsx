@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { getDatabases } from '@/api/server/databases';
+import { getDatabases } from '@/api/routes/server/databases';
 import { ServerContext } from '@/state/server';
 import { httpErrorToHuman } from '@/api/http';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import DatabaseRow from '@/components/server/databases/DatabaseRow';
-import Spinner from '@elements/Spinner';
-import CreateDatabaseButton from '@/components/server/databases/CreateDatabaseButton';
-import Can from '@elements/Can';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import DatabaseRow from '@server/databases/DatabaseRow';
+import Spinner from '@/elements/Spinner';
+import CreateDatabaseButton from '@server/databases/CreateDatabaseButton';
+import Can from '@/elements/Can';
 import useFlash from '@/plugins/useFlash';
 import tw from 'twin.macro';
 import { useDeepMemoize } from '@/plugins/useDeepMemoize';
-import FadeTransition from '@elements/transitions/FadeTransition';
-import PageContentBlock from '@/components/elements/PageContentBlock';
+import FadeTransition from '@/elements/transitions/FadeTransition';
+import PageContentBlock from '@/elements/PageContentBlock';
 
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);

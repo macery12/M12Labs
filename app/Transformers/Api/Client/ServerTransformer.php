@@ -69,7 +69,7 @@ class ServerTransformer extends Transformer
                 'subusers' => $server->subuser_limit,
             ],
             'status' => $server->status,
-            'renewal_date' => self::formatTimestamp($server->renewal_date),
+            'renewal_date' => $server->renewal_date,
             'is_transferring' => !is_null($server->transfer),
         ];
     }

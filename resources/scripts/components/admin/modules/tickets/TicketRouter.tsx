@@ -1,18 +1,17 @@
 import { useStoreState } from '@/state/hooks';
 import { Route, Routes } from 'react-router-dom';
-import { NotFound } from '@elements/ScreenBlock';
+import { NotFound } from '@/elements/ScreenBlock';
 import NewTicketForm from '@admin/modules/tickets/NewTicketForm';
 import TicketsContainer from '@admin/modules/tickets/TicketsContainer';
 import ViewTicketContainer from '@admin/modules/tickets/view/ViewTicketContainer';
 import EnableTicketsContainer from './EnableTicketsContainer';
 import { CogIcon, TicketIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import TicketOptionsContainer from './TicketOptionsContainer';
 
 export default () => {
-    const theme = useStoreState(state => state.theme.data!);
     const enabled = useStoreState(state => state.everest.data!.tickets.enabled);
 
     if (!enabled) return <EnableTicketsContainer />;
@@ -32,7 +31,7 @@ export default () => {
                     </p>
                 </div>
             </div>
-            <SubNavigation theme={theme}>
+            <SubNavigation>
                 <SubNavigationLink to={'/admin/tickets'} name={'Open Tickets'} base>
                     <TicketIcon />
                 </SubNavigationLink>

@@ -6,21 +6,21 @@ import { useNavigate, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
 import { httpErrorToHuman } from '@/api/http';
-import { getFileContents, saveFileContents } from '@/api/server/files';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import { Button } from '@elements/button';
-import Can from '@elements/Can';
-import Select from '@elements/Select';
-import PageContentBlock from '@elements/PageContentBlock';
-import { ServerError } from '@elements/ScreenBlock';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
-import FileManagerBreadcrumbs from '@/components/server/files/FileManagerBreadcrumbs';
-import FileNameModal from '@/components/server/files/FileNameModal';
-import ErrorBoundary from '@elements/ErrorBoundary';
-import { Editor } from '@elements/editor';
+import { getFileContents, saveFileContents } from '@/api/routes/server/files';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import { Button } from '@/elements/button';
+import Can from '@/elements/Can';
+import Select from '@/elements/Select';
+import PageContentBlock from '@/elements/PageContentBlock';
+import { ServerError } from '@/elements/ScreenBlock';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import FileManagerBreadcrumbs from '@server/files/FileManagerBreadcrumbs';
+import FileNameModal from '@server/files/FileNameModal';
+import ErrorBoundary from '@/elements/ErrorBoundary';
+import { Editor } from '@/elements/editor';
 import useFlash from '@/plugins/useFlash';
 import { ServerContext } from '@/state/server';
-import { encodePathSegments } from '@/helpers';
+import { encodePathSegments } from '@/lib/helpers';
 
 export default () => {
     const [error, setError] = useState('');

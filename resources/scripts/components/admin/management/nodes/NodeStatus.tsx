@@ -1,11 +1,11 @@
 import useFlash from '@/plugins/useFlash';
 import { useState, useEffect } from 'react';
-import getNodeInformation, { NodeInformation } from '@/api/admin/nodes/getNodeInformation';
-import Spinner from '@elements/Spinner';
+import getNodeInformation, { NodeInformation } from '@/api/routes/admin/nodes/getNodeInformation';
+import Spinner from '@/elements/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBoltLightning, faExclamationTriangle, faHeart } from '@fortawesome/free-solid-svg-icons';
 import classNames from 'classnames';
-import Tooltip from '@elements/tooltip/Tooltip';
+import Tooltip from '@/elements/tooltip/Tooltip';
 
 export default ({ node, className }: { node: number; className?: string }) => {
     const { clearFlashes } = useFlash();

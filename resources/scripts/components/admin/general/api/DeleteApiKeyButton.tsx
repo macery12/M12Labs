@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import useFlash from '@/plugins/useFlash';
-import { Dialog } from '@elements/dialog';
-import { Button } from '@elements/button';
-import deleteApiKey from '@/api/admin/api/deleteApiKey';
+import { Dialog } from '@/elements/dialog';
+import { Button } from '@/elements/button';
+import deleteApiKey from '@/api/routes/admin/api/deleteApiKey';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 

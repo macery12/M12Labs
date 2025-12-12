@@ -2,18 +2,18 @@ import { lazy } from 'react';
 import * as Icon from '@heroicons/react/outline';
 import { route, type ServerRouteDefinition } from '@/routers/routes/utils';
 
-const ServerConsoleContainer = lazy(() => import('@/components/server/console/ServerConsoleContainer'));
-const FileManagerContainer = lazy(() => import('@/components/server/files/FileManagerContainer'));
-const FileEditContainer = lazy(() => import('@/components/server/files/FileEditContainer'));
-const DatabasesContainer = lazy(() => import('@/components/server/databases/DatabasesContainer'));
-const ScheduleContainer = lazy(() => import('@/components/server/schedules/ScheduleContainer'));
-const ScheduleEditContainer = lazy(() => import('@/components/server/schedules/ScheduleEditContainer'));
-const UsersContainer = lazy(() => import('@/components/server/users/UsersContainer'));
-const BackupContainer = lazy(() => import('@/components/server/backups/BackupContainer'));
-const NetworkContainer = lazy(() => import('@/components/server/network/NetworkContainer'));
-const StartupContainer = lazy(() => import('@/components/server/startup/StartupContainer'));
-const ServerActivityLogContainer = lazy(() => import('@/components/server/ServerActivityLogContainer'));
-const ServerBillingContainer = lazy(() => import('@/components/server/billing/ServerBillingContainer'));
+const ServerConsoleContainer = lazy(() => import('@server/console/ServerConsoleContainer'));
+const FileManagerContainer = lazy(() => import('@server/files/FileManagerContainer'));
+const FileEditContainer = lazy(() => import('@server/files/FileEditContainer'));
+const DatabasesContainer = lazy(() => import('@server/databases/DatabasesContainer'));
+const ScheduleContainer = lazy(() => import('@server/schedules/ScheduleContainer'));
+const ScheduleEditContainer = lazy(() => import('@server/schedules/ScheduleEditContainer'));
+const UsersContainer = lazy(() => import('@server/users/UsersContainer'));
+const BackupContainer = lazy(() => import('@server/backups/BackupContainer'));
+const NetworkContainer = lazy(() => import('@server/network/NetworkContainer'));
+const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
+const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
+const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -66,7 +66,12 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.PlayIcon,
         category: 'configuration',
     }),
-    route('activity/*', ServerActivityLogContainer, { permission: 'activity.*', name: 'Activity', icon: Icon.EyeIcon }),
+    route('activity/*', ServerActivityLogContainer, {
+        permission: 'activity.*',
+        name: 'Activity',
+        icon: Icon.EyeIcon,
+        condition: flags => flags.activityEnabled,
+    }),
     route('billing/*', ServerBillingContainer, {
         permission: 'billing.*',
         name: 'Billing',

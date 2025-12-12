@@ -5,7 +5,7 @@ import flashes, { FlashStore } from '@/state/flashes';
 import everest, { EverestStore } from '@/state/everest';
 import settings, { SettingsStore } from '@/state/settings';
 import progress, { ProgressStore } from '@/state/progress';
-import permissions, { GloablPermissionsStore } from '@/state/permissions';
+import permissions, { GloablPermissionsStore } from '@/state/server/permissions';
 
 export interface ApplicationStore {
     permissions: GloablPermissionsStore;

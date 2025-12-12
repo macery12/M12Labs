@@ -22,8 +22,8 @@ class BackupTransformer extends Transformer
             'ignored_files' => $model->ignored_files,
             'checksum' => $model->checksum,
             'bytes' => $model->bytes,
-            'created_at' => self::formatTimestamp($model->created_at),
-            'completed_at' => self::formatTimestamp($model->completed_at),
+            'created_at' => $model->created_at->toIso8601String(),
+            'completed_at' => $model->completed_at,
         ];
     }
 }

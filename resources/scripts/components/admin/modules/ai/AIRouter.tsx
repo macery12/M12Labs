@@ -1,9 +1,9 @@
 import { useStoreState } from '@/state/hooks';
 import { Route, Routes } from 'react-router-dom';
 import { CogIcon, SparklesIcon } from '@heroicons/react/outline';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import { NotFound } from '@elements/ScreenBlock';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import { NotFound } from '@/elements/ScreenBlock';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import EnableAI from '@admin/modules/ai/EnableAI';
 import OverviewContainer from '@admin/modules/ai/OverviewContainer';
@@ -11,7 +11,6 @@ import ConfigureAI from '@admin/modules/ai/ConfigureAI';
 import SettingsContainer from './SettingsContainer';
 
 export default () => {
-    const theme = useStoreState(state => state.theme.data!);
     const settings = useStoreState(state => state.everest.data!.ai);
 
     if (!settings.enabled) return <EnableAI />;
@@ -32,7 +31,7 @@ export default () => {
                     </p>
                 </div>
             </div>
-            <SubNavigation theme={theme}>
+            <SubNavigation>
                 <SubNavigationLink to={'/admin/ai'} name={'General'} base>
                     <SparklesIcon />
                 </SubNavigationLink>

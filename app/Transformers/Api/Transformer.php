@@ -3,8 +3,6 @@
 namespace Everest\Transformers\Api;
 
 use Everest\Models\User;
-use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Webmozart\Assert\Assert;
 use League\Fractal\Resource\Item;
@@ -126,29 +124,5 @@ abstract class Transformer extends TransformerAbstract
         $expected = substr(static::class, 0, strlen(class_basename(static::class)) * -1);
 
         Assert::same($namespace, $expected, 'Cannot invoke a new transformer (%s) that is not in the same namespace (%s).');
-    }
-
-    /**
-     * Returns an ISO-8601 formatted timestamp to use in API responses. This
-     * time is returned in the default transformer timezone if no timezone value
-     * is provided.
-     *
-     * If no time is provided a null value is returned.
-     *
-     * @param string|\DateTimeInterface|null $timestamp
-     */
-    protected static function formatTimestamp($timestamp, string $tz = null): ?string
-    {
-        if (empty($timestamp)) {
-            return null;
-        }
-
-        if ($timestamp instanceof \DateTimeInterface) {
-            $value = CarbonImmutable::instance($timestamp);
-        } else {
-            $value = CarbonImmutable::createFromFormat(CarbonInterface::DEFAULT_TO_STRING_FORMAT, $timestamp);
-        }
-
-        return $value->setTimezone($tz ?? self::$timezone)->toAtomString();
     }
 }

@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
-import type { NodeInformation } from '@/api/admin/nodes/getNodeInformation';
-import getNodeInformation from '@/api/admin/nodes/getNodeInformation';
-import AdminBox from '@elements/AdminBox';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
+import type { NodeInformation } from '@/api/routes/admin/nodes/getNodeInformation';
+import getNodeInformation from '@/api/routes/admin/nodes/getNodeInformation';
+import AdminBox from '@/elements/AdminBox';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Context } from '@admin/management/nodes/NodeRouter';
-import { Alert } from '@elements/alert';
+import { Alert } from '@/elements/alert';
 import {
     faBarChart,
     faChartBar,
@@ -20,11 +20,11 @@ import {
     IconDefinition,
 } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
-import Label from '@elements/Label';
-import Input from '@elements/Input';
+import Label from '@/elements/Label';
+import Input from '@/elements/Input';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Tooltip from '@elements/tooltip/Tooltip';
-import getNodeUtilization, { NodeUtilization } from '@/api/admin/nodes/getNodeUtilization';
+import Tooltip from '@/elements/tooltip/Tooltip';
+import getNodeUtilization, { NodeUtilization } from '@/api/routes/admin/nodes/getNodeUtilization';
 import { useStoreState } from '@/state/hooks';
 
 const Code = ({ className, children }: { className?: string; children: ReactNode }) => {

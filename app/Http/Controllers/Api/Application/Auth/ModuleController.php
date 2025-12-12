@@ -2,9 +2,9 @@
 
 namespace Everest\Http\Controllers\Api\Application\Auth;
 
+use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Everest\Contracts\Repository\SettingsRepositoryInterface;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Auth\EnableAuthModuleRequest;
 use Everest\Http\Requests\Api\Application\Auth\UpdateAuthModuleRequest;
@@ -15,9 +15,8 @@ class ModuleController extends ApplicationApiController
     /**
      * ModuleController constructor.
      */
-    public function __construct(
-        private SettingsRepositoryInterface $settings
-    ) {
+    public function __construct()
+    {
         parent::__construct();
     }
 
@@ -28,7 +27,7 @@ class ModuleController extends ApplicationApiController
      */
     public function enable(EnableAuthModuleRequest $request): Response
     {
-        $this->settings->set('settings::modules:auth:' . $request->all()[0] . ':enabled', true);
+        Setting::set('settings::modules:auth:' . $request->all()[0] . ':enabled', true);
 
         Activity::event('admin:auth:module:enable')
             ->property('module', $request->all()[0])
@@ -45,7 +44,7 @@ class ModuleController extends ApplicationApiController
      */
     public function disable(DisableAuthModuleRequest $request): Response
     {
-        $this->settings->set('settings::modules:auth:' . $request->all()[0] . ':enabled', false);
+        Setting::set('settings::modules:auth:' . $request->all()[0] . ':enabled', false);
 
         Activity::event('admin:auth:module:disable')
             ->property('module', $request->all()[0])
@@ -63,7 +62,7 @@ class ModuleController extends ApplicationApiController
      */
     public function update(UpdateAuthModuleRequest $request): Response
     {
-        $this->settings->set(
+        Setting::set(
             'settings::modules:auth:' . $request->input('module') . ':' . $request->input('key'),
             $request->input('value')
         );

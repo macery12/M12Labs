@@ -49,6 +49,10 @@ export interface EverestSettings {
             symbol: string;
             code: string;
         };
+        links: {
+            terms: string;
+            privacy: string;
+        };
     };
     alert: {
         enabled: boolean;

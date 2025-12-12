@@ -1,7 +1,7 @@
 import tw from 'twin.macro';
 import { useEffect } from 'react';
 import useFlash from '@/plugins/useFlash';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import SuspendUserBox from './SuspendUserBox';
 import DeleteUserBox from './DeleteUserBox';
 

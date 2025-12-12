@@ -1,6 +1,6 @@
 import { Model } from '@definitions';
 import { type SubuserPermission } from '@/state/server/subusers';
-import { ServerStatus } from '@/api/server';
+import { ServerStatus } from '@/api/routes/server';
 
 interface Server {
     id: string;

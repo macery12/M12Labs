@@ -3,27 +3,27 @@ import { useStoreActions } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Form, Formik } from 'formik';
 import { useNavigate } from 'react-router-dom';
-import Field, { FieldRow } from '@elements/Field';
+import Field, { FieldRow } from '@/elements/Field';
 import tw from 'twin.macro';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import { Button } from '@elements/button';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import { Button } from '@/elements/button';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import type { ApplicationStore } from '@/state';
-import AdminBox from '@elements/AdminBox';
+import AdminBox from '@/elements/AdminBox';
 import { object, string, number } from 'yup';
 import { faTicket } from '@fortawesome/free-solid-svg-icons';
 import UserSelect from './UserSelect';
 import { useStoreState } from '@/state/hooks';
-import Select from '@/components/elements/Select';
-import Label from '@/components/elements/Label';
-import { createTicket } from '@/api/admin/tickets';
-import { Values } from '@/api/admin/tickets/types';
+import Select from '@/elements/Select';
+import Label from '@/elements/Label';
+import { createTicket } from '@/api/routes/admin/tickets';
+import { Values } from '@/api/routes/admin/tickets/types';
 
 const initialValues: Values = {
     title: '',
     user_id: 0,
     assigned_to: null,
-    status: undefined,
+    status: 'pending',
 };
 
 export default () => {

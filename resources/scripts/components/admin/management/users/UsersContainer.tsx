@@ -1,8 +1,8 @@
 import tw from 'twin.macro';
 import { Link, NavLink } from 'react-router-dom';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import { Button } from '@elements/button';
-import { RealFilters, useGetUsers, Context as UsersContext } from '@/api/admin/users';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import { Button } from '@/elements/button';
+import { RealFilters, useGetUsers, Context as UsersContext } from '@/api/routes/admin/users';
 import {
     faIdBadge,
     faLock,
@@ -25,9 +25,9 @@ import AdminTable, {
     TableHeader,
     TableRow,
     useTableHooks,
-} from '@/components/elements/AdminTable';
+} from '@/elements/AdminTable';
 import { useStoreState } from '@/state/hooks';
-import Pill from '@/components/elements/Pill';
+import Pill from '@/elements/Pill';
 
 function UsersContainer() {
     const { data: users, error, isValidating } = useGetUsers();

@@ -3,10 +3,10 @@ import { useFormikContext } from 'formik';
 import type { ReactNode } from 'react';
 import tw from 'twin.macro';
 
-import { useServerFromRoute } from '@/api/admin/server';
-import AdminBox from '@elements/AdminBox';
+import { useServerFromRoute } from '@/api/routes/admin/server';
+import AdminBox from '@/elements/AdminBox';
 import OwnerSelect from '@admin/management/servers/OwnerSelect';
-import Field from '@elements/Field';
+import Field from '@/elements/Field';
 
 export default ({ children }: { children?: ReactNode }) => {
     const { data: server } = useServerFromRoute();

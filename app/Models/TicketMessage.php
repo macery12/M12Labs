@@ -73,4 +73,12 @@ class TicketMessage extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    /**
+     * Get the validation rules for incoming requests.
+     */
+    public static function rules(): array
+    {
+        return self::$validationRules;
+    }
 }

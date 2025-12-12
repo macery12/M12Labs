@@ -1,17 +1,17 @@
 import tw from 'twin.macro';
-import AdminContentBlock from '@elements/AdminContentBlock';
+import AdminContentBlock from '@/elements/AdminContentBlock';
 import Registration from '@admin/modules/auth/Registration';
 import Security from './Security';
-import { Button } from '@elements/button';
+import { Button } from '@/elements/button';
 import { useState } from 'react';
-import { Dialog } from '@elements/dialog';
-import AuthModules from '@/components/modules/auth/Modules';
+import { Dialog } from '@/elements/dialog';
+import AuthModules from '@/components/admin/modules/auth/Modules';
 import { useStoreState } from '@/state/hooks';
 import DiscordSSO from './modules/DiscordSSO';
 import Onboarding from '@admin/modules/auth/modules/Onboarding';
 import GoogleSSO from './modules/GoogleSSO';
 import JGuard from './modules/JGuard';
-import Unfinished from '@elements/Unfinished';
+import Unfinished from '@/elements/Unfinished';
 
 export default () => {
     const [visible, setVisible] = useState<boolean>(false);

@@ -2,12 +2,12 @@ import { faDatabase } from '@fortawesome/free-solid-svg-icons';
 import { Field as FormikField, useFormikContext } from 'formik';
 import tw from 'twin.macro';
 
-import type { Node } from '@/api/admin/nodes/getNodes';
-import AdminBox from '@elements/AdminBox';
+import type { Node } from '@/api/routes/admin/nodes/getNodes';
+import AdminBox from '@/elements/AdminBox';
 import DatabaseSelect from '@admin/management/nodes/DatabaseSelect';
-import Label from '@elements/Label';
-import Field from '@elements/Field';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
+import Label from '@/elements/Label';
+import Field from '@/elements/Field';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
 
 export default function NodeSettingsContainer({ node }: { node?: Node }) {
     const { isSubmitting } = useFormikContext();

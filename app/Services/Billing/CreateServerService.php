@@ -55,7 +55,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
-                'renewal_date' => Carbon::now()->addDays(30),
+                'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
                 'allocation_limit' => $product->allocation_limit,

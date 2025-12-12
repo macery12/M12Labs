@@ -17,7 +17,6 @@ use Everest\Http\Controllers\Controller;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Everest\Services\Users\UserCreationService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
 abstract class AbstractLoginController extends Controller
 {
@@ -46,7 +45,7 @@ abstract class AbstractLoginController extends Controller
     public function __construct()
     {
         $this->lockoutTime = config('auth.lockout.time');
-        $this->maxLoginAttempts = config('modules.auth.security.attempts');
+        $this->maxLoginAttempts = (int) config('modules.auth.security.attempts');
         $this->auth = Container::getInstance()->make(AuthManager::class);
         $this->creation = Container::getInstance()->make(UserCreationService::class);
     }
@@ -98,13 +97,13 @@ abstract class AbstractLoginController extends Controller
     /**
      * Create an account on the Panel if the details do not exist.
      */
-    public function createAccount(SettingsRepositoryInterface $settings, array $data): User
+    public function createAccount(array $data): User
     {
-        $delay = $settings->get('settings:modules:auth:jguard:delay') ?? 0;
-        $guard = $settings->get('settings::modules:auth:jguard:enabled') ?? false;
-        $enabled = $settings->get('settings::modules:auth:registration:enabled') ?? false;
+        $delay = (int) config('modules.auth.jguard.delay') ?? 0;
+        $guard = config('modules.auth.jguard.enabled') ?? false;
+        $enabled = config('modules.auth.registration.enabled') ?? false;
 
-        if (!boolval($enabled)) {
+        if (!$enabled) {
             throw new DisplayException('User signup is disabled at this time.');
         }
 

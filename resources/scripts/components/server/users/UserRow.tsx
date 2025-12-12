@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { type Subuser } from '@definitions/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPencilAlt, faUnlockAlt, faUserLock } from '@fortawesome/free-solid-svg-icons';
-import RemoveSubuserButton from '@/components/server/users/RemoveSubuserButton';
-import EditSubuserModal from '@/components/server/users/EditSubuserModal';
-import Can from '@elements/Can';
+import RemoveSubuserButton from '@server/users/RemoveSubuserButton';
+import EditSubuserModal from '@server/users/EditSubuserModal';
+import Can from '@/elements/Can';
 import { useStoreState } from 'easy-peasy';
 import tw from 'twin.macro';
-import GreyRowBox from '@elements/GreyRowBox';
-import Avatar from '@/components/Avatar';
+import GreyRowBox from '@/elements/GreyRowBox';
+import Avatar from '@/elements/Avatar';
 
 interface Props {
     subuser: Subuser;

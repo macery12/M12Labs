@@ -3,10 +3,10 @@ import type { Actions } from 'easy-peasy';
 import { useStoreActions } from 'easy-peasy';
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
-import getNodeConfiguration from '@/api/admin/nodes/getNodeConfiguration';
-import AdminBox from '@elements/AdminBox';
+import getNodeConfiguration from '@/api/routes/admin/nodes/getNodeConfiguration';
+import AdminBox from '@/elements/AdminBox';
 import { Context } from '@admin/management/nodes/NodeRouter';
-import CopyOnClick from '@elements/CopyOnClick';
+import CopyOnClick from '@/elements/CopyOnClick';
 import type { ApplicationStore } from '@/state';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 

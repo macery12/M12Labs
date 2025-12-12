@@ -1,6 +1,6 @@
 import { useStoreState } from '@/state/hooks';
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons';
-import FeatureContainer from '@elements/FeatureContainer';
+import FeatureContainer from '@/elements/FeatureContainer';
 import ToggleWebhooksButton from './ToggleWebhooksButton';
 import WebhookSvg from '@/assets/images/themed/WebhookSvg';
 

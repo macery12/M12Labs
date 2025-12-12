@@ -27,8 +27,8 @@ class BillingExceptionTransformer extends Transformer
             'description' => $model->description,
             'exception_type' => $model->exception_type,
             'order_id' => $model->order_id ?? null,
-            'created_at' => $model->created_at->toAtomString(),
-            'updated_at' => $model->updated_at ? $model->updated_at->toAtomString() : null,
+            'created_at' => $model->created_at->toIso8601String(),
+            'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,
         ];
     }
 }

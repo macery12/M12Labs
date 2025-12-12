@@ -21,7 +21,7 @@ class UserSSHKeyTransformer extends Transformer
             'name' => $model->name,
             'fingerprint' => $model->fingerprint,
             'public_key' => $model->public_key,
-            'created_at' => self::formatTimestamp($model->created_at),
+            'created_at' => $model->created_at->toIso8601String(),
         ];
     }
 }

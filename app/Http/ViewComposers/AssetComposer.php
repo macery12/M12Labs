@@ -13,6 +13,7 @@ class AssetComposer
     {
         $view->with('siteConfiguration', [
             'name' => config('app.name') ?? 'Everest',
+            'logo' => config('app.logo') ?? null,
             'mode' => config('app.mode') ?? 'standard',
             'setup' => config('app.setup') ?? false,
             'debug' => env('APP_DEBUG') ?? false,
@@ -23,6 +24,13 @@ class AssetComposer
             'recaptcha' => [
                 'enabled' => config('recaptcha.enabled', false),
                 'siteKey' => config('recaptcha.website_key') ?? '',
+            ],
+            'activity' => [
+                'enabled' => [
+                    'account' => config('activity.enabled.account', true),
+                    'server' => config('activity.enabled.server', true),
+                    'admin' => config('activity.enabled.admin', true),
+                ],
             ],
         ]);
     }

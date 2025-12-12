@@ -1,10 +1,8 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
-import type { VersionData } from '@/api/admin/getVersion';
-import getVersion from '@/api/admin/getVersion';
-import AdminContentBlock from '@elements/AdminContentBlock';
-import FlashMessageRender from '@/components/FlashMessageRender';
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import {
     faArrowRight,
@@ -18,14 +16,15 @@ import {
     faUserPlus,
     IconDefinition,
 } from '@fortawesome/free-solid-svg-icons';
-import AdminBox from '@elements/AdminBox';
-import Spinner from '@elements/Spinner';
-import CopyOnClick from '@elements/CopyOnClick';
+import AdminBox from '@/elements/AdminBox';
+import Spinner from '@/elements/Spinner';
+import CopyOnClick from '@/elements/CopyOnClick';
 import { useStoreState } from '@/state/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Link } from 'react-router-dom';
-import getMetrics, { MetricData } from '@/api/admin/getMetrics';
-import { Alert } from '@elements/alert';
+import { Alert } from '@/elements/alert';
+import getMetrics, { MetricData } from '@/api/routes/admin/getMetrics';
+import getVersion, { VersionData } from '@/api/routes/admin/getVersion';
 
 interface SuggestionProps {
     icon: IconDefinition;

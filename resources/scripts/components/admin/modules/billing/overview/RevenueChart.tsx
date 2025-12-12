@@ -11,7 +11,7 @@ import {
 } from 'chart.js';
 import { format, startOfDay, endOfDay, isWithinInterval, eachDayOfInterval } from 'date-fns';
 import { useStoreState } from '@/state/hooks';
-import { BillingAnalytics } from '@/api/definitions/admin';
+import { BillingAnalytics } from '@definitions/admin';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 

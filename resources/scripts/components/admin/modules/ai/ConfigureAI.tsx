@@ -1,9 +1,9 @@
-import { updateSettings } from '@/api/admin/ai/settings';
-import Input from '@elements/Input';
-import SpinnerOverlay from '@elements/SpinnerOverlay';
-import Tooltip from '@elements/tooltip/Tooltip';
+import { updateSettings } from '@/api/routes/admin/ai/settings';
+import Input from '@/elements/Input';
+import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import Tooltip from '@/elements/tooltip/Tooltip';
 import { useFlashKey } from '@/plugins/useFlash';
-import { Dialog } from '@elements/dialog';
+import { Dialog } from '@/elements/dialog';
 import { faCheckCircle, faExclamationTriangle, faExternalLink } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useStoreState } from 'easy-peasy';

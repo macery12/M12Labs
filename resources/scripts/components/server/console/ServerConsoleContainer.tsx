@@ -1,22 +1,22 @@
 import { memo } from 'react';
 import isEqual from 'react-fast-compare';
-import { Alert } from '@elements/alert';
-import Can from '@elements/Can';
-import Spinner from '@elements/Spinner';
-import Console from '@/components/server/console/Console';
-import PowerButtons from '@/components/server/console/PowerButtons';
-import ServerDetailsBlock from '@/components/server/console/ServerDetailsBlock';
-import StatGraphs from '@/components/server/console/StatGraphs';
+import { Alert } from '@/elements/alert';
+import Can from '@/elements/Can';
+import Spinner from '@/elements/Spinner';
+import Console from '@server/console/Console';
+import PowerButtons from '@server/console/PowerButtons';
+import ServerDetailsBlock from '@server/console/ServerDetailsBlock';
+import StatGraphs from '@server/console/StatGraphs';
 import Features from '@feature/Features';
 import { ServerContext, ServerStatus } from '@/state/server';
 import classNames from 'classnames';
 import { usePersistedState } from '@/plugins/usePersistedState';
 import { useStoreState } from '@/state/hooks';
-import Pill from '@/components/elements/Pill';
+import Pill from '@/elements/Pill';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircle, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import EditServerDialog from './EditServerDialog';
-import PageContentBlock from '@/components/elements/PageContentBlock';
+import PageContentBlock from '@/elements/PageContentBlock';
 
 export type PowerAction = 'start' | 'stop' | 'restart' | 'kill';
 

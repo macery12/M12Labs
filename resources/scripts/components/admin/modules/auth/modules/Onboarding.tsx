@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import useFlash from '@/plugins/useFlash';
-import Label from '@elements/Label';
-import Input from '@elements/Input';
-import AdminBox from '@elements/AdminBox';
-import Spinner from '@elements/Spinner';
+import Label from '@/elements/Label';
+import Input from '@/elements/Input';
+import AdminBox from '@/elements/AdminBox';
+import Spinner from '@/elements/Spinner';
 import { CheckCircleIcon, TrashIcon } from '@heroicons/react/outline';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import { Dialog } from '@elements/dialog';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import { Dialog } from '@/elements/dialog';
 import { faDoorOpen } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
-import { Alert } from '@elements/alert';
-import { toggleModule, updateModule } from '@/api/admin/auth/module';
+import { Alert } from '@/elements/alert';
+import { toggleModule, updateModule } from '@/api/routes/admin/auth/module';
 
 export default () => {
     const [confirm, setConfirm] = useState<boolean>(false);
@@ -67,6 +67,7 @@ export default () => {
             <div>
                 <Label>Content</Label>
                 <Input
+                    autoComplete={'off'}
                     id={'content'}
                     type={'text'}
                     name={'content'}
