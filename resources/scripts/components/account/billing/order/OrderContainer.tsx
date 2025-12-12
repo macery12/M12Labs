@@ -1,5 +1,5 @@
 import Spinner from '@/elements/Spinner';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
@@ -45,7 +45,7 @@ const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) 
 export default () => {
     const params = useParams<'id'>();
 
-    const vars = new Map<string, string>();
+    const vars = useRef(new Map<string, string>()).current;
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
 
