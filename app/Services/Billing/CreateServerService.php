@@ -40,8 +40,15 @@ class CreateServerService
         // Extract custom variables from metadata if available
         $customVariables = [];
         if (!empty($metadata->variables)) {
-            $decoded = is_string($metadata->variables) ? json_decode($metadata->variables, true) : $metadata->variables;
-            $customVariables = is_array($decoded) ? $decoded : [];
+            if (is_string($metadata->variables)) {
+                $decoded = json_decode($metadata->variables, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new DisplayException('Failed to decode environment variables: ' . json_last_error_msg());
+                }
+                $customVariables = is_array($decoded) ? $decoded : [];
+            } elseif (is_array($metadata->variables)) {
+                $customVariables = $metadata->variables;
+            }
         }
         
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
@@ -169,26 +176,18 @@ class CreateServerService
     }
 
     /**
-     * Get the environment variables for the new server.
+     * Get the environment variables for the new server from JSON string.
+     * @deprecated Use getEnvironmentWithCustomVariables() instead
      */
     private function getServerEnvironment(string $data, int $id): array
     {
         $decoded = json_decode($data, true);
-
-        $variables = [];
-        $default = EggVariable::where('egg_id', $id)->get();
-
-        foreach ($decoded as $variable) {
-            $variables += [$variable['key'] => $variable['value']];
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new DisplayException('Failed to decode environment variables: ' . json_last_error_msg());
         }
 
-        foreach ($default as $variable) {
-            if (!array_key_exists($variable->env_variable, $variables)) {
-                $variables += [$variable->env_variable => $variable->default_value];
-            }
-        }
-
-        return $variables;
+        return $this->getEnvironmentWithCustomVariables($id, is_array($decoded) ? $decoded : []);
     }
 
     /**
