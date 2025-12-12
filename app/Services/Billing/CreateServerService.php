@@ -39,13 +39,16 @@ class CreateServerService
         
         // Extract custom variables from metadata if available
         $customVariables = [];
-        if (!empty($metadata->variables)) {
+        if (isset($metadata->variables) && $metadata->variables !== null && $metadata->variables !== '') {
             if (is_string($metadata->variables)) {
                 $decoded = json_decode($metadata->variables, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     throw new DisplayException('Failed to decode environment variables: ' . json_last_error_msg());
                 }
-                $customVariables = is_array($decoded) ? $decoded : [];
+                if (!is_array($decoded)) {
+                    throw new DisplayException('Environment variables must be an array.');
+                }
+                $customVariables = $decoded;
             } elseif (is_array($metadata->variables)) {
                 $customVariables = $metadata->variables;
             }
@@ -152,7 +155,10 @@ class CreateServerService
 
         // Override with custom variables
         foreach ($customVariables as $variable) {
-            if (is_array($variable) && isset($variable['key']) && isset($variable['value'])) {
+            if (is_array($variable) 
+                && array_key_exists('key', $variable) 
+                && array_key_exists('value', $variable)
+                && !empty($variable['key'])) {
                 $variables[$variable['key']] = $variable['value'];
             }
         }
@@ -162,7 +168,9 @@ class CreateServerService
 
     /**
      * Get the environment variables for the new server from JSON string.
-     * @deprecated Use getEnvironmentWithCustomVariables() instead
+     * 
+     * @deprecated This method is deprecated and will be removed in a future version.
+     * @see getEnvironmentWithCustomVariables() Use this method directly with decoded array instead.
      */
     private function getServerEnvironment(string $data, int $id): array
     {
