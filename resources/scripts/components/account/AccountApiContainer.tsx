@@ -3,7 +3,7 @@ import ContentBox from '@/elements/ContentBox';
 import CreateApiKeyForm from '@account/forms/CreateApiKeyForm';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faKey, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faTrashAlt, faBook } from '@fortawesome/free-solid-svg-icons';
 import { getApiKeys, deleteApiKey } from '@/api/routes/account/api-keys';
 import { type ApiKey } from '@definitions/user';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -14,12 +14,14 @@ import GreyRowBox from '@/elements/GreyRowBox';
 import { Dialog } from '@/elements/dialog';
 import { useFlashKey } from '@/plugins/useFlash';
 import Code from '@/elements/Code';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const [deleteIdentifier, setDeleteIdentifier] = useState('');
     const [keys, setKeys] = useState<ApiKey[]>([]);
     const [loading, setLoading] = useState(true);
     const { clearAndAddHttpError } = useFlashKey('account');
+    const { primary } = useStoreState(state => state.theme.data!.colors);
 
     useEffect(() => {
         getApiKeys()
@@ -48,6 +50,18 @@ export default () => {
             description={'Create, edit and delete API keys to access the Panel.'}
         >
             <FlashMessageRender byKey={'account'} />
+            <div css={tw`mb-6`}>
+                <a
+                    href={'/docs/index.html'}
+                    target={'_blank'}
+                    rel={'noopener noreferrer'}
+                    css={tw`px-4 py-2 inline-flex items-center justify-center rounded text-base font-semibold transition-all duration-300 focus:ring-[3px] focus:ring-offset-2 focus:ring-offset-slate-700 focus:ring-opacity-50 text-slate-50 no-underline`}
+                    style={{ backgroundColor: primary }}
+                >
+                    <FontAwesomeIcon icon={faBook} css={tw`mr-2`} />
+                    View API Documentation
+                </a>
+            </div>
             <div css={tw`md:flex flex-nowrap my-10`}>
                 <ContentBox title={'Create API Key'} css={tw`flex-none w-full md:w-1/2`}>
                     <CreateApiKeyForm onKeyCreated={key => setKeys(s => [...s!, key])} />

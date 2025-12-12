@@ -1,0 +1,18 @@
+# Ignore temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Ignore local test files
+test-*.yaml
+test-*.yml
+draft-*.yaml
+draft-*.yml
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore logs
+*.log
