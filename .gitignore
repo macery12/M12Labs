@@ -11,6 +11,7 @@ storage/framework/*
 /.direnv
 
 node_modules
+package-lock.json
 *.log
 _ide_helper.php
 _ide_helper_models.php
