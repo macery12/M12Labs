@@ -95,12 +95,12 @@ class EggController extends ApplicationApiController
     {
         $data = $request->validated();
 
-        // Handle empty config values - convert empty strings to null or keep existing value
-        // This prevents the frontend from clearing pre-existing config when saving other fields
+        // Handle empty config values - remove them from update to preserve existing values
+        // This prevents the frontend from clearing pre-existing config when editor returns empty
         foreach (['config_startup', 'config_files', 'config_stop'] as $field) {
-            if (isset($data[$field]) && $data[$field] === '') {
-                // If the field is an empty string, set it to null instead
-                $data[$field] = null;
+            if (isset($data[$field]) && trim($data[$field]) === '') {
+                // If the field is empty/whitespace only, don't update it (preserve existing value)
+                unset($data[$field]);
             }
         }
 
