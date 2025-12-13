@@ -7,17 +7,47 @@ import Label from '@/elements/Label';
 import { CashIcon, ClockIcon, PencilAltIcon } from '@heroicons/react/outline';
 import classNames from 'classnames';
 import { Form, Formik } from 'formik';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getCategories, getCategory } from '@/api/routes/admin/billing/categories';
+import { Product } from '@definitions/admin';
+import Spinner from '@/elements/Spinner';
 
 export default ({ server }: { server: Server }) => {
     const [open, setOpen] = useState<boolean>(false);
     const [billable, setBillable] = useState<boolean>(Boolean(server.billingProductId));
+    const [selectedProductId, setSelectedProductId] = useState<number | null>(server.billingProductId || null);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
 
     const [renewalDateStr, setRenewalDateStr] = useState<string>(
         server.renewalDate
             ? new Date(server.renewalDate).toISOString().slice(0, 16)
             : new Date().toISOString().slice(0, 16),
     );
+
+    useEffect(() => {
+        if (open) {
+            setLoading(true);
+            getCategories()
+                .then(cats => {
+                    // Fetch each category with its products
+                    const promises = cats.map(cat => getCategory(cat.id));
+                    return Promise.all(promises);
+                })
+                .then(categoriesWithProducts => {
+                    // Flatten all products from all categories
+                    const allProducts: Product[] = [];
+                    categoriesWithProducts.forEach(cat => {
+                        if (cat.relationships?.products) {
+                            allProducts.push(...cat.relationships.products);
+                        }
+                    });
+                    setProducts(allProducts);
+                })
+                .catch(err => console.error('Failed to fetch products:', err))
+                .finally(() => setLoading(false));
+        }
+    }, [open]);
 
     const localStrToUTC = (localStr: string): Date => {
         const localDate = new Date(localStr);
@@ -30,14 +60,18 @@ export default ({ server }: { server: Server }) => {
         };
 
         if (billable) {
-            // When enabling billing, set the renewal date
+            // When enabling billing, set the renewal date and product ID
             if (!renewalDateStr) {
                 console.error('No date selected');
                 return;
             }
+            if (!selectedProductId) {
+                console.error('No product selected - please select a billing plan');
+                return;
+            }
             const utcDate = localStrToUTC(renewalDateStr);
             payload.renewalDate = utcDate;
-            // Keep the existing billingProductId - it's already in the payload from the spread
+            payload.billingProductId = selectedProductId;
         } else {
             // When disabling billing, clear the renewal date and product ID to stop billing
             payload.renewalDate = null;
@@ -85,6 +119,44 @@ export default ({ server }: { server: Server }) => {
                                     Disabled
                                 </button>
                             </div>
+
+                            {billable && (
+                                <div>
+                                    <div className={'flex'}>
+                                        <Label>
+                                            <CashIcon className={'w-4 inline-flex'} /> Billing Plan
+                                        </Label>
+                                        <span className={'ml-2 italic text-gray-400 text-sm'}>
+                                            Select the billing product for this server.
+                                        </span>
+                                    </div>
+                                    {loading ? (
+                                        <Spinner size={'small'} />
+                                    ) : (
+                                        <select
+                                            value={selectedProductId || ''}
+                                            onChange={e => setSelectedProductId(Number(e.target.value) || null)}
+                                            className={
+                                                'w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-sm'
+                                            }
+                                        >
+                                            <option value="">Select a billing plan...</option>
+                                            {products.map(product => (
+                                                <option key={product.id} value={product.id}>
+                                                    {product.name} - ${product.price}/month ({product.limits.cpu}% CPU,{' '}
+                                                    {product.limits.memory / 1024}GB RAM, {product.limits.disk / 1024}GB
+                                                    Disk)
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {!selectedProductId && (
+                                        <p className={'text-red-400 text-sm mt-1'}>
+                                            Please select a billing plan to enable billing
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             <div>
                                 <div className={'flex'}>
