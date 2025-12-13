@@ -116,16 +116,14 @@ export const EggProcessContainer = forwardRef<any, EggProcessContainerProps>(fun
     useImperativeHandle<EggProcessContainerRef, EggProcessContainerRef>(ref, () => ({
         getStartupConfiguration: async () => {
             if (fetchStartupConfiguration === null) {
-                // If editor hasn't initialized, return current value instead of null
-                return values.configStartup;
+                return new Promise<null>(resolve => resolve(null));
             }
             return await fetchStartupConfiguration();
         },
 
         getFilesConfiguration: async () => {
             if (fetchFilesConfiguration === null) {
-                // If editor hasn't initialized, return current value instead of null
-                return values.configFiles;
+                return new Promise<null>(resolve => resolve(null));
             }
             return await fetchFilesConfiguration();
         },
