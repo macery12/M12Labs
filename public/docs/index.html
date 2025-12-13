@@ -42,20 +42,13 @@
                 docExpansion: 'list',
                 filter: true,
                 tryItOutEnabled: true,
-                onComplete: function() {
-                    // Override the servers in the spec with the current URL
-                    ui.specActions.updateSpec(
-                        JSON.stringify({
-                            ...ui.specSelectors.specJson().toJS(),
-                            servers: [
-                                {
-                                    url: apiUrl,
-                                    description: 'Current panel (auto-detected)'
-                                }
-                            ]
-                        })
-                    );
-                }
+                // Override servers with auto-detected URL
+                servers: [
+                    {
+                        url: apiUrl,
+                        description: 'Current panel (auto-detected)'
+                    }
+                ]
             });
             window.ui = ui;
         };
