@@ -18,6 +18,7 @@ export default ({ server }: { server: Server }) => {
     const [selectedProductId, setSelectedProductId] = useState<number | null>(server.billingProductId || null);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [renewalDateStr, setRenewalDateStr] = useState<string>(
         server.renewalDate
@@ -28,6 +29,7 @@ export default ({ server }: { server: Server }) => {
     useEffect(() => {
         if (open) {
             setLoading(true);
+            setError(null);
             getCategories()
                 .then(cats => {
                     // Fetch each category with its products
@@ -44,7 +46,10 @@ export default ({ server }: { server: Server }) => {
                     });
                     setProducts(allProducts);
                 })
-                .catch(err => console.error('Failed to fetch products:', err))
+                .catch(err => {
+                    console.error('Failed to fetch products:', err);
+                    setError('Failed to load billing products. Please try again.');
+                })
                 .finally(() => setLoading(false));
         }
     }, [open]);
@@ -62,11 +67,11 @@ export default ({ server }: { server: Server }) => {
         if (billable) {
             // When enabling billing, set the renewal date and product ID
             if (!renewalDateStr) {
-                console.error('No date selected');
+                setError('Please select a renewal date');
                 return;
             }
             if (!selectedProductId) {
-                console.error('No product selected - please select a billing plan');
+                setError('Please select a billing plan');
                 return;
             }
             const utcDate = localStrToUTC(renewalDateStr);
@@ -78,9 +83,13 @@ export default ({ server }: { server: Server }) => {
             payload.billingProductId = null;
         }
 
+        setError(null);
         updateServer(server.id, payload)
             .then(() => window.location.reload())
-            .catch(error => console.log(error.message));
+            .catch(error => {
+                console.error(error);
+                setError(error.message || 'Failed to update billing settings');
+            });
     };
 
     return (
@@ -88,6 +97,11 @@ export default ({ server }: { server: Server }) => {
             <Dialog open={open} onClose={() => setOpen(false)} title={'Edit Server Billing'}>
                 <Formik onSubmit={submit} initialValues={{}}>
                     <Form>
+                        {error && (
+                            <div className={'mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-400 text-sm'}>
+                                {error}
+                            </div>
+                        )}
                         <div className={'grid space-y-6'}>
                             <div>
                                 <div className={'flex'}>
@@ -135,7 +149,7 @@ export default ({ server }: { server: Server }) => {
                                     ) : (
                                         <select
                                             value={selectedProductId || ''}
-                                            onChange={e => setSelectedProductId(Number(e.target.value) || null)}
+                                            onChange={e => setSelectedProductId(e.target.value ? Number(e.target.value) : null)}
                                             className={
                                                 'w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-sm'
                                             }
@@ -144,8 +158,8 @@ export default ({ server }: { server: Server }) => {
                                             {products.map(product => (
                                                 <option key={product.id} value={product.id}>
                                                     {product.name} - ${product.price}/month ({product.limits.cpu}% CPU,{' '}
-                                                    {product.limits.memory / 1024}GB RAM, {product.limits.disk / 1024}GB
-                                                    Disk)
+                                                    {(product.limits.memory / 1024).toFixed(1)}GB RAM,{' '}
+                                                    {(product.limits.disk / 1024).toFixed(1)}GB Disk)
                                                 </option>
                                             ))}
                                         </select>
