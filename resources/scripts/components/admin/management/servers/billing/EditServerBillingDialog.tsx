@@ -25,17 +25,24 @@ export default ({ server }: { server: Server }) => {
     };
 
     const submit = () => {
-        if (!renewalDateStr) {
-            console.error('No date selected');
-            return;
+        const utcDate = renewalDateStr ? localStrToUTC(renewalDateStr) : new Date();
+
+        const payload: Partial<Values> = {
+            ...(server as unknown as Partial<Values>),
+        };
+
+        if (billable) {
+            // When enabling billing, set the renewal date
+            payload.renewalDate = utcDate;
+            // Keep the existing billingProductId - it's already in the payload from the spread
+        } else {
+            // When disabling billing, clear the renewal date to stop billing
+            payload.renewalDate = null;
+            // Optionally clear the product ID as well
+            payload.billingProductId = null;
         }
 
-        const utcDate = localStrToUTC(renewalDateStr);
-
-        updateServer(server.id, {
-            ...(server as unknown as Partial<Values>),
-            renewalDate: utcDate,
-        })
+        updateServer(server.id, payload)
             .then(() => window.location.reload())
             .catch(error => console.log(error.message));
     };

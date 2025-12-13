@@ -23,8 +23,8 @@ export interface Values {
         subusers: number;
     };
 
-    renewalDate?: Date | undefined;
-    billingProductId?: number;
+    renewalDate?: Date | null | undefined;
+    billingProductId?: number | null;
 
     allocationId: number;
     addAllocations: number[];
