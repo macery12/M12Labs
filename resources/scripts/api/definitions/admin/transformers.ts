@@ -60,7 +60,7 @@ export default class Transformers {
             limits: { ...limits, oomKiller: oom_killer },
             featureLimits: attributes.feature_limits,
             container: attributes.container,
-            renewalDate: attributes.renewal_date,
+            renewalDate: attributes.renewal_date ? new Date(attributes.renewal_date) : undefined,
             billingProductId: attributes.billing_product_id,
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
