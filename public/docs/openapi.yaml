@@ -59,6 +59,22 @@ tags:
     description: Role management
   - name: Application - Locations
     description: Location management
+  - name: Application - Databases
+    description: Database host management
+  - name: Application - Webhooks
+    description: Webhook configuration
+  - name: Application - Tickets
+    description: Support ticket management
+  - name: Application - Theme
+    description: Panel theme customization
+  - name: Application - Links
+    description: Custom links management
+  - name: Application - Alerts
+    description: Alert management
+  - name: Application - AI
+    description: AI/Intelligence features
+  - name: Application - API Keys
+    description: Application API key management
   - name: Client - Account
     description: User account management
   - name: Client - Servers
@@ -1382,6 +1398,909 @@ paths:
                         created_at:
                           type: string
                           format: date-time
+  
+  # Application API - Database Hosts
+  /application/databases:
+    get:
+      tags:
+        - Application - Databases
+      summary: List database hosts
+      description: Get all database hosts
+      operationId: listDatabaseHosts
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of database hosts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        host:
+                          type: string
+                        port:
+                          type: integer
+                        username:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Application - Databases
+      summary: Create database host
+      description: Create a new database host
+      operationId: createDatabaseHost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - host
+                - port
+                - username
+                - password
+              properties:
+                name:
+                  type: string
+                host:
+                  type: string
+                port:
+                  type: integer
+                username:
+                  type: string
+                password:
+                  type: string
+                max_databases:
+                  type: integer
+      responses:
+        '201':
+          description: Database host created
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/databases/{databaseHost}:
+    get:
+      tags:
+        - Application - Databases
+      summary: Get database host
+      description: Get a specific database host
+      operationId: getDatabaseHost
+      parameters:
+        - name: databaseHost
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Database host details
+        '404':
+          description: Database host not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    patch:
+      tags:
+        - Application - Databases
+      summary: Update database host
+      description: Update a database host
+      operationId: updateDatabaseHost
+      parameters:
+        - name: databaseHost
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                host:
+                  type: string
+                port:
+                  type: integer
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Database host updated
+        '404':
+          description: Database host not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Application - Databases
+      summary: Delete database host
+      description: Delete a database host
+      operationId: deleteDatabaseHost
+      parameters:
+        - name: databaseHost
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Database host deleted
+        '404':
+          description: Database host not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - Webhooks
+  /application/webhooks:
+    get:
+      tags:
+        - Application - Webhooks
+      summary: List webhooks
+      description: Get all configured webhooks
+      operationId: listWebhooks
+      responses:
+        '200':
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags:
+        - Application - Webhooks
+      summary: Update webhook settings
+      description: Update webhook configuration settings
+      operationId: updateWebhookSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                webhook_url:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Settings updated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/webhooks/test:
+    post:
+      tags:
+        - Application - Webhooks
+      summary: Test webhook
+      description: Send a test webhook event
+      operationId: testWebhook
+      responses:
+        '200':
+          description: Test webhook sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/webhooks/toggle:
+    put:
+      tags:
+        - Application - Webhooks
+      summary: Toggle webhook
+      description: Enable or disable webhook functionality
+      operationId: toggleWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Webhook toggled
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - Tickets
+  /application/tickets:
+    get:
+      tags:
+        - Application - Tickets
+      summary: List tickets
+      description: Get all support tickets
+      operationId: listApplicationTickets
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Application - Tickets
+      summary: Create ticket
+      description: Create a new support ticket
+      operationId: createApplicationTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+                - user_id
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                user_id:
+                  type: integer
+      responses:
+        '201':
+          description: Ticket created
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/tickets/settings:
+    put:
+      tags:
+        - Application - Tickets
+      summary: Update ticket settings
+      description: Update support ticket system settings
+      operationId: updateTicketSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                max_tickets_per_user:
+                  type: integer
+      responses:
+        '200':
+          description: Settings updated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/tickets/{ticket}:
+    get:
+      tags:
+        - Application - Tickets
+      summary: Get ticket details
+      description: Get a specific ticket
+      operationId: getApplicationTicket
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ticket details
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags:
+        - Application - Tickets
+      summary: Update ticket
+      description: Update a ticket (e.g., status, priority)
+      operationId: updateApplicationTicket
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [open, pending, resolved, closed]
+                priority:
+                  type: string
+      responses:
+        '200':
+          description: Ticket updated
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Application - Tickets
+      summary: Delete ticket
+      description: Delete a ticket
+      operationId: deleteApplicationTicket
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Ticket deleted
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/tickets/message:
+    post:
+      tags:
+        - Application - Tickets
+      summary: Post ticket message
+      description: Add a message to a ticket
+      operationId: createTicketMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ticket_id
+                - content
+              properties:
+                ticket_id:
+                  type: integer
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Message posted
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/tickets/{ticket}/messages:
+    get:
+      tags:
+        - Application - Tickets
+      summary: Get ticket messages
+      description: Get all messages for a ticket
+      operationId: getTicketMessages
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - Theme
+  /application/theme/colors:
+    put:
+      tags:
+        - Application - Theme
+      summary: Update theme colors
+      description: Update panel theme color scheme
+      operationId: updateThemeColors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primary:
+                  type: string
+                  description: Primary color (hex)
+                secondary:
+                  type: string
+                  description: Secondary color (hex)
+                accent:
+                  type: string
+                  description: Accent color (hex)
+      responses:
+        '200':
+          description: Theme colors updated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/theme/reset:
+    post:
+      tags:
+        - Application - Theme
+      summary: Reset theme
+      description: Reset theme to default colors
+      operationId: resetTheme
+      responses:
+        '200':
+          description: Theme reset successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - Links
+  /application/links:
+    get:
+      tags:
+        - Application - Links
+      summary: List custom links
+      description: Get all custom navigation links
+      operationId: listLinks
+      responses:
+        '200':
+          description: List of links
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        url:
+                          type: string
+                        icon:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Application - Links
+      summary: Create link
+      description: Create a new custom navigation link
+      operationId: createLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - url
+              properties:
+                name:
+                  type: string
+                url:
+                  type: string
+                icon:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Link created
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/links/{id}:
+    patch:
+      tags:
+        - Application - Links
+      summary: Update link
+      description: Update a custom link
+      operationId: updateLink
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                url:
+                  type: string
+                icon:
+                  type: string
+      responses:
+        '200':
+          description: Link updated
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Application - Links
+      summary: Delete link
+      description: Delete a custom link
+      operationId: deleteLink
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Link deleted
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - Alerts
+  /application/alerts:
+    patch:
+      tags:
+        - Application - Alerts
+      summary: Update alerts
+      description: Update panel alert messages
+      operationId: updateAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [info, warning, error, success]
+                message:
+                  type: string
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Alerts updated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - AI
+  /application/ai/settings:
+    put:
+      tags:
+        - Application - AI
+      summary: Update AI settings
+      description: Update AI/intelligence feature settings
+      operationId: updateAISettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                api_key:
+                  type: string
+                model:
+                  type: string
+      responses:
+        '200':
+          description: AI settings updated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/ai/query:
+    post:
+      tags:
+        - Application - AI
+      summary: Query AI
+      description: Send a query to the AI assistant
+      operationId: queryAI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                context:
+                  type: object
+      responses:
+        '200':
+          description: AI response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - API Keys
+  /application/api:
+    get:
+      tags:
+        - Application - API Keys
+      summary: List API keys
+      description: Get all application API keys
+      operationId: listApplicationApiKeys
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Application - API Keys
+      summary: Create API key
+      description: Create a new application API key
+      operationId: createApplicationApiKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - description
+              properties:
+                description:
+                  type: string
+                allowed_ips:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  attributes:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                      description:
+                        type: string
+                  meta:
+                    type: object
+                    properties:
+                      secret_token:
+                        type: string
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/api/{key}:
+    delete:
+      tags:
+        - Application - API Keys
+      summary: Delete API key
+      description: Delete an application API key
+      operationId: deleteApplicationApiKey
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: API key deleted
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Account
   /client:
@@ -2957,11 +3876,30 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       responses:
         '200':
           description: List of databases
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Database'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - Client - Server Databases
@@ -2972,6 +3910,7 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       requestBody:
@@ -2980,15 +3919,96 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - database
               properties:
                 database:
                   type: string
+                  description: Database name
                 remote:
                   type: string
+                  description: Remote connections allowed from
                   default: '%'
       responses:
         '201':
-          description: Database created
+          description: Database created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Database'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/databases/{database}:
+    delete:
+      tags:
+        - Client - Server Databases
+      summary: Delete database
+      description: Delete a server database
+      operationId: deleteServerDatabaseClient
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: database
+          in: path
+          required: true
+          description: Database identifier
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Database deleted successfully
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/databases/{database}/rotate-password:
+    post:
+      tags:
+        - Client - Server Databases
+      summary: Rotate database password
+      description: Rotate the password for a database
+      operationId: rotateDatabasePassword
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: database
+          in: path
+          required: true
+          description: Database identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Password rotated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                    type: string
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Schedules
   /client/servers/{server}/schedules:
@@ -3002,11 +4022,30 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       responses:
         '200':
           description: List of schedules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Schedule'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - Client - Server Schedules
@@ -3017,8 +4056,116 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Schedule name
+                is_active:
+                  type: boolean
+                  description: Whether the schedule is active
+                  default: true
+                only_when_online:
+                  type: boolean
+                  description: Only run when server is online
+                  default: false
+                minute:
+                  type: string
+                  description: Cron minute field
+                  default: '0'
+                hour:
+                  type: string
+                  description: Cron hour field
+                  default: '*'
+                day_of_week:
+                  type: string
+                  description: Cron day of week field
+                  default: '*'
+                day_of_month:
+                  type: string
+                  description: Cron day of month field
+                  default: '*'
+                month:
+                  type: string
+                  description: Cron month field
+                  default: '*'
+      responses:
+        '201':
+          description: Schedule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/schedules/{schedule}:
+    get:
+      tags:
+        - Client - Server Schedules
+      summary: Get schedule details
+      description: Get a specific schedule
+      operationId: getSchedule
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: schedule
+          in: path
+          required: true
+          description: Schedule ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Schedule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Client - Server Schedules
+      summary: Update schedule
+      description: Update a schedule
+      operationId: updateSchedule
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: schedule
+          in: path
+          required: true
+          description: Schedule ID
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -3039,8 +4186,226 @@ paths:
                 day_of_month:
                   type: string
       responses:
+        '200':
+          description: Schedule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Client - Server Schedules
+      summary: Delete schedule
+      description: Delete a schedule
+      operationId: deleteSchedule
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: schedule
+          in: path
+          required: true
+          description: Schedule ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Schedule deleted successfully
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/schedules/{schedule}/execute:
+    post:
+      tags:
+        - Client - Server Schedules
+      summary: Execute schedule
+      description: Manually execute a schedule now
+      operationId: executeSchedule
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: schedule
+          in: path
+          required: true
+          description: Schedule ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Schedule executed successfully
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/schedules/{schedule}/tasks:
+    post:
+      tags:
+        - Client - Server Schedules
+      summary: Create schedule task
+      description: Add a task to a schedule
+      operationId: createScheduleTask
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: schedule
+          in: path
+          required: true
+          description: Schedule ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+                - payload
+              properties:
+                action:
+                  type: string
+                  enum: [command, power, backup]
+                  description: Task action type
+                payload:
+                  type: string
+                  description: Task payload (e.g., command to run, power action)
+                time_offset:
+                  type: integer
+                  description: Time offset in seconds from previous task
+                  default: 0
+                continue_on_failure:
+                  type: boolean
+                  description: Continue to next task if this one fails
+                  default: false
+      responses:
         '201':
-          description: Schedule created
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/schedules/{schedule}/tasks/{task}:
+    post:
+      tags:
+        - Client - Server Schedules
+      summary: Update schedule task
+      description: Update a schedule task
+      operationId: updateScheduleTask
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: schedule
+          in: path
+          required: true
+          description: Schedule ID
+          schema:
+            type: integer
+        - name: task
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                payload:
+                  type: string
+                time_offset:
+                  type: integer
+                continue_on_failure:
+                  type: boolean
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Client - Server Schedules
+      summary: Delete schedule task
+      description: Delete a schedule task
+      operationId: deleteScheduleTask
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: schedule
+          in: path
+          required: true
+          description: Schedule ID
+          schema:
+            type: integer
+        - name: task
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Backups
   /client/servers/{server}/backups:
@@ -3054,11 +4419,30 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       responses:
         '200':
           description: List of backups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Backup'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - Client - Server Backups
@@ -3069,6 +4453,7 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       requestBody:
@@ -3079,12 +4464,169 @@ paths:
               properties:
                 name:
                   type: string
+                  description: Backup name
                 ignored:
                   type: string
+                  description: Comma-separated list of files/directories to ignore
+                is_locked:
+                  type: boolean
+                  description: Lock the backup to prevent deletion
+                  default: false
       responses:
         '201':
-          description: Backup created
+          description: Backup created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+        '422':
+          description: Validation error or backup limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
+  /client/servers/{server}/backups/{backup}:
+    get:
+      tags:
+        - Client - Server Backups
+      summary: Get backup details
+      description: Get details of a specific backup
+      operationId: getBackup
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: backup
+          in: path
+          required: true
+          description: Backup UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+        '404':
+          description: Backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Client - Server Backups
+      summary: Delete backup
+      description: Delete a backup
+      operationId: deleteBackup
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: backup
+          in: path
+          required: true
+          description: Backup UUID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Backup deleted successfully
+        '404':
+          description: Backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/backups/{backup}/download:
+    get:
+      tags:
+        - Client - Server Backups
+      summary: Download backup
+      description: Get a signed URL to download a backup
+      operationId: downloadBackup
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: backup
+          in: path
+          required: true
+          description: Backup UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: signed_url
+                  attributes:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        description: Signed download URL
+        '404':
+          description: Backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/backups/{backup}/lock:
+    post:
+      tags:
+        - Client - Server Backups
+      summary: Toggle backup lock
+      description: Lock or unlock a backup to prevent/allow deletion
+      operationId: toggleBackupLock
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: backup
+          in: path
+          required: true
+          description: Backup UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup lock toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+        '404':
+          description: Backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /client/servers/{server}/backups/{backup}/restore:
     post:
       tags:
@@ -3096,16 +4638,34 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
         - name: backup
           in: path
           required: true
+          description: Backup UUID
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                truncate:
+                  type: boolean
+                  description: Delete all files before restoring
+                  default: false
       responses:
         '204':
-          description: Backup restore initiated
+          description: Backup restore initiated successfully
+        '404':
+          description: Backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Users (Subusers)
   /client/servers/{server}/users:
