@@ -3776,6 +3776,7 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       requestBody:
@@ -3784,12 +3785,197 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - command
               properties:
                 command:
                   type: string
+                  description: Console command to execute
       responses:
         '204':
-          description: Command sent
+          description: Command sent successfully
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/websocket:
+    get:
+      tags:
+        - Client - Servers
+      summary: Get websocket credentials
+      description: Get websocket connection credentials for the server console
+      operationId: getWebsocket
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Websocket credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      socket:
+                        type: string
+                        description: Websocket URL
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/resources:
+    get:
+      tags:
+        - Client - Servers
+      summary: Get server resources
+      description: Get current resource utilization for the server
+      operationId: getServerResources
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server resource utilization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: stats
+                  attributes:
+                    type: object
+                    properties:
+                      current_state:
+                        type: string
+                        enum: [starting, running, stopping, stopped]
+                      is_suspended:
+                        type: boolean
+                      resources:
+                        type: object
+                        properties:
+                          memory_bytes:
+                            type: integer
+                          memory_limit_bytes:
+                            type: integer
+                          cpu_absolute:
+                            type: number
+                          network_rx_bytes:
+                            type: integer
+                          network_tx_bytes:
+                            type: integer
+                          uptime:
+                            type: integer
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/activity:
+    get:
+      tags:
+        - Client - Servers
+      summary: Get server activity logs
+      description: Get activity logs for a server
+      operationId: getServerActivity
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Activity logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityLog'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/ai:
+    post:
+      tags:
+        - Client - Servers
+      summary: Query AI for server
+      description: Send an AI query related to the server
+      operationId: queryServerAI
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: AI query about the server
+      responses:
+        '200':
+          description: AI response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Files
   /client/servers/{server}/files/list:
@@ -3803,16 +3989,50 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
         - name: directory
           in: query
+          description: Directory path to list
           schema:
             type: string
             default: /
       responses:
         '200':
           description: File listing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        mode:
+                          type: string
+                        size:
+                          type: integer
+                        is_file:
+                          type: boolean
+                        is_symlink:
+                          type: boolean
+                        modified_at:
+                          type: string
+                          format: date-time
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   /client/servers/{server}/files/contents:
     get:
@@ -3825,16 +4045,71 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
         - name: file
           in: query
           required: true
+          description: File path to read
           schema:
             type: string
       responses:
         '200':
-          description: File contents
+          description: File contents (plain text)
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/download:
+    get:
+      tags:
+        - Client - Server Files
+      summary: Download file
+      description: Get a signed URL to download a file
+      operationId: downloadFile
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: file
+          in: query
+          required: true
+          description: File path to download
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: signed_url
+                  attributes:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   /client/servers/{server}/files/write:
     post:
@@ -3847,6 +4122,7 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       requestBody:
@@ -3855,14 +4131,412 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - file
+                - content
               properties:
                 file:
                   type: string
+                  description: File path
                 content:
                   type: string
+                  description: File content
       responses:
         '204':
-          description: File written
+          description: File written successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/rename:
+    put:
+      tags:
+        - Client - Server Files
+      summary: Rename file
+      description: Rename or move a file/directory
+      operationId: renameFile
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - root
+                - files
+              properties:
+                root:
+                  type: string
+                  description: Base directory
+                files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                      to:
+                        type: string
+      responses:
+        '204':
+          description: File renamed successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/copy:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Copy file
+      description: Copy a file or directory
+      operationId: copyFile
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - location
+              properties:
+                location:
+                  type: string
+                  description: File path to copy
+      responses:
+        '204':
+          description: File copied successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/delete:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Delete files
+      description: Delete one or more files/directories
+      operationId: deleteFiles
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - root
+                - files
+              properties:
+                root:
+                  type: string
+                  description: Base directory
+                files:
+                  type: array
+                  items:
+                    type: string
+                  description: List of file paths to delete
+      responses:
+        '204':
+          description: Files deleted successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/create-folder:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Create folder
+      description: Create a new directory
+      operationId: createFolder
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - root
+                - name
+              properties:
+                root:
+                  type: string
+                  description: Base directory
+                name:
+                  type: string
+                  description: Folder name
+      responses:
+        '204':
+          description: Folder created successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/compress:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Compress files
+      description: Create an archive from files/directories
+      operationId: compressFiles
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - root
+                - files
+              properties:
+                root:
+                  type: string
+                  description: Base directory
+                files:
+                  type: array
+                  items:
+                    type: string
+                  description: List of files to compress
+      responses:
+        '200':
+          description: Archive created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: file_object
+                  attributes:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/decompress:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Decompress archive
+      description: Extract files from an archive
+      operationId: decompressFile
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - root
+                - file
+              properties:
+                root:
+                  type: string
+                  description: Base directory
+                file:
+                  type: string
+                  description: Archive file to extract
+      responses:
+        '204':
+          description: Archive extracted successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/chmod:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Change permissions
+      description: Change file/directory permissions
+      operationId: chmodFile
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - root
+                - files
+              properties:
+                root:
+                  type: string
+                  description: Base directory
+                files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      file:
+                        type: string
+                      mode:
+                        type: string
+                        description: Unix permissions (e.g., "0755")
+      responses:
+        '204':
+          description: Permissions changed successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/pull:
+    post:
+      tags:
+        - Client - Server Files
+      summary: Pull file from URL
+      description: Download a file from a URL to the server
+      operationId: pullFile
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+                - directory
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL to download from
+                directory:
+                  type: string
+                  description: Directory to save file to
+                filename:
+                  type: string
+                  description: Optional filename (auto-detected if not provided)
+      responses:
+        '204':
+          description: File pull initiated successfully
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/files/upload:
+    get:
+      tags:
+        - Client - Server Files
+      summary: Get upload URL
+      description: Get a signed URL for uploading files
+      operationId: getUploadUrl
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Upload URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: signed_url
+                  attributes:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Databases
   /client/servers/{server}/databases:
@@ -4679,11 +5353,30 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       responses:
         '200':
           description: List of subusers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Subuser'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - Client - Server Users
@@ -4694,6 +5387,7 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       requestBody:
@@ -4702,16 +5396,142 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - permissions
               properties:
                 email:
                   type: string
+                  format: email
+                  description: Email of the user to add as subuser
                 permissions:
                   type: array
                   items:
                     type: string
+                  description: List of permission keys to grant
       responses:
         '201':
-          description: Subuser created
+          description: Subuser created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subuser'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/users/{user}:
+    get:
+      tags:
+        - Client - Server Users
+      summary: Get subuser details
+      description: Get details of a specific subuser
+      operationId: getSubuser
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          description: Subuser UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subuser details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subuser'
+        '404':
+          description: Subuser not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Client - Server Users
+      summary: Update subuser
+      description: Update subuser permissions
+      operationId: updateSubuser
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          description: Subuser UUID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - permissions
+              properties:
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated list of permission keys
+      responses:
+        '200':
+          description: Subuser updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subuser'
+        '404':
+          description: Subuser not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Client - Server Users
+      summary: Delete subuser
+      description: Remove a subuser from the server
+      operationId: deleteSubuser
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          description: Subuser UUID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Subuser deleted successfully
+        '404':
+          description: Subuser not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Network
   /client/servers/{server}/network/allocations:
@@ -4725,11 +5545,30 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       responses:
         '200':
           description: List of allocations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Allocation'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - Client - Server Network
@@ -4740,11 +5579,129 @@ paths:
         - name: server
           in: path
           required: true
+          description: Server identifier (UUID)
           schema:
             type: string
       responses:
         '201':
-          description: Allocation created
+          description: Allocation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Allocation'
+        '422':
+          description: Validation error or allocation limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/network/allocations/{allocation}:
+    post:
+      tags:
+        - Client - Server Network
+      summary: Update allocation
+      description: Update notes for an allocation
+      operationId: updateAllocation
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: allocation
+          in: path
+          required: true
+          description: Allocation ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+                  description: Notes for the allocation
+      responses:
+        '200':
+          description: Allocation updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Allocation'
+        '404':
+          description: Allocation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Client - Server Network
+      summary: Delete allocation
+      description: Remove an allocation from the server
+      operationId: deleteAllocation
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: allocation
+          in: path
+          required: true
+          description: Allocation ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Allocation deleted successfully
+        '404':
+          description: Allocation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/servers/{server}/network/allocations/{allocation}/primary:
+    post:
+      tags:
+        - Client - Server Network
+      summary: Set primary allocation
+      description: Set an allocation as the primary (default) allocation
+      operationId: setPrimaryAllocation
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server identifier (UUID)
+          schema:
+            type: string
+        - name: allocation
+          in: path
+          required: true
+          description: Allocation ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Primary allocation set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Allocation'
+        '404':
+          description: Allocation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Startup
   /client/servers/{server}/startup:
