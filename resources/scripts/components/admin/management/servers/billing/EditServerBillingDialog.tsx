@@ -104,6 +104,11 @@ export default ({ server }: { server: Server }) => {
                 return;
             }
             const utcDate = localStrToUTC(renewalDateStr);
+            console.log('Setting renewal date:', {
+                renewalDateStr,
+                utcDate,
+                isoString: utcDate.toISOString(),
+            });
             payload.renewalDate = utcDate;
             payload.billingProductId = selectedProductId;
         } else {
@@ -112,9 +117,13 @@ export default ({ server }: { server: Server }) => {
             payload.billingProductId = null;
         }
 
+        console.log('Submitting payload:', payload);
         setError(null);
         updateServer(server.id, payload)
-            .then(() => window.location.reload())
+            .then((updatedServer) => {
+                console.log('Server updated, renewal_date:', updatedServer.renewalDate);
+                window.location.reload();
+            })
             .catch(error => {
                 console.error(error);
                 setError(error.message || 'Failed to update billing settings');
