@@ -33,8 +33,10 @@ info:
     url: https://github.com/Jexactyl/Jexactyl/blob/main/LICENSE.md
 
 servers:
+  - url: /api
+    description: Current panel (auto-detected - recommended)
   - url: https://panel.example.com/api
-    description: Production server (replace with your domain)
+    description: Example - replace with your domain if auto-detection fails
   - url: http://localhost/api
     description: Local development server
 

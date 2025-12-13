@@ -21,6 +21,10 @@
     <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
     <script>
         window.onload = function() {
+            // Automatically detect the current panel URL
+            const currentOrigin = window.location.origin;
+            const apiUrl = currentOrigin + '/api';
+            
             const ui = SwaggerUIBundle({
                 url: "./openapi.yaml",
                 dom_id: '#swagger-ui',
@@ -37,7 +41,21 @@
                 defaultModelExpandDepth: 1,
                 docExpansion: 'list',
                 filter: true,
-                tryItOutEnabled: true
+                tryItOutEnabled: true,
+                onComplete: function() {
+                    // Override the servers in the spec with the current URL
+                    ui.specActions.updateSpec(
+                        JSON.stringify({
+                            ...ui.specSelectors.specJson().toJS(),
+                            servers: [
+                                {
+                                    url: apiUrl,
+                                    description: 'Current panel (auto-detected)'
+                                }
+                            ]
+                        })
+                    );
+                }
             });
             window.ui = ui;
         };
