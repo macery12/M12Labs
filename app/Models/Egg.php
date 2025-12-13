@@ -126,9 +126,9 @@ class Egg extends Model
         'docker_images.*' => 'required|string',
         'startup' => 'required|nullable|string',
         'config_from' => 'sometimes|bail|nullable|numeric|exists:eggs,id',
-        'config_stop' => 'required_without:config_from|nullable|string|max:191',
-        'config_startup' => 'required_without:config_from|nullable|json',
-        'config_files' => 'required_without:config_from|nullable|json',
+        'config_stop' => 'nullable|string|max:191',
+        'config_startup' => 'nullable|json',
+        'config_files' => 'nullable|json',
         'update_url' => 'sometimes|nullable|string',
         'force_outgoing_ip' => 'sometimes|boolean',
     ];
