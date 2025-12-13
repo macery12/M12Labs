@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $uuid
  * @property string $name
- * @property string $description
+ * @property string|null $description
  * @property int $memory
  * @property int $disk
  * @property int $cpu
@@ -41,7 +41,7 @@ class ServerPreset extends Model
 
     public static array $validationRules = [
         'name' => 'required|string|min:1|max:191',
-        'description' => 'string',
+        'description' => 'nullable|string',
         'memory' => 'required|numeric|min:0',
         'cpu' => 'required|numeric|min:0',
         'disk' => 'required|numeric|min:0',
