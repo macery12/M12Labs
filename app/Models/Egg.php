@@ -154,9 +154,9 @@ class Egg extends Model
         // These fields can be null (inherited from parent egg via config_from)
         foreach (['config_stop', 'config_startup', 'config_files'] as $field) {
             if (isset($rules[$field])) {
-                $rules[$field] = array_filter($rules[$field], function ($rule) {
+                $rules[$field] = array_values(array_filter($rules[$field], function ($rule) {
                     return !is_string($rule) || !str_starts_with($rule, 'required_without');
-                });
+                }));
             }
         }
 
