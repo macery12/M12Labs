@@ -117,7 +117,7 @@ export const EggProcessContainer = forwardRef<any, EggProcessContainerProps>(fun
         getStartupConfiguration: async () => {
             if (fetchStartupConfiguration === null) {
                 // If editor hasn't initialized, return current value instead of null
-                return new Promise<string>(resolve => resolve(values.configStartup));
+                return values.configStartup || null;
             }
             return await fetchStartupConfiguration();
         },
@@ -125,7 +125,7 @@ export const EggProcessContainer = forwardRef<any, EggProcessContainerProps>(fun
         getFilesConfiguration: async () => {
             if (fetchFilesConfiguration === null) {
                 // If editor hasn't initialized, return current value instead of null
-                return new Promise<string>(resolve => resolve(values.configFiles));
+                return values.configFiles || null;
             }
             return await fetchFilesConfiguration();
         },
