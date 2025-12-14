@@ -33,9 +33,10 @@ export default () => {
                     setNodes(availableNodes);
                 })
                 .catch(error => {
-                    clearAndAddHttpError({
+                    addFlash({
                         key: 'server:manage',
-                        error: `Failed to load nodes: ${error.message}`,
+                        type: 'error',
+                        message: 'Unable to load available nodes. Please try again.',
                     });
                 });
         }
@@ -44,8 +45,8 @@ export default () => {
     useEffect(() => {
         if (selectedNodeId) {
             setLoading(true);
-            // Fetch allocations for the selected node
-            getAllocations(selectedNodeId, 100, { filters: { server_id: 'null' } })
+            // Fetch allocations for the selected node (limiting to 500 for practical display)
+            getAllocations(selectedNodeId, 500, { filters: { server_id: 'null' } })
                 .then(fetchedAllocations => {
                     setAllocations(fetchedAllocations);
                     // Auto-select first allocation if available
@@ -57,9 +58,10 @@ export default () => {
                     setLoading(false);
                 })
                 .catch(error => {
-                    clearAndAddHttpError({
+                    addFlash({
                         key: 'server:manage',
-                        error: `Failed to load allocations: ${error.message}`,
+                        type: 'error',
+                        message: 'Unable to load available allocations for the selected node.',
                     });
                     setLoading(false);
                 });
@@ -98,9 +100,10 @@ export default () => {
                 setAllocations([]);
             })
             .catch(error => {
-                clearAndAddHttpError({
+                addFlash({
                     key: 'server:manage',
-                    error: `Failed to initiate transfer: ${error.message}`,
+                    type: 'error',
+                    message: 'Failed to initiate server transfer. Please ensure the server is not suspended or already being transferred.',
                 });
             })
             .finally(() => {

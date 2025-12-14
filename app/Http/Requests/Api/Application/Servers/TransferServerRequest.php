@@ -8,7 +8,7 @@ class TransferServerRequest extends ServerWriteRequest
 {
     public function permission(): string
     {
-        return AdminRole::SERVERS_DELETE;
+        return AdminRole::SERVERS_UPDATE;
     }
 
     public function rules(): array
