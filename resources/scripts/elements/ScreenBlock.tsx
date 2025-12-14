@@ -104,9 +104,6 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const settings = useStoreState(state => state.everest.data!.billing);
 
-    // Get configurable renewal settings
-    const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
-
     useEffect(() => {
         if (id) {
             getProduct(id)
@@ -137,6 +134,11 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     if (!product) return <Spinner centered />;
 
     const isFree = product.price === 0;
+    
+    // Get configurable renewal settings based on server type
+    const suspensionThreshold = isFree 
+        ? (settings.renewal?.free_suspension_days || 7)
+        : (settings.renewal?.paid_suspension_days || 30);
     
     // Calculate days past the renewal date
     const now = new Date();

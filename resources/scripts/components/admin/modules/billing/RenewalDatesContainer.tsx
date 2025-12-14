@@ -18,6 +18,12 @@ export default () => {
     const [suspensionThreshold, setSuspensionThreshold] = useState<number>(
         settings.renewal?.suspension_threshold || 7
     );
+    const [freeSuspensionDays, setFreeSuspensionDays] = useState<number>(
+        settings.renewal?.free_suspension_days || 7
+    );
+    const [paidSuspensionDays, setPaidSuspensionDays] = useState<number>(
+        settings.renewal?.paid_suspension_days || 30
+    );
     const [loading, setLoading] = useState(false);
 
     const handleSaveRenewalDays = async () => {
@@ -84,6 +90,70 @@ export default () => {
         }
     };
 
+    const handleSaveFreeSuspensionDays = async () => {
+        clearFlashes('admin:billing');
+        setLoading(true);
+
+        try {
+            await updateSettings('renewal:free_suspension_days', freeSuspensionDays);
+            updateEverest({
+                billing: {
+                    ...settings,
+                    renewal: {
+                        ...settings.renewal,
+                        free_suspension_days: freeSuspensionDays,
+                    },
+                },
+            });
+            addFlash({
+                key: 'admin:billing',
+                type: 'success',
+                message: 'Free server suspension days updated successfully.',
+            });
+        } catch (error) {
+            console.error(error);
+            addFlash({
+                key: 'admin:billing',
+                type: 'error',
+                message: 'Failed to update free server suspension days.',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSavePaidSuspensionDays = async () => {
+        clearFlashes('admin:billing');
+        setLoading(true);
+
+        try {
+            await updateSettings('renewal:paid_suspension_days', paidSuspensionDays);
+            updateEverest({
+                billing: {
+                    ...settings,
+                    renewal: {
+                        ...settings.renewal,
+                        paid_suspension_days: paidSuspensionDays,
+                    },
+                },
+            });
+            addFlash({
+                key: 'admin:billing',
+                type: 'success',
+                message: 'Paid server suspension days updated successfully.',
+            });
+        } catch (error) {
+            console.error(error);
+            addFlash({
+                key: 'admin:billing',
+                type: 'error',
+                message: 'Failed to update paid server suspension days.',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className={'grid lg:grid-cols-2 gap-4'}>
             <FlashMessageRender byKey={'admin:billing'} className={'mb-4 col-span-2'} />
@@ -111,6 +181,60 @@ export default () => {
                 <div className={'text-right'}>
                     <Button onClick={handleSaveRenewalDays} disabled={loading}>
                         {loading ? 'Saving...' : 'Save Renewal Days'}
+                    </Button>
+                </div>
+            </AdminBox>
+
+            <AdminBox title={'Free Server Suspension'} icon={faClock}>
+                <p className={'text-gray-400 mb-4'}>
+                    Configure how many days after the renewal date free servers will be suspended. This is the grace
+                    period before automatic suspension.
+                </p>
+                <div className={'mb-4'}>
+                    <Label>Days Until Suspension (Free Servers)</Label>
+                    <Input
+                        type={'number'}
+                        min={0}
+                        max={90}
+                        value={freeSuspensionDays}
+                        onChange={e => setFreeSuspensionDays(parseInt(e.target.value) || 7)}
+                        disabled={loading}
+                    />
+                    <p className={'text-xs text-gray-500 mt-2'}>
+                        Current value: {settings.renewal?.free_suspension_days || 7} days. Free servers will be
+                        suspended this many days after the renewal date passes.
+                    </p>
+                </div>
+                <div className={'text-right'}>
+                    <Button onClick={handleSaveFreeSuspensionDays} disabled={loading}>
+                        {loading ? 'Saving...' : 'Save Free Suspension Days'}
+                    </Button>
+                </div>
+            </AdminBox>
+
+            <AdminBox title={'Paid Server Suspension'} icon={faClock}>
+                <p className={'text-gray-400 mb-4'}>
+                    Configure how many days after the renewal date paid servers will be suspended. This is the grace
+                    period before automatic suspension.
+                </p>
+                <div className={'mb-4'}>
+                    <Label>Days Until Suspension (Paid Servers)</Label>
+                    <Input
+                        type={'number'}
+                        min={0}
+                        max={90}
+                        value={paidSuspensionDays}
+                        onChange={e => setPaidSuspensionDays(parseInt(e.target.value) || 30)}
+                        disabled={loading}
+                    />
+                    <p className={'text-xs text-gray-500 mt-2'}>
+                        Current value: {settings.renewal?.paid_suspension_days || 30} days. Paid servers will be
+                        suspended this many days after the renewal date passes.
+                    </p>
+                </div>
+                <div className={'text-right'}>
+                    <Button onClick={handleSavePaidSuspensionDays} disabled={loading}>
+                        {loading ? 'Saving...' : 'Save Paid Suspension Days'}
                     </Button>
                 </div>
             </AdminBox>
@@ -150,12 +274,18 @@ export default () => {
                             renewed, its expiration date will be set to {renewalDays} days from the renewal time.
                         </p>
                         <p>
-                            <strong className={'text-gray-300'}>Suspension:</strong> Servers are automatically
-                            suspended by the billing system when their renewal date has passed (0 days remaining).
+                            <strong className={'text-gray-300'}>Free Server Suspension:</strong> Free servers are
+                            automatically suspended by the billing system {freeSuspensionDays} days after their renewal
+                            date passes.
                         </p>
                         <p>
-                            <strong className={'text-gray-300'}>Free Server Renewal:</strong> Users can only renew
-                            their free servers when there are {suspensionThreshold} days or fewer remaining until
+                            <strong className={'text-gray-300'}>Paid Server Suspension:</strong> Paid servers are
+                            automatically suspended by the billing system {paidSuspensionDays} days after their renewal
+                            date passes.
+                        </p>
+                        <p>
+                            <strong className={'text-gray-300'}>Free Server Renewal Eligibility:</strong> Users can only
+                            renew their free servers when there are {suspensionThreshold} days or fewer remaining until
                             expiration. This prevents abuse of the free server system.
                         </p>
                         <p>
