@@ -151,7 +151,7 @@ export default () => {
                             {product.price === 0 ? (
                                 <div>
                                     <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. You can renew it when there are 7 days or less remaining.
+                                        This is a free server. You can renew it for another 30 days when there are 7 days or less remaining.
                                     </p>
                                     {!canRenew ? (
                                         <Alert type={'info'}>
