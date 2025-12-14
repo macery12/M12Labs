@@ -85,12 +85,8 @@ class FreeProductController extends ClientApiController
             throw new DisplayException('This product is not free.');
         }
 
-        $server = Server::findOrFail($serverId);
-
-        // Verify that the user owns this server
-        if ($server->owner_id !== $user->id) {
-            throw new DisplayException('You do not own this server.');
-        }
+        // Lookup server scoped to the authenticated user
+        $server = $user->servers()->findOrFail($serverId);
 
         // Verify that the server uses this product
         if ($server->billing_product_id !== $product->id) {

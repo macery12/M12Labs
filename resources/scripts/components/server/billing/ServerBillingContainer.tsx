@@ -44,6 +44,7 @@ export default () => {
     const navigate = useNavigate();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
+    const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
@@ -71,7 +72,7 @@ export default () => {
         renewFreeServer(billingProductId, serverId)
             .then(() => {
                 // Redirect to server overview after successful renewal
-                navigate(`/server/${ServerContext.useStoreState.getState().server.data!.uuid}`);
+                navigate(`/server/${serverUuid}`);
             })
             .catch(error => {
                 clearAndAddHttpError({ key: 'server:billing', error });
