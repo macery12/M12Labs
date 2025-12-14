@@ -114,7 +114,7 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     }, []);
 
     const handleFreeRenewal = () => {
-        if (!product || !id || !serverId) return;
+        if (!product || !id || !serverId || !serverUuid) return;
 
         setRenewing(true);
         clearFlashes('suspended:billing');

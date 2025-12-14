@@ -81,7 +81,7 @@ export default () => {
     };
 
     // Calculate days remaining until renewal
-    const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
+    const daysRemaining = renewalDate ? Math.max(0, timeUntil(renewalDate).days) : 0;
     const canRenew = daysRemaining <= 7;
 
     return (
