@@ -136,7 +136,7 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     
     // Calculate days past the renewal date
     const now = new Date();
-    const daysOverdue = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const daysOverdue = Math.max(0, Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)));
     const isPastGracePeriod = daysOverdue > 7;
 
     return (
@@ -159,16 +159,15 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                                     <>
                                         Your free server has been suspended for more than 7 days due to non-renewal.{' '}
                                         <span className={'font-bold text-red-400'}>
-                                            You must contact the server administrator to restore access.
+                                            Please create a support ticket to restore access.
                                         </span>
                                         {' '}Self-service renewal is no longer available after the 7-day grace period.
                                     </>
                                 ) : (
                                     <>
-                                        Your free server has been suspended because it was not renewed. Your server will be permanently deleted{' '}
-                                        <span className={'font-bold'}>7 days after suspension</span>
-                                        {' '}if you do not renew it.
-                                        {daysOverdue > 0 && (
+                                        Your free server has been suspended because the renewal date has passed. To avoid permanent deletion, you must renew within{' '}
+                                        <span className={'font-bold'}>7 days of the suspension</span>.
+                                        {daysOverdue >= 0 && (
                                             <div className={'mt-2 text-yellow-400 font-semibold'}>
                                                 Days overdue: {daysOverdue} / 7
                                             </div>
@@ -182,15 +181,14 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                                     <>
                                         Your server has been suspended for more than 7 days due to non-payment.{' '}
                                         <span className={'font-bold text-red-400'}>
-                                            You must contact the server administrator to restore access.
+                                            Please create a support ticket to restore access.
                                         </span>
                                         {' '}Self-service payment is no longer available after the 7-day grace period.
                                     </>
                                 ) : (
                                     <>
-                                        Your server has been suspended due to a lack of payment. Your server will be permanently deleted{' '}
-                                        <span className={'font-bold'}>7 days after suspension</span>
-                                        {' '}if you do not choose to pay the monthly cost for your server.
+                                        Your server has been suspended due to a lack of payment. To avoid permanent deletion, you must pay within{' '}
+                                        <span className={'font-bold'}>7 days of the suspension</span>.
                                         <div className={'mt-2 text-gray-300 font-semibold'}>
                                             Your outstanding balance is:
                                             <span className={'text-white ml-2 font-bold'}>
@@ -198,7 +196,7 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                                                 {product.price}
                                             </span>
                                         </div>
-                                        {daysOverdue > 0 && (
+                                        {daysOverdue >= 0 && (
                                             <div className={'mt-2 text-yellow-400 font-semibold'}>
                                                 Days overdue: {daysOverdue} / 7
                                             </div>
@@ -213,7 +211,7 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                         {isPastGracePeriod ? (
                             <div css={tw`text-center p-4 bg-red-900/30 rounded border border-red-500`}>
                                 <p css={tw`text-red-300 font-semibold`}>
-                                    Grace period expired. Please contact support to restore your server.
+                                    Grace period expired. Please create a support ticket to restore your server.
                                 </p>
                             </div>
                         ) : (
