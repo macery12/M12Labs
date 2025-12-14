@@ -14,6 +14,7 @@ use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
+use Everest\Services\Servers\SuspensionService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class PaymentController extends ClientApiController
@@ -21,6 +22,7 @@ class PaymentController extends ClientApiController
     public function __construct(
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
+        private SuspensionService $suspensionService,
     ) {
         parent::__construct();
 
@@ -176,9 +178,13 @@ class PaymentController extends ClientApiController
         if ($order->type === Order::TYPE_REN && ((int) $intent->metadata->server_id != 0)) {
             $server = Server::findOrFail((int) $intent->metadata->server_id);
 
+            // Unsuspend the server if it was suspended due to billing
+            if ($server->isSuspended()) {
+                $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
+            }
+
             $server->update([
                 'renewal_date' => $server->renewal_date->addDays(30)->toDateTimeString(),
-                'status' => $server->isSuspended() ? null : $server->status,
             ]);
         } else {
             $product = Product::findOrFail($intent->metadata->product_id);

@@ -42,9 +42,20 @@ function ServerConsoleContainer() {
     const eggFeatures = ServerContext.useStoreState(state => state.server.data!.eggFeatures, isEqual);
     const isNodeUnderMaintenance = ServerContext.useStoreState(state => state.server.data!.isNodeUnderMaintenance);
     const status = ServerContext.useStoreState(state => state.status.value);
+    const renewalDate = ServerContext.useStoreState(state => state.server.data!.renewalDate);
+    const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
+
+    // Calculate days until renewal
+    const daysUntilRenewal = renewalDate ? Math.floor((new Date(renewalDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+    const showRenewalWarning = billingProductId && daysUntilRenewal !== null && daysUntilRenewal <= 7 && daysUntilRenewal >= 0;
 
     return (
         <PageContentBlock title={'Server Console'} showFlashKey={'console:share'}>
+            {showRenewalWarning && (
+                <Alert type={'warning'} className={'mb-4'}>
+                    Your server renewal is due in {daysUntilRenewal} day{daysUntilRenewal !== 1 ? 's' : ''}. Please renew before the renewal date to avoid suspension. Your server files and data will be preserved.
+                </Alert>
+            )}
             {(isNodeUnderMaintenance || isInstalling || isTransferring) && (
                 <Alert type={'warning'} className={'mb-4'}>
                     {isNodeUnderMaintenance

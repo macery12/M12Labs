@@ -11,6 +11,7 @@ use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
+use Everest\Services\Servers\SuspensionService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
@@ -18,7 +19,8 @@ class FreeProductController extends ClientApiController
 {
     public function __construct(
         private CreateServerService $serverCreation,
-        private CreateOrderService $orderService
+        private CreateOrderService $orderService,
+        private SuspensionService $suspensionService
     ) {
         parent::__construct();
     }
@@ -97,10 +99,14 @@ class FreeProductController extends ClientApiController
         // Create an order record for the renewal
         $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_REN);
 
+        // Unsuspend the server if it was suspended due to billing
+        if ($server->isSuspended()) {
+            $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
+        }
+
         // Reset the renewal date to 30 days from now (not add 30 days)
         $server->update([
             'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
-            'status' => $server->isSuspended() ? null : $server->status,
         ]);
 
         $order->update([
