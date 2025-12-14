@@ -2,6 +2,7 @@
 
 namespace Everest\Models;
 
+use Carbon\Carbon;
 use Everest\Models\Billing\Product;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Query\JoinClause;
