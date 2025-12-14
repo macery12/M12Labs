@@ -48,8 +48,9 @@ export default () => {
             getAllocations(selectedNodeId)
                 .then(fetchedAllocations => {
                     // Filter for allocations that are not assigned to any server
+                    // According to the API, unassigned allocations have assigned=false and server_id=null
                     const availableAllocations = fetchedAllocations.filter(
-                        allocation => !allocation.isAssigned && allocation.relationships.server === null
+                        allocation => !allocation.isAssigned
                     );
                     setAllocations(availableAllocations);
                     // Auto-select first allocation if available
