@@ -50,8 +50,14 @@ class PaymentController extends ClientApiController
      */
     public function intent(Request $request, int $id): JsonResponse
     {
-        $paymentMethodTypes = ['card'];
         $product = Product::findOrFail($id);
+
+        // Free products should not create payment intents
+        if ((float) $product->price === 0.0) {
+            throw new DisplayException('Free products do not require payment. Please use the free product renewal process.');
+        }
+
+        $paymentMethodTypes = ['card'];
 
         if (config('modules.billing.paypal')) {
             $paymentMethodTypes[] = 'paypal';

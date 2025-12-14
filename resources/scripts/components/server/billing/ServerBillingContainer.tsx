@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Label from '@/elements/Label';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ContentBox from '@/elements/ContentBox';
 import { ServerContext } from '@/state/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,6 +14,9 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import { format } from 'date-fns';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
+import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
+import { Button } from '@/elements/button';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -36,9 +39,13 @@ function addDays(date: Date | string, days: number) {
 export default () => {
     const [product, setProduct] = useState<Product>();
     const [loading, setLoading] = useState<boolean>(true);
+    const [renewing, setRenewing] = useState<boolean>(false);
 
-    const { clearFlashes } = useFlash();
+    const navigate = useNavigate();
+    const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
+    const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
+    const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
 
@@ -55,6 +62,27 @@ export default () => {
                 });
         }
     }, []);
+
+    const handleFreeRenewal = () => {
+        if (!product || !billingProductId) return;
+
+        setRenewing(true);
+        clearFlashes('server:billing');
+
+        renewFreeServer(billingProductId, serverId)
+            .then(() => {
+                // Redirect to server overview after successful renewal
+                navigate(`/server/${serverUuid}`);
+            })
+            .catch(error => {
+                clearAndAddHttpError({ key: 'server:billing', error });
+                setRenewing(false);
+            });
+    };
+
+    // Calculate days remaining until renewal
+    const daysRemaining = renewalDate ? Math.max(0, timeUntil(renewalDate).days) : 0;
+    const canRenew = daysRemaining <= 7;
 
     return (
         <PageContentBlock
@@ -112,6 +140,7 @@ export default () => {
                             .
                         </p>
                     </div>
+                    <FlashMessageRender byKey={'server:billing'} className={'mb-4'} />
                     {!product ? (
                         <Alert type={'danger'}>
                             The product package that the server was made with no longer exists. In order to renew your
@@ -120,7 +149,25 @@ export default () => {
                     ) : (
                         <>
                             {product.price === 0 ? (
-                                <>You cannot renew a free server. It will be renewed automatically.</>
+                                <div>
+                                    <p className={'text-gray-400 text-sm mb-4'}>
+                                        This is a free server. You can renew it for another 30 days when there are 7 days or less remaining.
+                                    </p>
+                                    {!canRenew ? (
+                                        <Alert type={'info'}>
+                                            You can renew this server when there are 7 days or less until the renewal
+                                            date. Currently, you have {daysRemaining} days remaining.
+                                        </Alert>
+                                    ) : (
+                                        <Button
+                                            onClick={handleFreeRenewal}
+                                            disabled={renewing}
+                                            size={Button.Sizes.Large}
+                                        >
+                                            {renewing ? 'Renewing...' : 'Renew Server'}
+                                        </Button>
+                                    )}
+                                </div>
                             ) : (
                                 <PaymentContainer id={Number(product.id)} />
                             )}

@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
+use Carbon\Carbon;
 use Everest\Models\Node;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
@@ -47,25 +48,16 @@ class FreeProductController extends ClientApiController
             throw new DisplayException('Free servers cannot be deployed to this node.');
         }
 
-        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, $this->getOrderType($request));
+        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_NEW);
 
-        if ($order->type === Order::TYPE_REN && $request->has('server_id')) {
-            $server = Server::findOrFail((int) $request->input('server_id'));
-
-            $server->update([
-                'renewal_date' => $server->renewal_date->addDays(30),
-                'status' => $server->isSuspended() ? null : $server->status,
-            ]);
-        } else {
-            $variables = $request->input('variables', []);
-            $server = $this->serverCreation->processFree(
-                $request,
-                $product,
-                $request->input('node'),
-                $order,
-                $variables
-            );
-        }
+        $variables = $request->input('variables', []);
+        $server = $this->serverCreation->processFree(
+            $request,
+            $product,
+            $request->input('node'),
+            $order,
+            $variables
+        );
 
         $order->update([
             'status' => Order::STATUS_PROCESSED,
@@ -78,18 +70,46 @@ class FreeProductController extends ClientApiController
     }
 
     /**
-     * Determine whether an order is a NEW, UPGRADE or RENEWAL.
+     * Renew a free server by extending its renewal date.
      */
-    private function getOrderType(Request $request): mixed
+    public function renew(Request $request): array
     {
-        $type = null;
+        $user = $request->user();
+        $serverId = $request->input('server_id');
+        $product = Product::findOrFail($request->input('product'));
 
-        if ($request->has('renewal') && $request->boolean('renewal')) {
-            $type = Order::TYPE_REN;
-        } else {
-            $type = Order::TYPE_NEW;
+        if (!config('modules.billing.enabled')) {
+            throw new DisplayException('The billing module is not enabled.');
         }
 
-        return $type;
+        if ((float) $product->price !== 0.0) {
+            throw new DisplayException('This product is not free.');
+        }
+
+        // Lookup server scoped to the authenticated user
+        $server = $user->servers()->findOrFail($serverId);
+
+        // Verify that the server uses this product
+        if ($server->billing_product_id !== $product->id) {
+            throw new DisplayException('This server does not use this product.');
+        }
+
+        // Create an order record for the renewal
+        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_REN);
+
+        // Reset the renewal date to 30 days from now (not add 30 days)
+        $server->update([
+            'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
+            'status' => $server->isSuspended() ? null : $server->status,
+        ]);
+
+        $order->update([
+            'status' => Order::STATUS_PROCESSED,
+            'name' => $order->name . substr($server->uuid, 0, 8),
+        ]);
+
+        return $this->fractal->item($server)
+            ->transformWith(ServerTransformer::class)
+            ->toArray();
     }
 }
