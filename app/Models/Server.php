@@ -2,6 +2,7 @@
 
 namespace Everest\Models;
 
+use Carbon\Carbon;
 use Everest\Models\Billing\Product;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Query\JoinClause;
@@ -411,7 +412,9 @@ class Server extends Model
         }
 
         try {
-            $this->attributes['renewal_date'] = Carbon::parse($value)->toDateString();
+            // Store as datetime to preserve time component
+            $dateTimeString = Carbon::parse($value)->toDateTimeString();
+            $this->attributes['renewal_date'] = $dateTimeString;
         } catch (\Throwable $e) {
             $this->attributes['renewal_date'] = null;
         }
