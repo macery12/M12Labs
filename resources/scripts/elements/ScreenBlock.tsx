@@ -133,6 +133,11 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     if (!product) return <Spinner centered />;
 
     const isFree = product.price === 0;
+    
+    // Calculate days past the renewal date
+    const now = new Date();
+    const daysOverdue = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const isPastGracePeriod = daysOverdue > 7;
 
     return (
         <PageContentBlock>
@@ -150,33 +155,77 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>
-                                Your free server has been suspended because it was not renewed. Your server will be permanently deleted{' '}
-                                <span className={'font-bold'}>7 days after suspension</span>
-                                {' '}if you do not renew it.
+                                {isPastGracePeriod ? (
+                                    <>
+                                        Your free server has been suspended for more than 7 days due to non-renewal.{' '}
+                                        <span className={'font-bold text-red-400'}>
+                                            You must contact the server administrator to restore access.
+                                        </span>
+                                        {' '}Self-service renewal is no longer available after the 7-day grace period.
+                                    </>
+                                ) : (
+                                    <>
+                                        Your free server has been suspended because it was not renewed. Your server will be permanently deleted{' '}
+                                        <span className={'font-bold'}>7 days after suspension</span>
+                                        {' '}if you do not renew it.
+                                        {daysOverdue > 0 && (
+                                            <div className={'mt-2 text-yellow-400 font-semibold'}>
+                                                Days overdue: {daysOverdue} / 7
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </>
                         ) : (
                             <>
-                                Your server has been suspended due to a lack of payment. Your server will be permanently deleted{' '}
-                                <span className={'font-bold'}>7 days after suspension</span>
-                                {' '}if you do not choose to pay the monthly cost for your server.
-                                <div className={'mt-2 text-gray-300 font-semibold'}>
-                                    Your outstanding balance is:
-                                    <span className={'text-white ml-2 font-bold'}>
-                                        {currency}
-                                        {product.price}
-                                    </span>
-                                </div>
+                                {isPastGracePeriod ? (
+                                    <>
+                                        Your server has been suspended for more than 7 days due to non-payment.{' '}
+                                        <span className={'font-bold text-red-400'}>
+                                            You must contact the server administrator to restore access.
+                                        </span>
+                                        {' '}Self-service payment is no longer available after the 7-day grace period.
+                                    </>
+                                ) : (
+                                    <>
+                                        Your server has been suspended due to a lack of payment. Your server will be permanently deleted{' '}
+                                        <span className={'font-bold'}>7 days after suspension</span>
+                                        {' '}if you do not choose to pay the monthly cost for your server.
+                                        <div className={'mt-2 text-gray-300 font-semibold'}>
+                                            Your outstanding balance is:
+                                            <span className={'text-white ml-2 font-bold'}>
+                                                {currency}
+                                                {product.price}
+                                            </span>
+                                        </div>
+                                        {daysOverdue > 0 && (
+                                            <div className={'mt-2 text-yellow-400 font-semibold'}>
+                                                Days overdue: {daysOverdue} / 7
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </>
                         )}
                     </p>
                     <FlashMessageRender byKey={'suspended:billing'} className={'mt-4'} />
                     <div className={'mt-6'}>
-                        {isFree ? (
-                            <Button onClick={handleFreeRenewal} disabled={renewing} size={Button.Sizes.Large}>
-                                {renewing ? 'Renewing...' : 'Renew Free Server'}
-                            </Button>
+                        {isPastGracePeriod ? (
+                            <div css={tw`text-center p-4 bg-red-900/30 rounded border border-red-500`}>
+                                <p css={tw`text-red-300 font-semibold`}>
+                                    Grace period expired. Please contact support to restore your server.
+                                </p>
+                            </div>
                         ) : (
-                            <PaymentContainer id={Number(product.id)} />
+                            <>
+                                {isFree ? (
+                                    <Button onClick={handleFreeRenewal} disabled={renewing} size={Button.Sizes.Large}>
+                                        {renewing ? 'Renewing...' : 'Renew Free Server'}
+                                    </Button>
+                                ) : (
+                                    <PaymentContainer id={Number(product.id)} />
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

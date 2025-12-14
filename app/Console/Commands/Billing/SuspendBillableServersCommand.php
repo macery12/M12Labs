@@ -43,7 +43,7 @@ class SuspendBillableServersCommand extends Command
                     continue;
                 }
 
-                if (!$server->suspended) {
+                if (!$server->isSuspended()) {
                     $this->info("suspending server {$server->id}, overdue by {$daysOverdue} day(s)");
                     $this->suspend->toggle($server, 'suspend');
                 }
