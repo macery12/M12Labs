@@ -80,6 +80,10 @@ export default () => {
             });
     };
 
+    // Calculate days remaining until renewal
+    const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
+    const canRenew = daysRemaining <= 7;
+
     return (
         <PageContentBlock
             title={'Server Billing'}
@@ -147,9 +151,20 @@ export default () => {
                             {product.price === 0 ? (
                                 <div>
                                     <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. Click the button below to renew it for another 30 days.
+                                        This is a free server. You can renew it for another 30 days when there are 7 days
+                                        or less remaining.
                                     </p>
-                                    <Button onClick={handleFreeRenewal} disabled={renewing} size={Button.Sizes.Large}>
+                                    {!canRenew && (
+                                        <Alert type={'info'} className={'mb-4'}>
+                                            You can renew this server when there are 7 days or less until the renewal
+                                            date. Currently, you have {daysRemaining} days remaining.
+                                        </Alert>
+                                    )}
+                                    <Button
+                                        onClick={handleFreeRenewal}
+                                        disabled={renewing || !canRenew}
+                                        size={Button.Sizes.Large}
+                                    >
                                         {renewing ? 'Renewing...' : 'Renew Server'}
                                     </Button>
                                 </div>
