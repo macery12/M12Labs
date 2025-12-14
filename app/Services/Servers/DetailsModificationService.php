@@ -30,15 +30,6 @@ class DetailsModificationService
         return $this->connection->transaction(function () use ($data, $server) {
             $owner = $server->owner_id;
 
-            // Debug logging
-            \Log::info('DetailsModificationService received data:', [
-                'renewal_date_exists' => array_key_exists('renewal_date', $data),
-                'renewal_date_value' => Arr::get($data, 'renewal_date'),
-                'billing_product_id_exists' => array_key_exists('billing_product_id', $data),
-                'billing_product_id_value' => Arr::get($data, 'billing_product_id'),
-                'all_keys' => array_keys($data),
-            ]);
-
             $server->forceFill([
                 'external_id' => Arr::get($data, 'external_id'),
                 'owner_id' => Arr::get($data, 'owner_id'),
@@ -47,11 +38,6 @@ class DetailsModificationService
                 'renewal_date' => array_key_exists('renewal_date', $data) ? Arr::get($data, 'renewal_date') : $server->renewal_date,
                 'billing_product_id' => array_key_exists('billing_product_id', $data) ? Arr::get($data, 'billing_product_id') : $server->billing_product_id,
             ])->saveOrFail();
-
-            \Log::info('After forceFill, server renewal_date:', [
-                'renewal_date' => $server->renewal_date,
-                'renewal_date_raw' => $server->getRawOriginal('renewal_date'),
-            ]);
 
             // If the owner_id value is changed we need to revoke any tokens that exist for the server
             // on the Wings instance so that the old owner no longer has any permission to access the

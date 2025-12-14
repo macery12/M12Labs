@@ -40,7 +40,6 @@ export default ({ server }: { server: Server }) => {
             setError(null);
             getCategories()
                 .then(cats => {
-                    console.log('Fetched categories:', cats);
                     setCategories(cats);
                     if (cats.length === 0) {
                         setError('No billing categories found. Please create a category first.');
@@ -66,7 +65,6 @@ export default ({ server }: { server: Server }) => {
             http.get(`/api/application/billing/categories/${selectedCategoryId}/products`)
                 .then(({ data }) => {
                     const productList = (data.data || []).map((item: any) => Transformers.toProduct(item));
-                    console.log(`Products for category ${selectedCategoryId}:`, productList);
                     setProducts(productList);
                     if (productList.length === 0) {
                         setError('No products found in this category. Please create products first.');
@@ -104,11 +102,6 @@ export default ({ server }: { server: Server }) => {
                 return;
             }
             const utcDate = localStrToUTC(renewalDateStr);
-            console.log('Setting renewal date:', {
-                renewalDateStr,
-                utcDate,
-                isoString: utcDate.toISOString(),
-            });
             payload.renewalDate = utcDate;
             payload.billingProductId = selectedProductId;
         } else {
@@ -117,11 +110,9 @@ export default ({ server }: { server: Server }) => {
             payload.billingProductId = null;
         }
 
-        console.log('Submitting payload:', payload);
         setError(null);
         updateServer(server.id, payload)
-            .then((updatedServer) => {
-                console.log('Server updated, renewal_date:', updatedServer.renewalDate);
+            .then(() => {
                 window.location.reload();
             })
             .catch(error => {

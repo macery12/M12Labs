@@ -405,15 +405,8 @@ class Server extends Model
      */
     public function setRenewalDateAttribute($value): void
     {
-        \Log::info('Server mutator setRenewalDateAttribute called:', [
-            'value' => $value,
-            'value_type' => gettype($value),
-            'is_empty' => empty($value),
-        ]);
-
         if (empty($value) || $value === '0000-00-00') {
             $this->attributes['renewal_date'] = null;
-            \Log::info('Server mutator: Set renewal_date to null (empty value)');
 
             return;
         }
@@ -422,16 +415,8 @@ class Server extends Model
             // Store as datetime to preserve time component
             $dateTimeString = Carbon::parse($value)->toDateTimeString();
             $this->attributes['renewal_date'] = $dateTimeString;
-            \Log::info('Server mutator: Set renewal_date to datetime', [
-                'original_value' => $value,
-                'parsed_datetime' => $dateTimeString,
-            ]);
         } catch (\Throwable $e) {
             $this->attributes['renewal_date'] = null;
-            \Log::error('Server mutator: Failed to parse renewal_date', [
-                'value' => $value,
-                'error' => $e->getMessage(),
-            ]);
         }
     }
 }
