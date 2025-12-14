@@ -151,22 +151,22 @@ export default () => {
                             {product.price === 0 ? (
                                 <div>
                                     <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. You can renew it for another 30 days when there are 7 days
-                                        or less remaining.
+                                        This is a free server. You can renew it when there are 7 days or less remaining.
                                     </p>
-                                    {!canRenew && (
-                                        <Alert type={'info'} className={'mb-4'}>
+                                    {!canRenew ? (
+                                        <Alert type={'info'}>
                                             You can renew this server when there are 7 days or less until the renewal
                                             date. Currently, you have {daysRemaining} days remaining.
                                         </Alert>
+                                    ) : (
+                                        <Button
+                                            onClick={handleFreeRenewal}
+                                            disabled={renewing}
+                                            size={Button.Sizes.Large}
+                                        >
+                                            {renewing ? 'Renewing...' : 'Renew Server'}
+                                        </Button>
                                     )}
-                                    <Button
-                                        onClick={handleFreeRenewal}
-                                        disabled={renewing || !canRenew}
-                                        size={Button.Sizes.Large}
-                                    >
-                                        {renewing ? 'Renewing...' : 'Renew Server'}
-                                    </Button>
                                 </div>
                             ) : (
                                 <PaymentContainer id={Number(product.id)} />

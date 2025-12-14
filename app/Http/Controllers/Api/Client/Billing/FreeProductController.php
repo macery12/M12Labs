@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
+use Carbon\Carbon;
 use Everest\Models\Node;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
@@ -96,9 +97,9 @@ class FreeProductController extends ClientApiController
         // Create an order record for the renewal
         $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_REN);
 
-        // Extend the renewal date by 30 days
+        // Reset the renewal date to 30 days from now (not add 30 days)
         $server->update([
-            'renewal_date' => $server->renewal_date->addDays(30),
+            'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
             'status' => $server->isSuspended() ? null : $server->status,
         ]);
 

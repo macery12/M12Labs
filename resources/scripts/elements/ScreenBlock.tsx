@@ -150,14 +150,14 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>
-                                Your free server has been suspended because it was not renewed. Your server will be deleted{' '}
-                                <span className={'font-bold'}>on {date.toDateString()}</span>
+                                Your free server has been suspended because it was not renewed. Your server will be permanently deleted{' '}
+                                <span className={'font-bold'}>7 days after suspension</span>
                                 {' '}if you do not renew it.
                             </>
                         ) : (
                             <>
-                                Your server has been suspended due to a lack of payment. Your server will be deleted{' '}
-                                <span className={'font-bold'}>on {date.toDateString()}</span>
+                                Your server has been suspended due to a lack of payment. Your server will be permanently deleted{' '}
+                                <span className={'font-bold'}>7 days after suspension</span>
                                 {' '}if you do not choose to pay the monthly cost for your server.
                                 <div className={'mt-2 text-gray-300 font-semibold'}>
                                     Your outstanding balance is:
