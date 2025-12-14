@@ -151,7 +151,7 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                             <FontAwesomeIcon icon={faArrowLeft} />
                         </ActionButton>
                     </div>
-                    <h2 css={tw`text-white font-bold text-4xl`}>Suspended - No Payment</h2>
+                    <h2 css={tw`text-white font-bold text-4xl`}>{isFree ? 'Suspended' : 'Suspended - No Payment'}</h2>
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>
