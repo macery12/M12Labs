@@ -12,10 +12,18 @@ import CategoryTable from '@admin/modules/billing/products/CategoryTable';
 import OrdersContainer from '@admin/modules/billing/orders/OrdersContainer';
 import ProductContainer from '@admin/modules/billing/products/ProductContainer';
 import CategoryContainer from '@admin/modules/billing/products/CategoryContainer';
-import { CogIcon, DesktopComputerIcon, ShoppingCartIcon, ViewGridIcon, XCircleIcon } from '@heroicons/react/outline';
+import {
+    CalendarIcon,
+    CogIcon,
+    DesktopComputerIcon,
+    ShoppingCartIcon,
+    ViewGridIcon,
+    XCircleIcon,
+} from '@heroicons/react/outline';
 import Unfinished from '@/elements/Unfinished';
 import SettingsContainer from '@admin/modules/billing/SettingsContainer';
 import BillingExceptionsContainer from './exceptions/BillingExceptionsContainer';
+import RenewalDatesContainer from '@admin/modules/billing/RenewalDatesContainer';
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.billing.enabled);
@@ -50,6 +58,9 @@ export default () => {
                 <SubNavigationLink to={'/admin/billing/exceptions'} name={'Exceptions'}>
                     <XCircleIcon />
                 </SubNavigationLink>
+                <SubNavigationLink to={'/admin/billing/renewal-dates'} name={'Renewal Dates'}>
+                    <CalendarIcon />
+                </SubNavigationLink>
                 <SubNavigationLink to={'/admin/billing/settings'} name={'Settings'}>
                     <CogIcon />
                 </SubNavigationLink>
@@ -67,6 +78,8 @@ export default () => {
                 <Route path={'/orders'} element={<OrdersContainer />} />
 
                 <Route path={'/exceptions'} element={<BillingExceptionsContainer />} />
+
+                <Route path={'/renewal-dates'} element={<RenewalDatesContainer />} />
 
                 <Route path={'/settings'} element={<SettingsContainer />} />
 

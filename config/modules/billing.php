@@ -39,4 +39,12 @@ return [
         'terms' => '',
         'privacy' => '',
     ],
+
+    /*
+     * Configure renewal and suspension settings.
+     */
+    'renewal' => [
+        'days' => env('BILLING_RENEWAL_DAYS', 30),
+        'suspension_threshold' => env('BILLING_SUSPENSION_THRESHOLD', 7),
+    ],
 ];

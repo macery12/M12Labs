@@ -49,6 +49,10 @@ export default () => {
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
 
+    // Get configurable renewal settings
+    const renewalDays = settings.renewal?.days || 30;
+    const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
+
     useEffect(() => {
         clearFlashes();
 
@@ -82,7 +86,7 @@ export default () => {
 
     // Calculate days remaining until renewal
     const daysRemaining = renewalDate ? Math.max(0, timeUntil(renewalDate).days) : 0;
-    const canRenew = daysRemaining <= 7;
+    const canRenew = daysRemaining <= suspensionThreshold;
 
     return (
         <PageContentBlock
@@ -119,8 +123,8 @@ export default () => {
                             <div className={'flex justify-between'}>
                                 <p className={'text-gray-400 text-sm'}>
                                     {settings.currency.symbol}
-                                    {product ? product.price : '...'} {settings.currency.code.toUpperCase()} every 30
-                                    days
+                                    {product ? product.price : '...'} {settings.currency.code.toUpperCase()} every{' '}
+                                    {renewalDays} days
                                 </p>
                                 <Link to={'/account/billing/orders'} className={'text-green-400 text-xs'}>
                                     View order <FontAwesomeIcon icon={faArrowRight} />
@@ -132,10 +136,10 @@ export default () => {
                 <ContentBox title={'Renew Server'} className={'lg:col-span-2'}>
                     <div className={'mb-4'}>
                         <p className={'text-gray-400 text-xs'}>
-                            If you renew now, your server will be active for a further 30 days, making your next renewal
-                            date
+                            If you renew now, your server will be active for a further {renewalDays} days, making your
+                            next renewal date
                             <strong className={'ml-1'}>
-                                {renewalDate ? format(addDays(renewalDate, 30), 'do MMMM yyyy') : 'Unknown'}
+                                {renewalDate ? format(addDays(renewalDate, renewalDays), 'do MMMM yyyy') : 'Unknown'}
                             </strong>
                             .
                         </p>
@@ -151,12 +155,13 @@ export default () => {
                             {product.price === 0 ? (
                                 <div>
                                     <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. You can renew it for another 30 days when there are 7 days or less remaining.
+                                        This is a free server. You can renew it for another {renewalDays} days when
+                                        there are {suspensionThreshold} days or less remaining.
                                     </p>
                                     {!canRenew ? (
                                         <Alert type={'info'}>
-                                            You can renew this server when there are 7 days or less until the renewal
-                                            date. Currently, you have {daysRemaining} days remaining.
+                                            You can renew this server when there are {suspensionThreshold} days or less
+                                            until the renewal date. Currently, you have {daysRemaining} days remaining.
                                         </Alert>
                                     ) : (
                                         <Button

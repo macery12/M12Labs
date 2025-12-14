@@ -104,9 +104,10 @@ class FreeProductController extends ClientApiController
             $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
         }
 
-        // Reset the renewal date to 30 days from now (not add 30 days)
+        // Reset the renewal date to configured days from now (not add days)
+        $renewalDays = config('modules.billing.renewal.days', 30);
         $server->update([
-            'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
+            'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
         ]);
 
         $order->update([

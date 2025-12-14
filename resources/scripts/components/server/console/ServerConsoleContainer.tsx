@@ -44,10 +44,14 @@ function ServerConsoleContainer() {
     const status = ServerContext.useStoreState(state => state.status.value);
     const renewalDate = ServerContext.useStoreState(state => state.server.data!.renewalDate);
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
+    const settings = useStoreState(state => state.everest.data!.billing);
+
+    // Get configurable renewal settings
+    const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
 
     // Calculate days until renewal
     const daysUntilRenewal = renewalDate ? Math.floor((new Date(renewalDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
-    const showRenewalWarning = billingProductId && daysUntilRenewal !== null && daysUntilRenewal <= 7 && daysUntilRenewal >= 0;
+    const showRenewalWarning = billingProductId && daysUntilRenewal !== null && daysUntilRenewal <= suspensionThreshold && daysUntilRenewal >= 0;
 
     return (
         <PageContentBlock title={'Server Console'} showFlashKey={'console:share'}>

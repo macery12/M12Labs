@@ -53,6 +53,10 @@ export interface EverestSettings {
             terms: string;
             privacy: string;
         };
+        renewal?: {
+            days: number;
+            suspension_threshold: number;
+        };
     };
     alert: {
         enabled: boolean;

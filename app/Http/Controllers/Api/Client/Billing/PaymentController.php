@@ -183,8 +183,9 @@ class PaymentController extends ClientApiController
                 $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
             }
 
+            $renewalDays = config('modules.billing.renewal.days', 30);
             $server->update([
-                'renewal_date' => $server->renewal_date->addDays(30)->toDateTimeString(),
+                'renewal_date' => $server->renewal_date->addDays($renewalDays)->toDateTimeString(),
             ]);
         } else {
             $product = Product::findOrFail($intent->metadata->product_id);

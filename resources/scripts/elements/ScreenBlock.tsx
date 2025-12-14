@@ -102,6 +102,10 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const currency = useStoreState(state => state.everest.data!.billing.currency.symbol);
     const { secondary } = useStoreState(state => state.theme.data!.colors);
+    const settings = useStoreState(state => state.everest.data!.billing);
+
+    // Get configurable renewal settings
+    const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
 
     useEffect(() => {
         if (id) {
@@ -137,7 +141,7 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     // Calculate days past the renewal date
     const now = new Date();
     const daysOverdue = Math.max(0, Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)));
-    const isLongOverdue = daysOverdue > 7;
+    const isLongOverdue = daysOverdue > suspensionThreshold;
 
     return (
         <PageContentBlock>
@@ -157,15 +161,17 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                             <>
                                 {isLongOverdue ? (
                                     <>
-                                        Your free server has been suspended for more than 7 days due to non-renewal.{' '}
+                                        Your free server has been suspended for more than {suspensionThreshold} days due
+                                        to non-renewal.{' '}
                                         <span className={'font-bold text-red-400'}>
                                             Please create a support ticket to restore access.
-                                        </span>
-                                        {' '}Self-service renewal is no longer available after 7 days.
+                                        </span>{' '}
+                                        Self-service renewal is no longer available after {suspensionThreshold} days.
                                     </>
                                 ) : (
                                     <>
-                                        Your free server has been suspended because the renewal date has passed. Please renew to restore access.
+                                        Your free server has been suspended because the renewal date has passed. Please
+                                        renew to restore access.
                                         <div className={'mt-2 text-yellow-400 font-semibold'}>
                                             Days overdue: {daysOverdue}
                                         </div>
@@ -176,11 +182,12 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                             <>
                                 {isLongOverdue ? (
                                     <>
-                                        Your server has been suspended for more than 7 days due to non-payment.{' '}
+                                        Your server has been suspended for more than {suspensionThreshold} days due to
+                                        non-payment.{' '}
                                         <span className={'font-bold text-red-400'}>
                                             Please create a support ticket to restore access.
-                                        </span>
-                                        {' '}Self-service payment is no longer available after 7 days.
+                                        </span>{' '}
+                                        Self-service payment is no longer available after {suspensionThreshold} days.
                                     </>
                                 ) : (
                                     <>
