@@ -45,7 +45,7 @@ export default () => {
         if (selectedNodeId) {
             setLoading(true);
             // Fetch all allocations for the selected node and filter client-side for unassigned ones
-            getAllocations(selectedNodeId, 500)
+            getAllocations(selectedNodeId)
                 .then(fetchedAllocations => {
                     // Filter for allocations that are not assigned to any server
                     const availableAllocations = fetchedAllocations.filter(
