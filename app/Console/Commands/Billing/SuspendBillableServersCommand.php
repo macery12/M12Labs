@@ -51,7 +51,7 @@ class SuspendBillableServersCommand extends Command
                 }
 
                 // Only suspend if overdue by more than the threshold
-                if ($daysOverdue >= $suspensionThreshold && !$server->isSuspended()) {
+                if ($daysOverdue > $suspensionThreshold && !$server->isSuspended()) {
                     $this->info("suspending server {$server->id}, overdue by {$daysOverdue} day(s)");
                     $this->suspend->toggle($server, 'suspend');
                 }

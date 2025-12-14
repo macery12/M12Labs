@@ -2,7 +2,7 @@
 
 return [
     /*
-     * Enable or disable the biling module.
+     * Enable or disable the billing module.
      */
     'enabled' => env('BILLING_ENABLED', false),
 
