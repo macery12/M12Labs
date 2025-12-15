@@ -37,6 +37,7 @@ function InternalForm({ category, visible, setVisible }: Props) {
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
     // Load egg object when category.eggId changes (after save/SWR revalidation)
+    // Note: No need for guard - useEffect only runs when category?.eggId changes
     useEffect(() => {
         if (category?.eggId) {
             getEgg(category.eggId)
