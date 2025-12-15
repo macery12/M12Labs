@@ -188,6 +188,7 @@ export default ({ category }: { category?: Category }) => {
                     description: category?.description ?? '',
                     visible: category?.visible ?? false,
                     eggId: category?.eggId ?? 0,
+                    environment: {} as Record<string, any>,
                 }}
                 validationSchema={object().shape({
                     name: string().required().max(191).min(3),
