@@ -14,7 +14,7 @@ import { object, string, boolean, number } from 'yup';
 import { faShoppingBasket } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import Label from '@/elements/Label';
-import { Dispatch, SetStateAction, useEffect, useState, useRef } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { ServerServiceContainer } from '@admin/management/servers/ServerStartupContainer';
 import { WithRelationships } from '@/api/routes/admin';
 import type { Egg } from '@/api/routes/admin/egg';
@@ -33,26 +33,17 @@ interface Props {
 
 function InternalForm({ category, visible, setVisible }: Props) {
     const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>();
-    const { setFieldValue, values, isSubmitting } = useFormikContext<CategoryValues>();
+    const { values, isSubmitting } = useFormikContext<CategoryValues>();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
-    const lastEggIdRef = useRef<number | undefined>();
 
-    // Load egg object when category.eggId changes (from SWR revalidation after save)
+    // Load egg object when category.eggId changes (after save/SWR revalidation)
     useEffect(() => {
-        if (category?.eggId && (!egg || category.eggId !== egg.id)) {
+        if (category?.eggId) {
             getEgg(category.eggId)
                 .then(egg => setEgg(egg))
                 .catch(error => console.error(error));
         }
     }, [category?.eggId]);
-
-    // Sync egg state with formik eggId field (when user manually selects different egg)
-    useEffect(() => {
-        if (egg?.id !== undefined && egg.id !== lastEggIdRef.current && egg.id !== values.eggId) {
-            lastEggIdRef.current = egg.id;
-            setFieldValue('eggId', egg.id);
-        }
-    }, [egg, setFieldValue, values.eggId]);
 
 
     return (
@@ -116,7 +107,7 @@ function InternalForm({ category, visible, setVisible }: Props) {
                 </div>
                 <div css={tw`w-full flex flex-col mr-0 lg:mr-2`}>
                     <ServerServiceContainer
-                        selectedEggId={egg?.id}
+                        selectedEggId={values.eggId}
                         setEgg={setEgg}
                         nestId={category?.nestId ?? 0}
                         noToggle
