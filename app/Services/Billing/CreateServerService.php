@@ -57,6 +57,9 @@ class CreateServerService
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
         try {
+            // Use paid renewal days for paid servers
+            $renewalDays = config('modules.billing.renewal.days', 30);
+            
             $server = $this->creation->handle([
                 'node_id' => $metadata->node_id,
                 'allocation_id' => $allocation,
@@ -73,7 +76,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
-                'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
+                'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
                 'allocation_limit' => $product->allocation_limit,
@@ -104,6 +107,9 @@ class CreateServerService
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
         try {
+            // Use free renewal days for free servers
+            $renewalDays = config('modules.billing.renewal.free_renewal_days', 30);
+            
             $server = $this->creation->handle([
                 'node_id' => $nodeId,
                 'allocation_id' => $allocation,
@@ -120,7 +126,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
-                'renewal_date' => Carbon::now()->addDays(30)->toDateTimeString(),
+                'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
                 'allocation_limit' => $product->allocation_limit,
