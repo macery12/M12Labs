@@ -39,12 +39,12 @@ function InternalForm({ category, visible, setVisible }: Props) {
 
     // Load egg object when category.eggId changes (from SWR revalidation after save)
     useEffect(() => {
-        if (category?.eggId && category.eggId !== egg?.id) {
+        if (category?.eggId && (!egg || category.eggId !== egg.id)) {
             getEgg(category.eggId)
                 .then(egg => setEgg(egg))
                 .catch(error => console.error(error));
         }
-    }, [category?.eggId]);
+    }, [category?.eggId, egg?.id]);
 
     // Sync egg state with formik eggId field (when user manually selects different egg)
     useEffect(() => {
