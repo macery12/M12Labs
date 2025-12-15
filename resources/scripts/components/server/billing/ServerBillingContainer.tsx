@@ -51,6 +51,7 @@ export default () => {
 
     // Get configurable renewal settings
     const renewalDays = settings.renewal?.days || 30;
+    const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
 
@@ -140,16 +141,6 @@ export default () => {
                     </ContentBox>
                 )}
                 <ContentBox title={'Renew Server'} className={'lg:col-span-2'}>
-                    <div className={'mb-4'}>
-                        <p className={'text-gray-400 text-xs'}>
-                            If you renew now, your server will be active for a further {renewalDays} days, making your
-                            next renewal date{' '}
-                            <strong>
-                                {format(addDays(new Date(), renewalDays), 'do MMMM yyyy')}
-                            </strong>
-                            .
-                        </p>
-                    </div>
                     <FlashMessageRender byKey={'server:billing'} className={'mb-4'} />
                     {!product ? (
                         <Alert type={'danger'}>
@@ -158,10 +149,20 @@ export default () => {
                         </Alert>
                     ) : (
                         <>
+                            <div className={'mb-4'}>
+                                <p className={'text-gray-400 text-xs'}>
+                                    If you renew now, your server will be active for a further {product.price === 0 ? freeRenewalDays : renewalDays} days, making your
+                                    next renewal date{' '}
+                                    <strong>
+                                        {format(addDays(new Date(), product.price === 0 ? freeRenewalDays : renewalDays), 'do MMMM yyyy')}
+                                    </strong>
+                                    .
+                                </p>
+                            </div>
                             {product.price === 0 ? (
                                 <div>
                                     <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. You can renew it for another {renewalDays} days starting {suspensionThreshold} days before it expires, giving you time to renew before expiration. You can also renew within the {freeGraceDays}-day grace period after expiration.
+                                        This is a free server. You can renew it for another {freeRenewalDays} days starting {suspensionThreshold} days before it expires, giving you time to renew before expiration. You can also renew within the {freeGraceDays}-day grace period after expiration.
                                     </p>
                                     {daysOverdue > freeGraceDays ? (
                                         <Alert type={'danger'}>
