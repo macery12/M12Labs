@@ -220,6 +220,7 @@ export default function CouponForm() {
             <Formik
                 onSubmit={submit}
                 initialValues={initialValues}
+                enableReinitialize={true}
                 validationSchema={object().shape({
                     code: string().required().min(2).max(50),
                     type: string().required().oneOf(['percentage', 'fixed']),

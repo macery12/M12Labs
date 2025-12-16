@@ -144,7 +144,7 @@ export default () => {
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
             {/* @ts-expect-error this is fine, stripe library is just weird */}
-            <Elements stripe={stripe} options={options}>
+            <Elements stripe={stripe} options={options} key={intent?.id}>
                 <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
                     Your Order
                     <p className={'text-gray-400 font-normal text-sm mt-1'}>
