@@ -7,7 +7,9 @@ use Everest\Models\Node;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
+use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
+use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
@@ -43,7 +45,7 @@ class FreeProductController extends ClientApiController
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         
         if ($couponId) {
-            $coupon = \Everest\Models\Billing\Coupon::find($couponId);
+            $coupon = Coupon::find($couponId);
             if ($coupon) {
                 $discount = $coupon->calculateDiscount($product->price);
                 $finalPrice = max(0, $product->price - $discount);
@@ -77,7 +79,7 @@ class FreeProductController extends ClientApiController
 
         // Record coupon usage if a coupon was applied
         if ($couponId) {
-            \Everest\Models\Billing\CouponUsage::create([
+            CouponUsage::create([
                 'coupon_id' => $couponId,
                 'user_id' => $user->id,
                 'order_id' => $order->id,
