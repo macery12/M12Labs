@@ -124,13 +124,30 @@ class PaymentController extends ClientApiController
             ]);
         }
 
+        // Calculate the amount based on coupon if provided
+        $amount = $product->price;
+        $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
+        
+        if ($couponId) {
+            $coupon = \Everest\Models\Billing\Coupon::find($couponId);
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($product->price);
+                $amount = max(0, $product->price - $discount);
+            }
+        }
+
+        // Update the intent amount if it has changed
+        if ($intent->amount !== (int)($amount * 100)) {
+            $intent->amount = (int)($amount * 100);
+        }
+
         $metadata = [
             'customer_email' => $request->user()->email,
             'customer_name' => $request->user()->username,
             'product_id' => (string) $id,
             'node_id' => (string) ($request->input('node_id') ?? ''),
             'server_id' => (string) ($request->input('server_id') ?? 0),
-            'coupon_id' => (string) ($request->input('coupon_id') ?? ''),
+            'coupon_id' => (string) ($couponId ?? ''),
         ];
 
         $variables = $request->input('variables') ?? [];
@@ -140,7 +157,6 @@ class PaymentController extends ClientApiController
         $intent->save();
 
         // Create the order with coupon
-        $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $this->orderService->create(
             $intent->id,
             $request->user(),

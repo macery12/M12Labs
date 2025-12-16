@@ -34,6 +34,9 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                 placeholder={'SAVE20'}
                                 label={'Coupon Code'}
                                 description={'Unique code for this coupon (will be uppercase).'}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    setFieldValue('code', e.target.value.toUpperCase());
+                                }}
                             />
                             <div className={'mb-6'}>
                                 <Label htmlFor={'type'}>Discount Type</Label>
