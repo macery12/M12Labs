@@ -5,6 +5,7 @@ import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
 import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
+import CouponInput from '@account/billing/order/CouponInput';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -32,6 +33,7 @@ import { getProduct, getProductVariables, getViableNodes } from '@/api/routes/ac
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import AdminCheckbox from '@/elements/AdminCheckbox';
+import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 
 const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) => {
     return (
@@ -60,8 +62,20 @@ export default () => {
 
     const [termsAgreed, setTermsAgreed] = useState<boolean>(false);
     const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
+    const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
 
     const { colors } = useStoreState(state => state.theme.data!);
+
+    const handleCouponApplied = (data: ValidateCouponResponse | null) => {
+        setCouponData(data);
+        
+        // Regenerate intent with new amount if coupon is applied/removed for paid products
+        if (product && product.price !== 0) {
+            getStripeIntent(Number(params.id), data?.coupon.id)
+                .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
+                .catch(error => console.error('Error updating payment intent:', error));
+        }
+    };
 
     const createFree = () => {
         if (product) {
@@ -129,15 +143,13 @@ export default () => {
     return (
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            {/* @ts-expect-error this is fine, stripe library is just weird */}
-            <Elements stripe={stripe} options={options}>
-                <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
-                    Your Order
-                    <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                        Customize your selected plan and submit a payment.
-                    </p>
-                </div>
-                <div className={'grid lg:grid-cols-8 gap-4 lg:gap-12'}>
+            <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
+                Your Order
+                <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                    Customize your selected plan and submit a payment.
+                </p>
+            </div>
+            <div className={'grid lg:grid-cols-8 gap-4 lg:gap-12'}>
                     <div className={'lg:border-r-4 border-gray-500 lg:col-span-2'}>
                         <p className={'text-2xl text-gray-300 my-4 font-bold'}>
                             Selected Plan
@@ -146,10 +158,29 @@ export default () => {
                         <LimitBox icon={faIdBadge} content={product.name} />
                         <div className={'font-semibold text-gray-400 text-lg my-1'}>
                             <FontAwesomeIcon icon={faCreditCard} className={'w-4 h-4 inline-flex mr-2 '} />
-                            <span style={{ color: colors.primary }} className={'mr-1'}>
-                                ${product.price}
-                            </span>
-                            <span className={'text-sm'}>/ mo</span>
+                            {couponData ? (
+                                <div>
+                                    <div className={'line-through text-sm'}>
+                                        ${couponData.subtotal}
+                                    </div>
+                                    <div>
+                                        <span style={{ color: colors.primary }} className={'mr-1'}>
+                                            ${couponData.total.toFixed(2)}
+                                        </span>
+                                        <span className={'text-sm'}>/ mo</span>
+                                    </div>
+                                    <div className={'text-green-500 text-xs'}>
+                                        Save ${couponData.discount.toFixed(2)}
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <span style={{ color: colors.primary }} className={'mr-1'}>
+                                        ${product.price}
+                                    </span>
+                                    <span className={'text-sm'}>/ mo</span>
+                                </>
+                            )}
                         </div>
                         <div className={'h-0.5 my-4 bg-gray-600 mr-8 rounded-full'} />
                         <LimitBox icon={faMicrochip} content={`${product.limits.cpu}% CPU`} />
@@ -266,6 +297,21 @@ export default () => {
                                 </div>
                             </div>
                             <div className={'h-px bg-gray-700 rounded-full'} />
+                            {product.price !== 0 && (
+                                <>
+                                    <div className={'my-10'}>
+                                        <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
+                                            Coupon Code
+                                            <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                                                Have a coupon? Apply it here to get a discount on your order.
+                                            </p>
+                                        </div>
+                                        <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                        <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
+                                    </div>
+                                    <div className={'h-px bg-gray-700 rounded-full'} />
+                                </>
+                            )}
                             {!termsAgreed || !privacyAgreed ? (
                                 <Alert type={'warning'}>
                                     Please agree to the above legal documents before proceeding with your order.
@@ -274,12 +320,16 @@ export default () => {
                                 <>
                                     {product.price !== 0 && intent ? (
                                         <div className={'w-full mt-8'}>
-                                            <PaymentButton
-                                                selectedNode={selectedNode}
-                                                product={product}
-                                                vars={vars}
-                                                intent={intent}
-                                            />
+                                            {/* @ts-expect-error this is fine, stripe library is just weird */}
+                                            <Elements stripe={stripe} options={options} key={intent?.id}>
+                                                <PaymentButton
+                                                    selectedNode={selectedNode}
+                                                    product={product}
+                                                    vars={vars}
+                                                    intent={intent}
+                                                    couponId={couponData?.coupon.id}
+                                                />
+                                            </Elements>
                                         </div>
                                     ) : (
                                         <div className={'flex w-full mt-8'}>
@@ -297,7 +347,6 @@ export default () => {
                         </div>
                     </div>
                 </div>
-            </Elements>
         </PageContentBlock>
     );
 };

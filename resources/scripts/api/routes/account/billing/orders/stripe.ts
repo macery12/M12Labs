@@ -10,9 +10,11 @@ export const getStripeKey = (id: number): Promise<{ key: string }> => {
     });
 };
 
-export const getStripeIntent = (id: number): Promise<StripeIntent> => {
+export const getStripeIntent = (id: number, couponId?: number): Promise<StripeIntent> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/billing/products/${id}/intent`)
+        http.post(`/api/client/billing/products/${id}/intent`, {
+            coupon_id: couponId,
+        })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -25,6 +27,7 @@ export const updateStripeIntent = ({
     vars,
     serverId,
     renewal,
+    coupon_id,
 }: UpdateStripeIntent): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/client/billing/products/${id}/intent`, {
@@ -33,6 +36,7 @@ export const updateStripeIntent = ({
             node_id,
             variables: vars,
             server_id: serverId,
+            coupon_id,
         })
             .then(() => resolve())
             .catch(reject);

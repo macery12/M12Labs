@@ -13,4 +13,5 @@ export interface UpdateStripeIntent {
     vars?: { key: string; value: string }[];
     serverId?: number;
     renewal?: boolean;
+    coupon_id?: number;
 }

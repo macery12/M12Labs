@@ -12,11 +12,14 @@ import CategoryTable from '@admin/modules/billing/products/CategoryTable';
 import OrdersContainer from '@admin/modules/billing/orders/OrdersContainer';
 import ProductContainer from '@admin/modules/billing/products/ProductContainer';
 import CategoryContainer from '@admin/modules/billing/products/CategoryContainer';
+import CouponsContainer from '@admin/modules/billing/coupons/CouponsContainer';
+import CouponForm from '@admin/modules/billing/coupons/CouponForm';
 import {
     CalendarIcon,
     CogIcon,
     DesktopComputerIcon,
     ShoppingCartIcon,
+    TicketIcon,
     ViewGridIcon,
     XCircleIcon,
 } from '@heroicons/react/outline';
@@ -55,6 +58,9 @@ export default () => {
                 <SubNavigationLink to={'/admin/billing/orders'} name={'Orders'}>
                     <ShoppingCartIcon />
                 </SubNavigationLink>
+                <SubNavigationLink to={'/admin/billing/coupons'} name={'Coupons'}>
+                    <TicketIcon />
+                </SubNavigationLink>
                 <SubNavigationLink to={'/admin/billing/exceptions'} name={'Exceptions'}>
                     <XCircleIcon />
                 </SubNavigationLink>
@@ -76,6 +82,10 @@ export default () => {
                 <Route path={'/categories/:id/products/:productId'} element={<ProductContainer />} />
 
                 <Route path={'/orders'} element={<OrdersContainer />} />
+
+                <Route path={'/coupons'} element={<CouponsContainer />} />
+                <Route path={'/coupons/new'} element={<CouponForm />} />
+                <Route path={'/coupons/:id'} element={<CouponForm />} />
 
                 <Route path={'/exceptions'} element={<BillingExceptionsContainer />} />
 
