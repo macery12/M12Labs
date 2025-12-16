@@ -16,36 +16,47 @@ class CouponController extends ClientApiController
      */
     public function validate(ValidateCouponRequest $request): JsonResponse
     {
-        $code = Str::upper($request->input('code'));
-        $subtotal = (float) $request->input('subtotal');
-        $userId = $request->user()->id;
+        try {
+            $code = Str::upper($request->input('code'));
+            $subtotal = (float) $request->input('subtotal');
+            $userId = $request->user()->id;
 
-        $coupon = Coupon::where('code', $code)->first();
+            $coupon = Coupon::where('code', $code)->first();
 
-        if (!$coupon) {
-            throw new DisplayException('Invalid coupon code.');
+            if (!$coupon) {
+                throw new DisplayException('Invalid coupon code.');
+            }
+
+            $validation = $coupon->canBeUsed($userId, $subtotal);
+
+            if (!$validation['valid']) {
+                throw new DisplayException($validation['message']);
+            }
+
+            $discount = $coupon->calculateDiscount($subtotal);
+            $total = max(0, $subtotal - $discount);
+
+            return response()->json([
+                'valid' => true,
+                'coupon' => [
+                    'id' => $coupon->id,
+                    'code' => $coupon->code,
+                    'type' => $coupon->type,
+                    'value' => $coupon->value,
+                ],
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'total' => $total,
+            ]);
+        } catch (DisplayException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('Coupon validation error: ' . $e->getMessage(), [
+                'code' => $request->input('code'),
+                'subtotal' => $request->input('subtotal'),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw new DisplayException('An error occurred while validating the coupon. Please try again later.');
         }
-
-        $validation = $coupon->canBeUsed($userId, $subtotal);
-
-        if (!$validation['valid']) {
-            throw new DisplayException($validation['message']);
-        }
-
-        $discount = $coupon->calculateDiscount($subtotal);
-        $total = max(0, $subtotal - $discount);
-
-        return response()->json([
-            'valid' => true,
-            'coupon' => [
-                'id' => $coupon->id,
-                'code' => $coupon->code,
-                'type' => $coupon->type,
-                'value' => $coupon->value,
-            ],
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'total' => $total,
-        ]);
     }
 }

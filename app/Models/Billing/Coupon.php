@@ -123,7 +123,12 @@ class Coupon extends Model
             return false;
         }
 
-        return $this->usage_count >= $this->max_uses;
+        try {
+            return $this->usage()->count() >= $this->max_uses;
+        } catch (\Exception $e) {
+            \Log::error('Error checking coupon max uses: ' . $e->getMessage());
+            return false; // If there's an error, allow the coupon to be used
+        }
     }
 
     /**
@@ -135,9 +140,13 @@ class Coupon extends Model
             return false;
         }
 
-        $userUsageCount = $this->usage()->where('user_id', $userId)->count();
-
-        return $userUsageCount >= $this->max_uses_per_user;
+        try {
+            $userUsageCount = $this->usage()->where('user_id', $userId)->count();
+            return $userUsageCount >= $this->max_uses_per_user;
+        } catch (\Exception $e) {
+            \Log::error('Error checking user coupon limit: ' . $e->getMessage());
+            return false; // If there's an error, allow the coupon to be used
+        }
     }
 
     /**
