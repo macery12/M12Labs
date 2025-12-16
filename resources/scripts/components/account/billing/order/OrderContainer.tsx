@@ -143,15 +143,13 @@ export default () => {
     return (
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            {/* @ts-expect-error this is fine, stripe library is just weird */}
-            <Elements stripe={stripe} options={options} key={intent?.id}>
-                <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
-                    Your Order
-                    <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                        Customize your selected plan and submit a payment.
-                    </p>
-                </div>
-                <div className={'grid lg:grid-cols-8 gap-4 lg:gap-12'}>
+            <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
+                Your Order
+                <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                    Customize your selected plan and submit a payment.
+                </p>
+            </div>
+            <div className={'grid lg:grid-cols-8 gap-4 lg:gap-12'}>
                     <div className={'lg:border-r-4 border-gray-500 lg:col-span-2'}>
                         <p className={'text-2xl text-gray-300 my-4 font-bold'}>
                             Selected Plan
@@ -322,13 +320,16 @@ export default () => {
                                 <>
                                     {product.price !== 0 && intent ? (
                                         <div className={'w-full mt-8'}>
-                                            <PaymentButton
-                                                selectedNode={selectedNode}
-                                                product={product}
-                                                vars={vars}
-                                                intent={intent}
-                                                couponId={couponData?.coupon.id}
-                                            />
+                                            {/* @ts-expect-error this is fine, stripe library is just weird */}
+                                            <Elements stripe={stripe} options={options} key={intent?.id}>
+                                                <PaymentButton
+                                                    selectedNode={selectedNode}
+                                                    product={product}
+                                                    vars={vars}
+                                                    intent={intent}
+                                                    couponId={couponData?.coupon.id}
+                                                />
+                                            </Elements>
                                         </div>
                                     ) : (
                                         <div className={'flex w-full mt-8'}>
@@ -346,7 +347,6 @@ export default () => {
                         </div>
                     </div>
                 </div>
-            </Elements>
         </PageContentBlock>
     );
 };
