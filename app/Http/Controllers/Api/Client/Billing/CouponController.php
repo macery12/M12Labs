@@ -15,7 +15,7 @@ class CouponController extends ClientApiController
     /**
      * Validate a coupon code for use in checkout.
      */
-    public function validate(ValidateCouponRequest $request): JsonResponse
+    public function validateCoupon(ValidateCouponRequest $request): JsonResponse
     {
         try {
             // Check if coupons table exists
