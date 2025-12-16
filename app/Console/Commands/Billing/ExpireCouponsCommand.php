@@ -12,30 +12,15 @@ class ExpireCouponsCommand extends Command
     protected $signature = 'p:billing:expire-coupons';
 
     /**
-     * ExpireCouponsCommand constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Handle command execution.
      */
     public function handle()
     {
-        $expiredCount = 0;
-
-        // Find all active coupons that have passed their expiration date
-        $coupons = Coupon::where('is_active', true)
+        // Find and update all active coupons that have passed their expiration date
+        $expiredCount = Coupon::where('is_active', true)
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now())
-            ->get();
-
-        foreach ($coupons as $coupon) {
-            $coupon->update(['is_active' => false]);
-            $expiredCount++;
-        }
+            ->update(['is_active' => false]);
 
         if ($expiredCount > 0) {
             $this->info("Marked {$expiredCount} expired coupon(s) as inactive.");
