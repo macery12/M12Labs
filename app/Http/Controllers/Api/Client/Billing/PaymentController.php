@@ -54,11 +54,6 @@ class PaymentController extends ClientApiController
     {
         $product = Product::findOrFail($id);
 
-        // Free products should not create payment intents
-        if ((float) $product->price === 0.0) {
-            throw new DisplayException('Free products do not require payment. Please use the free product renewal process.');
-        }
-
         // Calculate the amount based on coupon if provided
         $amount = $product->price;
         if ($request->has('coupon_id') && $request->input('coupon_id')) {
@@ -67,6 +62,11 @@ class PaymentController extends ClientApiController
                 $discount = $coupon->calculateDiscount($product->price);
                 $amount = max(0, $product->price - $discount);
             }
+        }
+
+        // Free products or zero-dollar totals should not create payment intents
+        if ((float) $amount === 0.0) {
+            throw new DisplayException('This order total is $0. Please use the free order process instead of payment.');
         }
 
         $paymentMethodTypes = ['card'];

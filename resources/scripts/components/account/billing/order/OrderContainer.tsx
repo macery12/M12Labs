@@ -37,8 +37,8 @@ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 
 const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) => {
     return (
-        <div className={'font-semibold text-gray-400 my-1'}>
-            <FontAwesomeIcon icon={icon} className={'w-4 h-4 inline-flex mr-2 '} />
+        <div className={'my-1 font-semibold text-gray-400'}>
+            <FontAwesomeIcon icon={icon} className={'mr-2 inline-flex h-4 w-4 '} />
             {content}
         </div>
     );
@@ -68,19 +68,27 @@ export default () => {
 
     const handleCouponApplied = (data: ValidateCouponResponse | null) => {
         setCouponData(data);
-        
-        // Regenerate intent with new amount if coupon is applied/removed for paid products
+
+        // Only regenerate intent if the final total is not zero
         if (product && product.price !== 0) {
-            getStripeIntent(Number(params.id), data?.coupon.id)
-                .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
-                .catch(error => console.error('Error updating payment intent:', error));
+            const finalTotal = data ? data.total : product.price;
+
+            // If coupon makes it free, don't fetch intent
+            if (finalTotal === 0) {
+                setIntent(null);
+            } else {
+                // Regenerate intent with new amount for paid products
+                getStripeIntent(Number(params.id), data?.coupon.id)
+                    .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
+                    .catch(error => console.error('Error updating payment intent:', error));
+            }
         }
     };
 
     const createFree = () => {
         if (product) {
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
-            processUnpaidOrder(product.id, selectedNode, undefined, variables)
+            processUnpaidOrder(product.id, selectedNode, undefined, variables, undefined, couponData?.coupon.id)
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
         }
@@ -128,7 +136,10 @@ export default () => {
     }, [product]);
 
     if (!product) return <Spinner centered />;
-    if (product.price !== 0 && (!intent || !stripe)) return <Spinner centered />;
+    // Only show spinner for paid products when Stripe hasn't loaded yet
+    // If a coupon makes it free, we don't need Stripe
+    const needsStripe = product.price !== 0 && (!couponData || couponData.total !== 0);
+    if (needsStripe && (!intent || !stripe)) return <Spinner centered />;
 
     const options = {
         clientSecret: intent?.secret,
@@ -143,210 +154,203 @@ export default () => {
     return (
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
+            <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                 Your Order
-                <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                <p className={'mt-1 text-sm font-normal text-gray-400'}>
                     Customize your selected plan and submit a payment.
                 </p>
             </div>
-            <div className={'grid lg:grid-cols-8 gap-4 lg:gap-12'}>
-                    <div className={'lg:border-r-4 border-gray-500 lg:col-span-2'}>
-                        <p className={'text-2xl text-gray-300 my-4 font-bold'}>
-                            Selected Plan
-                            {product.icon && <img src={product.icon} className={'w-8 h-8 ml-2 inline-flex'} />}
-                        </p>
-                        <LimitBox icon={faIdBadge} content={product.name} />
-                        <div className={'font-semibold text-gray-400 text-lg my-1'}>
-                            <FontAwesomeIcon icon={faCreditCard} className={'w-4 h-4 inline-flex mr-2 '} />
-                            {couponData ? (
+            <div className={'grid gap-4 lg:grid-cols-8 lg:gap-12'}>
+                <div className={'border-gray-500 lg:col-span-2 lg:border-r-4'}>
+                    <p className={'my-4 text-2xl font-bold text-gray-300'}>
+                        Selected Plan
+                        {product.icon && <img src={product.icon} className={'ml-2 inline-flex h-8 w-8'} />}
+                    </p>
+                    <LimitBox icon={faIdBadge} content={product.name} />
+                    <div className={'my-1 text-lg font-semibold text-gray-400'}>
+                        <FontAwesomeIcon icon={faCreditCard} className={'mr-2 inline-flex h-4 w-4 '} />
+                        {couponData ? (
+                            <div>
+                                <div className={'text-sm line-through'}>${couponData.subtotal}</div>
                                 <div>
-                                    <div className={'line-through text-sm'}>
-                                        ${couponData.subtotal}
-                                    </div>
-                                    <div>
-                                        <span style={{ color: colors.primary }} className={'mr-1'}>
-                                            ${couponData.total.toFixed(2)}
-                                        </span>
-                                        <span className={'text-sm'}>/ mo</span>
-                                    </div>
-                                    <div className={'text-green-500 text-xs'}>
-                                        Save ${couponData.discount.toFixed(2)}
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
                                     <span style={{ color: colors.primary }} className={'mr-1'}>
-                                        ${product.price}
+                                        ${couponData.total.toFixed(2)}
                                     </span>
                                     <span className={'text-sm'}>/ mo</span>
-                                </>
-                            )}
-                        </div>
-                        <div className={'h-0.5 my-4 bg-gray-600 mr-8 rounded-full'} />
-                        <LimitBox icon={faMicrochip} content={`${product.limits.cpu}% CPU`} />
-                        <LimitBox icon={faMemory} content={`${(product.limits.memory / 1024).toFixed(1)} GiB Memory`} />
-                        <LimitBox icon={faHdd} content={`${(product.limits.disk / 1024).toFixed(1)} GiB Disk`} />
-                        <div className={'h-0.5 my-4 bg-gray-600 mr-8 rounded-full'} />
-                        <LimitBox icon={faArchive} content={`${product.limits.backup} Backup Slots`} />
-                        <LimitBox icon={faDatabase} content={`${product.limits.database} Database Slots`} />
-                        <LimitBox icon={faEthernet} content={`${product.limits.allocation} Network Ports`} />
+                                </div>
+                                <div className={'text-xs text-green-500'}>Save ${couponData.discount.toFixed(2)}</div>
+                            </div>
+                        ) : (
+                            <>
+                                <span style={{ color: colors.primary }} className={'mr-1'}>
+                                    ${product.price}
+                                </span>
+                                <span className={'text-sm'}>/ mo</span>
+                            </>
+                        )}
                     </div>
-                    <div className={'lg:col-span-6'}>
-                        <div>
-                            <div className={'my-10'}>
-                                <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
-                                    Choose a location
-                                    <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                                        Select a location from our list to deploy your server to.
-                                    </p>
-                                </div>
-                                <div className={'grid lg:grid-cols-2 gap-4'}>
-                                    {(!nodes || nodes.length < 1) && (
-                                        <Alert type={'danger'} className={'col-span-2'}>
-                                            There are no nodes available for deployment. Please contact an
-                                            administrator.
-                                        </Alert>
-                                    )}
-                                    {nodes?.map(node => (
-                                        <NodeBox
-                                            node={node}
-                                            key={node.id}
-                                            selected={selectedNode}
-                                            setSelected={setSelectedNode}
-                                        />
-                                    ))}
-                                </div>
+                    <div className={'my-4 mr-8 h-0.5 rounded-full bg-gray-600'} />
+                    <LimitBox icon={faMicrochip} content={`${product.limits.cpu}% CPU`} />
+                    <LimitBox icon={faMemory} content={`${(product.limits.memory / 1024).toFixed(1)} GiB Memory`} />
+                    <LimitBox icon={faHdd} content={`${(product.limits.disk / 1024).toFixed(1)} GiB Disk`} />
+                    <div className={'my-4 mr-8 h-0.5 rounded-full bg-gray-600'} />
+                    <LimitBox icon={faArchive} content={`${product.limits.backup} Backup Slots`} />
+                    <LimitBox icon={faDatabase} content={`${product.limits.database} Database Slots`} />
+                    <LimitBox icon={faEthernet} content={`${product.limits.allocation} Network Ports`} />
+                </div>
+                <div className={'lg:col-span-6'}>
+                    <div>
+                        <div className={'my-10'}>
+                            <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
+                                Choose a location
+                                <p className={'mt-1 text-sm font-normal text-gray-400'}>
+                                    Select a location from our list to deploy your server to.
+                                </p>
                             </div>
-                            <div className={'h-px bg-gray-700 rounded-full'} />
-                            {eggs && eggs.length > 1 && (
-                                <>
-                                    <div className={'my-10'}>
-                                        <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
-                                            Plan Variables
-                                            <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                                                Modify your server variables before your server is even created for ease
-                                                of use.
-                                            </p>
-                                        </div>
-                                        <div className={'grid lg:grid-cols-2 gap-4'}>
-                                            {eggs?.map(variable => (
-                                                <div key={variable.envVariable}>
-                                                    {variable.isEditable && (
-                                                        <VariableBox variable={variable} vars={vars} />
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className={'h-px bg-gray-700 rounded-full'} />
-                                </>
-                            )}
-                            <div className={'my-10'}>
-                                <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
-                                    Legal Documents
-                                    <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                                        Agree and sign the relevant legal documents for your new server.
-                                    </p>
-                                </div>
-                                <div className={'grid lg:grid-cols-2 gap-4'}>
-                                    <TitledGreyBox title={'Terms of Service agreement'} className={'relative'}>
-                                        {!termsAgreed ? (
-                                            <>
-                                                Click the checkbox to agree to our{' '}
-                                                <a href={billing.links.terms} className={'text-blue-400 font-semibold'}>
-                                                    Terms of Service <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                                </a>
-                                            </>
-                                        ) : (
-                                            <Alert type={'success'}>Terms of Service completed</Alert>
-                                        )}
-                                        {!termsAgreed && (
-                                            <div className={'absolute top-0 right-0 p-3'}>
-                                                <AdminCheckbox
-                                                    name={'terms'}
-                                                    checked={false}
-                                                    onChange={() => setTermsAgreed(true)}
-                                                />
-                                            </div>
-                                        )}
-                                    </TitledGreyBox>
-                                    <TitledGreyBox title={'Privacy Policy agreement'} className={'relative'}>
-                                        {!privacyAgreed ? (
-                                            <>
-                                                Click the checkbox to agree to our{' '}
-                                                <a
-                                                    href={billing.links.privacy}
-                                                    className={'text-blue-400 font-semibold'}
-                                                >
-                                                    Privacy Policy <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                                </a>
-                                            </>
-                                        ) : (
-                                            <Alert type={'success'}>Privacy Policy completed</Alert>
-                                        )}
-                                        {!privacyAgreed && (
-                                            <div className={'absolute top-0 right-0 p-3'}>
-                                                <AdminCheckbox
-                                                    name={'privacy'}
-                                                    checked={false}
-                                                    onChange={() => setPrivacyAgreed(true)}
-                                                />
-                                            </div>
-                                        )}
-                                    </TitledGreyBox>
-                                </div>
+                            <div className={'grid gap-4 lg:grid-cols-2'}>
+                                {(!nodes || nodes.length < 1) && (
+                                    <Alert type={'danger'} className={'col-span-2'}>
+                                        There are no nodes available for deployment. Please contact an administrator.
+                                    </Alert>
+                                )}
+                                {nodes?.map(node => (
+                                    <NodeBox
+                                        node={node}
+                                        key={node.id}
+                                        selected={selectedNode}
+                                        setSelected={setSelectedNode}
+                                    />
+                                ))}
                             </div>
-                            <div className={'h-px bg-gray-700 rounded-full'} />
-                            {product.price !== 0 && (
-                                <>
-                                    <div className={'my-10'}>
-                                        <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
-                                            Coupon Code
-                                            <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                                                Have a coupon? Apply it here to get a discount on your order.
-                                            </p>
-                                        </div>
-                                        <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                                        <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
-                                    </div>
-                                    <div className={'h-px bg-gray-700 rounded-full'} />
-                                </>
-                            )}
-                            {!termsAgreed || !privacyAgreed ? (
-                                <Alert type={'warning'}>
-                                    Please agree to the above legal documents before proceeding with your order.
-                                </Alert>
-                            ) : (
-                                <>
-                                    {product.price !== 0 && intent ? (
-                                        <div className={'w-full mt-8'}>
-                                            {/* @ts-expect-error this is fine, stripe library is just weird */}
-                                            <Elements stripe={stripe} options={options} key={intent?.id}>
-                                                <PaymentButton
-                                                    selectedNode={selectedNode}
-                                                    product={product}
-                                                    vars={vars}
-                                                    intent={intent}
-                                                    couponId={couponData?.coupon.id}
-                                                />
-                                            </Elements>
-                                        </div>
-                                    ) : (
-                                        <div className={'flex w-full mt-8'}>
-                                            <p className={'font-semibold text-gray-400'}>
-                                                As this product is free, no purchase needs to be made via our payment
-                                                gateways.
-                                            </p>
-                                            <Button className={'ml-auto'} onClick={createFree}>
-                                                Create Server
-                                            </Button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
                         </div>
+                        <div className={'h-px rounded-full bg-gray-700'} />
+                        {eggs && eggs.length > 1 && (
+                            <>
+                                <div className={'my-10'}>
+                                    <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
+                                        Plan Variables
+                                        <p className={'mt-1 text-sm font-normal text-gray-400'}>
+                                            Modify your server variables before your server is even created for ease of
+                                            use.
+                                        </p>
+                                    </div>
+                                    <div className={'grid gap-4 lg:grid-cols-2'}>
+                                        {eggs?.map(variable => (
+                                            <div key={variable.envVariable}>
+                                                {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className={'h-px rounded-full bg-gray-700'} />
+                            </>
+                        )}
+                        <div className={'my-10'}>
+                            <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
+                                Legal Documents
+                                <p className={'mt-1 text-sm font-normal text-gray-400'}>
+                                    Agree and sign the relevant legal documents for your new server.
+                                </p>
+                            </div>
+                            <div className={'grid gap-4 lg:grid-cols-2'}>
+                                <TitledGreyBox title={'Terms of Service agreement'} className={'relative'}>
+                                    {!termsAgreed ? (
+                                        <>
+                                            Click the checkbox to agree to our{' '}
+                                            <a href={billing.links.terms} className={'font-semibold text-blue-400'}>
+                                                Terms of Service <FontAwesomeIcon icon={faExternalLinkAlt} />
+                                            </a>
+                                        </>
+                                    ) : (
+                                        <Alert type={'success'}>Terms of Service completed</Alert>
+                                    )}
+                                    {!termsAgreed && (
+                                        <div className={'absolute top-0 right-0 p-3'}>
+                                            <AdminCheckbox
+                                                name={'terms'}
+                                                checked={false}
+                                                onChange={() => setTermsAgreed(true)}
+                                            />
+                                        </div>
+                                    )}
+                                </TitledGreyBox>
+                                <TitledGreyBox title={'Privacy Policy agreement'} className={'relative'}>
+                                    {!privacyAgreed ? (
+                                        <>
+                                            Click the checkbox to agree to our{' '}
+                                            <a href={billing.links.privacy} className={'font-semibold text-blue-400'}>
+                                                Privacy Policy <FontAwesomeIcon icon={faExternalLinkAlt} />
+                                            </a>
+                                        </>
+                                    ) : (
+                                        <Alert type={'success'}>Privacy Policy completed</Alert>
+                                    )}
+                                    {!privacyAgreed && (
+                                        <div className={'absolute top-0 right-0 p-3'}>
+                                            <AdminCheckbox
+                                                name={'privacy'}
+                                                checked={false}
+                                                onChange={() => setPrivacyAgreed(true)}
+                                            />
+                                        </div>
+                                    )}
+                                </TitledGreyBox>
+                            </div>
+                        </div>
+                        <div className={'h-px rounded-full bg-gray-700'} />
+                        {product.price !== 0 && (
+                            <>
+                                <div className={'my-10'}>
+                                    <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
+                                        Coupon Code
+                                        <p className={'mt-1 text-sm font-normal text-gray-400'}>
+                                            Have a coupon? Apply it here to get a discount on your order.
+                                        </p>
+                                    </div>
+                                    <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                    <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
+                                </div>
+                                <div className={'h-px rounded-full bg-gray-700'} />
+                            </>
+                        )}
+                        {!termsAgreed || !privacyAgreed ? (
+                            <Alert type={'warning'}>
+                                Please agree to the above legal documents before proceeding with your order.
+                            </Alert>
+                        ) : (
+                            <>
+                                {product.price === 0 || couponData?.total === 0 ? (
+                                    <div className={'mt-8 flex w-full'}>
+                                        <p className={'font-semibold text-gray-400'}>
+                                            {couponData?.total === 0
+                                                ? 'Your coupon has made this order free! No payment is required.'
+                                                : 'As this product is free, no purchase needs to be made via our payment gateways.'}
+                                        </p>
+                                        <Button className={'ml-auto'} onClick={createFree}>
+                                            Create Server
+                                        </Button>
+                                    </div>
+                                ) : intent ? (
+                                    <div className={'mt-8 w-full'}>
+                                        {/* @ts-expect-error this is fine, stripe library is just weird */}
+                                        <Elements stripe={stripe} options={options} key={intent?.id}>
+                                            <PaymentButton
+                                                selectedNode={selectedNode}
+                                                product={product}
+                                                vars={vars}
+                                                intent={intent}
+                                                couponId={couponData?.coupon.id}
+                                            />
+                                        </Elements>
+                                    </div>
+                                ) : (
+                                    <Spinner centered />
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
+            </div>
         </PageContentBlock>
     );
 };
