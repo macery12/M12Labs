@@ -863,7 +863,172 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   
-  # Application API - Billing Categories
+  # Application API - Authentication Modules
+  /application/auth/modules/enable:
+    post:
+      tags:
+        - Application - Authentication
+      summary: Enable authentication module
+      description: Enable a specific authentication module on the panel
+      operationId: enableAuthModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                enum: [discord, google, github]
+              example: ["discord"]
+      responses:
+        '204':
+          description: Module enabled successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/auth/modules/disable:
+    post:
+      tags:
+        - Application - Authentication
+      summary: Disable authentication module
+      description: Disable a specific authentication module on the panel
+      operationId: disableAuthModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                enum: [discord, google, github]
+              example: ["discord"]
+      responses:
+        '204':
+          description: Module disabled successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/auth/modules:
+    put:
+      tags:
+        - Application - Authentication
+      summary: Update authentication module settings
+      description: Update settings for a specific authentication module
+      operationId: updateAuthModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - module
+                - key
+                - value
+              properties:
+                module:
+                  type: string
+                  description: Module name
+                  enum: [discord, google, github]
+                key:
+                  type: string
+                  description: Setting key to update
+                  example: client_id
+                value:
+                  type: string
+                  description: Setting value
+                  example: your_client_id_here
+      responses:
+        '204':
+          description: Settings updated successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - Setup
+  /application/setup/data:
+    get:
+      tags:
+        - Application - Overview
+      summary: Get setup data
+      description: Get counts of existing panel resources for setup wizard
+      operationId: getSetupData
+      responses:
+        '200':
+          description: Setup data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes:
+                    type: integer
+                    description: Number of nodes
+                  servers:
+                    type: integer
+                    description: Number of servers
+                  users:
+                    type: integer
+                    description: Number of users
+                  eggs:
+                    type: integer
+                    description: Number of eggs
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/setup/finish:
+    post:
+      tags:
+        - Application - Overview
+      summary: Complete panel setup
+      description: Mark the panel as setup complete and ready for use
+      operationId: finishSetup
+      responses:
+        '204':
+          description: Setup completed successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Application API - Billing
   /application/billing/analytics:
     get:
       tags:
@@ -1400,6 +1565,208 @@ paths:
                         created_at:
                           type: string
                           format: date-time
+  
+  /application/billing/exceptions:
+    get:
+      tags:
+        - Application - Billing
+      summary: List billing exceptions
+      description: Get all billing exceptions/errors
+      operationId: listBillingExceptions
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of billing exceptions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        uuid:
+                          type: string
+                        message:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Application - Billing
+      summary: Resolve all billing exceptions
+      description: Clear all billing exceptions
+      operationId: resolveAllBillingExceptions
+      responses:
+        '204':
+          description: All exceptions resolved successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/billing/exceptions/{uuid}:
+    delete:
+      tags:
+        - Application - Billing
+      summary: Resolve billing exception
+      description: Clear a specific billing exception
+      operationId: resolveBillingException
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          description: Exception UUID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Exception resolved successfully
+        '404':
+          description: Exception not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/billing/config/import:
+    post:
+      tags:
+        - Application - Billing
+      summary: Import billing configuration
+      description: Import billing categories and products from configuration file
+      operationId: importBillingConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - config
+              properties:
+                config:
+                  type: object
+                  description: Billing configuration data
+                  properties:
+                    categories:
+                      type: array
+                      description: Billing categories to import
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          description:
+                            type: string
+                          icon:
+                            type: string
+                    products:
+                      type: array
+                      description: Billing products to import
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          price:
+                            type: number
+                          category_id:
+                            type: integer
+      responses:
+        '200':
+          description: Configuration imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/billing/config/export:
+    post:
+      tags:
+        - Application - Billing
+      summary: Export billing configuration
+      description: Export billing categories and products as configuration file
+      operationId: exportBillingConfig
+      responses:
+        '200':
+          description: Configuration exported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    description: Exported billing categories
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        icon:
+                          type: string
+                  products:
+                    type: array
+                    description: Exported billing products
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        price:
+                          type: number
+                        category_id:
+                          type: integer
+                        egg_id:
+                          type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Application API - Database Hosts
   /application/databases:
@@ -2881,6 +3248,360 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   
+  /client/billing/process/free:
+    post:
+      tags:
+        - Client - Billing
+      summary: Process free product
+      description: Create a server using a free product (no payment required)
+      operationId: processFreeProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+              properties:
+                product_id:
+                  type: integer
+                  description: Free product ID
+                name:
+                  type: string
+                  description: Server name
+                node_id:
+                  type: integer
+                  description: Optional node ID
+      responses:
+        '200':
+          description: Server created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  server_id:
+                    type: integer
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/billing/renew/free:
+    post:
+      tags:
+        - Client - Billing
+      summary: Renew free product
+      description: Renew a server created with a free product
+      operationId: renewFreeProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - server_id
+              properties:
+                server_id:
+                  type: integer
+                  description: Server ID to renew
+      responses:
+        '200':
+          description: Server renewed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/billing/products/{id}/key:
+    get:
+      tags:
+        - Client - Billing
+      summary: Get Stripe public key
+      description: Get the Stripe public key for payment processing
+      operationId: getStripePublicKey
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Stripe public key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key:
+                    type: string
+                    description: Stripe publishable key
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/billing/products/{id}/intent:
+    post:
+      tags:
+        - Client - Billing
+      summary: Create payment intent
+      description: Create a Stripe payment intent for purchasing a product
+      operationId: createPaymentIntent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Payment intent ID
+                  secret:
+                    type: string
+                    description: Client secret for frontend
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags:
+        - Client - Billing
+      summary: Update payment intent
+      description: Update a payment intent with new information
+      operationId: updatePaymentIntent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - intent
+              properties:
+                intent:
+                  type: string
+                  description: Payment intent ID to update
+                variables:
+                  type: object
+                  description: Updated environment variables
+      responses:
+        '204':
+          description: Intent updated successfully
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/billing/products/{id}/variables:
+    get:
+      tags:
+        - Client - Billing
+      summary: Get product variables
+      description: Get environment variables/egg variables for a product
+      operationId: getProductVariables
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Product variables
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        env_variable:
+                          type: string
+                        default_value:
+                          type: string
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/billing/nodes/{product}:
+    post:
+      tags:
+        - Client - Billing
+      summary: Get available nodes for product
+      description: Get list of nodes available for deploying a product
+      operationId: getProductNodes
+      parameters:
+        - name: product
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Available nodes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        location:
+                          type: string
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/billing/orders:
+    get:
+      tags:
+        - Client - Billing
+      summary: List user orders
+      description: Get all orders for the authenticated user
+      operationId: listUserOrders
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        product_id:
+                          type: integer
+                        amount:
+                          type: number
+                        status:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/billing/orders/{id}:
+    get:
+      tags:
+        - Client - Billing
+      summary: Get order details
+      description: Get details of a specific order
+      operationId: getUserOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  product_id:
+                    type: integer
+                  amount:
+                    type: number
+                  status:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
   # Application API - Users
   /application/users:
     get:
@@ -3717,6 +4438,137 @@ paths:
         '201':
           description: Server group created
   
+  /client/groups/{id}:
+    patch:
+      tags:
+        - Client - Server Groups
+      summary: Update server group
+      description: Update a server group's name or color
+      operationId: updateServerGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Group ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Group name
+                color:
+                  type: string
+                  description: Group color (hex code)
+      responses:
+        '204':
+          description: Group updated successfully
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Client - Server Groups
+      summary: Delete server group
+      description: Delete a server group
+      operationId: deleteServerGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Group ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Group deleted successfully
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/groups/{id}/add:
+    post:
+      tags:
+        - Client - Server Groups
+      summary: Add server to group
+      description: Add a server to a server group
+      operationId: addServerToGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Group ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - server
+              properties:
+                server:
+                  type: string
+                  description: Server UUID
+      responses:
+        '204':
+          description: Server added to group
+        '404':
+          description: Group or server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/groups/{id}/remove:
+    post:
+      tags:
+        - Client - Server Groups
+      summary: Remove server from group
+      description: Remove a server from a server group
+      operationId: removeServerFromGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Group ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - server
+              properties:
+                server:
+                  type: string
+                  description: Server UUID
+      responses:
+        '204':
+          description: Server removed from group
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
   # Client API - SSH Keys
   /client/account/ssh-keys:
     get:
@@ -3749,6 +4601,65 @@ paths:
         '201':
           description: SSH key added
   
+  /client/account/ssh-keys/remove:
+    post:
+      tags:
+        - Client - Account
+      summary: Remove SSH key
+      description: Remove an SSH key from the account
+      operationId: removeSSHKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fingerprint
+              properties:
+                fingerprint:
+                  type: string
+                  description: SSH key fingerprint
+      responses:
+        '204':
+          description: SSH key removed
+        '404':
+          description: SSH key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Client API - Links
+  /client/links:
+    get:
+      tags:
+        - Client - Account
+      summary: Get custom links
+      description: Get all custom navigation links for the panel
+      operationId: getClientLinks
+      responses:
+        '200':
+          description: List of custom links
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        url:
+                          type: string
+                        icon:
+                          type: string
+  
   # Client API - Tickets
   /client/account/tickets:
     get:
@@ -3780,6 +4691,146 @@ paths:
       responses:
         '201':
           description: Ticket created
+  
+  /client/account/tickets/{ticket}:
+    get:
+      tags:
+        - Client - Support
+      summary: Get ticket details
+      description: Get details of a specific support ticket
+      operationId: getTicket
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          description: Ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ticket details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  status:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Client - Support
+      summary: Delete ticket
+      description: Delete a support ticket
+      operationId: deleteTicket
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          description: Ticket ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Ticket deleted successfully
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/account/tickets/{ticket}/messages:
+    post:
+      tags:
+        - Client - Support
+      summary: Add ticket message
+      description: Add a message/reply to a support ticket
+      operationId: addTicketMessage
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          description: Ticket ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: Message content
+      responses:
+        '201':
+          description: Message added successfully
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /client/account/setup:
+    post:
+      tags:
+        - Client - Account
+      summary: Complete account setup
+      description: Complete the initial account setup wizard
+      operationId: completeAccountSetup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Account setup preferences and settings
+              properties:
+                preferences:
+                  type: object
+                  description: User preferences for panel behavior
+                  properties:
+                    language:
+                      type: string
+                      description: Preferred language
+                      example: en
+                    theme:
+                      type: string
+                      description: Preferred theme
+                      enum: [light, dark, auto]
+                      example: dark
+                    notifications:
+                      type: boolean
+                      description: Enable notifications
+                      example: true
+      responses:
+        '204':
+          description: Setup completed
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   # Client API - Server Details
   /client/servers/{server}:
@@ -6237,6 +7288,180 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  
+  /application/servers/presets/{server_preset}:
+    get:
+      tags:
+        - Application - Servers
+      summary: Get server preset
+      description: Get details of a specific server preset
+      operationId: getServerPreset
+      parameters:
+        - name: server_preset
+          in: path
+          required: true
+          description: Preset ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Server preset details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  memory:
+                    type: integer
+                  disk:
+                    type: integer
+                  cpu:
+                    type: integer
+        '404':
+          description: Preset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    patch:
+      tags:
+        - Application - Servers
+      summary: Update server preset
+      description: Update a server preset
+      operationId: updateServerPreset
+      parameters:
+        - name: server_preset
+          in: path
+          required: true
+          description: Preset ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                memory:
+                  type: integer
+                disk:
+                  type: integer
+                cpu:
+                  type: integer
+      responses:
+        '200':
+          description: Preset updated successfully
+        '404':
+          description: Preset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Application - Servers
+      summary: Delete server preset
+      description: Delete a server preset
+      operationId: deleteServerPreset
+      parameters:
+        - name: server_preset
+          in: path
+          required: true
+          description: Preset ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Preset deleted successfully
+        '404':
+          description: Preset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/servers/preset:
+    post:
+      tags:
+        - Application - Servers
+      summary: Create server from preset
+      description: Create a new server using a preset configuration
+      operationId: createServerFromPreset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - preset_id
+                - name
+                - user_id
+              properties:
+                preset_id:
+                  type: integer
+                  description: ID of the preset to use
+                name:
+                  type: string
+                  description: Server name
+                user_id:
+                  type: integer
+                  description: User ID to assign server to
+                egg_id:
+                  type: integer
+                  description: Egg ID (optional override)
+                node_id:
+                  type: integer
+                  description: Node ID (optional override)
+      responses:
+        '201':
+          description: Server created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/servers/external/{external_id}:
+    get:
+      tags:
+        - Application - Servers
+      summary: Get server by external ID
+      description: Get server details by external ID
+      operationId: getServerByExternalId
+      parameters:
+        - name: external_id
+          in: path
+          required: true
+          description: External ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /application/servers/{server}:
     get:
@@ -6447,6 +7672,51 @@ paths:
           description: Reinstall triggered successfully
         '404':
           description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /application/servers/{server}/transfer:
+    post:
+      tags:
+        - Application - Servers
+      summary: Transfer server
+      description: Transfer server to a different node
+      operationId: transferServer
+      parameters:
+        - name: server
+          in: path
+          required: true
+          description: Server ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - node_id
+              properties:
+                node_id:
+                  type: integer
+                  description: Target node ID
+                allocation_id:
+                  type: integer
+                  description: Optional allocation ID on target node
+      responses:
+        '202':
+          description: Transfer initiated successfully
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
           content:
             application/json:
               schema:

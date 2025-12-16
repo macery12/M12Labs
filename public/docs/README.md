@@ -30,7 +30,7 @@ Once your Jexpanel instance is running, you can access the API documentation at:
 - Interactive interface with "Try it out" functionality
 - Allows you to test API endpoints directly from the browser
 - Great for developers who want to experiment with the API
-- Includes complete documentation of 47+ API endpoints
+- Includes complete documentation of 160+ API endpoints
 
 ## API Authentication
 
