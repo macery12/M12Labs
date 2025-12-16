@@ -11,11 +11,18 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('coupon_id')->nullable()->after('product_id');
-            $table->decimal('subtotal', 10, 2)->nullable()->after('total');
-            $table->decimal('discount', 10, 2)->nullable()->after('subtotal');
-
-            $table->foreign('coupon_id')->references('id')->on('coupons')->onDelete('set null');
+            if (!Schema::hasColumn('orders', 'coupon_id')) {
+                $table->unsignedBigInteger('coupon_id')->nullable()->after('product_id');
+                $table->foreign('coupon_id')->references('id')->on('coupons')->onDelete('set null');
+            }
+            
+            if (!Schema::hasColumn('orders', 'subtotal')) {
+                $table->decimal('subtotal', 10, 2)->nullable()->after('total');
+            }
+            
+            if (!Schema::hasColumn('orders', 'discount')) {
+                $table->decimal('discount', 10, 2)->nullable()->after('subtotal');
+            }
         });
     }
 

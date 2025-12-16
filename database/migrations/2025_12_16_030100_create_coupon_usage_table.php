@@ -10,18 +10,20 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        Schema::create('coupon_usage', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('coupon_id');
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('order_id');
-            $table->dateTime('used_at');
-            $table->timestamps();
+        if (!Schema::hasTable('coupon_usage')) {
+            Schema::create('coupon_usage', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('coupon_id');
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('order_id');
+                $table->dateTime('used_at');
+                $table->timestamps();
 
-            $table->foreign('coupon_id')->references('id')->on('coupons')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
-        });
+                $table->foreign('coupon_id')->references('id')->on('coupons')->onDelete('cascade');
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
+            });
+        }
     }
 
     /**
