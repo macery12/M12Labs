@@ -83,11 +83,27 @@ function CouponsContainer() {
                                         direction={sort === 'code' ? (sortDirection ? 1 : 2) : null}
                                         onClick={() => setSort('code')}
                                     />
-                                    <TableHeader name={'Type'} />
-                                    <TableHeader name={'Value'} />
+                                    <TableHeader
+                                        name={'Type'}
+                                        direction={sort === 'type' ? (sortDirection ? 1 : 2) : null}
+                                        onClick={() => setSort('type')}
+                                    />
+                                    <TableHeader
+                                        name={'Value'}
+                                        direction={sort === 'value' ? (sortDirection ? 1 : 2) : null}
+                                        onClick={() => setSort('value')}
+                                    />
                                     <TableHeader name={'Usage'} />
-                                    <TableHeader name={'Status'} />
-                                    <TableHeader name={'Expires At'} />
+                                    <TableHeader
+                                        name={'Status'}
+                                        direction={sort === 'is_active' ? (sortDirection ? 1 : 2) : null}
+                                        onClick={() => setSort('is_active')}
+                                    />
+                                    <TableHeader
+                                        name={'Expires At'}
+                                        direction={sort === 'expires_at' ? (sortDirection ? 1 : 2) : null}
+                                        onClick={() => setSort('expires_at')}
+                                    />
                                 </TableHead>
                                 <TableBody>
                                     {coupons !== undefined &&
@@ -113,7 +129,9 @@ function CouponsContainer() {
                                         coupons.items.map(coupon => (
                                             <TableRow key={coupon.id}>
                                                 <td css={tw`whitespace-nowrap`}>
-                                                    <TicketIcon color={colors.primary} css={tw`h-5 w-5`} />
+                                                    <Link to={`/admin/billing/coupons/${coupon.id}`}>
+                                                        <TicketIcon color={colors.primary} css={tw`h-5 w-5 cursor-pointer`} />
+                                                    </Link>
                                                 </td>
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
                                                     <Link to={`/admin/billing/coupons/${coupon.id}`}>
@@ -123,9 +141,9 @@ function CouponsContainer() {
                                                     </Link>
                                                 </td>
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
-                                                    <Link to={`/admin/billing/coupons/${coupon.id}`}>
-                                                        <code css={tw`font-bold`}>{coupon.code}</code>
-                                                    </Link>
+                                                    <CopyOnClick text={coupon.code}>
+                                                        <code css={tw`font-bold cursor-pointer`}>{coupon.code}</code>
+                                                    </CopyOnClick>
                                                 </td>
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center capitalize`}>
                                                     {coupon.type}

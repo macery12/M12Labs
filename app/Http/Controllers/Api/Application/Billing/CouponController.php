@@ -37,7 +37,7 @@ class CouponController extends ApplicationApiController
 
         $coupons = QueryBuilder::for(Coupon::query())
             ->allowedFilters(['code', 'type', 'is_active'])
-            ->allowedSorts(['id', 'code', 'created_at', 'expires_at'])
+            ->allowedSorts(['id', 'code', 'type', 'value', 'is_active', 'created_at', 'expires_at'])
             ->paginate($perPage);
 
         return $this->fractal->collection($coupons)
