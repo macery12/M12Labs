@@ -93,7 +93,11 @@ function CouponsContainer() {
                                     {coupons !== undefined &&
                                         !coupons.items.length &&
                                         ((!filters || Object.keys(filters).length === 0 ? (
-                                            <NoItems />
+                                            <tr>
+                                                <td colSpan={8}>
+                                                    <NoItems />
+                                                </td>
+                                            </tr>
                                         ) : (
                                             <tr>
                                                 <td colSpan={8}>
@@ -127,7 +131,9 @@ function CouponsContainer() {
                                                     {coupon.type}
                                                 </td>
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
-                                                    {coupon.type === 'percentage' ? `${coupon.value}%` : `$${coupon.value}`}
+                                                    {coupon.type === 'percentage'
+                                                        ? `${coupon.value}%`
+                                                        : `$${coupon.value}`}
                                                 </td>
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
                                                     {coupon.usageCount}
@@ -135,9 +141,7 @@ function CouponsContainer() {
                                                 </td>
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
                                                     <span
-                                                        className={
-                                                            coupon.isActive ? 'text-green-500' : 'text-red-500'
-                                                        }
+                                                        className={coupon.isActive ? 'text-green-500' : 'text-red-500'}
                                                     >
                                                         {coupon.isActive ? 'Active' : 'Inactive'}
                                                     </span>
