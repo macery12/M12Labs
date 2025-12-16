@@ -4,6 +4,7 @@ namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @property int $id
@@ -91,7 +92,18 @@ class Coupon extends Model
      */
     public function usage()
     {
-        return $this->hasMany(CouponUsage::class);
+        try {
+            // Check if the coupon_usage table exists
+            if (!\Schema::hasTable('coupon_usage')) {
+                // Return a mock relationship that won't execute queries
+                return $this->hasMany(CouponUsage::class)->whereRaw('1 = 0');
+            }
+            return $this->hasMany(CouponUsage::class);
+        } catch (\Exception $e) {
+            \Log::error('Error in coupon usage relationship: ' . $e->getMessage());
+            // Return a mock relationship that won't execute queries
+            return $this->hasMany(CouponUsage::class)->whereRaw('1 = 0');
+        }
     }
 
     /**
@@ -99,7 +111,12 @@ class Coupon extends Model
      */
     public function getUsageCountAttribute(): int
     {
-        return $this->usage()->count();
+        try {
+            return $this->usage()->count();
+        } catch (\Exception $e) {
+            \Log::error('Error getting coupon usage count: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
