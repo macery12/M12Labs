@@ -40,12 +40,13 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                 <Select
                                     id={'type'}
                                     name={'type'}
+                                    value={values.type}
                                     onChange={e => setFieldValue('type', e.target.value)}
                                 >
-                                    <option value={'percentage'} selected={values.type === 'percentage'}>
+                                    <option value={'percentage'}>
                                         Percentage
                                     </option>
-                                    <option value={'fixed'} selected={values.type === 'fixed'}>
+                                    <option value={'fixed'}>
                                         Fixed Amount
                                     </option>
                                 </Select>

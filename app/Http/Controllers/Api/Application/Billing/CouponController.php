@@ -87,16 +87,30 @@ class CouponController extends ApplicationApiController
      */
     public function update(UpdateCouponRequest $request, Coupon $coupon): Response
     {
-        $coupon->update([
+        $updateData = [
             'code' => $request->input('code', $coupon->code),
             'type' => $request->input('type', $coupon->type),
             'value' => $request->has('value') ? (float) $request->input('value') : $coupon->value,
-            'max_uses' => $request->has('max_uses') ? $request->input('max_uses') : $coupon->max_uses,
-            'max_uses_per_user' => $request->has('max_uses_per_user') ? $request->input('max_uses_per_user') : $coupon->max_uses_per_user,
-            'min_order_total' => $request->has('min_order_total') ? ($request->input('min_order_total') ? (float) $request->input('min_order_total') : null) : $coupon->min_order_total,
-            'expires_at' => $request->has('expires_at') ? $request->input('expires_at') : $coupon->expires_at,
             'is_active' => $request->has('is_active') ? $request->input('is_active') : $coupon->is_active,
-        ]);
+        ];
+
+        if ($request->has('max_uses')) {
+            $updateData['max_uses'] = $request->input('max_uses');
+        }
+
+        if ($request->has('max_uses_per_user')) {
+            $updateData['max_uses_per_user'] = $request->input('max_uses_per_user');
+        }
+
+        if ($request->has('min_order_total')) {
+            $updateData['min_order_total'] = $request->input('min_order_total') ? (float) $request->input('min_order_total') : null;
+        }
+
+        if ($request->has('expires_at')) {
+            $updateData['expires_at'] = $request->input('expires_at');
+        }
+
+        $coupon->update($updateData);
 
         Activity::event('admin:billing:coupons:update')
             ->property('coupon', $coupon)
