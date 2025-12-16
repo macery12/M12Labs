@@ -1662,10 +1662,37 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - config
               properties:
                 config:
                   type: object
                   description: Billing configuration data
+                  properties:
+                    categories:
+                      type: array
+                      description: Billing categories to import
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          description:
+                            type: string
+                          icon:
+                            type: string
+                    products:
+                      type: array
+                      description: Billing products to import
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          price:
+                            type: number
+                          category_id:
+                            type: integer
       responses:
         '200':
           description: Configuration imported successfully
@@ -1706,12 +1733,34 @@ paths:
                 properties:
                   categories:
                     type: array
+                    description: Exported billing categories
                     items:
                       type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        icon:
+                          type: string
                   products:
                     type: array
+                    description: Exported billing products
                     items:
                       type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        price:
+                          type: number
+                        category_id:
+                          type: integer
+                        egg_id:
+                          type: integer
         '401':
           description: Unauthorized
           content:
@@ -4754,10 +4803,25 @@ paths:
           application/json:
             schema:
               type: object
+              description: Account setup preferences and settings
               properties:
                 preferences:
                   type: object
-                  description: User preferences
+                  description: User preferences for panel behavior
+                  properties:
+                    language:
+                      type: string
+                      description: Preferred language
+                      example: en
+                    theme:
+                      type: string
+                      description: Preferred theme
+                      enum: [light, dark, auto]
+                      example: dark
+                    notifications:
+                      type: boolean
+                      description: Enable notifications
+                      example: true
       responses:
         '204':
           description: Setup completed
