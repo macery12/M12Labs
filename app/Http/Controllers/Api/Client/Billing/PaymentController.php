@@ -9,7 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
+use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
+use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
@@ -54,19 +56,19 @@ class PaymentController extends ClientApiController
     {
         $product = Product::findOrFail($id);
 
-        // Free products should not create payment intents
-        if ((float) $product->price === 0.0) {
-            throw new DisplayException('Free products do not require payment. Please use the free product renewal process.');
-        }
-
         // Calculate the amount based on coupon if provided
         $amount = $product->price;
         if ($request->has('coupon_id') && $request->input('coupon_id')) {
-            $coupon = \Everest\Models\Billing\Coupon::find($request->input('coupon_id'));
+            $coupon = Coupon::find($request->input('coupon_id'));
             if ($coupon) {
                 $discount = $coupon->calculateDiscount($product->price);
                 $amount = max(0, $product->price - $discount);
             }
+        }
+
+        // Free products or zero-dollar totals should not create payment intents
+        if ((float) $amount === 0.0) {
+            throw new DisplayException('This order total is $0. Please use the free order process instead of payment.');
         }
 
         $paymentMethodTypes = ['card'];
@@ -129,7 +131,7 @@ class PaymentController extends ClientApiController
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         
         if ($couponId) {
-            $coupon = \Everest\Models\Billing\Coupon::find($couponId);
+            $coupon = Coupon::find($couponId);
             if ($coupon) {
                 $discount = $coupon->calculateDiscount($product->price);
                 $amount = max(0, $product->price - $discount);
@@ -248,7 +250,7 @@ class PaymentController extends ClientApiController
 
         // Record coupon usage if a coupon was applied
         if ($order->coupon_id) {
-            \Everest\Models\Billing\CouponUsage::create([
+            CouponUsage::create([
                 'coupon_id' => $order->coupon_id,
                 'user_id' => $order->user_id,
                 'order_id' => $order->id,

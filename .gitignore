@@ -39,3 +39,4 @@ docker-compose.yaml
 # Caddy/SSL files
 Caddyfile
 *.pem
+package-lock.json
