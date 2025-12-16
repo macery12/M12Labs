@@ -11,7 +11,6 @@ use Everest\Transformers\Api\Application\CouponTransformer;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Billing\Coupons\GetCouponsRequest;
-use Everest\Http\Requests\Api\Application\Billing\Coupons\GetCouponRequest;
 use Everest\Http\Requests\Api\Application\Billing\Coupons\StoreCouponRequest;
 use Everest\Http\Requests\Api\Application\Billing\Coupons\UpdateCouponRequest;
 use Everest\Http\Requests\Api\Application\Billing\Coupons\DeleteCouponRequest;
@@ -75,7 +74,7 @@ class CouponController extends ApplicationApiController
     /**
      * View an existing coupon.
      */
-    public function view(GetCouponRequest $request, Coupon $coupon): array
+    public function view(GetCouponsRequest $request, Coupon $coupon): array
     {
         return $this->fractal->item($coupon)
             ->transformWith(CouponTransformer::class)
