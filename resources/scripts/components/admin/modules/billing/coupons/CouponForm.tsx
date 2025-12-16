@@ -6,7 +6,7 @@ import tw from 'twin.macro';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import { Button } from '@/elements/button';
 import AdminBox from '@/elements/AdminBox';
-import { createCoupon, getCoupon, updateCoupon, deleteCoupon } from '@/api/routes/admin/billing/coupons';
+import { createCoupon, getCoupon, updateCoupon } from '@/api/routes/admin/billing/coupons';
 import { object, string, boolean, number } from 'yup';
 import { faTicketAlt } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
@@ -16,6 +16,7 @@ import { CouponValues } from '@/api/routes/admin/billing/types';
 import useFlash from '@/plugins/useFlash';
 import { Coupon } from '@definitions/admin';
 import Select from '@/elements/Select';
+import CouponDeleteButton from './CouponDeleteButton';
 
 function InternalForm({ coupon }: { coupon?: Coupon }) {
     const { values, isSubmitting, setFieldValue } = useFormikContext<CouponValues>();
@@ -140,7 +141,8 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                     </AdminBox>
                 </div>
             </div>
-            <div css={tw`mt-4 flex justify-end`}>
+            <div css={tw`mt-4 flex justify-between`}>
+                {coupon && <CouponDeleteButton coupon={coupon} />}
                 <Button type={'submit'} disabled={isSubmitting}>
                     {coupon ? 'Update Coupon' : 'Create Coupon'}
                 </Button>
