@@ -59,6 +59,16 @@ class PaymentController extends ClientApiController
             throw new DisplayException('Free products do not require payment. Please use the free product renewal process.');
         }
 
+        // Calculate the amount based on coupon if provided
+        $amount = $product->price;
+        if ($request->has('coupon_id') && $request->input('coupon_id')) {
+            $coupon = \Everest\Models\Billing\Coupon::find($request->input('coupon_id'));
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($product->price);
+                $amount = max(0, $product->price - $discount);
+            }
+        }
+
         $paymentMethodTypes = ['card'];
 
         if (config('modules.billing.paypal')) {
@@ -70,7 +80,7 @@ class PaymentController extends ClientApiController
         }
 
         $paymentIntent = $this->stripe->paymentIntents->create([
-            'amount' => $product->price * 100,
+            'amount' => $amount * 100,
             'currency' => strtolower(config('modules.billing.currency.code')),
             'payment_method_types' => array_values($paymentMethodTypes),
             'capture_method' => 'manual',
@@ -120,6 +130,7 @@ class PaymentController extends ClientApiController
             'product_id' => (string) $id,
             'node_id' => (string) ($request->input('node_id') ?? ''),
             'server_id' => (string) ($request->input('server_id') ?? 0),
+            'coupon_id' => (string) ($request->input('coupon_id') ?? ''),
         ];
 
         $variables = $request->input('variables') ?? [];
@@ -128,13 +139,15 @@ class PaymentController extends ClientApiController
         $intent->metadata = $metadata;
         $intent->save();
 
-        // Create the order
+        // Create the order with coupon
+        $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $this->orderService->create(
             $intent->id,
             $request->user(),
             $product,
             Order::STATUS_PENDING,
             $this->getOrderType($request),
+            $couponId,
         );
 
         return $this->returnNoContent();
@@ -215,6 +228,16 @@ class PaymentController extends ClientApiController
 
                 throw new DisplayException('Unable to capture payment for this order.');
             }
+        }
+
+        // Record coupon usage if a coupon was applied
+        if ($order->coupon_id) {
+            \Everest\Models\Billing\CouponUsage::create([
+                'coupon_id' => $order->coupon_id,
+                'user_id' => $order->user_id,
+                'order_id' => $order->id,
+                'used_at' => now(),
+            ]);
         }
 
         // Mark the order as processed
