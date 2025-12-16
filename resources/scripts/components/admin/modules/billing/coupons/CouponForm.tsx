@@ -20,7 +20,6 @@ import CouponDeleteButton from './CouponDeleteButton';
 
 function InternalForm({ coupon }: { coupon?: Coupon }) {
     const { values, isSubmitting, setFieldValue } = useFormikContext<CouponValues>();
-    const { secondary } = useStoreState(state => state.theme.data!.colors);
 
     return (
         <Form>
@@ -47,12 +46,8 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                     value={values.type}
                                     onChange={e => setFieldValue('type', e.target.value)}
                                 >
-                                    <option value={'percentage'}>
-                                        Percentage
-                                    </option>
-                                    <option value={'fixed'}>
-                                        Fixed Amount
-                                    </option>
+                                    <option value={'percentage'}>Percentage</option>
+                                    <option value={'fixed'}>Fixed Amount</option>
                                 </Select>
                                 <p className={'text-xs text-neutral-400 mt-2'}>
                                     Whether to discount by percentage or fixed amount.
@@ -112,23 +107,21 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                 <Label htmlFor={'isActive'}>Status</Label>
                                 <div className={'mt-1'}>
                                     <label css={tw`inline-flex items-center mr-2`}>
-                                        <Field
+                                        <input
                                             name={'isActive'}
                                             type={'radio'}
-                                            value={'true'}
                                             checked={values.isActive === true}
-                                            onClick={() => setFieldValue('isActive', true)}
+                                            onChange={() => setFieldValue('isActive', true)}
                                         />
                                         <span css={tw`text-neutral-300 ml-2`}>Active</span>
                                     </label>
 
                                     <label css={tw`inline-flex items-center ml-2`}>
-                                        <Field
+                                        <input
                                             name={'isActive'}
                                             type={'radio'}
-                                            value={'false'}
                                             checked={values.isActive === false}
-                                            onClick={() => setFieldValue('isActive', false)}
+                                            onChange={() => setFieldValue('isActive', false)}
                                         />
                                         <span css={tw`text-neutral-300 ml-2`}>Inactive</span>
                                     </label>
