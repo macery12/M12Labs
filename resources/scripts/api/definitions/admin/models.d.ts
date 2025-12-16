@@ -153,6 +153,21 @@ interface Category extends Model {
     };
 }
 
+interface Coupon extends Model {
+    id: number;
+    code: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    maxUses: number | null;
+    maxUsesPerUser: number | null;
+    minOrderTotal: number | null;
+    expiresAt: Date | null;
+    isActive: boolean;
+    usageCount: number;
+    createdAt: Date;
+    updatedAt?: Date | null;
+}
+
 interface AdminRolePermission extends Model {
     key: string;
     description: string;
