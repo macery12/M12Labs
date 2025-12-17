@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ServerContext } from '@/state/server';
-import ContentBox from '@/elements/ContentBox';
+import TitledGreyBox from '@/elements/TitledGreyBox';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
@@ -11,6 +11,8 @@ import { getProduct } from '@/api/routes/account/billing/products';
 import { getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
 import { Alert } from '@/elements/alert';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
+import tw from 'twin.macro';
 
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
@@ -45,12 +47,12 @@ export default () => {
                 // Fetch product to get allowed eggs
                 const product = await getProduct(billingProductId);
                 const allowedEggs = product.allowedEggs || [product.eggId];
-                
+
                 // Fetch egg information for all allowed eggs
                 const eggInfoPromises = allowedEggs.map(id => getEggInfo(id));
                 const eggInfos = await Promise.all(eggInfoPromises);
                 setAvailableEggs(eggInfos);
-                
+
                 // Check if category allows egg changes (from product)
                 setAllowEggChanges(product.allowEggChanges && allowedEggs.length > 1);
                 setLoading(false);
@@ -88,10 +90,10 @@ export default () => {
 
     if (loading) {
         return (
-            <ContentBox title={'Change Server Type'}>
+            <TitledGreyBox title={'Change Server Type'} icon={faPuzzlePiece}>
                 <SpinnerOverlay visible={true} />
-                <p className={'text-gray-400 text-sm'}>Loading server type options...</p>
-            </ContentBox>
+                <p css={tw`text-gray-400 text-sm`}>Loading server type options...</p>
+            </TitledGreyBox>
         );
     }
 
@@ -101,19 +103,15 @@ export default () => {
 
     return (
         <>
-            <ContentBox title={'Change Server Type'}>
+            <TitledGreyBox title={'Change Server Type'} icon={faPuzzlePiece}>
                 <SpinnerOverlay visible={loading} />
-                <div className={'mb-4'}>
+                <div css={tw`mb-4`}>
                     <Label>Current Server Type</Label>
-                    <p className={'text-gray-400 text-sm'}>
-                        {currentEgg?.name || 'Loading...'}
-                    </p>
-                    {currentEgg?.description && (
-                        <p className={'text-gray-500 text-xs mt-1'}>{currentEgg.description}</p>
-                    )}
+                    <p css={tw`text-gray-300 text-sm font-medium`}>{currentEgg?.name || 'Loading...'}</p>
+                    {currentEgg?.description && <p css={tw`text-gray-400 text-xs mt-1`}>{currentEgg.description}</p>}
                 </div>
 
-                <div className={'mb-4'}>
+                <div css={tw`mb-4`}>
                     <Label>Select New Server Type</Label>
                     <Select value={selectedEggId} onChange={e => setSelectedEggId(Number(e.currentTarget.value))}>
                         {availableEggs.map(egg => (
@@ -123,7 +121,7 @@ export default () => {
                         ))}
                     </Select>
                     {selectedEgg?.description && selectedEggId !== currentEggId && (
-                        <p className={'text-gray-400 text-xs mt-2'}>{selectedEgg.description}</p>
+                        <p css={tw`text-gray-400 text-xs mt-2`}>{selectedEgg.description}</p>
                     )}
                 </div>
 
@@ -141,10 +139,14 @@ export default () => {
                     </Alert>
                 )}
 
-                <Button.Danger onClick={() => setConfirmOpen(true)} disabled={!canChange || changing}>
+                <Button.Danger
+                    onClick={() => setConfirmOpen(true)}
+                    disabled={!canChange || changing}
+                    css={tw`w-full sm:w-auto`}
+                >
                     {changing ? 'Changing Server Type...' : 'Change Server Type'}
                 </Button.Danger>
-            </ContentBox>
+            </TitledGreyBox>
 
             <Dialog.Confirm
                 open={confirmOpen}
@@ -153,20 +155,20 @@ export default () => {
                 onClose={() => setConfirmOpen(false)}
                 onConfirmed={handleChangeEgg}
             >
-                <p className={'text-sm mb-2'}>
+                <p css={tw`text-sm mb-2`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
                     <strong>{selectedEgg?.name}</strong>.
                 </p>
-                <p className={'text-sm mb-2'}>
-                    <strong className={'text-red-400'}>This will permanently delete all server data</strong>, including:
+                <p css={tw`text-sm mb-2`}>
+                    <strong css={tw`text-red-400`}>This will permanently delete all server data</strong>, including:
                 </p>
-                <ul className={'list-disc list-inside text-sm mb-2 text-gray-400'}>
+                <ul css={tw`list-disc list-inside text-sm mb-2 text-gray-400`}>
                     <li>All files and directories</li>
                     <li>Database contents</li>
                     <li>Server configurations</li>
                     <li>Any custom modifications</li>
                 </ul>
-                <p className={'text-sm'}>
+                <p css={tw`text-sm`}>
                     The server will be reinstalled with the new server type. Are you sure you want to continue?
                 </p>
             </Dialog.Confirm>
