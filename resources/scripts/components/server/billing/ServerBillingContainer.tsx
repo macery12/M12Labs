@@ -179,7 +179,7 @@ export default () => {
                     )}
                 </ContentBox>
             </div>
-            <div className={'mt-4'}>
+            <div className={'grid lg:grid-cols-3 gap-4'}>
                 <ChangeEggContainer />
             </div>
         </PageContentBlock>

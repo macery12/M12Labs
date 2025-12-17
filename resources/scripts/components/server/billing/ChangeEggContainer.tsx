@@ -34,6 +34,12 @@ export default () => {
             return;
         }
 
+        // Validate currentEggId exists
+        if (!currentEggId) {
+            setLoading(false);
+            return;
+        }
+
         const fetchData = async () => {
             try {
                 // Fetch current egg info first
@@ -49,7 +55,7 @@ export default () => {
                 const eggInfos = await Promise.all(eggInfoPromises);
                 setAvailableEggs(eggInfos);
                 
-                // Check if category allows egg changes
+                // Check if category allows egg changes and has multiple eggs
                 setAllowEggChanges(allowedEggs.length > 1);
                 setLoading(false);
             } catch (error) {
