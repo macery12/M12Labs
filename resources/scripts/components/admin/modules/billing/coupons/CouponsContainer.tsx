@@ -93,7 +93,11 @@ function CouponsContainer() {
                                         direction={sort === 'value' ? (sortDirection ? 1 : 2) : null}
                                         onClick={() => setSort('value')}
                                     />
-                                    <TableHeader name={'Usage'} />
+                                    <TableHeader
+                                        name={'Usage'}
+                                        direction={sort === 'usage_count' ? (sortDirection ? 1 : 2) : null}
+                                        onClick={() => setSort('usage_count')}
+                                    />
                                     <TableHeader
                                         name={'Status'}
                                         direction={sort === 'is_active' ? (sortDirection ? 1 : 2) : null}
@@ -130,13 +134,18 @@ function CouponsContainer() {
                                             <TableRow key={coupon.id}>
                                                 <td css={tw`whitespace-nowrap`}>
                                                     <Link to={`/admin/billing/coupons/${coupon.id}`}>
-                                                        <TicketIcon color={colors.primary} css={tw`h-5 w-5 cursor-pointer`} />
+                                                        <TicketIcon
+                                                            color={colors.primary}
+                                                            css={tw`h-5 w-5 cursor-pointer`}
+                                                        />
                                                     </Link>
                                                 </td>
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
                                                     <Link to={`/admin/billing/coupons/${coupon.id}`}>
                                                         <CopyOnClick text={coupon.id.toString()}>
-                                                            <code css={tw`text-xs`}>{coupon.id}</code>
+                                                            <code css={tw`font-mono text-xs bg-neutral-900 rounded py-1 px-2`}>
+                                                                {coupon.id}
+                                                            </code>
                                                         </CopyOnClick>
                                                     </Link>
                                                 </td>
