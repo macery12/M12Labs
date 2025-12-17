@@ -29,19 +29,15 @@ export default () => {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
 
     useEffect(() => {
-        if (!billingProductId) {
-            setLoading(false);
-            return;
-        }
-
-        // Validate currentEggId exists
-        if (!currentEggId) {
-            setLoading(false);
-            return;
-        }
-
         const fetchData = async () => {
             try {
+                // Validate required data
+                if (!billingProductId || !currentEggId) {
+                    setLoading(false);
+                    setAllowEggChanges(false);
+                    return;
+                }
+
                 // Fetch current egg info first
                 const currentEggInfo = await getEggInfo(currentEggId);
                 setCurrentEgg(currentEggInfo);
@@ -61,6 +57,7 @@ export default () => {
             } catch (error) {
                 console.error(error);
                 setLoading(false);
+                setAllowEggChanges(false);
             }
         };
 
@@ -88,6 +85,15 @@ export default () => {
 
     const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
     const canChange = selectedEggId !== currentEggId && serverStatus === null;
+
+    if (loading) {
+        return (
+            <ContentBox title={'Change Server Type'}>
+                <SpinnerOverlay visible={true} />
+                <p className={'text-gray-400 text-sm'}>Loading server type options...</p>
+            </ContentBox>
+        );
+    }
 
     if (!allowEggChanges || availableEggs.length <= 1) {
         return null;
