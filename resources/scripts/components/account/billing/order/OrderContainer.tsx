@@ -383,13 +383,11 @@ export default () => {
                                             : { borderColor: '#374151', backgroundColor: colors.secondary }
                                     }
                                 >
-                                    <div onClick={() => setTermsAgreed(!termsAgreed)}>
-                                        <AdminCheckbox
-                                            name={'terms'}
-                                            checked={termsAgreed}
-                                            onChange={() => setTermsAgreed(!termsAgreed)}
-                                        />
-                                    </div>
+                                    <AdminCheckbox
+                                        name={'terms'}
+                                        checked={termsAgreed}
+                                        onChange={() => setTermsAgreed(!termsAgreed)}
+                                    />
                                     <div className={'flex-1 min-w-0'} onClick={() => setTermsAgreed(!termsAgreed)}>
                                         <p className={'text-xs font-medium text-gray-200'}>
                                             <a
@@ -421,13 +419,11 @@ export default () => {
                                             : { borderColor: '#374151', backgroundColor: colors.secondary }
                                     }
                                 >
-                                    <div onClick={() => setPrivacyAgreed(!privacyAgreed)}>
-                                        <AdminCheckbox
-                                            name={'privacy'}
-                                            checked={privacyAgreed}
-                                            onChange={() => setPrivacyAgreed(!privacyAgreed)}
-                                        />
-                                    </div>
+                                    <AdminCheckbox
+                                        name={'privacy'}
+                                        checked={privacyAgreed}
+                                        onChange={() => setPrivacyAgreed(!privacyAgreed)}
+                                    />
                                     <div className={'flex-1 min-w-0'} onClick={() => setPrivacyAgreed(!privacyAgreed)}>
                                         <p className={'text-xs font-medium text-gray-200'}>
                                             <a
