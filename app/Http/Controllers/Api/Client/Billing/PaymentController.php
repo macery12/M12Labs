@@ -128,7 +128,7 @@ class PaymentController extends ClientApiController
 
         // Validate egg selection
         $eggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
-        $allowedEggs = $product->category->allowed_eggs ?? [$product->category->egg_id];
+        $allowedEggs = $product->category->getAllowedEggs();
         
         if ($eggId) {
             if (!in_array($eggId, $allowedEggs)) {
@@ -136,9 +136,7 @@ class PaymentController extends ClientApiController
             }
         } else {
             // Default to first allowed egg if none selected
-            $eggId = is_array($allowedEggs) && count($allowedEggs) > 0 
-                ? $allowedEggs[0] 
-                : $product->category->egg_id;
+            $eggId = $product->category->getDefaultEggId();
         }
 
         // Calculate the amount based on coupon if provided

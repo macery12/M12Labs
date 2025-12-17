@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
+use Everest\Models\Egg;
 use Everest\Models\EggVariable;
 use Everest\Transformers\Api\Client\EggVariableTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -32,7 +33,7 @@ class EggController extends ClientApiController
      */
     public function getEgg(int $id): array
     {
-        $egg = \Everest\Models\Egg::findOrFail($id);
+        $egg = Egg::findOrFail($id);
 
         return [
             'id' => $egg->id,

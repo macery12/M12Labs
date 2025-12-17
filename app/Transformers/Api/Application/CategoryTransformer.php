@@ -38,10 +38,10 @@ class CategoryTransformer extends Transformer
             'visible' => boolval($model->visible),
             'nest_id' => $model->nest_id,
             'egg_id' => $model->egg_id,
-            'allowed_eggs' => $model->allowed_eggs ?? [$model->egg_id],
+            'allowed_eggs' => $model->getAllowedEggs(),
             'allow_egg_changes' => $model->allow_egg_changes ?? true,
             'created_at' => $model->created_at->toIso8601String(),
-            'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,
+            'updated_at' => $model->updated_at ? $model->updated_at->toIso8601String() : null,
         ];
     }
 

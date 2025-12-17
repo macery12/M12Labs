@@ -66,4 +66,27 @@ class Category extends Model
     {
         return $this->hasMany(Product::class, 'category_uuid');
     }
+
+    /**
+     * Get the allowed eggs for this category with fallback to single egg for backward compatibility.
+     */
+    public function getAllowedEggs(): array
+    {
+        $allowedEggs = $this->allowed_eggs;
+        
+        if (empty($allowedEggs) || !is_array($allowedEggs)) {
+            return [$this->egg_id];
+        }
+        
+        return $allowedEggs;
+    }
+
+    /**
+     * Get the default egg ID for this category (first allowed egg).
+     */
+    public function getDefaultEggId(): int
+    {
+        $allowedEggs = $this->getAllowedEggs();
+        return $allowedEggs[0] ?? $this->egg_id;
+    }
 }

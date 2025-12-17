@@ -56,7 +56,7 @@ class ChangeServerEggService
         }
 
         // Get allowed eggs for the category
-        $allowedEggs = $category->allowed_eggs ?? [$category->egg_id];
+        $allowedEggs = $category->getAllowedEggs();
 
         // Validate that the new egg is in the allowed list
         if (!in_array($newEggId, $allowedEggs)) {
@@ -75,6 +75,11 @@ class ChangeServerEggService
         }
 
         return $this->connection->transaction(function () use ($server, $newEgg) {
+            // Validate that docker images are available
+            if (empty($newEgg->docker_images) || !is_array($newEgg->docker_images)) {
+                throw new DisplayException('The selected egg does not have any Docker images configured.');
+            }
+
             // Update the server's egg
             $server->update([
                 'egg_id' => $newEgg->id,
