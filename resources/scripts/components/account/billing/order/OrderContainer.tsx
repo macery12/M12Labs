@@ -8,15 +8,12 @@ import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import {
     faArchive,
-    faCreditCard,
     faDatabase,
     faEthernet,
     faExternalLinkAlt,
     faHdd,
-    faIdBadge,
     faMemory,
     faMicrochip,
 } from '@fortawesome/free-solid-svg-icons';
@@ -30,22 +27,18 @@ import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Product, StripeIntent, type Node } from '@definitions/account/billing';
 import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
-import { getProduct, getProductVariables, getViableNodes, getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
+import {
+    getProduct,
+    getProductVariables,
+    getViableNodes,
+    getEggInfo,
+    type EggInfo,
+} from '@/api/routes/account/billing/products';
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
-import TitledGreyBox from '@/elements/TitledGreyBox';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import Select from '@/elements/Select';
 import classNames from 'classnames';
-
-const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) => {
-    return (
-        <div className={'my-1 font-semibold text-gray-400'}>
-            <FontAwesomeIcon icon={icon} className={'mr-2 inline-flex h-4 w-4 '} />
-            {content}
-        </div>
-    );
-};
 
 export default () => {
     const params = useParams<'id'>();
@@ -75,8 +68,21 @@ export default () => {
     const getCheckoutSteps = () => {
         const steps = [
             { id: 1, name: 'Location', status: selectedNode ? 'complete' : 'current' },
-            { id: 2, name: 'Configuration', status: selectedNode ? (availableEggs.length > 1 && selectedEggId ? 'complete' : 'current') : 'upcoming' },
-            { id: 3, name: 'Legal', status: termsAgreed && privacyAgreed ? 'complete' : (selectedNode && selectedEggId ? 'current' : 'upcoming') },
+            {
+                id: 2,
+                name: 'Configuration',
+                status: selectedNode
+                    ? availableEggs.length > 1 && selectedEggId
+                        ? 'complete'
+                        : 'current'
+                    : 'upcoming',
+            },
+            {
+                id: 3,
+                name: 'Legal',
+                status:
+                    termsAgreed && privacyAgreed ? 'complete' : selectedNode && selectedEggId ? 'current' : 'upcoming',
+            },
             { id: 4, name: 'Payment', status: termsAgreed && privacyAgreed ? 'current' : 'upcoming' },
         ];
         return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
@@ -104,7 +110,15 @@ export default () => {
     const createFree = () => {
         if (product) {
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
-            processUnpaidOrder(product.id, selectedNode, undefined, variables, undefined, couponData?.coupon.id, selectedEggId)
+            processUnpaidOrder(
+                product.id,
+                selectedNode,
+                undefined,
+                variables,
+                undefined,
+                couponData?.coupon.id,
+                selectedEggId,
+            )
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
         }
@@ -280,7 +294,7 @@ export default () => {
                                     'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
                                     termsAgreed
                                         ? 'border-green-500 bg-green-500/10'
-                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500',
                                 )}
                             >
                                 <AdminCheckbox
@@ -298,12 +312,11 @@ export default () => {
                                             className={'font-semibold text-blue-400 hover:text-blue-300'}
                                             onClick={e => e.stopPropagation()}
                                         >
-                                            Terms of Service <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                            Terms of Service{' '}
+                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
                                         </a>
                                     </p>
-                                    {termsAgreed && (
-                                        <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>
-                                    )}
+                                    {termsAgreed && <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>}
                                 </div>
                             </div>
                             <div
@@ -312,7 +325,7 @@ export default () => {
                                     'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
                                     privacyAgreed
                                         ? 'border-green-500 bg-green-500/10'
-                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500',
                                 )}
                             >
                                 <AdminCheckbox
@@ -330,12 +343,11 @@ export default () => {
                                             className={'font-semibold text-blue-400 hover:text-blue-300'}
                                             onClick={e => e.stopPropagation()}
                                         >
-                                            Privacy Policy <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                            Privacy Policy{' '}
+                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
                                         </a>
                                     </p>
-                                    {privacyAgreed && (
-                                        <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>
-                                    )}
+                                    {privacyAgreed && <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>}
                                 </div>
                             </div>
                         </div>
@@ -405,22 +417,31 @@ export default () => {
                 <div className={'lg:col-span-1'}>
                     <div className={'sticky top-4 rounded-lg border border-gray-700 bg-gray-800 p-6'}>
                         <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
-                        
+
                         <div className={'mb-4 flex items-center gap-3'}>
-                            {product.icon && <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />}
+                            {product.icon && (
+                                <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
+                            )}
                             <div className={'flex-1'}>
                                 <p className={'font-semibold text-gray-200'}>{product.name}</p>
                                 <div className={'mt-1'}>
                                     {couponData ? (
                                         <div>
-                                            <div className={'text-xs text-gray-400 line-through'}>${couponData.subtotal.toFixed(2)}</div>
+                                            <div className={'text-xs text-gray-400 line-through'}>
+                                                ${couponData.subtotal.toFixed(2)}
+                                            </div>
                                             <div className={'flex items-baseline gap-1'}>
-                                                <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
+                                                <span
+                                                    className={'text-2xl font-bold'}
+                                                    style={{ color: colors.primary }}
+                                                >
                                                     ${couponData.total.toFixed(2)}
                                                 </span>
                                                 <span className={'text-xs text-gray-400'}>/ month</span>
                                             </div>
-                                            <div className={'text-xs font-medium text-green-400'}>Save ${couponData.discount.toFixed(2)}</div>
+                                            <div className={'text-xs font-medium text-green-400'}>
+                                                Save ${couponData.discount.toFixed(2)}
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className={'flex items-baseline gap-1'}>
@@ -443,11 +464,15 @@ export default () => {
                             </div>
                             <div className={'flex items-center gap-2 text-sm'}>
                                 <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>{(product.limits.memory / 1024).toFixed(1)} GiB RAM</span>
+                                <span className={'text-gray-300'}>
+                                    {(product.limits.memory / 1024).toFixed(1)} GiB RAM
+                                </span>
                             </div>
                             <div className={'flex items-center gap-2 text-sm'}>
                                 <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>{(product.limits.disk / 1024).toFixed(1)} GiB Storage</span>
+                                <span className={'text-gray-300'}>
+                                    {(product.limits.disk / 1024).toFixed(1)} GiB Storage
+                                </span>
                             </div>
                         </div>
 
