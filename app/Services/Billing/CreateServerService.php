@@ -33,7 +33,16 @@ class CreateServerService
      */
     public function process(Request $request, Product $product, StripeObject $metadata, Order $order): Server
     {
-        $egg = Egg::findOrFail($product->category->egg_id);
+        // Use egg from order if available, otherwise fall back to category's first allowed egg
+        $eggId = $order->egg_id;
+        if (!$eggId) {
+            $allowedEggs = $product->category->allowed_eggs ?? [$product->category->egg_id];
+            $eggId = is_array($allowedEggs) && count($allowedEggs) > 0 
+                ? $allowedEggs[0] 
+                : $product->category->egg_id;
+        }
+
+        $egg = Egg::findOrFail($eggId);
 
         $allocation = $this->getAllocation($metadata->node_id, $order->id);
         
@@ -101,7 +110,16 @@ class CreateServerService
      */
     public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
     {
-        $egg = Egg::findOrFail($product->category->egg_id);
+        // Use egg from order if available, otherwise fall back to category's first allowed egg
+        $eggId = $order->egg_id;
+        if (!$eggId) {
+            $allowedEggs = $product->category->allowed_eggs ?? [$product->category->egg_id];
+            $eggId = is_array($allowedEggs) && count($allowedEggs) > 0 
+                ? $allowedEggs[0] 
+                : $product->category->egg_id;
+        }
+
+        $egg = Egg::findOrFail($eggId);
 
         $allocation = $this->getAllocation($nodeId, $order->id);
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);

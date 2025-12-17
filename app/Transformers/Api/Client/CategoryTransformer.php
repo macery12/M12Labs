@@ -25,6 +25,8 @@ class CategoryTransformer extends Transformer
             'name' => $model->name,
             'icon' => $model->icon,
             'description' => $model->description,
+            'allowedEggs' => $model->allowed_eggs ?? [$model->egg_id],
+            'allowEggChanges' => $model->allow_egg_changes ?? true,
         ];
     }
 }

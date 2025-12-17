@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $visible
  * @property int $nest_id
  * @property int $egg_id
+ * @property array $allowed_eggs
+ * @property bool $allow_egg_changes
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -36,6 +38,7 @@ class Category extends Model
     protected $fillable = [
         'uuid', 'name', 'visible', 'icon',
         'description', 'nest_id', 'egg_id',
+        'allowed_eggs', 'allow_egg_changes',
     ];
 
     public static array $validationRules = [
@@ -46,6 +49,17 @@ class Category extends Model
         'visible' => 'nullable|bool',
         'nest_id' => 'required|exists:nests,id',
         'egg_id' => 'required|exists:eggs,id',
+        'allowed_eggs' => 'nullable|array',
+        'allowed_eggs.*' => 'integer|exists:eggs,id',
+        'allow_egg_changes' => 'nullable|bool',
+    ];
+
+    /**
+     * Cast values to correct type.
+     */
+    protected $casts = [
+        'allowed_eggs' => 'array',
+        'allow_egg_changes' => 'boolean',
     ];
 
     public function products(): HasMany

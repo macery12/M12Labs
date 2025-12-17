@@ -20,13 +20,20 @@ class ProductTransformer extends Transformer
      */
     public function transform(Product $model): array
     {
+        // Use the first allowed egg as the default for backward compatibility
+        $allowedEggs = $model->category->allowed_eggs ?? [$model->category->egg_id];
+        $defaultEggId = is_array($allowedEggs) && count($allowedEggs) > 0 
+            ? $allowedEggs[0] 
+            : $model->category->egg_id;
+
         return [
             'id' => $model->id,
             'name' => $model->name,
             'icon' => $model->icon,
             'price' => $model->price,
             'description' => $model->description,
-            'egg_id' => $model->category->egg_id,
+            'egg_id' => $defaultEggId,
+            'allowed_eggs' => $allowedEggs,
             'limits' => [
                 'cpu' => $model->cpu_limit,
                 'memory' => $model->memory_limit,

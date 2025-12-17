@@ -126,6 +126,21 @@ class PaymentController extends ClientApiController
             ]);
         }
 
+        // Validate egg selection
+        $eggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
+        $allowedEggs = $product->category->allowed_eggs ?? [$product->category->egg_id];
+        
+        if ($eggId) {
+            if (!in_array($eggId, $allowedEggs)) {
+                throw new DisplayException('The selected egg is not allowed for this product category.');
+            }
+        } else {
+            // Default to first allowed egg if none selected
+            $eggId = is_array($allowedEggs) && count($allowedEggs) > 0 
+                ? $allowedEggs[0] 
+                : $product->category->egg_id;
+        }
+
         // Calculate the amount based on coupon if provided
         $amount = $product->price;
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
@@ -150,6 +165,7 @@ class PaymentController extends ClientApiController
             'node_id' => (string) ($request->input('node_id') ?? ''),
             'server_id' => (string) ($request->input('server_id') ?? 0),
             'coupon_id' => (string) ($couponId ?? ''),
+            'egg_id' => (string) $eggId,
         ];
 
         $variables = $request->input('variables') ?? [];
@@ -158,7 +174,7 @@ class PaymentController extends ClientApiController
         $intent->metadata = $metadata;
         $intent->save();
 
-        // Create the order with coupon
+        // Create the order with coupon and egg
         $this->orderService->create(
             $intent->id,
             $request->user(),
@@ -166,6 +182,7 @@ class PaymentController extends ClientApiController
             Order::STATUS_PENDING,
             $this->getOrderType($request),
             $couponId,
+            $eggId,
         );
 
         return $this->returnNoContent();
