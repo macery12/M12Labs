@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $visible
  * @property int $nest_id
  * @property int $egg_id
+ * @property array $allowed_eggs
+ * @property bool $allow_egg_changes
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -36,6 +38,7 @@ class Category extends Model
     protected $fillable = [
         'uuid', 'name', 'visible', 'icon',
         'description', 'nest_id', 'egg_id',
+        'allowed_eggs', 'allow_egg_changes',
     ];
 
     public static array $validationRules = [
@@ -46,10 +49,44 @@ class Category extends Model
         'visible' => 'nullable|bool',
         'nest_id' => 'required|exists:nests,id',
         'egg_id' => 'required|exists:eggs,id',
+        'allowed_eggs' => 'nullable|array',
+        'allowed_eggs.*' => 'integer|exists:eggs,id',
+        'allow_egg_changes' => 'nullable|bool',
+    ];
+
+    /**
+     * Cast values to correct type.
+     */
+    protected $casts = [
+        'allowed_eggs' => 'array',
+        'allow_egg_changes' => 'boolean',
     ];
 
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_uuid');
+    }
+
+    /**
+     * Get the allowed eggs for this category with fallback to single egg for backward compatibility.
+     */
+    public function getAllowedEggs(): array
+    {
+        $allowedEggs = $this->allowed_eggs;
+        
+        if (empty($allowedEggs) || !is_array($allowedEggs)) {
+            return [$this->egg_id];
+        }
+        
+        return $allowedEggs;
+    }
+
+    /**
+     * Get the default egg ID for this category (first allowed egg).
+     */
+    public function getDefaultEggId(): int
+    {
+        $allowedEggs = $this->getAllowedEggs();
+        return $allowedEggs[0] ?? $this->egg_id;
     }
 }

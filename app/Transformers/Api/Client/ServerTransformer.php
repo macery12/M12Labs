@@ -61,6 +61,7 @@ class ServerTransformer extends Transformer
             'invocation' => $server->egg->startup,
             'docker_image' => $server->image,
             'egg_features' => $server->egg->inherit_features,
+            'egg_id' => $server->egg_id,
             'billing_product_id' => $server->billing_product_id,
             'feature_limits' => [
                 'databases' => $server->database_limit,

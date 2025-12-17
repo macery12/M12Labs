@@ -9,9 +9,9 @@ import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
 import PaymentContainer from './PaymentContainer';
+import ChangeEggContainer from './ChangeEggContainer';
 import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
-import { format } from 'date-fns';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
@@ -178,6 +178,9 @@ export default () => {
                         </>
                     )}
                 </ContentBox>
+            </div>
+            <div className={'grid lg:grid-cols-3 gap-4'}>
+                <ChangeEggContainer />
             </div>
         </PageContentBlock>
     );

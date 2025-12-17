@@ -33,7 +33,10 @@ class CreateServerService
      */
     public function process(Request $request, Product $product, StripeObject $metadata, Order $order): Server
     {
-        $egg = Egg::findOrFail($product->category->egg_id);
+        // Use egg from order if available, otherwise fall back to category's default egg
+        $eggId = $order->egg_id ?? $product->category->getDefaultEggId();
+
+        $egg = Egg::findOrFail($eggId);
 
         $allocation = $this->getAllocation($metadata->node_id, $order->id);
         
@@ -101,7 +104,10 @@ class CreateServerService
      */
     public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
     {
-        $egg = Egg::findOrFail($product->category->egg_id);
+        // Use egg from order if available, otherwise fall back to category's default egg
+        $eggId = $order->egg_id ?? $product->category->getDefaultEggId();
+
+        $egg = Egg::findOrFail($eggId);
 
         $allocation = $this->getAllocation($nodeId, $order->id);
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);

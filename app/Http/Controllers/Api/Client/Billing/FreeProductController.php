@@ -66,7 +66,20 @@ class FreeProductController extends ClientApiController
             throw new DisplayException('Free servers cannot be deployed to this node.');
         }
 
-        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_NEW, $couponId);
+        // Validate egg selection
+        $eggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
+        $allowedEggs = $product->category->getAllowedEggs();
+        
+        if ($eggId) {
+            if (!in_array($eggId, $allowedEggs)) {
+                throw new DisplayException('The selected egg is not allowed for this product category.');
+            }
+        } else {
+            // Default to first allowed egg if none selected
+            $eggId = $product->category->getDefaultEggId();
+        }
+
+        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_NEW, $couponId, $eggId);
 
         $variables = $request->input('variables', []);
         $server = $this->serverCreation->processFree(

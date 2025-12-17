@@ -56,6 +56,12 @@ class CategoryController extends ApplicationApiController
     {
         $egg = Egg::query()->findOrFail($request->input('eggId'));
 
+        // Get allowed eggs from request, default to single egg for backward compatibility
+        $allowedEggs = $request->input('allowedEggs', [$egg->id]);
+        if (empty($allowedEggs)) {
+            $allowedEggs = [$egg->id];
+        }
+
         try {
             $category = Category::create([
                 'uuid' => Uuid::uuid4()->toString(),
@@ -65,6 +71,8 @@ class CategoryController extends ApplicationApiController
                 'visible' => $request->input('visible'),
                 'nest_id' => $egg->nest_id,
                 'egg_id' => $egg->id,
+                'allowed_eggs' => $allowedEggs,
+                'allow_egg_changes' => $request->input('allowEggChanges', true),
             ]);
         } catch (\Exception $ex) {
             throw new \Exception('Failed to create a new product category: ' . $ex->getMessage());
@@ -87,6 +95,12 @@ class CategoryController extends ApplicationApiController
     {
         $egg = Egg::query()->findOrFail($request->input('eggId'));
 
+        // Get allowed eggs from request, default to single egg for backward compatibility
+        $allowedEggs = $request->input('allowedEggs', [$egg->id]);
+        if (empty($allowedEggs)) {
+            $allowedEggs = [$egg->id];
+        }
+
         try {
             $category->updateOrFail([
                 'name' => $request->input('name'),
@@ -95,6 +109,8 @@ class CategoryController extends ApplicationApiController
                 'visible' => $request->input('visible'),
                 'nest_id' => $egg->nest_id,
                 'egg_id' => $egg->id,
+                'allowed_eggs' => $allowedEggs,
+                'allow_egg_changes' => $request->input('allowEggChanges', true),
             ]);
         } catch (\Exception $ex) {
             throw new \Exception('Failed to update a product category: ' . $ex->getMessage());

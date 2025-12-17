@@ -76,6 +76,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
         Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
         Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
+        Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
 
         Route::get('/products/{id}/key', [Client\Billing\PaymentController::class, 'publicKey']);
 
@@ -188,6 +189,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/rename', [Client\Servers\SettingsController::class, 'rename']);
             Route::post('/reinstall', [Client\Servers\SettingsController::class, 'reinstall']);
             Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
+            Route::post('/change-egg', [Client\Servers\SettingsController::class, 'changeEgg']);
         });
     });
 });

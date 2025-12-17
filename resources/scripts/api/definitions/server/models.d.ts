@@ -17,6 +17,7 @@ interface Server {
     };
     invocation: string;
     dockerImage: string;
+    eggId: number;
     description: string | null;
     limits: {
         memory: number;

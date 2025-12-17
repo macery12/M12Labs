@@ -3,6 +3,12 @@ import { EggVariable } from '@definitions/server';
 import http from '@/api/http';
 import { Transformers as ServerTransformers } from '@definitions/server';
 
+export interface EggInfo {
+    id: number;
+    name: string;
+    description: string;
+}
+
 export const getProducts = (id: number): Promise<Product[]> => {
     return new Promise((resolve, reject) => {
         http.get(`/api/client/billing/categories/${id}`)
@@ -23,6 +29,14 @@ export const getProductVariables = (id: number): Promise<EggVariable[]> => {
     return new Promise((resolve, reject) => {
         http.get(`/api/client/billing/products/${id}/variables`)
             .then(({ data }) => resolve((data.data || []).map(ServerTransformers.toEggVariable)))
+            .catch(reject);
+    });
+};
+
+export const getEggInfo = (id: number): Promise<EggInfo> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/billing/eggs/${id}`)
+            .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };

@@ -13,6 +13,7 @@ export default class Transformers {
         status: data.status,
         invocation: data.invocation,
         dockerImage: data.docker_image,
+        eggId: data.egg_id,
         sftpDetails: {
             ip: data.sftp_details.ip,
             port: data.sftp_details.port,
