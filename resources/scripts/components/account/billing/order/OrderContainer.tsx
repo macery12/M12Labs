@@ -6,6 +6,7 @@ import NodeBox from '@account/billing/order/NodeBox';
 import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
+import CheckoutStepper from '@account/billing/order/CheckoutStepper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -35,6 +36,7 @@ import TitledGreyBox from '@/elements/TitledGreyBox';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import Select from '@/elements/Select';
+import classNames from 'classnames';
 
 const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) => {
     return (
@@ -68,6 +70,17 @@ export default () => {
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
 
     const { colors } = useStoreState(state => state.theme.data!);
+
+    // Calculate checkout steps progress
+    const getCheckoutSteps = () => {
+        const steps = [
+            { id: 1, name: 'Location', status: selectedNode ? 'complete' : 'current' },
+            { id: 2, name: 'Configuration', status: selectedNode ? (availableEggs.length > 1 && selectedEggId ? 'complete' : 'current') : 'upcoming' },
+            { id: 3, name: 'Legal', status: termsAgreed && privacyAgreed ? 'complete' : (selectedNode && selectedEggId ? 'current' : 'upcoming') },
+            { id: 4, name: 'Payment', status: termsAgreed && privacyAgreed ? 'current' : 'upcoming' },
+        ];
+        return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
+    };
 
     const handleCouponApplied = (data: ValidateCouponResponse | null) => {
         setCouponData(data);
@@ -166,232 +179,294 @@ export default () => {
     return (
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
-                Your Order
-                <p className={'mt-1 text-sm font-normal text-gray-400'}>
-                    Customize your selected plan and submit a payment.
+            <div className={'mb-8'}>
+                <h1 className={'text-4xl font-bold text-gray-100'}>Complete Your Order</h1>
+                <p className={'mt-2 text-base text-gray-400'}>
+                    Customize your server configuration and complete your purchase.
                 </p>
             </div>
-            <div className={'grid gap-4 lg:grid-cols-8 lg:gap-12'}>
-                <div className={'border-gray-500 lg:col-span-2 lg:border-r-4'}>
-                    <p className={'my-4 text-2xl font-bold text-gray-300'}>
-                        Selected Plan
-                        {product.icon && <img src={product.icon} className={'ml-2 inline-flex h-8 w-8'} />}
-                    </p>
-                    <LimitBox icon={faIdBadge} content={product.name} />
-                    <div className={'my-1 text-lg font-semibold text-gray-400'}>
-                        <FontAwesomeIcon icon={faCreditCard} className={'mr-2 inline-flex h-4 w-4 '} />
-                        {couponData ? (
-                            <div>
-                                <div className={'text-sm line-through'}>${couponData.subtotal}</div>
-                                <div>
-                                    <span style={{ color: colors.primary }} className={'mr-1'}>
-                                        ${couponData.total.toFixed(2)}
-                                    </span>
-                                    <span className={'text-sm'}>/ mo</span>
-                                </div>
-                                <div className={'text-xs text-green-500'}>Save ${couponData.discount.toFixed(2)}</div>
-                            </div>
-                        ) : (
-                            <>
-                                <span style={{ color: colors.primary }} className={'mr-1'}>
-                                    ${product.price}
-                                </span>
-                                <span className={'text-sm'}>/ mo</span>
-                            </>
+
+            <CheckoutStepper steps={getCheckoutSteps()} />
+
+            <div className={'mt-10 grid gap-8 lg:grid-cols-3 lg:gap-10'}>
+                {/* Main Content Area */}
+                <div className={'lg:col-span-2 space-y-8'}>
+                    {/* Location Section */}
+                    <section>
+                        <div className={'mb-6'}>
+                            <h2 className={'text-2xl font-bold text-gray-200'}>Choose a Location</h2>
+                            <p className={'mt-1 text-sm text-gray-400'}>
+                                Select where you want your server to be deployed.
+                            </p>
+                        </div>
+                        {(!nodes || nodes.length < 1) && (
+                            <Alert type={'danger'}>
+                                There are no nodes available for deployment. Please contact an administrator.
+                            </Alert>
                         )}
-                    </div>
-                    <div className={'my-4 mr-8 h-0.5 rounded-full bg-gray-600'} />
-                    <LimitBox icon={faMicrochip} content={`${product.limits.cpu}% CPU`} />
-                    <LimitBox icon={faMemory} content={`${(product.limits.memory / 1024).toFixed(1)} GiB Memory`} />
-                    <LimitBox icon={faHdd} content={`${(product.limits.disk / 1024).toFixed(1)} GiB Disk`} />
-                    <div className={'my-4 mr-8 h-0.5 rounded-full bg-gray-600'} />
-                    <LimitBox icon={faArchive} content={`${product.limits.backup} Backup Slots`} />
-                    <LimitBox icon={faDatabase} content={`${product.limits.database} Database Slots`} />
-                    <LimitBox icon={faEthernet} content={`${product.limits.allocation} Network Ports`} />
-                </div>
-                <div className={'lg:col-span-6'}>
-                    <div>
-                        <div className={'my-10'}>
-                            <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
-                                Choose a location
-                                <p className={'mt-1 text-sm font-normal text-gray-400'}>
-                                    Select a location from our list to deploy your server to.
+                        <div className={'grid gap-4 sm:grid-cols-2'}>
+                            {nodes?.map(node => (
+                                <NodeBox
+                                    node={node}
+                                    key={node.id}
+                                    selected={selectedNode}
+                                    setSelected={setSelectedNode}
+                                />
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Server Type Section */}
+                    {availableEggs.length > 1 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Server Type</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Select which type of server you want to create.
                                 </p>
                             </div>
-                            <div className={'grid gap-4 lg:grid-cols-2'}>
-                                {(!nodes || nodes.length < 1) && (
-                                    <Alert type={'danger'} className={'col-span-2'}>
-                                        There are no nodes available for deployment. Please contact an administrator.
-                                    </Alert>
-                                )}
-                                {nodes?.map(node => (
-                                    <NodeBox
-                                        node={node}
-                                        key={node.id}
-                                        selected={selectedNode}
-                                        setSelected={setSelectedNode}
-                                    />
+                            <Select
+                                value={selectedEggId}
+                                onChange={e => {
+                                    setSelectedEggId(Number(e.currentTarget.value));
+                                    setEggs(undefined);
+                                }}
+                            >
+                                {availableEggs.map(egg => (
+                                    <option key={egg.id} value={egg.id}>
+                                        {egg.name}
+                                    </option>
+                                ))}
+                            </Select>
+                            {availableEggs.find(e => e.id === selectedEggId)?.description && (
+                                <p className={'mt-3 text-sm text-gray-400'}>
+                                    {availableEggs.find(e => e.id === selectedEggId)?.description}
+                                </p>
+                            )}
+                        </section>
+                    )}
+
+                    {/* Variables Section */}
+                    {eggs && eggs.length > 1 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Server Variables</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Configure your server settings before deployment.
+                                </p>
+                            </div>
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {eggs?.map(variable => (
+                                    <div key={variable.envVariable}>
+                                        {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
+                                    </div>
                                 ))}
                             </div>
+                        </section>
+                    )}
+
+                    {/* Legal Section */}
+                    <section>
+                        <div className={'mb-6'}>
+                            <h2 className={'text-2xl font-bold text-gray-200'}>Legal Agreements</h2>
+                            <p className={'mt-1 text-sm text-gray-400'}>
+                                Please review and accept our terms to continue.
+                            </p>
                         </div>
-                        <div className={'h-px rounded-full bg-gray-700'} />
-                        {availableEggs.length > 1 && (
-                            <>
-                                <div className={'my-10'}>
-                                    <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
-                                        Choose a server type
-                                        <p className={'mt-1 text-sm font-normal text-gray-400'}>
-                                            Select which type of server you want to create.
-                                        </p>
-                                    </div>
-                                    <Select
-                                        value={selectedEggId}
-                                        onChange={e => {
-                                            setSelectedEggId(Number(e.currentTarget.value));
-                                            setEggs(undefined); // Reset eggs to reload variables
-                                        }}
-                                    >
-                                        {availableEggs.map(egg => (
-                                            <option key={egg.id} value={egg.id}>
-                                                {egg.name}
-                                            </option>
-                                        ))}
-                                    </Select>
-                                    {availableEggs.find(e => e.id === selectedEggId)?.description && (
-                                        <p className={'mt-2 text-sm text-gray-400'}>
-                                            {availableEggs.find(e => e.id === selectedEggId)?.description}
-                                        </p>
+                        <div className={'space-y-4'}>
+                            <div
+                                onClick={() => !termsAgreed && setTermsAgreed(true)}
+                                className={classNames(
+                                    'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
+                                    termsAgreed
+                                        ? 'border-green-500 bg-green-500/10'
+                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                                )}
+                            >
+                                <AdminCheckbox
+                                    name={'terms'}
+                                    checked={termsAgreed}
+                                    onChange={() => setTermsAgreed(!termsAgreed)}
+                                />
+                                <div className={'flex-1'}>
+                                    <p className={'text-sm font-medium text-gray-200'}>
+                                        I agree to the{' '}
+                                        <a
+                                            href={billing.links.terms}
+                                            target={'_blank'}
+                                            rel={'noreferrer'}
+                                            className={'font-semibold text-blue-400 hover:text-blue-300'}
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            Terms of Service <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                        </a>
+                                    </p>
+                                    {termsAgreed && (
+                                        <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>
                                     )}
                                 </div>
-                                <div className={'h-px rounded-full bg-gray-700'} />
-                            </>
-                        )}
-                        {eggs && eggs.length > 1 && (
-                            <>
-                                <div className={'my-10'}>
-                                    <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
-                                        Plan Variables
-                                        <p className={'mt-1 text-sm font-normal text-gray-400'}>
-                                            Modify your server variables before your server is even created for ease of
-                                            use.
-                                        </p>
-                                    </div>
-                                    <div className={'grid gap-4 lg:grid-cols-2'}>
-                                        {eggs?.map(variable => (
-                                            <div key={variable.envVariable}>
-                                                {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
-                                            </div>
-                                        ))}
-                                    </div>
+                            </div>
+                            <div
+                                onClick={() => !privacyAgreed && setPrivacyAgreed(true)}
+                                className={classNames(
+                                    'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
+                                    privacyAgreed
+                                        ? 'border-green-500 bg-green-500/10'
+                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                                )}
+                            >
+                                <AdminCheckbox
+                                    name={'privacy'}
+                                    checked={privacyAgreed}
+                                    onChange={() => setPrivacyAgreed(!privacyAgreed)}
+                                />
+                                <div className={'flex-1'}>
+                                    <p className={'text-sm font-medium text-gray-200'}>
+                                        I agree to the{' '}
+                                        <a
+                                            href={billing.links.privacy}
+                                            target={'_blank'}
+                                            rel={'noreferrer'}
+                                            className={'font-semibold text-blue-400 hover:text-blue-300'}
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            Privacy Policy <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                        </a>
+                                    </p>
+                                    {privacyAgreed && (
+                                        <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>
+                                    )}
                                 </div>
-                                <div className={'h-px rounded-full bg-gray-700'} />
-                            </>
-                        )}
-                        <div className={'my-10'}>
-                            <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
-                                Legal Documents
-                                <p className={'mt-1 text-sm font-normal text-gray-400'}>
-                                    Agree and sign the relevant legal documents for your new server.
+                            </div>
+                        </div>
+                        {!termsAgreed || !privacyAgreed ? (
+                            <Alert type={'warning'} className={'mt-4'}>
+                                Please accept both agreements to proceed with your order.
+                            </Alert>
+                        ) : null}
+                    </section>
+
+                    {/* Coupon Section */}
+                    {product.price !== 0 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Coupon Code</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Have a coupon? Apply it to get a discount.
                                 </p>
                             </div>
-                            <div className={'grid gap-4 lg:grid-cols-2'}>
-                                <TitledGreyBox title={'Terms of Service agreement'} className={'relative'}>
-                                    {!termsAgreed ? (
-                                        <>
-                                            Click the checkbox to agree to our{' '}
-                                            <a href={billing.links.terms} className={'font-semibold text-blue-400'}>
-                                                Terms of Service <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                            </a>
-                                        </>
+                            <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                            <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
+                        </section>
+                    )}
+
+                    {/* Payment Section */}
+                    {termsAgreed && privacyAgreed && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Payment</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Complete your purchase to deploy your server.
+                                </p>
+                            </div>
+                            {product.price === 0 || couponData?.total === 0 ? (
+                                <div className={'rounded-lg border-2 border-green-500 bg-green-500/10 p-6'}>
+                                    <p className={'mb-4 text-gray-200'}>
+                                        {couponData?.total === 0
+                                            ? '🎉 Your coupon has made this order free! No payment is required.'
+                                            : '🎉 This product is free! No payment is required.'}
+                                    </p>
+                                    <Button onClick={createFree} size={Button.Sizes.Large}>
+                                        Create Server
+                                    </Button>
+                                </div>
+                            ) : intent ? (
+                                <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                                    {/* @ts-expect-error this is fine, stripe library is just weird */}
+                                    <Elements stripe={stripe} options={options} key={intent?.id}>
+                                        <PaymentButton
+                                            selectedNode={selectedNode}
+                                            product={product}
+                                            vars={vars}
+                                            intent={intent}
+                                            couponId={couponData?.coupon.id}
+                                            selectedEggId={selectedEggId}
+                                        />
+                                    </Elements>
+                                </div>
+                            ) : (
+                                <Spinner centered />
+                            )}
+                        </section>
+                    )}
+                </div>
+
+                {/* Sidebar - Order Summary */}
+                <div className={'lg:col-span-1'}>
+                    <div className={'sticky top-4 rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                        <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
+                        
+                        <div className={'mb-4 flex items-center gap-3'}>
+                            {product.icon && <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />}
+                            <div className={'flex-1'}>
+                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                <div className={'mt-1'}>
+                                    {couponData ? (
+                                        <div>
+                                            <div className={'text-xs text-gray-400 line-through'}>${couponData.subtotal.toFixed(2)}</div>
+                                            <div className={'flex items-baseline gap-1'}>
+                                                <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
+                                                    ${couponData.total.toFixed(2)}
+                                                </span>
+                                                <span className={'text-xs text-gray-400'}>/ month</span>
+                                            </div>
+                                            <div className={'text-xs font-medium text-green-400'}>Save ${couponData.discount.toFixed(2)}</div>
+                                        </div>
                                     ) : (
-                                        <Alert type={'success'}>Terms of Service completed</Alert>
-                                    )}
-                                    {!termsAgreed && (
-                                        <div className={'absolute top-0 right-0 p-3'}>
-                                            <AdminCheckbox
-                                                name={'terms'}
-                                                checked={false}
-                                                onChange={() => setTermsAgreed(true)}
-                                            />
+                                        <div className={'flex items-baseline gap-1'}>
+                                            <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
+                                                ${product.price.toFixed(2)}
+                                            </span>
+                                            <span className={'text-xs text-gray-400'}>/ month</span>
                                         </div>
                                     )}
-                                </TitledGreyBox>
-                                <TitledGreyBox title={'Privacy Policy agreement'} className={'relative'}>
-                                    {!privacyAgreed ? (
-                                        <>
-                                            Click the checkbox to agree to our{' '}
-                                            <a href={billing.links.privacy} className={'font-semibold text-blue-400'}>
-                                                Privacy Policy <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                            </a>
-                                        </>
-                                    ) : (
-                                        <Alert type={'success'}>Privacy Policy completed</Alert>
-                                    )}
-                                    {!privacyAgreed && (
-                                        <div className={'absolute top-0 right-0 p-3'}>
-                                            <AdminCheckbox
-                                                name={'privacy'}
-                                                checked={false}
-                                                onChange={() => setPrivacyAgreed(true)}
-                                            />
-                                        </div>
-                                    )}
-                                </TitledGreyBox>
+                                </div>
                             </div>
                         </div>
-                        <div className={'h-px rounded-full bg-gray-700'} />
-                        {product.price !== 0 && (
-                            <>
-                                <div className={'my-10'}>
-                                    <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
-                                        Coupon Code
-                                        <p className={'mt-1 text-sm font-normal text-gray-400'}>
-                                            Have a coupon? Apply it here to get a discount on your order.
-                                        </p>
-                                    </div>
-                                    <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                                    <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
-                                </div>
-                                <div className={'h-px rounded-full bg-gray-700'} />
-                            </>
-                        )}
-                        {!termsAgreed || !privacyAgreed ? (
-                            <Alert type={'warning'}>
-                                Please agree to the above legal documents before proceeding with your order.
-                            </Alert>
-                        ) : (
-                            <>
-                                {product.price === 0 || couponData?.total === 0 ? (
-                                    <div className={'mt-8 flex w-full'}>
-                                        <p className={'font-semibold text-gray-400'}>
-                                            {couponData?.total === 0
-                                                ? 'Your coupon has made this order free! No payment is required.'
-                                                : 'As this product is free, no purchase needs to be made via our payment gateways.'}
-                                        </p>
-                                        <Button className={'ml-auto'} onClick={createFree}>
-                                            Create Server
-                                        </Button>
-                                    </div>
-                                ) : intent ? (
-                                    <div className={'mt-8 w-full'}>
-                                        {/* @ts-expect-error this is fine, stripe library is just weird */}
-                                        <Elements stripe={stripe} options={options} key={intent?.id}>
-                                            <PaymentButton
-                                                selectedNode={selectedNode}
-                                                product={product}
-                                                vars={vars}
-                                                intent={intent}
-                                                couponId={couponData?.coupon.id}
-                                                selectedEggId={selectedEggId}
-                                            />
-                                        </Elements>
-                                    </div>
-                                ) : (
-                                    <Spinner centered />
-                                )}
-                            </>
-                        )}
+
+                        <div className={'my-4 h-px bg-gray-700'} />
+
+                        <div className={'space-y-3'}>
+                            <div className={'flex items-center gap-2 text-sm'}>
+                                <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 text-gray-400'} />
+                                <span className={'text-gray-300'}>{product.limits.cpu}% CPU</span>
+                            </div>
+                            <div className={'flex items-center gap-2 text-sm'}>
+                                <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 text-gray-400'} />
+                                <span className={'text-gray-300'}>{(product.limits.memory / 1024).toFixed(1)} GiB RAM</span>
+                            </div>
+                            <div className={'flex items-center gap-2 text-sm'}>
+                                <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 text-gray-400'} />
+                                <span className={'text-gray-300'}>{(product.limits.disk / 1024).toFixed(1)} GiB Storage</span>
+                            </div>
+                        </div>
+
+                        <div className={'my-4 h-px bg-gray-700'} />
+
+                        <div className={'space-y-3'}>
+                            <div className={'flex items-center gap-2 text-sm'}>
+                                <FontAwesomeIcon icon={faArchive} className={'h-4 w-4 text-gray-400'} />
+                                <span className={'text-gray-300'}>{product.limits.backup} Backups</span>
+                            </div>
+                            <div className={'flex items-center gap-2 text-sm'}>
+                                <FontAwesomeIcon icon={faDatabase} className={'h-4 w-4 text-gray-400'} />
+                                <span className={'text-gray-300'}>{product.limits.database} Databases</span>
+                            </div>
+                            <div className={'flex items-center gap-2 text-sm'}>
+                                <FontAwesomeIcon icon={faEthernet} className={'h-4 w-4 text-gray-400'} />
+                                <span className={'text-gray-300'}>{product.limits.allocation} Ports</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
