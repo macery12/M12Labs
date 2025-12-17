@@ -13,6 +13,7 @@ interface Props {
     vars: Map<string, string>;
     intent: StripeIntent;
     couponId?: number;
+    selectedEggId?: number;
 }
 
 export default (data: Props) => {
@@ -36,6 +37,7 @@ export default (data: Props) => {
             node_id: data.selectedNode!,
             vars: variables,
             coupon_id: data.couponId,
+            egg_id: data.selectedEggId,
         })
             .then(() => {
                 stripe.confirmPayment({

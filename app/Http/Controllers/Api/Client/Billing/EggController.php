@@ -26,4 +26,18 @@ class EggController extends ClientApiController
             ->transformWith(EggVariableTransformer::class)
             ->toArray();
     }
+
+    /**
+     * Returns basic egg information for display purposes.
+     */
+    public function getEgg(int $id): array
+    {
+        $egg = \Everest\Models\Egg::findOrFail($id);
+
+        return [
+            'id' => $egg->id,
+            'name' => $egg->name,
+            'description' => $egg->description,
+        ];
+    }
 }

@@ -14,4 +14,5 @@ export interface UpdateStripeIntent {
     serverId?: number;
     renewal?: boolean;
     coupon_id?: number;
+    egg_id?: number;
 }

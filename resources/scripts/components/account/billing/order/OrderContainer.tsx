@@ -29,11 +29,12 @@ import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Product, StripeIntent, type Node } from '@definitions/account/billing';
 import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
-import { getProduct, getProductVariables, getViableNodes } from '@/api/routes/account/billing/products';
+import { getProduct, getProductVariables, getViableNodes, getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+import Select from '@/elements/Select';
 
 const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) => {
     return (
@@ -59,6 +60,8 @@ export default () => {
     const [selectedNode, setSelectedNode] = useState<number>(0);
     const [product, setProduct] = useState<Product | undefined>();
     const [eggs, setEggs] = useState<EggVariable[] | undefined>();
+    const [selectedEggId, setSelectedEggId] = useState<number | undefined>();
+    const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
 
     const [termsAgreed, setTermsAgreed] = useState<boolean>(false);
     const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
@@ -88,7 +91,7 @@ export default () => {
     const createFree = () => {
         if (product) {
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
-            processUnpaidOrder(product.id, selectedNode, undefined, variables, undefined, couponData?.coupon.id)
+            processUnpaidOrder(product.id, selectedNode, undefined, variables, undefined, couponData?.coupon.id, selectedEggId)
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
         }
@@ -100,6 +103,15 @@ export default () => {
                 // Fetch product details
                 const productData = await getProduct(Number(params.id));
                 setProduct(productData);
+
+                // Initialize selected egg with the default (first allowed egg)
+                const allowedEggs = productData.allowedEggs || [productData.eggId];
+                setSelectedEggId(allowedEggs[0]);
+
+                // Fetch egg information for all allowed eggs
+                const eggInfoPromises = allowedEggs.map(id => getEggInfo(id));
+                const eggInfos = await Promise.all(eggInfoPromises);
+                setAvailableEggs(eggInfos);
 
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
@@ -127,13 +139,13 @@ export default () => {
     useEffect(() => {
         clearFlashes();
 
-        if (!product || eggs) return;
+        if (!product || eggs || !selectedEggId) return;
 
-        // Fetch product variables (egg data)
-        getProductVariables(Number(product.eggId))
+        // Fetch product variables (egg data) for the selected egg
+        getProductVariables(selectedEggId)
             .then(data => setEggs(data))
             .catch(error => console.error(error));
-    }, [product]);
+    }, [product, selectedEggId]);
 
     if (!product) return <Spinner centered />;
     // Only show spinner for paid products when Stripe hasn't loaded yet
@@ -224,6 +236,37 @@ export default () => {
                             </div>
                         </div>
                         <div className={'h-px rounded-full bg-gray-700'} />
+                        {availableEggs.length > 1 && (
+                            <>
+                                <div className={'my-10'}>
+                                    <div className={'mb-4 text-xl font-semibold lg:text-3xl'}>
+                                        Choose a server type
+                                        <p className={'mt-1 text-sm font-normal text-gray-400'}>
+                                            Select which type of server you want to create.
+                                        </p>
+                                    </div>
+                                    <Select
+                                        value={selectedEggId}
+                                        onChange={e => {
+                                            setSelectedEggId(Number(e.currentTarget.value));
+                                            setEggs(undefined); // Reset eggs to reload variables
+                                        }}
+                                    >
+                                        {availableEggs.map(egg => (
+                                            <option key={egg.id} value={egg.id}>
+                                                {egg.name}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    {availableEggs.find(e => e.id === selectedEggId)?.description && (
+                                        <p className={'mt-2 text-sm text-gray-400'}>
+                                            {availableEggs.find(e => e.id === selectedEggId)?.description}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className={'h-px rounded-full bg-gray-700'} />
+                            </>
+                        )}
                         {eggs && eggs.length > 1 && (
                             <>
                                 <div className={'my-10'}>
@@ -340,6 +383,7 @@ export default () => {
                                                 vars={vars}
                                                 intent={intent}
                                                 couponId={couponData?.coupon.id}
+                                                selectedEggId={selectedEggId}
                                             />
                                         </Elements>
                                     </div>
