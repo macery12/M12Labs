@@ -122,13 +122,9 @@ export default () => {
                     </Alert>
                 )}
 
-                <Button
-                    onClick={() => setConfirmOpen(true)}
-                    disabled={!canChange || changing}
-                    color={Button.Colors.Red}
-                >
+                <Button.Danger onClick={() => setConfirmOpen(true)} disabled={!canChange || changing}>
                     {changing ? 'Changing Server Type...' : 'Change Server Type'}
-                </Button>
+                </Button.Danger>
             </ContentBox>
 
             <Dialog.Confirm
