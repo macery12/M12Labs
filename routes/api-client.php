@@ -189,6 +189,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/rename', [Client\Servers\SettingsController::class, 'rename']);
             Route::post('/reinstall', [Client\Servers\SettingsController::class, 'reinstall']);
             Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
+            Route::post('/change-egg', [Client\Servers\SettingsController::class, 'changeEgg']);
         });
     });
 });

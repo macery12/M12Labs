@@ -31,10 +31,14 @@ const setImage = async (uuid: string, image: string): Promise<void> => {
     await http.put(`/api/client/servers/${uuid}/settings/docker-image`, { docker_image: image });
 };
 
+const changeEgg = async (uuid: string, eggId: number): Promise<void> => {
+    await http.post(`/api/client/servers/${uuid}/settings/change-egg`, { egg_id: eggId });
+};
+
 const updateStartupVariable = async (uuid: string, key: string, value: string): Promise<[EggVariable, string]> => {
     const { data } = await http.put(`/api/client/servers/${uuid}/startup/variable`, { key, value });
 
     return [Transformers.toEggVariable(data), data.meta.startup_command];
 };
 
-export { getServerStartup, setImage, updateStartupVariable };
+export { getServerStartup, setImage, changeEgg, updateStartupVariable };
