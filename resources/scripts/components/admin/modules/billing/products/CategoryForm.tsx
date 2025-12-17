@@ -10,42 +10,35 @@ import { Button } from '@/elements/button';
 import type { ApplicationStore } from '@/state';
 import AdminBox from '@/elements/AdminBox';
 import { createCategory, updateCategory } from '@/api/routes/admin/billing/categories';
-import { object, string, boolean, number } from 'yup';
+import { object, string, boolean, number, array } from 'yup';
 import { faShoppingBasket } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import Label from '@/elements/Label';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { ServerServiceContainer } from '@admin/management/servers/ServerStartupContainer';
-import { WithRelationships } from '@/api/routes/admin';
-import type { Egg } from '@/api/routes/admin/egg';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { ShoppingCartIcon } from '@heroicons/react/outline';
 import CategoryDeleteButton from './CategoryDeleteButton';
-import { getEgg } from '@/api/routes/admin/egg';
 import { Category } from '@definitions/admin';
 import { CategoryValues } from '@/api/routes/admin/billing/types';
 import { useSWRConfig } from 'swr';
+import NestSelector from '@admin/management/servers/NestSelector';
+import MultiEggSelect from './MultiEggSelect';
+import AdminCheckbox from '@/elements/AdminCheckbox';
 
 interface Props {
     visible: boolean;
+    allowEggChanges: boolean;
     category?: Category;
     setVisible: Dispatch<SetStateAction<boolean>>;
+    setAllowEggChanges: Dispatch<SetStateAction<boolean>>;
 }
 
-function InternalForm({ category, visible, setVisible }: Props) {
-    const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>();
-    const { values, isSubmitting } = useFormikContext<CategoryValues>();
+function InternalForm({ category, visible, setVisible, allowEggChanges, setAllowEggChanges }: Props) {
+    const { isSubmitting } = useFormikContext<CategoryValues>();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
-
-    // Load egg object when category.eggId changes (after save/SWR revalidation)
-    // Note: No need for guard - useEffect only runs when category?.eggId changes
-    useEffect(() => {
-        if (category?.eggId) {
-            getEgg(category.eggId)
-                .then(egg => setEgg(egg))
-                .catch(error => console.error(error));
-        }
-    }, [category?.eggId]);
-
+    const [nestId, setNestId] = useState<number>(category?.nestId ?? 0);
+    const [selectedEggIds, setSelectedEggIds] = useState<number[]>(
+        category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []),
+    );
 
     return (
         <Form>
@@ -103,16 +96,39 @@ function InternalForm({ category, visible, setVisible }: Props) {
                                 </div>
                                 <p className={'mt-3 text-xs'}>Should this category be visible instantly?</p>
                             </div>
+                            <div className={'mt-4'}>
+                                <Label>Allow users to change eggs after purchase</Label>
+                                <div css={tw`flex items-center mt-2`}>
+                                    <AdminCheckbox
+                                        name={'allowEggChanges'}
+                                        checked={allowEggChanges}
+                                        onChange={e => setAllowEggChanges(e.target.checked)}
+                                    />
+                                    <span css={tw`ml-2 text-sm text-neutral-300`}>
+                                        {allowEggChanges ? 'Enabled' : 'Disabled'}
+                                    </span>
+                                </div>
+                                <p className={'mt-2 text-xs text-neutral-400'}>
+                                    When enabled, users can change their server&apos;s egg to any other allowed egg in
+                                    this category.
+                                </p>
+                            </div>
                         </FieldRow>
                     </AdminBox>
                 </div>
                 <div css={tw`w-full flex flex-col mr-0 lg:mr-2`}>
-                    <ServerServiceContainer
-                        selectedEggId={values.eggId}
-                        setEgg={setEgg}
-                        nestId={category?.nestId ?? 0}
-                        noToggle
-                    />
+                    <AdminBox title={'Egg Selection'} isLoading={isSubmitting}>
+                        <div className={'mb-6'}>
+                            <NestSelector selectedNestId={nestId} onNestSelect={setNestId} />
+                        </div>
+                        <div className={'mb-6'}>
+                            <MultiEggSelect
+                                nestId={nestId}
+                                selectedEggIds={selectedEggIds}
+                                onEggSelectionChange={setSelectedEggIds}
+                            />
+                        </div>
+                    </AdminBox>
                     <div css={tw`rounded shadow-md mt-4 py-2 pr-6`} style={{ backgroundColor: secondary }}>
                         <div css={tw`text-right`}>
                             {category && <CategoryDeleteButton category={category} />}
@@ -132,6 +148,7 @@ export default ({ category }: { category?: Category }) => {
     const params = useParams<'id'>();
     const { mutate } = useSWRConfig();
     const [visible, setVisible] = useState<boolean>(category?.visible || false);
+    const [allowEggChanges, setAllowEggChanges] = useState<boolean>(category?.allowEggChanges ?? true);
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
@@ -141,6 +158,7 @@ export default ({ category }: { category?: Category }) => {
         clearFlashes('admin:billing:category:create');
 
         values.visible = visible;
+        values.allowEggChanges = allowEggChanges;
 
         createCategory(values)
             .then(data => navigate(`/admin/billing/categories/${data.id}`))
@@ -155,6 +173,7 @@ export default ({ category }: { category?: Category }) => {
         clearFlashes();
 
         values.visible = visible;
+        values.allowEggChanges = allowEggChanges;
 
         updateCategory(category!.id, values)
             .then(async () => {
@@ -171,9 +190,9 @@ export default ({ category }: { category?: Category }) => {
         <AdminContentBlock title={'New Category'}>
             <div css={tw`w-full flex flex-row items-center m-8`}>
                 {category?.icon ? (
-                    <img src={category.icon} className={'ww-8 h-8 mr-4'} />
+                    <img src={category.icon} className={'ww-8 mr-4 h-8'} />
                 ) : (
-                    <ShoppingCartIcon className={'w-8 h-8 mr-4'} />
+                    <ShoppingCartIcon className={'mr-4 h-8 w-8'} />
                 )}
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>
@@ -195,8 +214,8 @@ export default ({ category }: { category?: Category }) => {
                     description: category?.description ?? '',
                     visible: category?.visible ?? false,
                     eggId: category?.eggId ?? 0,
-                    // Required by EggSelect component but not submitted to backend (not in CategoryValues type)
-                    environment: {} as Record<string, unknown>,
+                    allowedEggs: category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []),
+                    allowEggChanges: category?.allowEggChanges ?? true,
                 }}
                 validationSchema={object().shape({
                     name: string().required().max(191).min(3),
@@ -204,10 +223,18 @@ export default ({ category }: { category?: Category }) => {
                     description: string().nullable().max(191).min(3),
                     visible: boolean().required(),
                     nestId: number(),
-                    eggId: number(),
+                    eggId: number().required(),
+                    allowedEggs: array().of(number()).min(1).required(),
+                    allowEggChanges: boolean(),
                 })}
             >
-                <InternalForm category={category} visible={visible} setVisible={setVisible} />
+                <InternalForm
+                    category={category}
+                    visible={visible}
+                    setVisible={setVisible}
+                    allowEggChanges={allowEggChanges}
+                    setAllowEggChanges={setAllowEggChanges}
+                />
             </Formik>
         </AdminContentBlock>
     );
