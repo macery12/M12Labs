@@ -22,9 +22,11 @@ import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
-import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
+import { renewFreeServer, processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
+import CouponInput from '@/components/account/billing/order/CouponInput';
+import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
 
 function timeUntil(targetDate: Date | string) {
@@ -60,6 +62,7 @@ export default () => {
     const [product, setProduct] = useState<Product>();
     const [loading, setLoading] = useState<boolean>(true);
     const [renewing, setRenewing] = useState<boolean>(false);
+    const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
 
     const navigate = useNavigate();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
@@ -95,15 +98,31 @@ export default () => {
         setRenewing(true);
         clearFlashes('server:billing');
 
-        renewFreeServer(billingProductId, serverId)
-            .then(() => {
-                // Redirect to server overview after successful renewal
-                navigate(`/server/${serverUuid}`);
-            })
-            .catch(error => {
-                clearAndAddHttpError({ key: 'server:billing', error });
-                setRenewing(false);
-            });
+        // If there's a coupon that makes it free, use processUnpaidOrder
+        if (couponData?.total === 0) {
+            processUnpaidOrder(billingProductId, undefined, true, undefined, serverId, couponData?.coupon.id)
+                .then(() => {
+                    navigate(`/server/${serverUuid}`);
+                })
+                .catch(error => {
+                    clearAndAddHttpError({ key: 'server:billing', error });
+                    setRenewing(false);
+                });
+        } else {
+            // Regular free server renewal
+            renewFreeServer(billingProductId, serverId)
+                .then(() => {
+                    navigate(`/server/${serverUuid}`);
+                })
+                .catch(error => {
+                    clearAndAddHttpError({ key: 'server:billing', error });
+                    setRenewing(false);
+                });
+        }
+    };
+
+    const handleCouponApplied = (data: ValidateCouponResponse | null) => {
+        setCouponData(data);
     };
 
     // Calculate days remaining until renewal (can be negative if overdue)
@@ -264,8 +283,61 @@ export default () => {
                                 </div>
                             ) : (
                                 <div>
-                                    <p css={tw`text-gray-300 text-sm mb-3`}>Renew for {renewalDays} days.</p>
-                                    <PaymentContainer id={Number(product.id)} />
+                                    {/* Show coupon input for paid servers */}
+                                    <div css={tw`mb-4`}>
+                                        <Label>Renewal Cost</Label>
+                                        {couponData ? (
+                                            <div>
+                                                <div css={tw`text-sm text-gray-400 line-through`}>
+                                                    {settings.currency.symbol}
+                                                    {couponData.subtotal.toFixed(2)}
+                                                </div>
+                                                <div css={tw`flex items-baseline gap-1 mb-1`}>
+                                                    <span css={tw`text-2xl font-bold text-gray-200`}>
+                                                        {settings.currency.symbol}
+                                                        {couponData.total.toFixed(2)}
+                                                    </span>
+                                                    <span css={tw`text-xs text-gray-400`}>
+                                                        {settings.currency.code.toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <div css={tw`text-xs font-medium text-green-400`}>
+                                                    Save {settings.currency.symbol}
+                                                    {couponData.discount.toFixed(2)}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p css={tw`text-gray-300 text-sm`}>
+                                                {settings.currency.symbol}
+                                                {product.price.toFixed(2)} {settings.currency.code.toUpperCase()}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                    <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
+
+                                    <div css={tw`mt-4`}>
+                                        {couponData?.total === 0 ? (
+                                            <div>
+                                                <p css={tw`text-green-400 text-sm mb-3`}>
+                                                    🎉 Your coupon has made this renewal free!
+                                                </p>
+                                                <Button
+                                                    onClick={handleFreeRenewal}
+                                                    disabled={renewing}
+                                                    css={tw`w-full`}
+                                                >
+                                                    {renewing ? 'Renewing...' : 'Renew Server'}
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <PaymentContainer
+                                                id={Number(product.id)}
+                                                couponId={couponData?.coupon.id}
+                                            />
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </>

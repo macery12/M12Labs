@@ -7,7 +7,7 @@ import { ServerContext } from '@/state/server';
 import { StripeIntent } from '@definitions/account/billing';
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 
-export default ({ id }: { id?: number }) => {
+export default ({ id, couponId }: { id?: number; couponId?: number }) => {
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
 
@@ -17,7 +17,7 @@ export default ({ id }: { id?: number }) => {
         const fetchData = async () => {
             if (id) {
                 try {
-                    const intentData = await getStripeIntent(id);
+                    const intentData = await getStripeIntent(id, couponId);
                     setIntent({ id: intentData.id, secret: intentData.secret });
 
                     const stripePublicKey = await getStripeKey(id);
@@ -30,7 +30,7 @@ export default ({ id }: { id?: number }) => {
         };
 
         fetchData();
-    }, [id]);
+    }, [id, couponId]);
 
     if (!id || !intent || !stripe) return <Spinner size={'large'} centered />;
 
@@ -47,7 +47,7 @@ export default ({ id }: { id?: number }) => {
     return (
         <>
             {/* @ts-expect-error this is fine, stripe library is just weird */}
-            <Elements stripe={stripe} options={options}>
+            <Elements stripe={stripe} options={options} key={intent?.id}>
                 <PaymentForm id={id} serverId={Number(serverId)} intent={intent.id} renewal />
             </Elements>
         </>
