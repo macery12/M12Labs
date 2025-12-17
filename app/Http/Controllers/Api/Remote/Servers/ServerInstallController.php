@@ -32,7 +32,7 @@ class ServerInstallController extends Controller
         $egg = $server->egg;
 
         return new JsonResponse([
-            'container_image' => $egg->copy_script_container,
+            'container_image' => $server->image ?? current($egg->docker_images),
             'entrypoint' => $egg->copy_script_entry,
             'script' => $egg->copy_script_install,
         ]);
