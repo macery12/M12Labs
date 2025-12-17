@@ -144,6 +144,8 @@ interface Category extends Model {
     visible: boolean;
     nestId: number;
     eggId: number;
+    allowedEggs: number[];
+    allowEggChanges: boolean;
 
     createdAt: Date;
     updatedAt?: Date | null;

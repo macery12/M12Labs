@@ -26,6 +26,8 @@ export interface CategoryValues {
     description: string;
     visible: boolean;
     eggId: number;
+    allowedEggs?: number[];
+    allowEggChanges?: boolean;
 }
 
 export interface CouponValues {
