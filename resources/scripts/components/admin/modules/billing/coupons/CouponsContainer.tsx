@@ -143,7 +143,7 @@ function CouponsContainer() {
                                                 <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
                                                     <Link to={`/admin/billing/coupons/${coupon.id}`}>
                                                         <CopyOnClick text={coupon.id.toString()}>
-                                                            <code css={tw`font-mono bg-neutral-900 rounded py-1 px-2`}>
+                                                            <code css={tw`font-mono text-xs bg-neutral-900 rounded py-1 px-2`}>
                                                                 {coupon.id}
                                                             </code>
                                                         </CopyOnClick>
