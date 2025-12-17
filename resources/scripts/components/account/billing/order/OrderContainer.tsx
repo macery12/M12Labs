@@ -272,20 +272,6 @@ export default () => {
                             </div>
                         </section>
                     )}
-
-                    {/* Coupon Section */}
-                    {product.price !== 0 && (
-                        <section>
-                            <div className={'mb-6'}>
-                                <h2 className={'text-2xl font-bold text-gray-200'}>Coupon Code</h2>
-                                <p className={'mt-1 text-sm text-gray-400'}>
-                                    Have a coupon? Apply it to get a discount.
-                                </p>
-                            </div>
-                            <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                            <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
-                        </section>
-                    )}
                 </div>
 
                 {/* Sidebar - Order Summary */}
@@ -388,7 +374,6 @@ export default () => {
                             <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
                             <div className={'space-y-3'}>
                                 <div
-                                    onClick={() => setTermsAgreed(!termsAgreed)}
                                     className={
                                         'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer'
                                     }
@@ -398,12 +383,14 @@ export default () => {
                                             : { borderColor: '#374151', backgroundColor: colors.secondary }
                                     }
                                 >
-                                    <AdminCheckbox
-                                        name={'terms'}
-                                        checked={termsAgreed}
-                                        onChange={() => setTermsAgreed(!termsAgreed)}
-                                    />
-                                    <div className={'flex-1 min-w-0'}>
+                                    <div onClick={() => setTermsAgreed(!termsAgreed)}>
+                                        <AdminCheckbox
+                                            name={'terms'}
+                                            checked={termsAgreed}
+                                            onChange={() => setTermsAgreed(!termsAgreed)}
+                                        />
+                                    </div>
+                                    <div className={'flex-1 min-w-0'} onClick={() => setTermsAgreed(!termsAgreed)}>
                                         <p className={'text-xs font-medium text-gray-200'}>
                                             <a
                                                 href={billing.links.terms}
@@ -425,7 +412,6 @@ export default () => {
                                     </div>
                                 </div>
                                 <div
-                                    onClick={() => setPrivacyAgreed(!privacyAgreed)}
                                     className={
                                         'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer'
                                     }
@@ -435,12 +421,14 @@ export default () => {
                                             : { borderColor: '#374151', backgroundColor: colors.secondary }
                                     }
                                 >
-                                    <AdminCheckbox
-                                        name={'privacy'}
-                                        checked={privacyAgreed}
-                                        onChange={() => setPrivacyAgreed(!privacyAgreed)}
-                                    />
-                                    <div className={'flex-1 min-w-0'}>
+                                    <div onClick={() => setPrivacyAgreed(!privacyAgreed)}>
+                                        <AdminCheckbox
+                                            name={'privacy'}
+                                            checked={privacyAgreed}
+                                            onChange={() => setPrivacyAgreed(!privacyAgreed)}
+                                        />
+                                    </div>
+                                    <div className={'flex-1 min-w-0'} onClick={() => setPrivacyAgreed(!privacyAgreed)}>
                                         <p className={'text-xs font-medium text-gray-200'}>
                                             <a
                                                 href={billing.links.privacy}
@@ -468,6 +456,18 @@ export default () => {
                                 </Alert>
                             ) : null}
                         </div>
+
+                        {/* Coupon Section - Only show for paid products */}
+                        {product.price !== 0 && (
+                            <div
+                                style={{ backgroundColor: colors.secondary }}
+                                className={'rounded-lg border border-gray-700 p-6'}
+                            >
+                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Coupon Code</h3>
+                                <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
+                            </div>
+                        )}
 
                         {/* Checkout Button Card */}
                         {termsAgreed && privacyAgreed && (
