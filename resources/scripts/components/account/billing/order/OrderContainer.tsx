@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
+import EggBox from '@account/billing/order/EggBox';
 import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
@@ -37,7 +38,6 @@ import {
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
-import Select from '@/elements/Select';
 import classNames from 'classnames';
 
 export default () => {
@@ -240,24 +240,16 @@ export default () => {
                                     Select which type of server you want to create.
                                 </p>
                             </div>
-                            <Select
-                                value={selectedEggId}
-                                onChange={e => {
-                                    setSelectedEggId(Number(e.currentTarget.value));
-                                    setEggs(undefined);
-                                }}
-                            >
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
                                 {availableEggs.map(egg => (
-                                    <option key={egg.id} value={egg.id}>
-                                        {egg.name}
-                                    </option>
+                                    <EggBox
+                                        egg={egg}
+                                        key={egg.id}
+                                        selected={selectedEggId}
+                                        setSelected={setSelectedEggId}
+                                    />
                                 ))}
-                            </Select>
-                            {availableEggs.find(e => e.id === selectedEggId)?.description && (
-                                <p className={'mt-3 text-sm text-gray-400'}>
-                                    {availableEggs.find(e => e.id === selectedEggId)?.description}
-                                </p>
-                            )}
+                            </div>
                         </section>
                     )}
 
@@ -280,85 +272,6 @@ export default () => {
                         </section>
                     )}
 
-                    {/* Legal Section */}
-                    <section>
-                        <div className={'mb-6'}>
-                            <h2 className={'text-2xl font-bold text-gray-200'}>Legal Agreements</h2>
-                            <p className={'mt-1 text-sm text-gray-400'}>
-                                Please review and accept our terms to continue.
-                            </p>
-                        </div>
-                        <div className={'space-y-4'}>
-                            <div
-                                onClick={() => setTermsAgreed(!termsAgreed)}
-                                className={classNames(
-                                    'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
-                                    termsAgreed
-                                        ? 'border-green-500 bg-green-500/10'
-                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500',
-                                )}
-                            >
-                                <AdminCheckbox
-                                    name={'terms'}
-                                    checked={termsAgreed}
-                                    onChange={() => setTermsAgreed(!termsAgreed)}
-                                />
-                                <div className={'flex-1'}>
-                                    <p className={'text-sm font-medium text-gray-200'}>
-                                        I agree to the{' '}
-                                        <a
-                                            href={billing.links.terms}
-                                            target={'_blank'}
-                                            rel={'noreferrer'}
-                                            className={'font-semibold text-blue-400 hover:text-blue-300'}
-                                            onClick={e => e.stopPropagation()}
-                                        >
-                                            Terms of Service{' '}
-                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
-                                        </a>
-                                    </p>
-                                    {termsAgreed && <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>}
-                                </div>
-                            </div>
-                            <div
-                                onClick={() => setPrivacyAgreed(!privacyAgreed)}
-                                className={classNames(
-                                    'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
-                                    privacyAgreed
-                                        ? 'border-green-500 bg-green-500/10'
-                                        : 'border-gray-600 bg-gray-800 hover:border-gray-500',
-                                )}
-                            >
-                                <AdminCheckbox
-                                    name={'privacy'}
-                                    checked={privacyAgreed}
-                                    onChange={() => setPrivacyAgreed(!privacyAgreed)}
-                                />
-                                <div className={'flex-1'}>
-                                    <p className={'text-sm font-medium text-gray-200'}>
-                                        I agree to the{' '}
-                                        <a
-                                            href={billing.links.privacy}
-                                            target={'_blank'}
-                                            rel={'noreferrer'}
-                                            className={'font-semibold text-blue-400 hover:text-blue-300'}
-                                            onClick={e => e.stopPropagation()}
-                                        >
-                                            Privacy Policy{' '}
-                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
-                                        </a>
-                                    </p>
-                                    {privacyAgreed && <p className={'mt-1 text-xs text-green-400'}>✓ Accepted</p>}
-                                </div>
-                            </div>
-                        </div>
-                        {!termsAgreed || !privacyAgreed ? (
-                            <Alert type={'warning'} className={'mt-4'}>
-                                Please accept both agreements to proceed with your order.
-                            </Alert>
-                        ) : null}
-                    </section>
-
                     {/* Coupon Section */}
                     {product.price !== 0 && (
                         <section>
@@ -372,127 +285,200 @@ export default () => {
                             <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
                         </section>
                     )}
-
-                    {/* Payment Section */}
-                    {termsAgreed && privacyAgreed && (
-                        <section>
-                            <div className={'mb-6'}>
-                                <h2 className={'text-2xl font-bold text-gray-200'}>Payment</h2>
-                                <p className={'mt-1 text-sm text-gray-400'}>
-                                    Complete your purchase to deploy your server.
-                                </p>
-                            </div>
-                            {product.price === 0 || couponData?.total === 0 ? (
-                                <div className={'rounded-lg border-2 border-green-500 bg-green-500/10 p-6'}>
-                                    <p className={'mb-4 text-gray-200'}>
-                                        {couponData?.total === 0
-                                            ? '🎉 Your coupon has made this order free! No payment is required.'
-                                            : '🎉 This product is free! No payment is required.'}
-                                    </p>
-                                    <Button onClick={createFree} size={Button.Sizes.Large}>
-                                        Create Server
-                                    </Button>
-                                </div>
-                            ) : intent ? (
-                                <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
-                                    {/* @ts-expect-error this is fine, stripe library is just weird */}
-                                    <Elements stripe={stripe} options={options} key={intent?.id}>
-                                        <PaymentButton
-                                            selectedNode={selectedNode}
-                                            product={product}
-                                            vars={vars}
-                                            intent={intent}
-                                            couponId={couponData?.coupon.id}
-                                            selectedEggId={selectedEggId}
-                                        />
-                                    </Elements>
-                                </div>
-                            ) : (
-                                <Spinner centered />
-                            )}
-                        </section>
-                    )}
                 </div>
 
                 {/* Sidebar - Order Summary */}
                 <div className={'lg:col-span-1'}>
-                    <div className={'sticky top-4 rounded-lg border border-gray-700 bg-gray-800 p-6'}>
-                        <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
+                    <div className={'sticky top-4 space-y-6'}>
+                        {/* Order Summary Card */}
+                        <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                            <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
 
-                        <div className={'mb-4 flex items-center gap-3'}>
-                            {product.icon && (
-                                <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
-                            )}
-                            <div className={'flex-1'}>
-                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
-                                <div className={'mt-1'}>
-                                    {couponData ? (
-                                        <div>
-                                            <div className={'text-xs text-gray-400 line-through'}>
-                                                ${couponData.subtotal.toFixed(2)}
+                            <div className={'mb-4 flex items-center gap-3'}>
+                                {product.icon && (
+                                    <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
+                                )}
+                                <div className={'flex-1'}>
+                                    <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                    <div className={'mt-1'}>
+                                        {couponData ? (
+                                            <div>
+                                                <div className={'text-xs text-gray-400 line-through'}>
+                                                    ${couponData.subtotal.toFixed(2)}
+                                                </div>
+                                                <div className={'flex items-baseline gap-1'}>
+                                                    <span
+                                                        className={'text-2xl font-bold'}
+                                                        style={{ color: colors.primary }}
+                                                    >
+                                                        ${couponData.total.toFixed(2)}
+                                                    </span>
+                                                    <span className={'text-xs text-gray-400'}>/ month</span>
+                                                </div>
+                                                <div className={'text-xs font-medium text-green-400'}>
+                                                    Save ${couponData.discount.toFixed(2)}
+                                                </div>
                                             </div>
+                                        ) : (
                                             <div className={'flex items-baseline gap-1'}>
                                                 <span
                                                     className={'text-2xl font-bold'}
                                                     style={{ color: colors.primary }}
                                                 >
-                                                    ${couponData.total.toFixed(2)}
+                                                    ${product.price.toFixed(2)}
                                                 </span>
                                                 <span className={'text-xs text-gray-400'}>/ month</span>
                                             </div>
-                                            <div className={'text-xs font-medium text-green-400'}>
-                                                Save ${couponData.discount.toFixed(2)}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className={'flex items-baseline gap-1'}>
-                                            <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
-                                                ${product.price.toFixed(2)}
-                                            </span>
-                                            <span className={'text-xs text-gray-400'}>/ month</span>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={'my-4 h-px bg-gray-700'} />
+
+                            <div className={'space-y-3'}>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.cpu}% CPU</span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>
+                                        {(product.limits.memory / 1024).toFixed(1)} GiB RAM
+                                    </span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>
+                                        {(product.limits.disk / 1024).toFixed(1)} GiB Storage
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className={'my-4 h-px bg-gray-700'} />
+
+                            <div className={'space-y-3'}>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faArchive} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.backup} Backups</span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faDatabase} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.database} Databases</span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faEthernet} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.allocation} Ports</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className={'my-4 h-px bg-gray-700'} />
-
-                        <div className={'space-y-3'}>
-                            <div className={'flex items-center gap-2 text-sm'}>
-                                <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>{product.limits.cpu}% CPU</span>
+                        {/* Legal Agreements Card */}
+                        <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
+                            <div className={'space-y-3'}>
+                                <div
+                                    onClick={() => setTermsAgreed(!termsAgreed)}
+                                    className={classNames(
+                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer',
+                                        termsAgreed
+                                            ? 'border-green-500 bg-green-500/10'
+                                            : 'border-gray-600 bg-gray-900/50 hover:border-gray-500',
+                                    )}
+                                >
+                                    <AdminCheckbox
+                                        name={'terms'}
+                                        checked={termsAgreed}
+                                        onChange={() => setTermsAgreed(!termsAgreed)}
+                                    />
+                                    <div className={'flex-1 min-w-0'}>
+                                        <p className={'text-xs font-medium text-gray-200'}>
+                                            <a
+                                                href={billing.links.terms}
+                                                target={'_blank'}
+                                                rel={'noreferrer'}
+                                                className={'text-blue-400 hover:text-blue-300'}
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                Terms of Service{' '}
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                            </a>
+                                        </p>
+                                        {termsAgreed && <p className={'mt-0.5 text-xs text-green-400'}>✓ Accepted</p>}
+                                    </div>
+                                </div>
+                                <div
+                                    onClick={() => setPrivacyAgreed(!privacyAgreed)}
+                                    className={classNames(
+                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer',
+                                        privacyAgreed
+                                            ? 'border-green-500 bg-green-500/10'
+                                            : 'border-gray-600 bg-gray-900/50 hover:border-gray-500',
+                                    )}
+                                >
+                                    <AdminCheckbox
+                                        name={'privacy'}
+                                        checked={privacyAgreed}
+                                        onChange={() => setPrivacyAgreed(!privacyAgreed)}
+                                    />
+                                    <div className={'flex-1 min-w-0'}>
+                                        <p className={'text-xs font-medium text-gray-200'}>
+                                            <a
+                                                href={billing.links.privacy}
+                                                target={'_blank'}
+                                                rel={'noreferrer'}
+                                                className={'text-blue-400 hover:text-blue-300'}
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                Privacy Policy{' '}
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                            </a>
+                                        </p>
+                                        {privacyAgreed && <p className={'mt-0.5 text-xs text-green-400'}>✓ Accepted</p>}
+                                    </div>
+                                </div>
                             </div>
-                            <div className={'flex items-center gap-2 text-sm'}>
-                                <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>
-                                    {(product.limits.memory / 1024).toFixed(1)} GiB RAM
-                                </span>
-                            </div>
-                            <div className={'flex items-center gap-2 text-sm'}>
-                                <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>
-                                    {(product.limits.disk / 1024).toFixed(1)} GiB Storage
-                                </span>
-                            </div>
+                            {!termsAgreed || !privacyAgreed ? (
+                                <Alert type={'warning'} className={'mt-3'}>
+                                    <p className={'text-xs'}>Please accept both agreements to proceed.</p>
+                                </Alert>
+                            ) : null}
                         </div>
 
-                        <div className={'my-4 h-px bg-gray-700'} />
-
-                        <div className={'space-y-3'}>
-                            <div className={'flex items-center gap-2 text-sm'}>
-                                <FontAwesomeIcon icon={faArchive} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>{product.limits.backup} Backups</span>
+                        {/* Checkout Button Card */}
+                        {termsAgreed && privacyAgreed && (
+                            <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
+                                {product.price === 0 || couponData?.total === 0 ? (
+                                    <div>
+                                        <p className={'mb-4 text-sm text-gray-300'}>
+                                            {couponData?.total === 0
+                                                ? '🎉 Your coupon has made this order free!'
+                                                : '🎉 This product is free!'}
+                                        </p>
+                                        <Button onClick={createFree} size={Button.Sizes.Large} className={'w-full'}>
+                                            Create Server
+                                        </Button>
+                                    </div>
+                                ) : intent ? (
+                                    <div>
+                                        {/* @ts-expect-error this is fine, stripe library is just weird */}
+                                        <Elements stripe={stripe} options={options} key={intent?.id}>
+                                            <PaymentButton
+                                                selectedNode={selectedNode}
+                                                product={product}
+                                                vars={vars}
+                                                intent={intent}
+                                                couponId={couponData?.coupon.id}
+                                                selectedEggId={selectedEggId}
+                                            />
+                                        </Elements>
+                                    </div>
+                                ) : (
+                                    <Spinner centered />
+                                )}
                             </div>
-                            <div className={'flex items-center gap-2 text-sm'}>
-                                <FontAwesomeIcon icon={faDatabase} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>{product.limits.database} Databases</span>
-                            </div>
-                            <div className={'flex items-center gap-2 text-sm'}>
-                                <FontAwesomeIcon icon={faEthernet} className={'h-4 w-4 text-gray-400'} />
-                                <span className={'text-gray-300'}>{product.limits.allocation} Ports</span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
