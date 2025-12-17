@@ -9,7 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
+use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
+use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
@@ -54,9 +56,19 @@ class PaymentController extends ClientApiController
     {
         $product = Product::findOrFail($id);
 
-        // Free products should not create payment intents
-        if ((float) $product->price === 0.0) {
-            throw new DisplayException('Free products do not require payment. Please use the free product renewal process.');
+        // Calculate the amount based on coupon if provided
+        $amount = $product->price;
+        if ($request->has('coupon_id') && $request->input('coupon_id')) {
+            $coupon = Coupon::find($request->input('coupon_id'));
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($product->price);
+                $amount = max(0, $product->price - $discount);
+            }
+        }
+
+        // Free products or zero-dollar totals should not create payment intents
+        if ((float) $amount === 0.0) {
+            throw new DisplayException('This order total is $0. Please use the free order process instead of payment.');
         }
 
         $paymentMethodTypes = ['card'];
@@ -70,7 +82,7 @@ class PaymentController extends ClientApiController
         }
 
         $paymentIntent = $this->stripe->paymentIntents->create([
-            'amount' => $product->price * 100,
+            'amount' => $amount * 100,
             'currency' => strtolower(config('modules.billing.currency.code')),
             'payment_method_types' => array_values($paymentMethodTypes),
             'capture_method' => 'manual',
@@ -114,12 +126,30 @@ class PaymentController extends ClientApiController
             ]);
         }
 
+        // Calculate the amount based on coupon if provided
+        $amount = $product->price;
+        $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
+        
+        if ($couponId) {
+            $coupon = Coupon::find($couponId);
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($product->price);
+                $amount = max(0, $product->price - $discount);
+            }
+        }
+
+        // Update the intent amount if it has changed
+        if ($intent->amount !== (int)($amount * 100)) {
+            $intent->amount = (int)($amount * 100);
+        }
+
         $metadata = [
             'customer_email' => $request->user()->email,
             'customer_name' => $request->user()->username,
             'product_id' => (string) $id,
             'node_id' => (string) ($request->input('node_id') ?? ''),
             'server_id' => (string) ($request->input('server_id') ?? 0),
+            'coupon_id' => (string) ($couponId ?? ''),
         ];
 
         $variables = $request->input('variables') ?? [];
@@ -128,13 +158,14 @@ class PaymentController extends ClientApiController
         $intent->metadata = $metadata;
         $intent->save();
 
-        // Create the order
+        // Create the order with coupon
         $this->orderService->create(
             $intent->id,
             $request->user(),
             $product,
             Order::STATUS_PENDING,
             $this->getOrderType($request),
+            $couponId,
         );
 
         return $this->returnNoContent();
@@ -215,6 +246,16 @@ class PaymentController extends ClientApiController
 
                 throw new DisplayException('Unable to capture payment for this order.');
             }
+        }
+
+        // Record coupon usage if a coupon was applied
+        if ($order->coupon_id) {
+            CouponUsage::create([
+                'coupon_id' => $order->coupon_id,
+                'user_id' => $order->user_id,
+                'order_id' => $order->id,
+                'used_at' => now(),
+            ]);
         }
 
         // Mark the order as processed

@@ -83,6 +83,15 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::get('/', [Application\Billing\OrderController::class, 'index']);
         });
 
+        Route::group(['prefix' => '/coupons'], function () {
+            Route::get('/', [Application\Billing\CouponController::class, 'index']);
+            Route::post('/', [Application\Billing\CouponController::class, 'store']);
+
+            Route::get('/{coupon:id}', [Application\Billing\CouponController::class, 'view']);
+            Route::patch('/{coupon:id}', [Application\Billing\CouponController::class, 'update']);
+            Route::delete('/{coupon:id}', [Application\Billing\CouponController::class, 'delete']);
+        });
+
         Route::group(['prefix' => '/exceptions'], function () {
             Route::get('/', [Application\Billing\BillingExceptionController::class, 'index']);
 

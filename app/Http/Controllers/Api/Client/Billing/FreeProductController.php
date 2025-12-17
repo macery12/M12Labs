@@ -7,7 +7,9 @@ use Everest\Models\Node;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
+use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
+use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
@@ -38,11 +40,25 @@ class FreeProductController extends ClientApiController
             throw new DisplayException('The billing module is not enabled.');
         }
 
-        if ((float) $product->price !== 0.0) {
-            throw new DisplayException('This product holds a value greater than zero.');
+        // Calculate the final price with coupon if provided
+        $finalPrice = $product->price;
+        $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
+        
+        if ($couponId) {
+            $coupon = Coupon::find($couponId);
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($product->price);
+                $finalPrice = max(0, $product->price - $discount);
+            }
         }
 
-        if ($user->servers()->where('billing_product_id', $request->input('product'))->count() > 0) {
+        // Check if the final price is free (either originally free or made free by coupon)
+        if ((float) $finalPrice !== 0.0) {
+            throw new DisplayException('This product is not free. Please use the payment process.');
+        }
+
+        // For originally free products, check if user already owns one
+        if ((float) $product->price === 0.0 && $user->servers()->where('billing_product_id', $request->input('product'))->count() > 0) {
             throw new DisplayException('You already own one of this free product. Nice try!');
         }
 
@@ -50,7 +66,7 @@ class FreeProductController extends ClientApiController
             throw new DisplayException('Free servers cannot be deployed to this node.');
         }
 
-        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_NEW);
+        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_NEW, $couponId);
 
         $variables = $request->input('variables', []);
         $server = $this->serverCreation->processFree(
@@ -60,6 +76,16 @@ class FreeProductController extends ClientApiController
             $order,
             $variables
         );
+
+        // Record coupon usage if a coupon was applied
+        if ($couponId) {
+            CouponUsage::create([
+                'coupon_id' => $couponId,
+                'user_id' => $user->id,
+                'order_id' => $order->id,
+                'used_at' => now(),
+            ]);
+        }
 
         $order->update([
             'status' => Order::STATUS_PROCESSED,

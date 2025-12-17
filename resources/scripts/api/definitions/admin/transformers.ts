@@ -221,6 +221,21 @@ export default class Transformers {
             },
         } as Models.Category);
 
+    static toCoupon = ({ attributes }: FractalResponseData): Models.Coupon => ({
+        id: attributes.id,
+        code: attributes.code,
+        type: attributes.type,
+        value: attributes.value,
+        maxUses: attributes.max_uses,
+        maxUsesPerUser: attributes.max_uses_per_user,
+        minOrderTotal: attributes.min_order_total,
+        expiresAt: attributes.expires_at ? new Date(attributes.expires_at) : null,
+        isActive: attributes.is_active,
+        usageCount: attributes.usage_count,
+        createdAt: new Date(attributes.created_at),
+        updatedAt: new Date(attributes.updated_at),
+    });
+
     static toUser = ({ attributes }: FractalResponseData): Models.User => {
         return {
             id: attributes.id,
