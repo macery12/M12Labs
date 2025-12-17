@@ -26,9 +26,14 @@ export default ({ steps }: Props) => {
                         {step.status === 'complete' ? (
                             <>
                                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                                    {stepIdx !== steps.length - 1 && <div className="h-0.5 w-full bg-green-500" />}
+                                    {stepIdx !== steps.length - 1 && (
+                                        <div className="h-0.5 w-full" style={{ backgroundColor: colors.primary }} />
+                                    )}
                                 </div>
-                                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
+                                <div
+                                    className="relative flex h-8 w-8 items-center justify-center rounded-full"
+                                    style={{ backgroundColor: colors.primary }}
+                                >
                                     <CheckIcon className="h-5 w-5 text-white" aria-hidden="true" />
                                     <span className="sr-only">{step.name}</span>
                                 </div>
@@ -42,8 +47,8 @@ export default ({ steps }: Props) => {
                                     {stepIdx !== steps.length - 1 && <div className="h-0.5 w-full bg-gray-600" />}
                                 </div>
                                 <div
-                                    className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 bg-gray-800"
-                                    style={{ borderColor: colors.primary }}
+                                    className="relative flex h-8 w-8 items-center justify-center rounded-full border-2"
+                                    style={{ borderColor: colors.primary, backgroundColor: colors.secondary }}
                                     aria-current="step"
                                 >
                                     <span
@@ -64,7 +69,10 @@ export default ({ steps }: Props) => {
                                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
                                     {stepIdx !== steps.length - 1 && <div className="h-0.5 w-full bg-gray-600" />}
                                 </div>
-                                <div className="group relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-600 bg-gray-800">
+                                <div
+                                    className="group relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-600"
+                                    style={{ backgroundColor: colors.secondary }}
+                                >
                                     <span className="h-2.5 w-2.5 rounded-full bg-gray-600" />
                                     <span className="sr-only">{step.name}</span>
                                 </div>

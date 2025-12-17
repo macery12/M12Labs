@@ -27,14 +27,12 @@ export default ({ egg, selected, setSelected, onEggChange }: Props) => {
             onClick={handleClick}
             className={classNames(
                 'relative rounded-lg border-2 p-4 transition-all cursor-pointer',
-                isSelected ? 'border-green-500 bg-green-500/10' : 'border-gray-700 bg-gray-800 hover:border-gray-600',
+                isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
+            style={isSelected ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` } : {}}
         >
             <div className={'flex items-start gap-3'}>
-                <CubeIcon
-                    className={'h-8 w-8 flex-shrink-0'}
-                    style={{ color: isSelected ? '#10b981' : colors.primary }}
-                />
+                <CubeIcon className={'h-8 w-8 flex-shrink-0'} style={{ color: colors.primary }} />
                 <div className={'flex-1 min-w-0'}>
                     <p className={'font-semibold text-gray-200'}>{egg.name}</p>
                     {egg.description && (
@@ -51,10 +49,8 @@ export default ({ egg, selected, setSelected, onEggChange }: Props) => {
                     )}
                 </div>
                 <CheckCircleIcon
-                    className={classNames(
-                        'h-6 w-6 transition-colors flex-shrink-0',
-                        isSelected ? 'text-green-500' : 'text-gray-600',
-                    )}
+                    className={classNames('h-6 w-6 transition-colors flex-shrink-0', isSelected ? '' : 'text-gray-600')}
+                    style={isSelected ? { color: colors.primary } : {}}
                 />
             </div>
         </div>

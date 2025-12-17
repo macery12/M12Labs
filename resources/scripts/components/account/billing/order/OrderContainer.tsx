@@ -292,7 +292,10 @@ export default () => {
                 <div className={'lg:col-span-1'}>
                     <div className={'sticky top-4 space-y-6'}>
                         {/* Order Summary Card */}
-                        <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                        <div
+                            style={{ backgroundColor: colors.secondary }}
+                            className={'rounded-lg border border-gray-700 p-6'}
+                        >
                             <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
 
                             <div className={'mb-4 flex items-center gap-3'}>
@@ -316,7 +319,10 @@ export default () => {
                                                     </span>
                                                     <span className={'text-xs text-gray-400'}>/ month</span>
                                                 </div>
-                                                <div className={'text-xs font-medium text-green-400'}>
+                                                <div
+                                                    className={'text-xs font-medium'}
+                                                    style={{ color: colors.primary }}
+                                                >
                                                     Save ${couponData.discount.toFixed(2)}
                                                 </div>
                                             </div>
@@ -375,17 +381,22 @@ export default () => {
                         </div>
 
                         {/* Legal Agreements Card */}
-                        <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                        <div
+                            style={{ backgroundColor: colors.secondary }}
+                            className={'rounded-lg border border-gray-700 p-6'}
+                        >
                             <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
                             <div className={'space-y-3'}>
                                 <div
                                     onClick={() => setTermsAgreed(!termsAgreed)}
-                                    className={classNames(
-                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer',
+                                    className={
+                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer'
+                                    }
+                                    style={
                                         termsAgreed
-                                            ? 'border-green-500 bg-green-500/10'
-                                            : 'border-gray-600 bg-gray-900/50 hover:border-gray-500',
-                                    )}
+                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                            : {}
+                                    }
                                 >
                                     <AdminCheckbox
                                         name={'terms'}
@@ -398,24 +409,31 @@ export default () => {
                                                 href={billing.links.terms}
                                                 target={'_blank'}
                                                 rel={'noreferrer'}
-                                                className={'text-blue-400 hover:text-blue-300'}
+                                                className={'hover:brightness-125'}
+                                                style={{ color: colors.primary }}
                                                 onClick={e => e.stopPropagation()}
                                             >
                                                 Terms of Service{' '}
                                                 <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
                                             </a>
                                         </p>
-                                        {termsAgreed && <p className={'mt-0.5 text-xs text-green-400'}>✓ Accepted</p>}
+                                        {termsAgreed && (
+                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
+                                                ✓ Accepted
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                                 <div
                                     onClick={() => setPrivacyAgreed(!privacyAgreed)}
-                                    className={classNames(
-                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer',
+                                    className={
+                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer'
+                                    }
+                                    style={
                                         privacyAgreed
-                                            ? 'border-green-500 bg-green-500/10'
-                                            : 'border-gray-600 bg-gray-900/50 hover:border-gray-500',
-                                    )}
+                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                            : {}
+                                    }
                                 >
                                     <AdminCheckbox
                                         name={'privacy'}
@@ -428,14 +446,19 @@ export default () => {
                                                 href={billing.links.privacy}
                                                 target={'_blank'}
                                                 rel={'noreferrer'}
-                                                className={'text-blue-400 hover:text-blue-300'}
+                                                className={'hover:brightness-125'}
+                                                style={{ color: colors.primary }}
                                                 onClick={e => e.stopPropagation()}
                                             >
                                                 Privacy Policy{' '}
                                                 <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
                                             </a>
                                         </p>
-                                        {privacyAgreed && <p className={'mt-0.5 text-xs text-green-400'}>✓ Accepted</p>}
+                                        {privacyAgreed && (
+                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
+                                                ✓ Accepted
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -448,7 +471,10 @@ export default () => {
 
                         {/* Checkout Button Card */}
                         {termsAgreed && privacyAgreed && (
-                            <div className={'rounded-lg border border-gray-700 bg-gray-800 p-6'}>
+                            <div
+                                style={{ backgroundColor: colors.secondary }}
+                                className={'rounded-lg border border-gray-700 p-6'}
+                            >
                                 <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
                                 {product.price === 0 || couponData?.total === 0 ? (
                                     <div>
