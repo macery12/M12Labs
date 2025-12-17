@@ -80,12 +80,18 @@ class ChangeServerEggService
                 throw new DisplayException('The selected egg does not have any Docker images configured.');
             }
 
-            // Update the server's egg
+            // Update the server's egg and related configuration
             $server->update([
                 'egg_id' => $newEgg->id,
                 'startup' => $newEgg->startup,
                 'image' => current($newEgg->docker_images),
             ]);
+
+            // Refresh to get updated relationships
+            $server->refresh();
+
+            // Sync the updated server configuration to the daemon
+            $this->daemonServerRepository->setServer($server)->sync();
 
             // Trigger reinstall (which will wipe filesystem automatically)
             $this->reinstallService->handle($server);

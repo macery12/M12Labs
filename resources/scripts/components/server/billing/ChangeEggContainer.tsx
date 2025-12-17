@@ -22,6 +22,7 @@ export default () => {
     const [changing, setChanging] = useState(false);
     const [selectedEggId, setSelectedEggId] = useState<number>(currentEggId);
     const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
+    const [currentEgg, setCurrentEgg] = useState<EggInfo | null>(null);
     const [allowEggChanges, setAllowEggChanges] = useState<boolean>(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -33,8 +34,14 @@ export default () => {
             return;
         }
 
-        getProduct(billingProductId)
-            .then(async product => {
+        const fetchData = async () => {
+            try {
+                // Fetch current egg info first
+                const currentEggInfo = await getEggInfo(currentEggId);
+                setCurrentEgg(currentEggInfo);
+
+                // Fetch product to get allowed eggs
+                const product = await getProduct(billingProductId);
                 const allowedEggs = product.allowedEggs || [product.eggId];
                 
                 // Fetch egg information for all allowed eggs
@@ -42,16 +49,17 @@ export default () => {
                 const eggInfos = await Promise.all(eggInfoPromises);
                 setAvailableEggs(eggInfos);
                 
-                // Check if category allows egg changes (we'd need to fetch category for this)
-                // For now, assume true if multiple eggs available
+                // Check if category allows egg changes
                 setAllowEggChanges(allowedEggs.length > 1);
                 setLoading(false);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error(error);
                 setLoading(false);
-            });
-    }, [billingProductId]);
+            }
+        };
+
+        fetchData();
+    }, [billingProductId, currentEggId]);
 
     const handleChangeEgg = () => {
         if (selectedEggId === currentEggId) {
@@ -72,7 +80,6 @@ export default () => {
             });
     };
 
-    const currentEgg = availableEggs.find(e => e.id === currentEggId);
     const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
     const canChange = selectedEggId !== currentEggId && serverStatus === null;
 
@@ -87,7 +94,7 @@ export default () => {
                 <div className={'mb-4'}>
                     <Label>Current Server Type</Label>
                     <p className={'text-gray-400 text-sm'}>
-                        {currentEgg?.name || 'Unknown'}
+                        {currentEgg?.name || 'Loading...'}
                     </p>
                     {currentEgg?.description && (
                         <p className={'text-gray-500 text-xs mt-1'}>{currentEgg.description}</p>
