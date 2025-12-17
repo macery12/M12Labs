@@ -111,6 +111,11 @@ class Coupon extends Model
      */
     public function getUsageCountAttribute(): int
     {
+        // If the usage_count was loaded via withCount(), use that value
+        if (isset($this->attributes['usage_count'])) {
+            return (int) $this->attributes['usage_count'];
+        }
+
         try {
             return $this->usage()->count();
         } catch (\Exception $e) {
