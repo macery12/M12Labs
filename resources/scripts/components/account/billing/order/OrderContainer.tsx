@@ -66,22 +66,23 @@ export default () => {
 
     // Calculate checkout steps progress
     const getCheckoutSteps = () => {
+        const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
         const steps = [
             { id: 1, name: 'Location', status: selectedNode ? 'complete' : 'current' },
             {
                 id: 2,
                 name: 'Configuration',
-                status: selectedNode
-                    ? availableEggs.length > 1 && selectedEggId
-                        ? 'complete'
-                        : 'current'
-                    : 'upcoming',
+                status: selectedNode ? (isEggSelectionComplete ? 'complete' : 'current') : 'upcoming',
             },
             {
                 id: 3,
                 name: 'Legal',
                 status:
-                    termsAgreed && privacyAgreed ? 'complete' : selectedNode && selectedEggId ? 'current' : 'upcoming',
+                    termsAgreed && privacyAgreed
+                        ? 'complete'
+                        : selectedNode && isEggSelectionComplete
+                        ? 'current'
+                        : 'upcoming',
             },
             { id: 4, name: 'Payment', status: termsAgreed && privacyAgreed ? 'current' : 'upcoming' },
         ];
@@ -289,7 +290,7 @@ export default () => {
                         </div>
                         <div className={'space-y-4'}>
                             <div
-                                onClick={() => !termsAgreed && setTermsAgreed(true)}
+                                onClick={() => setTermsAgreed(!termsAgreed)}
                                 className={classNames(
                                     'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
                                     termsAgreed
@@ -320,7 +321,7 @@ export default () => {
                                 </div>
                             </div>
                             <div
-                                onClick={() => !privacyAgreed && setPrivacyAgreed(true)}
+                                onClick={() => setPrivacyAgreed(!privacyAgreed)}
                                 className={classNames(
                                     'flex items-start gap-4 rounded-lg border-2 p-4 transition-all cursor-pointer',
                                     privacyAgreed
