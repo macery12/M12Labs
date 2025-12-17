@@ -136,10 +136,9 @@ export default () => {
                         {statusBadge && (
                             <div css={tw`mb-4`}>
                                 <span
-                                    css={tw`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white`}
-                                    className={statusBadge.color}
+                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white ${statusBadge.color}`}
                                 >
-                                    <FontAwesomeIcon icon={statusBadge.icon} css={tw`mr-2`} />
+                                    <FontAwesomeIcon icon={statusBadge.icon} className={'mr-2'} />
                                     {statusBadge.text}
                                 </span>
                             </div>
@@ -178,7 +177,7 @@ export default () => {
                     <div>
                         <Label>Current Package</Label>
                         <p css={tw`text-gray-300 font-medium mb-1`}>
-                            {product ? product.name : loading ? 'Loading...' : 'Unknown'}
+                            {product?.name || (loading ? 'Loading...' : 'Unknown')}
                         </p>
                         {product?.description && <p css={tw`text-gray-400 text-xs mb-3`}>{product.description}</p>}
                     </div>
