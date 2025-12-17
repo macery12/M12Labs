@@ -395,7 +395,7 @@ export default () => {
                                     style={
                                         termsAgreed
                                             ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                            : {}
+                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
                                     }
                                 >
                                     <AdminCheckbox
@@ -432,7 +432,7 @@ export default () => {
                                     style={
                                         privacyAgreed
                                             ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                            : {}
+                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
                                     }
                                 >
                                     <AdminCheckbox
