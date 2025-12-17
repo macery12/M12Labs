@@ -31,6 +31,7 @@ class ProductTransformer extends Transformer
             'description' => $model->description,
             'egg_id' => $defaultEggId,
             'allowed_eggs' => $allowedEggs,
+            'allow_egg_changes' => $model->category->allow_egg_changes ?? true,
             'limits' => [
                 'cpu' => $model->cpu_limit,
                 'memory' => $model->memory_limit,

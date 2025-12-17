@@ -55,8 +55,8 @@ export default () => {
                 const eggInfos = await Promise.all(eggInfoPromises);
                 setAvailableEggs(eggInfos);
                 
-                // Check if category allows egg changes and has multiple eggs
-                setAllowEggChanges(allowedEggs.length > 1);
+                // Check if category allows egg changes (from product)
+                setAllowEggChanges(product.allowEggChanges && allowedEggs.length > 1);
                 setLoading(false);
             } catch (error) {
                 console.error(error);

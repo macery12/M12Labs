@@ -32,6 +32,7 @@ export default class Transformers {
         description: data.description,
         eggId: data.egg_id,
         allowedEggs: data.allowed_eggs || [data.egg_id],
+        allowEggChanges: data.allow_egg_changes ?? true,
         limits: {
             cpu: data.limits.cpu,
             memory: data.limits.memory,
