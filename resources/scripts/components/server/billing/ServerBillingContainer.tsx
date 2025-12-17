@@ -220,88 +220,61 @@ export default () => {
                 </Alert>
             )}
 
-            {/* Renewal Section */}
-            <TitledGreyBox title={'Server Renewal'} icon={faCreditCard} css={tw`mb-4`}>
-                {!product ? (
-                    <Alert type={'danger'}>
-                        The product package that the server was made with no longer exists. In order to renew your
-                        server, you&apos;ll need to speak to an administrator.
-                    </Alert>
-                ) : (
-                    <>
-                        {product.price === 0 ? (
-                            <div>
-                                <div
-                                    css={tw`bg-blue-900 bg-opacity-25 border border-blue-500 border-opacity-50 rounded p-4 mb-4`}
-                                >
-                                    <p css={tw`text-blue-200 text-sm flex items-start`}>
-                                        <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-2 mt-0.5`} />
-                                        <span>
-                                            This is a free server. You can renew it for another{' '}
-                                            <strong>{freeRenewalDays} days</strong> starting{' '}
-                                            <strong>{suspensionThreshold} days</strong> before it expires. You can also
-                                            renew within the <strong>{freeGraceDays}-day</strong> grace period after
-                                            expiration.
-                                        </span>
+            {/* Action Cards Section - Renewal and Server Type Change */}
+            <div css={tw`grid gap-4 md:grid-cols-2`}>
+                {/* Renewal Section */}
+                <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
+                    {!product ? (
+                        <Alert type={'danger'}>
+                            The product package that the server was made with no longer exists. In order to renew your
+                            server, you&apos;ll need to speak to an administrator.
+                        </Alert>
+                    ) : (
+                        <>
+                            {product.price === 0 ? (
+                                <div>
+                                    <p css={tw`text-blue-200 text-xs mb-3`}>
+                                        <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
+                                        Free server - renewable {suspensionThreshold} days before expiration
                                     </p>
+                                    {daysOverdue > freeGraceDays ? (
+                                        <Alert type={'danger'}>
+                                            <strong>Expired</strong> - Contact support for assistance.
+                                        </Alert>
+                                    ) : daysRemaining > suspensionThreshold ? (
+                                        <Alert type={'info'}>
+                                            Renewal available in {daysRemaining - suspensionThreshold} days.
+                                        </Alert>
+                                    ) : (
+                                        <div>
+                                            <p css={tw`text-gray-300 text-sm mb-3`}>
+                                                {daysRemaining >= 0 ? (
+                                                    <>Renew for {freeRenewalDays} more days.</>
+                                                ) : (
+                                                    <>
+                                                        Grace period: {daysOverdue}/{freeGraceDays} days
+                                                    </>
+                                                )}
+                                            </p>
+                                            <Button onClick={handleFreeRenewal} disabled={renewing} css={tw`w-full`}>
+                                                {renewing ? 'Renewing...' : 'Renew Server'}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
-                                {daysOverdue > freeGraceDays ? (
-                                    <Alert type={'danger'}>
-                                        <strong>Server Expired</strong>
-                                        <p css={tw`mt-1`}>
-                                            This server has been overdue for more than {freeGraceDays} days and can no
-                                            longer be renewed through self-service. Please contact support for
-                                            assistance.
-                                        </p>
-                                    </Alert>
-                                ) : daysRemaining > suspensionThreshold ? (
-                                    <Alert type={'info'}>
-                                        <strong>Renewal Not Yet Available</strong>
-                                        <p css={tw`mt-1`}>
-                                            You still have {daysRemaining} days before your server expires. The renew
-                                            button will become available {suspensionThreshold} days before expiration.
-                                        </p>
-                                    </Alert>
-                                ) : (
-                                    <div>
-                                        <p css={tw`text-gray-300 text-sm mb-4`}>
-                                            {daysRemaining >= 0 ? (
-                                                <>
-                                                    Your server will expire in {daysRemaining} days. Click below to
-                                                    renew for another {freeRenewalDays} days.
-                                                </>
-                                            ) : (
-                                                <>
-                                                    Your server is currently in the grace period ({daysOverdue}/
-                                                    {freeGraceDays} days). Renew now to restore full functionality.
-                                                </>
-                                            )}
-                                        </p>
-                                        <Button
-                                            onClick={handleFreeRenewal}
-                                            disabled={renewing}
-                                            size={Button.Sizes.Large}
-                                            css={tw`w-full sm:w-auto`}
-                                        >
-                                            {renewing ? 'Renewing Server...' : `Renew for ${freeRenewalDays} Days`}
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div>
-                                <p css={tw`text-gray-300 text-sm mb-4`}>
-                                    Complete the payment below to renew your server for another {renewalDays} days.
-                                </p>
-                                <PaymentContainer id={Number(product.id)} />
-                            </div>
-                        )}
-                    </>
-                )}
-            </TitledGreyBox>
+                            ) : (
+                                <div>
+                                    <p css={tw`text-gray-300 text-sm mb-3`}>Renew for {renewalDays} days.</p>
+                                    <PaymentContainer id={Number(product.id)} />
+                                </div>
+                            )}
+                        </>
+                    )}
+                </TitledGreyBox>
 
-            {/* Change Server Type Section */}
-            <ChangeEggContainer />
+                {/* Change Server Type Section */}
+                <ChangeEggContainer />
+            </div>
         </PageContentBlock>
     );
 };

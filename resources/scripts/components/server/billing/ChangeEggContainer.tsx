@@ -105,14 +105,13 @@ export default () => {
         <>
             <TitledGreyBox title={'Change Server Type'} icon={faPuzzlePiece}>
                 <SpinnerOverlay visible={loading} />
-                <div css={tw`mb-4`}>
-                    <Label>Current Server Type</Label>
+                <div css={tw`mb-3`}>
+                    <Label>Current Type</Label>
                     <p css={tw`text-gray-300 text-sm font-medium`}>{currentEgg?.name || 'Loading...'}</p>
-                    {currentEgg?.description && <p css={tw`text-gray-400 text-xs mt-1`}>{currentEgg.description}</p>}
                 </div>
 
-                <div css={tw`mb-4`}>
-                    <Label>Select New Server Type</Label>
+                <div css={tw`mb-3`}>
+                    <Label>Select New Type</Label>
                     <Select value={selectedEggId} onChange={e => setSelectedEggId(Number(e.currentTarget.value))}>
                         {availableEggs.map(egg => (
                             <option key={egg.id} value={egg.id}>
@@ -120,31 +119,22 @@ export default () => {
                             </option>
                         ))}
                     </Select>
-                    {selectedEgg?.description && selectedEggId !== currentEggId && (
-                        <p css={tw`text-gray-400 text-xs mt-2`}>{selectedEgg.description}</p>
-                    )}
                 </div>
 
                 {serverStatus !== null && (
-                    <Alert type={'warning'} className={'mb-4'}>
-                        The server must be stopped before you can change the server type.
+                    <Alert type={'warning'} className={'mb-3'}>
+                        Server must be stopped first.
                     </Alert>
                 )}
 
                 {selectedEggId !== currentEggId && serverStatus === null && (
-                    <Alert type={'danger'} className={'mb-4'}>
-                        <strong>Warning:</strong> Changing the server type will trigger a complete reinstall. All server
-                        data, including files, databases, and configurations, will be permanently deleted. This action
-                        cannot be undone.
+                    <Alert type={'danger'} className={'mb-3'}>
+                        <strong>Warning:</strong> This will reinstall and delete all data.
                     </Alert>
                 )}
 
-                <Button.Danger
-                    onClick={() => setConfirmOpen(true)}
-                    disabled={!canChange || changing}
-                    css={tw`w-full sm:w-auto`}
-                >
-                    {changing ? 'Changing Server Type...' : 'Change Server Type'}
+                <Button.Danger onClick={() => setConfirmOpen(true)} disabled={!canChange || changing} css={tw`w-full`}>
+                    {changing ? 'Changing...' : 'Change Type'}
                 </Button.Danger>
             </TitledGreyBox>
 
