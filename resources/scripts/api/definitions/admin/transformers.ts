@@ -210,6 +210,8 @@ export default class Transformers {
             visible: attributes.visible,
             nestId: attributes.nest_id,
             eggId: attributes.egg_id,
+            allowedEggs: attributes.allowedEggs || [attributes.egg_id],
+            allowEggChanges: attributes.allowEggChanges ?? true,
 
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
