@@ -247,6 +247,7 @@ export default () => {
                                         key={egg.id}
                                         selected={selectedEggId}
                                         setSelected={setSelectedEggId}
+                                        onEggChange={() => setEggs(undefined)}
                                     />
                                 ))}
                             </div>
