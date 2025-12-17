@@ -100,7 +100,15 @@ export default () => {
 
         // If there's a coupon that makes it free, use processUnpaidOrder
         if (couponData?.total === 0) {
-            processUnpaidOrder(billingProductId, undefined, true, undefined, serverId, couponData?.coupon.id)
+            // Process as unpaid order with coupon: product, node, renewal, variables, server_id, coupon_id, egg_id
+            processUnpaidOrder(
+                billingProductId, // product
+                undefined, // node (not needed for renewals)
+                true, // renewal flag
+                undefined, // variables (not changed during renewal)
+                serverId, // server_id
+                couponData?.coupon.id, // coupon_id
+            )
                 .then(() => {
                     navigate(`/server/${serverUuid}`);
                 })

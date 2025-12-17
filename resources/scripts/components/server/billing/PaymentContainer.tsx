@@ -47,6 +47,7 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
     return (
         <>
             {/* @ts-expect-error this is fine, stripe library is just weird */}
+            {/* Key prop forces re-mount when intent changes (e.g., coupon applied/removed) */}
             <Elements stripe={stripe} options={options} key={intent?.id}>
                 <PaymentForm id={id} serverId={Number(serverId)} intent={intent.id} renewal />
             </Elements>
