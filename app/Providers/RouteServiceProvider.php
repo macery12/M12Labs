@@ -36,18 +36,6 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->routes(function () {
             Route::middleware('web')->group(function () {
-                // Public API documentation route (no authentication required)
-                // Only /docs/index.html is accessible
-                Route::prefix('/docs')->group(function () {
-                    Route::get('/index.html', function () {
-                        return response()->file(public_path('docs/index.html'));
-                    });
-                    // All other /docs/* routes return 404
-                    Route::get('/{any}', function () {
-                        abort(404);
-                    })->where('any', '.*');
-                });
-
                 Route::middleware(['auth.session', RequireTwoFactorAuthentication::class])
                     ->group(base_path('routes/base.php'));
 
