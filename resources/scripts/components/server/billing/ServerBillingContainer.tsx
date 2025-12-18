@@ -22,7 +22,7 @@ import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
-import { renewFreeServer, renewPaidServer } from '@/api/routes/account/billing/orders/process';
+import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import CouponInput from '@/components/account/billing/order/CouponInput';
@@ -100,23 +100,6 @@ export default () => {
 
         // Use renewFreeServer only for originally free products
         renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
-            .then(() => {
-                navigate(`/server/${serverUuid}`);
-            })
-            .catch(error => {
-                clearAndAddHttpError({ key: 'server:billing', error });
-                setRenewing(false);
-            });
-    };
-
-    const handlePaidRenewal = () => {
-        if (!product || !billingProductId) return;
-
-        setRenewing(true);
-        clearFlashes('server:billing');
-
-        // Use renewPaidServer for paid products with coupons that make them free
-        renewPaidServer(billingProductId, serverId, couponData?.coupon.id)
             .then(() => {
                 navigate(`/server/${serverUuid}`);
             })
@@ -323,25 +306,7 @@ export default () => {
                                     <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
 
                                     <div css={tw`mt-4`}>
-                                        {couponData?.total === 0 ? (
-                                            <div>
-                                                <p css={tw`text-green-400 text-sm mb-3`}>
-                                                    🎉 Your coupon has made this renewal free!
-                                                </p>
-                                                <Button
-                                                    onClick={handlePaidRenewal}
-                                                    disabled={renewing}
-                                                    css={tw`w-full`}
-                                                >
-                                                    {renewing ? 'Renewing...' : 'Renew Server'}
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <PaymentContainer
-                                                id={Number(product.id)}
-                                                couponId={couponData?.coupon.id}
-                                            />
-                                        )}
+                                        <PaymentContainer id={Number(product.id)} couponId={couponData?.coupon.id} />
                                     </div>
                                 </div>
                             )}

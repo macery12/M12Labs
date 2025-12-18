@@ -40,11 +40,3 @@ export const renewFreeServer = (product: number, server_id: number, coupon_id?: 
             .catch(reject);
     });
 };
-
-export const renewPaidServer = (product: number, server_id: number, coupon_id?: number): Promise<Server> => {
-    return new Promise((resolve, reject) => {
-        http.post(`/api/client/billing/renew/paid`, { product, server_id, coupon_id })
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
