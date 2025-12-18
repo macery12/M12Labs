@@ -98,7 +98,7 @@ export default () => {
         setRenewing(true);
         clearFlashes('server:billing');
 
-        // Use renewFreeServer only for originally free products
+        // Use renewFreeServer for free products and paid products made free by coupons
         renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
             .then(() => {
                 navigate(`/server/${serverUuid}`);
@@ -306,7 +306,25 @@ export default () => {
                                     <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
 
                                     <div css={tw`mt-4`}>
-                                        <PaymentContainer id={Number(product.id)} couponId={couponData?.coupon.id} />
+                                        {couponData?.total === 0 ? (
+                                            <div>
+                                                <p css={tw`text-green-400 text-sm mb-3`}>
+                                                    🎉 Your coupon has made this renewal free!
+                                                </p>
+                                                <Button
+                                                    onClick={handleFreeRenewal}
+                                                    disabled={renewing}
+                                                    css={tw`w-full`}
+                                                >
+                                                    {renewing ? 'Renewing...' : 'Renew Server'}
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <PaymentContainer
+                                                id={Number(product.id)}
+                                                couponId={couponData?.coupon.id}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             )}
