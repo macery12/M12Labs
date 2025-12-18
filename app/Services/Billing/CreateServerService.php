@@ -30,6 +30,7 @@ class CreateServerService
 
     /**
      * Process the creation of a server.
+     * This method handles both free and paid servers.
      */
     public function process(Request $request, Product $product, StripeObject $metadata, Order $order): Server
     {
@@ -60,8 +61,8 @@ class CreateServerService
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
         try {
-            // Use paid renewal days for paid servers
-            $renewalDays = config('modules.billing.renewal.days', 30);
+            // Use product-based renewal days (automatically handles free vs paid)
+            $renewalDays = $product->getRenewalDays();
             
             $server = $this->creation->handle([
                 'node_id' => $metadata->node_id,
@@ -101,6 +102,8 @@ class CreateServerService
 
     /**
      * Process the creation of a free server.
+     * 
+     * @deprecated Use process() method with StripeObject metadata instead
      */
     public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
     {
@@ -113,8 +116,8 @@ class CreateServerService
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
         try {
-            // Use free renewal days for free servers
-            $renewalDays = config('modules.billing.renewal.free_renewal_days', 30);
+            // Use product-based renewal days (automatically handles free vs paid)
+            $renewalDays = $product->getRenewalDays();
             
             $server = $this->creation->handle([
                 'node_id' => $nodeId,
