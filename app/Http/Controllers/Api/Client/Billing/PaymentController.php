@@ -14,6 +14,7 @@ use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
+use Everest\Services\Servers\SuspensionService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class PaymentController extends ClientApiController
@@ -21,6 +22,7 @@ class PaymentController extends ClientApiController
     public function __construct(
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
+        private SuspensionService $suspensionService,
     ) {
         parent::__construct();
 
@@ -50,8 +52,14 @@ class PaymentController extends ClientApiController
      */
     public function intent(Request $request, int $id): JsonResponse
     {
-        $paymentMethodTypes = ['card'];
         $product = Product::findOrFail($id);
+
+        // Free products should not create payment intents
+        if ((float) $product->price === 0.0) {
+            throw new DisplayException('Free products do not require payment. Please use the free product renewal process.');
+        }
+
+        $paymentMethodTypes = ['card'];
 
         if (config('modules.billing.paypal')) {
             $paymentMethodTypes[] = 'paypal';
@@ -170,9 +178,15 @@ class PaymentController extends ClientApiController
         if ($order->type === Order::TYPE_REN && ((int) $intent->metadata->server_id != 0)) {
             $server = Server::findOrFail((int) $intent->metadata->server_id);
 
+            // Unsuspend the server if it was suspended due to billing
+            if ($server->isSuspended()) {
+                $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
+            }
+
+            // Use paid renewal days for paid server renewals
+            $renewalDays = config('modules.billing.renewal.days', 30);
             $server->update([
-                'renewal_date' => $server->renewal_date->addDays(30)->toDateTimeString(),
-                'status' => $server->isSuspended() ? null : $server->status,
+                'renewal_date' => $server->renewal_date->addDays($renewalDays)->toDateTimeString(),
             ]);
         } else {
             $product = Product::findOrFail($intent->metadata->product_id);

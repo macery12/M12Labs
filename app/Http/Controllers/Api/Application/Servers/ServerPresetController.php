@@ -98,12 +98,14 @@ class ServerPresetController extends ApplicationApiController
      */
     public function delete(DeleteServerPresetRequest $request, int $id): Response
     {
-        $preset = ServerPreset::findOrFail($id)->delete();
+        $preset = ServerPreset::findOrFail($id);
 
         Activity::event('admin:server_presets:delete')
             ->property('server_preset', $preset)
             ->description('A server preset was deleted')
             ->log();
+
+        $preset->delete();
 
         return $this->returnNoContent();
     }

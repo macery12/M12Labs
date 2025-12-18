@@ -56,6 +56,11 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:billing:currency:symbol',
         'modules:billing:links:terms',
         'modules:billing:links:privacy',
+        'modules:billing:renewal:days',
+        'modules:billing:renewal:free_renewal_days',
+        'modules:billing:renewal:suspension_threshold',
+        'modules:billing:renewal:free_suspension_days',
+        'modules:billing:renewal:paid_suspension_days',
 
         // Ticket module settings
         'modules:tickets:enabled',

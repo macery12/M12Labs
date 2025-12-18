@@ -80,7 +80,14 @@ function ServerRouter() {
     }, [params.id]);
 
     if (billable && server.renewalDate && server.renewalDate.getTime() < new Date().getTime())
-        return <Suspended id={server.billingProductId} date={server.renewalDate} />;
+        return (
+            <Suspended
+                id={server.billingProductId}
+                date={server.renewalDate}
+                serverId={server.internalId}
+                serverUuid={server.uuid}
+            />
+        );
 
     return (
         <Fragment key={'server-router'}>

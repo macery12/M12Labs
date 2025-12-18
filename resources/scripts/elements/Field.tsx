@@ -96,10 +96,10 @@ const Field = forwardRef<HTMLInputElement, Props>(
                                     <IconWrapper $bgColor={bgColor}>
                                         <FontAwesomeIcon icon={icon} />
                                     </IconWrapper>
-                                    <StyledInput id={id} {...field} {...props} isLight={light} />
+                                    <StyledInput id={id} {...field} {...props} type={type} isLight={light} />
                                 </InputWrapper>
                             ) : (
-                                <Input id={id} {...field} {...props} isLight={light} />
+                                <Input id={id} {...field} {...props} type={type} isLight={light} />
                             )}
 
                             {error ? (
