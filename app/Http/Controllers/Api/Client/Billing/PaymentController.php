@@ -225,9 +225,10 @@ class PaymentController extends ClientApiController
             $server = Server::findOrFail((int) $intent->metadata->server_id);
             $product = Product::findOrFail($intent->metadata->product_id);
 
-            // Use the unified renewal service
+            // Use the unified renewal service (it handles order status update)
             $result = $this->renewalService->renew($server, $product, $order->coupon_id);
             $server = $result['server'];
+            $renewalOrder = $result['order'];
         } else {
             $product = Product::findOrFail($intent->metadata->product_id);
 
@@ -267,8 +268,10 @@ class PaymentController extends ClientApiController
             ]);
         }
 
-        // Mark the order as processed
-        $order->update(['status' => Order::STATUS_PROCESSED, 'name' => $order->name]);
+        // Mark the order as processed (only for non-renewal orders, as renewals are already marked by the service)
+        if ($order->type !== Order::TYPE_REN) {
+            $order->update(['status' => Order::STATUS_PROCESSED, 'name' => $order->name]);
+        }
 
         return $this->returnNoContent();
     }

@@ -21,6 +21,9 @@ class ServerRenewalService
      * Renew a server by extending its renewal date.
      * This handles both free and paid server renewals.
      * 
+     * For free servers: Resets renewal date to configured days from now
+     * For paid servers: Adds configured days to existing renewal date (extends the time)
+     * 
      * @return array{server: Server, order: Order}
      */
     public function renew(Server $server, Product $product, ?int $couponId = null): array
@@ -45,10 +48,19 @@ class ServerRenewalService
             $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
         }
 
-        // Reset the renewal date based on product type (free or paid)
+        // Calculate renewal date based on product type
         $renewalDays = $product->getRenewalDays();
+        
+        if ($product->isFree()) {
+            // Free servers: Reset renewal date to configured days from now
+            $newRenewalDate = Carbon::now()->addDays($renewalDays)->toDateTimeString();
+        } else {
+            // Paid servers: Add configured days to existing renewal date to extend the time
+            $newRenewalDate = $server->renewal_date->addDays($renewalDays)->toDateTimeString();
+        }
+        
         $server->update([
-            'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
+            'renewal_date' => $newRenewalDate,
         ]);
 
         // Mark order as processed

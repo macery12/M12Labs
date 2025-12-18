@@ -103,7 +103,14 @@ class CreateServerService
     /**
      * Process the creation of a free server.
      * 
-     * @deprecated Use process() method with StripeObject metadata instead
+     * @deprecated This method is maintained for backwards compatibility only.
+     *             New code should use the process() method with StripeObject metadata instead.
+     *             This method may be removed in a future major version.
+     *             
+     * Migration guide:
+     * - Convert $nodeId to metadata->node_id
+     * - Convert $customVariables array to metadata->variables (JSON encoded)
+     * - Use process() method instead of processFree()
      */
     public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
     {
