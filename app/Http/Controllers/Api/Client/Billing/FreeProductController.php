@@ -42,10 +42,6 @@ class FreeProductController extends ClientApiController
             throw new DisplayException('This product holds a value greater than zero.');
         }
 
-        if (!$product->category) {
-            throw new DisplayException('This product does not have a category assigned.');
-        }
-
         if ($user->servers()->where('billing_product_id', $request->input('product'))->count() > 0) {
             throw new DisplayException('You already own one of this free product. Nice try!');
         }
@@ -99,10 +95,6 @@ class FreeProductController extends ClientApiController
 
         if ((float) $product->price !== 0.0) {
             throw new DisplayException('This product is not free.');
-        }
-
-        if (!$product->category) {
-            throw new DisplayException('This product does not have a category assigned.');
         }
 
         // Lookup server scoped to the authenticated user
