@@ -8,6 +8,7 @@ use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Repositories\Wings\DaemonServerRepository;
+use Illuminate\Support\Facades\Log;
 
 class ChangeServerEggService
 {
@@ -86,7 +87,7 @@ class ChangeServerEggService
                     $this->daemonServerRepository->setServer($server)->delete();
                 } catch (\Exception $e) {
                     // Log but don't fail - the server will be reinstalled anyway
-                    \Log::warning('Failed to delete server files during egg change', [
+                    Log::warning('Failed to delete server files during egg change', [
                         'server_id' => $server->id,
                         'error' => $e->getMessage(),
                     ]);

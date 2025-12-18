@@ -195,7 +195,7 @@ export default () => {
                     {deleteFiles && (
                         <div css={tw`mt-3 pt-3 border-t border-red-500/30`}>
                             <p css={tw`text-xs font-bold text-red-300 mb-2`}>
-                                ⚠️ CONFIRM FILE DELETION - Type &quot;DELETE&quot; to confirm:
+                                ⚠️ CONFIRM FILE DELETION - Type DELETE to confirm:
                             </p>
                             <input
                                 type="text"
@@ -207,7 +207,7 @@ export default () => {
                             />
                             {confirmDelete && confirmDelete !== 'DELETE' && (
                                 <p css={tw`text-xs text-red-400 mt-1`}>
-                                    You must type &quot;DELETE&quot; exactly to confirm file deletion.
+                                    You must type DELETE exactly to confirm file deletion.
                                 </p>
                             )}
                         </div>
