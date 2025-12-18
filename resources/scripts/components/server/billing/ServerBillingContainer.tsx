@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
 import Label from '@/elements/Label';
 import { Link, useNavigate } from 'react-router-dom';
-import ContentBox from '@/elements/ContentBox';
+import TitledGreyBox from '@/elements/TitledGreyBox';
 import { ServerContext } from '@/state/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import {
+    faArrowRight,
+    faClock,
+    faCreditCard,
+    faInfoCircle,
+    faBox,
+    faCalendarAlt,
+    faExclamationTriangle,
+} from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
@@ -17,6 +25,9 @@ import { Product } from '@definitions/account/billing';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
+import CouponInput from '@/components/account/billing/order/CouponInput';
+import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+import tw from 'twin.macro';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -30,16 +41,28 @@ function timeUntil(targetDate: Date | string) {
     };
 }
 
-function addDays(date: Date | string, days: number) {
-    const d = date instanceof Date ? new Date(date) : new Date(date);
-    d.setDate(d.getDate() + days);
-    return d;
+function getRenewalStatusBadge(
+    daysRemaining: number,
+    suspensionThreshold: number,
+    daysOverdue: number,
+    freeGraceDays: number,
+) {
+    if (daysRemaining < 0) {
+        if (daysOverdue > freeGraceDays) {
+            return { text: 'Overdue', color: 'bg-red-500', icon: faExclamationTriangle };
+        }
+        return { text: 'Grace Period', color: 'bg-yellow-500', icon: faClock };
+    } else if (daysRemaining <= suspensionThreshold) {
+        return { text: 'Renewal Available', color: 'bg-yellow-500', icon: faClock };
+    }
+    return { text: 'Active', color: 'bg-green-500', icon: faInfoCircle };
 }
 
 export default () => {
     const [product, setProduct] = useState<Product>();
     const [loading, setLoading] = useState<boolean>(true);
     const [renewing, setRenewing] = useState<boolean>(false);
+    const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
 
     const navigate = useNavigate();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
@@ -75,9 +98,9 @@ export default () => {
         setRenewing(true);
         clearFlashes('server:billing');
 
-        renewFreeServer(billingProductId, serverId)
+        // Use renewFreeServer for free products and paid products made free by coupons
+        renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
             .then(() => {
-                // Redirect to server overview after successful renewal
                 navigate(`/server/${serverUuid}`);
             })
             .catch(error => {
@@ -86,62 +109,128 @@ export default () => {
             });
     };
 
+    const handleCouponApplied = (data: ValidateCouponResponse | null) => {
+        setCouponData(data);
+    };
+
     // Calculate days remaining until renewal (can be negative if overdue)
     const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
     const daysOverdue = daysRemaining < 0 ? Math.abs(daysRemaining) : 0;
-    
-    // Free servers can only be renewed if:
-    // 1. They're within the threshold period before renewal (e.g., 7 days or less and not yet overdue), OR
-    // 2. They're overdue but still within the grace period
-    const canRenew = (daysRemaining <= suspensionThreshold && daysRemaining > 0) || (daysRemaining <= 0 && daysOverdue <= freeGraceDays);
+
+    const statusBadge = renewalDate
+        ? getRenewalStatusBadge(daysRemaining, suspensionThreshold, daysOverdue, freeGraceDays)
+        : null;
 
     return (
         <PageContentBlock
             title={'Server Billing'}
             header
-            description={'Control your billing settings for this server.'}
+            description={'Manage your server subscription, renewal, and billing settings.'}
         >
+            <FlashMessageRender byKey={'server:billing'} css={tw`mb-4`} />
             {!product && !loading && (
                 <Alert type={'warning'} className={'mb-6'}>
-                    The product package you purchase initially no longer exists, so some details may not be shown.
+                    The product package you purchased initially no longer exists, so some details may not be shown.
                 </Alert>
             )}
-            <div className={'grid lg:grid-cols-3 gap-4'}>
-                {!renewalDate ? (
-                    <Alert type={'warning'}>There is no present renewal date for your server.</Alert>
-                ) : (
-                    <ContentBox title={'Summary'}>
+
+            {/* Billing Overview Section */}
+            <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
+                {/* Server Status Card */}
+                {renewalDate && (
+                    <TitledGreyBox title={'Renewal Status'} icon={faClock}>
                         <SpinnerOverlay visible={loading} />
+                        {statusBadge && (
+                            <div css={tw`mb-4`}>
+                                <span
+                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white ${statusBadge.color}`}
+                                >
+                                    <FontAwesomeIcon icon={statusBadge.icon} className={'mr-2'} />
+                                    {statusBadge.text}
+                                </span>
+                            </div>
+                        )}
                         <div>
-                            <Label>Next renewal due</Label>
-                            <p className={'text-gray-400 text-sm'}>
-                                {new Date(renewalDate).toLocaleDateString()}
-                                {' - '}
-                                {timeUntil(renewalDate).days} days, {timeUntil(renewalDate).hours} hours
+                            <Label>Next Renewal Date</Label>
+                            <p css={tw`text-gray-300 font-medium mb-1`}>
+                                {new Date(renewalDate).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                })}
+                            </p>
+                            <p css={tw`text-gray-400 text-sm`}>
+                                <FontAwesomeIcon icon={faClock} css={tw`mr-1`} />
+                                {daysRemaining >= 0 ? (
+                                    <>
+                                        {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'},{' '}
+                                        {timeUntil(renewalDate).hours}{' '}
+                                        {timeUntil(renewalDate).hours === 1 ? 'hour' : 'hours'} remaining
+                                    </>
+                                ) : (
+                                    <>
+                                        {daysOverdue} {daysOverdue === 1 ? 'day' : 'days'} overdue
+                                    </>
+                                )}
                             </p>
                         </div>
-                        <div className={'my-6'}>
-                            <Label>Your package</Label>
-                            <p className={'text-gray-400 text-sm'}>{product ? product.name : 'Unknown'}</p>
-                            <p className={'text-gray-500 text-xs'}>{product && product.description}</p>
-                        </div>
-                        <div>
-                            <Label>Plan cost</Label>
-                            <div className={'flex justify-between'}>
-                                <p className={'text-gray-400 text-sm'}>
-                                    {settings.currency.symbol}
-                                    {product ? product.price : '...'} {settings.currency.code.toUpperCase()} every{' '}
-                                    {renewalDays} days
-                                </p>
-                                <Link to={'/account/billing/orders'} className={'text-green-400 text-xs'}>
-                                    View order <FontAwesomeIcon icon={faArrowRight} />
-                                </Link>
-                            </div>
-                        </div>
-                    </ContentBox>
+                    </TitledGreyBox>
                 )}
-                <ContentBox title={'Renew Server'} className={'lg:col-span-2'}>
-                    <FlashMessageRender byKey={'server:billing'} className={'mb-4'} />
+
+                {/* Package Information Card */}
+                <TitledGreyBox title={'Package Details'} icon={faBox}>
+                    <SpinnerOverlay visible={loading} />
+                    <div>
+                        <Label>Current Package</Label>
+                        <p css={tw`text-gray-300 font-medium mb-1`}>
+                            {product?.name || (loading ? 'Loading...' : 'Unknown')}
+                        </p>
+                        {product?.description && <p css={tw`text-gray-400 text-xs mb-3`}>{product.description}</p>}
+                    </div>
+                    <div css={tw`mt-4`}>
+                        <Label>Billing Cycle</Label>
+                        <p css={tw`text-gray-400 text-sm`}>
+                            <FontAwesomeIcon icon={faCalendarAlt} css={tw`mr-1`} />
+                            Every {renewalDays} days
+                        </p>
+                    </div>
+                </TitledGreyBox>
+
+                {/* Pricing Card */}
+                <TitledGreyBox title={'Plan Cost'} icon={faCreditCard}>
+                    <SpinnerOverlay visible={loading} />
+                    <div>
+                        <Label>Price</Label>
+                        <p css={tw`text-3xl font-bold text-gray-200 mb-2`}>
+                            {settings.currency.symbol}
+                            {product ? product.price : '...'}
+                            <span css={tw`text-sm font-normal text-gray-400 ml-1`}>
+                                {settings.currency.code.toUpperCase()}
+                            </span>
+                        </p>
+                        <p css={tw`text-gray-400 text-xs mb-3`}>per {renewalDays} day billing cycle</p>
+                        <Link
+                            to={'/account/billing/orders'}
+                            css={tw`text-green-400 text-sm hover:text-green-300 transition-colors duration-150`}
+                        >
+                            View order history <FontAwesomeIcon icon={faArrowRight} css={tw`ml-1`} />
+                        </Link>
+                    </div>
+                </TitledGreyBox>
+            </div>
+
+            {!renewalDate && (
+                <Alert type={'warning'} className={'mb-4'}>
+                    There is no present renewal date for your server. Please contact support if you believe this is an
+                    error.
+                </Alert>
+            )}
+
+            {/* Action Cards Section - Renewal and Server Type Change */}
+            <div css={tw`grid gap-4 md:grid-cols-2`}>
+                {/* Renewal Section */}
+                <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
                     {!product ? (
                         <Alert type={'danger'}>
                             The product package that the server was made with no longer exists. In order to renew your
@@ -151,35 +240,99 @@ export default () => {
                         <>
                             {product.price === 0 ? (
                                 <div>
-                                    <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. You can renew it for another {freeRenewalDays} days starting {suspensionThreshold} days before it expires, giving you time to renew before expiration. You can also renew within the {freeGraceDays}-day grace period after expiration.
+                                    <p css={tw`text-blue-200 text-xs mb-3`}>
+                                        <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
+                                        Free server - renewable {suspensionThreshold} days before expiration
                                     </p>
                                     {daysOverdue > freeGraceDays ? (
                                         <Alert type={'danger'}>
-                                            This server has been overdue for more than {freeGraceDays} days and can no longer be renewed through self-service. Please contact support for assistance.
+                                            <strong>Expired</strong> - Contact support for assistance.
                                         </Alert>
                                     ) : daysRemaining > suspensionThreshold ? (
                                         <Alert type={'info'}>
-                                            You still have {daysRemaining} days before your server expires. The renew button will become available {suspensionThreshold} days before expiration, allowing you to renew in advance.
+                                            Renewal available in {daysRemaining - suspensionThreshold} days.
                                         </Alert>
                                     ) : (
-                                        <Button
-                                            onClick={handleFreeRenewal}
-                                            disabled={renewing}
-                                            size={Button.Sizes.Large}
-                                        >
-                                            {renewing ? 'Renewing...' : 'Renew Server'}
-                                        </Button>
+                                        <div>
+                                            <p css={tw`text-gray-300 text-sm mb-3`}>
+                                                {daysRemaining >= 0 ? (
+                                                    <>Renew for {freeRenewalDays} more days.</>
+                                                ) : (
+                                                    <>
+                                                        Grace period: {daysOverdue}/{freeGraceDays} days
+                                                    </>
+                                                )}
+                                            </p>
+                                            <Button onClick={handleFreeRenewal} disabled={renewing} css={tw`w-full`}>
+                                                {renewing ? 'Renewing...' : 'Renew Server'}
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
                             ) : (
-                                <PaymentContainer id={Number(product.id)} />
+                                <div>
+                                    {/* Show coupon input for paid servers */}
+                                    <div css={tw`mb-4`}>
+                                        <Label>Renewal Cost</Label>
+                                        {couponData ? (
+                                            <div>
+                                                <div css={tw`text-sm text-gray-400 line-through`}>
+                                                    {settings.currency.symbol}
+                                                    {couponData.subtotal.toFixed(2)}
+                                                </div>
+                                                <div css={tw`flex items-baseline gap-1 mb-1`}>
+                                                    <span css={tw`text-2xl font-bold text-gray-200`}>
+                                                        {settings.currency.symbol}
+                                                        {couponData.total.toFixed(2)}
+                                                    </span>
+                                                    <span css={tw`text-xs text-gray-400`}>
+                                                        {settings.currency.code.toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <div css={tw`text-xs font-medium text-green-400`}>
+                                                    Save {settings.currency.symbol}
+                                                    {couponData.discount.toFixed(2)}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p css={tw`text-gray-300 text-sm`}>
+                                                {settings.currency.symbol}
+                                                {product.price.toFixed(2)} {settings.currency.code.toUpperCase()}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                    <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
+
+                                    <div css={tw`mt-4`}>
+                                        {couponData?.total === 0 ? (
+                                            <div>
+                                                <p css={tw`text-green-400 text-sm mb-3`}>
+                                                    🎉 Your coupon has made this renewal free!
+                                                </p>
+                                                <Button
+                                                    onClick={handleFreeRenewal}
+                                                    disabled={renewing}
+                                                    css={tw`w-full`}
+                                                >
+                                                    {renewing ? 'Renewing...' : 'Renew Server'}
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <PaymentContainer
+                                                id={Number(product.id)}
+                                                couponId={couponData?.coupon.id}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
                             )}
                         </>
                     )}
-                </ContentBox>
-            </div>
-            <div className={'grid lg:grid-cols-3 gap-4'}>
+                </TitledGreyBox>
+
+                {/* Change Server Type Section */}
                 <ChangeEggContainer />
             </div>
         </PageContentBlock>

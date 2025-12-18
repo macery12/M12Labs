@@ -123,8 +123,21 @@ class FreeProductController extends ClientApiController
             throw new DisplayException('The billing module is not enabled.');
         }
 
-        if ((float) $product->price !== 0.0) {
-            throw new DisplayException('This product is not free.');
+        // Calculate the final price with coupon if provided
+        $finalPrice = $product->price;
+        $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
+        
+        if ($couponId) {
+            $coupon = Coupon::find($couponId);
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($product->price);
+                $finalPrice = max(0, $product->price - $discount);
+            }
+        }
+
+        // Check if the final price is free (either originally free or made free by coupon)
+        if ((float) $finalPrice !== 0.0) {
+            throw new DisplayException('This product is not free. Please use the payment process.');
         }
 
         // Lookup server scoped to the authenticated user
@@ -136,7 +149,7 @@ class FreeProductController extends ClientApiController
         }
 
         // Create an order record for the renewal
-        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_REN);
+        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_REN, $couponId);
 
         // Unsuspend the server if it was suspended due to billing
         if ($server->isSuspended()) {
@@ -148,6 +161,16 @@ class FreeProductController extends ClientApiController
         $server->update([
             'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
         ]);
+
+        // Record coupon usage if a coupon was applied
+        if ($couponId) {
+            CouponUsage::create([
+                'coupon_id' => $couponId,
+                'user_id' => $user->id,
+                'order_id' => $order->id,
+                'used_at' => now(),
+            ]);
+        }
 
         $order->update([
             'status' => Order::STATUS_PROCESSED,
