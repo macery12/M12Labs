@@ -102,8 +102,11 @@ class PaymentController extends ClientApiController
             throw new DisplayException('The billing module is not enabled.');
         }
 
-        if (!Node::findOrFail($request->input('node_id'))->deployable) {
-            throw new DisplayException('Paid servers cannot be deployed to this node.');
+        // Only validate node for new server purchases, not renewals
+        if (!$request->boolean('renewal') && $request->filled('node_id')) {
+            if (!Node::findOrFail($request->input('node_id'))->deployable) {
+                throw new DisplayException('Paid servers cannot be deployed to this node.');
+            }
         }
 
         if (!$intent) {
