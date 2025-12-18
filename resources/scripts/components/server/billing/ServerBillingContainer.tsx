@@ -22,7 +22,7 @@ import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
-import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
+import { renewFreeServer, renewPaidServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import CouponInput from '@/components/account/billing/order/CouponInput';
@@ -98,8 +98,25 @@ export default () => {
         setRenewing(true);
         clearFlashes('server:billing');
 
-        // Use renewFreeServer for both regular free renewals and coupon-based free renewals
+        // Use renewFreeServer only for originally free products
         renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
+            .then(() => {
+                navigate(`/server/${serverUuid}`);
+            })
+            .catch(error => {
+                clearAndAddHttpError({ key: 'server:billing', error });
+                setRenewing(false);
+            });
+    };
+
+    const handlePaidRenewal = () => {
+        if (!product || !billingProductId) return;
+
+        setRenewing(true);
+        clearFlashes('server:billing');
+
+        // Use renewPaidServer for paid products with coupons that make them free
+        renewPaidServer(billingProductId, serverId, couponData?.coupon.id)
             .then(() => {
                 navigate(`/server/${serverUuid}`);
             })
@@ -312,7 +329,7 @@ export default () => {
                                                     🎉 Your coupon has made this renewal free!
                                                 </p>
                                                 <Button
-                                                    onClick={handleFreeRenewal}
+                                                    onClick={handlePaidRenewal}
                                                     disabled={renewing}
                                                     css={tw`w-full`}
                                                 >
