@@ -36,7 +36,7 @@ class ServerRenewalService
         // Create an order record for the renewal
         $order = $this->orderService->create(
             null,
-            $server->owner,
+            $server->user,
             $product,
             Order::STATUS_PENDING,
             Order::TYPE_REN,
@@ -57,7 +57,11 @@ class ServerRenewalService
         } else {
             // Paid servers: Add configured days to existing renewal date to extend the time
             // Use copy() to avoid mutating the original Carbon instance
-            $newRenewalDate = $server->renewal_date->copy()->addDays($renewalDays)->toDateTimeString();
+            // If renewal_date is null or in the past, start from now instead
+            $baseDate = $server->renewal_date && $server->renewal_date->isFuture()
+                ? $server->renewal_date->copy()
+                : Carbon::now();
+            $newRenewalDate = $baseDate->addDays($renewalDays)->toDateTimeString();
         }
         
         $server->update([
