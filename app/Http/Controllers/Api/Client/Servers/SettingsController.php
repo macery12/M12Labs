@@ -103,11 +103,12 @@ class SettingsController extends ClientApiController
     public function changeEgg(ReinstallServerRequest $request, Server $server): JsonResponse
     {
         $newEggId = (int) $request->input('egg_id');
+        $deleteFiles = (bool) $request->input('delete_files', false);
 
-        $this->changeServerEggService->handle($server, $newEggId);
+        $this->changeServerEggService->handle($server, $newEggId, $deleteFiles);
 
         Activity::event('server:egg.change')
-            ->property(['old' => $server->egg_id, 'new' => $newEggId])
+            ->property(['old' => $server->egg_id, 'new' => $newEggId, 'delete_files' => $deleteFiles])
             ->log();
 
         return new JsonResponse([], Response::HTTP_ACCEPTED);
