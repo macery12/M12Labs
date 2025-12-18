@@ -22,7 +22,7 @@ import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
-import { renewFreeServer, processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
+import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import CouponInput from '@/components/account/billing/order/CouponInput';
@@ -98,35 +98,15 @@ export default () => {
         setRenewing(true);
         clearFlashes('server:billing');
 
-        // If there's a coupon that makes it free, use processUnpaidOrder
-        if (couponData?.total === 0) {
-            // Process as unpaid order with coupon: product, node, renewal, variables, server_id, coupon_id, egg_id
-            processUnpaidOrder(
-                billingProductId, // product
-                undefined, // node (not needed for renewals)
-                true, // renewal flag
-                undefined, // variables (not changed during renewal)
-                serverId, // server_id
-                couponData?.coupon.id, // coupon_id
-            )
-                .then(() => {
-                    navigate(`/server/${serverUuid}`);
-                })
-                .catch(error => {
-                    clearAndAddHttpError({ key: 'server:billing', error });
-                    setRenewing(false);
-                });
-        } else {
-            // Regular free server renewal
-            renewFreeServer(billingProductId, serverId)
-                .then(() => {
-                    navigate(`/server/${serverUuid}`);
-                })
-                .catch(error => {
-                    clearAndAddHttpError({ key: 'server:billing', error });
-                    setRenewing(false);
-                });
-        }
+        // Use renewFreeServer for both regular free renewals and coupon-based free renewals
+        renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
+            .then(() => {
+                navigate(`/server/${serverUuid}`);
+            })
+            .catch(error => {
+                clearAndAddHttpError({ key: 'server:billing', error });
+                setRenewing(false);
+            });
     };
 
     const handleCouponApplied = (data: ValidateCouponResponse | null) => {
