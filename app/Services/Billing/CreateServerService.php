@@ -30,6 +30,7 @@ class CreateServerService
 
     /**
      * Process the creation of a server.
+     * This method handles both free and paid servers.
      */
     public function process(Request $request, Product $product, StripeObject $metadata, Order $order): Server
     {
@@ -60,8 +61,8 @@ class CreateServerService
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
         try {
-            // Use paid renewal days for paid servers
-            $renewalDays = config('modules.billing.renewal.days', 30);
+            // Use product-based renewal days (automatically handles free vs paid)
+            $renewalDays = $product->getRenewalDays();
             
             $server = $this->creation->handle([
                 'node_id' => $metadata->node_id,
@@ -101,6 +102,17 @@ class CreateServerService
 
     /**
      * Process the creation of a free server.
+     * 
+     * @deprecated This method is maintained for backwards compatibility only.
+     *             New code should use the process() method with StripeObject metadata instead.
+     *             This method may be removed in a future major version.
+     *             
+     * Migration guide:
+     * - The process() method expects a Stripe PaymentIntent metadata object
+     * - Convert $nodeId to $metadata->node_id
+     * - Convert $customVariables array to JSON string in $metadata->variables
+     * - Example: $metadata->variables = json_encode($customVariables)
+     * - Call process($request, $product, $metadata, $order) instead
      */
     public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
     {
@@ -113,8 +125,8 @@ class CreateServerService
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
         try {
-            // Use free renewal days for free servers
-            $renewalDays = config('modules.billing.renewal.free_renewal_days', 30);
+            // Use product-based renewal days (automatically handles free vs paid)
+            $renewalDays = $product->getRenewalDays();
             
             $server = $this->creation->handle([
                 'node_id' => $nodeId,

@@ -16,7 +16,7 @@ use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Servers\SuspensionService;
+use Everest\Services\Billing\ServerRenewalService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class PaymentController extends ClientApiController
@@ -24,7 +24,7 @@ class PaymentController extends ClientApiController
     public function __construct(
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
-        private SuspensionService $suspensionService,
+        private ServerRenewalService $renewalService,
     ) {
         parent::__construct();
 
@@ -223,17 +223,12 @@ class PaymentController extends ClientApiController
         // Process the renewal or product purchase
         if ($order->type === Order::TYPE_REN && ((int) $intent->metadata->server_id != 0)) {
             $server = Server::findOrFail((int) $intent->metadata->server_id);
+            $product = Product::findOrFail($intent->metadata->product_id);
 
-            // Unsuspend the server if it was suspended due to billing
-            if ($server->isSuspended()) {
-                $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
-            }
-
-            // Use paid renewal days for paid server renewals
-            $renewalDays = config('modules.billing.renewal.days', 30);
-            $server->update([
-                'renewal_date' => $server->renewal_date->addDays($renewalDays)->toDateTimeString(),
-            ]);
+            // Use the unified renewal service (it handles order status update)
+            $result = $this->renewalService->renew($server, $product, $order->coupon_id);
+            $server = $result['server'];
+            $renewalOrder = $result['order'];
         } else {
             $product = Product::findOrFail($intent->metadata->product_id);
 
@@ -273,8 +268,10 @@ class PaymentController extends ClientApiController
             ]);
         }
 
-        // Mark the order as processed
-        $order->update(['status' => Order::STATUS_PROCESSED, 'name' => $order->name]);
+        // Mark the order as processed (only for non-renewal orders, as renewals are already marked by the service)
+        if ($order->type !== Order::TYPE_REN) {
+            $order->update(['status' => Order::STATUS_PROCESSED, 'name' => $order->name]);
+        }
 
         return $this->returnNoContent();
     }

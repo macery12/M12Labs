@@ -13,7 +13,7 @@ use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Servers\SuspensionService;
+use Everest\Services\Billing\ServerRenewalService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
@@ -22,7 +22,7 @@ class FreeProductController extends ClientApiController
     public function __construct(
         private CreateServerService $serverCreation,
         private CreateOrderService $orderService,
-        private SuspensionService $suspensionService
+        private ServerRenewalService $renewalService
     ) {
         parent::__construct();
     }
@@ -143,24 +143,10 @@ class FreeProductController extends ClientApiController
         // Lookup server scoped to the authenticated user
         $server = $user->servers()->findOrFail($serverId);
 
-        // Verify that the server uses this product
-        if ($server->billing_product_id !== $product->id) {
-            throw new DisplayException('This server does not use this product.');
-        }
-
-        // Create an order record for the renewal
-        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_REN, $couponId);
-
-        // Unsuspend the server if it was suspended due to billing
-        if ($server->isSuspended()) {
-            $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
-        }
-
-        // Reset the renewal date to configured days from now (not add days)
-        $renewalDays = config('modules.billing.renewal.free_renewal_days', 30);
-        $server->update([
-            'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
-        ]);
+        // Use the unified renewal service
+        $result = $this->renewalService->renew($server, $product, $couponId);
+        $server = $result['server'];
+        $order = $result['order'];
 
         // Record coupon usage if a coupon was applied
         if ($couponId) {
@@ -171,11 +157,6 @@ class FreeProductController extends ClientApiController
                 'used_at' => now(),
             ]);
         }
-
-        $order->update([
-            'status' => Order::STATUS_PROCESSED,
-            'name' => $order->name . substr($server->uuid, 0, 8),
-        ]);
 
         return $this->fractal->item($server)
             ->transformWith(ServerTransformer::class)
