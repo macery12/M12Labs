@@ -56,7 +56,8 @@ class ServerRenewalService
             $newRenewalDate = Carbon::now()->addDays($renewalDays)->toDateTimeString();
         } else {
             // Paid servers: Add configured days to existing renewal date to extend the time
-            $newRenewalDate = $server->renewal_date->addDays($renewalDays)->toDateTimeString();
+            // Use copy() to avoid mutating the original Carbon instance
+            $newRenewalDate = $server->renewal_date->copy()->addDays($renewalDays)->toDateTimeString();
         }
         
         $server->update([

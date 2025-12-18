@@ -108,9 +108,11 @@ class CreateServerService
      *             This method may be removed in a future major version.
      *             
      * Migration guide:
-     * - Convert $nodeId to metadata->node_id
-     * - Convert $customVariables array to metadata->variables (JSON encoded)
-     * - Use process() method instead of processFree()
+     * - The process() method expects a Stripe PaymentIntent metadata object
+     * - Convert $nodeId to $metadata->node_id
+     * - Convert $customVariables array to JSON string in $metadata->variables
+     * - Example: $metadata->variables = json_encode($customVariables)
+     * - Call process($request, $product, $metadata, $order) instead
      */
     public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
     {
