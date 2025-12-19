@@ -10,6 +10,7 @@ use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
+use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
@@ -232,9 +233,9 @@ class PaymentController extends ClientApiController
             }
         }
 
-        // Record coupon usage if a coupon was applied (only for non-renewal orders)
+        // Record coupon usage for non-renewal orders (renewals are handled by OrderProcessorService)
         if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-            \Everest\Models\Billing\CouponUsage::create([
+            CouponUsage::create([
                 'coupon_id' => $order->coupon_id,
                 'user_id' => $order->user_id,
                 'order_id' => $order->id,

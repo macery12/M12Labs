@@ -2,7 +2,8 @@
 
 namespace Everest\Services\Billing;
 
-use Everest\Models\Node;
+use Everest\Models\User;
+use Everest\Models\Server;
 use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
@@ -130,7 +131,7 @@ class BillingValidationService
     {
         // Only check for originally free products
         if ((float) $product->price === 0.0) {
-            $existingCount = \Everest\Models\Server::where('owner_id', $userId)
+            $existingCount = Server::where('owner_id', $userId)
                 ->where('billing_product_id', $product->id)
                 ->count();
 
