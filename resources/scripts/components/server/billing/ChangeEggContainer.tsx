@@ -11,6 +11,7 @@ import { getProduct } from '@/api/routes/account/billing/products';
 import { getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
 import { Alert } from '@/elements/alert';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 import tw from 'twin.macro';
 
@@ -70,11 +71,21 @@ export default () => {
 
     const handleChangeEgg = () => {
         if (selectedEggId === currentEggId) {
+            clearFlashes('server:billing:egg');
+            clearAndAddHttpError({
+                key: 'server:billing:egg',
+                error: { message: 'You must select a different server type to continue.' },
+            });
             return;
         }
 
         // If deleteFiles is checked, ensure DELETE confirmation is typed
         if (deleteFiles && confirmDelete !== 'DELETE') {
+            clearFlashes('server:billing:egg');
+            clearAndAddHttpError({
+                key: 'server:billing:egg',
+                error: { message: 'You must type DELETE to confirm file deletion.' },
+            });
             return;
         }
 
@@ -155,10 +166,12 @@ export default () => {
                     setConfirmOpen(false);
                     setDeleteFiles(false);
                     setConfirmDelete('');
+                    clearFlashes('server:billing:egg');
                 }}
                 onConfirmed={handleChangeEgg}
                 buttonType={'danger'}
             >
+                <FlashMessageRender byKey={'server:billing:egg'} css={tw`mb-3`} />
                 <p css={tw`text-sm mb-3`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
                     <strong>{selectedEgg?.name}</strong>.
