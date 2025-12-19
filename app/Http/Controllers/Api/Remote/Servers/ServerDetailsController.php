@@ -9,6 +9,7 @@ use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
 use Everest\Http\Controllers\Controller;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Everest\Services\Eggs\EggConfigurationService;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Http\Resources\Wings\ServerConfigurationCollection;
@@ -35,8 +36,13 @@ class ServerDetailsController extends Controller
      */
     public function __invoke(Request $request, string $uuid): JsonResponse
     {
-        $server = $this->repository->getByUuid($uuid);
-        $server->load('allocations', 'egg', 'mounts', 'variables');
+        // Load server with all required relationships in a single query
+        $server = Server::query()
+            ->with(['allocations', 'egg', 'mounts', 'variables', 'nest', 'node'])
+            ->where(function (Builder $query) use ($uuid) {
+                $query->where('uuidShort', $uuid)->orWhere('uuid', $uuid);
+            })
+            ->firstOrFail();
 
         return new JsonResponse([
             'settings' => $this->configurationStructureService->handle($server),
