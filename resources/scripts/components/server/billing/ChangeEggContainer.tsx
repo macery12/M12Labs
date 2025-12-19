@@ -73,6 +73,11 @@ export default () => {
             return;
         }
 
+        // If deleteFiles is checked, ensure DELETE confirmation is typed
+        if (deleteFiles && confirmDelete !== 'DELETE') {
+            return;
+        }
+
         setChanging(true);
         clearFlashes('server:billing:egg');
 
@@ -152,7 +157,6 @@ export default () => {
                     setConfirmDelete('');
                 }}
                 onConfirmed={handleChangeEgg}
-                disabled={deleteFiles && confirmDelete !== 'DELETE'}
             >
                 <p css={tw`text-sm mb-3`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
