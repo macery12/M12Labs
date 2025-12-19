@@ -16,13 +16,7 @@ class StartupCommandService
 
         foreach ($server->variables as $variable) {
             $find[] = '{{' . $variable->env_variable . '}}';
-            
-            // Use server_value if it's not null and not empty, otherwise use default_value
-            $value = ($variable->server_value !== null && $variable->server_value !== '') 
-                ? $variable->server_value 
-                : $variable->default_value;
-            
-            $replace[] = ($variable->user_viewable && !$hideAllValues) ? $value : '[hidden]';
+            $replace[] = ($variable->user_viewable && !$hideAllValues) ? ($variable->server_value ?? $variable->default_value) : '[hidden]';
         }
 
         return str_replace($find, $replace, $server->startup);
