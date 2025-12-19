@@ -157,6 +157,7 @@ export default () => {
                     setConfirmDelete('');
                 }}
                 onConfirmed={handleChangeEgg}
+                buttonType={'danger'}
             >
                 <p css={tw`text-sm mb-3`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
@@ -204,7 +205,7 @@ export default () => {
                             <input
                                 type="text"
                                 value={confirmDelete}
-                                onChange={e => setConfirmDelete(e.target.value)}
+                                onChange={e => setConfirmDelete(e.target.value.toUpperCase())}
                                 placeholder="Type DELETE to confirm"
                                 css={tw`w-full px-3 py-2 bg-gray-800 border border-red-500/50 rounded text-sm text-gray-200 focus:outline-none focus:border-red-500`}
                                 autoFocus
