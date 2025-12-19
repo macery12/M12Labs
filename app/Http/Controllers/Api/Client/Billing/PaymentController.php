@@ -9,14 +9,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
-use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
-use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Billing\ServerRenewalService;
+use Everest\Services\Billing\OrderProcessorService;
+use Everest\Services\Billing\BillingValidationService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class PaymentController extends ClientApiController
@@ -24,7 +23,8 @@ class PaymentController extends ClientApiController
     public function __construct(
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
-        private ServerRenewalService $renewalService,
+        private OrderProcessorService $processorService,
+        private BillingValidationService $validationService,
     ) {
         parent::__construct();
 
@@ -56,20 +56,12 @@ class PaymentController extends ClientApiController
     {
         $product = Product::findOrFail($id);
 
-        // Calculate the amount based on coupon if provided
-        $amount = $product->price;
-        if ($request->has('coupon_id') && $request->input('coupon_id')) {
-            $coupon = Coupon::find($request->input('coupon_id'));
-            if ($coupon) {
-                $discount = $coupon->calculateDiscount($product->price);
-                $amount = max(0, $product->price - $discount);
-            }
-        }
+        // Calculate price with coupon using validation service
+        $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
 
-        // Free products or zero-dollar totals should not create payment intents
-        if ((float) $amount === 0.0) {
-            throw new DisplayException('This order total is $0. Please use the free order process instead of payment.');
-        }
+        // Validate this is not a free order
+        $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
 
         $paymentMethodTypes = ['card'];
 
@@ -82,7 +74,7 @@ class PaymentController extends ClientApiController
         }
 
         $paymentIntent = $this->stripe->paymentIntents->create([
-            'amount' => $amount * 100,
+            'amount' => $priceInfo['finalPrice'] * 100,
             'currency' => strtolower(config('modules.billing.currency.code')),
             'payment_method_types' => array_values($paymentMethodTypes),
             'capture_method' => 'manual',
@@ -110,13 +102,12 @@ class PaymentController extends ClientApiController
         $product = Product::findOrFail($id);
         $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
 
-        if (!config('modules.billing.enabled')) {
-            throw new DisplayException('The billing module is not enabled.');
-        }
+        // Validate billing is enabled
+        $this->validationService->validateBillingEnabled();
 
-        if (!Node::findOrFail($request->input('node_id'))->deployable) {
-            throw new DisplayException('Paid servers cannot be deployed to this node.');
-        }
+        // Validate node deployment for paid products
+        $nodeId = (int) $request->input('node_id');
+        $this->validationService->validateNodeDeployment($nodeId, false);
 
         if (!$intent) {
             BillingException::create([
@@ -126,41 +117,24 @@ class PaymentController extends ClientApiController
             ]);
         }
 
-        // Validate egg selection
-        $eggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
-        $allowedEggs = $product->category->getAllowedEggs();
-        
-        if ($eggId) {
-            if (!in_array($eggId, $allowedEggs)) {
-                throw new DisplayException('The selected egg is not allowed for this product category.');
-            }
-        } else {
-            // Default to first allowed egg if none selected
-            $eggId = $product->category->getDefaultEggId();
-        }
+        // Validate and get egg ID
+        $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
+        $eggId = $this->validationService->validateAndGetEggId($product, $requestedEggId);
 
-        // Calculate the amount based on coupon if provided
-        $amount = $product->price;
+        // Calculate price with coupon
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        
-        if ($couponId) {
-            $coupon = Coupon::find($couponId);
-            if ($coupon) {
-                $discount = $coupon->calculateDiscount($product->price);
-                $amount = max(0, $product->price - $discount);
-            }
-        }
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
 
         // Update the intent amount if it has changed
-        if ($intent->amount !== (int)($amount * 100)) {
-            $intent->amount = (int)($amount * 100);
+        if ($intent->amount !== (int)($priceInfo['finalPrice'] * 100)) {
+            $intent->amount = (int)($priceInfo['finalPrice'] * 100);
         }
 
         $metadata = [
             'customer_email' => $request->user()->email,
             'customer_name' => $request->user()->username,
             'product_id' => (string) $id,
-            'node_id' => (string) ($request->input('node_id') ?? ''),
+            'node_id' => (string) $nodeId,
             'server_id' => (string) ($request->input('server_id') ?? 0),
             'coupon_id' => (string) ($couponId ?? ''),
             'egg_id' => (string) $eggId,
@@ -194,16 +168,17 @@ class PaymentController extends ClientApiController
         $order = Order::where('user_id', $request->user()->id)->latest()->first();
         $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
 
-        if (!config('modules.billing.enabled')) {
-            if (!$intent) {
-                throw new DisplayException('Unable to fetch payment intent from Stripe.');
-                BillingException::create([
-                    'order_id' => $order->id,
-                    'exception_type' => BillingException::TYPE_DEPLOYMENT,
-                    'title' => 'Unable to fetch PaymentIntent while processing order',
-                    'description' => 'Check Stripe Dashboard and ask in the Jexactyl Discord for support',
-                ]);
-            }
+        // Validate billing is enabled
+        $this->validationService->validateBillingEnabled();
+
+        if (!$intent) {
+            BillingException::create([
+                'order_id' => $order->id,
+                'exception_type' => BillingException::TYPE_DEPLOYMENT,
+                'title' => 'Unable to fetch PaymentIntent while processing order',
+                'description' => 'Check Stripe Dashboard and ask in the Jexactyl Discord for support',
+            ]);
+            throw new DisplayException('Unable to fetch payment intent from Stripe.');
         }
 
         // Check if order has already been processed
@@ -225,10 +200,9 @@ class PaymentController extends ClientApiController
             $server = Server::findOrFail((int) $intent->metadata->server_id);
             $product = Product::findOrFail($intent->metadata->product_id);
 
-            // Use the unified renewal service (it handles order status update)
-            $result = $this->renewalService->renew($server, $product, $order->coupon_id);
+            // Use the unified processor service for renewal
+            $result = $this->processorService->processRenewal($server, $product, $order->coupon_id);
             $server = $result['server'];
-            $renewalOrder = $result['order'];
         } else {
             $product = Product::findOrFail($intent->metadata->product_id);
 
@@ -258,9 +232,9 @@ class PaymentController extends ClientApiController
             }
         }
 
-        // Record coupon usage if a coupon was applied
-        if ($order->coupon_id) {
-            CouponUsage::create([
+        // Record coupon usage if a coupon was applied (only for non-renewal orders)
+        if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
+            \Everest\Models\Billing\CouponUsage::create([
                 'coupon_id' => $order->coupon_id,
                 'user_id' => $order->user_id,
                 'order_id' => $order->id,

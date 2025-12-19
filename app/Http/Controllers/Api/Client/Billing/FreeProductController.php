@@ -2,27 +2,20 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
-use Carbon\Carbon;
-use Everest\Models\Node;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
-use Everest\Models\Billing\Order;
-use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
-use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
-use Everest\Services\Billing\CreateOrderService;
-use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Billing\ServerRenewalService;
+use Everest\Services\Billing\OrderProcessorService;
+use Everest\Services\Billing\BillingValidationService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class FreeProductController extends ClientApiController
 {
     public function __construct(
-        private CreateServerService $serverCreation,
-        private CreateOrderService $orderService,
-        private ServerRenewalService $renewalService
+        private BillingValidationService $validationService,
+        private OrderProcessorService $processorService,
     ) {
         parent::__construct();
     }
@@ -36,76 +29,40 @@ class FreeProductController extends ClientApiController
         $user = $request->user();
         $product = Product::findOrFail($request->input('product'));
 
-        if (!config('modules.billing.enabled')) {
-            throw new DisplayException('The billing module is not enabled.');
-        }
+        // Validate billing is enabled
+        $this->validationService->validateBillingEnabled();
 
-        // Calculate the final price with coupon if provided
-        $finalPrice = $product->price;
+        // Calculate price with coupon
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        
-        if ($couponId) {
-            $coupon = Coupon::find($couponId);
-            if ($coupon) {
-                $discount = $coupon->calculateDiscount($product->price);
-                $finalPrice = max(0, $product->price - $discount);
-            }
-        }
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
 
-        // Check if the final price is free (either originally free or made free by coupon)
-        if ((float) $finalPrice !== 0.0) {
-            throw new DisplayException('This product is not free. Please use the payment process.');
-        }
+        // Validate this is a free order
+        $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
 
-        // For originally free products, check if user already owns one
-        if ((float) $product->price === 0.0 && $user->servers()->where('billing_product_id', $request->input('product'))->count() > 0) {
-            throw new DisplayException('You already own one of this free product. Nice try!');
-        }
+        // Validate user doesn't already own this free product
+        $this->validationService->validateFreeProductOwnership($user->id, $product);
 
-        if (!Node::findOrFail($request->input('node'))->deployable_free) {
-            throw new DisplayException('Free servers cannot be deployed to this node.');
-        }
+        // Validate node deployment
+        $nodeId = (int) $request->input('node');
+        $this->validationService->validateNodeDeployment($nodeId, true);
 
-        // Validate egg selection
-        $eggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
-        $allowedEggs = $product->category->getAllowedEggs();
-        
-        if ($eggId) {
-            if (!in_array($eggId, $allowedEggs)) {
-                throw new DisplayException('The selected egg is not allowed for this product category.');
-            }
-        } else {
-            // Default to first allowed egg if none selected
-            $eggId = $product->category->getDefaultEggId();
-        }
+        // Validate and get egg ID
+        $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
+        $eggId = $this->validationService->validateAndGetEggId($product, $requestedEggId);
 
-        $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, Order::TYPE_NEW, $couponId, $eggId);
-
+        // Process the order
         $variables = $request->input('variables', []);
-        $server = $this->serverCreation->processFree(
+        $result = $this->processorService->createServerOrder(
             $request,
+            $user,
             $product,
-            $request->input('node'),
-            $order,
+            $nodeId,
+            $eggId,
+            $couponId,
             $variables
         );
 
-        // Record coupon usage if a coupon was applied
-        if ($couponId) {
-            CouponUsage::create([
-                'coupon_id' => $couponId,
-                'user_id' => $user->id,
-                'order_id' => $order->id,
-                'used_at' => now(),
-            ]);
-        }
-
-        $order->update([
-            'status' => Order::STATUS_PROCESSED,
-            'name' => $order->name . substr($server->uuid, 0, 8),
-        ]);
-
-        return $this->fractal->item($server)
+        return $this->fractal->item($result['server'])
             ->transformWith(ServerTransformer::class)
             ->toArray();
     }
@@ -116,49 +73,26 @@ class FreeProductController extends ClientApiController
     public function renew(Request $request): array
     {
         $user = $request->user();
-        $serverId = $request->input('server_id');
+        $serverId = (int) $request->input('server_id');
         $product = Product::findOrFail($request->input('product'));
 
-        if (!config('modules.billing.enabled')) {
-            throw new DisplayException('The billing module is not enabled.');
-        }
+        // Validate billing is enabled
+        $this->validationService->validateBillingEnabled();
 
-        // Calculate the final price with coupon if provided
-        $finalPrice = $product->price;
+        // Calculate price with coupon
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        
-        if ($couponId) {
-            $coupon = Coupon::find($couponId);
-            if ($coupon) {
-                $discount = $coupon->calculateDiscount($product->price);
-                $finalPrice = max(0, $product->price - $discount);
-            }
-        }
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
 
-        // Check if the final price is free (either originally free or made free by coupon)
-        if ((float) $finalPrice !== 0.0) {
-            throw new DisplayException('This product is not free. Please use the payment process.');
-        }
+        // Validate this is a free renewal
+        $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
 
         // Lookup server scoped to the authenticated user
         $server = $user->servers()->findOrFail($serverId);
 
-        // Use the unified renewal service
-        $result = $this->renewalService->renew($server, $product, $couponId);
-        $server = $result['server'];
-        $order = $result['order'];
+        // Process the renewal
+        $result = $this->processorService->processRenewal($server, $product, $couponId);
 
-        // Record coupon usage if a coupon was applied
-        if ($couponId) {
-            CouponUsage::create([
-                'coupon_id' => $couponId,
-                'user_id' => $user->id,
-                'order_id' => $order->id,
-                'used_at' => now(),
-            ]);
-        }
-
-        return $this->fractal->item($server)
+        return $this->fractal->item($result['server'])
             ->transformWith(ServerTransformer::class)
             ->toArray();
     }
