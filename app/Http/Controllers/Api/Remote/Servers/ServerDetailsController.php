@@ -36,6 +36,7 @@ class ServerDetailsController extends Controller
     public function __invoke(Request $request, string $uuid): JsonResponse
     {
         $server = $this->repository->getByUuid($uuid);
+        $server->load('allocations', 'egg', 'mounts', 'variables');
 
         return new JsonResponse([
             'settings' => $this->configurationStructureService->handle($server),
