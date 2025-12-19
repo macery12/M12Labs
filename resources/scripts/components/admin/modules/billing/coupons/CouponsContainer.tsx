@@ -132,7 +132,7 @@ function CouponsContainer() {
                                     ) : (
                                         coupons.items.map(coupon => (
                                             <TableRow key={coupon.id}>
-                                                <td css={tw`whitespace-nowrap`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     <Link to={`/admin/billing/coupons/${coupon.id}`}>
                                                         <TicketIcon
                                                             color={colors.primary}
@@ -140,7 +140,7 @@ function CouponsContainer() {
                                                         />
                                                     </Link>
                                                 </td>
-                                                <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     <Link to={`/admin/billing/coupons/${coupon.id}`}>
                                                         <CopyOnClick text={coupon.id.toString()}>
                                                             <code css={tw`font-mono text-xs bg-neutral-900 rounded py-1 px-2`}>
@@ -149,31 +149,31 @@ function CouponsContainer() {
                                                         </CopyOnClick>
                                                     </Link>
                                                 </td>
-                                                <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     <CopyOnClick text={coupon.code}>
                                                         <code css={tw`font-bold cursor-pointer`}>{coupon.code}</code>
                                                     </CopyOnClick>
                                                 </td>
-                                                <td css={tw`pl-4 md:pl-0 text-left lg:text-center capitalize`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap capitalize`}>
                                                     {coupon.type}
                                                 </td>
-                                                <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     {coupon.type === 'percentage'
                                                         ? `${coupon.value}%`
                                                         : `$${coupon.value}`}
                                                 </td>
-                                                <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     {coupon.usageCount}
                                                     {coupon.maxUses ? ` / ${coupon.maxUses}` : ''}
                                                 </td>
-                                                <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     <span
                                                         className={coupon.isActive ? 'text-green-500' : 'text-red-500'}
                                                     >
                                                         {coupon.isActive ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td css={tw`pl-4 md:pl-0 text-left lg:text-center`}>
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     {coupon.expiresAt
                                                         ? format(coupon.expiresAt, 'MMM dd, yyyy')
                                                         : 'Never'}
