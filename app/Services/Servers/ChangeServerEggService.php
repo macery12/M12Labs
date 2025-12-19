@@ -8,6 +8,7 @@ use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Repositories\Wings\DaemonServerRepository;
+use Everest\Repositories\Wings\DaemonFileRepository;
 use Illuminate\Support\Facades\Log;
 
 class ChangeServerEggService
@@ -18,6 +19,7 @@ class ChangeServerEggService
     public function __construct(
         private ConnectionInterface $connection,
         private DaemonServerRepository $daemonServerRepository,
+        private DaemonFileRepository $daemonFileRepository,
         private ReinstallServerService $reinstallService
     ) {
     }
@@ -84,7 +86,24 @@ class ChangeServerEggService
             // Delete all files if requested
             if ($deleteFiles) {
                 try {
-                    $this->daemonServerRepository->setServer($server)->delete();
+                    // Get list of all files and folders in the root directory
+                    $fileRepository = $this->daemonFileRepository->setServer($server);
+                    $files = $fileRepository->getDirectory('/');
+                    
+                    // Extract file names from the directory listing
+                    $fileNames = array_map(function ($file) {
+                        return $file['name'];
+                    }, $files);
+                    
+                    // Delete all files and folders if any exist
+                    if (!empty($fileNames)) {
+                        $fileRepository->deleteFiles('/', $fileNames);
+                        
+                        Log::info('Deleted all server files during egg change', [
+                            'server_id' => $server->id,
+                            'file_count' => count($fileNames),
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     // Log but don't fail - the server will be reinstalled anyway
                     Log::warning('Failed to delete server files during egg change', [
