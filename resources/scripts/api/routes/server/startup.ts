@@ -31,8 +31,8 @@ const setImage = async (uuid: string, image: string): Promise<void> => {
     await http.put(`/api/client/servers/${uuid}/settings/docker-image`, { docker_image: image });
 };
 
-const changeEgg = async (uuid: string, eggId: number): Promise<void> => {
-    await http.post(`/api/client/servers/${uuid}/settings/change-egg`, { egg_id: eggId });
+const changeEgg = async (uuid: string, eggId: number, deleteFiles: boolean = false): Promise<void> => {
+    await http.post(`/api/client/servers/${uuid}/settings/change-egg`, { egg_id: eggId, delete_files: deleteFiles });
 };
 
 const updateStartupVariable = async (uuid: string, key: string, value: string): Promise<[EggVariable, string]> => {

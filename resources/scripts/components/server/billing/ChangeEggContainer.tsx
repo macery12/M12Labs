@@ -11,6 +11,7 @@ import { getProduct } from '@/api/routes/account/billing/products';
 import { getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
 import { Alert } from '@/elements/alert';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 import tw from 'twin.macro';
 
@@ -27,6 +28,8 @@ export default () => {
     const [currentEgg, setCurrentEgg] = useState<EggInfo | null>(null);
     const [allowEggChanges, setAllowEggChanges] = useState<boolean>(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deleteFiles, setDeleteFiles] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState('');
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
 
@@ -68,13 +71,28 @@ export default () => {
 
     const handleChangeEgg = () => {
         if (selectedEggId === currentEggId) {
+            clearFlashes('server:billing:egg');
+            clearAndAddHttpError({
+                key: 'server:billing:egg',
+                error: { message: 'You must select a different server type to continue.' },
+            });
+            return;
+        }
+
+        // If deleteFiles is checked, ensure DELETE confirmation is typed
+        if (deleteFiles && confirmDelete !== 'DELETE') {
+            clearFlashes('server:billing:egg');
+            clearAndAddHttpError({
+                key: 'server:billing:egg',
+                error: { message: 'You must type DELETE to confirm file deletion.' },
+            });
             return;
         }
 
         setChanging(true);
         clearFlashes('server:billing:egg');
 
-        changeEgg(uuid, selectedEggId)
+        changeEgg(uuid, selectedEggId, deleteFiles)
             .then(() => {
                 window.location.reload(); // Reload to refresh server data
             })
@@ -128,8 +146,10 @@ export default () => {
                 )}
 
                 {selectedEggId !== currentEggId && serverStatus === null && (
-                    <Alert type={'danger'} className={'mb-3'}>
-                        <strong>Warning:</strong> This will reinstall and delete all data.
+                    <Alert type={'warning'} className={'mb-3'}>
+                        <strong css={tw`text-yellow-400`}>⚠️ BACKUP YOUR FILES:</strong> This will reinstall your
+                        server. While files are typically not deleted, corruption is always possible during
+                        reinstallation. <strong>Always backup important data before proceeding.</strong>
                     </Alert>
                 )}
 
@@ -142,24 +162,86 @@ export default () => {
                 open={confirmOpen}
                 title={'Confirm Server Type Change'}
                 confirm={'Change Server Type'}
-                onClose={() => setConfirmOpen(false)}
+                onClose={() => {
+                    setConfirmOpen(false);
+                    setDeleteFiles(false);
+                    setConfirmDelete('');
+                    clearFlashes('server:billing:egg');
+                }}
                 onConfirmed={handleChangeEgg}
+                buttonType={'danger'}
             >
-                <p css={tw`text-sm mb-2`}>
+                <FlashMessageRender byKey={'server:billing:egg'} css={tw`mb-3`} />
+                <p css={tw`text-sm mb-3`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
                     <strong>{selectedEgg?.name}</strong>.
                 </p>
-                <p css={tw`text-sm mb-2`}>
-                    <strong css={tw`text-red-400`}>This will permanently delete all server data</strong>, including:
-                </p>
-                <ul css={tw`list-disc list-inside text-sm mb-2 text-gray-400`}>
-                    <li>All files and directories</li>
-                    <li>Database contents</li>
-                    <li>Server configurations</li>
-                    <li>Any custom modifications</li>
-                </ul>
-                <p css={tw`text-sm`}>
-                    The server will be reinstalled with the new server type. Are you sure you want to continue?
+
+                <div css={tw`bg-yellow-500/20 border border-yellow-500/50 rounded-md p-3 mb-3`}>
+                    <p css={tw`text-sm font-bold text-yellow-300 mb-2`}>⚠️ IMPORTANT: BACKUP YOUR FILES</p>
+                    <p css={tw`text-sm text-gray-300 mb-1`}>
+                        The reinstallation process will run the installation script for the new server type.
+                    </p>
+                    <p css={tw`text-sm text-gray-300`}>
+                        <strong>Files are normally NOT deleted</strong>, but corruption or modification is always
+                        possible. Always backup your data before proceeding.
+                    </p>
+                </div>
+
+                <div css={tw`bg-red-500/20 border border-red-500/50 rounded-md p-3 mb-3`}>
+                    <label css={tw`flex items-start cursor-pointer`}>
+                        <input
+                            type="checkbox"
+                            checked={deleteFiles}
+                            onChange={e => {
+                                setDeleteFiles(e.target.checked);
+                                if (!e.target.checked) {
+                                    setConfirmDelete('');
+                                }
+                            }}
+                            css={tw`mt-1 mr-2`}
+                        />
+                        <div>
+                            <p css={tw`text-sm font-bold text-red-300 mb-1`}>🗑️ Delete all files before reinstalling</p>
+                            <p css={tw`text-xs text-gray-400`}>
+                                This will permanently delete all server files, databases, and configurations before
+                                installing the new server type.
+                            </p>
+                        </div>
+                    </label>
+
+                    {deleteFiles && (
+                        <div css={tw`mt-3 pt-3 border-t border-red-500/30`}>
+                            <p css={tw`text-xs font-bold text-red-300 mb-2`}>
+                                ⚠️ CONFIRM FILE DELETION - Type DELETE to confirm:
+                            </p>
+                            <input
+                                type="text"
+                                value={confirmDelete}
+                                onChange={e => setConfirmDelete(e.target.value.toUpperCase())}
+                                placeholder="Type DELETE to confirm"
+                                css={tw`w-full px-3 py-2 bg-gray-800 border border-red-500/50 rounded text-sm text-gray-200 focus:outline-none focus:border-red-500`}
+                                autoFocus
+                            />
+                            {confirmDelete && confirmDelete !== 'DELETE' && (
+                                <p css={tw`text-xs text-red-400 mt-1`}>
+                                    You must type DELETE exactly to confirm file deletion.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <p css={tw`text-sm text-gray-400`}>
+                    {deleteFiles ? (
+                        <>
+                            The server will be stopped,{' '}
+                            <strong css={tw`text-red-400`}>all files will be deleted</strong>, and then the new server
+                            type will be installed. This action cannot be undone.
+                        </>
+                    ) : (
+                        <>The server will be stopped and the new server type will be installed.</>
+                    )}
                 </p>
             </Dialog.Confirm>
         </>
