@@ -33,7 +33,12 @@ class EnvironmentService
     public function handle(Server $server): array
     {
         $variables = $server->variables->toBase()->mapWithKeys(function (EggVariable $variable) {
-            return [$variable->env_variable => $variable->server_value ?? $variable->default_value];
+            // Use server_value if it's not null and not empty, otherwise use default_value
+            $value = $variable->server_value;
+            if ($value === null || $value === '') {
+                $value = $variable->default_value;
+            }
+            return [$variable->env_variable => $value];
         });
 
         // Process environment variables defined in this file. This is done first
