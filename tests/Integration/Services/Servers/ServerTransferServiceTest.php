@@ -9,6 +9,7 @@ use Everest\Models\Allocation;
 use Everest\Models\ServerTransfer;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Nodes\NodeJWTService;
+use Everest\Tests\Traits\CreatesTestJwtToken;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Services\Servers\ServerTransferService;
 use Everest\Repositories\Wings\DaemonTransferRepository;
@@ -16,6 +17,8 @@ use Everest\Exceptions\Http\Server\ServerStateConflictException;
 
 class ServerTransferServiceTest extends IntegrationTestCase
 {
+    use CreatesTestJwtToken;
+
     private MockInterface $daemonTransferRepository;
     private MockInterface $jwtService;
 
@@ -49,7 +52,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
 
         $this->jwtService->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(\Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn($this->createTestToken());
 
         $this->daemonTransferRepository->expects('setServer->notify')
             ->once()
@@ -111,7 +114,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
         $targetNode = Node::factory()->create();
         $targetAllocation = Allocation::factory()->create([
             'node_id' => $targetNode->id,
-            'server_id' => Server::factory()->create()->id, // Already assigned
+            'server_id' => $this->createServerModel()->id, // Already assigned
         ]);
 
         $this->expectException(DisplayException::class);
@@ -138,7 +141,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
 
         $this->jwtService->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(\Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn($this->createTestToken());
 
         $this->daemonTransferRepository->expects('setServer->notify')
             ->once()

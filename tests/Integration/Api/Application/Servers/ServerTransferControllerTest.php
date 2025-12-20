@@ -2,16 +2,18 @@
 
 namespace Everest\Tests\Integration\Api\Application\Servers;
 
-use Mockery;
 use Everest\Models\Node;
 use Illuminate\Http\Response;
 use Everest\Models\Allocation;
 use Everest\Services\Nodes\NodeJWTService;
+use Everest\Tests\Traits\CreatesTestJwtToken;
 use Everest\Repositories\Wings\DaemonTransferRepository;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
 
 class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
 {
+    use CreatesTestJwtToken;
+
     /**
      * Test that a server can be transferred to a new node.
      */
@@ -25,13 +27,13 @@ class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
         ]);
 
         // Mock the JWT service
-        $this->instance(NodeJWTService::class, $mock = Mockery::mock(NodeJWTService::class));
+        $this->instance(NodeJWTService::class, $mock = \Mockery::mock(NodeJWTService::class));
         $mock->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn($this->createTestToken());
 
         // Mock the daemon repository
-        $this->instance(DaemonTransferRepository::class, $daemonMock = Mockery::mock(DaemonTransferRepository::class));
+        $this->instance(DaemonTransferRepository::class, $daemonMock = \Mockery::mock(DaemonTransferRepository::class));
         $daemonMock->expects('setServer->notify')->once()->andReturnSelf();
 
         $response = $this->postJson('/api/application/servers/' . $server->id . '/transfer', [
