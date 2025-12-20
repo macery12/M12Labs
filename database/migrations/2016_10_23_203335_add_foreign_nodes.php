@@ -12,7 +12,7 @@ class AddForeignNodes extends Migration
     public function up(): void
     {
         Schema::table('nodes', function (Blueprint $table) {
-            $table->unsignedInteger('location')->nullable(false)->change();
+            $table->integer('location', false, true)->nullable(false)->change();
             $table->foreign('location')->references('id')->on('locations');
         });
     }

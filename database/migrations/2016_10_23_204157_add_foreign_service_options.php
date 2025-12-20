@@ -12,7 +12,7 @@ class AddForeignServiceOptions extends Migration
     public function up(): void
     {
         Schema::table('service_options', function (Blueprint $table) {
-            $table->unsignedInteger('parent_service')->change();
+            $table->integer('parent_service', false, true)->change();
             $table->foreign('parent_service')->references('id')->on('services');
         });
     }

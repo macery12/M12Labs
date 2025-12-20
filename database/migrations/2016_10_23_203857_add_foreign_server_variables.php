@@ -12,8 +12,8 @@ class AddForeignServerVariables extends Migration
     public function up(): void
     {
         Schema::table('server_variables', function (Blueprint $table) {
-            $table->unsignedInteger('server_id')->nullable()->change();
-            $table->unsignedInteger('variable_id')->nullable(false)->change();
+            $table->integer('server_id', false, true)->nullable()->change();
+            $table->integer('variable_id', false, true)->nullable(false)->change();
             $table->foreign('server_id')->references('id')->on('servers');
             $table->foreign('variable_id')->references('id')->on('service_variables');
         });

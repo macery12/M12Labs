@@ -13,8 +13,8 @@ class AddForeignAllocations extends Migration
     public function up(): void
     {
         Schema::table('allocations', function (Blueprint $table) {
-            $table->unsignedInteger('assigned_to')->nullable()->change();
-            $table->unsignedInteger('node')->nullable(false)->change();
+            $table->integer('assigned_to', false, true)->nullable()->change();
+            $table->integer('node', false, true)->nullable(false)->change();
             $table->foreign('assigned_to')->references('id')->on('servers');
             $table->foreign('node')->references('id')->on('nodes');
         });
