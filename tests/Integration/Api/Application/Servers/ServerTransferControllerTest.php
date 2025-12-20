@@ -2,7 +2,6 @@
 
 namespace Everest\Tests\Integration\Api\Application\Servers;
 
-use Mockery;
 use Everest\Models\Node;
 use Illuminate\Http\Response;
 use Everest\Models\Allocation;
@@ -28,13 +27,13 @@ class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
         ]);
 
         // Mock the JWT service
-        $this->instance(NodeJWTService::class, $mock = Mockery::mock(NodeJWTService::class));
-        $mock->expects('setExpiresAt->setSubject->setClaims->handle')
+        $jwtMock = $this->mock(NodeJWTService::class);
+        $jwtMock->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
             ->andReturn($this->createTestToken());
 
         // Mock the daemon repository
-        $this->instance(DaemonTransferRepository::class, $daemonMock = Mockery::mock(DaemonTransferRepository::class));
+        $daemonMock = $this->mock(DaemonTransferRepository::class);
         $daemonMock->expects('setServer->notify')->once()->andReturnSelf();
 
         $response = $this->postJson('/api/application/servers/' . $server->id . '/transfer', [
