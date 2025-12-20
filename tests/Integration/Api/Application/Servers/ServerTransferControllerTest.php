@@ -68,7 +68,10 @@ class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
         ]);
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $response->assertJsonValidationErrors(['node_id', 'allocation_id']);
+        $response->assertJsonPath('errors.0.meta.source_field', 'node_id');
+        $response->assertJsonPath('errors.0.meta.rule', 'integer');
+        $response->assertJsonPath('errors.1.meta.source_field', 'allocation_id');
+        $response->assertJsonPath('errors.1.meta.rule', 'required');
     }
 
     /**
