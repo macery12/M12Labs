@@ -31,7 +31,7 @@ export default () => {
                     const availableNodes = fetchedNodes.filter(node => node.id !== server.nodeId);
                     setNodes(availableNodes);
                 })
-                .catch(error => {
+                .catch(_error => {
                     addFlash({
                         key: 'server:manage',
                         type: 'error',
@@ -59,7 +59,7 @@ export default () => {
                     }
                     setLoading(false);
                 })
-                .catch(error => {
+                .catch(_error => {
                     addFlash({
                         key: 'server:manage',
                         type: 'error',
@@ -101,7 +101,7 @@ export default () => {
                 setNodes([]);
                 setAllocations([]);
             })
-            .catch(error => {
+            .catch(_error => {
                 addFlash({
                     key: 'server:manage',
                     type: 'error',

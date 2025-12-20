@@ -32,7 +32,7 @@ interface Props {
 }
 
 function InternalForm({ category, visible, setVisible }: Props) {
-    const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>();
+    const [_egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>();
     const { values, isSubmitting } = useFormikContext<CategoryValues>();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 

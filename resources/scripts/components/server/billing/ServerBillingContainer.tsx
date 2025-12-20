@@ -11,7 +11,6 @@ import { Alert } from '@/elements/alert';
 import PaymentContainer from './PaymentContainer';
 import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
-import { format } from 'date-fns';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
@@ -28,12 +27,6 @@ function timeUntil(targetDate: Date | string) {
         days: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
         hours: Math.floor((diffMs / (1000 * 60 * 60)) % 24),
     };
-}
-
-function addDays(date: Date | string, days: number) {
-    const d = date instanceof Date ? new Date(date) : new Date(date);
-    d.setDate(d.getDate() + days);
-    return d;
 }
 
 export default () => {
@@ -93,7 +86,7 @@ export default () => {
     // Free servers can only be renewed if:
     // 1. They're within the threshold period before renewal (e.g., 7 days or less and not yet overdue), OR
     // 2. They're overdue but still within the grace period
-    const canRenew =
+    const _canRenew =
         (daysRemaining <= suspensionThreshold && daysRemaining > 0) ||
         (daysRemaining <= 0 && daysOverdue <= freeGraceDays);
 
