@@ -12,11 +12,11 @@ class AddForeignKeysServers extends Migration
     public function up(): void
     {
         Schema::table('servers', function (Blueprint $table) {
-            $table->integer('node', false, true)->change();
-            $table->integer('owner', false, true)->change();
-            $table->integer('allocation', false, true)->change();
-            $table->integer('service', false, true)->change();
-            $table->integer('option', false, true)->change();
+            $table->unsignedInteger('node')->change();
+            $table->unsignedInteger('owner')->change();
+            $table->unsignedInteger('allocation')->change();
+            $table->unsignedInteger('service')->change();
+            $table->unsignedInteger('option')->change();
 
             $table->foreign('node')->references('id')->on('nodes');
             $table->foreign('owner')->references('id')->on('users');
