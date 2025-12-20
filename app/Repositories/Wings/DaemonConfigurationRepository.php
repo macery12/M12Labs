@@ -14,7 +14,7 @@ class DaemonConfigurationRepository extends DaemonRepository
      *
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function getSystemInformation(int $version = null): array
+    public function getSystemInformation(?int $version = null): array
     {
         try {
             $response = $this->getHttpClient()->get('/api/system' . (!is_null($version) ? '?v=' . $version : ''));

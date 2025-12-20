@@ -93,7 +93,7 @@ class PaymentController extends ClientApiController
     /**
      * Update a Payment Intent with new data from the UI.
      */
-    public function updateIntent(Request $request, int $id = null): Response
+    public function updateIntent(Request $request, ?int $id = null): Response
     {
         $product = Product::findOrFail($id);
         $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
