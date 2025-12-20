@@ -110,7 +110,7 @@ function LoginContainer() {
                             <Link
                                 to={'/auth/password'}
                                 tabIndex={-1}
-                                className={'ml-1 text-green-400 hover:text-green-200 duration-300 text-xs'}
+                                className={'ml-1 text-xs text-green-400 duration-300 hover:text-green-200'}
                             >
                                 Forgot Password?
                             </Link>
@@ -150,17 +150,17 @@ function LoginContainer() {
                         />
                     )}
                     {(modules.discord.enabled || modules.google.enabled || registration) && (
-                        <div className={'w-full text-center my-3 text-gray-400'}>OR</div>
+                        <div className={'my-3 w-full text-center text-gray-400'}>OR</div>
                     )}
-                    <div className={'mt-4 w-full grid gap-4 grid-cols-2'}>
+                    <div className={'mt-4 grid w-full grid-cols-2 gap-4'}>
                         {modules.discord.enabled && (
                             <Button.Info type={'button'} onClick={() => useOauth('discord')} size={Button.Sizes.Small}>
-                                <FontAwesomeIcon icon={faDiscord} className={'mr-2 my-auto'} /> Use Discord SSO
+                                <FontAwesomeIcon icon={faDiscord} className={'my-auto mr-2'} /> Use Discord SSO
                             </Button.Info>
                         )}
                         {modules.google.enabled && (
                             <Button.Text type={'button'} onClick={() => useOauth('google')} size={Button.Sizes.Small}>
-                                <FontAwesomeIcon icon={faGoogle} className={'mr-2 my-auto'} /> Use Google SSO
+                                <FontAwesomeIcon icon={faGoogle} className={'my-auto mr-2'} /> Use Google SSO
                             </Button.Text>
                         )}
                         {registration && (
@@ -169,7 +169,7 @@ function LoginContainer() {
                                 onClick={() => navigate('/auth/register')}
                                 size={Button.Sizes.Small}
                             >
-                                <FontAwesomeIcon icon={faEnvelope} className={'mr-2 my-auto'} /> Register with Email
+                                <FontAwesomeIcon icon={faEnvelope} className={'my-auto mr-2'} /> Register with Email
                             </Button.Text>
                         )}
                     </div>

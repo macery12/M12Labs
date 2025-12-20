@@ -57,7 +57,7 @@ export default () => {
 
     return visible === 'button' ? (
         <Button onClick={submit}>
-            <SparklesIcon className={'w-5 mr-1'} /> Ask AI
+            <SparklesIcon className={'mr-1 w-5'} /> Ask AI
         </Button>
     ) : visible === 'dialog' ? (
         <Dialog
@@ -69,7 +69,7 @@ export default () => {
             {loading ? (
                 <Spinner centered />
             ) : response ? (
-                <div className={'overflow-x-hidden bg-black/50 rounded-lg p-3'}>{response}</div>
+                <div className={'overflow-x-hidden rounded-lg bg-black/50 p-3'}>{response}</div>
             ) : (
                 'Error'
             )}

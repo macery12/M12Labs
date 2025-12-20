@@ -10,7 +10,7 @@ export default ({ reload }: { reload: boolean }) => {
             <iframe
                 src={reload ? '/null' : '/'}
                 style={{ borderColor: primary }}
-                className={'w-full rounded-lg h-[60vh] border-2 transition duration-500'}
+                className={'h-[60vh] w-full rounded-lg border-2 transition duration-500'}
             />
         </AdminBox>
     );

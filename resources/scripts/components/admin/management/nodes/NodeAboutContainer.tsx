@@ -47,16 +47,16 @@ const ResourceBox = ({
     large?: boolean;
 }) => (
     <div className={large ? 'col-span-2' : 'col-span-1'}>
-        <div className={'bg-black/50 rounded-lg shadow-xl text-left'}>
-            <div className={'grid grid-cols-3 gap-4 w-full p-4'}>
-                <div className={'w-12 h-12 rounded-xl bg-black grid m-auto'}>
+        <div className={'rounded-lg bg-black/50 text-left shadow-xl'}>
+            <div className={'grid w-full grid-cols-3 gap-4 p-4'}>
+                <div className={'m-auto grid h-12 w-12 rounded-xl bg-black'}>
                     <div className={'m-auto'}>
                         <FontAwesomeIcon icon={icon} className={'text-xl'} />
                     </div>
                 </div>
                 <div className={'col-span-2 my-auto'}>
-                    <p className={'text-xs uppercase text-gray-400 font-bold'}>{title}</p>
-                    <p className={'text-lg text-gray-200 font-semibold'}>{usage}</p>
+                    <p className={'text-xs font-bold uppercase text-gray-400'}>{title}</p>
+                    <p className={'text-lg font-semibold text-gray-200'}>{usage}</p>
                 </div>
             </div>
         </div>
@@ -67,16 +67,16 @@ const AllocatedBox = ({ title, percent }: { title: string; percent?: number }) =
     const { colors } = useStoreState(state => state.theme.data!);
 
     return (
-        <div className={'w-full grid grid-cols-[1fr_auto]'}>
+        <div className={'grid w-full grid-cols-[1fr_auto]'}>
             <Label>{title}</Label>
             <Label>
                 {(percent ?? 0) > 80 && (
-                    <FontAwesomeIcon icon={faExclamationTriangle} className={'text-yellow-500/50 mr-1'} />
+                    <FontAwesomeIcon icon={faExclamationTriangle} className={'mr-1 text-yellow-500/50'} />
                 )}
                 {percent}%
             </Label>
 
-            <div className="col-span-2 w-full rounded-full h-2.5" style={{ backgroundColor: colors.headers }}>
+            <div className="col-span-2 h-2.5 w-full rounded-full" style={{ backgroundColor: colors.headers }}>
                 <div
                     className="h-2.5 rounded-full"
                     style={{ width: `${percent ?? 0}%`, backgroundColor: colors.primary }}
@@ -127,7 +127,7 @@ export default () => {
     }
 
     return (
-        <div className={'grid lg:grid-cols-3 gap-4'}>
+        <div className={'grid gap-4 lg:grid-cols-3'}>
             {error ? (
                 <Alert type={'danger'} className={'col-span-2'}>
                     We were unable to connect to this node, so no information can be displayed.
@@ -177,7 +177,7 @@ export default () => {
                                             <FontAwesomeIcon
                                                 icon={faQuestionCircle}
                                                 size={'sm'}
-                                                className={'my-auto text-gray-300 ml-2'}
+                                                className={'my-auto ml-2 text-gray-300'}
                                             />
                                         </Tooltip>
                                     </td>
@@ -216,7 +216,7 @@ export default () => {
                     </AdminBox>
                     {utilization && (
                         <AdminBox icon={faBarChart} title={'Resource Utilization'} css={tw`w-full relative`}>
-                            <div className={'grid lg:grid-cols-3 gap-6'}>
+                            <div className={'grid gap-6 lg:grid-cols-3'}>
                                 <ResourceBox
                                     icon={faMicrochip}
                                     title={'CPU usage'}

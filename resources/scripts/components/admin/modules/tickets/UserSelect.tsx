@@ -52,7 +52,7 @@ export default ({ selected, isAdmin }: { selected?: User; isAdmin?: boolean }) =
                     item={d}
                     active={d.id === user?.id}
                 >
-                    <div className={'inline-flex items-center mr-2'}>
+                    <div className={'mr-2 inline-flex items-center'}>
                         <Avatar name={d.uuid} size={20} />
                     </div>
                     <div className={'inline-flex items-center'}>

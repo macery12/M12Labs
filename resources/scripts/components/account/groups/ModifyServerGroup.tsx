@@ -53,7 +53,7 @@ export default ({
             <div className={'mt-4'}>
                 <Label>Group Name</Label>
                 <InputField defaultValue={group?.name} name={'name'} onChange={updateValues}></InputField>
-                <p className={'text-gray-400 text-sm mt-1'}>Provide a name for this server group.</p>
+                <p className={'mt-1 text-sm text-gray-400'}>Provide a name for this server group.</p>
             </div>
             <div className={'mt-2'}>
                 <Label>Group Color</Label>
@@ -63,7 +63,7 @@ export default ({
                     onChange={updateValues}
                     defaultValue={group?.color}
                 ></InputField>
-                <p className={'text-gray-400 text-sm mt-1'}>This is the hex value of the group color.</p>
+                <p className={'mt-1 text-sm text-gray-400'}>This is the hex value of the group color.</p>
             </div>
         </Dialog.Confirm>
     );

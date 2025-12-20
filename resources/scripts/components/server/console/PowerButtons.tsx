@@ -54,12 +54,12 @@ export default ({ className }: PowerButtonProps) => {
             <SaveButton />
             <Can action={'control.start'}>
                 <Button.Success disabled={status !== 'offline'} onClick={onButtonClick.bind(this, 'start')}>
-                    <PlayIcon className={'w-5 mr-1'} /> Start
+                    <PlayIcon className={'mr-1 w-5'} /> Start
                 </Button.Success>
             </Can>
             <Can action={'control.restart'}>
                 <Button.Dark disabled={!status} onClick={onButtonClick.bind(this, 'restart')}>
-                    <RefreshIcon className={'w-5 mr-1'} /> Restart
+                    <RefreshIcon className={'mr-1 w-5'} /> Restart
                 </Button.Dark>
             </Can>
             <Can action={'control.stop'}>
@@ -69,11 +69,11 @@ export default ({ className }: PowerButtonProps) => {
                 >
                     {killable ? (
                         <>
-                            <BanIcon className={'w-5 mr-1'} /> Kill
+                            <BanIcon className={'mr-1 w-5'} /> Kill
                         </>
                     ) : (
                         <>
-                            <StopIcon className={'w-5 mr-1'} /> Stop
+                            <StopIcon className={'mr-1 w-5'} /> Stop
                         </>
                     )}
                 </Button.Danger>

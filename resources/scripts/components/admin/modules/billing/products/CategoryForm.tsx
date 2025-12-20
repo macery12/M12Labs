@@ -46,7 +46,6 @@ function InternalForm({ category, visible, setVisible }: Props) {
         }
     }, [category?.eggId]);
 
-
     return (
         <Form>
             <div css={tw`grid grid-cols-1 lg:grid-cols-2 gap-4`}>
@@ -171,9 +170,9 @@ export default ({ category }: { category?: Category }) => {
         <AdminContentBlock title={'New Category'}>
             <div css={tw`w-full flex flex-row items-center m-8`}>
                 {category?.icon ? (
-                    <img src={category.icon} className={'ww-8 h-8 mr-4'} />
+                    <img src={category.icon} className={'ww-8 mr-4 h-8'} />
                 ) : (
-                    <ShoppingCartIcon className={'w-8 h-8 mr-4'} />
+                    <ShoppingCartIcon className={'mr-4 h-8 w-8'} />
                 )}
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>

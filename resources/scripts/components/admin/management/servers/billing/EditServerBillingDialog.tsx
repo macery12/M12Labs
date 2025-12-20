@@ -60,7 +60,7 @@ export default ({ server }: { server: Server }) => {
             setError(null);
             setProducts([]);
             setSelectedProductId(null);
-            
+
             // Fetch products directly from the products endpoint
             http.get(`/api/application/billing/categories/${selectedCategoryId}/products`)
                 .then(({ data }) => {
@@ -127,7 +127,11 @@ export default ({ server }: { server: Server }) => {
                 <Formik onSubmit={submit} initialValues={{}}>
                     <Form>
                         {error && (
-                            <div className={'mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-400 text-sm'}>
+                            <div
+                                className={
+                                    'mb-4 rounded border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400'
+                                }
+                            >
                                 {error}
                             </div>
                         )}
@@ -135,9 +139,9 @@ export default ({ server }: { server: Server }) => {
                             <div>
                                 <div className={'flex'}>
                                     <Label>
-                                        <CashIcon className={'w-4 inline-flex'} /> Billing Status
+                                        <CashIcon className={'inline-flex w-4'} /> Billing Status
                                     </Label>
-                                    <span className={'ml-2 italic text-gray-400 text-sm'}>
+                                    <span className={'ml-2 text-sm italic text-gray-400'}>
                                         Should this server be billed automatically?
                                     </span>
                                 </div>
@@ -168,16 +172,20 @@ export default ({ server }: { server: Server }) => {
                                     <div>
                                         <div className={'flex'}>
                                             <Label>
-                                                <CashIcon className={'w-4 inline-flex'} /> Billing Category
+                                                <CashIcon className={'inline-flex w-4'} /> Billing Category
                                             </Label>
-                                            <span className={'ml-2 italic text-gray-400 text-sm'}>
+                                            <span className={'ml-2 text-sm italic text-gray-400'}>
                                                 Select the category for billing.
                                             </span>
                                         </div>
                                         {loadingCategories ? (
                                             <Spinner size={'small'} />
                                         ) : categories.length === 0 ? (
-                                            <div className={'p-3 bg-yellow-500/10 border border-yellow-500/50 rounded text-yellow-400 text-sm'}>
+                                            <div
+                                                className={
+                                                    'rounded border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-400'
+                                                }
+                                            >
                                                 No billing categories available. Please create a category first.
                                             </div>
                                         ) : (
@@ -188,7 +196,7 @@ export default ({ server }: { server: Server }) => {
                                                     setSelectedCategoryId(!Number.isNaN(val) && val > 0 ? val : null);
                                                 }}
                                                 className={
-                                                    'w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-sm'
+                                                    'w-full rounded border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm'
                                                 }
                                             >
                                                 <option value="">Select a category...</option>
@@ -205,16 +213,20 @@ export default ({ server }: { server: Server }) => {
                                         <div>
                                             <div className={'flex'}>
                                                 <Label>
-                                                    <CashIcon className={'w-4 inline-flex'} /> Billing Plan
+                                                    <CashIcon className={'inline-flex w-4'} /> Billing Plan
                                                 </Label>
-                                                <span className={'ml-2 italic text-gray-400 text-sm'}>
+                                                <span className={'ml-2 text-sm italic text-gray-400'}>
                                                     Select the billing product for this server.
                                                 </span>
                                             </div>
                                             {loadingProducts ? (
                                                 <Spinner size={'small'} />
                                             ) : products.length === 0 ? (
-                                                <div className={'p-3 bg-yellow-500/10 border border-yellow-500/50 rounded text-yellow-400 text-sm'}>
+                                                <div
+                                                    className={
+                                                        'rounded border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-400'
+                                                    }
+                                                >
                                                     No products found in this category. Please create products first.
                                                 </div>
                                             ) : (
@@ -222,16 +234,19 @@ export default ({ server }: { server: Server }) => {
                                                     value={selectedProductId || ''}
                                                     onChange={e => {
                                                         const val = parseInt(e.target.value, 10);
-                                                        setSelectedProductId(!Number.isNaN(val) && val > 0 ? val : null);
+                                                        setSelectedProductId(
+                                                            !Number.isNaN(val) && val > 0 ? val : null,
+                                                        );
                                                     }}
                                                     className={
-                                                        'w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-sm'
+                                                        'w-full rounded border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm'
                                                     }
                                                 >
                                                     <option value="">Select a billing plan...</option>
                                                     {products.map(product => (
                                                         <option key={product.id} value={product.id}>
-                                                            {product.name} - ${product.price}/month ({product.limits.cpu}% CPU,{' '}
+                                                            {product.name} - ${product.price}/month (
+                                                            {product.limits.cpu}% CPU,{' '}
                                                             {(product.limits.memory / MB_TO_GB).toFixed(1)}GB RAM,{' '}
                                                             {(product.limits.disk / MB_TO_GB).toFixed(1)}GB Disk)
                                                         </option>
@@ -239,7 +254,7 @@ export default ({ server }: { server: Server }) => {
                                                 </select>
                                             )}
                                             {billable && !selectedProductId && products.length > 0 && (
-                                                <p className={'text-red-400 text-sm mt-1'}>
+                                                <p className={'mt-1 text-sm text-red-400'}>
                                                     Please select a billing plan to enable billing
                                                 </p>
                                             )}
@@ -251,9 +266,9 @@ export default ({ server }: { server: Server }) => {
                             <div>
                                 <div className={'flex'}>
                                     <Label>
-                                        <ClockIcon className={'w-4 inline-flex'} /> Renewal Date
+                                        <ClockIcon className={'inline-flex w-4'} /> Renewal Date
                                     </Label>
-                                    <span className={'ml-2 italic text-gray-400 text-sm'}>
+                                    <span className={'ml-2 text-sm italic text-gray-400'}>
                                         Adjust when this server will renew.
                                     </span>
                                 </div>

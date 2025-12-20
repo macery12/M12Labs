@@ -32,10 +32,10 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Billing'}>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Billing</h2>
-                    <p className={'text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'}>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Billing</h2>
+                    <p className={'overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400'}>
                         Configure the billing settings for this panel.
                     </p>
                 </div>

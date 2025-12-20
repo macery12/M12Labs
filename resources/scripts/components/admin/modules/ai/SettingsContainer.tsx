@@ -39,7 +39,7 @@ export default () => {
             }}
         >
             <Form>
-                <div className={'grid lg:grid-cols-4 gap-4'}>
+                <div className={'grid gap-4 lg:grid-cols-4'}>
                     <AdminBox title={'Client-side AI'} icon={faUser}>
                         <div>
                             <div className={'inline-flex'}>
@@ -51,7 +51,7 @@ export default () => {
                                     defaultChecked={ai.user_access}
                                 />
                             </div>
-                            <p className={'text-gray-400 text-xs mt-1.5'}>
+                            <p className={'mt-1.5 text-xs text-gray-400'}>
                                 If enabled, standard Jexactyl users will be able to interact with Jexactyl AI as well as
                                 administrators.
                             </p>
@@ -60,18 +60,18 @@ export default () => {
                     <AdminBox title={'Modify API Key'} icon={faKey}>
                         <div>
                             <Field id={'key'} name={'key'} type={'input'} />
-                            <p className={'text-gray-400 text-xs mt-1.5'}>
+                            <p className={'mt-1.5 text-xs text-gray-400'}>
                                 If you are experiencing &apos;Invalid API Key&apos; errors, you can enter a new one here
                                 to reset it.
                             </p>
                         </div>
                     </AdminBox>
                 </div>
-                <div className={'w-full flex flex-row items-center mt-6'}>
+                <div className={'mt-6 flex w-full flex-row items-center'}>
                     <div className={'flex text-xs text-gray-500'}>
                         These changes may not apply until this page is reloaded.
                     </div>
-                    <div className={'flex ml-auto'}>
+                    <div className={'ml-auto flex'}>
                         <Button type="submit">Save Changes</Button>
                     </div>
                 </div>

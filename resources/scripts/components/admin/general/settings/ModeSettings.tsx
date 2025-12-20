@@ -42,10 +42,10 @@ export default () => {
                 <ul className={'my-4 text-gray-300'}>
                     <li>&bull; SSH into your Webserver console</li>
                     <li className={'my-1'}>
-                        &bull; Navigate to <code className={'bg-black/50 p-1 rounded-lg'}>/var/www/jexactyl</code>
+                        &bull; Navigate to <code className={'rounded-lg bg-black/50 p-1'}>/var/www/jexactyl</code>
                     </li>
                     <li className={'my-1'}>
-                        &bull; Open the environment file (<code className={'bg-black/50 p-1 rounded-lg'}>.env</code>)
+                        &bull; Open the environment file (<code className={'rounded-lg bg-black/50 p-1'}>.env</code>)
                     </li>
                     <li className={'my-1'}>&bull; Set APP_ENV to local, and APP_DEBUG to true</li>
                     <li className={'my-1'}>&bull; Set APP_ENV to production, and APP_DEBUG to false to deactivate</li>
@@ -59,13 +59,13 @@ export default () => {
             >
                 Standard mode enables all the typical features of Jexactyl, including our billing system, tickets, user
                 registration and so much more.
-                <p className={'text-right mt-2'}>
+                <p className={'mt-2 text-right'}>
                     <Button disabled={settings.mode === 'standard'} onClick={() => updateMode('standard')}>
                         {settings.mode === 'standard' ? 'Currently Active' : 'Enable Now'}
                     </Button>
                 </p>
             </FeatureContainer>
-            <div className={'h-px bg-gray-700 rounded-full my-4'} />
+            <div className={'my-4 h-px rounded-full bg-gray-700'} />
             <FeatureContainer
                 noHeight
                 icon={faMoon}
@@ -74,18 +74,18 @@ export default () => {
             >
                 With Personal mode, the Panel automatically removes features mostly used by larger organisations and
                 hosting providers in order to make hosting and controlling servers much easier for a smaller audience.
-                <p className={'text-right mt-2'}>
+                <p className={'mt-2 text-right'}>
                     <Button disabled={settings.mode === 'personal'} onClick={() => updateMode('personal')}>
                         {settings.mode === 'personal' ? 'Currently Active' : 'Enable Now'}
                     </Button>
                 </p>
             </FeatureContainer>
-            <div className={'h-px bg-gray-700 rounded-full my-4'} />
+            <div className={'my-4 h-px rounded-full bg-gray-700'} />
             <FeatureContainer noHeight icon={faTerminal} title={'Debug Mode'} image={<ServerSvg color={primary} />}>
                 When Jexactyl is in Debug mode, all HTTP request data is exposed and errors are reported including
                 sensitive details. Use this mode with caution, and especially{' '}
                 <strong>do not use this mode in production.</strong>
-                <p className={'text-right mt-2'}>
+                <p className={'mt-2 text-right'}>
                     <Button onClick={() => setWarning(true)} disabled={settings.debug}>
                         {settings.debug ? 'Currently Active' : 'Enable Now'}
                     </Button>

@@ -64,15 +64,15 @@ export default () => {
                 </div>
                 <div className={'my-auto ml-2 flex space-x-2'}>
                     <Pill type={'warn'}>
-                        <ServerIcon className={'w-3 mr-1'} /> {server.relationships.allocations[0]?.getDisplayText()}
+                        <ServerIcon className={'mr-1 w-3'} /> {server.relationships.allocations[0]?.getDisplayText()}
                     </Pill>
                     {billing.enabled && server.billingProductId && (
                         <Pill type={'info'}>
-                            <CurrencyDollarIcon className={'w-3 mr-1'} /> Billable
+                            <CurrencyDollarIcon className={'mr-1 w-3'} /> Billable
                         </Pill>
                     )}
                     <Pill type={'success'}>
-                        <InformationCircleIcon className={'w-3 mr-1'} /> {server.status ?? 'Active'}
+                        <InformationCircleIcon className={'mr-1 w-3'} /> {server.status ?? 'Active'}
                     </Pill>
                 </div>
             </div>

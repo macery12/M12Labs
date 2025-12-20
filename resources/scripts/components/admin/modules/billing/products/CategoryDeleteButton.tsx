@@ -43,7 +43,7 @@ export default ({ category }: { category: Category }) => {
                 <FlashMessageRender byKey={'admin:billing:categories:delete'} className={'mb-2'} />
                 Are you sure you want to delete this category? All products under this category will also be permenantly
                 deleted. To confirm, please type the category name&nbsp;
-                <span className={'p-1 bg-zinc-900 rounded font-mono text-sm mx-1'}>({category.name})</span>below:
+                <span className={'mx-1 rounded bg-zinc-900 p-1 font-mono text-sm'}>({category.name})</span>below:
                 <Input onChange={e => setName(e.currentTarget.value)} className={'mt-2'} />
             </Dialog.Confirm>
             <Button.Danger type={'button'} onClick={() => setOpen(true)}>

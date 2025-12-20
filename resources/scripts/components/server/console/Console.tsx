@@ -223,7 +223,7 @@ export default ({ expand, setExpand }: Props) => {
             style={{ backgroundColor: secondary }}
             className={classNames(
                 styles.terminal,
-                'relative p-2 rounded-lg',
+                'relative rounded-lg p-2',
                 expand ? 'min-h-[48rem]' : 'min-h-[16rem]',
             )}
         >
@@ -231,8 +231,8 @@ export default ({ expand, setExpand }: Props) => {
             <div
                 className={classNames(styles.container, styles.overflows_container, { 'rounded-b': !canSendCommands })}
             >
-                <div className={'h-full static'}>
-                    <div className={'absolute top-0 right-0 p-5 z-10'}>
+                <div className={'static h-full'}>
+                    <div className={'absolute top-0 right-0 z-10 p-5'}>
                         <IntelligenceButton />
                     </div>
                     <div id={styles.terminal} ref={ref} />
@@ -260,7 +260,7 @@ export default ({ expand, setExpand }: Props) => {
                     </div>
                     <div className={styles.expand_icon}>
                         <ArrowsExpandIcon
-                            className={'hover:text-green-400 w-4 h-4 duration-300'}
+                            className={'h-4 w-4 duration-300 hover:text-green-400'}
                             onClick={() => setExpand(s => !s)}
                         />
                     </div>

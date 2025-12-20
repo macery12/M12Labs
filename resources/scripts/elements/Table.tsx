@@ -27,7 +27,7 @@ const BodyItem = ({ item, to, children }: { item: string; to?: string; children:
         <tr className={'border-b-2 border-gray-700'} style={{ backgroundColor: colors.secondary }}>
             <th
                 style={{ color: colors.primary }}
-                className={'px-6 py-4 font-bold whitespace-nowrap hover:brightness-150 duration-300'}
+                className={'whitespace-nowrap px-6 py-4 font-bold duration-300 hover:brightness-150'}
             >
                 {to ? <Link to={to}>{item}</Link> : item}
             </th>
@@ -51,13 +51,13 @@ const PaginatedFooter = ({
             className={'rounded-b-lg py-2 px-4'}
         >
             <div className={'flex justify-between space-x-2'}>
-                <p className={'text-xs font-bold text-gray-400 my-auto'}>
+                <p className={'my-auto text-xs font-bold text-gray-400'}>
                     Showing <span className={'text-white'}>{pagination.startIndex + 1}</span> to{' '}
                     <span className={'text-white'}>{pagination.endIndex}</span> of{' '}
                     <span className={'text-white'}>{pagination.totalItems}</span> results
                 </p>
                 <div className={'inline-flex'}>
-                    <p className={'text-xs font-bold text-gray-400 my-auto mr-2'}>
+                    <p className={'my-auto mr-2 text-xs font-bold text-gray-400'}>
                         Page <span className={'text-white'}>{pagination.currentPage}</span> of{' '}
                         <span className={'text-white'}>{pagination.totalPages}</span>
                     </p>
@@ -86,8 +86,8 @@ const Table = ({ children }: { children: ReactNode[] }) => {
 
     return (
         <div className={'relative overflow-x-auto'}>
-            <div className={'py-5 rounded-t-lg'} style={{ backgroundColor: colors.secondary }}></div>
-            <table className={'w-full text-sm text-left text-gray-400'}>{children}</table>
+            <div className={'rounded-t-lg py-5'} style={{ backgroundColor: colors.secondary }}></div>
+            <table className={'w-full text-left text-sm text-gray-400'}>{children}</table>
         </div>
     );
 };

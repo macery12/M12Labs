@@ -68,7 +68,7 @@ export default () => {
                                     }
                                 />
                             </div>
-                            <p className={'text-gray-400 text-xs mt-1.5'}>
+                            <p className={'mt-1.5 text-xs text-gray-400'}>
                                 Set the webhook URL to use for sending data.
                             </p>
                         </div>

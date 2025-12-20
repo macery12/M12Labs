@@ -63,13 +63,13 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
             <ModifyServerGroup open={open.open === 'modify'} group={group} setOpen={setOpen} />
             <Dialog open={open.open === 'add'} onClose={() => setOpen({ open: 'none' })} title={'Add group to server'}>
                 {groups ? (
-                    <div className={'my-3 grid grid-cols-2 lg:grid-cols-3 gap-4 cursor-pointer'}>
+                    <div className={'my-3 grid cursor-pointer grid-cols-2 gap-4 lg:grid-cols-3'}>
                         {groups?.map(group => (
                             <Pill size={'large'} type={'unknown'} key={group.id}>
                                 <span style={{ color: group.color }}>{group.name}</span>
                                 <div
                                     className={
-                                        'absolute right-4 my-auto text-green-500/75 hover:text-green-400 transition duration-250'
+                                        'absolute right-4 my-auto text-green-500/75 transition duration-250 hover:text-green-400'
                                     }
                                     onClick={() => {
                                         setGroup(group);
@@ -82,7 +82,7 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
                         ))}
                     </div>
                 ) : (
-                    <div className={'text-gray-400 mt-4 text-center font-semibold'}>
+                    <div className={'mt-4 text-center font-semibold text-gray-400'}>
                         No groups exist on this account.
                     </div>
                 )}
@@ -98,7 +98,7 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
                     </Button>
                 </div>
                 {groups ? (
-                    <div className={'my-3 grid grid-cols-2 lg:grid-cols-3 gap-4 cursor-pointer'}>
+                    <div className={'my-3 grid cursor-pointer grid-cols-2 gap-4 lg:grid-cols-3'}>
                         {groups?.map(group => (
                             <Pill size={'large'} key={group.id} type={'unknown'}>
                                 <div
@@ -113,7 +113,7 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
                                 <div
                                     onClick={() => onDelete(group.id)}
                                     className={
-                                        'absolute right-4 my-auto text-red-500/75 hover:text-red-400 transition duration-250'
+                                        'absolute right-4 my-auto text-red-500/75 transition duration-250 hover:text-red-400'
                                     }
                                 >
                                     <FontAwesomeIcon icon={faTrash} size={'sm'} />
@@ -122,7 +122,7 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
                         ))}
                     </div>
                 ) : (
-                    <div className={'text-gray-400 mt-4 text-center font-semibold'}>
+                    <div className={'mt-4 text-center font-semibold text-gray-400'}>
                         No groups exist on this account.
                     </div>
                 )}

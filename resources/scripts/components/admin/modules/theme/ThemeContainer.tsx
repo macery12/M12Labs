@@ -36,29 +36,29 @@ export default () => {
                 Performing this action will immediately wipe all of your custom theming settings. Only do this if you
                 wish to return to the stock appearance of Jexactyl. This action cannot be reversed.
             </Dialog.Confirm>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>System Theme</h2>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>System Theme</h2>
                     <p
                         className={
-                            'hidden lg:block text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                            'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-neutral-400 lg:block'
                         }
                     >
                         View and update the theme of this interface.
                     </p>
                 </div>
-                <div className={'flex ml-auto pl-4'}>
+                <div className={'ml-auto flex pl-4'}>
                     <Button
                         type={'button'}
                         size={Button.Sizes.Large}
                         onClick={() => setVisible(true)}
-                        className={'h-10 px-4 py-0 whitespace-nowrap'}
+                        className={'h-10 whitespace-nowrap px-4 py-0'}
                     >
                         Reset to Defaults
                     </Button>
                 </div>
             </div>
-            <div className={'grid md:grid-cols-2 xl:grid-cols-3 gap-4'}>
+            <div className={'grid gap-4 md:grid-cols-2 xl:grid-cols-3'}>
                 <ColorSelect setReload={setReload} />
                 <Preview reload={reload} />
             </div>
