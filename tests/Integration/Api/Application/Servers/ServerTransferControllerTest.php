@@ -6,12 +6,32 @@ use Mockery;
 use Everest\Models\Node;
 use Illuminate\Http\Response;
 use Everest\Models\Allocation;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Everest\Services\Nodes\NodeJWTService;
 use Everest\Repositories\Wings\DaemonTransferRepository;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
 
 class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
 {
+    /**
+     * Create a real JWT token for testing.
+     */
+    private function createTestToken(): \Lcobucci\JWT\Token\Plain
+    {
+        $config = Configuration::forSymmetricSigner(
+            new Sha256(),
+            InMemory::plainText('test-secret-key-that-is-long-enough-for-sha256-signer')
+        );
+
+        return $config->builder()
+            ->issuedBy('test')
+            ->permittedFor('test')
+            ->identifiedBy('test')
+            ->getToken($config->signer(), $config->signingKey());
+    }
+
     /**
      * Test that a server can be transferred to a new node.
      */
@@ -28,7 +48,7 @@ class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
         $this->instance(NodeJWTService::class, $mock = Mockery::mock(NodeJWTService::class));
         $mock->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn($this->createTestToken());
 
         // Mock the daemon repository
         $this->instance(DaemonTransferRepository::class, $daemonMock = Mockery::mock(DaemonTransferRepository::class));

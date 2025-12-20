@@ -6,6 +6,9 @@ use Everest\Models\Node;
 use Everest\Models\Server;
 use Mockery\MockInterface;
 use Everest\Models\Allocation;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Everest\Models\ServerTransfer;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Nodes\NodeJWTService;
@@ -18,6 +21,23 @@ class ServerTransferServiceTest extends IntegrationTestCase
 {
     private MockInterface $daemonTransferRepository;
     private MockInterface $jwtService;
+
+    /**
+     * Create a real JWT token for testing.
+     */
+    private function createTestToken(): \Lcobucci\JWT\Token\Plain
+    {
+        $config = Configuration::forSymmetricSigner(
+            new Sha256(),
+            InMemory::plainText('test-secret-key-that-is-long-enough-for-sha256-signer')
+        );
+
+        return $config->builder()
+            ->issuedBy('test')
+            ->permittedFor('test')
+            ->identifiedBy('test')
+            ->getToken($config->signer(), $config->signingKey());
+    }
 
     /**
      * Setup test instance.
@@ -49,7 +69,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
 
         $this->jwtService->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(\Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn($this->createTestToken());
 
         $this->daemonTransferRepository->expects('setServer->notify')
             ->once()
@@ -111,7 +131,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
         $targetNode = Node::factory()->create();
         $targetAllocation = Allocation::factory()->create([
             'node_id' => $targetNode->id,
-            'server_id' => Server::factory()->create()->id, // Already assigned
+            'server_id' => $this->createServerModel()->id, // Already assigned
         ]);
 
         $this->expectException(DisplayException::class);
@@ -138,7 +158,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
 
         $this->jwtService->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(\Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn($this->createTestToken());
 
         $this->daemonTransferRepository->expects('setServer->notify')
             ->once()
