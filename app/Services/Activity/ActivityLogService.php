@@ -120,7 +120,6 @@ class ActivityLogService
      * Sets a custom property on the activity log instance.
      *
      * @param string|array $key
-     * @param mixed $value
      */
     public function property($key, $value = null): self
     {

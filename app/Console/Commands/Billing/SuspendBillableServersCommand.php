@@ -39,7 +39,7 @@ class SuspendBillableServersCommand extends Command
 
                 // Get the product to determine if it's free or paid
                 $product = $server->product;
-                
+
                 // Determine suspension threshold based on whether server is free or paid
                 $suspensionThreshold = 0;
                 if ($product && (float) $product->price === 0.0) {

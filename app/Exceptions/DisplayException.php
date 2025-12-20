@@ -21,7 +21,7 @@ class DisplayException extends PterodactylException implements HttpExceptionInte
     /**
      * DisplayException constructor.
      */
-    public function __construct(string $message, ?\Throwable $previous = null, protected string $level = self::LEVEL_ERROR, int $code = 0)
+    public function __construct(string $message, \Throwable $previous = null, protected string $level = self::LEVEL_ERROR, int $code = 0)
     {
         parent::__construct($message, $code, $previous);
     }
@@ -69,7 +69,7 @@ class DisplayException extends PterodactylException implements HttpExceptionInte
 
         try {
             $logger = Container::getInstance()->make(LoggerInterface::class);
-        } catch (Exception) {
+        } catch (\Exception) {
             throw $this->getPrevious();
         }
 

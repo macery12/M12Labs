@@ -102,9 +102,6 @@ class Schedule extends Model
         'next_run_at' => 'nullable|date',
     ];
 
-    /**
-     * {@inheritDoc}
-     */
     public function getRouteKeyName(): string
     {
         return $this->getKeyName();

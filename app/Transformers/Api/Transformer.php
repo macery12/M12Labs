@@ -59,12 +59,9 @@ abstract class Transformer extends TransformerAbstract
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @param mixed $data
      * @param callable|\League\Fractal\TransformerAbstract $transformer
      */
-    protected function item($data, $transformer, ?string $resourceKey = null): Item
+    protected function item($data, $transformer, string $resourceKey = null): Item
     {
         if (!$transformer instanceof \Closure) {
             self::assertSameNamespace($transformer);
@@ -80,12 +77,9 @@ abstract class Transformer extends TransformerAbstract
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @param mixed $data
      * @param callable|\League\Fractal\TransformerAbstract $transformer
      */
-    protected function collection($data, $transformer, ?string $resourceKey = null): Collection
+    protected function collection($data, $transformer, string $resourceKey = null): Collection
     {
         if (!$transformer instanceof \Closure) {
             self::assertSameNamespace($transformer);

@@ -12,9 +12,9 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
+use Everest\Services\Servers\SuspensionService;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Servers\SuspensionService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class PaymentController extends ClientApiController
@@ -93,7 +93,7 @@ class PaymentController extends ClientApiController
     /**
      * Update a Payment Intent with new data from the UI.
      */
-    public function updateIntent(Request $request, ?int $id = null): Response
+    public function updateIntent(Request $request, int $id = null): Response
     {
         $product = Product::findOrFail($id);
         $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));

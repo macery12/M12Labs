@@ -93,9 +93,6 @@ class Task extends Model
         'continue_on_failure' => 'boolean',
     ];
 
-    /**
-     * {@inheritDoc}
-     */
     public function getRouteKeyName(): string
     {
         return $this->getKeyName();

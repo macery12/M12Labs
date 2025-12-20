@@ -101,10 +101,10 @@ class UserController extends ApplicationApiController
     public function update(UpdateUserRequest $request, User $user): array
     {
         if (
-            !$request->user()->root_admin &&
-            (
-                $request->input('root_admin') ||
-                $request->input('admin_role_id') !== $user->admin_role_id
+            !$request->user()->root_admin
+            && (
+                $request->input('root_admin')
+                || $request->input('admin_role_id') !== $user->admin_role_id
             )
         ) {
             throw new DisplayException('You must be a root administrator to grant another user permissions.');

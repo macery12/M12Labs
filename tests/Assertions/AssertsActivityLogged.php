@@ -64,7 +64,7 @@ trait AssertsActivityLogged
      * Asserts that the provided event was logged into the activity logs with the provided
      * actor model associated with it.
      */
-    public function assertActivityActor(string $event, ?Model $actor = null): void
+    public function assertActivityActor(string $event, Model $actor = null): void
     {
         Event::assertDispatched(ActivityLogged::class, function (ActivityLogged $e) use ($event, $actor) {
             Assert::assertEquals($event, $e->model->event);
