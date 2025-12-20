@@ -12,9 +12,9 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
+use Everest\Services\Servers\SuspensionService;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Servers\SuspensionService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class PaymentController extends ClientApiController

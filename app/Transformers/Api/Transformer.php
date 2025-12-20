@@ -59,9 +59,6 @@ abstract class Transformer extends TransformerAbstract
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @param mixed $data
      * @param callable|\League\Fractal\TransformerAbstract $transformer
      */
     protected function item($data, $transformer, ?string $resourceKey = null): Item
@@ -80,9 +77,6 @@ abstract class Transformer extends TransformerAbstract
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @param mixed $data
      * @param callable|\League\Fractal\TransformerAbstract $transformer
      */
     protected function collection($data, $transformer, ?string $resourceKey = null): Collection

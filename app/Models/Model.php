@@ -174,8 +174,6 @@ abstract class Model extends IlluminateModel
 
     /**
      * Return a timestamp as DateTime object.
-     *
-     * @param mixed $value
      */
     protected function asDateTime($value): Carbon|CarbonImmutable
     {

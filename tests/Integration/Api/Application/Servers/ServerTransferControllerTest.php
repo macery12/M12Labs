@@ -4,8 +4,8 @@ namespace Everest\Tests\Integration\Api\Application\Servers;
 
 use Mockery;
 use Everest\Models\Node;
-use Everest\Models\Allocation;
 use Illuminate\Http\Response;
+use Everest\Models\Allocation;
 use Everest\Services\Nodes\NodeJWTService;
 use Everest\Repositories\Wings\DaemonTransferRepository;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;

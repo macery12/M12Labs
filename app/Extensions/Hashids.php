@@ -7,9 +7,6 @@ use Everest\Contracts\Extensions\HashidsInterface;
 
 class Hashids extends VendorHashids implements HashidsInterface
 {
-    /**
-     * {@inheritdoc}
-     */
     public function decodeFirst(string $encoded, string $default = null): mixed
     {
         $result = $this->decode($encoded);

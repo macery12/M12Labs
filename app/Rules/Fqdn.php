@@ -27,7 +27,6 @@ final class Fqdn implements Rule, DataAwareRule
      * specified when this rule is created additional checks will be applied.
      *
      * @param string $attribute
-     * @param mixed $value
      */
     public function passes($attribute, $value): bool
     {

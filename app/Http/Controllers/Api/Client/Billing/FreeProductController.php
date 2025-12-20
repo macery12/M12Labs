@@ -9,9 +9,9 @@ use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Servers\SuspensionService;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Servers\SuspensionService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 

@@ -2,7 +2,6 @@
 
 namespace Everest\Services\Helpers;
 
-use Exception;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -160,7 +159,7 @@ class SoftwareVersionService
                 }
 
                 throw new CdnVersionFetchingException();
-            } catch (Exception) {
+            } catch (\Exception) {
                 return [];
             }
         });

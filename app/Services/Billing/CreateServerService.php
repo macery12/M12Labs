@@ -36,7 +36,7 @@ class CreateServerService
         $egg = Egg::findOrFail($product->category->egg_id);
 
         $allocation = $this->getAllocation($metadata->node_id, $order->id);
-        
+
         // Extract custom variables from metadata if available
         $customVariables = [];
         if (isset($metadata->variables) && $metadata->variables !== null && $metadata->variables !== '') {
@@ -53,13 +53,13 @@ class CreateServerService
                 $customVariables = $metadata->variables;
             }
         }
-        
+
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
         try {
             // Use paid renewal days for paid servers
             $renewalDays = config('modules.billing.renewal.days', 30);
-            
+
             $server = $this->creation->handle([
                 'node_id' => $metadata->node_id,
                 'allocation_id' => $allocation,
@@ -109,7 +109,7 @@ class CreateServerService
         try {
             // Use free renewal days for free servers
             $renewalDays = config('modules.billing.renewal.free_renewal_days', 30);
-            
+
             $server = $this->creation->handle([
                 'node_id' => $nodeId,
                 'allocation_id' => $allocation,
@@ -162,8 +162,8 @@ class CreateServerService
 
         // Override with custom variables
         foreach ($customVariables as $variable) {
-            if (is_array($variable) 
-                && array_key_exists('key', $variable) 
+            if (is_array($variable)
+                && array_key_exists('key', $variable)
                 && array_key_exists('value', $variable)
                 && !empty($variable['key'])) {
                 $variables[$variable['key']] = $variable['value'];
@@ -175,14 +175,14 @@ class CreateServerService
 
     /**
      * Get the environment variables for the new server from JSON string.
-     * 
-     * @deprecated This method is deprecated and will be removed in a future version.
+     *
+     * @deprecated this method is deprecated and will be removed in a future version
      * @see getEnvironmentWithCustomVariables() Use this method directly with decoded array instead.
      */
     private function getServerEnvironment(string $data, int $id): array
     {
         $decoded = json_decode($data, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new DisplayException('Failed to decode environment variables: ' . json_last_error_msg());
         }

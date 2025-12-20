@@ -74,9 +74,6 @@ class Allocation extends Model
         'notes' => 'nullable|string|max:256',
     ];
 
-    /**
-     * {@inheritDoc}
-     */
     public function getRouteKeyName(): string
     {
         return $this->getKeyName();
