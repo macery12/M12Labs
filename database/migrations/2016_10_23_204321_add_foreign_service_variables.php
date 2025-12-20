@@ -12,7 +12,7 @@ class AddForeignServiceVariables extends Migration
     public function up(): void
     {
         Schema::table('service_variables', function (Blueprint $table) {
-            $table->integer('option_id', false, true)->change();
+            $table->unsignedInteger('option_id')->change();
             $table->foreign('option_id')->references('id')->on('service_options');
         });
     }
