@@ -35,12 +35,7 @@ class FixForeignKeyColumnTypes extends Migration
             $table->unsignedInteger('node_id')->nullable(false)->change();
         });
 
-        // Fix api_permissions table foreign key columns
-        Schema::table('api_permissions', function (Blueprint $table) {
-            $table->unsignedInteger('key_id')->nullable(false)->change();
-        });
-
-        // Note: nodes.location_id was dropped in migration 2025_04_23_163956, so we skip it
+        // Note: api_permissions table was dropped in migration 2018_01_11_213943, so we skip it
 
         // Fix server_variables table foreign key columns
         Schema::table('server_variables', function (Blueprint $table) {
@@ -54,9 +49,9 @@ class FixForeignKeyColumnTypes extends Migration
             $table->unsignedInteger('nest_id')->change();
         });
 
-        // Fix service_variables table foreign key columns
-        // option_id was renamed to egg_id
-        Schema::table('service_variables', function (Blueprint $table) {
+        // Fix egg_variables table (formerly service_variables) foreign key columns
+        // option_id was renamed to egg_id, table was renamed to egg_variables
+        Schema::table('egg_variables', function (Blueprint $table) {
             $table->unsignedInteger('egg_id')->change();
         });
     }
@@ -81,11 +76,6 @@ class FixForeignKeyColumnTypes extends Migration
             $table->mediumInteger('node_id', false, true)->nullable(false)->change();
         });
 
-        // Revert api_permissions table columns to mediumInteger
-        Schema::table('api_permissions', function (Blueprint $table) {
-            $table->mediumInteger('key_id', false, true)->nullable(false)->change();
-        });
-
         // Revert server_variables table columns to mediumInteger
         Schema::table('server_variables', function (Blueprint $table) {
             $table->mediumInteger('server_id', false, true)->nullable()->change();
@@ -97,8 +87,8 @@ class FixForeignKeyColumnTypes extends Migration
             $table->mediumInteger('nest_id', false, true)->change();
         });
 
-        // Revert service_variables table columns to mediumInteger
-        Schema::table('service_variables', function (Blueprint $table) {
+        // Revert egg_variables table columns to mediumInteger
+        Schema::table('egg_variables', function (Blueprint $table) {
             $table->mediumInteger('egg_id', false, true)->change();
         });
     }
