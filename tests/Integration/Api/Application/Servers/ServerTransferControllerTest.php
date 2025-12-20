@@ -27,13 +27,13 @@ class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
         ]);
 
         // Mock the JWT service
-        $jwtMock = $this->mock(NodeJWTService::class);
-        $jwtMock->expects('setExpiresAt->setSubject->setClaims->handle')
+        $this->instance(NodeJWTService::class, $mock = \Mockery::mock(NodeJWTService::class));
+        $mock->expects('setExpiresAt->setSubject->setClaims->handle')
             ->once()
             ->andReturn($this->createTestToken());
 
         // Mock the daemon repository
-        $daemonMock = $this->mock(DaemonTransferRepository::class);
+        $this->instance(DaemonTransferRepository::class, $daemonMock = \Mockery::mock(DaemonTransferRepository::class));
         $daemonMock->expects('setServer->notify')->once()->andReturnSelf();
 
         $response = $this->postJson('/api/application/servers/' . $server->id . '/transfer', [
