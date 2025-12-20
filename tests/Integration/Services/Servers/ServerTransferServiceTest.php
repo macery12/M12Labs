@@ -6,12 +6,10 @@ use Everest\Models\Node;
 use Everest\Models\Server;
 use Mockery\MockInterface;
 use Everest\Models\Allocation;
-use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\Signer\Key\InMemory;
 use Everest\Models\ServerTransfer;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Nodes\NodeJWTService;
+use Everest\Tests\Traits\CreatesTestJwtToken;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Services\Servers\ServerTransferService;
 use Everest\Repositories\Wings\DaemonTransferRepository;
@@ -19,25 +17,10 @@ use Everest\Exceptions\Http\Server\ServerStateConflictException;
 
 class ServerTransferServiceTest extends IntegrationTestCase
 {
+    use CreatesTestJwtToken;
+
     private MockInterface $daemonTransferRepository;
     private MockInterface $jwtService;
-
-    /**
-     * Create a real JWT token for testing.
-     */
-    private function createTestToken(): \Lcobucci\JWT\Token\Plain
-    {
-        $config = Configuration::forSymmetricSigner(
-            new Sha256(),
-            InMemory::plainText('test-secret-key-that-is-long-enough-for-sha256-signer')
-        );
-
-        return $config->builder()
-            ->issuedBy('test')
-            ->permittedFor('test')
-            ->identifiedBy('test')
-            ->getToken($config->signer(), $config->signingKey());
-    }
 
     /**
      * Setup test instance.
