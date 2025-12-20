@@ -19,19 +19,20 @@ class FixForeignKeyColumnTypes extends Migration
      */
     public function up(): void
     {
-        // Fix servers table foreign key columns
+        // Fix servers table foreign key columns (renamed from node->node_id, etc. in 2017)
+        // service_id renamed to nest_id, option_id renamed to egg_id
         Schema::table('servers', function (Blueprint $table) {
-            $table->unsignedInteger('node')->change();
-            $table->unsignedInteger('owner')->change();
-            $table->unsignedInteger('allocation')->change();
-            $table->unsignedInteger('service')->change();
-            $table->unsignedInteger('option')->change();
+            $table->unsignedInteger('node_id')->change();
+            $table->unsignedInteger('owner_id')->change();
+            $table->unsignedInteger('allocation_id')->change();
+            $table->unsignedInteger('nest_id')->change();
+            $table->unsignedInteger('egg_id')->change();
         });
 
-        // Fix allocations table foreign key columns
+        // Fix allocations table foreign key columns (renamed from node->node_id, assigned_to->server_id in 2017)
         Schema::table('allocations', function (Blueprint $table) {
-            $table->unsignedInteger('assigned_to')->nullable()->change();
-            $table->unsignedInteger('node')->nullable(false)->change();
+            $table->unsignedInteger('server_id')->nullable()->change();
+            $table->unsignedInteger('node_id')->nullable(false)->change();
         });
 
         // Fix api_permissions table foreign key columns
@@ -39,10 +40,7 @@ class FixForeignKeyColumnTypes extends Migration
             $table->unsignedInteger('key_id')->nullable(false)->change();
         });
 
-        // Fix nodes table foreign key columns
-        Schema::table('nodes', function (Blueprint $table) {
-            $table->unsignedInteger('location')->nullable(false)->change();
-        });
+        // Note: nodes.location_id was dropped in migration 2025_04_23_163956, so we skip it
 
         // Fix server_variables table foreign key columns
         Schema::table('server_variables', function (Blueprint $table) {
@@ -50,14 +48,16 @@ class FixForeignKeyColumnTypes extends Migration
             $table->unsignedInteger('variable_id')->nullable(false)->change();
         });
 
-        // Fix service_options table foreign key columns
-        Schema::table('service_options', function (Blueprint $table) {
-            $table->unsignedInteger('parent_service')->change();
+        // Fix eggs table (formerly service_options) foreign key columns
+        // parent_service was renamed to nest_id
+        Schema::table('eggs', function (Blueprint $table) {
+            $table->unsignedInteger('nest_id')->change();
         });
 
         // Fix service_variables table foreign key columns
+        // option_id was renamed to egg_id
         Schema::table('service_variables', function (Blueprint $table) {
-            $table->unsignedInteger('option_id')->change();
+            $table->unsignedInteger('egg_id')->change();
         });
     }
 
@@ -68,27 +68,22 @@ class FixForeignKeyColumnTypes extends Migration
     {
         // Revert servers table columns to mediumInteger
         Schema::table('servers', function (Blueprint $table) {
-            $table->mediumInteger('node', false, true)->change();
-            $table->mediumInteger('owner', false, true)->change();
-            $table->mediumInteger('allocation', false, true)->change();
-            $table->mediumInteger('service', false, true)->change();
-            $table->mediumInteger('option', false, true)->change();
+            $table->mediumInteger('node_id', false, true)->change();
+            $table->mediumInteger('owner_id', false, true)->change();
+            $table->mediumInteger('allocation_id', false, true)->change();
+            $table->mediumInteger('nest_id', false, true)->change();
+            $table->mediumInteger('egg_id', false, true)->change();
         });
 
         // Revert allocations table columns to mediumInteger
         Schema::table('allocations', function (Blueprint $table) {
-            $table->mediumInteger('assigned_to', false, true)->nullable()->change();
-            $table->mediumInteger('node', false, true)->nullable(false)->change();
+            $table->mediumInteger('server_id', false, true)->nullable()->change();
+            $table->mediumInteger('node_id', false, true)->nullable(false)->change();
         });
 
         // Revert api_permissions table columns to mediumInteger
         Schema::table('api_permissions', function (Blueprint $table) {
             $table->mediumInteger('key_id', false, true)->nullable(false)->change();
-        });
-
-        // Revert nodes table columns to mediumInteger
-        Schema::table('nodes', function (Blueprint $table) {
-            $table->mediumInteger('location', false, true)->nullable(false)->change();
         });
 
         // Revert server_variables table columns to mediumInteger
@@ -97,14 +92,14 @@ class FixForeignKeyColumnTypes extends Migration
             $table->mediumInteger('variable_id', false, true)->nullable(false)->change();
         });
 
-        // Revert service_options table columns to mediumInteger
-        Schema::table('service_options', function (Blueprint $table) {
-            $table->mediumInteger('parent_service', false, true)->change();
+        // Revert eggs table columns to mediumInteger
+        Schema::table('eggs', function (Blueprint $table) {
+            $table->mediumInteger('nest_id', false, true)->change();
         });
 
         // Revert service_variables table columns to mediumInteger
         Schema::table('service_variables', function (Blueprint $table) {
-            $table->mediumInteger('option_id', false, true)->change();
+            $table->mediumInteger('egg_id', false, true)->change();
         });
     }
 }
