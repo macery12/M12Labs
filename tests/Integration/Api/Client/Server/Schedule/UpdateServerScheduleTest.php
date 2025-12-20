@@ -45,7 +45,7 @@ class UpdateServerScheduleTest extends ClientApiIntegrationTestCase
         $this->assertFalse($schedule->is_active);
         $this->assertJsonTransformedWith($response->json('attributes'), $schedule);
 
-        $this->assertSame($expected, $schedule->next_run_at);
+        $this->assertTrue($expected->equalTo($schedule->next_run_at));
     }
 
     /**
