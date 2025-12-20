@@ -80,9 +80,9 @@ function ProductTable() {
                                         <TableRow key={product.id}>
                                             <td css={tw`pl-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                 {product.icon ? (
-                                                    <img src={product.icon} className={'w-6 h-6 rounded-full'} />
+                                                    <img src={product.icon} className={'h-6 w-6 rounded-full'} />
                                                 ) : (
-                                                    <ShoppingBagIcon className={'w-6 h-6'} />
+                                                    <ShoppingBagIcon className={'h-6 w-6'} />
                                                 )}
                                             </td>
                                             <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
@@ -98,7 +98,7 @@ function ProductTable() {
                                                         product.id
                                                     }`}
                                                     style={{ color: colors.primary }}
-                                                    className={'hover:brightness-125 duration-300'}
+                                                    className={'duration-300 hover:brightness-125'}
                                                 >
                                                     {product.name}
                                                 </NavLink>

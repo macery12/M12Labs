@@ -12,7 +12,7 @@ export default ({ type, className, children, small }: AlertProps) => {
     return (
         <div
             className={classNames(
-                'flex items-center border-l-8 text-gray-50 rounded-md shadow',
+                'flex items-center rounded-md border-l-8 text-gray-50 shadow',
                 small ? 'px-2 py-2 text-xs' : 'px-4 py-3',
                 {
                     ['border-green-500 bg-green-500/25']: type === 'success',

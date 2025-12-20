@@ -107,7 +107,7 @@ export default () => {
                     </Can>
                 </div>
             </ErrorBoundary>
-            <div className={'grid xl:grid-cols-4 gap-4'}>
+            <div className={'grid gap-4 xl:grid-cols-4'}>
                 <div className={'xl:col-span-3'}>
                     {!files ? (
                         <Spinner size={'large'} centered />
@@ -127,7 +127,7 @@ export default () => {
                                             </div>
                                         )}
                                         {gridView ? (
-                                            <div className={'grid grid-cols-2 lg:grid-cols-6 gap-2 lg:gap-4'}>
+                                            <div className={'grid grid-cols-2 gap-2 lg:grid-cols-6 lg:gap-4'}>
                                                 {sortFiles(files.slice(0, 250)).map(file => (
                                                     <FileObjectGrid key={file.key} file={file} />
                                                 ))}

@@ -94,7 +94,17 @@ const NotFound = ({ title, message, onBack }: Partial<Pick<ScreenBlockProps, 'ti
     />
 );
 
-const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number; serverId?: number; serverUuid?: string }) => {
+const Suspended = ({
+    date,
+    id,
+    serverId,
+    serverUuid,
+}: {
+    date: Date;
+    id?: number;
+    serverId?: number;
+    serverUuid?: string;
+}) => {
     const [product, setProduct] = useState<Product>();
     const [renewing, setRenewing] = useState<boolean>(false);
 
@@ -134,12 +144,12 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
     if (!product) return <Spinner centered />;
 
     const isFree = product.price === 0;
-    
+
     // Get configurable renewal settings based on server type
-    const suspensionThreshold = isFree 
-        ? (settings.renewal?.free_suspension_days || 7)
-        : (settings.renewal?.paid_suspension_days || 30);
-    
+    const suspensionThreshold = isFree
+        ? settings.renewal?.free_suspension_days || 7
+        : settings.renewal?.paid_suspension_days || 30;
+
     // Calculate days past the renewal date
     const now = new Date();
     const daysOverdue = Math.max(0, Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)));
@@ -174,7 +184,7 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                                     <>
                                         Your free server has been suspended because the renewal date has passed. Please
                                         renew to restore access.
-                                        <div className={'mt-2 text-yellow-400 font-semibold'}>
+                                        <div className={'mt-2 font-semibold text-yellow-400'}>
                                             Days overdue: {daysOverdue}
                                         </div>
                                     </>
@@ -193,15 +203,16 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                                     </>
                                 ) : (
                                     <>
-                                        Your server has been suspended due to a lack of payment. Please pay to restore access.
-                                        <div className={'mt-2 text-gray-300 font-semibold'}>
+                                        Your server has been suspended due to a lack of payment. Please pay to restore
+                                        access.
+                                        <div className={'mt-2 font-semibold text-gray-300'}>
                                             Your outstanding balance is:
-                                            <span className={'text-white ml-2 font-bold'}>
+                                            <span className={'ml-2 font-bold text-white'}>
                                                 {currency}
                                                 {product.price}
                                             </span>
                                         </div>
-                                        <div className={'mt-2 text-yellow-400 font-semibold'}>
+                                        <div className={'mt-2 font-semibold text-yellow-400'}>
                                             Days overdue: {daysOverdue}
                                         </div>
                                     </>
@@ -214,7 +225,8 @@ const Suspended = ({ date, id, serverId, serverUuid }: { date: Date; id?: number
                         {isLongOverdue ? (
                             <div css={tw`text-center p-4 bg-red-900/30 rounded border border-red-500`}>
                                 <p css={tw`text-red-300 font-semibold`}>
-                                    Self-service renewal/payment is no longer available. Please create a support ticket to restore your server.
+                                    Self-service renewal/payment is no longer available. Please create a support ticket
+                                    to restore your server.
                                 </p>
                             </div>
                         ) : (

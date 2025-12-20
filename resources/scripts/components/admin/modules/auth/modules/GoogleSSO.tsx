@@ -55,7 +55,7 @@ export default () => {
                 Are you sure you wish to delete this module?
             </Dialog.Confirm>
             <TrashIcon
-                className={'w-5 h-5 absolute top-0 right-0 m-3.5 text-red-500 hover:text-red-300 duration-300'}
+                className={'absolute top-0 right-0 m-3.5 h-5 w-5 text-red-500 duration-300 hover:text-red-300'}
                 onClick={() => setConfirm(true)}
             />
             <div>
@@ -69,7 +69,7 @@ export default () => {
                     placeholder={settings.clientId ? '••••••••••••••••' : ''}
                 />
 
-                <p className={'text-xs text-gray-400 mt-1'}>Set the Google Client ID.</p>
+                <p className={'mt-1 text-xs text-gray-400'}>Set the Google Client ID.</p>
             </div>
             <div className={'my-6'}>
                 <Label>Client Secret {!settings.clientSecret && <RequiredFieldIcon />}</Label>
@@ -81,12 +81,12 @@ export default () => {
                     onChange={e => update('client_secret', e.target.value)}
                     placeholder={settings.clientSecret ? '••••••••••••••••' : ''}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>Set the Google Client Secret.</p>
+                <p className={'mt-1 text-xs text-gray-400'}>Set the Google Client Secret.</p>
             </div>
             <Alert type={'info'}>
                 <div>
                     Use the following Callback URL:
-                    <p className={'bg-black/50 p-1 rounded-lg font-mono w-fit mt-2'}>
+                    <p className={'mt-2 w-fit rounded-lg bg-black/50 p-1 font-mono'}>
                         /auth/modules/google/authenticate
                     </p>
                 </div>

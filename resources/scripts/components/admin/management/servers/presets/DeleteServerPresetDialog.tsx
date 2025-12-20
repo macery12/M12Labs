@@ -33,7 +33,7 @@ export default ({ id }: { id: number }) => {
                 Are you sure you wish to delete this server preset? This action cannot be undone.
             </Dialog.Confirm>
             <Button.Danger onClick={() => setOpen(true)}>
-                <TrashIcon className={'w-5 h-5 mr-1'} /> Delete
+                <TrashIcon className={'mr-1 h-5 w-5'} /> Delete
             </Button.Danger>
         </>
     );

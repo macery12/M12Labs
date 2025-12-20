@@ -5,12 +5,12 @@ import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 export default () => (
     <AdminContentBlock title={'Billing Orders'}>
-        <div className={'w-full flex flex-row items-center p-8'}>
-            <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Orders</h2>
+        <div className={'flex w-full flex-row items-center p-8'}>
+            <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Orders</h2>
                 <p
                     className={
-                        'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                        'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                     }
                 >
                     A list of the orders placed on this Panel.

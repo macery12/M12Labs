@@ -50,16 +50,24 @@ function ServerConsoleContainer() {
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
 
     // Calculate days until renewal (can be negative if overdue)
-    const daysUntilRenewal = renewalDate ? Math.floor((new Date(renewalDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
-    
+    const daysUntilRenewal = renewalDate
+        ? Math.floor((new Date(renewalDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
     // Show warning if within grace period (from expiration to grace period end)
-    const showRenewalWarning = billingProductId && daysUntilRenewal !== null && daysUntilRenewal <= 0 && Math.abs(daysUntilRenewal) <= freeGraceDays;
+    const showRenewalWarning =
+        billingProductId &&
+        daysUntilRenewal !== null &&
+        daysUntilRenewal <= 0 &&
+        Math.abs(daysUntilRenewal) <= freeGraceDays;
 
     return (
         <PageContentBlock title={'Server Console'} showFlashKey={'console:share'}>
             {showRenewalWarning && (
                 <Alert type={'warning'} className={'mb-4'}>
-                    Your server is {Math.abs(daysUntilRenewal!)} day{Math.abs(daysUntilRenewal!) !== 1 ? 's' : ''} overdue for renewal. Please renew within {freeGraceDays} days to avoid permanent suspension. Your server files and data will be preserved.
+                    Your server is {Math.abs(daysUntilRenewal!)} day{Math.abs(daysUntilRenewal!) !== 1 ? 's' : ''}{' '}
+                    overdue for renewal. Please renew within {freeGraceDays} days to avoid permanent suspension. Your
+                    server files and data will be preserved.
                 </Alert>
             )}
             {(isNodeUnderMaintenance || isInstalling || isTransferring) && (
@@ -71,7 +79,7 @@ function ServerConsoleContainer() {
                         : 'This server is currently being transferred to another node and all actions are unavailable.'}
                 </Alert>
             )}
-            <div className={'mb-4 flex justify-between gap-4 bg-black/50 rounded-lg p-5'}>
+            <div className={'mb-4 flex justify-between gap-4 rounded-lg bg-black/50 p-5'}>
                 <div className={'hidden pr-4 sm:col-span-2 sm:block lg:col-span-3'}>
                     <div className={'flex items-center space-x-2'}>
                         <h1 className={'font-header text-2xl leading-relaxed text-slate-50 line-clamp-1'}>{name}</h1>
@@ -84,7 +92,7 @@ function ServerConsoleContainer() {
                             )}
                             {isTransferring && (
                                 <>
-                                    <FontAwesomeIcon icon={faSpinner} className={'animate-spin my-auto mr-1'} />
+                                    <FontAwesomeIcon icon={faSpinner} className={'my-auto mr-1 animate-spin'} />
                                     Transferring
                                 </>
                             )}
@@ -116,7 +124,7 @@ function ServerConsoleContainer() {
                     </Spinner.Suspense>
                 </div>
                 {!expand && (
-                    <div className={'col-span-4 lg:col-span-1 my-auto'}>
+                    <div className={'col-span-4 my-auto lg:col-span-1'}>
                         <div className={'grid grid-cols-1 gap-2'}>
                             <Spinner.Suspense>
                                 <StatGraphs />

@@ -143,29 +143,29 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
                 css={tw`absolute top-0 right-0 p-2 hover:text-white text-gray-400 duration-250`}
                 onClick={() => setVisible(true)}
             >
-                <FontAwesomeIcon icon={faEllipsisH} className={'p-1 bg-black/25 rounded'} />
+                <FontAwesomeIcon icon={faEllipsisH} className={'rounded bg-black/25 p-1'} />
             </div>
             {visible && (
                 <Dialog open={visible} onClose={() => setVisible(false)} title={'File Options'}>
-                    <div className={'grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-4 mt-6'}>
+                    <div className={'mt-6 grid grid-cols-2 gap-2 lg:grid-cols-3 lg:gap-4'}>
                         <Can action={'file.update'}>
                             <Button.Text onClick={() => setModal('rename')} className={'w-full'}>
-                                <PencilIcon className={'w-4 mt-0.5 mr-2'} />
+                                <PencilIcon className={'mt-0.5 mr-2 w-4'} />
                                 Rename
                             </Button.Text>
                             <Button.Text onClick={() => setModal('move')} className={'w-full'}>
-                                <ArrowUpIcon className={'w-4 mt-0.5 mr-2'} />
+                                <ArrowUpIcon className={'mt-0.5 mr-2 w-4'} />
                                 Move
                             </Button.Text>
                             <Button.Text onClick={() => setModal('chmod')} className={'w-full'}>
-                                <CogIcon className={'w-4 mt-0.5 mr-2'} />
+                                <CogIcon className={'mt-0.5 mr-2 w-4'} />
                                 Permissions
                             </Button.Text>
                         </Can>
                         {file.isFile && (
                             <Can action={'file.create'}>
                                 <Button.Text onClick={doCopy}>
-                                    <ClipboardCopyIcon className={'w-4 mt-0.5 mr-2'} />
+                                    <ClipboardCopyIcon className={'mt-0.5 mr-2 w-4'} />
                                     Copy File
                                 </Button.Text>
                             </Can>
@@ -173,27 +173,27 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
                         {file.isArchiveType() ? (
                             <Can action={'file.create'}>
                                 <Button.Text onClick={doUnarchive}>
-                                    <InboxIcon className={'w-4 mt-0.5 mr-2'} />
+                                    <InboxIcon className={'mt-0.5 mr-2 w-4'} />
                                     Extract Files
                                 </Button.Text>
                             </Can>
                         ) : (
                             <Can action={'file.archive'}>
                                 <Button.Text onClick={doArchive}>
-                                    <ArchiveIcon className={'w-4 mt-0.5 mr-2'} />
+                                    <ArchiveIcon className={'mt-0.5 mr-2 w-4'} />
                                     Archive File
                                 </Button.Text>
                             </Can>
                         )}
                         {file.isFile && (
                             <Button.Text onClick={doDownload}>
-                                <DownloadIcon className={'w-4 mt-0.5 mr-2'} />
+                                <DownloadIcon className={'mt-0.5 mr-2 w-4'} />
                                 Download
                             </Button.Text>
                         )}
                         <Can action={'file.archive'}>
                             <Button.Danger onClick={() => setShowConfirmation(true)}>
-                                <TrashIcon className={'w-4 mt-0.5 mr-2'} />
+                                <TrashIcon className={'mt-0.5 mr-2 w-4'} />
                                 Delete
                             </Button.Danger>
                         </Can>

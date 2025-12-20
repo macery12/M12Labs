@@ -83,9 +83,9 @@ function OrderTable() {
 
     return (
         <PageContentBlock>
-            <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
+            <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                 Billing Activity
-                <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                <p className={'mt-1 text-sm font-normal text-gray-400'}>
                     View and manage the active and previous subscriptions you&apos;ve created.
                 </p>
                 <FlashMessageRender byKey={'billing:orders'} className={'mt-4'} />
@@ -125,15 +125,15 @@ function OrderTable() {
                                         orders.items.map(order => (
                                             <TableRow key={order.id}>
                                                 <td
-                                                    className={`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}
+                                                    className={`whitespace-nowrap px-6 text-left text-sm text-neutral-200`}
                                                 >
                                                     <CopyOnClick text={order.id}>
-                                                        <code className={`font-mono bg-neutral-900 rounded py-1 px-2`}>
+                                                        <code className={`rounded bg-neutral-900 py-1 px-2 font-mono`}>
                                                             {order.id}
                                                         </code>
                                                     </CopyOnClick>
                                                 </td>
-                                                <td className={'px-6 py-4 text-white font-bold'}>${order.total}/mo</td>
+                                                <td className={'px-6 py-4 font-bold text-white'}>${order.total}/mo</td>
                                                 <td className={'px-6 py-4'}>
                                                     {order.name.slice(0, 8)} {order.description}
                                                 </td>
@@ -145,7 +145,7 @@ function OrderTable() {
                                                         {order.status}
                                                     </Pill>
                                                 </td>
-                                                <td className={'pr-12 py-4 text-center'}>
+                                                <td className={'py-4 pr-12 text-center'}>
                                                     <Pill
                                                         size={'small'}
                                                         type={order.type === 'new' ? 'success' : 'info'}

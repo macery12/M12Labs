@@ -4,7 +4,7 @@ export default ({ color }: { color: string }) => (
         width="586.47858"
         height="659.29778"
         viewBox="0 0 586.47858 659.29778"
-        className={'w-2/3 h-auto select-none mx-auto'}
+        className={'mx-auto h-auto w-2/3 select-none'}
     >
         <circle cx="332.47856" cy="254" r="254.00001" fill="#f2f2f2" />
         <path

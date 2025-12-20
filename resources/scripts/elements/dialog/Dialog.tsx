@@ -110,7 +110,7 @@ export default ({
                                                         <HDialog.Title className={styles.title}>{title}</HDialog.Title>
                                                     )}
                                                     {description && (
-                                                        <p className={'text-gray-400 italic text-sm'}>{description}</p>
+                                                        <p className={'text-sm italic text-gray-400'}>{description}</p>
                                                     )}
                                                 </div>
                                             </div>

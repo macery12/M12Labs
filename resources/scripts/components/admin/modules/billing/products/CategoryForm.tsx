@@ -32,7 +32,7 @@ interface Props {
 }
 
 function InternalForm({ category, visible, setVisible }: Props) {
-    const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>();
+    const [_egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>();
     const { values, isSubmitting } = useFormikContext<CategoryValues>();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
@@ -45,7 +45,6 @@ function InternalForm({ category, visible, setVisible }: Props) {
                 .catch(error => console.error(error));
         }
     }, [category?.eggId]);
-
 
     return (
         <Form>
@@ -171,9 +170,9 @@ export default ({ category }: { category?: Category }) => {
         <AdminContentBlock title={'New Category'}>
             <div css={tw`w-full flex flex-row items-center m-8`}>
                 {category?.icon ? (
-                    <img src={category.icon} className={'ww-8 h-8 mr-4'} />
+                    <img src={category.icon} className={'ww-8 mr-4 h-8'} />
                 ) : (
-                    <ShoppingCartIcon className={'w-8 h-8 mr-4'} />
+                    <ShoppingCartIcon className={'mr-4 h-8 w-8'} />
                 )}
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>

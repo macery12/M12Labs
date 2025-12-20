@@ -38,7 +38,7 @@ export default ({ role }: { role: UserRole }) => {
 
     return (
         <>
-            <div className={'grid lg:grid-cols-4 gap-4'}>
+            <div className={'grid gap-4 lg:grid-cols-4'}>
                 <SpinnerOverlay visible={submitting} />
                 {Object.keys(permissions).map(key => {
                     const keys = Object.keys(permissions[key]?.keys ?? {});
@@ -63,7 +63,7 @@ export default ({ role }: { role: UserRole }) => {
                             key={key}
                             className={'relative'}
                         >
-                            <p className={'mb-4 text-gray-400 text-xs'}>{permissions[key]?.description}</p>
+                            <p className={'mb-4 text-xs text-gray-400'}>{permissions[key]?.description}</p>
                             <div className={'absolute top-0 right-0 pt-2 pr-4'}>
                                 <Checkbox
                                     id={`select-all-${key}`}
@@ -83,7 +83,7 @@ export default ({ role }: { role: UserRole }) => {
                                         />
                                         <Tooltip placement={'top'} content={permissions[key]?.keys[pkey] ?? ''}>
                                             <div
-                                                className={'inline-flex my-auto ml-2 font-semibold'}
+                                                className={'my-auto ml-2 inline-flex font-semibold'}
                                             >{`${key}.${pkey}`}</div>
                                         </Tooltip>
                                     </div>
@@ -93,7 +93,7 @@ export default ({ role }: { role: UserRole }) => {
                     );
                 })}
             </div>
-            <div className={'text-right mt-4'}>
+            <div className={'mt-4 text-right'}>
                 <Button onClick={save}>Save</Button>
             </div>
         </>

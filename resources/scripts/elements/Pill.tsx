@@ -34,11 +34,11 @@ export default ({ type, size, children }: { type?: PillStatus; size?: PillSize; 
     <span
         className={classNames(
             getColor(type),
-            !size && 'text-xs px-2 rounded-full',
-            size === 'large' && 'px-6 py-4 rounded-lg w-full',
-            size === 'small' && 'text-sm px-3 py-0.5 rounded-full',
-            size === 'xsmall' && 'text-2xs px-1 rounded-full',
-            'relative mx-1 inline-flex leading-5 font-medium capitalize',
+            !size && 'rounded-full px-2 text-xs',
+            size === 'large' && 'w-full rounded-lg px-6 py-4',
+            size === 'small' && 'rounded-full px-3 py-0.5 text-sm',
+            size === 'xsmall' && 'rounded-full px-1 text-2xs',
+            'relative mx-1 inline-flex font-medium capitalize leading-5',
         )}
     >
         {children}

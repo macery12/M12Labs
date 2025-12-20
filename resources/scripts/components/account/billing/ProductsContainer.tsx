@@ -29,8 +29,8 @@ interface LimitProps {
 }
 
 const LimitBox = ({ icon, limit }: LimitProps) => (
-    <div className={'text-gray-400 mt-1'}>
-        <FontAwesomeIcon icon={icon} className={'w-4 h-4 mr-2'} />
+    <div className={'mt-1 text-gray-400'}>
+        <FontAwesomeIcon icon={icon} className={'mr-2 h-4 w-4'} />
         {limit}
     </div>
 );
@@ -71,25 +71,25 @@ export default () => {
 
     return (
         <PageContentBlock title={'Available Products'}>
-            <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
+            <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                 Order a Product
-                <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                <p className={'mt-1 text-sm font-normal text-gray-400'}>
                     Choose and configure any of the products below to your liking.
                 </p>
             </div>
-            <div className={'grid lg:grid-cols-4 gap-4 lg:gap-12'}>
+            <div className={'grid gap-4 lg:grid-cols-4 lg:gap-12'}>
                 <div className={'border-r-4 border-gray-500'}>
-                    <p className={'text-2xl text-gray-300 mb-8 mt-4 font-bold'}>Categories</p>
+                    <p className={'mb-8 mt-4 text-2xl font-bold text-gray-300'}>Categories</p>
                     {(!categories || categories.length < 1) && (
-                        <div className={'font-semibold my-4 text-gray-400'}>
-                            <FontAwesomeIcon icon={faExclamationTriangle} className={'w-5 h-5 mr-2 text-yellow-400'} />
+                        <div className={'my-4 font-semibold text-gray-400'}>
+                            <FontAwesomeIcon icon={faExclamationTriangle} className={'mr-2 h-5 w-5 text-yellow-400'} />
                             No categories found.
                         </div>
                     )}
                     {categories?.map(cat => (
                         <button
                             className={classNames(
-                                'font-semibold my-4 w-full text-left hover:brightness-150 duration-300 cursor-pointer line-clamp-1',
+                                'my-4 w-full cursor-pointer text-left font-semibold duration-300 line-clamp-1 hover:brightness-150',
                                 Number(cat.id) === category && 'brightness-150',
                             )}
                             disabled={category === Number(cat.id)}
@@ -100,9 +100,9 @@ export default () => {
                             }}
                             key={cat.id}
                         >
-                            {cat.icon && <img src={cat.icon} className={'w-7 h-7 inline-flex rounded-full mr-3'} />}
+                            {cat.icon && <img src={cat.icon} className={'mr-3 inline-flex h-7 w-7 rounded-full'} />}
                             {cat.name}
-                            <div className={'h-0.5 mt-4 bg-gray-600 mr-8 rounded-full'} />
+                            <div className={'mt-4 mr-8 h-0.5 rounded-full bg-gray-600'} />
                         </button>
                     ))}
                 </div>
@@ -112,31 +112,31 @@ export default () => {
                     ) : (
                         <>
                             {products?.length < 1 && (
-                                <div className={'font-semibold my-4 text-gray-400'}>
+                                <div className={'my-4 font-semibold text-gray-400'}>
                                     <FontAwesomeIcon
                                         icon={faExclamationTriangle}
-                                        className={'w-5 h-5 mr-2 text-yellow-400'}
+                                        className={'mr-2 h-5 w-5 text-yellow-400'}
                                     />
                                     No products could be found in this category.
                                 </div>
                             )}
-                            <div className={'grid grid-cols-1 xl:grid-cols-3 gap-4'}>
+                            <div className={'grid grid-cols-1 gap-4 xl:grid-cols-3'}>
                                 {products?.map(product => (
                                     <ContentBox key={product.id}>
                                         <div className={'p-3 lg:p-6'}>
                                             <div className={'flex justify-center'}>
                                                 {product.icon ? (
-                                                    <img src={product.icon} className={'w-16 h-16'} />
+                                                    <img src={product.icon} className={'h-16 w-16'} />
                                                 ) : (
                                                     <FontAwesomeIcon
                                                         icon={faShoppingBag}
-                                                        className={'w-12 h-12 m-2'}
+                                                        className={'m-2 h-12 w-12'}
                                                         style={{ color: colors.primary }}
                                                     />
                                                 )}
                                             </div>
-                                            <p className={'text-3xl font-bold text-center mt-3'}>{product.name}</p>
-                                            <p className={'text-lg font-semibold text-center mt-1 mb-4 text-gray-400'}>
+                                            <p className={'mt-3 text-center text-3xl font-bold'}>{product.name}</p>
+                                            <p className={'mt-1 mb-4 text-center text-lg font-semibold text-gray-400'}>
                                                 <span style={{ color: colors.primary }} className={'mr-1'}>
                                                     {settings.currency.symbol}
                                                     {product.price.toFixed(2)}
@@ -145,7 +145,7 @@ export default () => {
                                                 </span>
                                                 <span className={'text-base'}>/ monthly</span>
                                             </p>
-                                            <div className={'grid justify-center items-center'}>
+                                            <div className={'grid items-center justify-center'}>
                                                 <LimitBox icon={faMicrochip} limit={<>{product.limits.cpu}% CPU</>} />
                                                 <LimitBox
                                                     icon={faMemory}
@@ -155,7 +155,7 @@ export default () => {
                                                     icon={faHdd}
                                                     limit={<>{product.limits.disk / 1024} GiB of Storage</>}
                                                 />
-                                                <div className={'border border-dashed border-gray-500 my-4'} />
+                                                <div className={'my-4 border border-dashed border-gray-500'} />
                                                 {product.limits.backup ? (
                                                     <LimitBox
                                                         icon={faArchive}
@@ -182,7 +182,7 @@ export default () => {
                                                     }
                                                 />
                                             </div>
-                                            <div className={'text-center mt-6'}>
+                                            <div className={'mt-6 text-center'}>
                                                 <Link to={`/account/billing/order/${product.id}`}>
                                                     <Button size={Button.Sizes.Large} className={'w-full'}>
                                                         Configure

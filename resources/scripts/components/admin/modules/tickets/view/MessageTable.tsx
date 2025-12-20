@@ -35,7 +35,7 @@ const MessagesTable = ({ ticketId }: { ticketId: number }) => {
             {/* this is a really dumb comparison but TS is dumber. */}
             {visible !== null && (
                 <Dialog open={Boolean(visible)} onClose={() => setVisible(null)} title={'Message Content'}>
-                    <p className={'text-gray-300 italic'}>{visible.toString()}</p>
+                    <p className={'italic text-gray-300'}>{visible.toString()}</p>
                 </Dialog>
             )}
             <AdminTable className={'mt-6'}>
@@ -77,7 +77,7 @@ const MessagesTable = ({ ticketId }: { ticketId: number }) => {
                                                             <Link
                                                                 to={`/admin/users/${message.author.id}`}
                                                                 style={{ color: colors.primary }}
-                                                                className={'hover:brightness-125 duration-300'}
+                                                                className={'duration-300 hover:brightness-125'}
                                                             >
                                                                 {message.author.email}
                                                             </Link>
@@ -89,7 +89,7 @@ const MessagesTable = ({ ticketId }: { ticketId: number }) => {
                                                             <Link
                                                                 to={`/admin/users`}
                                                                 style={{ color: colors.primary }}
-                                                                className={'hover:brightness-125 duration-300'}
+                                                                className={'duration-300 hover:brightness-125'}
                                                             >
                                                                 Ticket Owner
                                                             </Link>

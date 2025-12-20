@@ -21,7 +21,7 @@ function DisplayMessage({ primary, result, loading }: Props) {
     if (result && result !== 'error') {
         return (
             <>
-                <SparklesIcon className={'w-4 h-4 inline-flex'} style={{ color: primary }} />
+                <SparklesIcon className={'inline-flex h-4 w-4'} style={{ color: primary }} />
                 <div>{result}</div>
             </>
         );
@@ -30,7 +30,7 @@ function DisplayMessage({ primary, result, loading }: Props) {
     if (result && result === 'error') {
         return (
             <>
-                <XCircleIcon className={'w-4 h-4 inline-flex text-red-400'} /> An error occurred. Please try again
+                <XCircleIcon className={'inline-flex h-4 w-4 text-red-400'} /> An error occurred. Please try again
                 later.
             </>
         );
@@ -47,7 +47,7 @@ function DisplayMessage({ primary, result, loading }: Props) {
 
     return (
         <>
-            <SparklesIcon className={'w-4 h-4 inline-flex'} style={{ color: primary }} /> waiting for query
+            <SparklesIcon className={'inline-flex h-4 w-4'} style={{ color: primary }} /> waiting for query
         </>
     );
 }
@@ -77,14 +77,14 @@ export default () => {
     };
 
     return (
-        <div className={'grid lg:grid-cols-5 gap-4'}>
+        <div className={'grid gap-4 lg:grid-cols-5'}>
             <div className={'col-span-3'}>
-                <div className={'bg-black rounded-t shadow-xl relative overflow-auto min-h-[50vh] h-full'}>
+                <div className={'relative h-full min-h-[50vh] overflow-auto rounded-t bg-black shadow-xl'}>
                     <div className={'absolute top-0 left-0 w-full p-2 font-mono'}>
                         <DisplayMessage primary={primary} loading={loading} result={result} />
                     </div>
                 </div>
-                <div className={'w-full bg-zinc-800 rounded-b px-4 py-2 inline-flex'}>
+                <div className={'inline-flex w-full rounded-b bg-zinc-800 px-4 py-2'}>
                     <FontAwesomeIcon icon={faChevronRight} className={'my-auto mr-4'} />
                     <Input className={'font-mono'} placeholder={'Ask Jexactyl AI a question'} onKeyDown={submit} />
                 </div>
@@ -101,7 +101,7 @@ export default () => {
                 <AdminBox title={'Disable Jexactyl AI'} className={'col-span-2 h-min'}>
                     Clicking the button below will disable Jexactyl AI for both clients and administrators. Your API key
                     will remain in the database unless you choose to delete it manually.
-                    <div className={'text-right mt-2'}>
+                    <div className={'mt-2 text-right'}>
                         <ToggleFeatureButton />
                     </div>
                 </AdminBox>

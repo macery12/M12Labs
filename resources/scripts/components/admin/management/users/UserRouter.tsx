@@ -81,7 +81,7 @@ const UserRouter = () => {
                 <div css={tw`flex ml-auto pl-4`}>
                     <Link to={'/admin/users'}>
                         <Button>
-                            <FontAwesomeIcon icon={faArrowLeft} className={'mr-2 my-auto'} /> Back to Users
+                            <FontAwesomeIcon icon={faArrowLeft} className={'my-auto mr-2'} /> Back to Users
                         </Button>
                     </Link>
                 </div>

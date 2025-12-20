@@ -23,7 +23,7 @@ export default () => {
                     <AdminBox icon={faNetworkWired} title={'Allocations'} css={tw`h-auto w-full`}>
                         <CreateAllocationForm nodeId={Number(params.id)} />
                     </AdminBox>
-                    <div className={'text-right mt-4'}>
+                    <div className={'mt-4 text-right'}>
                         <DeleteAllAllocationsButton nodeId={Number(params.id)} />
                     </div>
                 </div>

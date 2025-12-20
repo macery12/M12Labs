@@ -39,12 +39,12 @@ export default ({ defaultColor }: { defaultColor: string }) => {
 
     return (
         <div>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Theme Preferences</h2>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Theme Preferences</h2>
                     <p
                         className={
-                            'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                            'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
                         Select a preferred primary color for your Panel UI.
@@ -52,10 +52,10 @@ export default ({ defaultColor }: { defaultColor: string }) => {
                 </div>
             </div>
             <AdminBox status={status} title={'Set Primary Color'}>
-                <div className={'grid grid-cols-4 lg:grid-cols-8 gap-4 lg:gap-8'}>
+                <div className={'grid grid-cols-4 gap-4 lg:grid-cols-8 lg:gap-8'}>
                     {colorOptions.map(option => (
                         <div
-                            className={'text-center relative'}
+                            className={'relative text-center'}
                             key={option.hex}
                             onClick={() => changeColor(option.hex)}
                         >
@@ -63,19 +63,19 @@ export default ({ defaultColor }: { defaultColor: string }) => {
                                 icon={faCircle}
                                 style={{ color: option.hex }}
                                 size={'3x'}
-                                className={'hover:brightness-125 transition duration-300'}
+                                className={'transition duration-300 hover:brightness-125'}
                             />
                             {defaultColor === option.hex && (
                                 <div className={'absolute top-[10px] right-[27px]'}>
                                     <CheckCircleIcon className={'w-7'} />
                                 </div>
                             )}
-                            <p className={'italic text-xs mt-1 text-gray-400'}>{option.name}</p>
+                            <p className={'mt-1 text-xs italic text-gray-400'}>{option.name}</p>
                         </div>
                     ))}
                 </div>
             </AdminBox>
-            <p className={'text-gray-400 mt-2 text-right'}>Select a color from the options to apply it.</p>
+            <p className={'mt-2 text-right text-gray-400'}>Select a color from the options to apply it.</p>
         </div>
     );
 };

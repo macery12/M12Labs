@@ -25,7 +25,7 @@ export default ({ event }: { event: WebhookEvent }) => {
         <AdminBox
             status={status}
             key={event.id}
-            className={'capitalize relative'}
+            className={'relative capitalize'}
             title={event.key.replace(/[:-]/g, ' ')}
         >
             {status === 'none' && (
@@ -42,12 +42,12 @@ export default ({ event }: { event: WebhookEvent }) => {
                     {event.enabled ? (
                         <FontAwesomeIcon
                             icon={faXmarkCircle}
-                            className={'text-red-400 hover:text-red-300 transition duration-250'}
+                            className={'text-red-400 transition duration-250 hover:text-red-300'}
                         />
                     ) : (
                         <FontAwesomeIcon
                             icon={faPlusCircle}
-                            className={'text-green-400 hover:text-green-300 transition duration-250'}
+                            className={'text-green-400 transition duration-250 hover:text-green-300'}
                         />
                     )}
                 </div>
