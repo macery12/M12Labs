@@ -2,10 +2,10 @@
 
 namespace Everest\Tests\Traits;
 
+use Lcobucci\JWT\Token\Plain;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
-use Lcobucci\JWT\Token\Plain;
 
 trait CreatesTestJwtToken
 {
