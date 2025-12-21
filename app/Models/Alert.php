@@ -37,8 +37,13 @@ class Alert extends Model
         'content',
         'type',
         'position',
+        'scope',
+        'user_targeting',
         'enabled',
         'dismissible',
+        'show_button',
+        'button_text',
+        'button_position',
         'link',
         'link_text',
         'priority',
@@ -52,6 +57,7 @@ class Alert extends Model
     protected $casts = [
         'enabled' => 'boolean',
         'dismissible' => 'boolean',
+        'show_button' => 'boolean',
         'priority' => 'integer',
         'start_at' => 'datetime',
         'end_at' => 'datetime',
@@ -65,14 +71,27 @@ class Alert extends Model
         'content' => 'required|string|max:1000',
         'type' => 'required|string|in:success,info,warning,danger',
         'position' => 'required|string|in:top-center,bottom-right,bottom-left,center',
+        'scope' => 'required|string|in:global,dashboard,server,billing,account,admin',
+        'user_targeting' => 'required|string|in:all,specific',
         'enabled' => 'boolean',
         'dismissible' => 'boolean',
+        'show_button' => 'boolean',
+        'button_text' => 'nullable|string|max:50',
+        'button_position' => 'nullable|string|in:bottom-right,bottom-left,top-right,top-left',
         'link' => 'nullable|url|max:500',
         'link_text' => 'nullable|string|max:100',
         'priority' => 'integer|min:0',
         'start_at' => 'nullable|date',
         'end_at' => 'nullable|date|after:start_at',
     ];
+
+    /**
+     * Get the users that this alert is targeted to.
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'alert_user')->withTimestamps();
+    }
 
     /**
      * Scope to get only active alerts (enabled and within date range if set).
@@ -90,5 +109,29 @@ class Alert extends Model
             })
             ->orderByDesc('priority')
             ->orderByDesc('created_at');
+    }
+
+    /**
+     * Scope to filter alerts by scope.
+     */
+    public function scopeForScope($query, string $scope)
+    {
+        return $query->where(function ($q) use ($scope) {
+            $q->where('scope', $scope)
+                ->orWhere('scope', 'global');
+        });
+    }
+
+    /**
+     * Scope to filter alerts for a specific user.
+     */
+    public function scopeForUser($query, int $userId)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->where('user_targeting', 'all')
+                ->orWhereHas('users', function ($userQuery) use ($userId) {
+                    $userQuery->where('users.id', $userId);
+                });
+        });
     }
 }

@@ -6,8 +6,12 @@ export interface ActiveAlert {
     content: string;
     type: 'success' | 'info' | 'warning' | 'danger';
     position: 'top-center' | 'bottom-right' | 'bottom-left' | 'center';
+    scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
     enabled: boolean;
     dismissible: boolean;
+    show_button: boolean;
+    button_text?: string;
+    button_position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
     link?: string;
     link_text?: string;
     priority: number;
@@ -17,7 +21,9 @@ export interface ActiveAlert {
     updated_at: string;
 }
 
-export const getActiveAlerts = async (): Promise<ActiveAlert[]> => {
-    const { data } = await http.get('/api/client/alerts');
+export const getActiveAlerts = async (scope: string = 'global'): Promise<ActiveAlert[]> => {
+    const { data } = await http.get('/api/client/alerts', {
+        params: { scope },
+    });
     return data;
 };

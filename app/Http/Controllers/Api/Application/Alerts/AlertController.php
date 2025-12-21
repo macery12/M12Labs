@@ -5,8 +5,10 @@ namespace Everest\Http\Controllers\Api\Application\Alerts;
 use Ramsey\Uuid\Uuid;
 use Everest\Models\Alert;
 use Everest\Models\Setting;
+use Everest\Models\User;
 use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Alerts\CreateAlertRequest;
 use Everest\Http\Requests\Api\Application\Alerts\UpdateAlertRequest;
@@ -29,7 +31,8 @@ class AlertController extends ApplicationApiController
      */
     public function index(GetAlertsRequest $request): JsonResponse
     {
-        $alerts = Alert::orderByDesc('priority')
+        $alerts = Alert::with('users:id,email,username')
+            ->orderByDesc('priority')
             ->orderByDesc('created_at')
             ->get();
 
@@ -51,7 +54,16 @@ class AlertController extends ApplicationApiController
      */
     public function store(CreateAlertRequest $request): JsonResponse
     {
-        $alert = Alert::create($request->validated());
+        $data = $request->validated();
+        $userIds = $data['user_ids'] ?? [];
+        unset($data['user_ids']);
+
+        $alert = Alert::create($data);
+
+        // Attach users if specific targeting
+        if ($alert->user_targeting === 'specific' && !empty($userIds)) {
+            $alert->users()->attach($userIds);
+        }
 
         Activity::event('admin:alert:create')
             ->property('alert_id', $alert->id)
@@ -59,7 +71,7 @@ class AlertController extends ApplicationApiController
             ->description('Created a new alert')
             ->log();
 
-        return new JsonResponse($alert, 201);
+        return new JsonResponse($alert->load('users:id,email,username'), 201);
     }
 
     /**
@@ -67,7 +79,20 @@ class AlertController extends ApplicationApiController
      */
     public function updateAlert(UpdateAlertRequest $request, Alert $alert): JsonResponse
     {
-        $alert->update($request->validated());
+        $data = $request->validated();
+        $userIds = $data['user_ids'] ?? null;
+        unset($data['user_ids']);
+
+        $alert->update($data);
+
+        // Sync users if targeting changed or user_ids provided
+        if ($userIds !== null) {
+            if ($alert->user_targeting === 'specific') {
+                $alert->users()->sync($userIds);
+            } else {
+                $alert->users()->detach();
+            }
+        }
 
         Activity::event('admin:alert:update')
             ->property('alert_id', $alert->id)
@@ -75,7 +100,7 @@ class AlertController extends ApplicationApiController
             ->description('Updated alert')
             ->log();
 
-        return new JsonResponse($alert);
+        return new JsonResponse($alert->load('users:id,email,username'));
     }
 
     /**
@@ -114,5 +139,26 @@ class AlertController extends ApplicationApiController
             ->log();
 
         return new JsonResponse($uuid);
+    }
+
+    /**
+     * Search for users by email or username.
+     */
+    public function searchUsers(Request $request): JsonResponse
+    {
+        $query = $request->input('q', '');
+        $limit = min($request->input('limit', 10), 50);
+
+        if (strlen($query) < 2) {
+            return new JsonResponse([]);
+        }
+
+        $users = User::where('email', 'LIKE', "%{$query}%")
+            ->orWhere('username', 'LIKE', "%{$query}%")
+            ->select(['id', 'email', 'username'])
+            ->limit($limit)
+            ->get();
+
+        return new JsonResponse($users);
     }
 }

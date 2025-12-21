@@ -118,6 +118,10 @@ export default () => {
                                             {alert.position.replace('-', ' ')}
                                         </span>
                                         <span css={tw`text-xs text-gray-500`}>|</span>
+                                        <span css={tw`text-sm text-gray-400 capitalize bg-gray-700 px-2 py-0.5 rounded`}>
+                                            {alert.scope}
+                                        </span>
+                                        <span css={tw`text-xs text-gray-500`}>|</span>
                                         <span css={tw`text-sm text-gray-400`}>Priority: {alert.priority}</span>
                                         <FontAwesomeIcon
                                             icon={alert.enabled ? faToggleOn : faToggleOff}
@@ -139,6 +143,7 @@ export default () => {
                                             <span>End: {formatDate(alert.end_at)}</span>
                                         )}
                                         {alert.dismissible && <span>Dismissible</span>}
+                                        {alert.show_button && <span>Has Reopen Button</span>}
                                     </div>
                                 </div>
                                 <div css={tw`flex gap-2 ml-4`}>
