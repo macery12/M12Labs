@@ -2,6 +2,7 @@
 
 namespace Everest\Services\Billing;
 
+use Everest\Models\Node;
 use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\Billing\Coupon;
