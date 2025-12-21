@@ -5,7 +5,7 @@ import tw from 'twin.macro';
 import AdminBox from '@/elements/AdminBox';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
-import { Alert as AlertType, createAlert, updateAlert, getAlerts, CreateAlertData, UpdateAlertData, AlertScope, ButtonPosition, UserTargeting, searchUsers, AlertUser } from '@/api/routes/admin/alerts';
+import { Alert as AlertType, createAlert, updateAlert, getAlerts, CreateAlertData, UpdateAlertData, AlertScope, UserTargeting, searchUsers, AlertUser } from '@/api/routes/admin/alerts';
 import useFlash from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Label from '@/elements/Label';
@@ -24,9 +24,6 @@ interface FormValues {
     user_targeting: UserTargeting;
     enabled: boolean;
     dismissible: boolean;
-    show_button: boolean;
-    button_text: string;
-    button_position: ButtonPosition;
     link: string;
     link_text: string;
     priority: number;
@@ -52,9 +49,6 @@ export default () => {
         user_targeting: 'all' as UserTargeting,
         enabled: true,
         dismissible: false,
-        show_button: false,
-        button_text: 'Show Alert',
-        button_position: 'bottom-right' as ButtonPosition,
         link: '',
         link_text: '',
         priority: 0,
@@ -77,9 +71,6 @@ export default () => {
                             user_targeting: alert.user_targeting,
                             enabled: alert.enabled,
                             dismissible: alert.dismissible,
-                            show_button: alert.show_button,
-                            button_text: alert.button_text || 'Show Alert',
-                            button_position: alert.button_position,
                             link: alert.link || '',
                             link_text: alert.link_text || '',
                             priority: alert.priority,
@@ -113,9 +104,6 @@ export default () => {
             user_ids: values.user_targeting === 'specific' ? selectedUsers.map(u => u.id) : undefined,
             enabled: values.enabled,
             dismissible: values.dismissible,
-            show_button: values.show_button,
-            button_text: values.button_text || undefined,
-            button_position: values.button_position,
             link: values.link || undefined,
             link_text: values.link_text || undefined,
             priority: values.priority,
@@ -258,38 +246,9 @@ export default () => {
                                     />
                                     <Label className={'ml-2 mb-0'}>Dismissible by users</Label>
                                 </div>
-                                <div className={'flex items-center'}>
-                                    <Field
-                                        id={'show_button'}
-                                        name={'show_button'}
-                                        type={'checkbox'}
-                                        checked={values.show_button}
-                                    />
-                                    <Label className={'ml-2 mb-0'}>Show reopen button</Label>
-                                </div>
                                 <p className={'text-gray-400 text-xs'}>
-                                    If enabled, a floating button will appear to reopen dismissed alerts
+                                    Users can view all past alerts by clicking the bell icon in the navigation bar
                                 </p>
-                                {values.show_button && (
-                                    <>
-                                        <div>
-                                            <Label>Button Text</Label>
-                                            <Field id={'button_text'} name={'button_text'} type={'text'} />
-                                        </div>
-                                        <div>
-                                            <Label>Button Position</Label>
-                                            <Select
-                                                onChange={e => setFieldValue('button_position', e.currentTarget.value)}
-                                                value={values.button_position}
-                                            >
-                                                <option value={'bottom-right'}>Bottom Right</option>
-                                                <option value={'bottom-left'}>Bottom Left</option>
-                                                <option value={'top-right'}>Top Right</option>
-                                                <option value={'top-left'}>Top Left</option>
-                                            </Select>
-                                        </div>
-                                    </>
-                                )}
                             </div>
                         </AdminBox>
 
