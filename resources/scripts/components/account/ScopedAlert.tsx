@@ -58,8 +58,12 @@ export default ({ scope }: ScopedAlertProps) => {
 
     const renderAlertContent = (alert: ActiveAlert) => (
         <>
-            {alert.title && <strong className={'block mb-1'}>{alert.title}</strong>}
-            {alert.content}
+            {alert.title && (
+                <strong className={'block mb-2 text-base font-semibold'}>
+                    {alert.title}
+                </strong>
+            )}
+            <span className={'block'}>{alert.content}</span>
             {alert.link && (
                 <a 
                     href={alert.link} 
