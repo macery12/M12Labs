@@ -7,6 +7,7 @@ import type { Egg } from '@/api/routes/admin/egg';
 import { searchEggs } from '@/api/routes/admin/egg';
 import Label from '@/elements/Label';
 import AdminCheckbox from '@/elements/AdminCheckbox';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     nestId?: number;
@@ -20,6 +21,7 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
         useField<number[]>('allowedEggs');
     const [eggs, setEggs] = useState<WithRelationships<Egg, 'variables'>[] | undefined>(undefined);
     const [selected, setSelected] = useState<number[]>(selectedEggIds);
+    const theme = useStoreState(state => state.theme.data!);
 
     useEffect(() => {
         if (!nestId) {
@@ -95,7 +97,13 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
                     eggs.map(egg => (
                         <div
                             key={egg.id}
-                            css={tw`flex items-center space-x-2 p-2 rounded bg-neutral-700 hover:bg-neutral-600`}
+                            css={tw`flex items-center space-x-2 p-3 rounded shadow-md transition duration-200`}
+                            style={{
+                                backgroundColor: selected.includes(egg.id)
+                                    ? theme.colors.headers
+                                    : theme.colors.secondary,
+                            }}
+                            className={'hover:brightness-110'}
                         >
                             <AdminCheckbox
                                 name={`egg-${egg.id}`}
@@ -104,7 +112,11 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
                             />
                             <label htmlFor={`egg-${egg.id}`} css={tw`flex-1 cursor-pointer text-sm`}>
                                 {egg.name}
-                                {selected[0] === egg.id && <span css={tw`ml-2 text-xs text-blue-400`}>(Primary)</span>}
+                                {selected[0] === egg.id && (
+                                    <span css={tw`ml-2 text-xs`} style={{ color: theme.colors.primary }}>
+                                        (Primary)
+                                    </span>
+                                )}
                             </label>
                         </div>
                     ))

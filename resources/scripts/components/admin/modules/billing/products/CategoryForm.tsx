@@ -186,56 +186,60 @@ export default ({ category }: { category?: Category }) => {
             .then(() => setSubmitting(false));
     };
 
+    const formContent = (
+        <Formik
+            onSubmit={category ? update : submit}
+            enableReinitialize={true}
+            initialValues={{
+                name: category?.name ?? '',
+                icon: category?.icon ?? '',
+                description: category?.description ?? '',
+                visible: category?.visible ?? false,
+                eggId: category?.eggId ?? 0,
+                allowedEggs: category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []),
+                allowEggChanges: category?.allowEggChanges ?? true,
+            }}
+            validationSchema={object().shape({
+                name: string().required().max(191).min(3),
+                icon: string().nullable().max(191).min(3),
+                description: string().nullable().max(191).min(3),
+                visible: boolean().required(),
+                nestId: number(),
+                eggId: number().required(),
+                allowedEggs: array().of(number()).min(1).required(),
+                allowEggChanges: boolean(),
+            })}
+        >
+            <InternalForm
+                category={category}
+                visible={visible}
+                setVisible={setVisible}
+                allowEggChanges={allowEggChanges}
+                setAllowEggChanges={setAllowEggChanges}
+            />
+        </Formik>
+    );
+
+    // When editing an existing category, return just the form (parent provides AdminContentBlock)
+    if (category) {
+        return formContent;
+    }
+
+    // When creating a new category, wrap in AdminContentBlock with header
     return (
         <AdminContentBlock title={'New Category'}>
-            <div css={tw`w-full flex flex-row items-center m-8`}>
-                {category?.icon ? (
-                    <img src={category.icon} className={'ww-8 mr-4 h-8'} />
-                ) : (
-                    <ShoppingCartIcon className={'mr-4 h-8 w-8'} />
-                )}
+            <div css={tw`w-full flex flex-row items-center mb-8`}>
+                <ShoppingCartIcon className={'mr-4 h-8 w-8'} />
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
-                    <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>
-                        {category?.name ?? 'New Product Category'}
-                    </h2>
+                    <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>New Product Category</h2>
                     <p
                         css={tw`hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
                     >
-                        {category?.uuid ?? 'Add a new category to the billing interface.'}
+                        Add a new category to the billing interface.
                     </p>
                 </div>
             </div>
-            <Formik
-                onSubmit={category ? update : submit}
-                enableReinitialize={true}
-                initialValues={{
-                    name: category?.name ?? '',
-                    icon: category?.icon ?? '',
-                    description: category?.description ?? '',
-                    visible: category?.visible ?? false,
-                    eggId: category?.eggId ?? 0,
-                    allowedEggs: category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []),
-                    allowEggChanges: category?.allowEggChanges ?? true,
-                }}
-                validationSchema={object().shape({
-                    name: string().required().max(191).min(3),
-                    icon: string().nullable().max(191).min(3),
-                    description: string().nullable().max(191).min(3),
-                    visible: boolean().required(),
-                    nestId: number(),
-                    eggId: number().required(),
-                    allowedEggs: array().of(number()).min(1).required(),
-                    allowEggChanges: boolean(),
-                })}
-            >
-                <InternalForm
-                    category={category}
-                    visible={visible}
-                    setVisible={setVisible}
-                    allowEggChanges={allowEggChanges}
-                    setAllowEggChanges={setAllowEggChanges}
-                />
-            </Formik>
+            {formContent}
         </AdminContentBlock>
     );
 };
