@@ -12,15 +12,12 @@ export default () => {
     const { alert: legacyAlert } = useStoreState(s => s.everest.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
-    const [slideOutAlerts, setSlideOutAlerts] = useState<ActiveAlert[]>([]);
     
     // Load active alerts from the new system for dashboard scope
     useEffect(() => {
         getActiveAlerts('dashboard')
             .then(data => {
                 setAlerts(data);
-                // Initialize slide-out alerts
-                setSlideOutAlerts(data.filter(a => a.position === 'slide-out'));
             })
             .catch(() => setAlerts([]));
     }, []);
@@ -28,32 +25,53 @@ export default () => {
     // Legacy alert support
     const [open, setOpen] = usePersistedState(`alert_${legacyAlert.uuid}_${user}`, true);
 
-    // Filter alerts by position
-    const topCenterAlerts = alerts.filter(a => a.position === 'top-center');
-    const centerAlerts = alerts.filter(a => a.position === 'center');
+    // Helper function to check if an alert is dismissed
+    const isAlertDismissed = (alertId: number): boolean => {
+        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
+        return localStorage.getItem(dismissedKey) === 'true';
+    };
+
+    // Helper function to dismiss an alert
+    const dismissAlert = (alertId: number) => {
+        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
+        localStorage.setItem(dismissedKey, 'true');
+    };
+
+    // Filter out dismissed alerts and group by position
+    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id));
+    const topCenterAlerts = visibleAlerts.filter(a => a.position === 'top-center');
+    const slideOutAlerts = visibleAlerts.filter(a => a.position === 'slide-out');
+    const centerAlerts = visibleAlerts.filter(a => a.position === 'center');
 
     // Get the current center alert to show
     const currentCenterAlert = centerAlerts[dialogAlertIndex] || null;
-    const [centerDialogDismissed, setCenterDialogDismissed] = usePersistedState(
-        currentCenterAlert ? `alert_dismissed_${currentCenterAlert.id}_${user}` : 'none',
-        false
-    );
 
     // Always allow closing popups - this prevents page blocking
     const handleCenterAlertClose = () => {
         // Mark as dismissed for this user
         if (currentCenterAlert) {
-            setCenterDialogDismissed(true);
+            dismissAlert(currentCenterAlert.id);
         }
         
         // Move to next center alert if available
         if (dialogAlertIndex + 1 < centerAlerts.length) {
             setDialogAlertIndex(dialogAlertIndex + 1);
+        } else {
+            // Force re-render to hide the dialog
+            setAlerts(prev => [...prev]);
         }
     };
 
     const handleSlideOutClose = (alertId: number) => {
-        setSlideOutAlerts(prev => prev.filter(a => a.id !== alertId));
+        dismissAlert(alertId);
+        // Force re-render to update visible alerts
+        setAlerts(prev => [...prev]);
+    };
+
+    const handleTopCenterClose = (alertId: number) => {
+        dismissAlert(alertId);
+        // Force re-render to update visible alerts
+        setAlerts(prev => [...prev]);
     };
 
     const renderAlertContent = (alert: ActiveAlert) => (
@@ -100,6 +118,7 @@ export default () => {
                 <Alert 
                     key={alert.id} 
                     type={alert.type}
+                    onClose={() => handleTopCenterClose(alert.id)}
                 >
                     {renderAlertContent(alert)}
                 </Alert>
@@ -121,7 +140,7 @@ export default () => {
             ))}
 
             {/* Center Dialog Alerts - Always allow dismissal to prevent page blocking */}
-            {currentCenterAlert && !centerDialogDismissed && (
+            {currentCenterAlert && (
                 <Dialog.Confirm
                     open
                     buttonType={currentCenterAlert.type}

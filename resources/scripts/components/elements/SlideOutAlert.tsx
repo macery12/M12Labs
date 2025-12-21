@@ -35,7 +35,7 @@ export default ({ id, title, content, type, link, link_text, onClose, index }: S
     const handleClose = () => {
         setIsClosing(true);
         setTimeout(() => {
-            onClose();
+            onClose(); // This will call dismissAlert in parent component
         }, 300); // Match animation duration
     };
 
