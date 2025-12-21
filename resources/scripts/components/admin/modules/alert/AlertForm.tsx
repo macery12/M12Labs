@@ -123,26 +123,6 @@ export default () => {
             end_at: values.end_at || undefined,
         };
 
-        const data: CreateAlertData | UpdateAlertData = {
-            title: values.title || undefined,
-            content: values.content,
-            type: values.type,
-            position: values.position,
-            scope: values.scope,
-            user_targeting: values.user_targeting,
-            user_ids: values.user_targeting === 'specific' ? selectedUsers.map(u => u.id) : undefined,
-            enabled: values.enabled,
-            dismissible: values.dismissible,
-            show_button: values.show_button,
-            button_text: values.button_text || undefined,
-            button_position: values.button_position,
-            link: values.link || undefined,
-            link_text: values.link_text || undefined,
-            priority: values.priority,
-            start_at: values.start_at || undefined,
-            end_at: values.end_at || undefined,
-        };
-
         const promise = id ? updateAlert(parseInt(id), data) : createAlert(data);
 
         promise

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('alert_user', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('alert_id');
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedInteger('user_id'); // Changed from unsignedBigInteger to match users.id type
             $table->timestamps();
 
             $table->foreign('alert_id')->references('id')->on('alerts')->onDelete('cascade');
