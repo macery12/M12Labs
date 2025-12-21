@@ -203,11 +203,14 @@ export default () => {
                                         onChange={e => setFieldValue('position', e.currentTarget.value)}
                                         value={values.position}
                                     >
-                                        <option value={'top-center'}>Top Center</option>
-                                        <option value={'bottom-right'}>Bottom Right</option>
-                                        <option value={'bottom-left'}>Bottom Left</option>
-                                        <option value={'center'}>Center (Dialog)</option>
+                                        <option value={'top-center'}>Top Center Banner</option>
+                                        <option value={'slide-out'}>Slide-out Card (Right Side)</option>
+                                        <option value={'top-right-banner'}>Top Right Banner</option>
+                                        <option value={'center'}>Center (Popup Dialog)</option>
                                     </Select>
+                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                        Choose where and how the alert appears
+                                    </p>
                                 </div>
                                 <div>
                                     <Label>Scope *</Label>

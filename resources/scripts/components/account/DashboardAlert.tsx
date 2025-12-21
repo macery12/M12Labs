@@ -1,22 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Alert } from '@/elements/alert';
 import { useStoreState } from '@/state/hooks';
-import MessageBox, { FlashMessageType } from '@/elements/MessageBox';
 import { usePersistedState } from '@/plugins/usePersistedState';
 import { capitalize } from '@/lib/strings';
 import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
+import SlideOutAlert from '@/components/elements/SlideOutAlert';
+import TopRightBanner from '@/components/elements/TopRightBanner';
 
 export default () => {
     const { uuid: user } = useStoreState(s => s.user.data!);
     const { alert: legacyAlert } = useStoreState(s => s.everest.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
+    const [slideOutAlerts, setSlideOutAlerts] = useState<ActiveAlert[]>([]);
+    const [topRightBanners, setTopRightBanners] = useState<ActiveAlert[]>([]);
     
     // Load active alerts from the new system for dashboard scope
     useEffect(() => {
         getActiveAlerts('dashboard')
-            .then(data => setAlerts(data))
+            .then(data => {
+                setAlerts(data);
+                // Initialize slide-out and banner alerts
+                setSlideOutAlerts(data.filter(a => a.position === 'slide-out'));
+                setTopRightBanners(data.filter(a => a.position === 'top-right-banner'));
+            })
             .catch(() => setAlerts([]));
     }, []);
 
@@ -25,8 +33,6 @@ export default () => {
 
     // Filter alerts by position
     const topCenterAlerts = alerts.filter(a => a.position === 'top-center');
-    const bottomLeftAlerts = alerts.filter(a => a.position === 'bottom-left');
-    const bottomRightAlerts = alerts.filter(a => a.position === 'bottom-right');
     const centerAlerts = alerts.filter(a => a.position === 'center');
 
     // Get the current center alert to show
@@ -49,6 +55,14 @@ export default () => {
         }
     };
 
+    const handleSlideOutClose = (alertId: number) => {
+        setSlideOutAlerts(prev => prev.filter(a => a.id !== alertId));
+    };
+
+    const handleBannerClose = (alertId: number) => {
+        setTopRightBanners(prev => prev.filter(a => a.id !== alertId));
+    };
+
     const renderAlertContent = (alert: ActiveAlert) => (
         <>
             {alert.title && <strong className={'block mb-1'}>{alert.title}</strong>}
@@ -69,31 +83,19 @@ export default () => {
     return (
         <>
             {/* Legacy alert support */}
-            {legacyAlert.enabled && (
-                <>
-                    {legacyAlert.position === 'top-center' && <Alert type={legacyAlert.type}>{legacyAlert.content}</Alert>}
-                    {legacyAlert.position === 'bottom-left' && (
-                        <div className={'fixed bottom-2 left-2 z-50 m-4'}>
-                            <MessageBox type={legacyAlert.type as FlashMessageType}>{legacyAlert.content}</MessageBox>
-                        </div>
-                    )}
-                    {legacyAlert.position === 'bottom-right' && (
-                        <div className={'fixed bottom-2 right-2 z-50 m-4'}>
-                            <MessageBox type={legacyAlert.type as FlashMessageType}>{legacyAlert.content}</MessageBox>
-                        </div>
-                    )}
-                    {legacyAlert.position === 'center' && open && (
-                        <Dialog.Confirm
-                            open
-                            buttonType={legacyAlert.type}
-                            onClose={() => setOpen(false)}
-                            title={capitalize(legacyAlert.type)}
-                            onConfirmed={() => setOpen(false)}
-                        >
-                            {legacyAlert.content}
-                        </Dialog.Confirm>
-                    )}
-                </>
+            {legacyAlert.enabled && legacyAlert.position === 'top-center' && (
+                <Alert type={legacyAlert.type}>{legacyAlert.content}</Alert>
+            )}
+            {legacyAlert.enabled && legacyAlert.position === 'center' && open && (
+                <Dialog.Confirm
+                    open
+                    buttonType={legacyAlert.type}
+                    onClose={() => setOpen(false)}
+                    title={capitalize(legacyAlert.type)}
+                    onConfirmed={() => setOpen(false)}
+                >
+                    {legacyAlert.content}
+                </Dialog.Confirm>
             )}
 
             {/* New multi-alert system - Top Center */}
@@ -106,33 +108,34 @@ export default () => {
                 </Alert>
             ))}
 
-            {/* Bottom Left Alerts */}
-            {bottomLeftAlerts.length > 0 && (
-                <div className={'fixed bottom-2 left-2 z-50 space-y-2'}>
-                    {bottomLeftAlerts.map(alert => (
-                        <MessageBox 
-                            key={alert.id} 
-                            type={alert.type as FlashMessageType}
-                        >
-                            {renderAlertContent(alert)}
-                        </MessageBox>
-                    ))}
-                </div>
-            )}
+            {/* Top Right Banners */}
+            {topRightBanners.map(alert => (
+                <TopRightBanner
+                    key={alert.id}
+                    id={alert.id}
+                    title={alert.title}
+                    content={alert.content}
+                    type={alert.type}
+                    link={alert.link}
+                    link_text={alert.link_text}
+                    onClose={() => handleBannerClose(alert.id)}
+                />
+            ))}
 
-            {/* Bottom Right Alerts */}
-            {bottomRightAlerts.length > 0 && (
-                <div className={'fixed bottom-2 right-2 z-50 space-y-2'}>
-                    {bottomRightAlerts.map(alert => (
-                        <MessageBox 
-                            key={alert.id} 
-                            type={alert.type as FlashMessageType}
-                        >
-                            {renderAlertContent(alert)}
-                        </MessageBox>
-                    ))}
-                </div>
-            )}
+            {/* Slide-out Alerts (replaces bottom-left and bottom-right) */}
+            {slideOutAlerts.map((alert, index) => (
+                <SlideOutAlert
+                    key={alert.id}
+                    id={alert.id}
+                    title={alert.title}
+                    content={alert.content}
+                    type={alert.type}
+                    link={alert.link}
+                    link_text={alert.link_text}
+                    onClose={() => handleSlideOutClose(alert.id)}
+                    index={index}
+                />
+            ))}
 
             {/* Center Dialog Alerts - Always allow dismissal to prevent page blocking */}
             {currentCenterAlert && !centerDialogDismissed && (

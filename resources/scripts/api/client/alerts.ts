@@ -5,7 +5,7 @@ export interface ActiveAlert {
     title?: string;
     content: string;
     type: 'success' | 'info' | 'warning' | 'danger';
-    position: 'top-center' | 'bottom-right' | 'bottom-left' | 'center';
+    position: 'top-center' | 'slide-out' | 'top-right-banner' | 'center';
     scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
     enabled: boolean;
     dismissible: boolean;

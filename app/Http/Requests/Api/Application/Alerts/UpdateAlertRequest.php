@@ -13,7 +13,7 @@ class UpdateAlertRequest extends ApplicationApiRequest
             'title' => 'nullable|string|max:255',
             'content' => 'sometimes|required|string|max:1000',
             'type' => 'sometimes|required|string|in:success,info,warning,danger',
-            'position' => 'sometimes|required|string|in:top-center,bottom-right,bottom-left,center',
+            'position' => 'sometimes|required|string|in:top-center,slide-out,top-right-banner,center',
             'scope' => 'sometimes|required|string|in:global,dashboard,server,billing,account,admin',
             'user_targeting' => 'sometimes|required|string|in:all,specific',
             'user_ids' => 'nullable|array',
