@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Drop the table if it exists from a previous failed migration attempt
+        Schema::dropIfExists('alert_user');
+        
         Schema::create('alert_user', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('alert_id');
@@ -23,9 +26,12 @@ return new class extends Migration
             $table->unique(['alert_id', 'user_id']);
         });
 
-        Schema::table('alerts', function (Blueprint $table) {
-            $table->enum('user_targeting', ['all', 'specific'])->default('all')->after('scope');
-        });
+        // Check if the column already exists before adding it
+        if (!Schema::hasColumn('alerts', 'user_targeting')) {
+            Schema::table('alerts', function (Blueprint $table) {
+                $table->enum('user_targeting', ['all', 'specific'])->default('all')->after('scope');
+            });
+        }
     }
 
     /**
