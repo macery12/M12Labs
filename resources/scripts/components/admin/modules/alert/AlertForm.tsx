@@ -91,6 +91,45 @@ export default () => {
         }
     }, [id]);
 
+    useEffect(() => {
+        if (userSearchQuery.length < 2) {
+            setUserSearchResults([]);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setSearchingUsers(true);
+            searchUsers(userSearchQuery)
+                .then(users => {
+                    // Filter out already selected users
+                    const filteredUsers = users.filter(
+                        u => !selectedUsers.some(su => su.id === u.id)
+                    );
+                    setUserSearchResults(filteredUsers);
+                })
+                .catch(() => {
+                    setUserSearchResults([]);
+                })
+                .finally(() => {
+                    setSearchingUsers(false);
+                });
+        }, 300); // Debounce for 300ms
+
+        return () => clearTimeout(timer);
+    }, [userSearchQuery, selectedUsers]);
+
+    const addUser = (user: AlertUser) => {
+        if (!selectedUsers.some(u => u.id === user.id)) {
+            setSelectedUsers([...selectedUsers, user]);
+        }
+        setUserSearchQuery('');
+        setUserSearchResults([]);
+    };
+
+    const removeUser = (userId: number) => {
+        setSelectedUsers(selectedUsers.filter(u => u.id !== userId));
+    };
+
     const submit = (values: FormValues) => {
         clearFlashes();
 
