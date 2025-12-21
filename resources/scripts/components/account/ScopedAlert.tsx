@@ -7,21 +7,21 @@ import { capitalize } from '@/lib/strings';
 import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
 
-export default () => {
+interface ScopedAlertProps {
+    scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
+}
+
+export default ({ scope }: ScopedAlertProps) => {
     const { uuid: user } = useStoreState(s => s.user.data!);
-    const { alert: legacyAlert } = useStoreState(s => s.everest.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
     
-    // Load active alerts from the new system for dashboard scope
+    // Load active alerts for the specified scope
     useEffect(() => {
-        getActiveAlerts('dashboard')
+        getActiveAlerts(scope)
             .then(data => setAlerts(data))
             .catch(() => setAlerts([]));
-    }, []);
-
-    // Legacy alert support
-    const [open, setOpen] = usePersistedState(`alert_${legacyAlert.uuid}_${user}`, true);
+    }, [scope]);
 
     // Filter alerts by position
     const topCenterAlerts = alerts.filter(a => a.position === 'top-center');
@@ -68,35 +68,7 @@ export default () => {
 
     return (
         <>
-            {/* Legacy alert support */}
-            {legacyAlert.enabled && (
-                <>
-                    {legacyAlert.position === 'top-center' && <Alert type={legacyAlert.type}>{legacyAlert.content}</Alert>}
-                    {legacyAlert.position === 'bottom-left' && (
-                        <div className={'fixed bottom-2 left-2 z-50 m-4'}>
-                            <MessageBox type={legacyAlert.type as FlashMessageType}>{legacyAlert.content}</MessageBox>
-                        </div>
-                    )}
-                    {legacyAlert.position === 'bottom-right' && (
-                        <div className={'fixed bottom-2 right-2 z-50 m-4'}>
-                            <MessageBox type={legacyAlert.type as FlashMessageType}>{legacyAlert.content}</MessageBox>
-                        </div>
-                    )}
-                    {legacyAlert.position === 'center' && open && (
-                        <Dialog.Confirm
-                            open
-                            buttonType={legacyAlert.type}
-                            onClose={() => setOpen(false)}
-                            title={capitalize(legacyAlert.type)}
-                            onConfirmed={() => setOpen(false)}
-                        >
-                            {legacyAlert.content}
-                        </Dialog.Confirm>
-                    )}
-                </>
-            )}
-
-            {/* New multi-alert system - Top Center */}
+            {/* Top Center Alerts */}
             {topCenterAlerts.map(alert => (
                 <Alert 
                     key={alert.id} 

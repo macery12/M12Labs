@@ -22,6 +22,7 @@ import { Alert } from '@/elements/alert';
 import { getProducts } from '@/api/routes/account/billing/products';
 import { getCategories } from '@/api/routes/account/billing/categories';
 import { Category, Product } from '@definitions/account/billing';
+import ScopedAlert from '@account/ScopedAlert';
 
 interface LimitProps {
     icon: IconDefinition;
@@ -71,6 +72,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Available Products'}>
+            <ScopedAlert scope="billing" />
             <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
                 Order a Product
                 <p className={'text-gray-400 font-normal text-sm mt-1'}>
