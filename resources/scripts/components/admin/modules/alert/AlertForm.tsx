@@ -290,14 +290,6 @@ export default () => {
                                 )}
                             </div>
                         </AdminBox>
-                                        name={'dismissible'}
-                                        type={'checkbox'}
-                                        checked={values.dismissible}
-                                    />
-                                    <Label className={'ml-2 mb-0'}>Dismissible by users</Label>
-                                </div>
-                            </div>
-                        </AdminBox>
 
                         <AdminBox title={'Link (Optional)'}>
                             <div css={tw`space-y-4`}>
