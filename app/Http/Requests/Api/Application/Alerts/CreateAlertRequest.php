@@ -13,7 +13,7 @@ class CreateAlertRequest extends ApplicationApiRequest
             'title' => 'nullable|string|max:255',
             'content' => 'required|string|max:1000',
             'type' => 'required|string|in:success,info,warning,danger',
-            'position' => 'required|string|in:top-center,slide-out,top-right-banner,center',
+            'position' => 'required|string|in:top-center,slide-out,center',
             'scope' => 'required|string|in:global,dashboard,server,billing,account,admin',
             'user_targeting' => 'required|string|in:all,specific',
             'user_ids' => 'nullable|array',

@@ -205,7 +205,6 @@ export default () => {
                                     >
                                         <option value={'top-center'}>Top Center Banner</option>
                                         <option value={'slide-out'}>Slide-out Card (Right Side)</option>
-                                        <option value={'top-right-banner'}>Top Right Banner</option>
                                         <option value={'center'}>Center (Popup Dialog)</option>
                                     </Select>
                                     <p className={'text-gray-400 text-xs mt-1'}>

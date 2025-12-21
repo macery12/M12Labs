@@ -14,7 +14,7 @@ return new class extends Migration
     {
         // Update existing alerts to use the old position values if needed
         // Add comment to document the new position options
-        DB::statement("ALTER TABLE `alerts` MODIFY COLUMN `position` VARCHAR(255) DEFAULT 'top-center' COMMENT 'top-center, slide-out, top-right-banner, center'");
+        DB::statement("ALTER TABLE `alerts` MODIFY COLUMN `position` VARCHAR(255) DEFAULT 'top-center' COMMENT 'top-center, slide-out, center'");
         
         // Update any existing bottom-left or bottom-right to slide-out
         DB::table('alerts')
@@ -31,9 +31,5 @@ return new class extends Migration
         DB::table('alerts')
             ->where('position', 'slide-out')
             ->update(['position' => 'bottom-right']);
-            
-        DB::table('alerts')
-            ->where('position', 'top-right-banner')
-            ->update(['position' => 'top-center']);
     }
 };

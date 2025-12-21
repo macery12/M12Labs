@@ -6,7 +6,6 @@ import { capitalize } from '@/lib/strings';
 import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
 import SlideOutAlert from '@/components/elements/SlideOutAlert';
-import TopRightBanner from '@/components/elements/TopRightBanner';
 
 interface ScopedAlertProps {
     scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
@@ -17,16 +16,14 @@ export default ({ scope }: ScopedAlertProps) => {
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
     const [slideOutAlerts, setSlideOutAlerts] = useState<ActiveAlert[]>([]);
-    const [topRightBanners, setTopRightBanners] = useState<ActiveAlert[]>([]);
     
     // Load active alerts for the specified scope
     useEffect(() => {
         getActiveAlerts(scope)
             .then(data => {
                 setAlerts(data);
-                // Initialize slide-out and banner alerts
+                // Initialize slide-out alerts
                 setSlideOutAlerts(data.filter(a => a.position === 'slide-out'));
-                setTopRightBanners(data.filter(a => a.position === 'top-right-banner'));
             })
             .catch(() => setAlerts([]));
     }, [scope]);
@@ -59,10 +56,6 @@ export default ({ scope }: ScopedAlertProps) => {
         setSlideOutAlerts(prev => prev.filter(a => a.id !== alertId));
     };
 
-    const handleBannerClose = (alertId: number) => {
-        setTopRightBanners(prev => prev.filter(a => a.id !== alertId));
-    };
-
     const renderAlertContent = (alert: ActiveAlert) => (
         <>
             {alert.title && <strong className={'block mb-1'}>{alert.title}</strong>}
@@ -90,20 +83,6 @@ export default ({ scope }: ScopedAlertProps) => {
                 >
                     {renderAlertContent(alert)}
                 </Alert>
-            ))}
-
-            {/* Top Right Banners */}
-            {topRightBanners.map(alert => (
-                <TopRightBanner
-                    key={alert.id}
-                    id={alert.id}
-                    title={alert.title}
-                    content={alert.content}
-                    type={alert.type}
-                    link={alert.link}
-                    link_text={alert.link_text}
-                    onClose={() => handleBannerClose(alert.id)}
-                />
             ))}
 
             {/* Slide-out Alerts */}
