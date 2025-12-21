@@ -13,7 +13,7 @@ use Everest\Models\Billing\CouponUsage;
  * Unified order processing service for billing operations.
  * 
  * This service consolidates order creation and processing logic that was previously
- * duplicated across FreeProductController and PaymentController.
+ * duplicated across the old FreeProductController and PaymentController (now replaced by CheckoutController).
  * 
  * Responsibilities:
  * - Create orders with proper metadata

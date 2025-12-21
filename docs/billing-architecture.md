@@ -97,16 +97,20 @@ Creates order records with proper metadata.
 
 ### Controllers
 
-#### FreeProductController
-**Location**: `app/Http/Controllers/Api/Client/Billing/FreeProductController.php`
+#### CheckoutController
+**Location**: `app/Http/Controllers/Api/Client/Billing/CheckoutController.php`
 
-Handles free product purchases and renewals.
+Unified controller that handles both free and paid product purchases and renewals.
 
 **Endpoints**:
 - `POST /api/client/billing/process/free`: Process free product purchase
 - `POST /api/client/billing/renew/free`: Renew free server
+- `GET /api/client/billing/products/{id}/key`: Get Stripe public key
+- `POST /api/client/billing/products/{id}/intent`: Create payment intent
+- `PUT /api/client/billing/products/{id}/intent`: Update payment intent
+- `POST /api/client/billing/process`: Process payment and create server
 
-**Flow**:
+**Free Product Flow**:
 1. Validate billing is enabled (via BillingValidationService)
 2. Calculate price with coupon
 3. Validate price is free
@@ -114,18 +118,7 @@ Handles free product purchases and renewals.
 5. Process order (via OrderProcessorService)
 6. Return server details
 
-#### PaymentController
-**Location**: `app/Http/Controllers/Api/Client/Billing/PaymentController.php`
-
-Handles paid product purchases via Stripe.
-
-**Endpoints**:
-- `GET /api/client/billing/products/{id}/key`: Get Stripe public key
-- `POST /api/client/billing/products/{id}/intent`: Create payment intent
-- `PUT /api/client/billing/products/{id}/intent`: Update payment intent
-- `POST /api/client/billing/process`: Process payment and create server
-
-**Flow**:
+**Paid Product Flow**:
 1. Create Stripe payment intent with calculated price
 2. Update intent with order metadata
 3. Process payment
@@ -139,7 +132,7 @@ Handles paid product purchases via Stripe.
 ```
 User Request
     ↓
-FreeProductController::process()
+CheckoutController::processFree()
     ↓
 BillingValidationService::validateBillingEnabled()
     ↓
@@ -166,7 +159,7 @@ Return server details
 ```
 User Request
     ↓
-PaymentController::intent()
+CheckoutController::createIntent()
     ↓
 BillingValidationService::calculatePriceWithCoupon()
     ↓
@@ -176,7 +169,7 @@ Create Stripe PaymentIntent
     ↓
 Return intent to client
     ↓
-PaymentController::updateIntent()
+CheckoutController::updateIntent()
     ↓
 BillingValidationService::validateBillingEnabled()
     ↓
@@ -188,7 +181,7 @@ CreateOrderService::create()
     ↓
 Client confirms payment
     ↓
-PaymentController::process()
+CheckoutController::processPaid()
     ├─ CreateServerService::process()
     ├─ Stripe capture payment
     └─ Record coupon usage
@@ -200,7 +193,7 @@ Return success
 ```
 User Request
     ↓
-Controller::renew() (Free or Payment)
+CheckoutController::renewFree() or processPaid()
     ↓
 BillingValidationService::validateBillingEnabled()
     ↓

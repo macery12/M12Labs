@@ -13,7 +13,7 @@ use Everest\Exceptions\DisplayException;
  * Centralized validation service for billing operations.
  * 
  * This service consolidates all billing-related validation logic that was previously
- * duplicated across FreeProductController and PaymentController.
+ * duplicated across the old FreeProductController and PaymentController (now replaced by CheckoutController).
  */
 class BillingValidationService
 {

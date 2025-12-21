@@ -10,6 +10,7 @@ This document summarizes the refactoring of the Jexactyl billing system from a f
 - **Scattered Responsibilities**: Business logic mixed with controller logic
 - **Hard to Extend**: Adding new billing types required modifying multiple controllers
 - **Inconsistent**: Different code paths for similar operations
+- **Separate Controllers**: Two controllers (FreeProductController and PaymentController) for similar operations
 
 ### After Refactoring
 - **Unified Services**: 2 new centralized services (BillingValidationService, OrderProcessorService)
@@ -17,17 +18,18 @@ This document summarizes the refactoring of the Jexactyl billing system from a f
 - **Clear Separation**: Controllers handle HTTP, services handle business logic
 - **Easy to Extend**: New billing types can reuse existing validation and processing
 - **Consistent**: All billing flows use the same services
+- **Single Controller**: CheckoutController handles all billing operations (free and paid)
 
 ## New Architecture
 
 ### Services Created
 
-1. **BillingValidationService** (131 lines)
+1. **BillingValidationService** (143 lines)
    - Centralized validation for all billing operations
    - Methods for billing enabled, node deployment, egg selection, pricing, etc.
    - Reusable across all controllers
 
-2. **OrderProcessorService** (140 lines)
+2. **OrderProcessorService** (147 lines)
    - Orchestrates order creation and processing
    - Coordinates server creation/renewal
    - Handles coupon usage recording
@@ -41,13 +43,24 @@ This document summarizes the refactoring of the Jexactyl billing system from a f
    - `processFree()` is now a thin wrapper for backward compatibility
    - Removed deprecated `getServerEnvironment()` method
 
-### Controllers Refactored
+### Controllers Consolidated
 
-1. **FreeProductController**
-   - Reduced from 165 lines to 99 lines (40% reduction)
-   - Removed all validation logic (now uses BillingValidationService)
-   - Removed order processing logic (now uses OrderProcessorService)
-   - Cleaner, more readable code
+1. **CheckoutController** (NEW - 403 lines)
+   - **Replaces**: FreeProductController (99 lines) + PaymentController (269 lines)
+   - **Total Before**: 368 lines across 2 controllers
+   - **Total After**: 403 lines in 1 controller
+   - **Methods**:
+     - `processFree()`: Handle free product purchases
+     - `renewFree()`: Handle free server renewals
+     - `getStripeKey()`: Get Stripe public key
+     - `createIntent()`: Create Stripe payment intent
+     - `updateIntent()`: Update payment intent with order details
+     - `processPaid()`: Process paid orders
+   - **Benefits**:
+     - Single source of truth for all billing operations
+     - Consistent error handling
+     - Shared Stripe initialization
+     - Better null safety with optional Stripe client
 
 2. **PaymentController**
    - Reduced from 294 lines to ~260 lines
@@ -58,20 +71,25 @@ This document summarizes the refactoring of the Jexactyl billing system from a f
 ## Files Modified
 
 ### New Files
-- `app/Services/Billing/BillingValidationService.php` (131 lines)
-- `app/Services/Billing/OrderProcessorService.php` (140 lines)
+- `app/Services/Billing/BillingValidationService.php` (143 lines)
+- `app/Services/Billing/OrderProcessorService.php` (147 lines)
+- `app/Http/Controllers/Api/Client/Billing/CheckoutController.php` (403 lines)
 - `docs/billing-architecture.md` (267 lines)
 
 ### Modified Files
 - `app/Services/Billing/CreateServerService.php` (-52 lines)
-- `app/Http/Controllers/Api/Client/Billing/FreeProductController.php` (-66 lines)
-- `app/Http/Controllers/Api/Client/Billing/PaymentController.php` (-34 lines)
+- `routes/api-client.php` (updated to use CheckoutController)
+
+### Removed Files
+- `app/Http/Controllers/Api/Client/Billing/FreeProductController.php` (DELETED - replaced by CheckoutController)
+- `app/Http/Controllers/Api/Client/Billing/PaymentController.php` (DELETED - replaced by CheckoutController)
 
 ### Total Impact
-- **Lines Added**: 538 (new services + documentation)
-- **Lines Removed**: 152 (duplicated/refactored code)
-- **Net Change**: +386 lines (mostly documentation and service separation)
-- **Code Duplication**: -60% in controllers
+- **Lines Added**: 960 (new services + controller + documentation)
+- **Lines Removed**: 420 (old controllers + duplicated code)
+- **Net Change**: +540 lines (mostly documentation and consolidated controller)
+- **Code Duplication**: -100% in controllers (completely eliminated)
+- **Number of Controllers**: 2 → 1 (50% reduction)
 
 ## Backward Compatibility
 
