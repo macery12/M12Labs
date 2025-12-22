@@ -72,7 +72,8 @@ class CreateServerService
             $finalServerName = trim((string) $metadata->name);
         }
         if (!$finalServerName) {
-            // Fallback to default name if no custom name was provided
+            // Defensive fallback - should not be reached due to frontend/controller validation
+            // but ensures server creation never fails due to empty name
             $finalServerName = $request->user()->username . '\'s server';
         }
 

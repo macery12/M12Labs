@@ -295,6 +295,10 @@ export default () => {
                                 onBlur={() => setServerNameTouched(true)}
                                 required
                                 maxLength={191}
+                                aria-invalid={serverNameTouched && !serverName.trim()}
+                                aria-describedby={
+                                    serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
+                                }
                                 className={classNames(
                                     'w-full rounded-lg border px-4 py-2.5 text-sm transition-all',
                                     'bg-gray-800 text-gray-200 placeholder-gray-500',
@@ -305,7 +309,14 @@ export default () => {
                                 }}
                             />
                             {serverNameTouched && !serverName.trim() && (
-                                <p className={'mt-2 text-xs text-amber-400'}>⚠ Server name is required</p>
+                                <p
+                                    id={'server-name-error'}
+                                    className={'mt-2 text-xs text-amber-400'}
+                                    role={'alert'}
+                                    aria-live={'polite'}
+                                >
+                                    ⚠ Server name is required
+                                </p>
                             )}
                         </div>
 
