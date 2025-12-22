@@ -5,6 +5,7 @@ import { capitalize } from '@/lib/strings';
 import tw from 'twin.macro';
 import Spinner from '@/elements/Spinner';
 import { format } from 'date-fns';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     open: boolean;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default ({ open, onClose }: Props) => {
+    const { uuid: user } = useStoreState(s => s.user.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -49,6 +51,20 @@ export default ({ open, onClose }: Props) => {
                 .finally(() => setLoading(false));
         }
     }, [open]);
+
+    // Check if an alert is dismissed
+    const isAlertDismissed = (alertId: number): boolean => {
+        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
+        return localStorage.getItem(dismissedKey) === 'true';
+    };
+
+    // Reopen a dismissed popup alert
+    const reopenAlert = (alertId: number) => {
+        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
+        localStorage.removeItem(dismissedKey);
+        // Refresh the page to show the alert
+        window.location.reload();
+    };
 
     const getTypeColor = (type: string) => {
         switch (type) {
@@ -90,50 +106,72 @@ export default ({ open, onClose }: Props) => {
                     </div>
                 ) : (
                     <div css={tw`max-h-96 overflow-y-auto space-y-3`}>
-                        {alerts.map(alert => (
-                            <div
-                                key={alert.id}
-                                css={tw`p-4 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 transition-colors`}
-                            >
-                                <div css={tw`flex items-start justify-between mb-2`}>
-                                    <div css={tw`flex items-center gap-2`}>
-                                        {alert.title && (
-                                            <h4 css={tw`font-semibold text-gray-200`}>{alert.title}</h4>
-                                        )}
-                                        <span
-                                            className={`px-2 py-0.5 text-xs font-medium rounded border ${getTypeBadge(alert.type)}`}
-                                        >
-                                            {capitalize(alert.type)}
-                                        </span>
-                                    </div>
-                                    <span css={tw`text-xs text-gray-500 uppercase`}>{alert.scope}</span>
-                                </div>
-                                <p css={tw`text-gray-300 text-sm mb-2`}>{alert.content}</p>
-                                {alert.link && (
-                                    <a
-                                        href={alert.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        css={tw`text-blue-400 hover:text-blue-300 text-sm underline`}
-                                    >
-                                        {alert.link_text || 'Learn more'}
-                                    </a>
-                                )}
-                                <div css={tw`flex items-center justify-between mt-3 pt-2 border-t border-gray-700`}>
-                                    <div css={tw`text-xs text-gray-500`}>
-                                        Position: <span css={tw`text-gray-400`}>{alert.position}</span>
-                                    </div>
-                                    {alert.start_at && (
-                                        <div css={tw`text-xs text-gray-500`}>
-                                            Active from:{' '}
-                                            <span css={tw`text-gray-400`}>
-                                                {format(new Date(alert.start_at), 'MMM d, yyyy')}
+                        {alerts.map(alert => {
+                            const isDismissed = isAlertDismissed(alert.id);
+                            const isPopup = alert.position === 'center';
+                            
+                            return (
+                                <div
+                                    key={alert.id}
+                                    css={tw`p-4 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 transition-colors`}
+                                >
+                                    <div css={tw`flex items-start justify-between mb-2`}>
+                                        <div css={tw`flex items-center gap-2 flex-wrap`}>
+                                            {alert.title && (
+                                                <h4 css={tw`font-semibold text-gray-200`}>{alert.title}</h4>
+                                            )}
+                                            <span
+                                                className={`px-2 py-0.5 text-xs font-medium rounded border ${getTypeBadge(alert.type)}`}
+                                            >
+                                                {capitalize(alert.type)}
                                             </span>
+                                            {isDismissed && (
+                                                <span css={tw`px-2 py-0.5 text-xs font-medium rounded border bg-gray-600/20 text-gray-400 border-gray-600`}>
+                                                    Dismissed
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span css={tw`text-xs text-gray-500 uppercase`}>{alert.scope}</span>
+                                    </div>
+                                    <p css={tw`text-gray-300 text-sm mb-2`}>{alert.content}</p>
+                                    {alert.link && (
+                                        <a
+                                            href={alert.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            css={tw`text-blue-400 hover:text-blue-300 text-sm underline`}
+                                        >
+                                            {alert.link_text || 'Learn more'}
+                                        </a>
+                                    )}
+                                    <div css={tw`flex items-center justify-between mt-3 pt-2 border-t border-gray-700`}>
+                                        <div css={tw`text-xs text-gray-500`}>
+                                            Position: <span css={tw`text-gray-400`}>{alert.position}</span>
+                                        </div>
+                                        {alert.start_at && (
+                                            <div css={tw`text-xs text-gray-500`}>
+                                                Active from:{' '}
+                                                <span css={tw`text-gray-400`}>
+                                                    {format(new Date(alert.start_at), 'MMM d, yyyy')}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Reopen button for dismissed popup alerts */}
+                                    {isDismissed && isPopup && (
+                                        <div css={tw`mt-3 pt-2 border-t border-gray-700`}>
+                                            <button
+                                                type="button"
+                                                onClick={() => reopenAlert(alert.id)}
+                                                css={tw`px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors`}
+                                            >
+                                                Reopen Popup
+                                            </button>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

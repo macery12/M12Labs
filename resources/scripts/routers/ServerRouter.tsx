@@ -92,7 +92,9 @@ function ServerRouter() {
 
     return (
         <Fragment key={'server-router'}>
-            <ScopedAlert scope="server" />
+            {/* Global server alerts - slide-out and center popups only */}
+            <ScopedAlert scope="server" position="slide-out" />
+            <ScopedAlert scope="server" position="center" />
             <div className={'h-screen flex'}>
                 <MobileSidebar>
                     <MobileSidebar.Home />

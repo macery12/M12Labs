@@ -9,9 +9,10 @@ import SlideOutAlert from '@/components/elements/SlideOutAlert';
 
 interface ScopedAlertProps {
     scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
+    position?: 'top-center' | 'slide-out' | 'center' | 'all'; // Filter by position
 }
 
-export default ({ scope }: ScopedAlertProps) => {
+export default ({ scope, position = 'all' }: ScopedAlertProps) => {
     const { uuid: user } = useStoreState(s => s.user.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
@@ -39,9 +40,21 @@ export default ({ scope }: ScopedAlertProps) => {
 
     // Filter out dismissed alerts and group by position
     const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id));
-    const topCenterAlerts = visibleAlerts.filter(a => a.position === 'top-center');
-    const slideOutAlerts = visibleAlerts.filter(a => a.position === 'slide-out');
-    const centerAlerts = visibleAlerts.filter(a => a.position === 'center');
+    
+    // Apply position filter if specified
+    const filteredAlerts = position === 'all' 
+        ? visibleAlerts 
+        : visibleAlerts.filter(a => a.position === position);
+    
+    const topCenterAlerts = position === 'all' || position === 'top-center' 
+        ? filteredAlerts.filter(a => a.position === 'top-center')
+        : [];
+    const slideOutAlerts = position === 'all' || position === 'slide-out'
+        ? filteredAlerts.filter(a => a.position === 'slide-out')
+        : [];
+    const centerAlerts = position === 'all' || position === 'center'
+        ? filteredAlerts.filter(a => a.position === 'center')
+        : [];
 
     // Get the current center alert to show
     const currentCenterAlert = centerAlerts[dialogAlertIndex] || null;
