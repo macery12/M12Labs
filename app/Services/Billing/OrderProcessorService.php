@@ -127,11 +127,6 @@ class OrderProcessorService
      */
     private function recordCouponUsage(int $couponId, int $userId, int $orderId): void
     {
-        // Only record usage if coupons are enabled
-        if (!config('modules.billing.coupons_enabled', true)) {
-            return;
-        }
-
         CouponUsage::create([
             'coupon_id' => $couponId,
             'user_id' => $userId,

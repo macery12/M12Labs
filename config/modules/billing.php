@@ -52,9 +52,13 @@ return [
     ],
 
     /*
-     * Enable or disable coupon usage.
-     * Set to false to prevent users from using coupons.
-     * Environment variable: BILLING_COUPONS_ENABLED (default: true)
+     * Configure where coupons can be used.
+     * Options:
+     *   'both' - Coupons can be used for both purchases and renewals (default)
+     *   'purchases' - Coupons can only be used for new purchases
+     *   'renewals' - Coupons can only be used for renewals
+     *   'disabled' - Coupons are completely disabled
+     * Environment variable: BILLING_COUPON_USAGE (default: 'both')
      */
-    'coupons_enabled' => env('BILLING_COUPONS_ENABLED', true),
+    'coupon_usage' => env('BILLING_COUPON_USAGE', 'both'),
 ];

@@ -65,9 +65,9 @@ class CheckoutController extends ClientApiController
             throw new DisplayException('Server name is required.');
         }
 
-        // Calculate price with coupon
+        // Calculate price with coupon for new purchase
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, Order::TYPE_NEW);
 
         // Validate this is a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -117,9 +117,9 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
-        // Calculate price with coupon
+        // Calculate price with coupon for renewal
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, Order::TYPE_REN);
 
         // Validate this is a free renewal
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -170,9 +170,9 @@ class CheckoutController extends ClientApiController
         
         $product = Product::findOrFail($id);
 
-        // Calculate price with coupon using validation service
+        // Calculate price with coupon using validation service for new purchase
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, Order::TYPE_NEW);
 
         // Validate this is not a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
@@ -247,9 +247,10 @@ class CheckoutController extends ClientApiController
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
         $eggId = $this->validationService->validateAndGetEggId($product, $requestedEggId);
 
-        // Calculate price with coupon
+        // Determine order type and calculate price with coupon
+        $orderType = $this->getOrderType($request);
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType);
 
         // Update the intent amount if it has changed
         if ($intent->amount !== (int)($priceInfo['finalPrice'] * 100)) {
@@ -365,7 +366,7 @@ class CheckoutController extends ClientApiController
         }
 
         // Record coupon usage for non-renewal orders (renewals are handled by OrderProcessorService)
-        if ($order->type !== Order::TYPE_REN && $order->coupon_id && config('modules.billing.coupons_enabled', true)) {
+        if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
             CouponUsage::create([
                 'coupon_id' => $order->coupon_id,
                 'user_id' => $order->user_id,

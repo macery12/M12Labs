@@ -5,23 +5,30 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
+use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Coupon;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Billing\ValidateCouponRequest;
+use Everest\Services\Billing\BillingValidationService;
 
 class CouponController extends ClientApiController
 {
+    public function __construct(
+        private BillingValidationService $validationService,
+    ) {
+    }
+
     /**
      * Validate a coupon code for use in checkout.
      */
     public function validateCoupon(ValidateCouponRequest $request): JsonResponse
     {
         try {
-            // Check if coupons are enabled
-            if (!config('modules.billing.coupons_enabled', true)) {
-                throw new DisplayException('Coupons are currently disabled.');
-            }
+            $orderType = $request->input('order_type', Order::TYPE_NEW);
+            
+            // Check if coupons are allowed for this order type
+            $this->validationService->validateCouponUsageForOrderType($orderType);
 
             // Check if coupons table exists
             if (!\Schema::hasTable('coupons')) {
