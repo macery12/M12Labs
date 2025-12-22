@@ -33,7 +33,7 @@ class BillingValidationService
     /**
      * Check if coupons are allowed for a specific order type.
      * 
-     * @param string $orderType The order type (e.g., Order::TYPE_NEW, Order::TYPE_REN)
+     * @param string $orderType The order type (Order::TYPE_NEW, Order::TYPE_REN, or Order::TYPE_UPG)
      * @return bool True if coupons are allowed for this order type
      */
     public function areCouponsAllowedForOrderType(string $orderType): bool
@@ -63,7 +63,7 @@ class BillingValidationService
     /**
      * Validate that coupons are allowed for a specific order type.
      * 
-     * @param string $orderType The order type (e.g., Order::TYPE_NEW, Order::TYPE_REN)
+     * @param string $orderType The order type (Order::TYPE_NEW, Order::TYPE_REN, or Order::TYPE_UPG)
      * @throws DisplayException if coupons are not allowed for this order type
      */
     public function validateCouponUsageForOrderType(string $orderType): void
