@@ -20,6 +20,7 @@ export default () => {
         clearFlashes();
 
         const renewal = Boolean(params.get('renewal'));
+        const serverUuid = params.get('server_uuid');
 
         if (!intent) {
             addFlash({
@@ -33,7 +34,12 @@ export default () => {
 
         processPaidOrder(intent, renewal)
             .then(() => {
-                navigate('/account/billing/success');
+                // Redirect to server billing page for renewals, otherwise to success page
+                if (renewal && serverUuid) {
+                    navigate(`/server/${serverUuid}/billing`);
+                } else {
+                    navigate('/account/billing/success');
+                }
             })
             .catch(() => {
                 navigate('/account/billing/cancel');

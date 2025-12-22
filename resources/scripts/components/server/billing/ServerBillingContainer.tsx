@@ -101,7 +101,7 @@ export default () => {
         // Use renewFreeServer for free products and paid products made free by coupons
         renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
             .then(() => {
-                navigate(`/server/${serverUuid}`);
+                navigate(`/server/${serverUuid}/billing`);
             })
             .catch(error => {
                 clearAndAddHttpError({ key: 'server:billing', error });

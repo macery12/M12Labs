@@ -8,11 +8,13 @@ import { updateStripeIntent } from '@/api/routes/account/billing/orders/stripe';
 export default ({
     id,
     serverId,
+    serverUuid,
     intent,
     renewal,
 }: {
     id?: number;
     serverId: number;
+    serverUuid?: string;
     intent: string;
     renewal?: boolean;
 }) => {
@@ -30,10 +32,16 @@ export default ({
         if (!stripe || !elements) return;
 
         updateStripeIntent({ id: id!, intent, serverId, renewal }).then(() => {
+            // Build return URL with renewal flag and server UUID for renewals
+            let returnUrl = window.location.origin + '/account/billing/processing';
+            if (renewal && serverUuid) {
+                returnUrl += `?renewal=true&server_uuid=${serverUuid}`;
+            }
+            
             stripe.confirmPayment({
                 elements,
                 confirmParams: {
-                    return_url: window.location.origin + '/account/billing/processing',
+                    return_url: returnUrl,
                 },
             });
         });

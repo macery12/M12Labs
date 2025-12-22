@@ -12,6 +12,7 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
     const [intent, setIntent] = useState<StripeIntent | null>(null);
 
     const serverId = ServerContext.useStoreState(state => state.server.data!.internalId);
+    const serverUuid = ServerContext.useStoreState(state => state.server.data!.uuid);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -49,7 +50,7 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
             {/* @ts-expect-error this is fine, stripe library is just weird */}
             {/* Key prop forces re-mount when intent changes (e.g., coupon applied/removed) */}
             <Elements stripe={stripe} options={options} key={intent?.id}>
-                <PaymentForm id={id} serverId={Number(serverId)} intent={intent.id} renewal />
+                <PaymentForm id={id} serverId={Number(serverId)} serverUuid={serverUuid} intent={intent.id} renewal />
             </Elements>
         </>
     );
