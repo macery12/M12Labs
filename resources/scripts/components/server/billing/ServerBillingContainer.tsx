@@ -302,7 +302,11 @@ export default () => {
                                         )}
                                     </div>
 
-                                    <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                    <CouponInput
+                                        subtotal={product.price}
+                                        onCouponApplied={handleCouponApplied}
+                                        orderType="ren"
+                                    />
                                     <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
 
                                     <div css={tw`mt-4`}>
