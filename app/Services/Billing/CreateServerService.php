@@ -66,12 +66,13 @@ class CreateServerService
         
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
-        // Determine the server name: use custom name from metadata, passed parameter, or default
+        // Determine the server name: use passed parameter, metadata name, or default
         $finalServerName = $serverName;
         if (!$finalServerName && isset($metadata->name) && !empty(trim((string) $metadata->name))) {
             $finalServerName = trim((string) $metadata->name);
         }
         if (!$finalServerName) {
+            // Fallback to default name if no custom name was provided
             $finalServerName = $request->user()->username . '\'s server';
         }
 

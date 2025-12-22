@@ -93,7 +93,7 @@ class CheckoutController extends ClientApiController
             $eggId,
             $couponId,
             $variables,
-            null,
+            null, // No payment intent ID for free orders
             $serverName
         );
 

@@ -62,6 +62,7 @@ export default () => {
     const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [serverName, setServerName] = useState<string>('');
+    const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
 
     const { colors } = useStoreState(state => state.theme.data!);
 
@@ -291,6 +292,7 @@ export default () => {
                                 placeholder={'Enter server name'}
                                 value={serverName}
                                 onChange={e => setServerName(e.target.value)}
+                                onBlur={() => setServerNameTouched(true)}
                                 required
                                 maxLength={191}
                                 className={classNames(
@@ -302,7 +304,7 @@ export default () => {
                                     borderColor: serverName.trim() ? colors.primary : undefined,
                                 }}
                             />
-                            {!serverName.trim() && (
+                            {serverNameTouched && !serverName.trim() && (
                                 <p className={'mt-2 text-xs text-amber-400'}>⚠ Server name is required</p>
                             )}
                         </div>
