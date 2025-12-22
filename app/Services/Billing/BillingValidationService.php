@@ -79,16 +79,17 @@ class BillingValidationService
      * 
      * @param Product $product The product being purchased
      * @param int|null $couponId The coupon ID to apply (optional)
+     * @param string $orderType The order type (default: 'new')
      * @return array{finalPrice: float, discount: float} The final price and discount amount
      */
-    public function calculatePriceWithCoupon(Product $product, ?int $couponId): array
+    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new'): array
     {
         $finalPrice = $product->price;
         $discount = 0.0;
         
         if ($couponId) {
             $coupon = Coupon::find($couponId);
-            if ($coupon) {
+            if ($coupon && $coupon->isAllowedForOrderType($orderType)) {
                 $discount = $coupon->calculateDiscount($product->price);
                 $finalPrice = max(0, $product->price - $discount);
             }

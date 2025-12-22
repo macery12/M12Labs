@@ -233,6 +233,7 @@ export default class Transformers {
         minOrderTotal: attributes.min_order_total,
         expiresAt: attributes.expires_at ? new Date(attributes.expires_at) : null,
         isActive: attributes.is_active,
+        allowedFor: attributes.allowed_for,
         usageCount: attributes.usage_count,
         createdAt: new Date(attributes.created_at),
         updatedAt: new Date(attributes.updated_at),

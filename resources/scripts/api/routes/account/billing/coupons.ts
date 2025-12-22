@@ -3,6 +3,7 @@ import http from '@/api/http';
 export interface ValidateCouponRequest {
     code: string;
     subtotal: number;
+    order_type?: string;
 }
 
 export interface ValidateCouponResponse {
@@ -18,10 +19,15 @@ export interface ValidateCouponResponse {
     total: number;
 }
 
-export const validateCoupon = async (code: string, subtotal: number): Promise<ValidateCouponResponse> => {
+export const validateCoupon = async (
+    code: string,
+    subtotal: number,
+    orderType: string = 'new'
+): Promise<ValidateCouponResponse> => {
     const { data } = await http.post('/api/client/billing/coupons/validate', {
         code,
         subtotal,
+        order_type: orderType,
     });
 
     return data;

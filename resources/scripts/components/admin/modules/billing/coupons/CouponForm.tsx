@@ -103,6 +103,22 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                 label={'Expires At'}
                                 description={'When this coupon expires (leave empty to never expire).'}
                             />
+                            <div className={'mb-6'}>
+                                <Label htmlFor={'allowedFor'}>Allowed For</Label>
+                                <Select
+                                    id={'allowedFor'}
+                                    name={'allowedFor'}
+                                    value={values.allowedFor}
+                                    onChange={e => setFieldValue('allowedFor', e.target.value)}
+                                >
+                                    <option value={'both'}>Both Purchases and Renewals</option>
+                                    <option value={'purchases'}>Purchases Only</option>
+                                    <option value={'renewals'}>Renewals Only</option>
+                                </Select>
+                                <p className={'text-xs text-neutral-400 mt-2'}>
+                                    Whether this coupon can be used for new purchases, renewals, or both.
+                                </p>
+                            </div>
                             <div className={'mt-1'}>
                                 <Label htmlFor={'isActive'}>Status</Label>
                                 <div className={'mt-1'}>
@@ -187,6 +203,7 @@ export default function CouponForm() {
               minOrderTotal: coupon.minOrderTotal,
               expiresAt: coupon.expiresAt ? coupon.expiresAt.toISOString().slice(0, 16) : null,
               isActive: coupon.isActive,
+              allowedFor: coupon.allowedFor || 'both',
           }
         : {
               code: '',
@@ -197,6 +214,7 @@ export default function CouponForm() {
               minOrderTotal: null,
               expiresAt: null,
               isActive: true,
+              allowedFor: 'both',
           };
 
     return (
@@ -225,6 +243,7 @@ export default function CouponForm() {
                     minOrderTotal: number().nullable().min(0),
                     expiresAt: string().nullable(),
                     isActive: boolean().required(),
+                    allowedFor: string().required().oneOf(['both', 'purchases', 'renewals']),
                 })}
             >
                 <InternalForm coupon={coupon} />

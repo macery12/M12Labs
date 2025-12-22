@@ -165,6 +165,7 @@ interface Coupon extends Model {
     minOrderTotal: number | null;
     expiresAt: Date | null;
     isActive: boolean;
+    allowedFor: 'both' | 'purchases' | 'renewals';
     usageCount: number;
     createdAt: Date;
     updatedAt?: Date | null;

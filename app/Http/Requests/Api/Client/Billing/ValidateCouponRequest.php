@@ -16,6 +16,7 @@ class ValidateCouponRequest extends ClientApiRequest
         return [
             'code' => 'required|string',
             'subtotal' => 'required|numeric|min:0',
+            'order_type' => 'nullable|string|in:new,ren,upg',
         ];
     }
 }

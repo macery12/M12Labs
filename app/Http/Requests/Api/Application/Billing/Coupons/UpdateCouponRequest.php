@@ -26,6 +26,7 @@ class UpdateCouponRequest extends ApplicationApiRequest
             'min_order_total' => 'nullable|numeric|min:0',
             'expires_at' => 'nullable|date',
             'is_active' => 'sometimes|boolean',
+            'allowed_for' => 'nullable|in:both,purchases,renewals',
         ];
     }
 }

@@ -26,6 +26,7 @@ class StoreCouponRequest extends ApplicationApiRequest
             'min_order_total' => $rules['min_order_total'],
             'expires_at' => $rules['expires_at'],
             'is_active' => $rules['is_active'],
+            'allowed_for' => $rules['allowed_for'],
         ];
     }
 }
