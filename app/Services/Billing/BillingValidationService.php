@@ -48,7 +48,8 @@ class BillingValidationService
             return true;
         }
         
-        if ($couponUsage === 'purchases' && $orderType === Order::TYPE_NEW) {
+        // Treat both NEW and UPG (upgrade) as purchases
+        if ($couponUsage === 'purchases' && in_array($orderType, [Order::TYPE_NEW, Order::TYPE_UPG])) {
             return true;
         }
         
@@ -73,7 +74,8 @@ class BillingValidationService
             throw new DisplayException('Coupons are currently disabled.');
         }
         
-        if ($couponUsage === 'purchases' && $orderType !== Order::TYPE_NEW) {
+        // Treat both NEW and UPG (upgrade) as purchases
+        if ($couponUsage === 'purchases' && !in_array($orderType, [Order::TYPE_NEW, Order::TYPE_UPG])) {
             throw new DisplayException('Coupons can only be used for new purchases.');
         }
         

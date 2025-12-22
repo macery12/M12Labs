@@ -366,13 +366,17 @@ class CheckoutController extends ClientApiController
         }
 
         // Record coupon usage for non-renewal orders (renewals are handled by OrderProcessorService)
+        // Only record if coupons are allowed for this order type
         if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-            CouponUsage::create([
-                'coupon_id' => $order->coupon_id,
-                'user_id' => $order->user_id,
-                'order_id' => $order->id,
-                'used_at' => now(),
-            ]);
+            $orderType = $order->type ?? Order::TYPE_NEW;
+            if ($this->validationService->areCouponsAllowedForOrderType($orderType)) {
+                CouponUsage::create([
+                    'coupon_id' => $order->coupon_id,
+                    'user_id' => $order->user_id,
+                    'order_id' => $order->id,
+                    'used_at' => now(),
+                ]);
+            }
         }
 
         // Mark the order as processed (only for non-renewal orders)
