@@ -92,6 +92,19 @@ export default ({ open, onClose }: Props) => {
         }
     };
 
+    const getTypeBorderColor = (type: string) => {
+        switch (type) {
+            case 'success':
+                return 'border-l-green-500';
+            case 'warning':
+                return 'border-l-yellow-500';
+            case 'danger':
+                return 'border-l-red-500';
+            default:
+                return 'border-l-blue-500';
+        }
+    };
+
     return (
         <Dialog open={open} onClose={onClose} title="Alert History">
             <div css={tw`space-y-4`}>
@@ -113,7 +126,7 @@ export default ({ open, onClose }: Props) => {
                             return (
                                 <div
                                     key={alert.id}
-                                    css={tw`p-4 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 transition-colors`}
+                                    className={`p-4 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 transition-colors border-l-8 ${getTypeBorderColor(alert.type)}`}
                                 >
                                     <div css={tw`flex items-start justify-between mb-2`}>
                                         <div css={tw`flex items-center gap-2 flex-wrap`}>
