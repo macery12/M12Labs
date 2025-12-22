@@ -59,6 +59,7 @@ class CouponController extends ApplicationApiController
             'min_order_total' => $request->input('min_order_total') ? (float) $request->input('min_order_total') : null,
             'expires_at' => $request->input('expires_at'),
             'is_active' => $request->input('is_active', true),
+            'allowed_for' => $request->input('allowed_for', 'both'),
         ]);
 
         Activity::event('admin:billing:coupons:create')
@@ -107,6 +108,10 @@ class CouponController extends ApplicationApiController
 
         if ($request->has('expires_at')) {
             $updateData['expires_at'] = $request->input('expires_at');
+        }
+
+        if ($request->has('allowed_for')) {
+            $updateData['allowed_for'] = $request->input('allowed_for');
         }
 
         $coupon->update($updateData);
