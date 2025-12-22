@@ -65,6 +65,7 @@ class Coupon extends Model
         'min_order_total' => 'float',
         'expires_at' => 'datetime',
         'is_active' => 'bool',
+        'allowed_for' => 'string',
     ];
     
     /**
