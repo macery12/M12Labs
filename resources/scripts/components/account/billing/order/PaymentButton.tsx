@@ -57,7 +57,11 @@ export default (data: Props) => {
             <PaymentElement />
             <SpinnerOverlay visible={loading} />
             <FlashMessageRender byKey={'store:order'} className={'mb-4'} />
-            <Button disabled={!data.selectedNode || !data.serverName.trim()} className={'mt-4 w-full'} size={Button.Sizes.Large}>
+            <Button
+                disabled={!data.selectedNode || !data.serverName.trim()}
+                className={'mt-4 w-full'}
+                size={Button.Sizes.Large}
+            >
                 Pay Now
             </Button>
         </form>
