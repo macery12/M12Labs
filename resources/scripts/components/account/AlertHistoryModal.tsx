@@ -126,7 +126,7 @@ export default ({ open, onClose }: Props) => {
                             return (
                                 <div
                                     key={alert.id}
-                                    className={`p-4 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 transition-colors border-l-8 ${getTypeBorderColor(alert.type)}`}
+                                    className={`p-4 rounded-lg bg-gray-800 border border-gray-700 border-l-8 ${getTypeBorderColor(alert.type)}`}
                                 >
                                     <div css={tw`flex items-start justify-between mb-2`}>
                                         <div css={tw`flex items-center gap-2 flex-wrap`}>
