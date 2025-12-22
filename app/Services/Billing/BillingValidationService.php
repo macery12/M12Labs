@@ -5,7 +5,6 @@ namespace Everest\Services\Billing;
 use Everest\Models\Node;
 use Everest\Models\User;
 use Everest\Models\Server;
-use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
@@ -27,60 +26,6 @@ class BillingValidationService
     {
         if (!config('modules.billing.enabled')) {
             throw new DisplayException('The billing module is not enabled.');
-        }
-    }
-
-    /**
-     * Check if coupons are allowed for a specific order type.
-     * 
-     * @param string $orderType The order type (Order::TYPE_NEW, Order::TYPE_REN, or Order::TYPE_UPG)
-     * @return bool True if coupons are allowed for this order type
-     */
-    public function areCouponsAllowedForOrderType(string $orderType): bool
-    {
-        $couponUsage = config('modules.billing.coupon_usage', 'both');
-        
-        if ($couponUsage === 'disabled') {
-            return false;
-        }
-        
-        if ($couponUsage === 'both') {
-            return true;
-        }
-        
-        // Treat both NEW and UPG (upgrade) as purchases
-        if ($couponUsage === 'purchases' && in_array($orderType, [Order::TYPE_NEW, Order::TYPE_UPG])) {
-            return true;
-        }
-        
-        if ($couponUsage === 'renewals' && $orderType === Order::TYPE_REN) {
-            return true;
-        }
-        
-        return false;
-    }
-
-    /**
-     * Validate that coupons are allowed for a specific order type.
-     * 
-     * @param string $orderType The order type (Order::TYPE_NEW, Order::TYPE_REN, or Order::TYPE_UPG)
-     * @throws DisplayException if coupons are not allowed for this order type
-     */
-    public function validateCouponUsageForOrderType(string $orderType): void
-    {
-        $couponUsage = config('modules.billing.coupon_usage', 'both');
-        
-        if ($couponUsage === 'disabled') {
-            throw new DisplayException('Coupons are currently disabled.');
-        }
-        
-        // Treat both NEW and UPG (upgrade) as purchases
-        if ($couponUsage === 'purchases' && !in_array($orderType, [Order::TYPE_NEW, Order::TYPE_UPG])) {
-            throw new DisplayException('Coupons can only be used for new purchases.');
-        }
-        
-        if ($couponUsage === 'renewals' && $orderType !== Order::TYPE_REN) {
-            throw new DisplayException('Coupons can only be used for renewals.');
         }
     }
 
@@ -134,18 +79,17 @@ class BillingValidationService
      * 
      * @param Product $product The product being purchased
      * @param int|null $couponId The coupon ID to apply (optional)
-     * @param string $orderType The order type (default: Order::TYPE_NEW)
+     * @param string $orderType The order type (default: 'new')
      * @return array{finalPrice: float, discount: float} The final price and discount amount
      */
-    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = Order::TYPE_NEW): array
+    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new'): array
     {
         $finalPrice = $product->price;
         $discount = 0.0;
         
-        // Only apply coupon if coupons are allowed for this order type
-        if ($couponId && $this->areCouponsAllowedForOrderType($orderType)) {
+        if ($couponId) {
             $coupon = Coupon::find($couponId);
-            if ($coupon) {
+            if ($coupon && $coupon->isAllowedForOrderType($orderType)) {
                 $discount = $coupon->calculateDiscount($product->price);
                 $finalPrice = max(0, $product->price - $discount);
             }

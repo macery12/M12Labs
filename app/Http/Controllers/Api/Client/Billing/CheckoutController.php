@@ -67,7 +67,7 @@ class CheckoutController extends ClientApiController
 
         // Calculate price with coupon for new purchase
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, Order::TYPE_NEW);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
 
         // Validate this is a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -119,7 +119,7 @@ class CheckoutController extends ClientApiController
 
         // Calculate price with coupon for renewal
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, Order::TYPE_REN);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren');
 
         // Validate this is a free renewal
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -172,7 +172,7 @@ class CheckoutController extends ClientApiController
 
         // Calculate price with coupon using validation service for new purchase
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, Order::TYPE_NEW);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
 
         // Validate this is not a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
@@ -366,17 +366,13 @@ class CheckoutController extends ClientApiController
         }
 
         // Record coupon usage for non-renewal orders (renewals are handled by OrderProcessorService)
-        // Only record if coupons are allowed for this order type
         if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-            $orderType = $order->type ?? Order::TYPE_NEW;
-            if ($this->validationService->areCouponsAllowedForOrderType($orderType)) {
-                CouponUsage::create([
-                    'coupon_id' => $order->coupon_id,
-                    'user_id' => $order->user_id,
-                    'order_id' => $order->id,
-                    'used_at' => now(),
-                ]);
-            }
+            CouponUsage::create([
+                'coupon_id' => $order->coupon_id,
+                'user_id' => $order->user_id,
+                'order_id' => $order->id,
+                'used_at' => now(),
+            ]);
         }
 
         // Mark the order as processed (only for non-renewal orders)
@@ -401,9 +397,6 @@ class CheckoutController extends ClientApiController
 
     /**
      * Determine the order type (NEW, UPGRADE, or RENEWAL).
-     * 
-     * Note: Currently only NEW and RENEWAL are detected. UPGRADE support
-     * is prepared in the validation service but not yet implemented in the checkout flow.
      * 
      * @param Request $request
      * @return string

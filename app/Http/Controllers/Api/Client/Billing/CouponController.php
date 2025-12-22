@@ -5,31 +5,19 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
-use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Coupon;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Billing\ValidateCouponRequest;
-use Everest\Services\Billing\BillingValidationService;
 
 class CouponController extends ClientApiController
 {
-    public function __construct(
-        private BillingValidationService $validationService,
-    ) {
-    }
-
     /**
      * Validate a coupon code for use in checkout.
      */
     public function validateCoupon(ValidateCouponRequest $request): JsonResponse
     {
         try {
-            $orderType = $request->input('order_type', Order::TYPE_NEW);
-            
-            // Check if coupons are allowed for this order type
-            $this->validationService->validateCouponUsageForOrderType($orderType);
-
             // Check if coupons table exists
             if (!\Schema::hasTable('coupons')) {
                 \Log::error('Coupon validation failed: coupons table does not exist');
@@ -39,11 +27,17 @@ class CouponController extends ClientApiController
             $code = Str::upper($request->input('code'));
             $subtotal = (float) $request->input('subtotal');
             $userId = $request->user()->id;
+            $orderType = $request->input('order_type', 'new');
 
             $coupon = Coupon::where('code', $code)->first();
 
             if (!$coupon) {
                 throw new DisplayException('Invalid coupon code.');
+            }
+
+            // Check if coupon is allowed for this order type
+            if (!$coupon->isAllowedForOrderType($orderType)) {
+                throw new DisplayException($coupon->getNotAllowedMessage($orderType));
             }
 
             $validation = $coupon->canBeUsed($userId, $subtotal);

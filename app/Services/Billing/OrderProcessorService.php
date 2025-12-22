@@ -27,7 +27,6 @@ class OrderProcessorService
         private CreateOrderService $orderService,
         private CreateServerService $serverCreationService,
         private ServerRenewalService $renewalService,
-        private BillingValidationService $validationService,
     ) {
     }
 
@@ -81,7 +80,7 @@ class OrderProcessorService
 
         // Record coupon usage if applicable
         if ($couponId) {
-            $this->recordCouponUsage($couponId, $user->id, $order->id, Order::TYPE_NEW);
+            $this->recordCouponUsage($couponId, $user->id, $order->id);
         }
 
         // Update order status and name
@@ -113,7 +112,7 @@ class OrderProcessorService
 
         // Record coupon usage if applicable
         if ($couponId) {
-            $this->recordCouponUsage($couponId, $server->user->id, $result['order']->id, Order::TYPE_REN);
+            $this->recordCouponUsage($couponId, $server->user->id, $result['order']->id);
         }
 
         return $result;
@@ -125,15 +124,9 @@ class OrderProcessorService
      * @param int $couponId The coupon ID
      * @param int $userId The user ID
      * @param int $orderId The order ID
-     * @param string $orderType The order type
      */
-    private function recordCouponUsage(int $couponId, int $userId, int $orderId, string $orderType): void
+    private function recordCouponUsage(int $couponId, int $userId, int $orderId): void
     {
-        // Only record usage if coupons are allowed for this order type
-        if (!$this->validationService->areCouponsAllowedForOrderType($orderType)) {
-            return;
-        }
-
         CouponUsage::create([
             'coupon_id' => $couponId,
             'user_id' => $userId,

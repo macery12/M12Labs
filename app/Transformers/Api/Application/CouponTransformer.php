@@ -30,6 +30,7 @@ class CouponTransformer extends Transformer
             'min_order_total' => $model->min_order_total,
             'expires_at' => $model->expires_at?->toIso8601String(),
             'is_active' => $model->is_active,
+            'allowed_for' => $model->allowed_for,
             'usage_count' => $model->usage_count,
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String(),

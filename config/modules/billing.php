@@ -50,15 +50,4 @@ return [
         'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
         'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
     ],
-
-    /*
-     * Configure where coupons can be used.
-     * Options:
-     *   'both' - Coupons can be used for both purchases and renewals (default)
-     *   'purchases' - Coupons can only be used for new purchases
-     *   'renewals' - Coupons can only be used for renewals
-     *   'disabled' - Coupons are completely disabled
-     * Environment variable: BILLING_COUPON_USAGE (default: 'both')
-     */
-    'coupon_usage' => env('BILLING_COUPON_USAGE', 'both'),
 ];
