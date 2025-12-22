@@ -53,6 +53,8 @@ return [
 
     /*
      * Enable or disable coupon usage.
+     * Set to false to prevent users from using coupons.
+     * Environment variable: BILLING_COUPONS_ENABLED (default: true)
      */
     'coupons_enabled' => env('BILLING_COUPONS_ENABLED', true),
 ];
