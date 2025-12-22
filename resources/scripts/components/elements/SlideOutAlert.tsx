@@ -16,17 +16,17 @@ interface SlideOutAlertProps {
 }
 
 const typeColors = {
-    success: 'border-green-500 bg-green-500/10',
-    info: 'border-blue-500 bg-blue-500/10',
-    warning: 'border-yellow-500 bg-yellow-500/10',
-    danger: 'border-red-500 bg-red-500/10',
+    success: 'border-green-500 bg-green-500/20',
+    info: 'border-blue-500 bg-blue-500/20',
+    warning: 'border-yellow-500 bg-yellow-500/20',
+    danger: 'border-red-500 bg-red-500/20',
 };
 
 const typeTextColors = {
-    success: 'text-green-400',
-    info: 'text-blue-400',
-    warning: 'text-yellow-400',
-    danger: 'text-red-400',
+    success: 'text-green-300',
+    info: 'text-blue-300',
+    warning: 'text-yellow-300',
+    danger: 'text-red-300',
 };
 
 export default ({ id, title, content, type, link, link_text, onClose, index }: SlideOutAlertProps) => {

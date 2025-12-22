@@ -69,26 +69,26 @@ export default ({ open, onClose }: Props) => {
     const getTypeColor = (type: string) => {
         switch (type) {
             case 'success':
-                return 'text-green-500';
+                return 'text-green-400';
             case 'warning':
-                return 'text-yellow-500';
+                return 'text-yellow-400';
             case 'danger':
-                return 'text-red-500';
+                return 'text-red-400';
             default:
-                return 'text-blue-500';
+                return 'text-blue-400';
         }
     };
 
     const getTypeBadge = (type: string) => {
         switch (type) {
             case 'success':
-                return 'bg-green-500/20 text-green-400 border-green-500';
+                return 'bg-green-500/30 text-green-300 border-green-400';
             case 'warning':
-                return 'bg-yellow-500/20 text-yellow-400 border-yellow-500';
+                return 'bg-yellow-500/30 text-yellow-300 border-yellow-400';
             case 'danger':
-                return 'bg-red-500/20 text-red-400 border-red-500';
+                return 'bg-red-500/30 text-red-300 border-red-400';
             default:
-                return 'bg-blue-500/20 text-blue-400 border-blue-500';
+                return 'bg-blue-500/30 text-blue-300 border-blue-400';
         }
     };
 
