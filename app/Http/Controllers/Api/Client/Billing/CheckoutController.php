@@ -402,6 +402,9 @@ class CheckoutController extends ClientApiController
     /**
      * Determine the order type (NEW, UPGRADE, or RENEWAL).
      * 
+     * Note: Currently only NEW and RENEWAL are detected. UPGRADE support
+     * is prepared in the validation service but not yet implemented in the checkout flow.
+     * 
      * @param Request $request
      * @return string
      */
