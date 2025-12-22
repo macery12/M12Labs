@@ -18,6 +18,11 @@ class CouponController extends ClientApiController
     public function validateCoupon(ValidateCouponRequest $request): JsonResponse
     {
         try {
+            // Check if coupons are enabled
+            if (!config('modules.billing.coupons_enabled', true)) {
+                throw new DisplayException('Coupons are currently disabled.');
+            }
+
             // Check if coupons table exists
             if (!\Schema::hasTable('coupons')) {
                 \Log::error('Coupon validation failed: coupons table does not exist');

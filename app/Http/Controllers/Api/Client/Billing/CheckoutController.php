@@ -365,7 +365,7 @@ class CheckoutController extends ClientApiController
         }
 
         // Record coupon usage for non-renewal orders (renewals are handled by OrderProcessorService)
-        if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
+        if ($order->type !== Order::TYPE_REN && $order->coupon_id && config('modules.billing.coupons_enabled', true)) {
             CouponUsage::create([
                 'coupon_id' => $order->coupon_id,
                 'user_id' => $order->user_id,

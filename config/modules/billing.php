@@ -50,4 +50,9 @@ return [
         'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
         'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
     ],
+
+    /*
+     * Enable or disable coupon usage.
+     */
+    'coupons_enabled' => env('BILLING_COUPONS_ENABLED', true),
 ];

@@ -86,7 +86,8 @@ class BillingValidationService
         $finalPrice = $product->price;
         $discount = 0.0;
         
-        if ($couponId) {
+        // Only apply coupon if coupons are enabled
+        if ($couponId && config('modules.billing.coupons_enabled', true)) {
             $coupon = Coupon::find($couponId);
             if ($coupon) {
                 $discount = $coupon->calculateDiscount($product->price);
