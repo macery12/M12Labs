@@ -59,6 +59,12 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
+        // Get and validate server name
+        $serverName = trim((string) $request->input('name', ''));
+        if (empty($serverName)) {
+            throw new DisplayException('Server name is required.');
+        }
+
         // Calculate price with coupon
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId);
@@ -86,7 +92,9 @@ class CheckoutController extends ClientApiController
             $nodeId,
             $eggId,
             $couponId,
-            $variables
+            $variables,
+            null,
+            $serverName
         );
 
         return $this->fractal->item($result['server'])
@@ -217,6 +225,12 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
+        // Get and validate server name
+        $serverName = trim((string) $request->input('name', ''));
+        if (empty($serverName)) {
+            throw new DisplayException('Server name is required.');
+        }
+
         // Validate node deployment for paid products
         $nodeId = (int) $request->input('node_id');
         $this->validationService->validateNodeDeployment($nodeId, false);
@@ -250,6 +264,7 @@ class CheckoutController extends ClientApiController
             'server_id' => (string) ($request->input('server_id') ?? 0),
             'coupon_id' => (string) ($couponId ?? ''),
             'egg_id' => (string) $eggId,
+            'name' => $serverName,
         ];
 
         $variables = $request->input('variables') ?? [];

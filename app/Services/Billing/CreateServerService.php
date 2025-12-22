@@ -35,9 +35,10 @@ class CreateServerService
      * @param Product $product The product being purchased
      * @param \Stripe\StripeObject|\stdClass $metadata The metadata (from Stripe or mock object)
      * @param Order $order The order being processed
+     * @param string|null $serverName The custom server name (optional)
      * @return Server The created server
      */
-    public function process(Request $request, Product $product, object $metadata, Order $order): Server
+    public function process(Request $request, Product $product, object $metadata, Order $order, ?string $serverName = null): Server
     {
         // Use egg from order if available, otherwise fall back to category's default egg
         $eggId = $order->egg_id ?? $product->category->getDefaultEggId();
@@ -65,6 +66,15 @@ class CreateServerService
         
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
+        // Determine the server name: use custom name from metadata, passed parameter, or default
+        $finalServerName = $serverName;
+        if (!$finalServerName && isset($metadata->name) && !empty(trim((string) $metadata->name))) {
+            $finalServerName = trim((string) $metadata->name);
+        }
+        if (!$finalServerName) {
+            $finalServerName = $request->user()->username . '\'s server';
+        }
+
         try {
             // Use product-based renewal days (automatically handles free vs paid)
             $renewalDays = $product->getRenewalDays();
@@ -74,7 +84,7 @@ class CreateServerService
                 'allocation_id' => $allocation,
                 'egg_id' => $egg->id,
                 'nest_id' => $product->category->nest_id,
-                'name' => $request->user()->username . '\'s server',
+                'name' => $finalServerName,
                 'owner_id' => $request->user()->id,
                 'memory' => $product->memory_limit,
                 'swap' => 0,
@@ -116,9 +126,10 @@ class CreateServerService
      * @param int $nodeId The node ID to deploy to
      * @param Order $order The order being processed
      * @param array $customVariables Custom environment variables
+     * @param string|null $serverName The custom server name (optional)
      * @return Server The created server
      */
-    public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
+    public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = [], ?string $serverName = null): Server
     {
         // Create a mock metadata object that mimics Stripe's StripeObject structure
         $metadata = new \stdClass();
@@ -126,7 +137,7 @@ class CreateServerService
         $metadata->variables = !empty($customVariables) ? $customVariables : null;
         
         // Call the unified process method
-        return $this->process($request, $product, $metadata, $order);
+        return $this->process($request, $product, $metadata, $order, $serverName);
     }
 
     /**

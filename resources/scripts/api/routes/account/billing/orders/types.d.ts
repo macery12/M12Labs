@@ -15,4 +15,5 @@ export interface UpdateStripeIntent {
     renewal?: boolean;
     coupon_id?: number;
     egg_id?: number;
+    name?: string;
 }

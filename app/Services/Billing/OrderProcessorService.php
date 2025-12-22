@@ -43,6 +43,7 @@ class OrderProcessorService
      * @param int|null $couponId The coupon ID (optional)
      * @param array $variables Custom environment variables (optional)
      * @param string|null $paymentIntentId The Stripe payment intent ID (for paid orders)
+     * @param string|null $serverName The custom server name (optional)
      * @return array{server: Server, order: Order}
      */
     public function createServerOrder(
@@ -53,7 +54,8 @@ class OrderProcessorService
         int $eggId,
         ?int $couponId = null,
         array $variables = [],
-        ?string $paymentIntentId = null
+        ?string $paymentIntentId = null,
+        ?string $serverName = null
     ): array {
         // Create the order record
         $order = $this->orderService->create(
@@ -72,7 +74,8 @@ class OrderProcessorService
             $product,
             $nodeId,
             $order,
-            $variables
+            $variables,
+            $serverName
         );
 
         // Record coupon usage if applicable
