@@ -61,6 +61,8 @@ export default () => {
     const [termsAgreed, setTermsAgreed] = useState<boolean>(false);
     const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
+    const [serverName, setServerName] = useState<string>('');
+    const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
 
     const { colors } = useStoreState(state => state.theme.data!);
 
@@ -109,7 +111,7 @@ export default () => {
     };
 
     const createFree = () => {
-        if (product) {
+        if (product && serverName.trim()) {
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
             processUnpaidOrder(
                 product.id,
@@ -119,6 +121,7 @@ export default () => {
                 undefined,
                 couponData?.coupon.id,
                 selectedEggId,
+                serverName.trim(),
             )
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
@@ -277,6 +280,46 @@ export default () => {
                 {/* Sidebar - Order Summary */}
                 <div className={'lg:col-span-1'}>
                     <div className={'sticky top-4 space-y-6'}>
+                        {/* Server Name Card */}
+                        <div
+                            style={{ backgroundColor: colors.secondary }}
+                            className={'rounded-lg border border-gray-700 p-6'}
+                        >
+                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Server Name</h3>
+                            <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
+                            <input
+                                type={'text'}
+                                placeholder={'Enter server name'}
+                                value={serverName}
+                                onChange={e => setServerName(e.target.value)}
+                                onBlur={() => setServerNameTouched(true)}
+                                required
+                                maxLength={191}
+                                aria-invalid={serverNameTouched && !serverName.trim()}
+                                aria-describedby={
+                                    serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
+                                }
+                                className={classNames(
+                                    'w-full rounded-lg border px-4 py-2.5 text-sm transition-all',
+                                    'bg-gray-800 text-gray-200 placeholder-gray-500',
+                                    'border-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                )}
+                                style={{
+                                    borderColor: serverName.trim() ? colors.primary : undefined,
+                                }}
+                            />
+                            {serverNameTouched && !serverName.trim() && (
+                                <p
+                                    id={'server-name-error'}
+                                    className={'mt-2 text-xs text-amber-400'}
+                                    role={'alert'}
+                                    aria-live={'polite'}
+                                >
+                                    ⚠ Server name is required
+                                </p>
+                            )}
+                        </div>
+
                         {/* Order Summary Card */}
                         <div
                             style={{ backgroundColor: colors.secondary }}
@@ -479,7 +522,12 @@ export default () => {
                                                 ? '🎉 Your coupon has made this order free!'
                                                 : '🎉 This product is free!'}
                                         </p>
-                                        <Button onClick={createFree} size={Button.Sizes.Large} className={'w-full'}>
+                                        <Button
+                                            onClick={createFree}
+                                            size={Button.Sizes.Large}
+                                            className={'w-full'}
+                                            disabled={!serverName.trim()}
+                                        >
                                             Create Server
                                         </Button>
                                     </div>
@@ -494,6 +542,7 @@ export default () => {
                                                 intent={intent}
                                                 couponId={couponData?.coupon.id}
                                                 selectedEggId={selectedEggId}
+                                                serverName={serverName}
                                             />
                                         </Elements>
                                     </div>
