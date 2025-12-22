@@ -34,9 +34,9 @@ export default () => {
 
         processPaidOrder(intent, renewal)
             .then(() => {
-                // Redirect to server billing page for renewals, otherwise to success page
+                // Redirect to server billing page for renewals with full page reload, otherwise to success page
                 if (renewal && serverUuid) {
-                    navigate(`/server/${serverUuid}/billing`);
+                    window.location.href = `/server/${serverUuid}/billing`;
                 } else {
                     navigate('/account/billing/success');
                 }
