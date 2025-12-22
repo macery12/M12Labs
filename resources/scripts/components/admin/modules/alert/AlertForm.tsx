@@ -44,7 +44,7 @@ export default () => {
         title: '',
         content: '',
         type: 'info' as AlertTypeEnum,
-        position: 'top-center' as AlertPosition,
+        position: 'notification' as AlertPosition,
         scope: 'global' as AlertScope,
         user_targeting: 'all' as UserTargeting,
         enabled: true,
@@ -230,24 +230,28 @@ export default () => {
                                         onChange={e => setFieldValue('position', e.currentTarget.value)}
                                         value={values.position}
                                     >
+                                        <option value={'notification'}>Notification (Alerts Page Only)</option>
                                         <option value={'top-center'}>Top Center Banner</option>
                                         <option value={'slide-out'}>Slide-out Card (Right Side)</option>
                                         <option value={'center'}>Center (Popup Dialog)</option>
                                     </Select>
                                     <p className={'text-gray-400 text-xs mt-1'}>
-                                        Choose where and how the alert appears
+                                        {values.position === 'notification' 
+                                            ? 'Alert appears only in the alerts page - shown as unread notification'
+                                            : 'Choose where and how the alert appears on pages'}
                                     </p>
                                 </div>
-                                <div>
-                                    <Label>Scope *</Label>
-                                    <Select
-                                        onChange={e => setFieldValue('scope', e.currentTarget.value)}
-                                        value={values.scope}
-                                    >
-                                        <option value={'global'}>Global (All Pages)</option>
-                                        <option value={'dashboard'}>Dashboard Only</option>
-                                        <option value={'server'}>Server Pages Only</option>
-                                        <option value={'billing'}>Billing Pages Only</option>
+                                {values.position !== 'notification' && (
+                                    <div>
+                                        <Label>Scope *</Label>
+                                        <Select
+                                            onChange={e => setFieldValue('scope', e.currentTarget.value)}
+                                            value={values.scope}
+                                        >
+                                            <option value={'global'}>Global (All Pages)</option>
+                                            <option value={'dashboard'}>Dashboard Only</option>
+                                            <option value={'server'}>Server Pages Only</option>
+                                            <option value={'billing'}>Billing Pages Only</option>
                                         <option value={'account'}>Account Pages Only</option>
                                         <option value={'admin'}>Admin Panel Only</option>
                                     </Select>
@@ -255,6 +259,7 @@ export default () => {
                                         Choose where this alert should be displayed
                                     </p>
                                 </div>
+                                )}
                                 <div>
                                     <Label>Priority</Label>
                                     <Field id={'priority'} name={'priority'} type={'number'} />

@@ -38,8 +38,8 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
         localStorage.setItem(dismissedKey, 'true');
     };
 
-    // Filter out dismissed alerts and group by position
-    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id));
+    // Filter out dismissed alerts, notification-only alerts, and group by position
+    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id) && a.position !== 'notification');
     
     // Apply position filter if specified
     const filteredAlerts = position === 'all' 

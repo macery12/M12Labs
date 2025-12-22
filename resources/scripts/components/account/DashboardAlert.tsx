@@ -37,8 +37,8 @@ export default () => {
         localStorage.setItem(dismissedKey, 'true');
     };
 
-    // Filter out dismissed alerts and group by position
-    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id));
+    // Filter out dismissed alerts and notification-only alerts, then group by position
+    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id) && a.position !== 'notification');
     const topCenterAlerts = visibleAlerts.filter(a => a.position === 'top-center');
     const slideOutAlerts = visibleAlerts.filter(a => a.position === 'slide-out');
     const centerAlerts = visibleAlerts.filter(a => a.position === 'center');
