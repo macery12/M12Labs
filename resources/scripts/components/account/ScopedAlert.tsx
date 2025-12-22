@@ -7,23 +7,24 @@ import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
 import SlideOutAlert from '@/components/elements/SlideOutAlert';
 
-export default () => {
+interface ScopedAlertProps {
+    scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
+    position?: 'top-center' | 'slide-out' | 'center' | 'all'; // Filter by position
+}
+
+export default ({ scope, position = 'all' }: ScopedAlertProps) => {
     const { uuid: user } = useStoreState(s => s.user.data!);
-    const { alert: legacyAlert } = useStoreState(s => s.everest.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
     
-    // Load active alerts from the new system for dashboard scope
+    // Load active alerts for the specified scope
     useEffect(() => {
-        getActiveAlerts('dashboard')
+        getActiveAlerts(scope)
             .then(data => {
                 setAlerts(data);
             })
             .catch(() => setAlerts([]));
-    }, []);
-
-    // Legacy alert support
-    const [open, setOpen] = usePersistedState(`alert_${legacyAlert.uuid}_${user}`, true);
+    }, [scope]);
 
     // Helper function to check if an alert is dismissed
     const isAlertDismissed = (alertId: number): boolean => {
@@ -37,11 +38,23 @@ export default () => {
         localStorage.setItem(dismissedKey, 'true');
     };
 
-    // Filter out dismissed alerts and notification-only alerts, then group by position
+    // Filter out dismissed alerts, notification-only alerts, and group by position
     const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id) && a.position !== 'notification');
-    const topCenterAlerts = visibleAlerts.filter(a => a.position === 'top-center');
-    const slideOutAlerts = visibleAlerts.filter(a => a.position === 'slide-out');
-    const centerAlerts = visibleAlerts.filter(a => a.position === 'center');
+    
+    // Apply position filter if specified
+    const filteredAlerts = position === 'all' 
+        ? visibleAlerts 
+        : visibleAlerts.filter(a => a.position === position);
+    
+    const topCenterAlerts = position === 'all' || position === 'top-center' 
+        ? filteredAlerts.filter(a => a.position === 'top-center')
+        : [];
+    const slideOutAlerts = position === 'all' || position === 'slide-out'
+        ? filteredAlerts.filter(a => a.position === 'slide-out')
+        : [];
+    const centerAlerts = position === 'all' || position === 'center'
+        ? filteredAlerts.filter(a => a.position === 'center')
+        : [];
 
     // Get the current center alert to show
     const currentCenterAlert = centerAlerts[dialogAlertIndex] || null;
@@ -97,23 +110,7 @@ export default () => {
 
     return (
         <>
-            {/* Legacy alert support */}
-            {legacyAlert.enabled && legacyAlert.position === 'top-center' && (
-                <Alert type={legacyAlert.type}>{legacyAlert.content}</Alert>
-            )}
-            {legacyAlert.enabled && legacyAlert.position === 'center' && open && (
-                <Dialog.Confirm
-                    open
-                    buttonType={legacyAlert.type}
-                    onClose={() => setOpen(false)}
-                    title={capitalize(legacyAlert.type)}
-                    onConfirmed={() => setOpen(false)}
-                >
-                    {legacyAlert.content}
-                </Dialog.Confirm>
-            )}
-
-            {/* New multi-alert system - Top Center */}
+            {/* Top Center Alerts */}
             {topCenterAlerts.map(alert => (
                 <Alert 
                     key={alert.id} 
@@ -124,7 +121,7 @@ export default () => {
                 </Alert>
             ))}
 
-            {/* Slide-out Alerts (replaces bottom-left and bottom-right) */}
+            {/* Slide-out Alerts */}
             {slideOutAlerts.map((alert, index) => (
                 <SlideOutAlert
                     key={alert.id}

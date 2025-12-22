@@ -22,6 +22,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
     Route::get('links', [Client\LinkController::class, 'index']);
+    Route::get('/alerts', [Client\AlertController::class, 'index']);
 
     Route::prefix('/groups')->group(function () {
         Route::get('/', [Client\ServerGroupController::class, 'index']);

@@ -20,6 +20,7 @@ import { CogIcon, DesktopComputerIcon, PuzzleIcon, ReplyIcon } from '@heroicons/
 import SidebarControls from '@server/console/SidebarControls';
 import classNames from 'classnames';
 import NavigationBar from '@/elements/NavigationBar';
+import ScopedAlert from '@account/ScopedAlert';
 
 function statusToColor(status: ServerStatus): string {
     switch (status) {
@@ -91,6 +92,9 @@ function ServerRouter() {
 
     return (
         <Fragment key={'server-router'}>
+            {/* Global server alerts - slide-out and center popups only */}
+            <ScopedAlert scope="server" position="slide-out" />
+            <ScopedAlert scope="server" position="center" />
             <div className={'h-screen flex'}>
                 <MobileSidebar>
                     <MobileSidebar.Home />
