@@ -20,6 +20,7 @@ class UpdateServerScheduleTest extends ClientApiIntegrationTestCase
         'month' => '*',
         'day_of_month' => '*',
         'is_active' => false,
+        'only_when_online' => true,
     ];
 
     /**
@@ -43,6 +44,7 @@ class UpdateServerScheduleTest extends ClientApiIntegrationTestCase
         $response->assertOk();
         $this->assertSame('Updated Schedule Name', $schedule->name);
         $this->assertFalse($schedule->is_active);
+        $this->assertTrue($schedule->only_when_online);
         $this->assertJsonTransformedWith($response->json('attributes'), $schedule);
 
         $this->assertSame($expected, $schedule->next_run_at);
