@@ -57,7 +57,7 @@ class CreateServerScheduleTest extends ClientApiIntegrationTestCase
         $response = $this->actingAs($user)->postJson("/api/client/servers/$server->uuid/schedules", []);
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        foreach (['name', 'minute', 'hour', 'day_of_month', 'day_of_week'] as $i => $field) {
+        foreach (['name', 'minute', 'hour', 'day_of_month', 'month', 'day_of_week'] as $i => $field) {
             $response->assertJsonPath("errors.$i.code", 'ValidationException');
             $response->assertJsonPath("errors.$i.meta.rule", 'required');
             $response->assertJsonPath("errors.$i.meta.source_field", $field);
@@ -75,6 +75,53 @@ class CreateServerScheduleTest extends ClientApiIntegrationTestCase
             ])
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
             ->assertJsonPath('errors.0.meta.rule', 'boolean');
+
+        $this->actingAs($user)
+            ->postJson("/api/client/servers/$server->uuid/schedules", [
+                'name' => 'Testing',
+                'only_when_online' => 'invalid',
+                'minute' => '*',
+                'hour' => '*',
+                'day_of_month' => '*',
+                'month' => '*',
+                'day_of_week' => '*',
+            ])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJsonPath('errors.0.meta.rule', 'boolean');
+    }
+
+    /**
+     * Test that a schedule can be created with only_when_online flag.
+     */
+    public function testScheduleCanBeCreatedWithOnlyWhenOnlineFlag()
+    {
+        [$user, $server] = $this->generateTestAccount();
+
+        $response = $this->actingAs($user)->postJson("/api/client/servers/$server->uuid/schedules", [
+            'name' => 'Test Schedule',
+            'is_active' => true,
+            'only_when_online' => true,
+            'minute' => '0',
+            'hour' => '*/2',
+            'day_of_week' => '*',
+            'month' => '*',
+            'day_of_month' => '*',
+        ]);
+
+        $response->assertOk();
+
+        $this->assertNotNull($id = $response->json('attributes.id'));
+
+        /** @var \Everest\Models\Schedule $schedule */
+        $schedule = Schedule::query()->findOrFail($id);
+        $this->assertTrue($schedule->is_active);
+        $this->assertTrue($schedule->only_when_online);
+        $this->assertSame('0', $schedule->cron_minute);
+        $this->assertSame('*/2', $schedule->cron_hour);
+        $this->assertSame('*', $schedule->cron_day_of_week);
+        $this->assertSame('*', $schedule->cron_month);
+        $this->assertSame('*', $schedule->cron_day_of_month);
+        $this->assertSame('Test Schedule', $schedule->name);
     }
 
     /**
