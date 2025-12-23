@@ -65,6 +65,7 @@ const ResourceBox = ({
 
 const AllocatedBox = ({ title, percent }: { title: string; percent?: number }) => {
     const { colors } = useStoreState(state => state.theme.data!);
+    const barWidth = Math.min(percent ?? 0, 100);
 
     return (
         <div className={'w-full grid grid-cols-[1fr_auto]'}>
@@ -79,7 +80,7 @@ const AllocatedBox = ({ title, percent }: { title: string; percent?: number }) =
             <div className="col-span-2 w-full rounded-full h-2.5" style={{ backgroundColor: colors.headers }}>
                 <div
                     className="h-2.5 rounded-full"
-                    style={{ width: `${percent ?? 0}%`, backgroundColor: colors.primary }}
+                    style={{ width: `${barWidth}%`, backgroundColor: colors.primary }}
                 ></div>
             </div>
         </div>
