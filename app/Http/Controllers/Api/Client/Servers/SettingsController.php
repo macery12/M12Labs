@@ -8,6 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Services\Servers\ReinstallServerService;
+use Everest\Services\Servers\ChangeServerEggService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Everest\Http\Requests\Api\Client\Servers\Settings\RenameServerRequest;
@@ -21,7 +22,8 @@ class SettingsController extends ClientApiController
      */
     public function __construct(
         private ServerRepository $repository,
-        private ReinstallServerService $reinstallServerService
+        private ReinstallServerService $reinstallServerService,
+        private ChangeServerEggService $changeServerEggService
     ) {
         parent::__construct();
     }
@@ -91,5 +93,24 @@ class SettingsController extends ClientApiController
         }
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Change the server's egg and trigger a reinstall.
+     *
+     * @throws \Throwable
+     */
+    public function changeEgg(ReinstallServerRequest $request, Server $server): JsonResponse
+    {
+        $newEggId = (int) $request->input('egg_id');
+        $deleteFiles = (bool) $request->input('delete_files', false);
+
+        $this->changeServerEggService->handle($server, $newEggId, $deleteFiles);
+
+        Activity::event('server:egg.change')
+            ->property(['old' => $server->egg_id, 'new' => $newEggId, 'delete_files' => $deleteFiles])
+            ->log();
+
+        return new JsonResponse([], Response::HTTP_ACCEPTED);
     }
 }

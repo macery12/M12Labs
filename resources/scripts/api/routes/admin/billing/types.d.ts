@@ -1,6 +1,7 @@
 export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
 
 export type CouponType = 'percentage' | 'fixed';
+export type CouponAllowedFor = 'both' | 'purchases' | 'renewals';
 
 export interface ProductValues {
     categoryUuid: string;
@@ -26,6 +27,8 @@ export interface CategoryValues {
     description: string;
     visible: boolean;
     eggId: number;
+    allowedEggs?: number[];
+    allowEggChanges?: boolean;
 }
 
 export interface CouponValues {
@@ -37,6 +40,7 @@ export interface CouponValues {
     minOrderTotal: number | null;
     expiresAt: string | null;
     isActive: boolean;
+    allowedFor: CouponAllowedFor;
 }
 
 export interface ProductFilters {

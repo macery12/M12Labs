@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircle, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import EditServerDialog from './EditServerDialog';
 import PageContentBlock from '@/elements/PageContentBlock';
+import ScopedAlert from '@account/ScopedAlert';
 
 export type PowerAction = 'start' | 'stop' | 'restart' | 'kill';
 
@@ -71,6 +72,8 @@ function ServerConsoleContainer() {
                         : 'This server is currently being transferred to another node and all actions are unavailable.'}
                 </Alert>
             )}
+            {/* Server-scoped top-center alerts between header and console */}
+            <ScopedAlert scope="server" position="top-center" />
             <div className={'mb-4 flex justify-between gap-4 bg-black/50 rounded-lg p-5'}>
                 <div className={'hidden pr-4 sm:col-span-2 sm:block lg:col-span-3'}>
                     <div className={'flex items-center space-x-2'}>

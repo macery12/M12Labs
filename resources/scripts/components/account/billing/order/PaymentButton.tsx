@@ -13,6 +13,8 @@ interface Props {
     vars: Map<string, string>;
     intent: StripeIntent;
     couponId?: number;
+    selectedEggId?: number;
+    serverName: string;
 }
 
 export default (data: Props) => {
@@ -36,6 +38,8 @@ export default (data: Props) => {
             node_id: data.selectedNode!,
             vars: variables,
             coupon_id: data.couponId,
+            egg_id: data.selectedEggId,
+            name: data.serverName,
         })
             .then(() => {
                 stripe.confirmPayment({
@@ -53,11 +57,13 @@ export default (data: Props) => {
             <PaymentElement />
             <SpinnerOverlay visible={loading} />
             <FlashMessageRender byKey={'store:order'} className={'mb-4'} />
-            <div className={'text-right'}>
-                <Button disabled={!data.selectedNode} className={'mt-4'} size={Button.Sizes.Large}>
-                    Pay Now
-                </Button>
-            </div>
+            <Button
+                disabled={!data.selectedNode || !data.serverName.trim()}
+                className={'mt-4 w-full'}
+                size={Button.Sizes.Large}
+            >
+                Pay Now
+            </Button>
         </form>
     );
 };

@@ -28,6 +28,8 @@ export const updateStripeIntent = ({
     serverId,
     renewal,
     coupon_id,
+    egg_id,
+    name,
 }: UpdateStripeIntent): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/client/billing/products/${id}/intent`, {
@@ -37,6 +39,8 @@ export const updateStripeIntent = ({
             variables: vars,
             server_id: serverId,
             coupon_id,
+            egg_id,
+            name,
         })
             .then(() => resolve())
             .catch(reject);

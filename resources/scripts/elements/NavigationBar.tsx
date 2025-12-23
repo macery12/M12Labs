@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faHeart, faIdBadge } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from 'easy-peasy';
 import SearchContainer from '@account/search/SearchContainer';
+import AlertHistoryContainer from '@account/AlertHistoryContainer';
 import tw from 'twin.macro';
 import styled from 'styled-components';
 import { SiteTheme } from '@/state/theme';
@@ -132,6 +133,7 @@ const NavigationBar = () => {
                         <div className={'hidden lg:block'}>{renderPageContent()}</div>
                     </div>
                     <SearchContainer />
+                    <AlertHistoryContainer />
                 </RightNavigation>
             </div>
         </div>

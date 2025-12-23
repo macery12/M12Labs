@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Schema;
  * @property float|null $min_order_total
  * @property \Carbon\Carbon|null $expires_at
  * @property bool $is_active
+ * @property string $allowed_for
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -23,6 +24,10 @@ class Coupon extends Model
 {
     public const TYPE_PERCENTAGE = 'percentage';
     public const TYPE_FIXED = 'fixed';
+    
+    public const ALLOWED_FOR_BOTH = 'both';
+    public const ALLOWED_FOR_PURCHASES = 'purchases';
+    public const ALLOWED_FOR_RENEWALS = 'renewals';
 
     /**
      * The resource name for this model when it is transformed into an
@@ -47,6 +52,7 @@ class Coupon extends Model
         'min_order_total',
         'expires_at',
         'is_active',
+        'allowed_for',
     ];
 
     /**
@@ -59,6 +65,14 @@ class Coupon extends Model
         'min_order_total' => 'float',
         'expires_at' => 'datetime',
         'is_active' => 'bool',
+        'allowed_for' => 'string',
+    ];
+    
+    /**
+     * Default values for model attributes.
+     */
+    protected $attributes = [
+        'allowed_for' => self::ALLOWED_FOR_BOTH,
     ];
 
     /**
@@ -73,6 +87,7 @@ class Coupon extends Model
         'min_order_total' => 'nullable|numeric|min:0',
         'expires_at' => 'nullable|date',
         'is_active' => 'boolean',
+        'allowed_for' => 'nullable|in:both,purchases,renewals',
     ];
 
     /**
@@ -220,5 +235,52 @@ class Coupon extends Model
         }
 
         return ['valid' => true, 'message' => 'Coupon is valid.'];
+    }
+
+    /**
+     * Check if this coupon is allowed for a specific order type.
+     * 
+     * @param string $orderType The order type ('new', 'ren', 'upg')
+     * @return bool True if the coupon is allowed for this order type
+     */
+    public function isAllowedForOrderType(string $orderType): bool
+    {
+        $allowedFor = $this->allowed_for ?? self::ALLOWED_FOR_BOTH;
+        
+        if ($allowedFor === self::ALLOWED_FOR_BOTH) {
+            return true;
+        }
+        
+        // Treat both 'new' and 'upg' as purchases
+        if ($allowedFor === self::ALLOWED_FOR_PURCHASES && in_array($orderType, ['new', 'upg'])) {
+            return true;
+        }
+        
+        if ($allowedFor === self::ALLOWED_FOR_RENEWALS && $orderType === 'ren') {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get a human-readable message for when a coupon is not allowed for an order type.
+     * 
+     * @param string $orderType The order type ('new', 'ren', 'upg')
+     * @return string Error message
+     */
+    public function getNotAllowedMessage(string $orderType): string
+    {
+        $allowedFor = $this->allowed_for ?? self::ALLOWED_FOR_BOTH;
+        
+        if ($allowedFor === self::ALLOWED_FOR_PURCHASES) {
+            return 'This coupon can only be used for new purchases.';
+        }
+        
+        if ($allowedFor === self::ALLOWED_FOR_RENEWALS) {
+            return 'This coupon can only be used for renewals.';
+        }
+        
+        return 'This coupon is not valid for this order type.';
     }
 }

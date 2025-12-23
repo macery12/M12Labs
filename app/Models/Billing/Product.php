@@ -82,4 +82,32 @@ class Product extends Model
     {
         return $this->belongsTo(Category::class, 'category_uuid', 'uuid');
     }
+
+    /**
+     * Determine if this product is free.
+     */
+    public function isFree(): bool
+    {
+        return (float) $this->price === 0.0;
+    }
+
+    /**
+     * Get the renewal period in days for this product.
+     */
+    public function getRenewalDays(): int
+    {
+        return $this->isFree()
+            ? config('modules.billing.renewal.free_renewal_days', 30)
+            : config('modules.billing.renewal.days', 30);
+    }
+
+    /**
+     * Get the suspension threshold in days for this product.
+     */
+    public function getSuspensionThresholdDays(): int
+    {
+        return $this->isFree()
+            ? config('modules.billing.renewal.free_suspension_days', 7)
+            : config('modules.billing.renewal.paid_suspension_days', 30);
+    }
 }

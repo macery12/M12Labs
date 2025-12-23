@@ -9,9 +9,10 @@ import { Alert } from '@/elements/alert';
 interface Props {
     subtotal: number;
     onCouponApplied: (couponData: ValidateCouponResponse | null) => void;
+    orderType?: 'new' | 'ren' | 'upg';
 }
 
-export default ({ subtotal, onCouponApplied }: Props) => {
+export default ({ subtotal, onCouponApplied, orderType = 'new' }: Props) => {
     const [code, setCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [applied, setApplied] = useState<ValidateCouponResponse | null>(null);
@@ -23,7 +24,7 @@ export default ({ subtotal, onCouponApplied }: Props) => {
         setLoading(true);
         clearFlashes('coupon');
 
-        validateCoupon(code.trim(), subtotal)
+        validateCoupon(code.trim(), subtotal, orderType)
             .then(data => {
                 setApplied(data);
                 onCouponApplied(data);

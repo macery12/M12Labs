@@ -37,18 +37,15 @@ class SuspendBillableServersCommand extends Command
             if ($renewalDate->isPast()) {
                 $daysOverdue = $renewalDate->diffInDays($now);
 
-                // Get the product to determine if it's free or paid
+                // Get the product to determine suspension threshold
                 $product = $server->product;
                 
-                // Determine suspension threshold based on whether server is free or paid
-                $suspensionThreshold = 0;
-                if ($product && (float) $product->price === 0.0) {
-                    // Free server - use free suspension days
-                    $suspensionThreshold = config('modules.billing.renewal.free_suspension_days', 7);
-                } else {
-                    // Paid server - use paid suspension days
-                    $suspensionThreshold = config('modules.billing.renewal.paid_suspension_days', 30);
+                if (!$product) {
+                    continue;
                 }
+
+                // Use product method to get suspension threshold
+                $suspensionThreshold = $product->getSuspensionThresholdDays();
 
                 // Only suspend if overdue by more than the threshold
                 if ($daysOverdue > $suspensionThreshold && !$server->isSuspended()) {

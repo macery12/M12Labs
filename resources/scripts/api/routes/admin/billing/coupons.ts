@@ -39,6 +39,7 @@ export const createCoupon = (values: CouponValues): Promise<Coupon> => {
             min_order_total: values.minOrderTotal,
             expires_at: values.expiresAt,
             is_active: values.isActive,
+            allowed_for: values.allowedFor,
         })
             .then(({ data }) => resolve(Transformers.toCoupon(data)))
             .catch(reject);
@@ -56,6 +57,7 @@ export const updateCoupon = (id: number, values: Partial<CouponValues>): Promise
             min_order_total: values.minOrderTotal,
             expires_at: values.expiresAt,
             is_active: values.isActive,
+            allowed_for: values.allowedFor,
         })
             .then(() => resolve())
             .catch(reject);

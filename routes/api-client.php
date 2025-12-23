@@ -22,6 +22,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
     Route::get('links', [Client\LinkController::class, 'index']);
+    Route::get('/alerts', [Client\AlertController::class, 'index']);
 
     Route::prefix('/groups')->group(function () {
         Route::get('/', [Client\ServerGroupController::class, 'index']);
@@ -76,17 +77,19 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
         Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
         Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
+        Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
 
-        Route::get('/products/{id}/key', [Client\Billing\PaymentController::class, 'publicKey']);
+        // Unified checkout controller for both free and paid products
+        Route::get('/products/{id}/key', [Client\Billing\CheckoutController::class, 'getStripeKey']);
 
-        Route::post('/products/{id}/intent', [Client\Billing\PaymentController::class, 'intent']);
-        Route::put('/products/{id}/intent', [Client\Billing\PaymentController::class, 'updateIntent']);
+        Route::post('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'createIntent']);
+        Route::put('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'updateIntent']);
 
         Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
 
-        Route::post('/process', [Client\Billing\PaymentController::class, 'process'])->name('api:client.billing.process');
-        Route::post('/process/free', [Client\Billing\FreeProductController::class, 'process']);
-        Route::post('/renew/free', [Client\Billing\FreeProductController::class, 'renew']);
+        Route::post('/process', [Client\Billing\CheckoutController::class, 'processPaid'])->name('api:client.billing.process');
+        Route::post('/process/free', [Client\Billing\CheckoutController::class, 'processFree']);
+        Route::post('/renew/free', [Client\Billing\CheckoutController::class, 'renewFree']);
 
         Route::get('/orders', [Client\Billing\OrderController::class, 'index']);
         Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
@@ -188,6 +191,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/rename', [Client\Servers\SettingsController::class, 'rename']);
             Route::post('/reinstall', [Client\Servers\SettingsController::class, 'reinstall']);
             Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
+            Route::post('/change-egg', [Client\Servers\SettingsController::class, 'changeEgg']);
         });
     });
 });

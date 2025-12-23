@@ -144,6 +144,8 @@ interface Category extends Model {
     visible: boolean;
     nestId: number;
     eggId: number;
+    allowedEggs: number[];
+    allowEggChanges: boolean;
 
     createdAt: Date;
     updatedAt?: Date | null;
@@ -163,6 +165,7 @@ interface Coupon extends Model {
     minOrderTotal: number | null;
     expiresAt: Date | null;
     isActive: boolean;
+    allowedFor: 'both' | 'purchases' | 'renewals';
     usageCount: number;
     createdAt: Date;
     updatedAt?: Date | null;

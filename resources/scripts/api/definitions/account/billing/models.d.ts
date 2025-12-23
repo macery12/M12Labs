@@ -8,6 +8,7 @@ interface Order extends Model {
     description: string;
     total: number;
     product_id: number;
+    egg_id?: number;
     status: OrderStatus;
     type: OrderType;
     created_at: Date;
@@ -18,6 +19,8 @@ interface Category extends Model {
     name: string;
     icon?: string;
     description?: string;
+    allowedEggs: number[];
+    allowEggChanges: boolean;
 }
 
 interface Product extends Model {
@@ -27,6 +30,7 @@ interface Product extends Model {
     price: number;
     description?: string;
     eggId: number;
+    allowedEggs: number[];
     limits: {
         cpu: number;
         memory: number;

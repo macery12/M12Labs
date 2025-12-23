@@ -16,17 +16,28 @@ export const processUnpaidOrder = (
     variables?: { key: string; value: string }[],
     server_id?: number,
     coupon_id?: number,
+    egg_id?: number,
+    name?: string,
 ): Promise<Server> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/billing/process/free`, { server_id, node, product, renewal, variables, coupon_id })
+        http.post(`/api/client/billing/process/free`, {
+            server_id,
+            node,
+            product,
+            renewal,
+            variables,
+            coupon_id,
+            egg_id,
+            name,
+        })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const renewFreeServer = (product: number, server_id: number): Promise<Server> => {
+export const renewFreeServer = (product: number, server_id: number, coupon_id?: number): Promise<Server> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/billing/renew/free`, { product, server_id })
+        http.post(`/api/client/billing/renew/free`, { product, server_id, coupon_id })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

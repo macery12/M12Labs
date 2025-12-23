@@ -210,6 +210,8 @@ export default class Transformers {
             visible: attributes.visible,
             nestId: attributes.nest_id,
             eggId: attributes.egg_id,
+            allowedEggs: attributes.allowedEggs || [attributes.egg_id],
+            allowEggChanges: attributes.allowEggChanges ?? true,
 
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
@@ -231,6 +233,7 @@ export default class Transformers {
         minOrderTotal: attributes.min_order_total,
         expiresAt: attributes.expires_at ? new Date(attributes.expires_at) : null,
         isActive: attributes.is_active,
+        allowedFor: attributes.allowed_for,
         usageCount: attributes.usage_count,
         createdAt: new Date(attributes.created_at),
         updatedAt: new Date(attributes.updated_at),

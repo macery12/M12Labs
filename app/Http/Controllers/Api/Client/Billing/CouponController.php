@@ -27,11 +27,17 @@ class CouponController extends ClientApiController
             $code = Str::upper($request->input('code'));
             $subtotal = (float) $request->input('subtotal');
             $userId = $request->user()->id;
+            $orderType = $request->input('order_type', 'new');
 
             $coupon = Coupon::where('code', $code)->first();
 
             if (!$coupon) {
                 throw new DisplayException('Invalid coupon code.');
+            }
+
+            // Check if coupon is allowed for this order type
+            if (!$coupon->isAllowedForOrderType($orderType)) {
+                throw new DisplayException($coupon->getNotAllowedMessage($orderType));
             }
 
             $validation = $coupon->canBeUsed($userId, $subtotal);
