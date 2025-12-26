@@ -1,5 +1,4 @@
 import tw from 'twin.macro';
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import { statusToColor } from '@admin/modules/tickets/TicketsContainer';
 import classNames from 'classnames';
@@ -13,7 +12,7 @@ import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Select from '@/elements/Select';
 import Label from '@/elements/Label';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import NewMessageDialog from '@admin/modules/tickets/view/NewMessageDialog';
 import MessageTable from './MessageTable';
 import DeleteTicketDialog from './DeleteTicketDialog';
@@ -52,6 +51,12 @@ export default () => {
             });
     };
 
+    useEffect(() => {
+        if (ticket) {
+            document.title = `Admin | View ticket: ${ticket.title}`;
+        }
+    }, [ticket]);
+
     if (!ticket || isLoading) return <Spinner size={'large'} centered />;
 
     if (!ticket.user)
@@ -63,7 +68,7 @@ export default () => {
         );
 
     return (
-        <AdminContentBlock title={`View ticket: ${ticket.title}`}>
+        <>
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'inline-flex font-header text-2xl font-medium'}>
@@ -165,6 +170,6 @@ export default () => {
                 </div>
             </div>
             <MessageTable ticketId={ticket.id} />
-        </AdminContentBlock>
+        </>
     );
 };
