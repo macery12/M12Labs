@@ -13,6 +13,7 @@ import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 export default () => {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const appName = useStoreState(state => state.settings.data!.name);
+    const user = useStoreState(state => state.user.data);
     const force2fa = useStoreState(state => state.everest.data!.auth.security.force2fa);
     const content = useStoreState(state => state.everest.data!.auth.modules.onboarding.content);
 
@@ -27,6 +28,9 @@ export default () => {
             .catch(error => clearAndAddHttpError({ key: 'onboarding', error }));
     };
 
+    // Use suggested username from OAuth if available, otherwise empty
+    const initialUsername = user?.suggestedUsername || '';
+
     return (
         <Dialog
             open={true}
@@ -36,7 +40,7 @@ export default () => {
             title={`👋 Welcome to ${appName.toString()}!`}
         >
             <FlashMessageRender byKey={'onboarding'} className={'my-3'} />
-            <Formik onSubmit={submit} initialValues={{ username: '', password: '' }}>
+            <Formik onSubmit={submit} initialValues={{ username: initialUsername, password: '' }}>
                 <Form>
                     <p className={'mt-2'}>We are missing some details - please enter them now.</p>
                     <p className={'text-sm text-gray-400'}>

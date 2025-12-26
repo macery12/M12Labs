@@ -10,6 +10,7 @@ interface User extends Model {
     createdAt: Date;
     permissions: SubuserPermission[];
     can(permission: SubuserPermission): boolean;
+    suggestedUsername?: string;
 }
 
 interface SSHKey extends Model {

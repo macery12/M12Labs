@@ -76,12 +76,34 @@ class DiscordLoginController extends AbstractLoginController
         if (User::where('email', $account->email)->exists()) {
             $user = User::where('email', $account->email)->first();
 
+            // Link Discord account if not already linked
+            if (!$user->external_id && isset($account->id)) {
+                $user->external_id = 'discord:' . $account->id;
+                $user->save();
+            }
+
             $this->sendLoginResponse($user, $request);
 
             return redirect('/');
         } else {
-            $username = $this->generateUniqueUsername($account->username ?? $account->global_name ?? 'user');
-            $user = $this->createAccount(['email' => $account->email, 'username' => $username]);
+            // Store Discord info in session for account setup
+            $discordUsername = $this->sanitizeDiscordUsername($account->username ?? $account->global_name ?? 'user');
+            $discordId = isset($account->id) ? 'discord:' . $account->id : null;
+            
+            $request->session()->put('oauth_account_data', [
+                'email' => $account->email,
+                'username' => $discordUsername,
+                'external_id' => $discordId,
+                'provider' => 'discord',
+            ]);
+
+            // Create temporary account that will be finalized during setup
+            $username = 'pending_' . $this->randStr(16);
+            $user = $this->createAccount([
+                'email' => $account->email,
+                'username' => $username,
+                'external_id' => $discordId,
+            ]);
 
             $this->sendLoginResponse($user, $request);
 
@@ -92,13 +114,14 @@ class DiscordLoginController extends AbstractLoginController
     }
 
     /**
-     * Generate a unique username from Discord username.
-     * Sanitizes the username to meet validation requirements and ensures uniqueness.
+     * Sanitize a Discord username to meet validation requirements.
+     * Does not check for uniqueness - that's handled during account setup.
      */
-    private function generateUniqueUsername(string $discordUsername): string
+    private function sanitizeDiscordUsername(string $discordUsername): string
     {
-        // Sanitize the username: lowercase, remove invalid characters, ensure it starts/ends with alphanumeric
+        // Sanitize the username: lowercase, remove invalid characters
         $username = mb_strtolower($discordUsername);
+        // Fix: escape hyphen in character class by placing it at the end
         $username = preg_replace('/[^a-z0-9\._-]/', '', $username);
         
         // Ensure username starts and ends with alphanumeric character
@@ -107,24 +130,11 @@ class DiscordLoginController extends AbstractLoginController
         
         // If username is empty or too short after sanitization, use a default
         if (strlen($username) < 2) {
-            $username = 'discord_user';
+            $username = 'discorduser';
         }
         
-        // Limit username length to reasonable size (max 191 as per validation)
+        // Limit username length to reasonable size
         $username = substr($username, 0, 100);
-        
-        // Check if username is unique, if not append random suffix
-        $originalUsername = $username;
-        $attempts = 0;
-        while (User::where('username', $username)->exists() && $attempts < 10) {
-            $username = $originalUsername . '_' . $this->randStr(6);
-            $attempts++;
-        }
-        
-        // Final fallback if still not unique
-        if (User::where('username', $username)->exists()) {
-            $username = 'user_' . $this->randStr(16);
-        }
         
         return $username;
     }

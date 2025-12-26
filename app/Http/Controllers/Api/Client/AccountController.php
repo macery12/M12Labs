@@ -81,6 +81,9 @@ class AccountController extends ClientApiController
     {
         $user = $this->updateService->handle($request->user(), $request->validated());
 
+        // Clear OAuth account data from session after setup is complete
+        $request->session()->forget('oauth_account_data');
+
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }
 }

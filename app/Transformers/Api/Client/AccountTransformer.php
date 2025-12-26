@@ -26,6 +26,7 @@ class AccountTransformer extends Transformer
             'username' => $model->username,
             'email' => $model->email,
             'language' => $model->language,
+            'suggested_username' => request()->session()->get('oauth_account_data.username', null),
         ];
     }
 }
