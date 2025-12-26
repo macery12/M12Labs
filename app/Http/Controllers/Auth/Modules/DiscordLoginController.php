@@ -76,8 +76,8 @@ class DiscordLoginController extends AbstractLoginController
         if (User::where('email', $account->email)->exists()) {
             $user = User::where('email', $account->email)->first();
 
-            // Link Discord account if not already linked
-            if (!$user->external_id && isset($account->id)) {
+            // Link Discord account if not already linked with Discord
+            if (isset($account->id) && strpos($user->external_id ?? '', 'discord:') !== 0) {
                 $user->external_id = 'discord:' . $account->id;
                 $user->save();
             }
@@ -121,8 +121,8 @@ class DiscordLoginController extends AbstractLoginController
     {
         // Sanitize the username: lowercase, remove invalid characters
         $username = mb_strtolower($discordUsername);
-        // Fix: escape hyphen in character class by placing it at the end
-        $username = preg_replace('/[^a-z0-9\._-]/', '', $username);
+        // Remove any characters that aren't alphanumeric, dots, underscores, or hyphens
+        $username = preg_replace('/[^a-z0-9._\-]/', '', $username);
         
         // Ensure username starts and ends with alphanumeric character
         $username = preg_replace('/^[^a-z0-9]+/', '', $username);
