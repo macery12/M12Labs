@@ -35,11 +35,15 @@ class DiscordLoginController extends AbstractLoginController
             $this->sendLockoutResponse($request);
         }
 
+        // Generate a CSRF token for OAuth state parameter
+        $state = bin2hex(random_bytes(16));
+        $request->session()->put('oauth_state', $state);
+
         return 'https://discord.com/api/oauth2/authorize?'
             . 'client_id=' . config('modules.auth.discord.client_id')
             . '&redirect_uri=' . urlencode(route('auth.modules.discord.authenticate'))
             . '&response_type=code&scope=identify%20email'
-            . '&state=' . urlencode(encrypt($request->ip()));
+            . '&state=' . $state;
     }
 
     /**
@@ -47,6 +51,17 @@ class DiscordLoginController extends AbstractLoginController
      */
     public function authenticate(Request $request): RedirectResponse
     {
+        // Validate OAuth state to prevent CSRF attacks
+        $state = $request->input('state');
+        $sessionState = $request->session()->get('oauth_state');
+        
+        if (!$state || !$sessionState || $state !== $sessionState) {
+            return redirect()->route('auth.login');
+        }
+        
+        // Clear the state from session
+        $request->session()->forget('oauth_state');
+
         $tokenResponse = Http::asForm()->post('https://discord.com/api/oauth2/token', [
             'client_id' => config('modules.auth.discord.client_id'),
             'client_secret' => config('modules.auth.discord.client_secret'),
