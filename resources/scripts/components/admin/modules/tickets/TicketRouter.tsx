@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useStoreState } from '@/state/hooks';
 import { Route, Routes } from 'react-router-dom';
 import { NotFound } from '@/elements/ScreenBlock';
@@ -7,17 +8,20 @@ import ViewTicketContainer from '@admin/modules/tickets/view/ViewTicketContainer
 import EnableTicketsContainer from './EnableTicketsContainer';
 import { CogIcon, TicketIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import TicketOptionsContainer from './TicketOptionsContainer';
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.tickets.enabled);
 
+    useEffect(() => {
+        document.title = 'Admin | Ticket Dashboard';
+    }, []);
+
     if (!enabled) return <EnableTicketsContainer />;
 
     return (
-        <AdminContentBlock title={'Ticket Dashboard'}>
+        <>
             <FlashMessageRender byKey={'admin:tickets'} className={'mb-4'} />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
@@ -49,6 +53,17 @@ export default () => {
 
                 <Route path={'/*'} element={<NotFound />} />
             </Routes>
-        </AdminContentBlock>
+            <p className={'mb-8 mt-4 text-center text-xs text-neutral-500'}>
+                &copy; {new Date().getFullYear()}&nbsp;
+                <a
+                    rel={'noopener nofollow noreferrer'}
+                    href={'https://jexpanel.com'}
+                    target={'_blank'}
+                    className={'text-neutral-500 no-underline hover:text-neutral-300'}
+                >
+                    Jexpanel.com
+                </a>
+            </p>
+        </>
     );
 };

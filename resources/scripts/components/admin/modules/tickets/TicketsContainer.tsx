@@ -1,7 +1,6 @@
 import tw from 'twin.macro';
 import { Link, NavLink } from 'react-router-dom';
-import { useContext } from 'react';
-import AdminContentBlock from '@/elements/AdminContentBlock';
+import { useContext, useEffect } from 'react';
 import AdminTable, {
     ContentWrapper,
     Loading,
@@ -51,8 +50,12 @@ function TicketContainer() {
         });
     };
 
+    useEffect(() => {
+        document.title = 'Admin | Tickets';
+    }, []);
+
     return (
-        <AdminContentBlock title={'Tickets'}>
+        <>
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Tickets</h2>
@@ -152,7 +155,7 @@ function TicketContainer() {
                     </Pagination>
                 </ContentWrapper>
             </AdminTable>
-        </AdminContentBlock>
+        </>
     );
 }
 
