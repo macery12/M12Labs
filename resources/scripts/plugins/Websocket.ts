@@ -42,9 +42,20 @@ export class Websocket extends EventEmitter {
                 this.emit('SOCKET_OPEN');
                 this.authenticate();
             },
-            onreconnect: () => {
-                this.emit('SOCKET_RECONNECT');
-                this.authenticate();
+            onreconnect: evt => {
+                // We return code 4409 from Wings when a server is suspended. We've
+                // gone ahead and reserved 4400 as well here for future expansion without
+                // having to loop back around.
+                //
+                // If either of those codes is returned go ahead and abort here. Unfortunately
+                // the underlying sockette logic always calls reconnect for any code that isn't
+                // 1000/1001/1003, which is painful but we can just stop the flow here.
+                // @ts-expect-error code is actually present here.
+                if (evt.code === 4409 || evt.code === 4400) {
+                    this.close(1000);
+                } else {
+                    this.emit('SOCKET_RECONNECT');
+                }
             },
             onclose: () => this.emit('SOCKET_CLOSE'),
             onerror: error => this.emit('SOCKET_ERROR', error),
