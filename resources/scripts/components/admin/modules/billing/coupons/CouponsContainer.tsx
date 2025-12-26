@@ -49,14 +49,14 @@ function CouponsContainer() {
 
     return (
         <>
-            <div className={'w-full flex flex-row items-center my-8 px-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Coupons</h2>
-                    <p className={'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-hidden'}>
+            <div className={'my-8 flex w-full flex-row items-center px-8'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Coupons</h2>
+                    <p className={'hidden overflow-hidden whitespace-nowrap text-base text-neutral-400 lg:block'}>
                         Manage discount coupons for the billing system.
                     </p>
                 </div>
-                <div className={'flex ml-auto pl-4'}>
+                <div className={'ml-auto flex pl-4'}>
                     <Link to={'/admin/billing/coupons/new'}>
                         <Button>Add Coupon</Button>
                     </Link>
@@ -143,7 +143,9 @@ function CouponsContainer() {
                                                 <td css={tw`px-6 text-sm text-neutral-200 whitespace-nowrap`}>
                                                     <Link to={`/admin/billing/coupons/${coupon.id}`}>
                                                         <CopyOnClick text={coupon.id.toString()}>
-                                                            <code css={tw`font-mono text-xs bg-neutral-900 rounded py-1 px-2`}>
+                                                            <code
+                                                                css={tw`font-mono text-xs bg-neutral-900 rounded py-1 px-2`}
+                                                            >
                                                                 {coupon.id}
                                                             </code>
                                                         </CopyOnClick>
@@ -152,13 +154,13 @@ function CouponsContainer() {
 
                                                 <td css={tw`px-6 text-sm text-neutral-200 whitespace-nowrap`}>
                                                     <CopyOnClick text={coupon.code}>
-                                                        <code css={tw`font-bold cursor-pointer`}>
-                                                            {coupon.code}
-                                                        </code>
+                                                        <code css={tw`font-bold cursor-pointer`}>{coupon.code}</code>
                                                     </CopyOnClick>
                                                 </td>
 
-                                                <td css={tw`px-6 text-sm text-neutral-200 whitespace-nowrap capitalize`}>
+                                                <td
+                                                    css={tw`px-6 text-sm text-neutral-200 whitespace-nowrap capitalize`}
+                                                >
                                                     {coupon.type}
                                                 </td>
 

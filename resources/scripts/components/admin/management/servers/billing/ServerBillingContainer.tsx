@@ -39,7 +39,7 @@ export default () => {
                     module is enabled again.
                 </Alert>
             )}
-            <div className={'mt-4 grid lg:grid-cols-4 gap-4'}>
+            <div className={'mt-4 grid gap-4 lg:grid-cols-4'}>
                 <AdminBox title={'Billing Details'} icon={faCashRegister} className={'relative'}>
                     <div className={'grid gap-y-4'}>
                         <div>

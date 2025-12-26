@@ -132,7 +132,7 @@ export const EggProcessContainer = forwardRef<any, EggProcessContainerProps>(fun
                 return await fetchFilesConfiguration();
             },
         }),
-        [fetchStartupConfiguration, fetchFilesConfiguration, values.configStartup, values.configFiles]
+        [fetchStartupConfiguration, fetchFilesConfiguration, values.configStartup, values.configFiles],
     );
 
     return (

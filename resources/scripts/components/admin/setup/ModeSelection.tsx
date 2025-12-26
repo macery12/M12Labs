@@ -19,22 +19,22 @@ export default () => {
 
     return (
         <div>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Mode Selection</h2>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Mode Selection</h2>
                     <p
                         className={
-                            'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                            'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
                         Select how you want to run Jexactyl.
                     </p>
                 </div>
             </div>
-            <div className={'grid lg:grid-cols-2 gap-8'}>
-                <div className={'bg-black/25 rounded-xl w-full p-8 relative'}>
+            <div className={'grid gap-8 lg:grid-cols-2'}>
+                <div className={'relative w-full rounded-xl bg-black/25 p-8'}>
                     <PersonalModeSvg color={primary} />
-                    <p className={'text-2xl lg:text-4xl font-bold mb-2'}>Personal Mode</p>
+                    <p className={'mb-2 text-2xl font-bold lg:text-4xl'}>Personal Mode</p>
                     <p className={'text-gray-400'}>
                         Personal Mode allows you to run Jexactyl in standard settings, with basic features enable by
                         default. It gives you all the great typical features of a game hosting panel without any
@@ -46,9 +46,9 @@ export default () => {
                         </Button.Text>
                     </div>
                 </div>
-                <div className={'bg-black/25 rounded-xl w-full p-8 relative'}>
+                <div className={'relative w-full rounded-xl bg-black/25 p-8'}>
                     <StandardMoveSvg color={primary} />
-                    <p className={'text-2xl lg:text-4xl font-bold mb-2'}>Standard Mode</p>
+                    <p className={'mb-2 text-2xl font-bold lg:text-4xl'}>Standard Mode</p>
                     <p className={'text-gray-400'}>
                         Standard Mode allows all of the Jexactyl features by default, such as billing, tickets, webhooks
                         and more. It&apos;s ideal for businesses or large groups who need more control over their users.

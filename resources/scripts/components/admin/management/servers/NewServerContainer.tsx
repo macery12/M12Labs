@@ -72,11 +72,11 @@ function InternalForm() {
 
     return (
         <Form>
-            <div className="grid grid-cols-2 gap-y-6 gap-x-8 mb-16">
-                <div className="grid grid-cols-1 gap-y-6 col-span-2 md:col-span-1">
+            <div className="mb-16 grid grid-cols-2 gap-y-6 gap-x-8">
+                <div className="col-span-2 grid grid-cols-1 gap-y-6 md:col-span-1">
                     <BaseSettingsBox>
                         <NodeSelect node={node!} setNode={setNode} />
-                        <div className="xl:col-span-2 bg-neutral-800 border border-neutral-900 shadow-inner p-4 rounded">
+                        <div className="rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner xl:col-span-2">
                             <FormikSwitch
                                 name={'startOnCompletion'}
                                 label={'Start after installation'}
@@ -87,7 +87,7 @@ function InternalForm() {
                     <FeatureLimitsBox />
                     <ServerServiceContainer selectedEggId={egg?.id} setEgg={setEgg} nestId={0} />
                 </div>
-                <div className="grid grid-cols-1 gap-y-6 col-span-2 md:col-span-1">
+                <div className="col-span-2 grid grid-cols-1 gap-y-6 md:col-span-1">
                     <AdminBox icon={faNetworkWired} title="Networking" isLoading={isSubmitting}>
                         <div className="grid grid-cols-1 gap-4 lg:gap-6">
                             <div>
@@ -108,7 +108,7 @@ function InternalForm() {
                     <ServerImageContainer />
                 </div>
 
-                <AdminBox title={'Startup Command'} className="relative w-full col-span-2">
+                <AdminBox title={'Startup Command'} className="relative col-span-2 w-full">
                     <SpinnerOverlay visible={isSubmitting} />
 
                     <Field
@@ -123,7 +123,7 @@ function InternalForm() {
                     />
                 </AdminBox>
 
-                <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+                <div className="col-span-2 grid grid-cols-1 gap-y-6 gap-x-8 md:grid-cols-2">
                     {/* This ensures that no variables are rendered unless the environment has a value for the variable. */}
                     {egg?.relationships.variables
                         ?.filter(v => Object.keys(environment).find(e => e === v.environmentVariable) !== undefined)
@@ -132,7 +132,7 @@ function InternalForm() {
                         ))}
                 </div>
 
-                <div className="bg-neutral-700 rounded shadow-md px-4 py-3 col-span-2">
+                <div className="col-span-2 rounded bg-neutral-700 px-4 py-3 shadow-md">
                     <div className="flex flex-row">
                         <Button type="submit" className="ml-auto" disabled={isSubmitting || !isValid}>
                             Create Server

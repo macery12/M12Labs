@@ -52,11 +52,11 @@ const AdminBox = ({
                 <Spinner className={classNames(position, 'absolute top-0 m-3.5')} size={'small'} />
             )}
             {status === 'success' && (
-                <CheckCircleIcon className={classNames(position, 'w-5 h-5 absolute top-0 m-3.5 text-green-500')} />
+                <CheckCircleIcon className={classNames(position, 'absolute top-0 m-3.5 h-5 w-5 text-green-500')} />
             )}
             {status === 'error' && (
                 <ExclamationCircleIcon
-                    className={classNames(position, 'w-5 h-5 absolute top-0 right-8 m-3.5 text-red-500')}
+                    className={classNames(position, 'absolute top-0 right-8 m-3.5 h-5 w-5 text-red-500')}
                 />
             )}
             <div

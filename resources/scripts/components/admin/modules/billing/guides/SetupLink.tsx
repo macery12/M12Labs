@@ -14,17 +14,17 @@ export default ({ setOpen }: { setOpen: Dispatch<SetStateAction<BillingSetupDial
             <Alert type={'warning'} className={'my-2'}>
                 If you skip this step, Link payments will not work.
             </Alert>
-            <p className={'text-lg font-semibold mt-4 text-white'}>1. Navigate to Stripe Dashboard</p>
+            <p className={'mt-4 text-lg font-semibold text-white'}>1. Navigate to Stripe Dashboard</p>
             First, navigate to&nbsp;
             <a href={'https://dashboard.stripe.com'} className={'text-blue-300'}>
                 Stripe
             </a>
             &nbsp;and login using your credentials. Then, once logged in, go to{' '}
             <Code>Settings {'>'} Payment Methods</Code> and select the payment method configuration to update.
-            <p className={'text-lg font-semibold mt-4 text-white'}>2. Enable Link module in Stripe</p>
+            <p className={'mt-4 text-lg font-semibold text-white'}>2. Enable Link module in Stripe</p>
             Once you have navigated to the payment configuration page, scroll down and click the{' '}
             <Button.Text size={Button.Sizes.Small}>Turn On</Button.Text> button to activate it.
-            <p className={'text-lg font-semibold mt-4 text-white'}>3. Check Jexactyl for Link method</p>
+            <p className={'mt-4 text-lg font-semibold text-white'}>3. Check Jexactyl for Link method</p>
             Finally, go back to Jexactyl and visit the billing store. Select a plan, and head to the checkout. You
             should now be able to checkout with Link via Jexactyl.
             <Alert className={'mt-2'} type={'info'}>

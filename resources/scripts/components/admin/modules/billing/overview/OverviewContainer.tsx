@@ -40,9 +40,9 @@ export default () => {
     const revenue: string = successfulOrders.reduce((total, order) => total + order.total, 0).toFixed(2);
 
     return (
-        <div className={'grid lg:grid-cols-5 gap-4'}>
+        <div className={'grid gap-4 lg:grid-cols-5'}>
             <SetupStripe />
-            <ol className="space-y-4 w-full">
+            <ol className="w-full space-y-4">
                 <Select onChange={e => setHistory(Number(e.currentTarget.value))}>
                     <option value={7}>Last 7 days</option>
                     <option selected value={14}>
@@ -54,7 +54,7 @@ export default () => {
                     <option value={180}>Last 6 months</option>
                     <option value={360}>Last year</option>
                 </Select>
-                <h2 className={'text-neutral-300 mb-4 px-4 text-2xl'}>Suggested Actions</h2>
+                <h2 className={'mb-4 px-4 text-2xl text-neutral-300'}>Suggested Actions</h2>
                 <Stepper className={'text-green-500'} icon={faCheck} content={'Enable billing module'} />
                 <Stepper
                     className={hasProducts ? 'text-green-500' : 'text-blue-500'}
@@ -75,13 +75,13 @@ export default () => {
                     link={'/admin/billing/settings'}
                 />
             </ol>
-            <div className={'flex flex-col items-center rounded-lg shadow md:flex-row col-span-4'}>
-                <div className={'w-full grid grid-cols-3 mb-auto gap-6'}>
+            <div className={'col-span-4 flex flex-col items-center rounded-lg shadow md:flex-row'}>
+                <div className={'mb-auto grid w-full grid-cols-3 gap-6'}>
                     <ContentBox>
                         <h1 className={'text-2xl font-bold'}>
                             <span className={'text-4xl'}>{successRate}</span>% conversion rate
                         </h1>
-                        <p className={'text-gray-400 text-sm mt-2'}>
+                        <p className={'mt-2 text-sm text-gray-400'}>
                             Out of {allOrders.length} orders, {successfulOrders.length} were processed.
                         </p>
                         <SuccessChart data={analytics} history={history} />
@@ -91,7 +91,7 @@ export default () => {
                             {settings.currency.symbol}
                             <span className={'text-4xl'}>{revenue}</span> total revenue
                         </h1>
-                        <p className={'text-gray-400 text-sm mt-2'}>
+                        <p className={'mt-2 text-sm text-gray-400'}>
                             Your {successfulOrders.length} successful orders have generated {settings.currency.symbol}
                             {revenue} {settings.currency.code} over the last {history} days.
                         </p>

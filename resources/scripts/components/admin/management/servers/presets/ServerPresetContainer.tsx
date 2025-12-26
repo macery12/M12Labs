@@ -6,16 +6,16 @@ import ServerPresetDialog from './ServerPresetDialog';
 
 export default () => (
     <AdminContentBlock title={'New Server'} showFlashKey={'admin:servers:presets'}>
-        <div className={`w-full flex flex-row items-center mb-8`}>
-            <div className={`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
-                <h2 className={`text-2xl text-neutral-50 font-header font-medium`}>Server Presets</h2>
+        <div className={`mb-8 flex w-full flex-row items-center`}>
+            <div className={`flex flex-shrink flex-col`} style={{ minWidth: '0' }}>
+                <h2 className={`font-header text-2xl font-medium text-neutral-50`}>Server Presets</h2>
                 <p
-                    className={`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
+                    className={`hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 md:block`}
                 >
                     Control preset server configurations for administrators.
                 </p>
             </div>
-            <div className={`flex ml-auto pl-4`}>
+            <div className={`ml-auto flex pl-4`}>
                 <ServerPresetDialog />
             </div>
         </div>

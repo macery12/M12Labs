@@ -106,7 +106,7 @@ const NestsContainer = () => {
                                                     <NavLink
                                                         to={`/admin/nests/${nest.id}`}
                                                         style={{ color: colors.primary }}
-                                                        className={'hover:brightness-125 duration-300'}
+                                                        className={'duration-300 hover:brightness-125'}
                                                     >
                                                         {nest.name}
                                                     </NavLink>

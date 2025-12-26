@@ -41,7 +41,7 @@ export default () => {
                 In order to use <span style={{ color: theme.primary }}>Jexactyl AI</span>, you must get a Gemini API key
                 from Google.
             </p>
-            <p className={'text-gray-400 my-2'}>
+            <p className={'my-2 text-gray-400'}>
                 You can visit the{' '}
                 <a
                     href={'https://aistudio.google.com/'}

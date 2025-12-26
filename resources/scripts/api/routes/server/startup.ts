@@ -31,7 +31,7 @@ const setImage = async (uuid: string, image: string): Promise<void> => {
     await http.put(`/api/client/servers/${uuid}/settings/docker-image`, { docker_image: image });
 };
 
-const changeEgg = async (uuid: string, eggId: number, deleteFiles: boolean = false): Promise<void> => {
+const changeEgg = async (uuid: string, eggId: number, deleteFiles = false): Promise<void> => {
     await http.post(`/api/client/servers/${uuid}/settings/change-egg`, { egg_id: eggId, delete_files: deleteFiles });
 };
 

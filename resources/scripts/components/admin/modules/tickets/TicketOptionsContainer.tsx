@@ -61,7 +61,7 @@ export default () => {
                                 <Label className={'mt-1 mr-2'}>What should the limit be?</Label>
                                 <Field id={'maxCount'} name={'maxCount'} defaultValue={settings.maxCount} />
                             </div>
-                            <p className={'text-gray-400 text-xs mt-1.5'}>
+                            <p className={'mt-1.5 text-xs text-gray-400'}>
                                 If you wish, you can set a maximum amount of tickets that a user can create.
                             </p>
                         </div>

@@ -57,7 +57,7 @@ export default ({ setReload }: Props) => {
         <AdminBox title={'Color Selection'} icon={faPaintbrush}>
             <FlashMessageRender byKey={'theme:colors'} className={'my-2'} />
             {loading && <Spinner className={'absolute top-0 right-0 m-3.5'} size={'small'} />}
-            {success && <CheckCircleIcon className={'w-5 h-5 absolute top-0 right-0 m-3.5 text-green-500'} />}
+            {success && <CheckCircleIcon className={'absolute top-0 right-0 m-3.5 h-5 w-5 text-green-500'} />}
             <div>
                 <Label>Primary Content (Accent Color)</Label>
                 <Input
@@ -67,7 +67,7 @@ export default ({ setReload }: Props) => {
                     value={colors.primary}
                     onChange={e => update('primary', e.target.value)}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     This color is used as the main text color on the application and is also used for the buttons and
                     other components.
                 </p>
@@ -81,12 +81,12 @@ export default ({ setReload }: Props) => {
                     value={colors.secondary}
                     onChange={e => update('secondary', e.target.value)}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     Secondary content is elements of pages like this box, tables and other components. This should
                     usually be a dark, muted colour which doesn&apos;t blend in with the background easily.
                 </p>
             </div>
-            <div className={'h-0.5 my-6 rounded-full border-b border-gray-500 border-dashed'} />
+            <div className={'my-6 h-0.5 rounded-full border-b border-dashed border-gray-500'} />
             <div className={'mt-6'}>
                 <Label>Background Color</Label>
                 <Input
@@ -96,7 +96,7 @@ export default ({ setReload }: Props) => {
                     value={colors.background}
                     onChange={e => update('background', e.target.value)}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     This color is used for the background of this application.
                 </p>
             </div>
@@ -109,7 +109,7 @@ export default ({ setReload }: Props) => {
                     value={colors.headers}
                     onChange={e => update('headers', e.target.value)}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     This color is used for headers of forms, boxes and tables. We usually advise that this colour is
                     slightly darker than &apos;Secondary Content&apos;.
                 </p>
@@ -123,7 +123,7 @@ export default ({ setReload }: Props) => {
                     value={colors.sidebar}
                     onChange={e => update('sidebar', e.target.value)}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     This is the color of the sidebar to the left-hand side of your screen.
                 </p>
             </div>

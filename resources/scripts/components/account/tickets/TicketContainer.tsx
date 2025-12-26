@@ -43,13 +43,13 @@ export default () => {
     return (
         <PageContentBlock title={'Support Tickets'}>
             <FlashMessageRender byKey={'account:tickets'} />
-            <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
+            <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                 Your Support Tickets
-                <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                <p className={'mt-1 text-sm font-normal text-gray-400'}>
                     Create a ticket to gain support from an administrator.
                 </p>
             </div>
-            <div className={'grid lg:grid-cols-3 gap-4'}>
+            <div className={'grid gap-4 lg:grid-cols-3'}>
                 <div className={'lg:col-span-2'}>
                     <ContentBox title={'Support Tickets'}>
                         <SpinnerOverlay visible={!tickets && isValidating} />
@@ -62,17 +62,17 @@ export default () => {
                                 <Link to={`/account/tickets/${ticket.id}`} key={ticket.id}>
                                     <div
                                         style={{ backgroundColor: colors.headers }}
-                                        className={classNames(index > 0 ? 'mt-4' : 'mt-0', 'flex p-4 rounded-lg')}
+                                        className={classNames(index > 0 ? 'mt-4' : 'mt-0', 'flex rounded-lg p-4')}
                                     >
-                                        <div className={'flex items-center truncate w-full md:flex-1'}>
+                                        <div className={'flex w-full items-center truncate md:flex-1'}>
                                             <p className={'mr-4 text-xl font-bold'}>#{ticket.id}</p>
                                             <div className={'flex flex-col truncate'}>
-                                                <div className={'flex items-center mb-1'}>
-                                                    <p className={'break-words truncate text-lg'}>{ticket.title}</p>
+                                                <div className={'mb-1 flex items-center'}>
+                                                    <p className={'truncate break-words text-lg'}>{ticket.title}</p>
                                                     <span
                                                         className={classNames(
                                                             statusToColor(ticket.status),
-                                                            'capitalize px-2 ml-4 inline-flex text-xs leading-5 font-medium rounded-full hidden sm:inline',
+                                                            'ml-4 inline-flex hidden rounded-full px-2 text-xs font-medium capitalize leading-5 sm:inline',
                                                         )}
                                                     >
                                                         {ticket.status}
@@ -83,11 +83,11 @@ export default () => {
                                         {ticket.createdAt && (
                                             <div
                                                 className={
-                                                    'flex-1 md:flex-none md:w-48 mt-4 md:mt-0 md:ml-8 md:text-center'
+                                                    'mt-4 flex-1 md:mt-0 md:ml-8 md:w-48 md:flex-none md:text-center'
                                                 }
                                             >
                                                 <p className={'text-sm'}>{format(ticket.createdAt, 'MMMM do, yyyy')}</p>
-                                                <p className={'text-2xs text-gray-300 uppercase mt-1'}>
+                                                <p className={'mt-1 text-2xs uppercase text-gray-300'}>
                                                     Created{' '}
                                                     {formatDistanceToNow(ticket.createdAt, {
                                                         includeSeconds: true,

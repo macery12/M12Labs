@@ -50,7 +50,7 @@ export default ({ databaseId, onDeleted }: Props) => {
             </ConfirmationModal>
 
             <Button.Danger type="button" shape={Shape.IconSquare} onClick={() => setVisible(true)}>
-                <TrashIcon className={'w-5 h-5'} />
+                <TrashIcon className={'h-5 w-5'} />
             </Button.Danger>
         </>
     );

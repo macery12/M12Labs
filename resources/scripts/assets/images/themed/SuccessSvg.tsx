@@ -5,7 +5,7 @@ export default ({ color }: { color: string }) => (
         width="652"
         height="570.12526"
         viewBox="0 0 652 570.12526"
-        className={'w-2/3 h-auto select-none mx-auto'}
+        className={'mx-auto h-auto w-2/3 select-none'}
     >
         <path
             d="M383.95544,670.80537c-21.41987,11.54992-30.61494,36.063-30.61494,36.063s25.53333,5.787,46.95319-5.763,30.61493-36.063,30.61493-36.063S405.3753,659.25547,383.95544,670.80537Z"

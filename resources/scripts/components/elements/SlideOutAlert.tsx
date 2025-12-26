@@ -29,7 +29,7 @@ const typeTextColors = {
     danger: 'text-red-300',
 };
 
-export default ({ id, title, content, type, link, link_text, onClose, index }: SlideOutAlertProps) => {
+export default ({ id: _id, title, content, type, link, link_text, onClose, index }: SlideOutAlertProps) => {
     const [isClosing, setIsClosing] = useState(false);
 
     const handleClose = () => {
@@ -40,13 +40,13 @@ export default ({ id, title, content, type, link, link_text, onClose, index }: S
     };
 
     // Calculate position based on index - stack them vertically
-    const topPosition = 4 + (index * 7); // 4rem base + 7rem spacing between cards
+    const topPosition = 4 + index * 7; // 4rem base + 7rem spacing between cards
 
     return (
         <div
             className={classNames(
                 'fixed right-0 z-50 transition-all duration-300 ease-in-out',
-                isClosing ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'
+                isClosing ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100',
             )}
             style={{
                 top: `${topPosition}rem`,
@@ -55,27 +55,22 @@ export default ({ id, title, content, type, link, link_text, onClose, index }: S
             }}
         >
             <div
-                className={classNames(
-                    'mr-4 rounded-lg border-l-4 shadow-lg backdrop-blur-sm',
-                    typeColors[type]
-                )}
+                className={classNames('mr-4 rounded-lg border-l-4 shadow-lg backdrop-blur-sm', typeColors[type])}
                 css={tw`bg-neutral-800/95`}
             >
                 {/* Header */}
                 <div className={'flex items-start justify-between p-4 pb-2'}>
                     <div className={'flex-1'}>
                         {title && (
-                            <h3 className={classNames('text-lg font-semibold mb-1', typeTextColors[type])}>
-                                {title}
-                            </h3>
+                            <h3 className={classNames('mb-1 text-lg font-semibold', typeTextColors[type])}>{title}</h3>
                         )}
                     </div>
                     <button
                         onClick={handleClose}
-                        className={'ml-3 text-gray-400 hover:text-gray-200 transition-colors flex-shrink-0'}
+                        className={'ml-3 flex-shrink-0 text-gray-400 transition-colors hover:text-gray-200'}
                         aria-label="Close notification"
                     >
-                        <FontAwesomeIcon icon={faTimes} className={'w-5 h-5'} />
+                        <FontAwesomeIcon icon={faTimes} className={'h-5 w-5'} />
                     </button>
                 </div>
 
@@ -84,17 +79,15 @@ export default ({ id, title, content, type, link, link_text, onClose, index }: S
 
                 {/* Content */}
                 <div className={'p-4 pt-3'}>
-                    <div className={'text-gray-300 text-sm leading-relaxed whitespace-pre-wrap'}>
-                        {content}
-                    </div>
+                    <div className={'whitespace-pre-wrap text-sm leading-relaxed text-gray-300'}>{content}</div>
                     {link && (
                         <a
                             href={link}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={classNames(
-                                'inline-block mt-3 text-sm font-medium hover:underline transition-colors',
-                                typeTextColors[type]
+                                'mt-3 inline-block text-sm font-medium transition-colors hover:underline',
+                                typeTextColors[type],
                             )}
                         >
                             {link_text || 'Learn more'} →

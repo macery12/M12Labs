@@ -72,7 +72,7 @@ const Field = forwardRef<HTMLInputElement, Props>(
                                     ref={ref}
                                 />
                                 {error ? (
-                                    <p className="input-help error text-red-400 text-xs mt-1">
+                                    <p className="input-help error mt-1 text-xs text-red-400">
                                         {(errors[field.name] as string).charAt(0).toUpperCase() +
                                             (errors[field.name] as string).slice(1)}
                                     </p>
@@ -103,7 +103,7 @@ const Field = forwardRef<HTMLInputElement, Props>(
                             )}
 
                             {error ? (
-                                <p className="input-help error text-red-400 text-xs mt-1">
+                                <p className="input-help error mt-1 text-xs text-red-400">
                                     {(errors[field.name] as string).charAt(0).toUpperCase() +
                                         (errors[field.name] as string).slice(1)}
                                 </p>

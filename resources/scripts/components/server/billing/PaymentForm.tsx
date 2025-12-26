@@ -37,7 +37,7 @@ export default ({
             if (renewal && serverUuid) {
                 returnUrl += `?renewal=true&server_uuid=${serverUuid}`;
             }
-            
+
             stripe.confirmPayment({
                 elements,
                 confirmParams: {

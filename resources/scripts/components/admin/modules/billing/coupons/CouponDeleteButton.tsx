@@ -45,7 +45,7 @@ export default ({ coupon }: { coupon: Coupon }) => {
                 <FlashMessageRender byKey={'admin:billing:coupons:delete'} className={'mb-2'} />
                 Are you sure you want to delete this coupon? This action cannot be undone. To confirm, please type the
                 coupon code&nbsp;
-                <span className={'p-1 bg-zinc-900 rounded font-mono text-sm mx-1'}>({coupon.code})</span>below:
+                <span className={'mx-1 rounded bg-zinc-900 p-1 font-mono text-sm'}>({coupon.code})</span>below:
                 <Input onChange={e => setCode(e.currentTarget.value)} className={'mt-2'} />
             </Dialog.Confirm>
             <Button.Danger className={'mr-4'} type={'button'} onClick={() => setOpen(true)}>

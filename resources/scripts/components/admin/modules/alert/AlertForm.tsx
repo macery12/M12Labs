@@ -5,7 +5,17 @@ import tw from 'twin.macro';
 import AdminBox from '@/elements/AdminBox';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
-import { Alert as AlertType, createAlert, updateAlert, getAlerts, CreateAlertData, UpdateAlertData, AlertScope, UserTargeting, searchUsers, AlertUser } from '@/api/routes/admin/alerts';
+import {
+    createAlert,
+    updateAlert,
+    getAlerts,
+    CreateAlertData,
+    UpdateAlertData,
+    AlertScope,
+    UserTargeting,
+    searchUsers,
+    AlertUser,
+} from '@/api/routes/admin/alerts';
 import useFlash from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Label from '@/elements/Label';
@@ -74,7 +84,7 @@ export default () => {
                             start_at: alert.start_at ? alert.start_at.split('T')[0] : '',
                             end_at: alert.end_at ? alert.end_at.split('T')[0] : '',
                         });
-                        
+
                         if (alert.users) {
                             setSelectedUsers(alert.users);
                         }
@@ -92,9 +102,7 @@ export default () => {
         try {
             const users = await searchUsers(query);
             // Filter out already selected users
-            const filteredUsers = users.filter(
-                u => !selectedUsers.some(su => su.id === u.id)
-            );
+            const filteredUsers = users.filter(u => !selectedUsers.some(su => su.id === u.id));
             setUserSearchResults(filteredUsers);
         } catch {
             setUserSearchResults([]);
@@ -160,7 +168,7 @@ export default () => {
             {({ values, setFieldValue }) => (
                 <Form>
                     <FlashMessageRender byKey={'alert:form'} className={'mb-4'} />
-                    
+
                     <div css={tw`mb-6`}>
                         <Button.Text onClick={() => navigate('/admin/alerts')} css={tw`mb-4`}>
                             ← Back to Alerts
@@ -174,14 +182,14 @@ export default () => {
                                 <div>
                                     <Label>Title (Optional)</Label>
                                     <Field id={'title'} name={'title'} type={'text'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Optional title for internal organization
                                     </p>
                                 </div>
                                 <div>
                                     <Label>Content *</Label>
                                     <Field id={'content'} name={'content'} type={'text'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         The message that will be displayed to users
                                     </p>
                                 </div>
@@ -213,8 +221,8 @@ export default () => {
                                         <option value={'slide-out'}>Slide-out Card (Right Side)</option>
                                         <option value={'center'}>Center (Popup Dialog)</option>
                                     </Select>
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        {values.position === 'notification' 
+                                    <p className={'mt-1 text-xs text-gray-400'}>
+                                        {values.position === 'notification'
                                             ? 'Alert appears only in the alerts page - shown as unread notification'
                                             : 'Choose where and how the alert appears on pages'}
                                     </p>
@@ -230,18 +238,18 @@ export default () => {
                                             <option value={'dashboard'}>Dashboard Only</option>
                                             <option value={'server'}>Server Pages Only</option>
                                             <option value={'billing'}>Billing Pages Only</option>
-                                        <option value={'account'}>Account Pages Only</option>
-                                        <option value={'admin'}>Admin Panel Only</option>
-                                    </Select>
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        Choose where this alert should be displayed
-                                    </p>
-                                </div>
+                                            <option value={'account'}>Account Pages Only</option>
+                                            <option value={'admin'}>Admin Panel Only</option>
+                                        </Select>
+                                        <p className={'mt-1 text-xs text-gray-400'}>
+                                            Choose where this alert should be displayed
+                                        </p>
+                                    </div>
                                 )}
                                 <div>
                                     <Label>Priority</Label>
                                     <Field id={'priority'} name={'priority'} type={'number'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Higher priority alerts appear first (default: 0)
                                     </p>
                                 </div>
@@ -251,12 +259,7 @@ export default () => {
                         <AdminBox title={'Settings'}>
                             <div css={tw`space-y-4`}>
                                 <div className={'flex items-center'}>
-                                    <Field
-                                        id={'enabled'}
-                                        name={'enabled'}
-                                        type={'checkbox'}
-                                        checked={values.enabled}
-                                    />
+                                    <Field id={'enabled'} name={'enabled'} type={'checkbox'} checked={values.enabled} />
                                     <Label className={'ml-2 mb-0'}>Enabled</Label>
                                 </div>
                                 <div className={'flex items-center'}>
@@ -268,7 +271,7 @@ export default () => {
                                     />
                                     <Label className={'ml-2 mb-0'}>Dismissible by users</Label>
                                 </div>
-                                <p className={'text-gray-400 text-xs'}>
+                                <p className={'text-xs text-gray-400'}>
                                     Users can view all past alerts by clicking the bell icon in the navigation bar
                                 </p>
                             </div>
@@ -283,7 +286,7 @@ export default () => {
                                 <div>
                                     <Label>Link Text</Label>
                                     <Field id={'link_text'} name={'link_text'} type={'text'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Text to display for the link (defaults to URL)
                                     </p>
                                 </div>
@@ -301,7 +304,7 @@ export default () => {
                                         <option value={'all'}>All Users</option>
                                         <option value={'specific'}>Specific Users Only</option>
                                     </Select>
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Choose whether to show this alert to all users or specific users
                                     </p>
                                 </div>
@@ -315,7 +318,9 @@ export default () => {
                                             placeholder={'Search by email or username...'}
                                             items={userSearchResults}
                                             selected={null}
-                                            setSelected={() => {}}
+                                            setSelected={() => {
+                                                // Not used for multi-select
+                                            }}
                                             setItems={setUserSearchResults}
                                             onSearch={onSearchUsers}
                                             onSelect={onSelectUser}
@@ -323,7 +328,13 @@ export default () => {
                                             nullable
                                         >
                                             {userSearchResults?.map(user => (
-                                                <Option key={user.id} selectId={'user-search'} id={user.id} item={user} active={false}>
+                                                <Option
+                                                    key={user.id}
+                                                    selectId={'user-search'}
+                                                    id={user.id}
+                                                    item={user}
+                                                    active={false}
+                                                >
                                                     {user.email} (@{user.username})
                                                 </Option>
                                             ))}
@@ -341,7 +352,11 @@ export default () => {
                                                             <span>{user.email}</span>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => setSelectedUsers(selectedUsers.filter(u => u.id !== user.id))}
+                                                                onClick={() =>
+                                                                    setSelectedUsers(
+                                                                        selectedUsers.filter(u => u.id !== user.id),
+                                                                    )
+                                                                }
                                                                 css={tw`text-gray-400 hover:text-red-400 transition-colors`}
                                                             >
                                                                 <svg
@@ -360,7 +375,7 @@ export default () => {
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <p className={'text-gray-400 text-xs mt-2'}>
+                                                <p className={'mt-2 text-xs text-gray-400'}>
                                                     {selectedUsers.length} user(s) selected
                                                 </p>
                                             </div>
@@ -375,16 +390,12 @@ export default () => {
                                 <div>
                                     <Label>Start Date</Label>
                                     <Field id={'start_at'} name={'start_at'} type={'date'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        Alert will only show after this date
-                                    </p>
+                                    <p className={'mt-1 text-xs text-gray-400'}>Alert will only show after this date</p>
                                 </div>
                                 <div>
                                     <Label>End Date</Label>
                                     <Field id={'end_at'} name={'end_at'} type={'date'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        Alert will only show until this date
-                                    </p>
+                                    <p className={'mt-1 text-xs text-gray-400'}>Alert will only show until this date</p>
                                 </div>
                             </div>
                         </AdminBox>

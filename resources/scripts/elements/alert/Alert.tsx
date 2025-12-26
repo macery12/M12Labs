@@ -15,7 +15,7 @@ export default ({ type, className, children, small, onClose }: AlertProps) => {
     return (
         <div
             className={classNames(
-                'flex items-start border-l-8 rounded-md shadow',
+                'flex items-start rounded-md border-l-8 shadow',
                 small ? 'px-2 py-2 text-xs' : 'px-4 py-3',
                 {
                     ['border-green-500 bg-green-500/30 text-green-50']: type === 'success',
@@ -26,16 +26,14 @@ export default ({ type, className, children, small, onClose }: AlertProps) => {
                 className,
             )}
         >
-            <div className="flex-1">
-                {children}
-            </div>
+            <div className="flex-1">{children}</div>
             {onClose && (
                 <button
                     onClick={onClose}
-                    className={'ml-3 text-gray-400 hover:text-gray-200 transition-colors flex-shrink-0'}
+                    className={'ml-3 flex-shrink-0 text-gray-400 transition-colors hover:text-gray-200'}
                     aria-label="Close alert"
                 >
-                    <FontAwesomeIcon icon={faTimes} className={'w-4 h-4'} />
+                    <FontAwesomeIcon icon={faTimes} className={'h-4 w-4'} />
                 </button>
             )}
         </div>

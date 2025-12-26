@@ -53,7 +53,7 @@ export default ({ subtotal, onCouponApplied, orderType = 'new' }: Props) => {
         <div className={'mt-4'}>
             <div className={'flex items-end gap-2'}>
                 <div className={'flex-1'}>
-                    <label htmlFor={'coupon'} className={'text-sm text-gray-400 mb-1 block'}>
+                    <label htmlFor={'coupon'} className={'mb-1 block text-sm text-gray-400'}>
                         Coupon Code
                     </label>
                     <Input

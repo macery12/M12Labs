@@ -13,7 +13,7 @@ const Indicator = ({ text, icon }: Props) => {
 
     return (
         <Tooltip content={text} placement={'left'}>
-            <div className={'p-3 rounded-lg'} style={{ backgroundColor: secondary }}>
+            <div className={'rounded-lg p-3'} style={{ backgroundColor: secondary }}>
                 <FontAwesomeIcon icon={icon} color={primary} fixedWidth />
             </div>
         </Tooltip>
@@ -25,7 +25,7 @@ export default () => {
     const everest = useStoreState(state => state.everest.data!);
 
     return (
-        <div className={'hidden md:block fixed top-3 right-3'}>
+        <div className={'fixed top-3 right-3 hidden md:block'}>
             <div className={'grid grid-cols-1 gap-y-2'}>
                 {settings.auto_update && <Indicator text={'Automatic updates are enabled.'} icon={faRecycle} />}
                 {everest.auth.registration.enabled && <Indicator text={'User registration is enabled.'} icon={faKey} />}

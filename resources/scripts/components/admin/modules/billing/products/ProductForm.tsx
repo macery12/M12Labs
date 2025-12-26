@@ -66,9 +66,9 @@ export default ({ product }: { product?: Product }) => {
         <AdminContentBlock title={product ? 'Edit Product' : 'New Product'}>
             <div css={tw`w-full flex flex-row items-center m-8`}>
                 {product?.icon ? (
-                    <img src={product.icon} className={'ww-8 h-8 mr-4'} />
+                    <img src={product.icon} className={'ww-8 mr-4 h-8'} />
                 ) : (
-                    <CubeIcon className={'w-8 h-8 mr-4'} />
+                    <CubeIcon className={'mr-4 h-8 w-8'} />
                 )}
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>{product?.name ?? 'New Product'}</h2>
@@ -79,7 +79,7 @@ export default ({ product }: { product?: Product }) => {
                     </p>
                 </div>
                 {product && (
-                    <div className={'hidden md:flex ml-auto mr-12'}>
+                    <div className={'ml-auto mr-12 hidden md:flex'}>
                         <Link to={`/admin/billing/categories/${Number(params.id)}`}>
                             <Button>
                                 <FontAwesomeIcon icon={faArrowLeft} className={'mr-2'} />

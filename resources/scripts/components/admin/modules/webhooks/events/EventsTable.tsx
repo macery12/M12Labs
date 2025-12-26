@@ -11,7 +11,7 @@ export default ({ events }: { events?: WebhookEvent[] }) => {
 
     return (
         <>
-            <div className={'grid lg:grid-cols-3 gap-4'}>
+            <div className={'grid gap-4 lg:grid-cols-3'}>
                 {pagination.paginatedItems.map(event => (
                     <EventBox event={event} key={event.id} />
                 ))}

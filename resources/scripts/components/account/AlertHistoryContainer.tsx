@@ -22,10 +22,8 @@ export default () => {
         ])
             .then(results => {
                 const allAlerts = results.flat();
-                const uniqueAlerts = Array.from(
-                    new Map(allAlerts.map(alert => [alert.id, alert])).values()
-                );
-                
+                const uniqueAlerts = Array.from(new Map(allAlerts.map(alert => [alert.id, alert])).values());
+
                 // Count unread: notification alerts + dismissed other alerts
                 const unread = uniqueAlerts.filter(alert => {
                     const dismissedKey = `alert_dismissed_${alert.id}_${user}`;
@@ -33,7 +31,7 @@ export default () => {
                     // Count notification alerts that aren't dismissed, or any alert that isn't dismissed
                     return !isDismissed;
                 }).length;
-                
+
                 setUnreadCount(unread);
             })
             .catch(() => setUnreadCount(0));
@@ -47,19 +45,21 @@ export default () => {
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                     <FontAwesomeIcon icon={faBell} />
                     {unreadCount > 0 && (
-                        <span style={{
-                            position: 'absolute',
-                            top: '-8px',
-                            right: '-10px',
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            borderRadius: '10px',
-                            padding: '2px 6px',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            minWidth: '18px',
-                            textAlign: 'center',
-                        }}>
+                        <span
+                            style={{
+                                position: 'absolute',
+                                top: '-8px',
+                                right: '-10px',
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                borderRadius: '10px',
+                                padding: '2px 6px',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                minWidth: '18px',
+                                textAlign: 'center',
+                            }}
+                        >
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}

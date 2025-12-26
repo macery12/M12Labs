@@ -24,9 +24,9 @@ export default () => {
     };
 
     return (
-        <div className={'min-h-screen static flex'}>
+        <div className={'static flex min-h-screen'}>
             <div
-                className={`m-auto flex justify-center transition-opacity duration-1000 max-w-7xl ${
+                className={`m-auto flex max-w-7xl justify-center transition-opacity duration-1000 ${
                     fadeIn ? 'opacity-100' : 'opacity-0'
                 }`}
             >
@@ -35,7 +35,7 @@ export default () => {
                         <h1 className={'text-5xl lg:text-8xl'}>
                             Welcome to <span style={{ color: primary }}>Jexactyl</span>
                         </h1>
-                        <p className={'italic text-gray-400 text-center'}>
+                        <p className={'text-center italic text-gray-400'}>
                             It&apos;s great to have you here. Let&apos;s get started.
                         </p>
                     </div>
@@ -48,7 +48,7 @@ export default () => {
                         <h1 className={'text-5xl lg:text-8xl'}>
                             Thanks for choosing <span style={{ color: primary }}>Jexactyl</span>
                         </h1>
-                        <p className={'italic text-gray-400 text-center'}>
+                        <p className={'text-center italic text-gray-400'}>
                             Your instance has been configured and is ready for use.
                         </p>
                     </div>

@@ -49,13 +49,13 @@ const UtilBox = ({
     return (
         <div
             className={classNames(
-                'col-span-2 lg:col-span-1 w-full h-full bg-white/10 lg:shadow-xl m-auto px-4 py-2',
+                'col-span-2 m-auto h-full w-full bg-white/10 px-4 py-2 lg:col-span-1 lg:shadow-xl',
                 rounded === 'left' && 'lg:rounded-l-lg',
                 rounded === 'right' && 'lg:rounded-r-lg',
-                rounded === 'full' && 'lg:rounded-lg lg:col-span-3',
+                rounded === 'full' && 'lg:col-span-3 lg:rounded-lg',
             )}
         >
-            <div className={'text-gray-300 font-bold text-center'}>
+            <div className={'text-center font-bold text-gray-300'}>
                 <p className={'my-auto inline-flex text-sm'}>
                     <FontAwesomeIcon icon={icon} className={'my-auto mr-1'} size={'xs'} />
                     <p className={'my-auto'}>
@@ -130,31 +130,31 @@ export default ({
     return (
         <>
             <div
-                className={'w-full p-4 rounded-lg grid grid-cols-2 lg:grid-cols-12 mb-2'}
+                className={'mb-2 grid w-full grid-cols-2 rounded-lg p-4 lg:grid-cols-12'}
                 style={{ backgroundColor: colors.background }}
             >
                 <FontAwesomeIcon
-                    className={classNames(statusToColor(stats?.status ?? 'offline'), 'my-auto ml-4 col-span-1')}
+                    className={classNames(statusToColor(stats?.status ?? 'offline'), 'col-span-1 my-auto ml-4')}
                     icon={server.status === 'suspended' ? faXmarkCircle : faPowerOff}
                     size={'lg'}
                 />
                 <Link
                     to={`/server/${server.id}`}
-                    className="whitespace-nowrap text-white col-span-1 lg:col-span-6 mb-4 lg:mb-0 hover:brightness-150 transition duration-300"
+                    className="col-span-1 mb-4 whitespace-nowrap text-white transition duration-300 hover:brightness-150 lg:col-span-6 lg:mb-0"
                 >
                     {server.name}
-                    <div className={'text-gray-500 text-xs my-auto'}>
+                    <div className={'my-auto text-xs text-gray-500'}>
                         {server.allocations[0]?.ip.toString()}:{server.allocations[0]?.port.toString()}
                     </div>
                 </Link>
-                <div className={'col-span-1 lg:col-span-2 my-auto mr-2'}>
+                <div className={'col-span-1 my-auto mr-2 lg:col-span-2'}>
                     {group && group.id === server.groupId && !removed ? (
                         <Pill size={'small'} type={'unknown'}>
-                            <span style={{ color: group?.color }} className={'cursor-default ml-3'}>
+                            <span style={{ color: group?.color }} className={'ml-3 cursor-default'}>
                                 {group.name}
                                 <div
                                     onClick={onDelete}
-                                    className={'opacity-0 hover:opacity-100 transition duration-200 inline-flex'}
+                                    className={'inline-flex opacity-0 transition duration-200 hover:opacity-100'}
                                 >
                                     <FontAwesomeIcon icon={faTrash} size={'xs'} color={'red'} className={'ml-1'} />
                                 </div>
@@ -164,10 +164,10 @@ export default ({
                         <div
                             onClick={() => setOpen({ open: 'add', serverId: server.uuid })}
                             className={
-                                'hidden xl:inline-flex leading-5 font-medium text-2xs px-2 py-0.25 text-gray-500 rounded-full border border-gray-400 border-dashed cursor-pointer hover:bg-white/10 hover:text-white transition duration-300'
+                                'py-0.25 hidden cursor-pointer rounded-full border border-dashed border-gray-400 px-2 text-2xs font-medium leading-5 text-gray-500 transition duration-300 hover:bg-white/10 hover:text-white xl:inline-flex'
                             }
                         >
-                            <FontAwesomeIcon icon={faPlus} className={'mr-1 my-auto'} />
+                            <FontAwesomeIcon icon={faPlus} className={'my-auto mr-1'} />
                             Add Group
                         </div>
                     )}

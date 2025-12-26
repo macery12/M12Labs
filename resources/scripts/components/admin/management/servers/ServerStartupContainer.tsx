@@ -93,7 +93,7 @@ export function ServerServiceContainer({
                 <EggSelect nestId={nestId} selectedEggId={selectedEggId} onEggSelect={setEgg} />
             </div>
             {!noToggle && (
-                <div className="bg-neutral-800 border border-neutral-900 shadow-inner p-4 rounded">
+                <div className="rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner">
                     <FormikSwitch name={'skipScripts'} label={'Skip Egg Install Script'} description={'Soon™'} />
                 </div>
             )}
@@ -108,7 +108,7 @@ export function ServerImageContainer() {
         <AdminBox title={'Image Configuration'} className="relative w-full">
             <SpinnerOverlay visible={isSubmitting} />
 
-            <div className="md:w-full md:flex md:flex-col">
+            <div className="md:flex md:w-full md:flex-col">
                 <div>
                     {/* TODO: make this a proper select but allow a custom image to be specified if needed. */}
                     <Field id={'image'} name={'image'} label={'Docker Image'} type={'text'} />
@@ -170,12 +170,12 @@ function ServerStartupForm({
 
     return (
         <Form>
-            <div className="flex flex-col mb-16">
-                <div className="flex flex-row mb-6">
+            <div className="mb-16 flex flex-col">
+                <div className="mb-6 flex flex-row">
                     <ServerStartupLineContainer egg={egg} server={server} />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
+                <div className="mb-6 grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
                     <div className="flex">
                         <ServerServiceContainer selectedEggId={selectedEggId} setEgg={setEgg} nestId={server.nestId} />
                     </div>
@@ -185,7 +185,7 @@ function ServerStartupForm({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+                <div className="grid grid-cols-1 gap-y-6 gap-x-8 md:grid-cols-2">
                     {/* This ensures that no variables are rendered unless the environment has a value for the variable. */}
                     {egg?.relationships.variables
                         ?.filter(v => Object.keys(environment).find(e => e === v.environmentVariable) !== undefined)
@@ -202,7 +202,7 @@ function ServerStartupForm({
                         ))}
                 </div>
 
-                <div className="rounded shadow-md py-2 pr-6 mt-6" style={{ backgroundColor: secondary }}>
+                <div className="mt-6 rounded py-2 pr-6 shadow-md" style={{ backgroundColor: secondary }}>
                     <div className="flex flex-row">
                         <Button type="submit" className="ml-auto" disabled={isSubmitting || !isValid}>
                             Save Changes

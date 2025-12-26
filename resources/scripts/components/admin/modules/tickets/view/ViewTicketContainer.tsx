@@ -64,14 +64,14 @@ export default () => {
 
     return (
         <AdminContentBlock title={`View ticket: ${ticket.title}`}>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl font-header font-medium inline-flex'}>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'inline-flex font-header text-2xl font-medium'}>
                         {ticket.title}
                         <span
                             className={classNames(
                                 statusToColor(ticket.status),
-                                'capitalize px-2 py-1 ml-2 my-auto text-xs font-medium rounded-full',
+                                'my-auto ml-2 rounded-full px-2 py-1 text-xs font-medium capitalize',
                             )}
                         >
                             {ticket.status}
@@ -79,7 +79,7 @@ export default () => {
                     </h2>
                     <p
                         className={
-                            'text-base text-sm mt-1 text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                            'mt-1 overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-sm text-neutral-400'
                         }
                     >
                         First created&nbsp;
@@ -101,7 +101,7 @@ export default () => {
                 {({ isSubmitting }) => (
                     <Form>
                         <AdminBox title={'Ticket Options'} icon={faGears} status={boxStatus.status}>
-                            <div className={'grid lg:grid-cols-3 gap-4'}>
+                            <div className={'grid gap-4 lg:grid-cols-3'}>
                                 <div>
                                     <Label>Update ticket status</Label>
                                     <Select
@@ -113,7 +113,7 @@ export default () => {
                                         <option value={'resolved'}>Resolved</option>
                                         <option value={'unresolved'}>Unresolved</option>
                                     </Select>
-                                    <p className={'text-xs mt-1 text-gray-400'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Change the state of this ticket for the user.
                                     </p>
                                 </div>
@@ -132,13 +132,13 @@ export default () => {
                                             </div>
                                         )}
                                     </div>
-                                    <p className={'text-xs mt-1 text-gray-400'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         You may assign a Panel administrator to be responsible for this ticket.
                                     </p>
                                 </div>
                                 <div>
                                     <UserSelect selected={ticket.user} />
-                                    <p className={'text-xs mt-1 text-gray-400'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         If needed, you can re-assign this ticket to a different user.
                                     </p>
                                 </div>
@@ -155,10 +155,10 @@ export default () => {
                     </Form>
                 )}
             </Formik>
-            <div className={'border-2 border-gray-700 rounded-full my-12'} />
-            <div className={'w-full flex flex-row items-center'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl font-header font-medium inline-flex'}>Ticket Messages</h2>
+            <div className={'my-12 rounded-full border-2 border-gray-700'} />
+            <div className={'flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'inline-flex font-header text-2xl font-medium'}>Ticket Messages</h2>
                 </div>
                 <div css={tw`flex ml-auto pl-4`}>
                     <NewMessageDialog ticketId={ticket.id} />

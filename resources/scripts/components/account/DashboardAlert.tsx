@@ -12,7 +12,7 @@ export default () => {
     const { alert: legacyAlert } = useStoreState(s => s.everest.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
-    
+
     // Load active alerts from the new system for dashboard scope
     useEffect(() => {
         getActiveAlerts('dashboard')
@@ -52,7 +52,7 @@ export default () => {
         if (currentCenterAlert) {
             dismissAlert(currentCenterAlert.id);
         }
-        
+
         // Move to next center alert if available
         if (dialogAlertIndex + 1 < centerAlerts.length) {
             setDialogAlertIndex(dialogAlertIndex + 1);
@@ -76,18 +76,14 @@ export default () => {
 
     const renderAlertContent = (alert: ActiveAlert) => (
         <>
-            {alert.title && (
-                <strong className={'block mb-2 text-base font-semibold'}>
-                    {alert.title}
-                </strong>
-            )}
+            {alert.title && <strong className={'mb-2 block text-base font-semibold'}>{alert.title}</strong>}
             <span className={'block'}>{alert.content}</span>
             {alert.link && (
-                <a 
-                    href={alert.link} 
-                    target="_blank" 
+                <a
+                    href={alert.link}
+                    target="_blank"
                     rel="noopener noreferrer"
-                    className={'block mt-2 underline hover:text-blue-300'}
+                    className={'mt-2 block underline hover:text-blue-300'}
                 >
                     {alert.link_text || 'Learn more'}
                 </a>
@@ -115,11 +111,7 @@ export default () => {
 
             {/* New multi-alert system - Top Center */}
             {topCenterAlerts.map(alert => (
-                <Alert 
-                    key={alert.id} 
-                    type={alert.type}
-                    onClose={() => handleTopCenterClose(alert.id)}
-                >
+                <Alert key={alert.id} type={alert.type} onClose={() => handleTopCenterClose(alert.id)}>
                     {renderAlertContent(alert)}
                 </Alert>
             ))}

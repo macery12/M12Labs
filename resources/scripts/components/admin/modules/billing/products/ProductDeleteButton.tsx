@@ -46,7 +46,7 @@ export default ({ product }: { product: Product }) => {
                 <FlashMessageRender byKey={'admin:billing:products:delete'} className={'mb-2'} />
                 Are you sure you want to delete this product? All products under this product will also be permenantly
                 deleted. To confirm, please type the product name&nbsp;
-                <span className={'p-1 bg-zinc-900 rounded font-mono text-sm mx-1'}>({product.name})</span>below:
+                <span className={'mx-1 rounded bg-zinc-900 p-1 font-mono text-sm'}>({product.name})</span>below:
                 <Input onChange={e => setName(e.currentTarget.value)} className={'mt-2'} />
             </Dialog.Confirm>
             <Button.Danger className={'mr-4'} type={'button'} onClick={() => setOpen(true)}>

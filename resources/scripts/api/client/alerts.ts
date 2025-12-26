@@ -21,7 +21,7 @@ export interface ActiveAlert {
     updated_at: string;
 }
 
-export const getActiveAlerts = async (scope: string = 'global'): Promise<ActiveAlert[]> => {
+export const getActiveAlerts = async (scope = 'global'): Promise<ActiveAlert[]> => {
     const { data } = await http.get('/api/client/alerts', {
         params: { scope },
     });

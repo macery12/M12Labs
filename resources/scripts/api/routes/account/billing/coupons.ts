@@ -22,7 +22,7 @@ export interface ValidateCouponResponse {
 export const validateCoupon = async (
     code: string,
     subtotal: number,
-    orderType: string = 'new'
+    orderType = 'new',
 ): Promise<ValidateCouponResponse> => {
     const { data } = await http.post('/api/client/billing/coupons/validate', {
         code,

@@ -208,7 +208,7 @@ export default () => {
 
             <div className={'mt-10 grid gap-8 lg:grid-cols-3 lg:gap-10'}>
                 {/* Main Content Area */}
-                <div className={'lg:col-span-2 space-y-8'}>
+                <div className={'space-y-8 lg:col-span-2'}>
                     {/* Location Section */}
                     <section>
                         <div className={'mb-6'}>
@@ -302,7 +302,7 @@ export default () => {
                                 className={classNames(
                                     'w-full rounded-lg border px-4 py-2.5 text-sm transition-all',
                                     'bg-gray-800 text-gray-200 placeholder-gray-500',
-                                    'border-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                    'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
                                 )}
                                 style={{
                                     borderColor: serverName.trim() ? colors.primary : undefined,
@@ -418,7 +418,7 @@ export default () => {
                             <div className={'space-y-3'}>
                                 <div
                                     className={
-                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer'
+                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'
                                     }
                                     style={
                                         termsAgreed
@@ -431,7 +431,7 @@ export default () => {
                                         checked={termsAgreed}
                                         onChange={() => setTermsAgreed(!termsAgreed)}
                                     />
-                                    <div className={'flex-1 min-w-0'} onClick={() => setTermsAgreed(!termsAgreed)}>
+                                    <div className={'min-w-0 flex-1'} onClick={() => setTermsAgreed(!termsAgreed)}>
                                         <p className={'text-xs font-medium text-gray-200'}>
                                             <a
                                                 href={billing.links.terms}
@@ -454,7 +454,7 @@ export default () => {
                                 </div>
                                 <div
                                     className={
-                                        'flex items-start gap-3 rounded-lg border p-3 transition-all cursor-pointer'
+                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'
                                     }
                                     style={
                                         privacyAgreed
@@ -467,7 +467,7 @@ export default () => {
                                         checked={privacyAgreed}
                                         onChange={() => setPrivacyAgreed(!privacyAgreed)}
                                     />
-                                    <div className={'flex-1 min-w-0'} onClick={() => setPrivacyAgreed(!privacyAgreed)}>
+                                    <div className={'min-w-0 flex-1'} onClick={() => setPrivacyAgreed(!privacyAgreed)}>
                                         <p className={'text-xs font-medium text-gray-200'}>
                                             <a
                                                 href={billing.links.privacy}

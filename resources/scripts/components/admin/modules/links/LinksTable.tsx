@@ -107,7 +107,7 @@ const LinksTable = ({ setOpen, setLink }: Props) => {
                                                     <Pill type={'danger'}>Hidden</Pill>
                                                 )}
                                             </td>
-                                            <td className={'px-6 py-4 space-x-3'}>
+                                            <td className={'space-x-3 px-6 py-4'}>
                                                 <Button
                                                     onClick={() => {
                                                         setLink(link);
