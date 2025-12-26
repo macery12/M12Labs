@@ -28,7 +28,7 @@ export default () => (
             <SubNavigationLink to={'/admin/alerts'} name={'Manage Alerts'} base>
                 <ClipboardListIcon />
             </SubNavigationLink>
-            <SubNavigationLink to={'/admin/alerts/legacy'} name={'Legacy'}>
+            <SubNavigationLink to={'/admin/alerts/legacy'} name={'Legacy'} base>
                 <ShieldExclamationIcon />
             </SubNavigationLink>
             <SubNavigationLink to={'/admin/alerts/legacy/view'} name={'Legacy Appearance'}>

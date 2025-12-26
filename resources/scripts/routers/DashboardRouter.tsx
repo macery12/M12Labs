@@ -14,6 +14,7 @@ import { getLinks } from '@/api/getLinks';
 import http from '@/api/http';
 import NavigationBar from '@/elements/NavigationBar';
 import DashboardContainer from '@account/DashboardContainer';
+import ScopedAlert from '@account/ScopedAlert';
 
 function DashboardRouter() {
     const user = useStoreState(s => s.user.data!);
@@ -125,6 +126,9 @@ function DashboardRouter() {
             </Sidebar>
             <div className={'flex-1 overflow-x-hidden'}>
                 <NavigationBar />
+                <ScopedAlert scope="account" position="top-center" />
+                <ScopedAlert scope="account" position="slide-out" />
+                <ScopedAlert scope="account" position="center" />
                 <Suspense fallback={<Spinner centered />}>
                     <Routes>
                         <Route path="" element={<DashboardContainer />} />

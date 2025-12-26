@@ -40,7 +40,7 @@ export default ({ id, title, content, type, link, link_text, onClose, index }: S
     };
 
     // Calculate position based on index - stack them vertically
-    const topPosition = 4 + (index * 10); // 4rem base + 10rem spacing between cards
+    const topPosition = 4 + (index * 7); // 4rem base + 7rem spacing between cards
 
     return (
         <div

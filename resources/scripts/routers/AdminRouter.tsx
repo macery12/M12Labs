@@ -12,6 +12,7 @@ import Spinner from '@/elements/Spinner';
 import { NotFound } from '@/elements/ScreenBlock';
 import { PuzzleIcon, ReplyIcon } from '@heroicons/react/outline';
 import { Fragment } from 'react';
+import ScopedAlert from '@account/ScopedAlert';
 
 function AdminRouter() {
     const theme = useStoreState(state => state.theme.data!);
@@ -100,6 +101,9 @@ function AdminRouter() {
                 </Sidebar.User>
             </Sidebar>
             <div className={'flex-1 overflow-x-hidden px-6 pt-6 lg:px-10 lg:pt-8 xl:px-16 xl:pt-12'}>
+                <ScopedAlert scope="admin" position="top-center" />
+                <ScopedAlert scope="admin" position="slide-out" />
+                <ScopedAlert scope="admin" position="center" />
                 <div className={'w-full flex flex-col mx-auto'} style={{ maxWidth: '86rem' }}>
                     <ErrorBoundary>
                         <Routes>
