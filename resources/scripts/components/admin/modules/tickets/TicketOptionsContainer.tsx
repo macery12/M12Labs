@@ -43,41 +43,55 @@ export default () => {
 
     useEffect(() => {
         clearFlashes();
+        document.title = 'Admin | Ticket Options';
     }, []);
 
     return (
-        <Formik
-            onSubmit={submit}
-            initialValues={{
-                maxCount: settings.maxCount,
-            }}
-        >
-            <Form>
-                <FlashMessageRender byKey={'settings:general'} className={'mb-2'} />
-                <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
-                    <AdminBox title={'Maximum Ticket Count'} icon={faFirstOrder}>
-                        <div>
+        <>
+            <Formik
+                onSubmit={submit}
+                initialValues={{
+                    maxCount: settings.maxCount,
+                }}
+            >
+                <Form>
+                    <FlashMessageRender byKey={'settings:general'} className={'mb-2'} />
+                    <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
+                        <AdminBox title={'Maximum Ticket Count'} icon={faFirstOrder}>
                             <div>
-                                <Label className={'mt-1 mr-2'}>What should the limit be?</Label>
-                                <Field id={'maxCount'} name={'maxCount'} defaultValue={settings.maxCount} />
+                                <div>
+                                    <Label className={'mt-1 mr-2'}>What should the limit be?</Label>
+                                    <Field id={'maxCount'} name={'maxCount'} defaultValue={settings.maxCount} />
+                                </div>
+                                <p className={'mt-1.5 text-xs text-gray-400'}>
+                                    If you wish, you can set a maximum amount of tickets that a user can create.
+                                </p>
                             </div>
-                            <p className={'mt-1.5 text-xs text-gray-400'}>
-                                If you wish, you can set a maximum amount of tickets that a user can create.
-                            </p>
+                        </AdminBox>
+                    </div>
+                    <div css={tw`w-full flex flex-row items-center mt-6`}>
+                        <div css={tw`flex text-xs text-gray-500`}>
+                            These changes may not apply until users refresh the page.
                         </div>
-                    </AdminBox>
-                </div>
-                <div css={tw`w-full flex flex-row items-center mt-6`}>
-                    <div css={tw`flex text-xs text-gray-500`}>
-                        These changes may not apply until users refresh the page.
-                    </div>
 
-                    <div css={tw`flex ml-auto`}>
-                        <ToggleTicketsButton />
-                        <Button type="submit">Save Changes</Button>
+                        <div css={tw`flex ml-auto`}>
+                            <ToggleTicketsButton />
+                            <Button type="submit">Save Changes</Button>
+                        </div>
                     </div>
-                </div>
-            </Form>
-        </Formik>
+                </Form>
+            </Formik>
+            <p css={tw`text-center text-neutral-500 text-xs mt-4 mb-8`}>
+                &copy; {new Date().getFullYear()}&nbsp;
+                <a
+                    rel={'noopener nofollow noreferrer'}
+                    href={'https://jexpanel.com'}
+                    target={'_blank'}
+                    css={tw`no-underline text-neutral-500 hover:text-neutral-300`}
+                >
+                    Jexpanel.com
+                </a>
+            </p>
+        </>
     );
 };

@@ -17,7 +17,7 @@ const TitledGreyBox = ({ icon, title, children, className }: Props) => {
     const { colors } = useStoreState(state => state.theme.data!);
 
     return (
-        <div css={tw`shadow-md`} style={{ backgroundColor: colors.secondary }} className={className}>
+        <div css={tw`shadow-md`} className={className}>
             <div css={tw`p-3 border-b border-black`}>
                 {typeof title === 'string' ? (
                     <p css={tw`text-sm font-semibold`}>
@@ -28,7 +28,9 @@ const TitledGreyBox = ({ icon, title, children, className }: Props) => {
                     title
                 )}
             </div>
-            <div css={tw`p-3`}>{children}</div>
+            <div css={tw`p-3`} style={{ backgroundColor: colors.secondary }}>
+                {children}
+            </div>
         </div>
     );
 };
