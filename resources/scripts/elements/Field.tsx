@@ -35,6 +35,7 @@ const StyledInput = styled(Input)`
     ${tw`flex-grow py-2 px-3 focus:outline-none text-white`};
     border: none;
     box-shadow: none;
+    background-color: transparent !important;
 `;
 
 const Field = forwardRef<HTMLInputElement, Props>(
