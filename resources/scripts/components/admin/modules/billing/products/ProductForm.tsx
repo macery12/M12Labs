@@ -63,7 +63,7 @@ export default ({ product }: { product?: Product }) => {
     }, [params.id]);
 
     return (
-        <AdminContentBlock title={product ? 'Edit Product' : 'New Product'}>
+        <>
             <div css={tw`w-full flex flex-row items-center m-8`}>
                 {product?.icon ? (
                     <img src={product.icon} className={'ww-8 mr-4 h-8'} />
@@ -239,6 +239,6 @@ export default ({ product }: { product?: Product }) => {
                     </Form>
                 )}
             </Formik>
-        </AdminContentBlock>
+        </>
     );
 };

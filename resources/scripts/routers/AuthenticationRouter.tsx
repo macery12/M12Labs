@@ -9,7 +9,7 @@ import { useStoreState } from '@/state/hooks';
 import RegisterContainer from '@/components/auth/RegisterContainer';
 
 const Container = styled.div`
-    ${tw`h-screen bg-login bg-cover`};
+    ${tw`min-h-screen bg-login bg-cover`};
     background-repeat: no-repeat;
     background-blend-mode: darken;
 `;

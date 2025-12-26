@@ -282,8 +282,7 @@ export default () => {
                     <div className={'sticky top-4 space-y-6'}>
                         {/* Server Name Card */}
                         <div
-                            style={{ backgroundColor: colors.secondary }}
-                            className={'rounded-lg border border-gray-700 p-6'}
+                            className={'rounded-lg border border-gray-700 bg-zinc-800/50 p-6'}
                         >
                             <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Server Name</h3>
                             <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
