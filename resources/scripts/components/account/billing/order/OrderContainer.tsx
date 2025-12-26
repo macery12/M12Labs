@@ -301,10 +301,11 @@ export default () => {
                                 }
                                 className={classNames(
                                     'w-full rounded-lg border px-4 py-2.5 text-sm transition-all',
-                                    'bg-gray-800 text-gray-200 placeholder-gray-500',
+                                    'text-gray-200 placeholder-gray-500',
                                     'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
                                 )}
                                 style={{
+                                    backgroundColor: colors.secondary,
                                     borderColor: serverName.trim() ? colors.primary : undefined,
                                 }}
                             />

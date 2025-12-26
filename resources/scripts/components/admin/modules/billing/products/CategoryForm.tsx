@@ -225,9 +225,9 @@ export default ({ category }: { category?: Category }) => {
         return formContent;
     }
 
-    // When creating a new category, wrap in AdminContentBlock with header
+    // When creating a new category, return form with header (parent BillingRouter provides AdminContentBlock)
     return (
-        <AdminContentBlock title={'New Category'}>
+        <>
             <div css={tw`w-full flex flex-row items-center mb-8`}>
                 <ShoppingCartIcon className={'mr-4 h-8 w-8'} />
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
@@ -240,6 +240,6 @@ export default ({ category }: { category?: Category }) => {
                 </div>
             </div>
             {formContent}
-        </AdminContentBlock>
+        </>
     );
 };

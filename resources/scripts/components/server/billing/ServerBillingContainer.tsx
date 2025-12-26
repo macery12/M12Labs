@@ -241,7 +241,7 @@ export default () => {
                         <>
                             {product.price === 0 ? (
                                 <div>
-                                    <p css={tw`text-blue-200 text-xs mb-3`}>
+                                    <p css={tw`text-gray-300 text-xs mb-3`}>
                                         <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
                                         Free server - renewable {suspensionThreshold} days before expiration
                                     </p>

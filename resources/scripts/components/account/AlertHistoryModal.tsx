@@ -14,6 +14,7 @@ interface Props {
 
 export default ({ open, onClose }: Props) => {
     const { uuid: user } = useStoreState(s => s.user.data!);
+    const { colors } = useStoreState(s => s.theme.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -124,9 +125,10 @@ export default ({ open, onClose }: Props) => {
                             return (
                                 <div
                                     key={alert.id}
-                                    className={`rounded-lg border border-l-8 border-gray-700 bg-gray-800 p-4 ${getTypeBorderColor(
+                                    className={`rounded-lg border border-l-8 border-gray-700 p-4 ${getTypeBorderColor(
                                         alert.type,
                                     )}`}
+                                    style={{ backgroundColor: colors.secondary }}
                                 >
                                     <div css={tw`flex items-start justify-between mb-2`}>
                                         <div css={tw`flex items-center gap-2 flex-wrap`}>
@@ -180,7 +182,8 @@ export default ({ open, onClose }: Props) => {
                                             <button
                                                 type="button"
                                                 onClick={() => reopenAlert(alert.id)}
-                                                css={tw`px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors flex items-center gap-2`}
+                                                css={tw`px-3 py-1.5 text-sm text-white rounded transition-colors flex items-center gap-2`}
+                                                style={{ backgroundColor: colors.primary }}
                                             >
                                                 <svg
                                                     css={tw`w-4 h-4`}

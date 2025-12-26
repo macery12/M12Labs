@@ -1,7 +1,6 @@
 import Spinner from '@/elements/Spinner';
 import { Link } from 'react-router-dom';
 import { Button } from '@/elements/button';
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import { useCategoryFromRoute } from '@/api/routes/admin/billing/categories';
 import CategoryForm from '@admin/modules/billing/products/CategoryForm';
 import ProductTable from '@admin/modules/billing/products/ProductTable';
@@ -14,7 +13,7 @@ export default () => {
     if (!data) return <Spinner size={'large'} centered />;
 
     return (
-        <AdminContentBlock title={data.name || 'View Category'}>
+        <>
             <div css={tw`w-full flex flex-row items-center mb-8`}>
                 {data.icon ? (
                     <img src={data.icon} className={'mr-4 h-8 w-8'} alt={data.name} />
@@ -49,6 +48,6 @@ export default () => {
                 </div>
                 <ProductTable />
             </div>
-        </AdminContentBlock>
+        </>
     );
 };

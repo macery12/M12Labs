@@ -18,7 +18,7 @@ const TitledGreyBox = ({ icon, title, children, className }: Props) => {
 
     return (
         <div css={tw`shadow-md`} style={{ backgroundColor: colors.secondary }} className={className}>
-            <div css={tw`p-3 border-b border-black`} style={{ backgroundColor: colors.headers }}>
+            <div css={tw`p-3 border-b border-black`}>
                 {typeof title === 'string' ? (
                     <p css={tw`text-sm font-semibold`}>
                         {icon && <FontAwesomeIcon icon={icon} css={tw`mr-2 text-neutral-300`} />}

@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { breakpoint } from '@/assets/theme';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import tw from 'twin.macro';
+import { useStoreState } from '@/state/hooks';
 
 type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, HTMLFormElement> & {
     title?: string;
@@ -33,6 +34,7 @@ const Container = styled.div<{ isVisible: boolean }>`
 
 export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => {
     const [visible, setVisible] = useState(false);
+    const { colors } = useStoreState(state => state.theme.data!);
 
     useEffect(() => {
         const timeout = setTimeout(() => setVisible(true), 50);
@@ -46,7 +48,10 @@ export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => 
                     {title && <h2 css={tw`text-3xl text-center text-neutral-100 font-medium py-4`}>{title}</h2>}
                     <FlashMessageRender css={tw`mb-2 px-1`} />
                     <Form {...props} ref={ref}>
-                        <div css={tw`w-full bg-zinc-800/50 shadow-lg rounded-lg p-6 mx-1`}>
+                        <div
+                            css={tw`w-full shadow-lg rounded-lg p-6 mx-1`}
+                            style={{ backgroundColor: colors.secondary }}
+                        >
                             <div css={tw`flex-1`}>{props.children}</div>
                         </div>
                     </Form>

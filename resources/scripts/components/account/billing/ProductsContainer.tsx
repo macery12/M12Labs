@@ -91,7 +91,7 @@ export default () => {
                     {categories?.map(cat => (
                         <button
                             className={classNames(
-                                'my-4 w-full cursor-pointer text-left font-semibold duration-300 line-clamp-1 hover:brightness-150',
+                                'my-4 w-full cursor-pointer text-left font-semibold duration-300 hover:brightness-150',
                                 Number(cat.id) === category && 'brightness-150',
                             )}
                             disabled={category === Number(cat.id)}
