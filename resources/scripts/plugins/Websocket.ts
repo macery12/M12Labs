@@ -2,12 +2,6 @@ import Sockette from 'sockette';
 import { EventEmitter } from 'events';
 
 export class Websocket extends EventEmitter {
-    // Timer instance for this socket.
-    private timer: any = null;
-
-    // The backoff for the timer, in milliseconds.
-    private backoff = 5000;
-
     // The socket instance being tracked.
     private socket: Sockette | null = null;
 
@@ -26,6 +20,8 @@ export class Websocket extends EventEmitter {
         this.url = url;
 
         this.socket = new Sockette(`${this.url}`, {
+            timeout: 1000,
+            maxAttempts: 20,
             onmessage: e => {
                 try {
                     const { event, args } = JSON.parse(e.data);
@@ -35,10 +31,6 @@ export class Websocket extends EventEmitter {
                 }
             },
             onopen: () => {
-                // Clear the timers, we managed to connect just fine.
-                this.timer && clearTimeout(this.timer);
-                this.backoff = 5000;
-
                 this.emit('SOCKET_OPEN');
                 this.authenticate();
             },
@@ -59,16 +51,8 @@ export class Websocket extends EventEmitter {
             },
             onclose: () => this.emit('SOCKET_CLOSE'),
             onerror: error => this.emit('SOCKET_ERROR', error),
+            onmaximum: () => this.emit('SOCKET_CONNECT_ERROR'),
         });
-
-        this.timer = setTimeout(() => {
-            this.backoff = this.backoff + 2500 >= 20000 ? 20000 : this.backoff + 2500;
-            this.socket && this.socket.close();
-            clearTimeout(this.timer);
-
-            // Re-attempt connecting to the socket.
-            this.connect(url);
-        }, this.backoff);
 
         return this;
     }
@@ -94,24 +78,18 @@ export class Websocket extends EventEmitter {
     close(code?: number, reason?: string) {
         this.url = null;
         this.token = '';
-        this.socket && this.socket.close(code, reason);
+        this.socket?.close(code, reason);
     }
 
     open() {
-        this.socket && this.socket.open();
+        this.socket?.open();
     }
 
     reconnect() {
-        this.socket && this.socket.reconnect();
+        this.socket?.reconnect();
     }
 
     send(event: string, payload?: string | string[]) {
-        this.socket &&
-            this.socket.send(
-                JSON.stringify({
-                    event,
-                    args: Array.isArray(payload) ? payload : [payload],
-                }),
-            );
+        this.socket?.json({ event, args: Array.isArray(payload) ? payload : [payload] });
     }
 }
