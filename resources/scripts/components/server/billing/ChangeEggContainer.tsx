@@ -14,12 +14,14 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 import tw from 'twin.macro';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const currentEggId = ServerContext.useStoreState(state => state.server.data!.eggId);
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
     const serverStatus = ServerContext.useStoreState(state => state.status.value);
+    const { colors } = useStoreState(state => state.theme.data!);
 
     const [loading, setLoading] = useState(true);
     const [changing, setChanging] = useState(false);
@@ -220,7 +222,8 @@ export default () => {
                                 value={confirmDelete}
                                 onChange={e => setConfirmDelete(e.target.value.toUpperCase())}
                                 placeholder="Type DELETE to confirm"
-                                css={tw`w-full px-3 py-2 bg-gray-800 border border-red-500/50 rounded text-sm text-gray-200 focus:outline-none focus:border-red-500`}
+                                css={tw`w-full px-3 py-2 border border-red-500/50 rounded text-sm text-gray-200 focus:outline-none focus:border-red-500`}
+                                style={{ backgroundColor: colors.secondary }}
                                 autoFocus
                             />
                             {confirmDelete && confirmDelete !== 'DELETE' && (

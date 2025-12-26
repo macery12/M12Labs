@@ -282,7 +282,8 @@ export default () => {
                     <div className={'sticky top-4 space-y-6'}>
                         {/* Server Name Card */}
                         <div
-                            className={'rounded-lg border border-gray-700 bg-zinc-800/50 p-6'}
+                            style={{ backgroundColor: colors.secondary }}
+                            className={'rounded-lg border border-gray-700 p-6'}
                         >
                             <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Server Name</h3>
                             <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
@@ -300,10 +301,11 @@ export default () => {
                                 }
                                 className={classNames(
                                     'w-full rounded-lg border px-4 py-2.5 text-sm transition-all',
-                                    'bg-gray-800 text-gray-200 placeholder-gray-500',
+                                    'text-gray-200 placeholder-gray-500',
                                     'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
                                 )}
                                 style={{
+                                    backgroundColor: colors.secondary,
                                     borderColor: serverName.trim() ? colors.primary : undefined,
                                 }}
                             />
