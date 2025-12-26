@@ -50,18 +50,18 @@ export default () => {
         <PageContentBlock>
             <div className={'flex justify-center'}>
                 <div
-                    className={'w-full sm:w-3/4 md:w-1/2 p-12 rounded-lg shadow-lg text-center relative'}
+                    className={'relative w-full rounded-lg p-12 text-center shadow-lg sm:w-3/4 md:w-1/2'}
                     style={{ backgroundColor: colors.secondary }}
                 >
                     <FlashMessageRender byKey={'billing:process'} className={'mb-6'} />
-                    <h2 className={'text-white font-bold text-4xl'}>
+                    <h2 className={'text-4xl font-bold text-white'}>
                         Processing Order <Spinner centered />
                     </h2>
-                    <p className={'text-sm text-neutral-200 mt-2'}>
+                    <p className={'mt-2 text-sm text-neutral-200'}>
                         Our systems are currently working on deploying your server to our systems. Sit tight while your
                         new server is deployed!
                     </p>
-                    <p className={'text-2xs text-neutral-400 mt-8'}>Session {intent ?? 'Unknown'}</p>
+                    <p className={'mt-8 text-2xs text-neutral-400'}>Session {intent ?? 'Unknown'}</p>
                 </div>
             </div>
         </PageContentBlock>

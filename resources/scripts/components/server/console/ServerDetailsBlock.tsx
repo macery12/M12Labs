@@ -84,7 +84,7 @@ function ServerDetailsBlock({ className }: { className?: string }) {
     });
 
     return (
-        <div className={classNames('grid grid-cols-10 gap-2 md:gap-4 mb-6', className)}>
+        <div className={classNames('mb-6 grid grid-cols-10 gap-2 md:gap-4', className)}>
             <StatBlock icon={faWifi} title={'Address'} className={'col-span-5 lg:col-span-2'} copyOnClick={allocation}>
                 {allocation}
             </StatBlock>

@@ -39,14 +39,14 @@ export default () => {
             {isLoading || !ticket ? (
                 <Spinner size={'large'} centered />
             ) : (
-                <div className={'grid lg:grid-cols-3 gap-4'}>
+                <div className={'grid gap-4 lg:grid-cols-3'}>
                     <div className={'lg:col-span-2'}>
-                        <h2 className={'text-neutral-300 mb-4 px-4 text-2xl'}>
+                        <h2 className={'mb-4 px-4 text-2xl text-neutral-300'}>
                             {ticket.title}
                             <span
                                 className={classNames(
                                     statusToColor(ticket.status),
-                                    'px-2 py-1 ml-2 text-sm font-medium rounded-full hidden sm:inline',
+                                    'ml-2 hidden rounded-full px-2 py-1 text-sm font-medium sm:inline',
                                 )}
                             >
                                 {ticket.status[0]?.toUpperCase() + ticket.status.slice(1)}
@@ -63,7 +63,7 @@ export default () => {
                                                 <div
                                                     key={message.id}
                                                     style={{ backgroundColor: colors.headers }}
-                                                    className={'flex p-4 rounded-lg'}
+                                                    className={'flex rounded-lg p-4'}
                                                 >
                                                     <p className={'mr-2 font-semibold text-primary-400'}>
                                                         {message.author.email === email
@@ -73,7 +73,7 @@ export default () => {
                                                     </p>
                                                     {message.message.toString()}
                                                 </div>
-                                                <p className={'text-2xs text-gray-300 mt-1 text-right'}>
+                                                <p className={'mt-1 text-right text-2xs text-gray-300'}>
                                                     Sent&nbsp;
                                                     {formatDistanceToNow(message.createdAt, {
                                                         includeSeconds: true,
@@ -86,7 +86,7 @@ export default () => {
                                 </>
                             )}
                         </ContentBox>
-                        <p className={'text-xs text-gray-400 mt-2'}>Sorted by latest message</p>
+                        <p className={'mt-2 text-xs text-gray-400'}>Sorted by latest message</p>
                     </div>
                     <ContentBox title={'Add Message'}>
                         <AddTicketMessageForm ticketId={ticket.id} />

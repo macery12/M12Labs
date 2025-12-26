@@ -28,8 +28,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 disabled={loading}
             >
                 {children}
-                {Icon && <Icon className={'w-4 h-4 ml-1 mt-1'} />}
-                {loading && <FontAwesomeIcon icon={faSpinner} className={'w-3 h-3 mt-1 ml-2 animate-spin'} />}
+                {Icon && <Icon className={'ml-1 mt-1 h-4 w-4'} />}
+                {loading && <FontAwesomeIcon icon={faSpinner} className={'mt-1 ml-2 h-3 w-3 animate-spin'} />}
             </button>
         );
     },

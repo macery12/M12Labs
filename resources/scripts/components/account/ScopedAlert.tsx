@@ -16,7 +16,7 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
     const { uuid: user } = useStoreState(s => s.user.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
-    
+
     // Load active alerts for the specified scope
     useEffect(() => {
         getActiveAlerts(scope)
@@ -40,21 +40,16 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
 
     // Filter out dismissed alerts, notification-only alerts, and group by position
     const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id) && a.position !== 'notification');
-    
+
     // Apply position filter if specified
-    const filteredAlerts = position === 'all' 
-        ? visibleAlerts 
-        : visibleAlerts.filter(a => a.position === position);
-    
-    const topCenterAlerts = position === 'all' || position === 'top-center' 
-        ? filteredAlerts.filter(a => a.position === 'top-center')
-        : [];
-    const slideOutAlerts = position === 'all' || position === 'slide-out'
-        ? filteredAlerts.filter(a => a.position === 'slide-out')
-        : [];
-    const centerAlerts = position === 'all' || position === 'center'
-        ? filteredAlerts.filter(a => a.position === 'center')
-        : [];
+    const filteredAlerts = position === 'all' ? visibleAlerts : visibleAlerts.filter(a => a.position === position);
+
+    const topCenterAlerts =
+        position === 'all' || position === 'top-center' ? filteredAlerts.filter(a => a.position === 'top-center') : [];
+    const slideOutAlerts =
+        position === 'all' || position === 'slide-out' ? filteredAlerts.filter(a => a.position === 'slide-out') : [];
+    const centerAlerts =
+        position === 'all' || position === 'center' ? filteredAlerts.filter(a => a.position === 'center') : [];
 
     // Get the current center alert to show
     const currentCenterAlert = centerAlerts[dialogAlertIndex] || null;
@@ -65,7 +60,7 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
         if (currentCenterAlert) {
             dismissAlert(currentCenterAlert.id);
         }
-        
+
         // Move to next center alert if available
         if (dialogAlertIndex + 1 < centerAlerts.length) {
             setDialogAlertIndex(dialogAlertIndex + 1);
@@ -89,18 +84,14 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
 
     const renderAlertContent = (alert: ActiveAlert) => (
         <>
-            {alert.title && (
-                <strong className={'block mb-2 text-base font-semibold'}>
-                    {alert.title}
-                </strong>
-            )}
+            {alert.title && <strong className={'mb-2 block text-base font-semibold'}>{alert.title}</strong>}
             <span className={'block'}>{alert.content}</span>
             {alert.link && (
-                <a 
-                    href={alert.link} 
-                    target="_blank" 
+                <a
+                    href={alert.link}
+                    target="_blank"
                     rel="noopener noreferrer"
-                    className={'block mt-2 underline hover:text-blue-300'}
+                    className={'mt-2 block underline hover:text-blue-300'}
                 >
                     {alert.link_text || 'Learn more'}
                 </a>
@@ -112,11 +103,7 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
         <>
             {/* Top Center Alerts */}
             {topCenterAlerts.map(alert => (
-                <Alert 
-                    key={alert.id} 
-                    type={alert.type}
-                    onClose={() => handleTopCenterClose(alert.id)}
-                >
+                <Alert key={alert.id} type={alert.type} onClose={() => handleTopCenterClose(alert.id)}>
                     {renderAlertContent(alert)}
                 </Alert>
             ))}

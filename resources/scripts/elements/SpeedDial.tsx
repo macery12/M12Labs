@@ -23,7 +23,7 @@ interface QuickActionProps {
 const QuickAction = ({ tooltip, icon, link }: QuickActionProps) => (
     <Tooltip placement={'left'} content={tooltip} arrow>
         <Link to={link}>
-            <Button.Text className={'w-12 h-12'}>
+            <Button.Text className={'h-12 w-12'}>
                 <FontAwesomeIcon icon={icon} />
             </Button.Text>
         </Link>
@@ -39,9 +39,9 @@ export default () => {
     if (!enabled) return <></>;
 
     return (
-        <div className="hidden md:block fixed bottom-6 right-6" style={{ zIndex: 9999 }}>
+        <div className="fixed bottom-6 right-6 hidden md:block" style={{ zIndex: 9999 }}>
             {open && (
-                <div className="flex flex-col items-center mb-4 space-y-2">
+                <div className="mb-4 flex flex-col items-center space-y-2">
                     {ai && <QuickAction icon={faMagicWandSparkles} link={'/admin/ai'} tooltip={'Ask AI'} />}
                     <QuickAction icon={faLayerGroup} link={'/admin/nodes/new'} tooltip={'Create Node'} />
                     <QuickAction icon={faServer} link={'/admin/servers/new'} tooltip={'Create Server'} />
@@ -49,7 +49,7 @@ export default () => {
                     {tickets && <QuickAction icon={faTicket} link={'/admin/tickets'} tooltip={'View Tickets'} />}
                 </div>
             )}
-            <Button className={'w-12 h-12'} onClick={() => setOpen(!open)}>
+            <Button className={'h-12 w-12'} onClick={() => setOpen(!open)}>
                 <FontAwesomeIcon icon={faPlus} />
             </Button>
         </div>

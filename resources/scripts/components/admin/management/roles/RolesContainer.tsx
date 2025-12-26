@@ -112,7 +112,7 @@ const RolesContainer = () => {
                                                     <NavLink
                                                         to={`${window.location.pathname}/${role.id}`}
                                                         style={{ color: role.color ?? colors.primary }}
-                                                        className={'hover:brightness-125 duration-300'}
+                                                        className={'duration-300 hover:brightness-125'}
                                                     >
                                                         {role.name}
                                                     </NavLink>

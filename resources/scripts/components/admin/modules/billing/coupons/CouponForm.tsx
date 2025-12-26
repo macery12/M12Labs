@@ -49,7 +49,7 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                     <option value={'percentage'}>Percentage</option>
                                     <option value={'fixed'}>Fixed Amount</option>
                                 </Select>
-                                <p className={'text-xs text-neutral-400 mt-2'}>
+                                <p className={'mt-2 text-xs text-neutral-400'}>
                                     Whether to discount by percentage or fixed amount.
                                 </p>
                             </div>
@@ -115,7 +115,7 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                     <option value={'purchases'}>Purchases Only</option>
                                     <option value={'renewals'}>Renewals Only</option>
                                 </Select>
-                                <p className={'text-xs text-neutral-400 mt-2'}>
+                                <p className={'mt-2 text-xs text-neutral-400'}>
                                     Whether this coupon can be used for new purchases, renewals, or both.
                                 </p>
                             </div>
@@ -142,7 +142,7 @@ function InternalForm({ coupon }: { coupon?: Coupon }) {
                                         <span css={tw`text-neutral-300 ml-2`}>Inactive</span>
                                     </label>
                                 </div>
-                                <p className={'text-xs text-neutral-400 mt-2'}>
+                                <p className={'mt-2 text-xs text-neutral-400'}>
                                     Whether this coupon is currently active and can be used.
                                 </p>
                             </div>
@@ -219,12 +219,12 @@ export default function CouponForm() {
 
     return (
         <AdminContentBlock title={coupon ? 'Edit Coupon' : 'Create Coupon'}>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>
                         {coupon ? `Edit ${coupon.code}` : 'Create Coupon'}
                     </h2>
-                    <p className={'text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'}>
+                    <p className={'overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400'}>
                         {coupon ? 'Edit an existing coupon' : 'Create a new discount coupon'}
                     </p>
                 </div>

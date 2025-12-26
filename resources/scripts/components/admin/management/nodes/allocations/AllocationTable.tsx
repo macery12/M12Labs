@@ -115,7 +115,7 @@ function AllocationsTable({ nodeId, filters }: Props) {
                                                     <NavLink
                                                         to={`/admin/servers/${allocation.serverId}`}
                                                         style={{ color: colors.primary }}
-                                                        className={'hover:brightness-125 duration-300'}
+                                                        className={'duration-300 hover:brightness-125'}
                                                     >
                                                         {allocation.relations.server.name}
                                                     </NavLink>

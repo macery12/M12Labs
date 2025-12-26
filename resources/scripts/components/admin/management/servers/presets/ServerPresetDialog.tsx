@@ -42,7 +42,7 @@ const NameSelect = ({ form, update }: NameSelectProps) => (
 
 const ResourceSelect = ({ form, update }: NameSelectProps) => (
     <div className="mb-8 space-y-2">
-        <div className={'grid lg:grid-cols-3 gap-4'}>
+        <div className={'grid gap-4 lg:grid-cols-3'}>
             <div>
                 <Label>CPU Limit (%)</Label>
                 <Input
@@ -144,7 +144,7 @@ export default function ServerPresetDialog({ preset }: { preset?: ServerPreset }
                             shape={Button.Shapes.IconSquare}
                             onClick={() => setPage(page - 1)}
                         >
-                            <ChevronLeftIcon className="w-4 h-4" />
+                            <ChevronLeftIcon className="h-4 w-4" />
                         </Button.Text>
                     )}
                     {page < pages.length - 1 && (
@@ -153,12 +153,12 @@ export default function ServerPresetDialog({ preset }: { preset?: ServerPreset }
                             shape={Button.Shapes.IconSquare}
                             onClick={() => setPage(page + 1)}
                         >
-                            <ChevronRightIcon className="w-4 h-4" />
+                            <ChevronRightIcon className="h-4 w-4" />
                         </Button.Text>
                     )}
                     {page === 2 && (
                         <Button.Success size={Button.Sizes.Small} onClick={submit}>
-                            <CheckCircleIcon className="w-4 h-4 mr-1" /> Finish
+                            <CheckCircleIcon className="mr-1 h-4 w-4" /> Finish
                         </Button.Success>
                     )}
                 </div>
@@ -168,15 +168,15 @@ export default function ServerPresetDialog({ preset }: { preset?: ServerPreset }
                 type="button"
                 size={Button.Sizes.Large}
                 onClick={() => setOpen(true)}
-                className="h-10 px-4 py-0 whitespace-nowrap"
+                className="h-10 whitespace-nowrap px-4 py-0"
             >
                 {preset ? (
                     <>
-                        <PencilAltIcon className={'w-5 h-5 mr-1'} /> Update
+                        <PencilAltIcon className={'mr-1 h-5 w-5'} /> Update
                     </>
                 ) : (
                     <>
-                        <PlusIcon className={'w-5 h-5 mr-1'} /> Create
+                        <PlusIcon className={'mr-1 h-5 w-5'} /> Create
                     </>
                 )}
             </Button>

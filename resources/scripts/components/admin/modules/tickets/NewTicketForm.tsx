@@ -86,13 +86,13 @@ export default () => {
                                         />
                                         <div>
                                             <UserSelect />
-                                            <p className={'text-xs pt-2'}>
+                                            <p className={'pt-2 text-xs'}>
                                                 This will be the user that the ticket is made for.
                                             </p>
                                         </div>
                                         <div>
                                             <UserSelect isAdmin />
-                                            <p className={'text-xs pt-2'}>
+                                            <p className={'pt-2 text-xs'}>
                                                 Set an assigned administrator to deal with this ticket.
                                             </p>
                                         </div>
@@ -104,7 +104,7 @@ export default () => {
                                                 <option value={'resolved'}>Resolved</option>
                                                 <option value={'unresolved'}>Unresolved</option>
                                             </Select>
-                                            <p className={'text-xs pt-2'}>
+                                            <p className={'pt-2 text-xs'}>
                                                 Before the ticket is created, you can change the status.
                                             </p>
                                         </div>

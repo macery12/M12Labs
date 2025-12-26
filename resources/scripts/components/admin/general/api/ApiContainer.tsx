@@ -84,7 +84,7 @@ function ApiContainer() {
                                                 <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     <div
                                                         style={{ color: colors.primary }}
-                                                        className={'hover:brightness-125 duration-300'}
+                                                        className={'duration-300 hover:brightness-125'}
                                                     >
                                                         {key.identifier}
                                                     </div>

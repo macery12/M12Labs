@@ -87,7 +87,7 @@ export default () => {
                                                 <NavLink
                                                     to={`/admin/databases/${database.id}`}
                                                     style={{ color: colors.primary }}
-                                                    className={'hover:brightness-125 duration-300'}
+                                                    className={'duration-300 hover:brightness-125'}
                                                 >
                                                     {database.name}
                                                 </NavLink>

@@ -109,7 +109,7 @@ export default ({ children, ...props }: Props) => {
                                         ay || 0,
                                     )}px) rotate(45deg)`,
                                 }}
-                                className={classNames('absolute h-3 w-3 bg-slate-900 z-50', side)}
+                                className={classNames('absolute z-50 h-3 w-3 bg-slate-900', side)}
                             />
                         )}
                     </motion.div>

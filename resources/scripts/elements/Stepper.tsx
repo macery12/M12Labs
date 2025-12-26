@@ -18,7 +18,7 @@ export default ({ className, icon, content, link }: Props) => {
         <li>
             <div
                 style={{ backgroundColor: colors.secondary }}
-                className={classNames(className, 'w-full p-4 rounded-lg')}
+                className={classNames(className, 'w-full rounded-lg p-4')}
             >
                 <div className={'flex items-center justify-between font-semibold'}>
                     <Link to={link ?? ''}>{content}</Link>

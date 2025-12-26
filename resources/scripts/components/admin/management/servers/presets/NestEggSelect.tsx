@@ -83,7 +83,7 @@ const EggSelect = ({ form, update }: NameSelectProps) => {
 
 export default ({ form, update }: NameSelectProps) => (
     <div className="mb-8 space-y-2">
-        <div className={'grid lg:grid-cols-2 gap-4'}>
+        <div className={'grid gap-4 lg:grid-cols-2'}>
             <NestSelect form={form} update={update} />
             <EggSelect form={form} update={update} />
         </div>

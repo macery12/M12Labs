@@ -50,18 +50,18 @@ function CategoryTable() {
 
     return (
         <>
-            <div className={'w-full flex flex-row items-center my-8 px-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Categories</h2>
+            <div className={'my-8 flex w-full flex-row items-center px-8'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Categories</h2>
                     <p
                         className={
-                            'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                            'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
                         These categories are used to contain your products.
                     </p>
                 </div>
-                <div className={'flex ml-auto pl-4'}>
+                <div className={'ml-auto flex pl-4'}>
                     <Link to={'/admin/billing/categories/new'}>
                         <Button>Add Category</Button>
                     </Link>
@@ -95,9 +95,9 @@ function CategoryTable() {
                                             <TableRow key={category.id}>
                                                 <td css={tw`pl-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     {category.icon ? (
-                                                        <img src={category.icon} className={'w-6 h-6 rounded-full'} />
+                                                        <img src={category.icon} className={'h-6 w-6 rounded-full'} />
                                                     ) : (
-                                                        <ShoppingCartIcon className={'w-6 h-6'} />
+                                                        <ShoppingCartIcon className={'h-6 w-6'} />
                                                     )}
                                                 </td>
                                                 <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
@@ -111,7 +111,7 @@ function CategoryTable() {
                                                     <NavLink
                                                         to={`/admin/billing/categories/${category.id}`}
                                                         style={{ color: colors.primary }}
-                                                        className={'hover:brightness-125 duration-300'}
+                                                        className={'duration-300 hover:brightness-125'}
                                                     >
                                                         {category.name}
                                                     </NavLink>
@@ -127,7 +127,7 @@ function CategoryTable() {
                                                 <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     <span
                                                         className={classNames(
-                                                            'px-2 rounded-full inline-flex text-xs leading-5 font-medium',
+                                                            'inline-flex rounded-full px-2 text-xs font-medium leading-5',
                                                             category.visible
                                                                 ? 'bg-green-200 text-green-800'
                                                                 : 'bg-red-200 text-red-800',

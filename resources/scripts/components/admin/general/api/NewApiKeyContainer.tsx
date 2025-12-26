@@ -67,7 +67,7 @@ export default () => {
                 <Dialog open={Boolean(visible)} onClose={() => setVisible(null)} title={'Your API Key'}>
                     Do not lose this key, it is impossible to recover. Click the key below to copy it.
                     <CopyOnClick text={visible}>
-                        <div className={'px-4 py-2 bg-black/50 rounded-lg mt-1 font-mono'}>
+                        <div className={'mt-1 rounded-lg bg-black/50 px-4 py-2 font-mono'}>
                             {visible.slice(0, 48) ?? ''}...
                         </div>
                     </CopyOnClick>
@@ -105,7 +105,7 @@ export default () => {
 
                                     <div css={tw`mb-6`}>
                                         <Field id={'memo'} name={'memo'} label={'Key Memo'} type={'text'} />
-                                        <p className={'text-gray-400 text-xs mt-1'}>
+                                        <p className={'mt-1 text-xs text-gray-400'}>
                                             A simple name or description to identify your API key.
                                         </p>
                                     </div>

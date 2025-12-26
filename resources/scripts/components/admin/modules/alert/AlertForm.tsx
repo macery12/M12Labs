@@ -5,15 +5,24 @@ import tw from 'twin.macro';
 import AdminBox from '@/elements/AdminBox';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
-import { Alert as AlertType, createAlert, updateAlert, getAlerts, CreateAlertData, UpdateAlertData, AlertScope, UserTargeting, searchUsers, AlertUser } from '@/api/routes/admin/alerts';
+import {
+    createAlert,
+    updateAlert,
+    getAlerts,
+    CreateAlertData,
+    UpdateAlertData,
+    AlertScope,
+    UserTargeting,
+    searchUsers,
+    AlertUser,
+} from '@/api/routes/admin/alerts';
 import useFlash from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { AlertType as AlertTypeEnum, AlertPosition } from '@/state/everest';
 import Spinner from '@/elements/Spinner';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
+import SearchableSelect, { Option } from '@/elements/SearchableSelect';
 
 interface FormValues {
     title: string;
@@ -37,9 +46,7 @@ export default () => {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const [loading, setLoading] = useState(!!id);
     const [selectedUsers, setSelectedUsers] = useState<AlertUser[]>([]);
-    const [userSearchQuery, setUserSearchQuery] = useState('');
-    const [userSearchResults, setUserSearchResults] = useState<AlertUser[]>([]);
-    const [searchingUsers, setSearchingUsers] = useState(false);
+    const [userSearchResults, setUserSearchResults] = useState<AlertUser[] | null>(null);
     const [initialValues, setInitialValues] = useState<FormValues>({
         title: '',
         content: '',
@@ -77,7 +84,7 @@ export default () => {
                             start_at: alert.start_at ? alert.start_at.split('T')[0] : '',
                             end_at: alert.end_at ? alert.end_at.split('T')[0] : '',
                         });
-                        
+
                         if (alert.users) {
                             setSelectedUsers(alert.users);
                         }
@@ -91,43 +98,22 @@ export default () => {
         }
     }, [id]);
 
-    useEffect(() => {
-        if (userSearchQuery.length < 2) {
+    const onSearchUsers = async (query: string) => {
+        try {
+            const users = await searchUsers(query);
+            // Filter out already selected users
+            const filteredUsers = users.filter(u => !selectedUsers.some(su => su.id === u.id));
+            setUserSearchResults(filteredUsers);
+        } catch {
             setUserSearchResults([]);
-            return;
         }
-
-        const timer = setTimeout(() => {
-            setSearchingUsers(true);
-            searchUsers(userSearchQuery)
-                .then(users => {
-                    // Filter out already selected users
-                    const filteredUsers = users.filter(
-                        u => !selectedUsers.some(su => su.id === u.id)
-                    );
-                    setUserSearchResults(filteredUsers);
-                })
-                .catch(() => {
-                    setUserSearchResults([]);
-                })
-                .finally(() => {
-                    setSearchingUsers(false);
-                });
-        }, 300); // Debounce for 300ms
-
-        return () => clearTimeout(timer);
-    }, [userSearchQuery, selectedUsers]);
-
-    const addUser = (user: AlertUser) => {
-        if (!selectedUsers.some(u => u.id === user.id)) {
-            setSelectedUsers([...selectedUsers, user]);
-        }
-        setUserSearchQuery('');
-        setUserSearchResults([]);
     };
 
-    const removeUser = (userId: number) => {
-        setSelectedUsers(selectedUsers.filter(u => u.id !== userId));
+    const onSelectUser = (user: AlertUser | null) => {
+        if (user && !selectedUsers.some(u => u.id === user.id)) {
+            setSelectedUsers([...selectedUsers, user]);
+        }
+        setUserSearchResults(null);
     };
 
     const submit = (values: FormValues) => {
@@ -182,7 +168,7 @@ export default () => {
             {({ values, setFieldValue }) => (
                 <Form>
                     <FlashMessageRender byKey={'alert:form'} className={'mb-4'} />
-                    
+
                     <div css={tw`mb-6`}>
                         <Button.Text onClick={() => navigate('/admin/alerts')} css={tw`mb-4`}>
                             ← Back to Alerts
@@ -196,14 +182,14 @@ export default () => {
                                 <div>
                                     <Label>Title (Optional)</Label>
                                     <Field id={'title'} name={'title'} type={'text'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Optional title for internal organization
                                     </p>
                                 </div>
                                 <div>
                                     <Label>Content *</Label>
                                     <Field id={'content'} name={'content'} type={'text'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         The message that will be displayed to users
                                     </p>
                                 </div>
@@ -235,8 +221,8 @@ export default () => {
                                         <option value={'slide-out'}>Slide-out Card (Right Side)</option>
                                         <option value={'center'}>Center (Popup Dialog)</option>
                                     </Select>
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        {values.position === 'notification' 
+                                    <p className={'mt-1 text-xs text-gray-400'}>
+                                        {values.position === 'notification'
                                             ? 'Alert appears only in the alerts page - shown as unread notification'
                                             : 'Choose where and how the alert appears on pages'}
                                     </p>
@@ -252,18 +238,18 @@ export default () => {
                                             <option value={'dashboard'}>Dashboard Only</option>
                                             <option value={'server'}>Server Pages Only</option>
                                             <option value={'billing'}>Billing Pages Only</option>
-                                        <option value={'account'}>Account Pages Only</option>
-                                        <option value={'admin'}>Admin Panel Only</option>
-                                    </Select>
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        Choose where this alert should be displayed
-                                    </p>
-                                </div>
+                                            <option value={'account'}>Account Pages Only</option>
+                                            <option value={'admin'}>Admin Panel Only</option>
+                                        </Select>
+                                        <p className={'mt-1 text-xs text-gray-400'}>
+                                            Choose where this alert should be displayed
+                                        </p>
+                                    </div>
                                 )}
                                 <div>
                                     <Label>Priority</Label>
                                     <Field id={'priority'} name={'priority'} type={'number'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Higher priority alerts appear first (default: 0)
                                     </p>
                                 </div>
@@ -273,12 +259,7 @@ export default () => {
                         <AdminBox title={'Settings'}>
                             <div css={tw`space-y-4`}>
                                 <div className={'flex items-center'}>
-                                    <Field
-                                        id={'enabled'}
-                                        name={'enabled'}
-                                        type={'checkbox'}
-                                        checked={values.enabled}
-                                    />
+                                    <Field id={'enabled'} name={'enabled'} type={'checkbox'} checked={values.enabled} />
                                     <Label className={'ml-2 mb-0'}>Enabled</Label>
                                 </div>
                                 <div className={'flex items-center'}>
@@ -290,7 +271,7 @@ export default () => {
                                     />
                                     <Label className={'ml-2 mb-0'}>Dismissible by users</Label>
                                 </div>
-                                <p className={'text-gray-400 text-xs'}>
+                                <p className={'text-xs text-gray-400'}>
                                     Users can view all past alerts by clicking the bell icon in the navigation bar
                                 </p>
                             </div>
@@ -305,7 +286,7 @@ export default () => {
                                 <div>
                                     <Label>Link Text</Label>
                                     <Field id={'link_text'} name={'link_text'} type={'text'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Text to display for the link (defaults to URL)
                                     </p>
                                 </div>
@@ -323,69 +304,83 @@ export default () => {
                                         <option value={'all'}>All Users</option>
                                         <option value={'specific'}>Specific Users Only</option>
                                     </Select>
-                                    <p className={'text-gray-400 text-xs mt-1'}>
+                                    <p className={'mt-1 text-xs text-gray-400'}>
                                         Choose whether to show this alert to all users or specific users
                                     </p>
                                 </div>
 
                                 {values.user_targeting === 'specific' && (
-                                    <div>
-                                        <Label>Select Users</Label>
-                                        <div css={tw`relative`}>
-                                            <div css={tw`flex items-center gap-2`}>
-                                                <FontAwesomeIcon 
-                                                    icon={faSearch} 
-                                                    css={tw`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400`}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={userSearchQuery}
-                                                    onChange={e => setUserSearchQuery(e.target.value)}
-                                                    placeholder="Search by email or username..."
-                                                    css={tw`w-full pl-10 pr-4 py-2 bg-neutral-800 border border-neutral-700 rounded text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500`}
-                                                />
-                                            </div>
-                                            
-                                            {userSearchResults.length > 0 && (
-                                                <div css={tw`absolute z-10 w-full mt-1 bg-neutral-800 border border-neutral-700 rounded shadow-lg max-h-60 overflow-y-auto`}>
-                                                    {userSearchResults.map(user => (
+                                    <>
+                                        <SearchableSelect
+                                            id={'user-search'}
+                                            name={'user-search'}
+                                            label={'Select Users'}
+                                            placeholder={'Search by email or username...'}
+                                            items={userSearchResults}
+                                            selected={null}
+                                            setSelected={() => {
+                                                // Not used for multi-select
+                                            }}
+                                            setItems={setUserSearchResults}
+                                            onSearch={onSearchUsers}
+                                            onSelect={onSelectUser}
+                                            getSelectedText={() => ''}
+                                            nullable
+                                        >
+                                            {userSearchResults?.map(user => (
+                                                <Option
+                                                    key={user.id}
+                                                    selectId={'user-search'}
+                                                    id={user.id}
+                                                    item={user}
+                                                    active={false}
+                                                >
+                                                    {user.email} (@{user.username})
+                                                </Option>
+                                            ))}
+                                        </SearchableSelect>
+
+                                        {selectedUsers.length > 0 && (
+                                            <div>
+                                                <Label>Selected Users</Label>
+                                                <div css={tw`flex flex-wrap gap-2`}>
+                                                    {selectedUsers.map(user => (
                                                         <div
                                                             key={user.id}
-                                                            onClick={() => addUser(user)}
-                                                            css={tw`px-4 py-2 hover:bg-neutral-700 cursor-pointer text-sm`}
+                                                            css={tw`flex items-center gap-2 bg-neutral-700 px-3 py-1.5 rounded text-sm`}
                                                         >
-                                                            <div css={tw`font-medium`}>{user.email}</div>
-                                                            <div css={tw`text-xs text-gray-400`}>@{user.username}</div>
+                                                            <span>{user.email}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setSelectedUsers(
+                                                                        selectedUsers.filter(u => u.id !== user.id),
+                                                                    )
+                                                                }
+                                                                css={tw`text-gray-400 hover:text-red-400 transition-colors`}
+                                                            >
+                                                                <svg
+                                                                    css={tw`w-4 h-4`}
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    viewBox="0 0 20 20"
+                                                                    fill="currentColor"
+                                                                >
+                                                                    <path
+                                                                        clipRule="evenodd"
+                                                                        fillRule="evenodd"
+                                                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                                    />
+                                                                </svg>
+                                                            </button>
                                                         </div>
                                                     ))}
                                                 </div>
-                                            )}
-                                        </div>
-
-                                        {selectedUsers.length > 0 && (
-                                            <div css={tw`mt-3 flex flex-wrap gap-2`}>
-                                                {selectedUsers.map(user => (
-                                                    <div
-                                                        key={user.id}
-                                                        css={tw`flex items-center gap-2 bg-neutral-700 px-3 py-1 rounded text-sm`}
-                                                    >
-                                                        <span>{user.email}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeUser(user.id)}
-                                                            css={tw`text-gray-400 hover:text-red-400`}
-                                                        >
-                                                            <FontAwesomeIcon icon={faTimes} />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                <p className={'mt-2 text-xs text-gray-400'}>
+                                                    {selectedUsers.length} user(s) selected
+                                                </p>
                                             </div>
                                         )}
-
-                                        <p className={'text-gray-400 text-xs mt-2'}>
-                                            {selectedUsers.length} user(s) selected
-                                        </p>
-                                    </div>
+                                    </>
                                 )}
                             </div>
                         </AdminBox>
@@ -395,16 +390,12 @@ export default () => {
                                 <div>
                                     <Label>Start Date</Label>
                                     <Field id={'start_at'} name={'start_at'} type={'date'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        Alert will only show after this date
-                                    </p>
+                                    <p className={'mt-1 text-xs text-gray-400'}>Alert will only show after this date</p>
                                 </div>
                                 <div>
                                     <Label>End Date</Label>
                                     <Field id={'end_at'} name={'end_at'} type={'date'} />
-                                    <p className={'text-gray-400 text-xs mt-1'}>
-                                        Alert will only show until this date
-                                    </p>
+                                    <p className={'mt-1 text-xs text-gray-400'}>Alert will only show until this date</p>
                                 </div>
                             </div>
                         </AdminBox>

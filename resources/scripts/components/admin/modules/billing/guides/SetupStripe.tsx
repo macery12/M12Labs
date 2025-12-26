@@ -36,12 +36,12 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
 
     return (
         <Dialog open={open} onClose={() => setOpen(false)} title={'Configure Stripe API'}>
-            <div className={'p-3 bg-black/50 rounded-lg mb-4'}>
-                <p className={'text-gray-200 font-semibold'}>
-                    <FontAwesomeIcon icon={faInfoCircle} className={'text-blue-400 mr-2'} />
+            <div className={'mb-4 rounded-lg bg-black/50 p-3'}>
+                <p className={'font-semibold text-gray-200'}>
+                    <FontAwesomeIcon icon={faInfoCircle} className={'mr-2 text-blue-400'} />
                     Still setting up?
                 </p>
-                <p className={'text-gray-400 text-sm'}>
+                <p className={'text-sm text-gray-400'}>
                     Feel free to skip this message by closing the dialog and proceed to set up your products and
                     categories. Once you&apos;re ready, head to the Settings tab to input your API key and secret.
                 </p>
@@ -51,7 +51,7 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
             <a
                 target={'_blank'}
                 rel={'noreferrer'}
-                className={'text-blue-300 mx-1'}
+                className={'mx-1 text-blue-300'}
                 href={'https://dashboard.stripe.com/apikeys'}
             >
                 here
@@ -89,7 +89,7 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                     <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-1/3 right-4 text-green-500'} />
                 )}
             </div>
-            <div className={'w-full text-right mt-4'}>
+            <div className={'mt-4 w-full text-right'}>
                 <Button onClick={submit} disabled={!data?.secret || !data?.publishable}>
                     Submit
                 </Button>

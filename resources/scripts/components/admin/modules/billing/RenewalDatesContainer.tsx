@@ -16,12 +16,8 @@ export default () => {
 
     const [paidRenewalDays, setPaidRenewalDays] = useState<number>(settings.renewal?.days || 30);
     const [freeRenewalDays, setFreeRenewalDays] = useState<number>(settings.renewal?.free_renewal_days || 30);
-    const [freeGraceDays, setFreeGraceDays] = useState<number>(
-        settings.renewal?.free_suspension_days || 7
-    );
-    const [paidGraceDays, setPaidGraceDays] = useState<number>(
-        settings.renewal?.paid_suspension_days || 30
-    );
+    const [freeGraceDays, setFreeGraceDays] = useState<number>(settings.renewal?.free_suspension_days || 7);
+    const [paidGraceDays, setPaidGraceDays] = useState<number>(settings.renewal?.paid_suspension_days || 30);
     const [loading, setLoading] = useState(false);
 
     const handleSaveAll = async () => {
@@ -70,9 +66,9 @@ export default () => {
         <div>
             <FlashMessageRender byKey={'admin:billing'} className={'mb-4'} />
 
-            <div className={'grid lg:grid-cols-2 gap-4'}>
+            <div className={'grid gap-4 lg:grid-cols-2'}>
                 <AdminBox title={'Paid Renewal Period (Days)'} icon={faCalendar}>
-                    <p className={'text-gray-400 mb-4'}>
+                    <p className={'mb-4 text-gray-400'}>
                         Number of days a paid server subscription lasts when purchased or renewed.
                     </p>
                     <div>
@@ -85,14 +81,14 @@ export default () => {
                             onChange={e => setPaidRenewalDays(parseInt(e.target.value) || 30)}
                             disabled={loading}
                         />
-                        <p className={'text-xs text-gray-500 mt-2'}>
+                        <p className={'mt-2 text-xs text-gray-500'}>
                             When a paid server is purchased or renewed, it will be active for this many days.
                         </p>
                     </div>
                 </AdminBox>
 
                 <AdminBox title={'Paid Grace Period (Days)'} icon={faClock}>
-                    <p className={'text-gray-400 mb-4'}>
+                    <p className={'mb-4 text-gray-400'}>
                         Number of days after expiration before a paid server is automatically suspended.
                     </p>
                     <div>
@@ -105,14 +101,14 @@ export default () => {
                             onChange={e => setPaidGraceDays(parseInt(e.target.value) || 30)}
                             disabled={loading}
                         />
-                        <p className={'text-xs text-gray-500 mt-2'}>
+                        <p className={'mt-2 text-xs text-gray-500'}>
                             Paid servers will be suspended this many days after their renewal date passes.
                         </p>
                     </div>
                 </AdminBox>
 
                 <AdminBox title={'Free Renewal Period (Days)'} icon={faCalendar}>
-                    <p className={'text-gray-400 mb-4'}>
+                    <p className={'mb-4 text-gray-400'}>
                         Number of days a free server subscription lasts when created or renewed.
                     </p>
                     <div>
@@ -125,14 +121,14 @@ export default () => {
                             onChange={e => setFreeRenewalDays(parseInt(e.target.value) || 30)}
                             disabled={loading}
                         />
-                        <p className={'text-xs text-gray-500 mt-2'}>
+                        <p className={'mt-2 text-xs text-gray-500'}>
                             When a free server is created or renewed, it will be active for this many days.
                         </p>
                     </div>
                 </AdminBox>
 
                 <AdminBox title={'Free Grace Period (Days)'} icon={faClock}>
-                    <p className={'text-gray-400 mb-4'}>
+                    <p className={'mb-4 text-gray-400'}>
                         Number of days after expiration before a free server is automatically suspended. Free servers
                         can only be renewed before this grace period expires.
                     </p>
@@ -146,7 +142,7 @@ export default () => {
                             onChange={e => setFreeGraceDays(parseInt(e.target.value) || 7)}
                             disabled={loading}
                         />
-                        <p className={'text-xs text-gray-500 mt-2'}>
+                        <p className={'mt-2 text-xs text-gray-500'}>
                             Free servers will be suspended this many days after their renewal date passes. Self-service
                             renewal is only available during this grace period.
                         </p>
@@ -154,7 +150,7 @@ export default () => {
                 </AdminBox>
             </div>
 
-            <div className={'flex justify-end mt-6'}>
+            <div className={'mt-6 flex justify-end'}>
                 <Button onClick={handleSaveAll} disabled={loading}>
                     {loading ? 'Saving...' : 'Save All Settings'}
                 </Button>

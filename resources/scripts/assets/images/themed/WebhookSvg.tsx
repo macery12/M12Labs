@@ -1,6 +1,6 @@
 export default ({ color }: { color: string }) => (
     <svg
-        className={'w-96 h-96 m-auto'}
+        className={'m-auto h-96 w-96'}
         xmlns="http://www.w3.org/2000/svg"
         width="761"
         height="700.71023"

@@ -103,7 +103,7 @@ function ServersTable({ filters }: Props) {
                                                 <NavLink
                                                     to={`/admin/servers/${server.id}`}
                                                     style={{ color: colors.primary }}
-                                                    className={'hover:brightness-125 duration-300'}
+                                                    className={'duration-300 hover:brightness-125'}
                                                 >
                                                     {server.name}
                                                 </NavLink>

@@ -32,9 +32,7 @@ export default ({ open, onClose }: Props) => {
                 .then(results => {
                     // Flatten and deduplicate by ID
                     const allAlerts = results.flat();
-                    const uniqueAlerts = Array.from(
-                        new Map(allAlerts.map(alert => [alert.id, alert])).values()
-                    );
+                    const uniqueAlerts = Array.from(new Map(allAlerts.map(alert => [alert.id, alert])).values());
                     // Sort by priority (highest first) then by ID (newest first)
                     uniqueAlerts.sort((a, b) => {
                         if (b.priority !== a.priority) {
@@ -122,11 +120,13 @@ export default ({ open, onClose }: Props) => {
                         {alerts.map(alert => {
                             const isDismissed = isAlertDismissed(alert.id);
                             const isPopup = alert.position === 'center';
-                            
+
                             return (
                                 <div
                                     key={alert.id}
-                                    className={`p-4 rounded-lg bg-gray-800 border border-gray-700 border-l-8 ${getTypeBorderColor(alert.type)}`}
+                                    className={`rounded-lg border border-l-8 border-gray-700 bg-gray-800 p-4 ${getTypeBorderColor(
+                                        alert.type,
+                                    )}`}
                                 >
                                     <div css={tw`flex items-start justify-between mb-2`}>
                                         <div css={tw`flex items-center gap-2 flex-wrap`}>
@@ -134,12 +134,16 @@ export default ({ open, onClose }: Props) => {
                                                 <h4 css={tw`font-semibold text-gray-200`}>{alert.title}</h4>
                                             )}
                                             <span
-                                                className={`px-2 py-0.5 text-xs font-medium rounded border ${getTypeBadge(alert.type)}`}
+                                                className={`rounded border px-2 py-0.5 text-xs font-medium ${getTypeBadge(
+                                                    alert.type,
+                                                )}`}
                                             >
                                                 {capitalize(alert.type)}
                                             </span>
                                             {isDismissed && (
-                                                <span css={tw`px-2 py-0.5 text-xs font-medium rounded border bg-gray-600/20 text-gray-400 border-gray-600`}>
+                                                <span
+                                                    css={tw`px-2 py-0.5 text-xs font-medium rounded border bg-gray-600/20 text-gray-400 border-gray-600`}
+                                                >
                                                     Dismissed
                                                 </span>
                                             )}
@@ -178,8 +182,18 @@ export default ({ open, onClose }: Props) => {
                                                 onClick={() => reopenAlert(alert.id)}
                                                 css={tw`px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors flex items-center gap-2`}
                                             >
-                                                <svg css={tw`w-4 h-4`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                <svg
+                                                    css={tw`w-4 h-4`}
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                                    />
                                                 </svg>
                                                 {isPopup ? 'Reopen Popup' : 'Mark as Unread'}
                                             </button>

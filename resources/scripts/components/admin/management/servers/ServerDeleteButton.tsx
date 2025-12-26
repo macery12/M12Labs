@@ -54,7 +54,7 @@ export default () => {
             >
                 <SpinnerOverlay visible={loading} />
                 Are you sure you want to delete this server?
-                <div className={'bg-black/50 rounded-lg p-4 text-gray-400 mt-4'}>
+                <div className={'mt-4 rounded-lg bg-black/50 p-4 text-gray-400'}>
                     <Checkbox onClick={() => setForce(!force)} className={'mr-1'} />
                     Force delete this server from the Panel
                 </div>

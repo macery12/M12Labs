@@ -118,7 +118,9 @@ export default () => {
                                             {alert.position.replace('-', ' ')}
                                         </span>
                                         <span css={tw`text-xs text-gray-500`}>|</span>
-                                        <span css={tw`text-sm text-gray-400 capitalize bg-gray-700 px-2 py-0.5 rounded`}>
+                                        <span
+                                            css={tw`text-sm text-gray-400 capitalize bg-gray-700 px-2 py-0.5 rounded`}
+                                        >
                                             {alert.scope}
                                         </span>
                                         <span css={tw`text-xs text-gray-500`}>|</span>
@@ -136,12 +138,8 @@ export default () => {
                                         </p>
                                     )}
                                     <div css={tw`flex gap-4 text-xs text-gray-500`}>
-                                        {alert.start_at && (
-                                            <span>Start: {formatDate(alert.start_at)}</span>
-                                        )}
-                                        {alert.end_at && (
-                                            <span>End: {formatDate(alert.end_at)}</span>
-                                        )}
+                                        {alert.start_at && <span>Start: {formatDate(alert.start_at)}</span>}
+                                        {alert.end_at && <span>End: {formatDate(alert.end_at)}</span>}
                                         {alert.dismissible && <span>Dismissible</span>}
                                         {alert.show_button && <span>Has Reopen Button</span>}
                                     </div>
@@ -153,10 +151,7 @@ export default () => {
                                     >
                                         <FontAwesomeIcon icon={faEdit} />
                                     </Button.Text>
-                                    <Button.Danger
-                                        onClick={() => handleDelete(alert)}
-                                        css={tw`px-3 py-2`}
-                                    >
+                                    <Button.Danger onClick={() => handleDelete(alert)} css={tw`px-3 py-2`}>
                                         <FontAwesomeIcon icon={faTrash} />
                                     </Button.Danger>
                                 </div>

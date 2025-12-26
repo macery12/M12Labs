@@ -12,18 +12,18 @@ type ConfirmationProps = Omit<RenderDialogProps, 'description' | 'children'> & {
 export default ({ confirm = 'Okay', children, onConfirmed, buttonType, ...props }: ConfirmationProps) => {
     // Use panel theme colors for title and description
     const titleElement = props.title ? (
-        <div className="-mx-6 -mt-6 px-6 py-4 mb-6 bg-zinc-800 border-b border-zinc-600">
+        <div className="-mx-6 -mt-6 mb-6 border-b border-zinc-600 bg-zinc-800 px-6 py-4">
             <h2 className="text-xl font-bold text-slate-50">{props.title}</h2>
         </div>
     ) : undefined;
 
     return (
-        <Dialog {...props} title={titleElement as any} description={typeof children === 'string' ? children : undefined}>
-            {typeof children !== 'string' && (
-                <div className="text-slate-300">
-                    {children}
-                </div>
-            )}
+        <Dialog
+            {...props}
+            title={titleElement as any}
+            description={typeof children === 'string' ? children : undefined}
+        >
+            {typeof children !== 'string' && <div className="text-slate-300">{children}</div>}
             <Dialog.Footer>
                 <Button.Text onClick={props.onClose}>Cancel</Button.Text>
                 {(!buttonType || buttonType === 'info') && <Button.Info onClick={onConfirmed}>{confirm}</Button.Info>}

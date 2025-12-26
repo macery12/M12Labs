@@ -44,7 +44,7 @@ export default () => {
                         Disabled
                     </option>
                 </Select>
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     Toggle whether users can register using the built-in pages.
                 </p>
             </div>
