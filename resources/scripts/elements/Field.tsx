@@ -9,7 +9,6 @@ import Input, { Textarea } from '@/elements/Input';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import InputError from './InputError';
-import { useStoreState } from '@/state/hooks';
 
 interface OwnProps {
     name: string;
@@ -22,14 +21,14 @@ interface OwnProps {
 
 type Props = OwnProps & Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 
-const InputWrapper = styled.div<{ $bgColor: string }>`
+const InputWrapper = styled.div`
     ${tw`flex items-center rounded-md border-2 border-zinc-800`};
-    background-color: ${({ $bgColor }) => $bgColor};
+    background-color: transparent;
 `;
 
-const IconWrapper = styled.div<{ $bgColor: string }>`
+const IconWrapper = styled.div`
     ${tw`pl-3 text-gray-400 flex-shrink-0`};
-    background-color: ${({ $bgColor }) => $bgColor};
+    background-color: transparent;
 `;
 
 const StyledInput = styled(Input)`
@@ -40,9 +39,6 @@ const StyledInput = styled(Input)`
 
 const Field = forwardRef<HTMLInputElement, Props>(
     ({ id, name, light = false, label, description, validate, icon, type = 'text', ...props }, ref) => {
-        const theme = useStoreState(state => state.theme.data!);
-        const bgColor = theme.colors.secondary;
-
         return (
             <FormikField name={name} validate={validate}>
                 {({ field, form: { errors, touched } }: FieldProps) => {
@@ -92,8 +88,8 @@ const Field = forwardRef<HTMLInputElement, Props>(
                             )}
 
                             {icon ? (
-                                <InputWrapper $bgColor={bgColor}>
-                                    <IconWrapper $bgColor={bgColor}>
+                                <InputWrapper>
+                                    <IconWrapper>
                                         <FontAwesomeIcon icon={icon} />
                                     </IconWrapper>
                                     <StyledInput id={id} {...field} {...props} type={type} isLight={light} />
