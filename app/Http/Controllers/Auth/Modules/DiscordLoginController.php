@@ -37,9 +37,9 @@ class DiscordLoginController extends AbstractLoginController
 
         return 'https://discord.com/api/oauth2/authorize?'
             . 'client_id=' . config('modules.auth.discord.client_id')
-            . '&redirect_uri=' . route('auth.modules.discord.authenticate')
+            . '&redirect_uri=' . urlencode(route('auth.modules.discord.authenticate'))
             . '&response_type=code&scope=identify%20email'
-            . '&state=' . encrypt($request->ip());
+            . '&state=' . urlencode(encrypt($request->ip()));
     }
 
     /**
