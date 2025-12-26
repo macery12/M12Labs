@@ -70,7 +70,8 @@ class DiscordLoginController extends AbstractLoginController
 
             return redirect('/');
         } else {
-            $user = $this->createAccount(['email' => $account->email, 'username' => 'null_user_' . $this->randStr(16)]);
+            $username = $this->generateUniqueUsername($account->username ?? $account->global_name ?? 'user');
+            $user = $this->createAccount(['email' => $account->email, 'username' => $username]);
 
             $this->sendLoginResponse($user, $request);
 
@@ -81,9 +82,47 @@ class DiscordLoginController extends AbstractLoginController
     }
 
     /**
+     * Generate a unique username from Discord username.
+     * Sanitizes the username to meet validation requirements and ensures uniqueness.
+     */
+    private function generateUniqueUsername(string $discordUsername): string
+    {
+        // Sanitize the username: lowercase, remove invalid characters, ensure it starts/ends with alphanumeric
+        $username = mb_strtolower($discordUsername);
+        $username = preg_replace('/[^a-z0-9\._-]/', '', $username);
+        
+        // Ensure username starts and ends with alphanumeric character
+        $username = preg_replace('/^[^a-z0-9]+/', '', $username);
+        $username = preg_replace('/[^a-z0-9]+$/', '', $username);
+        
+        // If username is empty or too short after sanitization, use a default
+        if (strlen($username) < 2) {
+            $username = 'discord_user';
+        }
+        
+        // Limit username length to reasonable size (max 191 as per validation)
+        $username = substr($username, 0, 100);
+        
+        // Check if username is unique, if not append random suffix
+        $originalUsername = $username;
+        $attempts = 0;
+        while (User::where('username', $username)->exists() && $attempts < 10) {
+            $username = $originalUsername . '_' . $this->randStr(6);
+            $attempts++;
+        }
+        
+        // Final fallback if still not unique
+        if (User::where('username', $username)->exists()) {
+            $username = 'user_' . $this->randStr(16);
+        }
+        
+        return $username;
+    }
+
+    /**
      * Create a random string we can use for a temporary username.
      */
-    public function randStr(int $length = 10): string
+    private function randStr(int $length = 10): string
     {
         return substr(str_shuffle(str_repeat($x = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', ceil($length / strlen($x)))), 1, $length);
     }
