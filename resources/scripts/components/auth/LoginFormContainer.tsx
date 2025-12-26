@@ -50,7 +50,7 @@ export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => 
                     <Form {...props} ref={ref}>
                         <div
                             css={tw`w-full shadow-lg rounded-lg p-6 mx-1`}
-                            style={{ backgroundColor: colors.secondary }}
+                            style={{ backgroundColor: 'transparent' }}
                         >
                             <div css={tw`flex-1`}>{props.children}</div>
                         </div>
