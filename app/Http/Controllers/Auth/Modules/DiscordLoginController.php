@@ -47,7 +47,7 @@ class DiscordLoginController extends AbstractLoginController
      */
     public function authenticate(Request $request): RedirectResponse
     {
-        $response = Http::asForm()->post('https://discord.com/api/oauth2/token', [
+        $tokenResponse = Http::asForm()->post('https://discord.com/api/oauth2/token', [
             'client_id' => config('modules.auth.discord.client_id'),
             'client_secret' => config('modules.auth.discord.client_secret'),
             'grant_type' => 'authorization_code',
@@ -55,13 +55,23 @@ class DiscordLoginController extends AbstractLoginController
             'redirect_uri' => route('auth.modules.discord.authenticate'),
         ])->body();
 
-        $response = json_decode($response);
+        $response = json_decode($tokenResponse);
 
-        $account = Http::withHeaders([
+        // Check if token exchange was successful
+        if (!isset($response->access_token)) {
+            return redirect()->route('auth.login');
+        }
+
+        $accountResponse = Http::withHeaders([
             'Authorization' => 'Bearer ' . $response->access_token,
-        ])->asForm()->get('https://discord.com/api/users/@me')->body();
+        ])->get('https://discord.com/api/users/@me')->body();
 
-        $account = json_decode($account);
+        $account = json_decode($accountResponse);
+
+        // Check if account data was successfully retrieved
+        if (!isset($account->email)) {
+            return redirect()->route('auth.login');
+        }
 
         if (User::where('email', $account->email)->exists()) {
             $user = User::where('email', $account->email)->first();
