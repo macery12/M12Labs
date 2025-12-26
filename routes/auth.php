@@ -31,10 +31,12 @@ Route::middleware(['throttle:authentication'])->group(function () {
 
     Route::post('/modules/discord', [Auth\Modules\DiscordLoginController::class, 'requestToken'])->middleware('recaptcha');
     Route::get('/modules/discord/authenticate', [Auth\Modules\DiscordLoginController::class, 'authenticate'])
+        ->withoutMiddleware('guest')
         ->name('auth.modules.discord.authenticate');
 
     Route::post('/modules/google', [Auth\Modules\GoogleLoginController::class, 'requestToken'])->middleware('recaptcha');
     Route::get('/modules/google/authenticate', [Auth\Modules\GoogleLoginController::class, 'authenticate'])
+        ->withoutMiddleware('guest')
         ->name('auth.modules.google.authenticate');
 
     // Forgot password route. A post to this endpoint will trigger an
