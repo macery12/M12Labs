@@ -49,6 +49,9 @@ interface AlertProviderProps {
 export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [initialized, setInitialized] = useState(false);
+    
+    // Timer reference for auto-dismiss functionality
+    const timersRef = useRef<Record<string, NodeJS.Timeout>>({});
 
     // Load backend flash messages on mount
     useEffect(() => {
@@ -96,6 +99,11 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     }, []);
 
     const dismissAlert = useCallback((id: string) => {
+        // Clear timer if exists
+        if (timersRef.current[id]) {
+            clearTimeout(timersRef.current[id]);
+            delete timersRef.current[id];
+        }
         setAlerts(prev => prev.filter(alert => alert.id !== id));
     }, []);
 
@@ -136,8 +144,6 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     );
 
     // Auto-dismiss alerts with timeout
-    const timersRef = useRef<Record<string, NodeJS.Timeout>>({});
-
     useEffect(() => {
         // Set up timers for new alerts
         alerts.forEach(alert => {

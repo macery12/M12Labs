@@ -18,19 +18,19 @@ const useFlash = (): Actions<FlashStore> => {
     const originalAddFlash = flashActions.addFlash;
 
     // Override addFlash to also add to AlertManager
+    const typeMapping: Record<string, 'success' | 'error' | 'info' | 'warning'> = {
+        success: 'success',
+        error: 'error',
+        warning: 'warning',
+        info: 'info',
+    };
+
     const bridgedAddFlash = (flash: FlashMessage) => {
         originalAddFlash(flash);
 
         // Also add to new Alert Manager
         addAlert({
-            type:
-                flash.type === 'error'
-                    ? 'error'
-                    : flash.type === 'success'
-                    ? 'success'
-                    : flash.type === 'warning'
-                    ? 'warning'
-                    : 'info',
+            type: typeMapping[flash.type] || 'info',
             message: flash.message,
             title: flash.title,
             key: flash.key,

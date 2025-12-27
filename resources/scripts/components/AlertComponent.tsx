@@ -74,7 +74,7 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
                 config.borderColor,
                 config.bgColor,
                 config.textColor,
-                isClosing ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100',
+                isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100',
                 className,
             )}
             role="alert"
