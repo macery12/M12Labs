@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserCreationService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
