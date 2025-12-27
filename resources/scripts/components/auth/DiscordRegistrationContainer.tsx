@@ -9,7 +9,11 @@ import Field from '@/elements/Field';
 import Label from '@/elements/Label';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
-import { getDiscordRegistrationData, completeDiscordRegistration, checkUsernameAvailability } from '@/api/routes/auth/discord';
+import {
+    getDiscordRegistrationData,
+    completeDiscordRegistration,
+    checkUsernameAvailability,
+} from '@/api/routes/auth/discord';
 import { faIdBadge, faKey, faUnlockKeyhole, faCheck, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';

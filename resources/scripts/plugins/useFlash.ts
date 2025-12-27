@@ -1,6 +1,7 @@
 import { Actions, useStoreActions } from 'easy-peasy';
 import { FlashStore } from '@/state/flashes';
 import { ApplicationStore } from '@/state';
+import { useAlerts } from '@/contexts/AlertContext';
 
 interface KeyedFlashStore {
     addError: (message: string, title?: string) => void;
@@ -9,7 +10,37 @@ interface KeyedFlashStore {
 }
 
 const useFlash = (): Actions<FlashStore> => {
-    return useStoreActions((actions: Actions<ApplicationStore>) => actions.flashes);
+    const flashActions = useStoreActions((actions: Actions<ApplicationStore>) => actions.flashes);
+    const { addAlert } = useAlerts();
+
+    // Bridge flash messages to the new Alert Manager
+    // This allows existing code to continue working while we migrate
+    const originalAddFlash = flashActions.addFlash;
+
+    // Override addFlash to also add to AlertManager
+    const bridgedAddFlash = (flash: any) => {
+        originalAddFlash(flash);
+
+        // Also add to new Alert Manager
+        addAlert({
+            type:
+                flash.type === 'error'
+                    ? 'error'
+                    : flash.type === 'success'
+                    ? 'success'
+                    : flash.type === 'warning'
+                    ? 'warning'
+                    : 'info',
+            message: flash.message,
+            title: flash.title,
+            key: flash.key,
+        });
+    };
+
+    return {
+        ...flashActions,
+        addFlash: bridgedAddFlash as any,
+    };
 };
 
 const useFlashKey = (key: string): KeyedFlashStore => {
