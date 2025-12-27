@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Formik, FormikHelpers } from 'formik';
+import { Formik, FormikHelpers, Field as FormikField } from 'formik';
 import { object, string } from 'yup';
 import tw from 'twin.macro';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import Field from '@/elements/Field';
+import Label from '@/elements/Label';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import { getDiscordRegistrationData, completeDiscordRegistration } from '@/api/routes/auth/discord';
 import { faIdBadge, faKey, faUnlockKeyhole } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Checkbox from '@/elements/inputs/Checkbox';
 
 interface Values {
     username: string;
@@ -137,12 +137,20 @@ function DiscordRegistrationContainer() {
                     />
 
                     <div css={tw`mt-6`}>
-                        <Checkbox
-                            name={'set_password'}
-                            label={'Set a password (optional)'}
-                            description={'Enable traditional username/password login in addition to Discord SSO'}
-                            disabled={isSubmitting}
-                        />
+                        <div className={'flex items-center'}>
+                            <FormikField
+                                type={'checkbox'}
+                                id={'set_password'}
+                                name={'set_password'}
+                                className={'mr-2'}
+                            />
+                            <Label htmlFor={'set_password'} className={'mb-0 cursor-pointer'}>
+                                Set a password (optional)
+                            </Label>
+                        </div>
+                        <p css={tw`mt-1 text-xs text-gray-400`}>
+                            Enable traditional username/password login in addition to Discord SSO
+                        </p>
                     </div>
 
                     {values.set_password && (
