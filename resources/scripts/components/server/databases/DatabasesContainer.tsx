@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getDatabases } from '@/api/routes/server/databases';
 import { ServerContext } from '@/state/server';
 import { httpErrorToHuman } from '@/api/http';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import DatabaseRow from '@server/databases/DatabaseRow';
 import Spinner from '@/elements/Spinner';
 import CreateDatabaseButton from '@server/databases/CreateDatabaseButton';
@@ -38,7 +38,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Databases'} header description={'Assign databases directly to your server.'}>
-            <AlertRenderer filterByKey={'databases'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'databases'} css={tw`mb-4`} />
             {!databases.length && loading ? (
                 <Spinner size={'large'} centered />
             ) : (

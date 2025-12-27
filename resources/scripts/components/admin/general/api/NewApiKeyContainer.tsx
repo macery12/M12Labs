@@ -5,7 +5,7 @@ import { Form, Formik } from 'formik';
 import Field from '@/elements/Field';
 import tw from 'twin.macro';
 import { Button } from '@/elements/button';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import type { ApplicationStore } from '@/state';
 import type { Values } from '@/api/routes/admin/api/createApiKey';
 import createApiKey from '@/api/routes/admin/api/createApiKey';
@@ -62,7 +62,7 @@ export default () => {
                     <Button.Text icon={XIcon}>Cancel</Button.Text>
                 </Link>
             </div>
-            <AlertRenderer filterByKey={'api:create'} position="top-center" />
+            <FlashMessageRender byKey={'api:create'} />
             {visible && (
                 <Dialog open={Boolean(visible)} onClose={() => setVisible(null)} title={'Your API Key'}>
                     Do not lose this key, it is impossible to recover. Click the key below to copy it.

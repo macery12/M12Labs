@@ -9,6 +9,7 @@ import tw from 'twin.macro';
 import { Button } from '@/elements/button/index';
 import { useFlashKey } from '@/plugins/useFlash';
 import useFileManagerSwr from '@/plugins/useFileManagerSwr';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Dialog, DialogWrapperContext } from '@/elements/dialog';
 import Code from '@/elements/Code';
 import asDialog from '@/hoc/asDialog';

@@ -5,7 +5,7 @@ import type { ApplicationStore } from '@/state';
 import { Dialog } from '@/elements/dialog';
 import { useState } from 'react';
 import { Button } from '@/elements/button';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { deleteTicket } from '@/api/routes/admin/tickets';
 
 export default ({ ticketId }: { ticketId: number }) => {
@@ -40,7 +40,7 @@ export default ({ ticketId }: { ticketId: number }) => {
                 onClose={() => setOpen(false)}
                 title={'Confirm ticket deletion'}
             >
-                <AlertRenderer filterByKey={'tickets:view'} position="top-center" />
+                <FlashMessageRender byKey={'tickets:view'} />
                 Are you sure you want to delete this ticket and the associated messages?
             </Dialog.Confirm>
         </>

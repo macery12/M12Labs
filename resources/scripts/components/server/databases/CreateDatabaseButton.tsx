@@ -6,7 +6,7 @@ import { object, string } from 'yup';
 import { createDatabase } from '@/api/routes/server/databases';
 import { ServerContext } from '@/state/server';
 import { httpErrorToHuman } from '@/api/http';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import tw from 'twin.macro';
@@ -68,7 +68,7 @@ export default () => {
                             setVisible(false);
                         }}
                     >
-                        <AlertRenderer filterByKey={'database:create'} className="mb-6" position="top-center" />
+                        <FlashMessageRender byKey={'database:create'} css={tw`mb-6`} />
                         <h2 css={tw`text-2xl mb-6`}>Create new database</h2>
                         <Form css={tw`m-0`}>
                             <Field

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import tw from 'twin.macro';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 const AdminContentBlock: React.FC<{
     children: ReactNode;
@@ -15,7 +15,7 @@ const AdminContentBlock: React.FC<{
 
     return (
         <>
-            {showFlashKey && <AlertRenderer filterByKey={showFlashKey} className="mb-4" position="top-center" />}
+            {showFlashKey && <FlashMessageRender byKey={showFlashKey} css={tw`mb-4`} />}
             {children}
             <p css={tw`text-center text-neutral-500 text-xs mt-4 mb-8`}>
                 &copy; {new Date().getFullYear()}&nbsp;

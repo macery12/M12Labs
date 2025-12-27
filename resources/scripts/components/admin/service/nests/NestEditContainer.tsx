@@ -10,7 +10,7 @@ import { object, string } from 'yup';
 import ImportEggButton from '@admin/service/nests/ImportEggButton';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import Spinner from '@/elements/Spinner';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import type { Nest } from '@/api/routes/admin/nests/getNests';
 import getNest from '@/api/routes/admin/nests/getNest';
 import updateNest from '@/api/routes/admin/nests/updateNest';
@@ -194,7 +194,7 @@ const NestEditContainer = () => {
     if (loading || nest === undefined) {
         return (
             <AdminContentBlock>
-                <AlertRenderer filterByKey={'nest'} className="mb-4" position="top-center" />
+                <FlashMessageRender byKey={'nest'} css={tw`mb-4`} />
 
                 <div css={tw`w-full flex flex-col items-center justify-center`} style={{ height: '24rem' }}>
                     <Spinner size={'base'} />
@@ -232,7 +232,7 @@ const NestEditContainer = () => {
                 </div>
             </div>
 
-            <AlertRenderer filterByKey={'nest'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'nest'} css={tw`mb-4`} />
 
             <div css={tw`flex flex-col lg:flex-row mb-8`}>
                 <EditInformationContainer />

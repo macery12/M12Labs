@@ -8,7 +8,7 @@ import createEggVariable from '@/api/routes/admin/eggs/createEggVariable';
 import { useEggFromRoute } from '@/api/routes/admin/egg';
 import { EggVariableForm, validationSchema } from '@admin/service/nests/eggs/EggVariablesContainer';
 import Modal from '@/elements/Modal';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import { Variant } from '@/elements/button/types';
@@ -67,7 +67,7 @@ export default function NewVariableButton() {
                             setVisible(false);
                         }}
                     >
-                        <AlertRenderer filterByKey={'variable:create'} className="mb-6" position="top-center" />
+                        <FlashMessageRender byKey={'variable:create'} css={tw`mb-6`} />
 
                         <h2 css={tw`mb-6 text-2xl text-neutral-100`}>New Variable</h2>
 

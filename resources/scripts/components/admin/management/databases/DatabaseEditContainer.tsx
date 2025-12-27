@@ -12,7 +12,7 @@ import getDatabase from '@/api/routes/admin/databases/getDatabase';
 import updateDatabase from '@/api/routes/admin/databases/updateDatabase';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import Spinner from '@/elements/Spinner';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import Field from '@/elements/Field';
@@ -200,7 +200,7 @@ const DatabaseEditContainer = () => {
     if (loading || database === undefined) {
         return (
             <AdminContentBlock>
-                <AlertRenderer filterByKey={'database'} className="mb-4" position="top-center" />
+                <FlashMessageRender byKey={'database'} css={tw`mb-4`} />
 
                 <div css={tw`w-full flex flex-col items-center justify-center`} style={{ height: '24rem' }}>
                     <Spinner size={'base'} />
@@ -222,7 +222,7 @@ const DatabaseEditContainer = () => {
                 </div>
             </div>
 
-            <AlertRenderer filterByKey={'database'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'database'} css={tw`mb-4`} />
 
             <EditInformationContainer />
         </AdminContentBlock>

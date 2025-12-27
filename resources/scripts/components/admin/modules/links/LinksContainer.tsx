@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CustomLink } from '@/api/routes/admin/links';
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Button } from '@/elements/button';
 import CreateLinkDialog from './CreateLinkDialog';
 import DeleteLinkDialog from './DeleteLinkDialog';
@@ -18,7 +18,7 @@ export default () => {
             {open === 'create' && <CreateLinkDialog setOpen={setOpen} />}
             {open === 'update' && link && <CreateLinkDialog link={link} setOpen={setOpen} />}
             {open === 'delete' && <DeleteLinkDialog id={link?.id} setOpen={setOpen} />}
-            <AlertRenderer filterByKey={'admin:links'} className={'mb-4'} position="top-center" />
+            <FlashMessageRender byKey={'admin:links'} className={'mb-4'} />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Custom Links</h2>

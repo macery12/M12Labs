@@ -8,7 +8,7 @@ import type { UpdateUserValues } from '@/api/routes/admin/users';
 import { createUser } from '@/api/routes/admin/users';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import UserForm from '@admin/management/users/view/UserForm';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import type { ApplicationStore } from '@/state';
 
 export default () => {
@@ -43,7 +43,7 @@ export default () => {
                 </div>
             </div>
 
-            <AlertRenderer filterByKey={'user:create'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'user:create'} css={tw`mb-4`} />
 
             <UserForm title={'Create User'} onSubmit={submit} />
         </AdminContentBlock>

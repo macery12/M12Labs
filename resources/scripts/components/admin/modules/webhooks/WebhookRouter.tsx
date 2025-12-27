@@ -4,7 +4,7 @@ import { NotFound } from '@/elements/ScreenBlock';
 import { CalendarIcon, CogIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import EnableWebhooks from './EnableWebhooks';
 import WebhookSettings from './WebhookSettings';
 import WebhookEventsContainer from './events/WebhookEventsContainer';
@@ -16,7 +16,7 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Webhooks'}>
-            <AlertRenderer filterByKey={'admin:webhooks'} className={'mb-4'} position="top-center" />
+            <FlashMessageRender byKey={'admin:webhooks'} className={'mb-4'} />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Webhook Logging</h2>

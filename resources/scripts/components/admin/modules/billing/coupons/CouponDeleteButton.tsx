@@ -1,5 +1,5 @@
 import { deleteCoupon } from '@/api/routes/admin/billing/coupons';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Input from '@/elements/Input';
 import { Button } from '@/elements/button';
 import { Dialog } from '@/elements/dialog';
@@ -42,7 +42,7 @@ export default ({ coupon }: { coupon: Coupon }) => {
                 onClose={() => setOpen(false)}
                 title={'Confirm coupon deletion'}
             >
-                <AlertRenderer filterByKey={'admin:billing:coupons:delete'} className={'mb-2'} position="top-center" />
+                <FlashMessageRender byKey={'admin:billing:coupons:delete'} className={'mb-2'} />
                 Are you sure you want to delete this coupon? This action cannot be undone. To confirm, please type the
                 coupon code&nbsp;
                 <span className={'mx-1 rounded bg-zinc-900 p-1 font-mono text-sm'}>({coupon.code})</span>below:

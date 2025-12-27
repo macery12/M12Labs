@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Alert } from '@/elements/alert';
 import { useStoreState } from '@/state/hooks';
+import { usePersistedState } from '@/plugins/usePersistedState';
 import { capitalize } from '@/lib/strings';
 import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
-import AlertComponent from '@/components/AlertComponent';
+import SlideOutAlert from '@/components/elements/SlideOutAlert';
 
 interface ScopedAlertProps {
     scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
@@ -107,40 +108,20 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
                 </Alert>
             ))}
 
-            {/* Slide-out Alerts - using new AlertComponent */}
-            <div className="fixed right-0 top-4 z-50 flex flex-col gap-3" style={{ maxWidth: '400px' }}>
-                {slideOutAlerts.map((alert, index) => {
-                    const content = (
-                        <>
-                            {alert.content}
-                            {alert.link && (
-                                <a
-                                    href={alert.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={'mt-2 block underline hover:text-blue-300'}
-                                >
-                                    {alert.link_text || 'Learn more'} →
-                                </a>
-                            )}
-                        </>
-                    );
-
-                    return (
-                        <AlertComponent
-                            key={alert.id}
-                            alert={{
-                                id: alert.id.toString(),
-                                type: alert.type,
-                                message: typeof content === 'string' ? content : alert.content,
-                                title: alert.title,
-                                dismissible: true,
-                            }}
-                            onDismiss={() => handleSlideOutClose(alert.id)}
-                        />
-                    );
-                })}
-            </div>
+            {/* Slide-out Alerts */}
+            {slideOutAlerts.map((alert, index) => (
+                <SlideOutAlert
+                    key={alert.id}
+                    id={alert.id}
+                    title={alert.title}
+                    content={alert.content}
+                    type={alert.type}
+                    link={alert.link}
+                    link_text={alert.link_text}
+                    onClose={() => handleSlideOutClose(alert.id)}
+                    index={index}
+                />
+            ))}
 
             {/* Center Dialog Alerts - Always allow dismissal to prevent page blocking */}
             {currentCenterAlert && (

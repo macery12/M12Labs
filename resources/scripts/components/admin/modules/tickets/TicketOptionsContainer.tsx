@@ -7,7 +7,7 @@ import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
 import useFlash from '@/plugins/useFlash';
 import { useEffect } from 'react';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Label from '@/elements/Label';
 import { faFirstOrder } from '@fortawesome/free-brands-svg-icons';
 import ToggleTicketsButton from './ToggleTicketsButton';
@@ -55,7 +55,7 @@ export default () => {
                 }}
             >
                 <Form>
-                    <AlertRenderer filterByKey={'settings:general'} className={'mb-2'} position="top-center" />
+                    <FlashMessageRender byKey={'settings:general'} className={'mb-2'} />
                     <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
                         <AdminBox title={'Maximum Ticket Count'} icon={faFirstOrder}>
                             <div>

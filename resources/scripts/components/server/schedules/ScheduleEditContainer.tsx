@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getSchedule } from '@/api/routes/server/schedules';
 import Spinner from '@/elements/Spinner';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import EditScheduleModal from '@server/schedules/EditScheduleModal';
 import NewTaskButton from '@server/schedules/NewTaskButton';
 import DeleteScheduleButton from '@server/schedules/DeleteScheduleButton';
@@ -78,7 +78,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Schedules'}>
-            <AlertRenderer filterByKey={'schedules'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'schedules'} css={tw`mb-4`} />
             {!schedule || isLoading ? (
                 <Spinner size={'large'} centered />
             ) : (

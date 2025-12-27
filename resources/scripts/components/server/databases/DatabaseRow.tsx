@@ -5,7 +5,7 @@ import Modal from '@/elements/Modal';
 import { Form, Formik, FormikHelpers } from 'formik';
 import Field from '@/elements/Field';
 import { object, string } from 'yup';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { ServerContext } from '@/state/server';
 import { deleteDatabase } from '@/api/routes/server/databases';
 import { httpErrorToHuman } from '@/api/http';
@@ -71,7 +71,7 @@ export default ({ database, className }: Props) => {
                             resetForm();
                         }}
                     >
-                        <AlertRenderer filterByKey={'database:delete'} className="mb-6" position="top-center" />
+                        <FlashMessageRender byKey={'database:delete'} css={tw`mb-6`} />
                         <h2 css={tw`text-2xl mb-6`}>Confirm database deletion</h2>
                         <p css={tw`text-sm`}>
                             Deleting a database is a permanent action, it cannot be undone. This will permanently delete
@@ -98,7 +98,7 @@ export default ({ database, className }: Props) => {
                 )}
             </Formik>
             <Modal visible={connectionVisible} onDismissed={() => setConnectionVisible(false)}>
-                <AlertRenderer filterByKey={'database-connection-modal'} className="mb-6" position="top-center" />
+                <FlashMessageRender byKey={'database-connection-modal'} css={tw`mb-6`} />
                 <h3 css={tw`mb-6 text-2xl`}>Database connection details</h3>
                 <div>
                     <Label>Endpoint</Label>

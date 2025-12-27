@@ -7,7 +7,7 @@ import Spinner from '@/elements/Spinner';
 import updateColors from '@/api/routes/admin/theme/updateColors';
 import { CheckCircleIcon } from '@heroicons/react/outline';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { faPaintbrush } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
@@ -55,7 +55,7 @@ export default ({ setReload }: Props) => {
 
     return (
         <AdminBox title={'Color Selection'} icon={faPaintbrush}>
-            <AlertRenderer filterByKey={'theme:colors'} className={'my-2'} position="top-center" />
+            <FlashMessageRender byKey={'theme:colors'} className={'my-2'} />
             {loading && <Spinner className={'absolute top-0 right-0 m-3.5'} size={'small'} />}
             {success && <CheckCircleIcon className={'absolute top-0 right-0 m-3.5 h-5 w-5 text-green-500'} />}
             <div>

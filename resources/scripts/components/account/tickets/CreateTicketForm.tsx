@@ -8,7 +8,7 @@ import Input, { Textarea } from '@/elements/Input';
 import styled from 'styled-components';
 import { useFlashKey } from '@/plugins/useFlash';
 import { createTicket } from '@/api/routes/account/tickets';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { useNavigate } from 'react-router-dom';
 
 interface Values {
@@ -47,7 +47,7 @@ export default () => {
             >
                 {({ isSubmitting }) => (
                     <Form>
-                        <AlertRenderer filterByKey={'account:tickets'} className={'mb-4'} position="top-center" />
+                        <FlashMessageRender byKey={'account:tickets'} className={'mb-4'} />
                         <SpinnerOverlay visible={isSubmitting} />
                         <FormikFieldWrapper
                             name={'title'}

@@ -6,7 +6,7 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
 import { breakpoint } from '@/assets/theme';
 import styled from 'styled-components';
-import { Alert } from '@/elements/alert';
+import MessageBox from '@/elements/MessageBox';
 import { useLocation } from 'react-router-dom';
 
 const Container = styled.div`
@@ -31,10 +31,9 @@ export default () => {
     return (
         <PageContentBlock title="Account Overview" header description={'Update your email, password, or setup 2-FA.'}>
             {state?.twoFactorRedirect && (
-                <Alert type="danger">
-                    <strong className="mb-2 block font-semibold">2-Factor Required</strong>
+                <MessageBox title="2-Factor Required" type="error">
                     Your account must have two-factor authentication enabled in order to continue.
-                </Alert>
+                </MessageBox>
             )}
 
             <Container css={[tw`lg:grid lg:grid-cols-3 mb-10`, state?.twoFactorRedirect ? tw`mt-4` : tw`mt-10`]}>

@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import ApiContainer from './ApiContainer';
 import NewApiKeyContainer from './NewApiKeyContainer';
 import { NotFound } from '@/elements/ScreenBlock';
@@ -20,7 +20,7 @@ export default () => (
             </div>
         </div>
 
-        <AlertRenderer filterByKey={'admin:settings'} className={'mb-4'} position="top-center" />
+        <FlashMessageRender byKey={'admin:settings'} className={'mb-4'} />
 
         <Routes>
             <Route path={'/'} element={<ApiContainer />} />

@@ -7,7 +7,7 @@ import { Button } from '@/elements/button';
 import { Textarea } from '@/elements/Input';
 import styled from 'styled-components';
 import { useFlashKey } from '@/plugins/useFlash';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { createMessage } from '@/api/routes/account/tickets';
 import DeleteTicketDialog from './DeleteTicketDialog';
 
@@ -44,7 +44,7 @@ export default ({ ticketId }: { ticketId: number }) => {
             >
                 {({ isSubmitting }) => (
                     <Form>
-                        <AlertRenderer filterByKey={'account:tickets:view'} className={'mb-4'} position="top-center" />
+                        <FlashMessageRender byKey={'account:tickets:view'} className={'mb-4'} />
                         <SpinnerOverlay visible={isSubmitting} />
                         <FormikFieldWrapper
                             label={'Message Content'}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getSchedules } from '@/api/routes/server/schedules';
 import { ServerContext } from '@/state/server';
 import Spinner from '@/elements/Spinner';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import ScheduleRow from '@server/schedules/ScheduleRow';
 import { httpErrorToHuman } from '@/api/http';
 import EditScheduleModal from '@server/schedules/EditScheduleModal';
@@ -35,7 +35,7 @@ function ScheduleContainer() {
 
     return (
         <PageContentBlock title={'Schedules'} header description={'Create and edit automatic tasks for your server.'}>
-            <AlertRenderer filterByKey={'schedules'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'schedules'} css={tw`mb-4`} />
             {!schedules.length && loading ? (
                 <Spinner size={'large'} centered />
             ) : (

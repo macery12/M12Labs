@@ -11,7 +11,7 @@ import { Button } from '@/elements/button';
 import { Size, Variant } from '@/elements/button/types';
 import { Editor } from '@/elements/editor';
 import Modal from '@/elements/Modal';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 export default ({ className }: { className?: string }) => {
     const [visible, setVisible] = useState(false);
@@ -74,7 +74,7 @@ export default ({ className }: { className?: string }) => {
     return (
         <>
             <Modal visible={visible} onDismissed={() => setVisible(false)}>
-                <AlertRenderer filterByKey={'egg:import'} className="mb-6" position="top-center" />
+                <FlashMessageRender byKey={'egg:import'} css={tw`mb-6`} />
 
                 <h2 css={tw`mb-6 text-2xl text-neutral-100`}>Import Egg</h2>
 

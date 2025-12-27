@@ -1,5 +1,5 @@
 import { deleteCategory } from '@/api/routes/admin/billing/categories';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Input from '@/elements/Input';
 import { Button } from '@/elements/button';
 import { Dialog } from '@/elements/dialog';
@@ -40,11 +40,7 @@ export default ({ category }: { category: Category }) => {
                 onClose={() => setOpen(false)}
                 title={'Confirm category deletion'}
             >
-                <AlertRenderer
-                    filterByKey={'admin:billing:categories:delete'}
-                    className={'mb-2'}
-                    position="top-center"
-                />
+                <FlashMessageRender byKey={'admin:billing:categories:delete'} className={'mb-2'} />
                 Are you sure you want to delete this category? All products under this category will also be permenantly
                 deleted. To confirm, please type the category name&nbsp;
                 <span className={'mx-1 rounded bg-zinc-900 p-1 font-mono text-sm'}>({category.name})</span>below:

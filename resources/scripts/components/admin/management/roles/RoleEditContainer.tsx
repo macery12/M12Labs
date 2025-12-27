@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 import { getRole, updateRole } from '@/api/routes/admin/roles';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import AdminBox from '@/elements/AdminBox';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import RoleDeleteButton from '@/components/admin/management/roles/RoleDeleteButton';
@@ -140,7 +140,7 @@ const RoleEditContainer = () => {
     if (loading || role === undefined) {
         return (
             <AdminContentBlock>
-                <AlertRenderer filterByKey={'role'} className="mb-4" position="top-center" />
+                <FlashMessageRender byKey={'role'} css={tw`mb-4`} />
 
                 <div css={tw`w-full flex flex-col items-center justify-center`} style={{ height: '24rem' }}>
                     <Spinner size={'base'} />
@@ -170,7 +170,7 @@ const RoleEditContainer = () => {
                     )}
                 </div>
             </div>
-            <AlertRenderer filterByKey={'role'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'role'} css={tw`mb-4`} />
             <EditInformationContainer />
             <div css={tw`w-full flex flex-row items-center my-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>

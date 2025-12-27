@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useActivityLogs } from '@/api/routes/server/activity';
 import { useFlashKey } from '@/plugins/useFlash';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Spinner from '@/elements/Spinner';
 import ActivityLogEntry from '@/elements/activity/ActivityLogEntry';
 import PaginationFooter from '@/elements/table/PaginationFooter';
@@ -37,7 +37,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Activity Log'} header description={'View recent activity on your server.'}>
-            <AlertRenderer filterByKey={'server:activity'} position="top-center" />
+            <FlashMessageRender byKey={'server:activity'} />
             {(filters.filters?.event || filters.filters?.ip) && (
                 <div className={'mb-2 flex justify-end'}>
                     <Link

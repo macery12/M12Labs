@@ -8,7 +8,7 @@ import AdminBox from '@/elements/AdminBox';
 import { TrashIcon } from '@heroicons/react/outline';
 import { Dialog } from '@/elements/dialog';
 import { faGoogle } from '@fortawesome/free-brands-svg-icons';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import RequiredFieldIcon from '@/elements/RequiredFieldIcon';
 import { toggleModule, updateModule } from '@/api/routes/admin/auth/module';
 import { Alert } from '@/elements/alert';
@@ -45,7 +45,7 @@ export default () => {
 
     return (
         <AdminBox title={'Google SSO Module'} icon={faGoogle} byKey={'auth:modules:google'} status={status} canDelete>
-            <AlertRenderer filterByKey={'auth:modules:google'} className={'my-2'} position="top-center" />
+            <FlashMessageRender byKey={'auth:modules:google'} className={'my-2'} />
             <Dialog.Confirm
                 open={confirm}
                 title={'Confirm module removal'}

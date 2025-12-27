@@ -6,7 +6,7 @@ import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
 import useFlash from '@/plugins/useFlash';
 import { useEffect } from 'react';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Label from '@/elements/Label';
 import { faLink } from '@fortawesome/free-solid-svg-icons';
 import ToggleWebhooksButton from './ToggleWebhooksButton';
@@ -52,7 +52,7 @@ export default () => {
             }}
         >
             <Form>
-                <AlertRenderer filterByKey={'admin:webhooks'} className={'mb-2'} position="top-center" />
+                <FlashMessageRender byKey={'admin:webhooks'} className={'mb-2'} />
                 <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
                     <AdminBox title={'Webhook URL'} icon={faLink}>
                         <div>

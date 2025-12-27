@@ -25,7 +25,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Product, StripeIntent, type Node } from '@definitions/account/billing';
 import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
 import {
@@ -196,7 +196,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Your Order'}>
-            <AlertRenderer filterByKey={'account:billing:order'} className={'mb-4'} position="top-center" />
+            <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
             <div className={'mb-8'}>
                 <h1 className={'text-4xl font-bold text-gray-100'}>Complete Your Order</h1>
                 <p className={'mt-2 text-base text-gray-400'}>
@@ -505,7 +505,7 @@ export default () => {
                             >
                                 <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Coupon Code</h3>
                                 <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                                <AlertRenderer filterByKey={'coupon'} className={'mt-4'} position="top-center" />
+                                <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
                             </div>
                         )}
 

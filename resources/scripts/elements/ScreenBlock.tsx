@@ -13,8 +13,8 @@ import { useState, useEffect } from 'react';
 import Spinner from './Spinner';
 import { getProduct, Product } from '@/api/routes/account/billing/products';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
-import { useAlerts } from '@/contexts/AlertContext';
-import AlertRenderer from '@/components/AlertRenderer';
+import useFlash from '@/plugins/useFlash';
+import FlashMessageRender from './FlashMessageRender';
 
 interface BaseProps {
     title: string;
@@ -109,7 +109,7 @@ const Suspended = ({
     const [renewing, setRenewing] = useState<boolean>(false);
 
     const navigate = useNavigate();
-    const { clearAlerts, error } = useAlerts();
+    const { clearFlashes, clearAndAddHttpError } = useFlash();
     const currency = useStoreState(state => state.everest.data!.billing.currency.symbol);
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const settings = useStoreState(state => state.everest.data!.billing);
@@ -118,8 +118,8 @@ const Suspended = ({
         if (id) {
             getProduct(id)
                 .then(data => setProduct(data))
-                .catch(err => {
-                    console.error(err);
+                .catch(error => {
+                    console.error(error);
                 });
         }
     }, []);
@@ -128,18 +128,15 @@ const Suspended = ({
         if (!product || !id || !serverId || !serverUuid) return;
 
         setRenewing(true);
-        clearAlerts('suspended:billing');
+        clearFlashes('suspended:billing');
 
         renewFreeServer(id, serverId)
             .then(() => {
                 // Redirect to server overview after successful renewal
                 navigate(`/server/${serverUuid}`);
             })
-            .catch(err => {
-                error(err.message || 'Failed to renew server', {
-                    key: 'suspended:billing',
-                    title: 'Renewal Error',
-                });
+            .catch(error => {
+                clearAndAddHttpError({ key: 'suspended:billing', error });
                 setRenewing(false);
             });
     };
@@ -223,7 +220,7 @@ const Suspended = ({
                             </>
                         )}
                     </p>
-                    <AlertRenderer filterByKey="suspended:billing" className="mt-4" position="top-center" />
+                    <FlashMessageRender byKey={'suspended:billing'} className={'mt-4'} />
                     <div className={'mt-6'}>
                         {isLongOverdue ? (
                             <div css={tw`text-center p-4 bg-red-900/30 rounded border border-red-500`}>

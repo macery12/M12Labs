@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Field, { FieldRow } from '@/elements/Field';
 import tw from 'twin.macro';
 import { Button } from '@/elements/button';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import type { ApplicationStore } from '@/state';
 import AdminBox from '@/elements/AdminBox';
 import { object, string, number } from 'yup';
@@ -63,7 +63,7 @@ export default () => {
                 </div>
             </div>
 
-            <AlertRenderer filterByKey={'ticket:create'} position="top-center" />
+            <FlashMessageRender byKey={'ticket:create'} />
 
             <Formik
                 onSubmit={submit}

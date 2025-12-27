@@ -4,7 +4,7 @@ import { useStoreState } from '@/state/hooks';
 import Field from '@/elements/Field';
 import { Dialog } from '@/elements/dialog';
 import useFlash from '@/plugins/useFlash';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '../../elements/FlashMessageRender';
 import { setupAccount } from '@/api/routes/account';
 import { Alert } from '@/elements/alert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -35,7 +35,7 @@ export default () => {
             onClose={() => undefined}
             title={`👋 Welcome to ${appName.toString()}!`}
         >
-            <AlertRenderer filterByKey={'onboarding'} className={'my-3'} position="top-center" />
+            <FlashMessageRender byKey={'onboarding'} className={'my-3'} />
             <Formik onSubmit={submit} initialValues={{ username: '', password: '' }}>
                 <Form>
                     <p className={'mt-2'}>We are missing some details - please enter them now.</p>

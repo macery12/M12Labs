@@ -6,7 +6,7 @@ import ServerManageContainer from '@admin/management/servers/manage/ServerManage
 import ServerStartupContainer from '@admin/management/servers/ServerStartupContainer';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import Spinner from '@/elements/Spinner';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import ServerSettingsContainer from '@admin/management/servers/ServerSettingsContainer';
 import useFlash from '@/plugins/useFlash';
@@ -52,7 +52,7 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Server - ' + server.name}>
-            <AlertRenderer filterByKey={'backups'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'backups'} css={tw`mb-4`} />
             <div css={tw`w-full flex flex-row items-center mb-4`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>{server.name}</h2>
@@ -77,7 +77,7 @@ export default () => {
                 </div>
             </div>
 
-            <AlertRenderer filterByKey={'server'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'server'} css={tw`mb-4`} />
 
             <SubNavigation>
                 <SubNavigationLink to={`/admin/servers/${params.id}`} name={'Settings'} icon={CogIcon} base />

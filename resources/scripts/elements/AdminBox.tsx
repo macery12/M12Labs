@@ -6,7 +6,7 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { useStoreState } from '@/state/hooks';
 import Spinner from '@/elements/Spinner';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/outline';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Status } from '@/plugins/useStatus';
 import classNames from 'classnames';
 
@@ -74,7 +74,7 @@ const AdminBox = ({
                 {button}
             </div>
             <div css={[!noPadding && tw`px-4 xl:px-5 py-5`]}>
-                <AlertRenderer filterByKey={byKey ?? 'null'} className="mb-3" position="top-center" />
+                <FlashMessageRender byKey={byKey ?? 'null'} className={'mb-3'} />
                 {children}
             </div>
         </div>

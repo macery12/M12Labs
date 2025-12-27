@@ -17,7 +17,7 @@ import {
     AlertUser,
 } from '@/api/routes/admin/alerts';
 import useFlash from '@/plugins/useFlash';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { AlertType as AlertTypeEnum, AlertPosition } from '@/state/everest';
@@ -167,7 +167,7 @@ export default () => {
         <Formik onSubmit={submit} initialValues={initialValues} enableReinitialize>
             {({ values, setFieldValue }) => (
                 <Form>
-                    <AlertRenderer filterByKey={'alert:form'} className={'mb-4'} position="top-center" />
+                    <FlashMessageRender byKey={'alert:form'} className={'mb-4'} />
 
                     <div css={tw`mb-6`}>
                         <Button.Text onClick={() => navigate('/admin/alerts')} css={tw`mb-4`}>

@@ -9,7 +9,7 @@ import { Form, Formik } from 'formik';
 import type { FormikHelpers } from 'formik';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Select from '@/elements/Select';
 import Label from '@/elements/Label';
 import { useEffect, useState } from 'react';
@@ -94,7 +94,7 @@ export default () => {
                     </p>
                 </div>
             </div>
-            <AlertRenderer filterByKey={'tickets:view'} className={'mb-4'} position="top-center" />
+            <FlashMessageRender byKey={'tickets:view'} className={'mb-4'} />
             <Formik
                 onSubmit={submit}
                 initialValues={{

@@ -9,7 +9,7 @@ import ModifyServerGroup from '@account/groups/ModifyServerGroup';
 import Pill from '@/elements/Pill';
 import Spinner from '@/elements/Spinner';
 import useFlash from '@/plugins/useFlash';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 export interface VisibleDialog {
     open: 'index' | 'modify' | 'delete' | 'add' | 'none';
@@ -59,7 +59,7 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
 
     return (
         <>
-            <AlertRenderer filterByKey={'dashboard:groups'} position="top-center" />
+            <FlashMessageRender byKey={'dashboard:groups'} />
             <ModifyServerGroup open={open.open === 'modify'} group={group} setOpen={setOpen} />
             <Dialog open={open.open === 'add'} onClose={() => setOpen({ open: 'none' })} title={'Add group to server'}>
                 {groups ? (

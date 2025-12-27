@@ -5,7 +5,7 @@ import { ApplicationStore } from '@/state';
 import Spinner from '@/elements/Spinner';
 import AddSubuserButton from '@server/users/AddSubuserButton';
 import UserRow from '@server/users/UserRow';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import { getSubusers } from '@/api/routes/server/subusers';
 import { httpErrorToHuman } from '@/api/http';
 import Can from '@/elements/Can';
@@ -51,7 +51,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Subusers'} header description={'Control the access of other users to this server.'}>
-            <AlertRenderer filterByKey={'users'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'users'} css={tw`mb-4`} />
             {!subusers.length ? (
                 <p css={tw`text-center text-sm text-neutral-300`}>It looks like you don&apos;t have any subusers.</p>
             ) : (

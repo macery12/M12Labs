@@ -25,7 +25,7 @@ import Field from '@/elements/Field';
 import FormikSwitch from '@/elements/FormikSwitch';
 import Label from '@/elements/Label';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import { WithRelationships } from '@/api/routes/admin';
@@ -171,7 +171,7 @@ export default () => {
                 </div>
             </div>
 
-            <AlertRenderer filterByKey={'server:create'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'server:create'} css={tw`mb-4`} />
 
             <Formik
                 onSubmit={submit}

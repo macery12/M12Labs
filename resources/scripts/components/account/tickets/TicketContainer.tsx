@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useFlashKey } from '@/plugins/useFlash';
 import { useTickets } from '@/api/routes/account/tickets';
 import ContentBox from '@/elements/ContentBox';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import PageContentBlock from '@/elements/PageContentBlock';
 import CreateTicketForm from '@account/tickets/CreateTicketForm';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
@@ -42,7 +42,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Support Tickets'}>
-            <AlertRenderer filterByKey={'account:tickets'} position="top-center" />
+            <FlashMessageRender byKey={'account:tickets'} />
             <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                 Your Support Tickets
                 <p className={'mt-1 text-sm font-normal text-gray-400'}>

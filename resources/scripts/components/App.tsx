@@ -16,8 +16,6 @@ import { EverestSettings } from '@/state/everest';
 import Onboarding from '@account/Onboarding';
 import SpeedDial from '@/elements/SpeedDial';
 import SetupContainer from './admin/setup/SetupContainer';
-import { AlertProvider } from '@/contexts/AlertContext';
-import AlertRenderer from '@/components/AlertRenderer';
 
 const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
@@ -28,11 +26,6 @@ interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
     ThemeConfiguration?: SiteTheme;
     EverestConfiguration?: EverestSettings;
-    FlashMessages?: Array<{
-        type: 'success' | 'error' | 'info' | 'warning';
-        message: string;
-        title?: string;
-    }>;
     PterodactylUser?: {
         uuid: string;
         username: string;
@@ -95,75 +88,72 @@ function App() {
         <>
             <GlobalStylesheet />
             <StoreProvider store={store}>
-                <AlertProvider>
-                    <ProgressBar />
-                    <AlertRenderer />
-                    {PterodactylUser?.root_admin && !SiteConfiguration?.setup ? (
-                        <SetupContainer />
-                    ) : (
-                        <>
-                            {' '}
-                            {PterodactylUser?.username.startsWith('null_user_') &&
-                            EverestConfiguration?.auth.modules.onboarding.enabled ? (
-                                <Onboarding />
-                            ) : (
-                                <div className="mx-auto w-auto">
-                                    <BrowserRouter>
-                                        <Routes>
-                                            <Route
-                                                path="/auth/*"
-                                                element={
+                <ProgressBar />
+                {PterodactylUser?.root_admin && !SiteConfiguration?.setup ? (
+                    <SetupContainer />
+                ) : (
+                    <>
+                        {' '}
+                        {PterodactylUser?.username.startsWith('null_user_') &&
+                        EverestConfiguration?.auth.modules.onboarding.enabled ? (
+                            <Onboarding />
+                        ) : (
+                            <div className="mx-auto w-auto">
+                                <BrowserRouter>
+                                    <Routes>
+                                        <Route
+                                            path="/auth/*"
+                                            element={
+                                                <Spinner.Suspense>
+                                                    <AuthenticationRouter />
+                                                </Spinner.Suspense>
+                                            }
+                                        />
+
+                                        <Route
+                                            path="/server/:id/*"
+                                            element={
+                                                <AuthenticatedRoute>
                                                     <Spinner.Suspense>
-                                                        <AuthenticationRouter />
-                                                    </Spinner.Suspense>
-                                                }
-                                            />
-
-                                            <Route
-                                                path="/server/:id/*"
-                                                element={
-                                                    <AuthenticatedRoute>
-                                                        <Spinner.Suspense>
-                                                            <ServerContext.Provider>
-                                                                {hasAdminRole && <SpeedDial />}
-                                                                <ServerRouter />
-                                                            </ServerContext.Provider>
-                                                        </Spinner.Suspense>
-                                                    </AuthenticatedRoute>
-                                                }
-                                            />
-
-                                            <Route
-                                                path="/admin/*"
-                                                element={
-                                                    <Spinner.Suspense>
-                                                        <AdminContext.Provider>
-                                                            <AdminRouter />
-                                                        </AdminContext.Provider>
-                                                    </Spinner.Suspense>
-                                                }
-                                            />
-
-                                            <Route
-                                                path="/*"
-                                                element={
-                                                    <AuthenticatedRoute>
-                                                        <Spinner.Suspense>
+                                                        <ServerContext.Provider>
                                                             {hasAdminRole && <SpeedDial />}
-                                                            <DashboardRouter />
-                                                        </Spinner.Suspense>
-                                                    </AuthenticatedRoute>
-                                                }
-                                            />
+                                                            <ServerRouter />
+                                                        </ServerContext.Provider>
+                                                    </Spinner.Suspense>
+                                                </AuthenticatedRoute>
+                                            }
+                                        />
 
-                                            <Route path="*" element={<NotFound />} />
-                                        </Routes>
-                                    </BrowserRouter>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </AlertProvider>
+                                        <Route
+                                            path="/admin/*"
+                                            element={
+                                                <Spinner.Suspense>
+                                                    <AdminContext.Provider>
+                                                        <AdminRouter />
+                                                    </AdminContext.Provider>
+                                                </Spinner.Suspense>
+                                            }
+                                        />
+
+                                        <Route
+                                            path="/*"
+                                            element={
+                                                <AuthenticatedRoute>
+                                                    <Spinner.Suspense>
+                                                        {hasAdminRole && <SpeedDial />}
+                                                        <DashboardRouter />
+                                                    </Spinner.Suspense>
+                                                </AuthenticatedRoute>
+                                            }
+                                        />
+
+                                        <Route path="*" element={<NotFound />} />
+                                    </Routes>
+                                </BrowserRouter>
+                            </div>
+                        )}
+                    </>
+                )}
             </StoreProvider>
         </>
     );

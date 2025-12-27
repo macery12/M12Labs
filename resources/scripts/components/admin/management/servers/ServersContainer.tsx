@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import ServersTable from '@admin/management/servers/ServersTable';
 import { Button } from '@/elements/button';
@@ -30,7 +30,7 @@ export default () => (
             </div>
         </div>
 
-        <AlertRenderer filterByKey={'servers'} className="mb-4" position="top-center" />
+        <FlashMessageRender byKey={'servers'} css={tw`mb-4`} />
 
         <SubNavigation>
             <SubNavigationLink to="/admin/servers" name="All Servers" base>

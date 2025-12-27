@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import AlertRenderer from '@/components/AlertRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import {
     faArrowRight,
@@ -100,7 +100,7 @@ export default () => {
                 </div>
             </div>
 
-            <AlertRenderer filterByKey={'overview'} className="mb-4" position="top-center" />
+            <FlashMessageRender byKey={'overview'} css={tw`mb-4`} />
 
             <AdminBox title={'Version Information'} icon={faDesktop}>
                 {settings.debug && (
