@@ -8,14 +8,6 @@ interface KeyedAlertStore {
 }
 
 /**
- * Hook to use the new Alert Manager system.
- * Provides convenience methods for showing alerts.
- */
-const useAlert = () => {
-    return useAlerts();
-};
-
-/**
  * Hook to use the new Alert Manager with a specific key for scoped alerts.
  * This is useful for showing alerts that are specific to a page or component.
  */
@@ -47,4 +39,5 @@ const useAlertKey = (key: string): KeyedAlertStore => {
 };
 
 export { useAlertKey };
-export default useAlert;
+// Re-export useAlerts as default for convenience
+export { useAlerts as default };

@@ -42,17 +42,11 @@
             @endif
             @php
                 $flashMessages = [];
-                if(session()->has('success')) {
-                    $flashMessages[] = ['type' => 'success', 'message' => session('success')];
-                }
-                if(session()->has('error')) {
-                    $flashMessages[] = ['type' => 'error', 'message' => session('error')];
-                }
-                if(session()->has('info')) {
-                    $flashMessages[] = ['type' => 'info', 'message' => session('info')];
-                }
-                if(session()->has('warning')) {
-                    $flashMessages[] = ['type' => 'warning', 'message' => session('warning')];
+                $flashTypes = ['success', 'error', 'info', 'warning'];
+                foreach($flashTypes as $type) {
+                    if(session()->has($type)) {
+                        $flashMessages[] = ['type' => $type, 'message' => session($type)];
+                    }
                 }
             @endphp
             @if(!empty($flashMessages))
