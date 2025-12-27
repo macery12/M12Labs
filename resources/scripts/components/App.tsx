@@ -28,6 +28,11 @@ interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
     ThemeConfiguration?: SiteTheme;
     EverestConfiguration?: EverestSettings;
+    FlashMessages?: Array<{
+        type: 'success' | 'error' | 'info' | 'warning';
+        message: string;
+        title?: string;
+    }>;
     PterodactylUser?: {
         uuid: string;
         username: string;

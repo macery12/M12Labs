@@ -48,6 +48,31 @@ interface AlertProviderProps {
 
 export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [initialized, setInitialized] = useState(false);
+
+    // Load backend flash messages on mount
+    useEffect(() => {
+        if (!initialized && typeof window !== 'undefined') {
+            const flashMessages = (window as any).FlashMessages;
+            if (flashMessages && Array.isArray(flashMessages)) {
+                flashMessages.forEach((flash: any) => {
+                    const id = nanoid();
+                    const newAlert: Alert = {
+                        id,
+                        type: flash.type as AlertType,
+                        message: flash.message,
+                        title: flash.title,
+                        dismissible: true,
+                        timeout: 5000,
+                    };
+                    setAlerts(prev => [...prev, newAlert]);
+                });
+                // Clear flash messages from window to prevent re-adding on re-render
+                delete (window as any).FlashMessages;
+            }
+            setInitialized(true);
+        }
+    }, [initialized]);
 
     const addAlert = useCallback((alert: Omit<Alert, 'id'>): string => {
         const id = nanoid();

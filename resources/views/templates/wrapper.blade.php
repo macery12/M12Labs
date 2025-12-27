@@ -40,6 +40,26 @@
                     window.ThemeConfiguration = {!! json_encode($themeConfiguration) !!};
                 </script>
             @endif
+            @php
+                $flashMessages = [];
+                if(session()->has('success')) {
+                    $flashMessages[] = ['type' => 'success', 'message' => session('success')];
+                }
+                if(session()->has('error')) {
+                    $flashMessages[] = ['type' => 'error', 'message' => session('error')];
+                }
+                if(session()->has('info')) {
+                    $flashMessages[] = ['type' => 'info', 'message' => session('info')];
+                }
+                if(session()->has('warning')) {
+                    $flashMessages[] = ['type' => 'warning', 'message' => session('warning')];
+                }
+            @endphp
+            @if(!empty($flashMessages))
+                <script>
+                    window.FlashMessages = {!! json_encode($flashMessages) !!};
+                </script>
+            @endif
         @show
         <style>
             @import url('//fonts.googleapis.com/css?family=Rubik:300,400,500&display=swap');
