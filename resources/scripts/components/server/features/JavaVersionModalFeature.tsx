@@ -4,7 +4,6 @@ import Modal from '@/elements/Modal';
 import tw from 'twin.macro';
 import { Button } from '@/elements/button';
 import { setImage, getServerStartup } from '@/api/routes/server/startup';
-import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 import { SocketEvent, SocketRequest } from '@server/events';
 import Select from '@/elements/Select';

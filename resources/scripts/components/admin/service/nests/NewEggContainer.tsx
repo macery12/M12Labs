@@ -16,7 +16,6 @@ import {
     EggStartupContainer,
 } from '@admin/service/nests/eggs/EggSettingsContainer';
 import { Button } from '@/elements/button';
-import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {

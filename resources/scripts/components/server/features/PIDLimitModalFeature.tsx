@@ -3,7 +3,6 @@ import { ServerContext } from '@/state/server';
 import Modal from '@/elements/Modal';
 import tw from 'twin.macro';
 import { Button } from '@/elements/button';
-import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 import { SocketEvent } from '@server/events';
 import { useStoreState } from 'easy-peasy';

@@ -8,7 +8,6 @@ import Switch from '@/elements/Switch';
 import { debounce } from 'debounce';
 import { updateStartupVariable, getServerStartup } from '@/api/routes/server/startup';
 import useFlash from '@/plugins/useFlash';
-import AlertRenderer from '@/components/AlertRenderer';
 import Select from '@/elements/Select';
 import isEqual from 'react-fast-compare';
 import { ServerContext } from '@/state/server';

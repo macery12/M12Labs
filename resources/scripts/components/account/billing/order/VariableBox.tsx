@@ -3,7 +3,6 @@ import { EggVariable } from '@definitions/server';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import Input from '@/elements/Input';
 import Switch from '@/elements/Switch';
-import AlertRenderer from '@/components/AlertRenderer';
 import Select from '@/elements/Select';
 import isEqual from 'react-fast-compare';
 
