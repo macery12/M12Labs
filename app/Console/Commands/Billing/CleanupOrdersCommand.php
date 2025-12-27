@@ -29,7 +29,7 @@ class CleanupOrdersCommand extends Command
         $fourteenDaysAgo = now()->subDays(14);
 
         // Process orders in chunks to avoid memory issues
-        Order::whereIn('status', ['pending', 'expired'])->chunk(100, function ($orders) use ($sevenDaysAgo, $fourteenDaysAgo) {
+        Order::whereIn('status', [Order::STATUS_PENDING, Order::STATUS_EXPIRED])->chunk(100, function ($orders) use ($sevenDaysAgo, $fourteenDaysAgo) {
             foreach ($orders as $order) {
                 $user = User::find($order->user_id) ?? null;
 
