@@ -41,13 +41,13 @@ class CleanupOrdersCommand extends Command
                     switch ($order->status) {
                         case 'pending':
                             // Only expire pending orders that are older than 7 days
-                            if ($order->created_at->lessThanOrEqualTo($sevenDaysAgo)) {
+                            if ($order->created_at->lte($sevenDaysAgo)) {
                                 $order->forceFill(['status' => Order::STATUS_EXPIRED])->save();
                             }
                             break;
                         case 'expired':
                             // Only delete expired orders that have been expired for more than 7 days
-                            if ($order->updated_at->lessThanOrEqualTo($sevenDaysAgo)) {
+                            if ($order->updated_at->lte($sevenDaysAgo)) {
                                 $order->delete();
                             }
                             break;
