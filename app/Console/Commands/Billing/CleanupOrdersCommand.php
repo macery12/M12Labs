@@ -27,32 +27,35 @@ class CleanupOrdersCommand extends Command
     {
         $sevenDaysAgo = now()->subDays(7);
 
-        foreach (Order::all() as $order) {
-            $user = User::find($order->user_id) ?? null;
+        // Process orders in chunks to avoid memory issues
+        Order::whereIn('status', ['pending', 'expired'])->chunk(100, function ($orders) use ($sevenDaysAgo) {
+            foreach ($orders as $order) {
+                $user = User::find($order->user_id) ?? null;
 
-            if (!$user) {
-                $order->delete();
-                continue;
-            }
-
-            try {
-                switch ($order->status) {
-                    case 'pending':
-                        // Only expire pending orders that are older than 7 days
-                        if ($order->created_at->lessThanOrEqualTo($sevenDaysAgo)) {
-                            $order->forceFill(['status' => Order::STATUS_EXPIRED])->save();
-                        }
-                        break;
-                    case 'expired':
-                        // Only delete expired orders that have been expired for more than 7 days
-                        if ($order->updated_at->lessThanOrEqualTo($sevenDaysAgo)) {
-                            $order->delete();
-                        }
-                        break;
+                if (!$user) {
+                    $order->delete();
+                    continue;
                 }
-            } catch (\Exception $ex) {
-                // handle quietly, no need to log this
+
+                try {
+                    switch ($order->status) {
+                        case 'pending':
+                            // Only expire pending orders that are older than 7 days
+                            if ($order->created_at->lessThanOrEqualTo($sevenDaysAgo)) {
+                                $order->forceFill(['status' => Order::STATUS_EXPIRED])->save();
+                            }
+                            break;
+                        case 'expired':
+                            // Only delete expired orders that have been expired for more than 7 days
+                            if ($order->updated_at->lessThanOrEqualTo($sevenDaysAgo)) {
+                                $order->delete();
+                            }
+                            break;
+                    }
+                } catch (\Exception $ex) {
+                    // handle quietly, no need to log this
+                }
             }
-        }
+        });
     }
 }
