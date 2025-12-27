@@ -27,9 +27,10 @@ class CleanupOrdersCommand extends Command
     {
         $sevenDaysAgo = now()->subDays(7);
         $fourteenDaysAgo = now()->subDays(14);
+        $thirtyDaysAgo = now()->subDays(30);
 
         // Process orders in chunks to avoid memory issues
-        Order::whereIn('status', [Order::STATUS_PENDING, Order::STATUS_EXPIRED])->chunk(100, function ($orders) use ($sevenDaysAgo, $fourteenDaysAgo) {
+        Order::whereIn('status', [Order::STATUS_PENDING, Order::STATUS_EXPIRED, Order::STATUS_PROCESSED])->chunk(100, function ($orders) use ($sevenDaysAgo, $fourteenDaysAgo, $thirtyDaysAgo) {
             foreach ($orders as $order) {
                 $user = User::find($order->user_id) ?? null;
 
@@ -49,6 +50,12 @@ class CleanupOrdersCommand extends Command
                         case Order::STATUS_EXPIRED:
                             // Delete expired orders that are 14+ days old (enforces 7-day retention: 7 days pending + 7 days expired)
                             if ($order->created_at->lte($fourteenDaysAgo)) {
+                                $order->delete();
+                            }
+                            break;
+                        case Order::STATUS_PROCESSED:
+                            // Delete processed orders that are older than 30 days
+                            if ($order->created_at->lte($thirtyDaysAgo)) {
                                 $order->delete();
                             }
                             break;
