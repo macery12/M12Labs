@@ -77,16 +77,16 @@ export default () => {
                     <Alert type={alert.type}>{alert.content}</Alert>
                 ) : alert.position === 'slide-out' ? (
                     <>
-                        <p className={'text-center text-lg font-semibold text-gray-400'}>
-                            Alert is being displayed as a slide-out notification in the top-right.
+                        <p className={'mb-4 text-center text-lg font-semibold text-gray-400'}>
+                            Alert will slide out from the right side below the header
                         </p>
-                        <div className={'fixed right-4 top-4 z-50'} style={{ maxWidth: '420px' }}>
+                        <div className={'fixed right-4 z-40'} style={{ top: '5rem', maxWidth: '420px' }}>
                             <AlertComponent
                                 alert={{
                                     id: 'preview',
                                     type: alert.type === 'danger' ? 'error' : (alert.type as 'success' | 'error' | 'info' | 'warning'),
                                     message: alert.content,
-                                    title: 'Preview Alert',
+                                    title: alert.title || undefined,
                                     dismissible: true,
                                 }}
                             />

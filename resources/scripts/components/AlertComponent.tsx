@@ -53,7 +53,13 @@ const typeConfig = {
 
 export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss, className }) => {
     const [isClosing, setIsClosing] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
     const config = typeConfig[alert.type];
+
+    // Add entrance animation
+    React.useEffect(() => {
+        setTimeout(() => setIsVisible(true), 10);
+    }, []);
 
     const handleDismiss = () => {
         if (!alert.dismissible) return;
@@ -69,12 +75,12 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
     return (
         <div
             className={classNames(
-                'flex items-start rounded-md border-l-8 shadow-lg transition-all duration-300',
-                'px-4 py-3',
+                'flex items-start rounded-lg border-l-8 shadow-xl backdrop-blur-sm transition-all duration-300 ease-out',
+                'px-4 py-3.5 hover:shadow-2xl',
                 config.borderColor,
                 config.bgColor,
                 config.textColor,
-                isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100',
+                isClosing ? 'scale-95 opacity-0 translate-x-4' : isVisible ? 'scale-100 opacity-100 translate-x-0' : 'scale-95 opacity-0 translate-x-4',
                 className,
             )}
             role="alert"
@@ -82,18 +88,18 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
             aria-atomic="true"
         >
             {/* Icon */}
-            <div className={classNames('mr-3 flex-shrink-0', config.iconColor)}>
+            <div className={classNames('mr-3 flex-shrink-0 transition-transform', config.iconColor, isVisible && 'animate-pulse-once')}>
                 <FontAwesomeIcon icon={config.icon} className={'h-5 w-5'} />
             </div>
 
             {/* Content */}
-            <div className="flex-1">
-                {alert.title && <div className="mb-1 font-semibold">{alert.title}</div>}
-                <div className="text-sm">{alert.message}</div>
+            <div className="flex-1 min-w-0">
+                {alert.title && <div className="mb-1 font-semibold text-base">{alert.title}</div>}
+                <div className="text-sm leading-relaxed break-words">{alert.message}</div>
 
                 {/* Actions */}
                 {alert.actions && alert.actions.length > 0 && (
-                    <div className="mt-3 flex space-x-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                         {alert.actions.map((action: AlertAction, index: number) => (
                             <button
                                 key={index}
@@ -104,7 +110,8 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
                                     }
                                 }}
                                 className={classNames(
-                                    'rounded px-3 py-1 text-xs font-medium text-white transition-colors',
+                                    'rounded-md px-3 py-1.5 text-xs font-medium text-white transition-all',
+                                    'hover:scale-105 active:scale-95',
                                     action.variant === 'secondary' ? 'bg-gray-600 hover:bg-gray-700' : config.buttonBg,
                                 )}
                             >
@@ -119,7 +126,7 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
             {alert.dismissible && (
                 <button
                     onClick={handleDismiss}
-                    className={'ml-3 flex-shrink-0 text-gray-400 transition-colors hover:text-gray-200'}
+                    className={'ml-3 flex-shrink-0 text-gray-400 transition-all hover:text-gray-200 hover:scale-110 active:scale-95'}
                     aria-label="Dismiss alert"
                 >
                     <FontAwesomeIcon icon={faTimes} className={'h-4 w-4'} />

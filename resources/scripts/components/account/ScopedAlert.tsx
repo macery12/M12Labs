@@ -101,14 +101,18 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
 
     return (
         <>
-            {/* Top Center Alerts */}
-            {topCenterAlerts.map(alert => (
-                <Alert key={alert.id} type={alert.type} onClose={() => handleTopCenterClose(alert.id)}>
-                    {renderAlertContent(alert)}
-                </Alert>
-            ))}
+            {/* Top Center Alerts with better spacing */}
+            {topCenterAlerts.length > 0 && (
+                <div className="mb-4 space-y-3">
+                    {topCenterAlerts.map(alert => (
+                        <Alert key={alert.id} type={alert.type} onClose={() => handleTopCenterClose(alert.id)}>
+                            {renderAlertContent(alert)}
+                        </Alert>
+                    ))}
+                </div>
+            )}
 
-            {/* Slide-out Alerts */}
+            {/* Slide-out Alerts - positioned to avoid header conflicts */}
             {slideOutAlerts.map((alert, index) => (
                 <SlideOutAlert
                     key={alert.id}
