@@ -47,7 +47,7 @@ class CleanupOrdersCommand extends Command
                             }
                             break;
                         case Order::STATUS_EXPIRED:
-                            // Only delete expired orders that are older than 14 days total (7 days pending + 7 days expired)
+                            // Delete expired orders that are 14+ days old (enforces 7-day retention: 7 days pending + 7 days expired)
                             if ($order->created_at->lte($fourteenDaysAgo)) {
                                 $order->delete();
                             }
