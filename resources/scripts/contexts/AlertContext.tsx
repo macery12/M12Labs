@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 
 export type AlertType = 'success' | 'error' | 'info' | 'warning';
@@ -136,19 +136,32 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     );
 
     // Auto-dismiss alerts with timeout
-    useEffect(() => {
-        const timers: Record<string, NodeJS.Timeout> = {};
+    const timersRef = useRef<Record<string, NodeJS.Timeout>>({});
 
+    useEffect(() => {
+        // Set up timers for new alerts
         alerts.forEach(alert => {
-            if (alert.timeout && alert.timeout > 0 && !timers[alert.id]) {
-                timers[alert.id] = setTimeout(() => {
+            if (alert.timeout && alert.timeout > 0 && !timersRef.current[alert.id]) {
+                timersRef.current[alert.id] = setTimeout(() => {
                     dismissAlert(alert.id);
+                    delete timersRef.current[alert.id];
                 }, alert.timeout);
             }
         });
 
+        // Clean up timers for dismissed alerts
+        const currentAlertIds = new Set(alerts.map(a => a.id));
+        Object.keys(timersRef.current).forEach(id => {
+            if (!currentAlertIds.has(id)) {
+                clearTimeout(timersRef.current[id]);
+                delete timersRef.current[id];
+            }
+        });
+
+        // Cleanup on unmount
         return () => {
-            Object.values(timers).forEach(timer => clearTimeout(timer));
+            Object.values(timersRef.current).forEach(timer => clearTimeout(timer));
+            timersRef.current = {};
         };
     }, [alerts, dismissAlert]);
 
