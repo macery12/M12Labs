@@ -136,6 +136,25 @@ class DiscordLoginController extends AbstractLoginController
     }
 
     /**
+     * Check if a username is available.
+     */
+    public function checkUsername(Request $request): JsonResponse
+    {
+        $username = $request->input('username');
+
+        if (!$username) {
+            return response()->json(['available' => false, 'message' => 'Username is required'], 400);
+        }
+
+        $exists = User::where('username', $username)->exists();
+
+        return response()->json([
+            'available' => !$exists,
+            'message' => $exists ? 'This username is already taken' : 'Username is available',
+        ]);
+    }
+
+    /**
      * Authenticate with the Discord OAuth2 service.
      */
     public function authenticate(Request $request): RedirectResponse

@@ -9,8 +9,8 @@ import Field from '@/elements/Field';
 import Label from '@/elements/Label';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
-import { getDiscordRegistrationData, completeDiscordRegistration } from '@/api/routes/auth/discord';
-import { faIdBadge, faKey, faUnlockKeyhole } from '@fortawesome/free-solid-svg-icons';
+import { getDiscordRegistrationData, completeDiscordRegistration, checkUsernameAvailability } from '@/api/routes/auth/discord';
+import { faIdBadge, faKey, faUnlockKeyhole, faCheck, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -30,6 +30,9 @@ function DiscordRegistrationContainer() {
         discord_id: string;
     } | null>(null);
     const [loading, setLoading] = useState(true);
+    const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+    const [usernameMessage, setUsernameMessage] = useState('');
+    const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         clearFlashes();
@@ -47,6 +50,34 @@ function DiscordRegistrationContainer() {
                 setLoading(false);
             });
     }, []);
+
+    const checkUsername = (username: string) => {
+        if (!username || username.length < 1) {
+            setUsernameStatus('idle');
+            setUsernameMessage('');
+            return;
+        }
+
+        setUsernameStatus('checking');
+        setUsernameMessage('Checking...');
+
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+
+        debounceTimer.current = setTimeout(() => {
+            checkUsernameAvailability(username)
+                .then(response => {
+                    setUsernameStatus(response.available ? 'available' : 'taken');
+                    setUsernameMessage(response.message);
+                })
+                .catch(error => {
+                    console.error(error);
+                    setUsernameStatus('idle');
+                    setUsernameMessage('');
+                });
+        }, 500);
+    };
 
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes();
@@ -126,15 +157,43 @@ function DiscordRegistrationContainer() {
                         </p>
                     </div>
 
-                    <Field
-                        type={'text'}
-                        label={'Username'}
-                        icon={faIdBadge}
-                        name={'username'}
-                        placeholder={'Choose a username'}
-                        disabled={isSubmitting}
-                        description={'This will be your display name on the panel'}
-                    />
+                    <div css={tw`mt-6`}>
+                        <Field
+                            type={'text'}
+                            label={'Username'}
+                            icon={faIdBadge}
+                            name={'username'}
+                            placeholder={'Choose a username'}
+                            disabled={isSubmitting}
+                            description={'This will be your display name on the panel'}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setFieldValue('username', e.target.value);
+                                checkUsername(e.target.value);
+                            }}
+                        />
+                        {usernameStatus !== 'idle' && (
+                            <div css={tw`mt-2 flex items-center text-sm`}>
+                                {usernameStatus === 'checking' && (
+                                    <>
+                                        <FontAwesomeIcon icon={faSpinner} spin css={tw`text-gray-400 mr-2`} />
+                                        <span css={tw`text-gray-400`}>{usernameMessage}</span>
+                                    </>
+                                )}
+                                {usernameStatus === 'available' && (
+                                    <>
+                                        <FontAwesomeIcon icon={faCheck} css={tw`text-green-400 mr-2`} />
+                                        <span css={tw`text-green-400`}>{usernameMessage}</span>
+                                    </>
+                                )}
+                                {usernameStatus === 'taken' && (
+                                    <>
+                                        <FontAwesomeIcon icon={faTimes} css={tw`text-red-400 mr-2`} />
+                                        <span css={tw`text-red-400`}>{usernameMessage}</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     <div css={tw`mt-6`}>
                         <div className={'flex items-center'}>
