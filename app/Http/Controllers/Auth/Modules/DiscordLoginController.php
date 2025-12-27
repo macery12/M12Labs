@@ -2,8 +2,10 @@
 
 namespace Everest\Http\Controllers\Auth\Modules;
 
+use Carbon\Carbon;
 use Everest\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -72,6 +74,11 @@ class DiscordLoginController extends AbstractLoginController
             throw new DisplayException('Discord registration data not found. Please try again.');
         }
 
+        // Check if Discord SSO is enabled
+        if (!config('modules.auth.discord.enabled', false)) {
+            throw new DisplayException('Discord authentication is currently disabled.');
+        }
+
         $username = $request->input('username');
         $password = $request->input('password');
         $passwordConfirm = $request->input('confirm_password');
@@ -96,7 +103,7 @@ class DiscordLoginController extends AbstractLoginController
             throw new DisplayException('This username is already in use.');
         }
 
-        // Create the user with Discord data
+        // Create the user with Discord data (bypassing regular registration check)
         $userData = [
             'username' => $username,
             'email' => $discordData['discord_email'],
@@ -108,7 +115,19 @@ class DiscordLoginController extends AbstractLoginController
             $userData['password'] = $password;
         }
 
-        $user = $this->createAccount($userData);
+        // Create user directly via UserCreationService, bypassing registration.enabled check
+        $user = $this->creationService->handle($userData);
+
+        // Apply jguard delay if configured
+        $delay = (int) config('modules.auth.jguard.delay') ?? 0;
+        $guard = config('modules.auth.jguard.enabled') ?? false;
+
+        if ($guard || $delay > 0) {
+            DB::table('jguard_delay')->insert([
+                'user_id' => $user->id,
+                'expires_at' => Carbon::now()->add($delay, 'minute'),
+            ]);
+        }
 
         // Clear the session data
         $request->session()->forget('discord_registration_data');
