@@ -41,6 +41,10 @@ function DiscordRegistrationContainer() {
             .then(data => {
                 setDiscordData(data);
                 setLoading(false);
+                // Automatically check the pre-filled Discord username
+                if (data.discord_username) {
+                    checkUsername(data.discord_username);
+                }
             })
             .catch(error => {
                 console.error(error);
