@@ -57,8 +57,7 @@ function DiscordRegistrationContainer() {
             use_discord_only: values.use_discord_only,
         })
             .then(() => {
-                // @ts-expect-error this is valid
-                window.location = '/';
+                window.location.href = '/';
             })
             .catch(error => {
                 console.error(error);

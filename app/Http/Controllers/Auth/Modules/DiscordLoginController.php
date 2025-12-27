@@ -177,17 +177,10 @@ class DiscordLoginController extends AbstractLoginController
         $existingEmailUser = User::where('email', $account->email)->first();
 
         if ($existingEmailUser) {
-            // Email exists but not linked to Discord, store data in session for linking
-            $request->session()->put('discord_link_data', [
-                'discord_id' => $account->id,
-                'discord_username' => $account->username,
-                'discord_email' => $account->email,
-                'discord_avatar' => $account->avatar ?? null,
-                'existing_user' => true,
-                'user_id' => $existingEmailUser->id,
-            ]);
-
-            return redirect('/auth/discord/link');
+            // Email exists but not linked to Discord
+            // For security, we don't auto-link - user should manually link in account settings
+            return redirect()->route('auth.login')->with('error', 
+                'An account with this email already exists. Please login with your password to link your Discord account.');
         }
 
         // New user - store Discord data in session and redirect to registration
