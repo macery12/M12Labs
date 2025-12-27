@@ -5,7 +5,7 @@ import { usePersistedState } from '@/plugins/usePersistedState';
 import { capitalize } from '@/lib/strings';
 import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
-import SlideOutAlert from '@/components/elements/SlideOutAlert';
+import AlertComponent from '@/components/AlertComponent';
 
 export default () => {
     const { uuid: user } = useStoreState(s => s.user.data!);
@@ -116,20 +116,24 @@ export default () => {
                 </Alert>
             ))}
 
-            {/* Slide-out Alerts (replaces bottom-left and bottom-right) */}
-            {slideOutAlerts.map((alert, index) => (
-                <SlideOutAlert
-                    key={alert.id}
-                    id={alert.id}
-                    title={alert.title}
-                    content={alert.content}
-                    type={alert.type}
-                    link={alert.link}
-                    link_text={alert.link_text}
-                    onClose={() => handleSlideOutClose(alert.id)}
-                    index={index}
-                />
-            ))}
+            {/* Slide-out Alerts - using new AlertComponent */}
+            <div className="fixed right-0 top-4 z-50 flex flex-col gap-3" style={{ maxWidth: '400px' }}>
+                {slideOutAlerts.map(alert => {
+                    return (
+                        <AlertComponent
+                            key={alert.id}
+                            alert={{
+                                id: alert.id.toString(),
+                                type: alert.type,
+                                message: alert.content,
+                                title: alert.title,
+                                dismissible: true,
+                            }}
+                            onDismiss={() => handleSlideOutClose(alert.id)}
+                        />
+                    );
+                })}
+            </div>
 
             {/* Center Dialog Alerts - Always allow dismissal to prevent page blocking */}
             {currentCenterAlert && (

@@ -1,7 +1,7 @@
 import type { DetailedHTMLProps, HTMLAttributes } from 'react';
 import tw from 'twin.macro';
 
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { useStoreState } from '@/state/hooks';
 
@@ -21,7 +21,11 @@ const ContentBox = ({ title, borderColor, showFlashes, showLoadingOverlay, child
         <div {...props}>
             {title && <h2 css={tw`text-neutral-300 mb-4 px-4 text-2xl`}>{title}</h2>}
             {showFlashes && (
-                <FlashMessageRender byKey={typeof showFlashes === 'string' ? showFlashes : undefined} css={tw`mb-4`} />
+                <AlertRenderer
+                    filterByKey={typeof showFlashes === 'string' ? showFlashes : undefined}
+                    className="mb-4"
+                    position="top-center"
+                />
             )}
             <div
                 style={{ backgroundColor: secondary }}

@@ -1,5 +1,5 @@
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { useEffect, useState } from 'react';
 import { useFlashKey } from '@/plugins/useFlash';
 import { Link } from 'react-router-dom';
@@ -37,7 +37,7 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Admin Activity'}>
-            <FlashMessageRender byKey={'admin:activity'} className={'mb-4'} />
+            <AlertRenderer filterByKey={'admin:activity'} className={'mb-4'} position="top-center" />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Admin Activity</h2>

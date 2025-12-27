@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import { CogIcon, SparklesIcon } from '@heroicons/react/outline';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import { NotFound } from '@/elements/ScreenBlock';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import EnableAI from '@admin/modules/ai/EnableAI';
 import OverviewContainer from '@admin/modules/ai/OverviewContainer';
@@ -18,7 +18,7 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Jexactyl AI'}>
-            <FlashMessageRender byKey={'admin:ai'} className={'mb-4'} />
+            <AlertRenderer filterByKey={'admin:ai'} className={'mb-4'} position="top-center" />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Jexactyl AI</h2>

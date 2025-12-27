@@ -6,7 +6,7 @@ import FormikSwitch from '@/elements/FormikSwitch';
 import { modifySchedule } from '@/api/routes/server/schedules';
 import { ServerContext } from '@/state/server';
 import { httpErrorToHuman } from '@/api/http';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 import tw from 'twin.macro';
 import { Button } from '@/elements/button/index';
@@ -93,7 +93,7 @@ const EditScheduleModal = ({ schedule }: Props) => {
             {({ isSubmitting }) => (
                 <Form>
                     <h3 css={tw`text-2xl mb-6`}>{schedule ? 'Edit schedule' : 'Create new schedule'}</h3>
-                    <FlashMessageRender byKey={'schedule:edit'} css={tw`mb-6`} />
+                    <AlertRenderer filterByKey={'schedule:edit'} className="mb-6" position="top-center" />
                     <Field
                         name={'name'}
                         label={'Schedule name'}

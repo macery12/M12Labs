@@ -13,7 +13,7 @@ import { PaginatedResult } from '@/api/http';
 import Pagination from '@/elements/Pagination';
 import { Link, useLocation } from 'react-router-dom';
 import ContentBox from '@/elements/ContentBox';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import NotFoundSvg from '@/assets/images/not_found.svg';
 import DashboardAlert from '@account/DashboardAlert';
 import ServerSvg from '@/assets/images/themed/ServerSvg';

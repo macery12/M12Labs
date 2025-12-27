@@ -1,7 +1,7 @@
 import { useStoreState } from '@/state/hooks';
 import Box from '@/components/admin/modules/auth/Box';
 import { faDoorOpen, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { faDiscord, faGoogle } from '@fortawesome/free-brands-svg-icons';
 
 export default () => {
@@ -17,7 +17,7 @@ export default () => {
      */
     return (
         <>
-            <FlashMessageRender byKey={'auth:modules'} />
+            <AlertRenderer filterByKey={'auth:modules'} position="top-center" />
             <Box
                 icon={faDoorOpen}
                 name={'onboarding'}

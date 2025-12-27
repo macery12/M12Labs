@@ -8,7 +8,7 @@ import EggVariablesContainer from '@admin/service/nests/eggs/EggVariablesContain
 import useFlash from '@/plugins/useFlash';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import Spinner from '@/elements/Spinner';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import EggSettingsContainer from '@admin/service/nests/eggs/EggSettingsContainer';
 
@@ -48,7 +48,7 @@ const EggRouter = () => {
                 </div>
             </div>
 
-            <FlashMessageRender byKey={'egg'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'egg'} className="mb-4" position="top-center" />
 
             <SubNavigation>
                 <SubNavigationLink to={`/admin/nests/${nestId ?? ''}/eggs/${id ?? ''}`} name={'About'} base>

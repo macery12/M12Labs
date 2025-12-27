@@ -12,7 +12,7 @@ import Select from '@/elements/Select';
 import currencyDictionary from '@/assets/currency';
 import SetupStripe from './guides/SetupStripe';
 import ExportConfigButton from './config/ExportConfigButton';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import ImportConfigButton from './config/ImportConfigButton';
 import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
@@ -119,7 +119,7 @@ export default () => {
                 </div>
             </AdminBox>
             <AdminBox title={'Import/Export Configuration'} icon={faExchange}>
-                <FlashMessageRender byKey={'billing:config'} className={'mb-2'} />
+                <AlertRenderer filterByKey={'billing:config'} className={'mb-2'} position="top-center" />
                 Use the below options to either export your current billing configurations, or use the Import button to
                 import a pre-created set of categories and products to Jexactyl.
                 <div className={'mt-3 text-right'}>

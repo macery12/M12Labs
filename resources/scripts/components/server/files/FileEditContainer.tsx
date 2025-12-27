@@ -7,7 +7,7 @@ import tw from 'twin.macro';
 
 import { httpErrorToHuman } from '@/api/http';
 import { getFileContents, saveFileContents } from '@/api/routes/server/files';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { Button } from '@/elements/button';
 import Can from '@/elements/Can';
 import Select from '@/elements/Select';
@@ -97,7 +97,7 @@ export default () => {
 
     return (
         <PageContentBlock>
-            <FlashMessageRender byKey={'files:view'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'files:view'} className="mb-4" position="top-center" />
 
             <ErrorBoundary>
                 <div css={tw`mb-4`}>

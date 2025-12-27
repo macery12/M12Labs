@@ -17,7 +17,7 @@ import { Button } from '@/elements/button';
 import { useGetApiKeys, Context as ApiContext, ContextFilters } from '@/api/routes/admin/api/getApiKeys';
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import DeleteApiKeyButton from './DeleteApiKeyButton';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { useStoreState } from '@/state/hooks';
 import { PlusIcon } from '@heroicons/react/outline';
 
@@ -44,7 +44,7 @@ function ApiContainer() {
                     <Button icon={PlusIcon}>New API Key</Button>
                 </Link>
             </div>
-            <FlashMessageRender byKey={'api'} className={'my-4'} />
+            <AlertRenderer filterByKey={'api'} className={'my-4'} position="top-center" />
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>
                     <Pagination data={apiKeys} onPageSelect={setPage}>

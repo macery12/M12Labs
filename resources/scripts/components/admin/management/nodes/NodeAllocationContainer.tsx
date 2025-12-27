@@ -6,14 +6,14 @@ import AdminBox from '@/elements/AdminBox';
 import AllocationTable from '@admin/management/nodes/allocations/AllocationTable';
 import CreateAllocationForm from '@admin/management/nodes/allocations/CreateAllocationForm';
 import DeleteAllAllocationsButton from './allocations/DeleteAllAllocationsButton';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 
 export default () => {
     const params = useParams<'id'>();
 
     return (
         <>
-            <FlashMessageRender byKey={'admin:nodes:allocations'} />
+            <AlertRenderer filterByKey={'admin:nodes:allocations'} position="top-center" />
             <div css={tw`w-full grid grid-cols-1 lg:grid-cols-12 gap-8`}>
                 <div css={tw`lg:col-span-8`}>
                     <AllocationTable nodeId={Number(params.id)} />

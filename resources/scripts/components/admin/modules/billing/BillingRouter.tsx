@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import { NotFound } from '@/elements/ScreenBlock';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import EnableBilling from '@admin/modules/billing/EnableBilling';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import ProductForm from '@admin/modules/billing/products/ProductForm';
 import CategoryForm from '@admin/modules/billing/products/CategoryForm';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
@@ -46,7 +46,7 @@ export default () => {
 
             <Unfinished untested />
 
-            <FlashMessageRender byKey={'admin:billing'} className={'mb-4'} />
+            <AlertRenderer filterByKey={'admin:billing'} className={'mb-4'} position="top-center" />
 
             <SubNavigation>
                 <SubNavigationLink to={'/admin/billing'} name={'Overview'} base>

@@ -1,5 +1,5 @@
 import { deleteProduct } from '@/api/routes/admin/billing/products';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import Input from '@/elements/Input';
 import { Button } from '@/elements/button';
 import { Dialog } from '@/elements/dialog';
@@ -43,7 +43,7 @@ export default ({ product }: { product: Product }) => {
                 onClose={() => setOpen(false)}
                 title={'Confirm product deletion'}
             >
-                <FlashMessageRender byKey={'admin:billing:products:delete'} className={'mb-2'} />
+                <AlertRenderer filterByKey={'admin:billing:products:delete'} className={'mb-2'} position="top-center" />
                 Are you sure you want to delete this product? All products under this product will also be permenantly
                 deleted. To confirm, please type the product name&nbsp;
                 <span className={'mx-1 rounded bg-zinc-900 p-1 font-mono text-sm'}>({product.name})</span>below:

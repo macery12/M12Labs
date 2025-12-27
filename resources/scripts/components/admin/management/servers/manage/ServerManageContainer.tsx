@@ -1,6 +1,6 @@
 import tw from 'twin.macro';
 import ReinstallServerBox from '@admin/management/servers/manage/ReinstallServerBox';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { useEffect } from 'react';
 import useFlash from '@/plugins/useFlash';
 import ToggleInstallStatusBox from '@admin/management/servers/manage/ToggleInstallStatusBox';
@@ -21,7 +21,11 @@ export default () => {
 
     return (
         <div css={tw`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-2 gap-y-2`}>
-            <FlashMessageRender byKey={'server:manage'} className={'mb-4 md:col-span-2 xl:col-span-3'} />
+            <AlertRenderer
+                filterByKey={'server:manage'}
+                className={'mb-4 md:col-span-2 xl:col-span-3'}
+                position="top-center"
+            />
             <ReinstallServerBox />
             <ToggleInstallStatusBox />
             {server.status === 'suspended' ? <UnsuspendServerBox /> : <SuspendServerBox />}

@@ -2,7 +2,7 @@ import { useContext, useEffect } from 'react';
 import { getRoles, Context as RolesContext, Filters } from '@/api/routes/admin/roles';
 import { AdminContext } from '@/state/admin';
 import NewRoleButton from '@/components/admin/management/roles/NewRoleButton';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
@@ -71,7 +71,7 @@ const RolesContainer = () => {
                 </div>
             </div>
 
-            <FlashMessageRender byKey={'roles'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'roles'} className="mb-4" position="top-center" />
 
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>

@@ -9,7 +9,7 @@ import getNests from '@/api/routes/admin/nests/getNests';
 import { Button } from '@/elements/button';
 import { Size, Variant } from '@/elements/button/types';
 import Field from '@/elements/Field';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import Modal from '@/elements/Modal';
 import useFlash from '@/plugins/useFlash';
 
@@ -62,7 +62,7 @@ export default () => {
                             setVisible(false);
                         }}
                     >
-                        <FlashMessageRender byKey={'nest:create'} css={tw`mb-6`} />
+                        <AlertRenderer filterByKey={'nest:create'} className="mb-6" position="top-center" />
 
                         <h2 css={tw`mb-6 text-2xl text-neutral-100`}>New Nest</h2>
 

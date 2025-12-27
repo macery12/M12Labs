@@ -7,7 +7,7 @@ import { Actions, useStoreActions, useStoreState } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import { modifySubuser } from '@/api/routes/server/subusers';
 import { ServerContext } from '@/state/server';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import Can from '@/elements/Can';
 import { usePermissions } from '@/plugins/usePermissions';
 import { useDeepCompareMemo } from '@/plugins/useDeepCompareMemo';
@@ -115,7 +115,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
                         </Button>
                     </div>
                 </div>
-                <FlashMessageRender byKey={'user:edit'} css={tw`mt-4`} />
+                <AlertRenderer filterByKey={'user:edit'} className="mt-4" position="top-center" />
                 {!isRootAdmin && loggedInPermissions[0] !== '*' && (
                     <div css={tw`mt-4 pl-4 py-2 border-l-4 border-cyan-400`}>
                         <p css={tw`text-sm text-neutral-300`}>

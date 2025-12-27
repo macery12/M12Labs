@@ -3,7 +3,7 @@ import Spinner from '@/elements/Spinner';
 import useFlash from '@/plugins/useFlash';
 import Can from '@/elements/Can';
 import CreateBackupButton from '@server/backups/CreateBackupButton';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import BackupRow from '@server/backups/BackupRow';
 import tw from 'twin.macro';
 import { getBackups, Context } from '@/api/routes/server/backups';
@@ -34,7 +34,7 @@ const BackupContainer = () => {
 
     return (
         <PageContentBlock title={'Backups'} header description={'Keep your data safe with backups.'}>
-            <FlashMessageRender byKey={'backups'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'backups'} className="mb-4" position="top-center" />
             <Pagination data={backups} onPageSelect={setPage}>
                 {({ items }) =>
                     !items.length ? (

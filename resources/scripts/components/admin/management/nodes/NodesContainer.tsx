@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import type { Filters } from '@/api/routes/admin/servers/getServers';
 import getNodes, { Context as NodesContext } from '@/api/routes/admin/nodes/getNodes';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
@@ -75,7 +75,7 @@ const NodesContainer = () => {
                 </div>
             </div>
 
-            <FlashMessageRender byKey={'nodes'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'nodes'} className="mb-4" position="top-center" />
 
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>

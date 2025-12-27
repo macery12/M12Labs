@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import tw from 'twin.macro';
 import ContentContainer from '@/elements/ContentContainer';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 
 export interface PageContentBlockProps {
     children?: ReactNode;
@@ -24,7 +24,7 @@ function PageContentBlock({ title, header, description, showFlashKey, className,
     return (
         <>
             <ContentContainer css={tw`my-4 sm:my-10`} className={className}>
-                {showFlashKey && <FlashMessageRender byKey={showFlashKey} css={tw`mb-4`} />}
+                {showFlashKey && <AlertRenderer filterByKey={showFlashKey} className="mb-4" position="top-center" />}
                 {header && (
                     <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                         {title}

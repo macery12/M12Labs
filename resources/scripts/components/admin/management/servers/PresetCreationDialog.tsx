@@ -7,7 +7,7 @@ import Select from '@/elements/Select';
 import { ServerPreset } from '@/api/definitions/admin';
 import getNodes, { Node } from '@/api/routes/admin/nodes/getNodes';
 import { Alert } from '@/elements/alert';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 
 export default () => {
@@ -45,7 +45,7 @@ export default () => {
     return (
         <>
             <Dialog open={open} onClose={() => setOpen(false)} title="Select preset for server creation">
-                <FlashMessageRender byKey={'admin:servers:create'} className={'mb-2'} />
+                <AlertRenderer filterByKey={'admin:servers:create'} className={'mb-2'} position="top-center" />
                 <div className={'grid gap-4 lg:grid-cols-2'}>
                     <Select onChange={presetSelect} value={selectedPreset?.id ?? ''}>
                         <option value="">Select a server preset...</option>

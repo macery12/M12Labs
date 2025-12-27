@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Product, StripeIntent } from '@definitions/account/billing';
@@ -56,7 +56,7 @@ export default (data: Props) => {
         <form onSubmit={handleSubmit}>
             <PaymentElement />
             <SpinnerOverlay visible={loading} />
-            <FlashMessageRender byKey={'store:order'} className={'mb-4'} />
+            <AlertRenderer filterByKey={'store:order'} className={'mb-4'} position="top-center" />
             <Button
                 disabled={!data.selectedNode || !data.serverName.trim()}
                 className={'mt-4 w-full'}

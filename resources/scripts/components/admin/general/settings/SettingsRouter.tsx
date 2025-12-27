@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import tw from 'twin.macro';
 
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import GeneralSettings from '@admin/general/settings/GeneralSettings';
 import { useStoreState } from '@/state/hooks';
@@ -25,7 +25,7 @@ const SettingsRouter = () => {
                 </div>
             </div>
 
-            <FlashMessageRender byKey={'admin:settings'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'admin:settings'} className="mb-4" position="top-center" />
 
             <SubNavigation>
                 <SubNavigationLink to="/admin/settings" name="Core" base>

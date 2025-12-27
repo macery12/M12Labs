@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Form } from 'formik';
 import styled from 'styled-components';
 import { breakpoint } from '@/assets/theme';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import tw from 'twin.macro';
 
 type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, HTMLFormElement> & {
@@ -44,7 +44,7 @@ export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => 
             <div className={'grid w-full 2xl:grid-cols-2'}>
                 <div className={'w-full lg:mx-auto lg:w-1/2'}>
                     {title && <h2 css={tw`text-3xl text-center text-neutral-100 font-medium py-4`}>{title}</h2>}
-                    <FlashMessageRender css={tw`mb-2 px-1`} />
+                    <AlertRenderer className="mb-2 px-1" position="top-center" />
                     <Form {...props} ref={ref}>
                         <div css={tw`w-full bg-zinc-800/50 shadow-lg rounded-lg p-6 mx-1`}>
                             <div css={tw`flex-1`}>{props.children}</div>

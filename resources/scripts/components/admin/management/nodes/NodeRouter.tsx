@@ -6,7 +6,7 @@ import tw from 'twin.macro';
 
 import type { Node } from '@/api/routes/admin/nodes/getNodes';
 import getNode from '@/api/routes/admin/nodes/getNode';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import NodeEditContainer from '@admin/management/nodes/NodeEditContainer';
 import Spinner from '@/elements/Spinner';
@@ -58,7 +58,7 @@ const NodeRouter = () => {
     if (loading || node === undefined) {
         return (
             <AdminContentBlock>
-                <FlashMessageRender byKey={'admin:nodes'} css={tw`mb-4`} />
+                <AlertRenderer filterByKey={'admin:nodes'} className="mb-4" position="top-center" />
 
                 <div css={tw`w-full flex flex-col items-center justify-center`} style={{ height: '24rem' }}>
                     <Spinner size={'base'} />
@@ -83,7 +83,7 @@ const NodeRouter = () => {
                 </div>
             </div>
 
-            <FlashMessageRender byKey={'admin:nodes'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'admin:nodes'} className="mb-4" position="top-center" />
 
             <SubNavigation>
                 <SubNavigationLink to={`/admin/nodes/${node.id}`} name={'About'} base>

@@ -7,7 +7,7 @@ import { Dialog } from '@/elements/dialog';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { useState } from 'react';
 import { Button } from '@/elements/button';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { TextareaField } from '@/elements/Field';
 import { createMessage } from '@/api/routes/admin/tickets/messages';
 import { CreateTicketMessageValues as Values } from '@/api/routes/admin/tickets/types';
@@ -44,7 +44,7 @@ export default ({ ticketId }: { ticketId: number }) => {
                     <Form>
                         <SpinnerOverlay visible={isSubmitting} />
                         <Dialog title={'New message'} open={open} onClose={() => setOpen(false)}>
-                            <FlashMessageRender byKey={'ticket:message:create'} />
+                            <AlertRenderer filterByKey={'ticket:message:create'} position="top-center" />
                             <TextareaField id={'message'} name={'message'} className={'my-4'} rows={5} />
                             <div className={'text-right'}>
                                 <Button type={'button'} onClick={submitForm} disabled={isSubmitting || !isValid}>

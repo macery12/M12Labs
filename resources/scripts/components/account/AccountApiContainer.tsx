@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faKey, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { getApiKeys, deleteApiKey } from '@/api/routes/account/api-keys';
 import { type ApiKey } from '@definitions/user';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { format } from 'date-fns';
 import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
@@ -47,7 +47,7 @@ export default () => {
             header
             description={'Create, edit and delete API keys to access the Panel.'}
         >
-            <FlashMessageRender byKey={'account'} />
+            <AlertRenderer filterByKey={'account'} position="top-center" />
             <div css={tw`md:flex flex-nowrap my-10`}>
                 <ContentBox title={'Create API Key'} css={tw`flex-none w-full md:w-1/2`}>
                     <CreateApiKeyForm onKeyCreated={key => setKeys(s => [...s!, key])} />

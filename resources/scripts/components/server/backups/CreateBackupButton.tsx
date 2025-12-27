@@ -6,7 +6,7 @@ import Field from '@/elements/Field';
 import FormikFieldWrapper from '@/elements/FormikFieldWrapper';
 import useFlash from '@/plugins/useFlash';
 import { createBackup, getBackups } from '@/api/routes/server/backups';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { Button } from '@/elements/button';
 import tw from 'twin.macro';
 import { Textarea } from '@/elements/Input';
@@ -26,7 +26,7 @@ const ModalContent = ({ ...props }: RequiredModalProps) => {
     return (
         <Modal {...props} showSpinnerOverlay={isSubmitting}>
             <Form>
-                <FlashMessageRender byKey={'backups:create'} css={tw`mb-4`} />
+                <AlertRenderer filterByKey={'backups:create'} className="mb-4" position="top-center" />
                 <h2 css={tw`text-2xl mb-6`}>Create server backup</h2>
                 <Field
                     name={'name'}

@@ -6,7 +6,7 @@ import { faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import { updateSettings } from '@/api/routes/admin/billing';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 
 export default () => {
@@ -64,7 +64,7 @@ export default () => {
 
     return (
         <div>
-            <FlashMessageRender byKey={'admin:billing'} className={'mb-4'} />
+            <AlertRenderer filterByKey={'admin:billing'} className={'mb-4'} position="top-center" />
 
             <div className={'grid gap-4 lg:grid-cols-2'}>
                 <AdminBox title={'Paid Renewal Period (Days)'} icon={faCalendar}>

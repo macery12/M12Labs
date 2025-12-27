@@ -10,7 +10,7 @@ import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import UserAboutContainer from '@admin/management/users/view/AboutContainer';
 import UserServers from '@admin/management/users/view/ServersContainer';
 import Spinner from '@/elements/Spinner';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import type { ApplicationStore } from '@/state';
 import type { User } from '@definitions/admin';
 import { CogIcon, ServerIcon, UserIcon } from '@heroicons/react/outline';
@@ -58,7 +58,7 @@ const UserRouter = () => {
     if (loading || user === undefined) {
         return (
             <AdminContentBlock>
-                <FlashMessageRender byKey={'user'} css={tw`mb-4`} />
+                <AlertRenderer filterByKey={'user'} className="mb-4" position="top-center" />
 
                 <div css={tw`w-full flex flex-col items-center justify-center`} style={{ height: '24rem' }}>
                     <Spinner size={'base'} />
@@ -87,7 +87,7 @@ const UserRouter = () => {
                 </div>
             </div>
 
-            <FlashMessageRender byKey={'user'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'user'} className="mb-4" position="top-center" />
 
             <SubNavigation>
                 <SubNavigationLink to={`/admin/users/${params.id}`} name={'About'} base>

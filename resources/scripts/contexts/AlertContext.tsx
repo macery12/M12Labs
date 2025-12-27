@@ -49,7 +49,7 @@ interface AlertProviderProps {
 export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [initialized, setInitialized] = useState(false);
-    
+
     // Timer reference for auto-dismiss functionality
     const timersRef = useRef<Record<string, NodeJS.Timeout>>({});
 

@@ -11,7 +11,7 @@ import { Input } from '@/elements/inputs';
 import CopyOnClick from '@/elements/CopyOnClick';
 import Tooltip from '@/elements/tooltip/Tooltip';
 import { enableTwoFactor } from '@/api/routes/account/two-factor';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { Actions, useStoreActions } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import asDialog from '@/hoc/asDialog';
@@ -61,7 +61,7 @@ const ConfigureTwoFactorForm = ({ onTokens }: Props) => {
 
     return (
         <form id={'enable-totp-form'} onSubmit={submit}>
-            <FlashMessageRender byKey={'account:two-step'} className={'mt-4'} />
+            <AlertRenderer filterByKey={'account:two-step'} className={'mt-4'} position="top-center" />
             <div className={'mx-auto mt-6 flex h-56 w-56 items-center justify-center bg-slate-50 p-2 shadow'}>
                 {!token ? (
                     <Spinner />

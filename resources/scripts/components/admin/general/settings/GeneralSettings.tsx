@@ -9,7 +9,7 @@ import { useStoreActions, useStoreState } from '@/state/hooks';
 import { faPaintBrush, faPlusCircle, faRecycle, faShapes, faImage, faEye } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import { useEffect } from 'react';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import Label from '@/elements/Label';
 
 export default () => {
@@ -62,7 +62,7 @@ export default () => {
             }}
         >
             <Form>
-                <FlashMessageRender byKey={'settings:general'} className={'mb-2'} />
+                <AlertRenderer filterByKey={'settings:general'} className={'mb-2'} position="top-center" />
                 <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
                     <AdminBox title={'Application Name'} icon={faPaintBrush}>
                         <Field id={'name'} name={'name'} type={'text'} description={''} />

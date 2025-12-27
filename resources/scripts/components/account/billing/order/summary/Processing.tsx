@@ -3,7 +3,7 @@ import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { useEffect } from 'react';
 import useFlash from '@/plugins/useFlash';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import Spinner from '@/elements/Spinner';
 import { processPaidOrder } from '@/api/routes/account/billing/orders/process';
 
@@ -53,7 +53,7 @@ export default () => {
                     className={'relative w-full rounded-lg p-12 text-center shadow-lg sm:w-3/4 md:w-1/2'}
                     style={{ backgroundColor: colors.secondary }}
                 >
-                    <FlashMessageRender byKey={'billing:process'} className={'mb-6'} />
+                    <AlertRenderer filterByKey={'billing:process'} className={'mb-6'} position="top-center" />
                     <h2 className={'text-4xl font-bold text-white'}>
                         Processing Order <Spinner centered />
                     </h2>

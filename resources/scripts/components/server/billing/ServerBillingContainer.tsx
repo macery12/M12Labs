@@ -24,7 +24,7 @@ import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import CouponInput from '@/components/account/billing/order/CouponInput';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
@@ -128,7 +128,7 @@ export default () => {
             header
             description={'Manage your server subscription, renewal, and billing settings.'}
         >
-            <FlashMessageRender byKey={'server:billing'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'server:billing'} className="mb-4" position="top-center" />
             {!product && !loading && (
                 <Alert type={'warning'} className={'mb-6'}>
                     The product package you purchased initially no longer exists, so some details may not be shown.
@@ -308,7 +308,7 @@ export default () => {
                                         onCouponApplied={handleCouponApplied}
                                         orderType="ren"
                                     />
-                                    <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
+                                    <AlertRenderer filterByKey={'coupon'} className="mt-2" position="top-center" />
 
                                     <div css={tw`mt-4`}>
                                         {couponData?.total === 0 ? (

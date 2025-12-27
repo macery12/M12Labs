@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import ContentBox from '@/elements/ContentBox';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
 import GreyRowBox from '@/elements/GreyRowBox';
@@ -28,7 +28,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'SSH Keys'} header description={'Create, use and delete SSH keys to access servers.'}>
-            <FlashMessageRender byKey={'account'} />
+            <AlertRenderer filterByKey={'account'} position="top-center" />
             <div css={tw`md:flex flex-nowrap my-10`}>
                 <ContentBox title={'Add SSH Key'} css={tw`flex-none w-full md:w-1/2`}>
                     <CreateSSHKeyForm />

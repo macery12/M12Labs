@@ -17,7 +17,7 @@ import AdminTable, {
 } from '@/elements/AdminTable';
 import CopyOnClick from '@/elements/CopyOnClick';
 import NewNestButton from '@admin/service/nests/NewNestButton';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 
@@ -66,7 +66,7 @@ const NestsContainer = () => {
                 </div>
             </div>
 
-            <FlashMessageRender byKey={'nests'} css={tw`mb-4`} />
+            <AlertRenderer filterByKey={'nests'} className="mb-4" position="top-center" />
 
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>

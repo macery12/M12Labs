@@ -8,7 +8,7 @@ import { useStoreActions, useStoreState } from '@/state/hooks';
 import { faEye, faList, faPaintBrush } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import { useEffect, useState } from 'react';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { AlertType } from '@/state/everest';
@@ -58,7 +58,7 @@ export default () => {
             }}
         >
             <Form>
-                <FlashMessageRender byKey={'settings:alert'} className={'mb-2'} />
+                <AlertRenderer filterByKey={'settings:alert'} className={'mb-2'} position="top-center" />
                 <div css={tw`grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-6`}>
                     <AdminBox title={'Alert Status'} icon={faEye}>
                         <div>

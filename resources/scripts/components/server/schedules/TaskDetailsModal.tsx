@@ -5,7 +5,7 @@ import { ServerContext } from '@/state/server';
 import { modifyTask } from '@/api/routes/server/tasks';
 import { httpErrorToHuman } from '@/api/http';
 import Field from '@/elements/Field';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { boolean, number, object, string } from 'yup';
 import useFlash from '@/plugins/useFlash';
 import FormikFieldWrapper from '@/elements/FormikFieldWrapper';
@@ -118,7 +118,7 @@ const TaskDetailsModal = ({ schedule, task }: Props) => {
         >
             {({ isSubmitting, values }) => (
                 <Form css={tw`m-0`}>
-                    <FlashMessageRender byKey={'schedule:task'} css={tw`mb-4`} />
+                    <AlertRenderer filterByKey={'schedule:task'} className="mb-4" position="top-center" />
                     <h2 css={tw`text-2xl mb-6`}>{task ? 'Edit Task' : 'Create Task'}</h2>
                     <div css={tw`flex`}>
                         <div css={tw`mr-2 w-1/3`}>

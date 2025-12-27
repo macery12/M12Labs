@@ -1,6 +1,6 @@
 import Pill, { PillStatus } from '@/elements/Pill';
 import PageContentBlock from '@/elements/PageContentBlock';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { useContext, useEffect } from 'react';
 import useFlash from '@/plugins/useFlash';
 import AdminTable, {
@@ -88,7 +88,7 @@ function OrderTable() {
                 <p className={'mt-1 text-sm font-normal text-gray-400'}>
                     View and manage the active and previous subscriptions you&apos;ve created.
                 </p>
-                <FlashMessageRender byKey={'billing:orders'} className={'mt-4'} />
+                <AlertRenderer filterByKey={'billing:orders'} className={'mt-4'} position="top-center" />
             </div>
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>

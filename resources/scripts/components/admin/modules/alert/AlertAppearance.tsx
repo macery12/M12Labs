@@ -2,14 +2,14 @@ import { Alert } from '@/elements/alert';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import { faCircle, faDesktop, faList } from '@fortawesome/free-solid-svg-icons';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ReactNode, useState } from 'react';
 import classNames from 'classnames';
 import { updateAlertSettings } from '@/api/routes/admin/alerts';
 import { AlertPosition } from '@/state/everest';
-import useFlash from '@/plugins/useFlash';
-import MessageBox, { FlashMessageType } from '@/elements/MessageBox';
+import { useAlerts } from '@/contexts/AlertContext';
+import AlertComponent from '@/components/AlertComponent';
 import useStatus from '@/plugins/useStatus';
 import { Dialog } from '@/elements/dialog';
 import { capitalize } from '@/lib/strings';
@@ -37,7 +37,7 @@ const DemoBox = ({ children, selected }: { children: ReactNode; selected: boolea
 
 export default () => {
     const { status, setStatus } = useStatus();
-    const { clearAndAddHttpError } = useFlash();
+    const { error: showError, clearAlerts } = useAlerts();
     const [open, setOpen] = useState<boolean>(false);
 
     const { alert } = useStoreState(state => state.everest.data!);
@@ -53,8 +53,11 @@ export default () => {
 
                 setStatus('success');
             })
-            .catch(error => {
-                clearAndAddHttpError({ key: 'alerts:view', error });
+            .catch(err => {
+                showError(err.message || 'Failed to update alert settings', {
+                    key: 'alerts:view',
+                    title: 'Update Error',
+                });
                 setStatus('error');
             });
     };
@@ -70,7 +73,7 @@ export default () => {
             >
                 {alert.content}
             </Dialog.Confirm>
-            <FlashMessageRender byKey={'alerts:view'} className={'mb-2'} />
+            <AlertRenderer filterByKey={'alerts:view'} className={'mb-2'} position="top-center" />
             <AdminBox title={'Preview'} icon={faDesktop}>
                 {alert.enabled && alert.position === 'top-center' ? (
                     <Alert type={alert.type}>{alert.content}</Alert>
@@ -80,7 +83,13 @@ export default () => {
                             Alert is being displayed in the bottom-right mode.
                         </p>
                         <div className={'fixed bottom-2 right-2 z-50 m-4'}>
-                            <MessageBox type={alert.type as FlashMessageType}>{alert.content}</MessageBox>
+                            <AlertComponent
+                                alert={{
+                                    id: 'preview',
+                                    type: alert.type as 'success' | 'error' | 'info' | 'warning',
+                                    message: alert.content,
+                                }}
+                            />
                         </div>
                     </>
                 ) : alert.position === 'bottom-left' ? (
@@ -89,7 +98,13 @@ export default () => {
                             Alert is being displayed in the bottom-left mode.
                         </p>
                         <div className={'fixed bottom-2 left-64 z-50 m-4'}>
-                            <MessageBox type={alert.type as FlashMessageType}>{alert.content}</MessageBox>
+                            <AlertComponent
+                                alert={{
+                                    id: 'preview',
+                                    type: alert.type as 'success' | 'error' | 'info' | 'warning',
+                                    message: alert.content,
+                                }}
+                            />
                         </div>
                     </>
                 ) : alert.position === 'center' ? (

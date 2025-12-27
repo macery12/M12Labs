@@ -3,7 +3,7 @@ import { useState } from 'react';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 import { getRoles, createRole } from '@/api/routes/admin/roles';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { Button } from '@/elements/button';
 import Field from '@/elements/Field';
 import useFlash from '@/plugins/useFlash';
@@ -59,7 +59,7 @@ export default () => {
                         }}
                     >
                         <SpinnerOverlay visible={isSubmitting} />
-                        <FlashMessageRender byKey={'role:create'} css={tw`mb-6`} />
+                        <AlertRenderer filterByKey={'role:create'} className="mb-6" position="top-center" />
                         <h2 css={tw`mb-6 text-2xl text-neutral-100`}>New Role</h2>
                         <Form css={tw`m-0`}>
                             <Field

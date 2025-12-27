@@ -5,7 +5,7 @@ import Input from '@/elements/Input';
 import AdminBox from '@/elements/AdminBox';
 import Spinner from '@/elements/Spinner';
 import { CheckCircleIcon, TrashIcon } from '@heroicons/react/outline';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { Dialog } from '@/elements/dialog';
 import { faDoorOpen } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
@@ -49,7 +49,7 @@ export default () => {
 
     return (
         <AdminBox title={'Onboarding'} icon={faDoorOpen}>
-            <FlashMessageRender byKey={'auth:modules:onboarding'} className={'my-2'} />
+            <AlertRenderer filterByKey={'auth:modules:onboarding'} className={'my-2'} position="top-center" />
             {loading && <Spinner className={'absolute top-0 right-8 m-3.5'} size={'small'} />}
             {success && <CheckCircleIcon className={'absolute top-0 right-8 m-3.5 h-5 w-5 text-green-500'} />}
             <Dialog.Confirm

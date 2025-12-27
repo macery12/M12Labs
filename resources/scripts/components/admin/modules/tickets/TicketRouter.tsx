@@ -8,7 +8,7 @@ import ViewTicketContainer from '@admin/modules/tickets/view/ViewTicketContainer
 import EnableTicketsContainer from './EnableTicketsContainer';
 import { CogIcon, TicketIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import TicketOptionsContainer from './TicketOptionsContainer';
 
 export default () => {
@@ -22,7 +22,7 @@ export default () => {
 
     return (
         <>
-            <FlashMessageRender byKey={'admin:tickets'} className={'mb-4'} />
+            <AlertRenderer filterByKey={'admin:tickets'} className={'mb-4'} position="top-center" />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Ticket Dashboard</h2>

@@ -11,7 +11,7 @@ import { getProduct } from '@/api/routes/account/billing/products';
 import { getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
 import { Alert } from '@/elements/alert';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 import tw from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
@@ -173,7 +173,7 @@ export default () => {
                 onConfirmed={handleChangeEgg}
                 buttonType={'danger'}
             >
-                <FlashMessageRender byKey={'server:billing:egg'} css={tw`mb-3`} />
+                <AlertRenderer filterByKey={'server:billing:egg'} className="mb-3" position="top-center" />
                 <p css={tw`text-sm mb-3`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
                     <strong>{selectedEgg?.name}</strong>.

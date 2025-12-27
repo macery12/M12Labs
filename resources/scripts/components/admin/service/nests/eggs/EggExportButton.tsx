@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
 import { exportEgg } from '@/api/routes/admin/egg';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { Button } from '@/elements/button';
 import { Variant } from '@/elements/button/types';
 import { Editor } from '@/elements/editor';
@@ -46,7 +46,7 @@ export default ({ className }: { className?: string }) => {
             >
                 <SpinnerOverlay visible={loading} />
                 <h2 css={tw`mb-6 text-2xl text-neutral-100`}>Export Egg</h2>
-                <FlashMessageRender byKey={'egg:export'} css={tw`mb-6`} />
+                <AlertRenderer filterByKey={'egg:export'} className="mb-6" position="top-center" />
 
                 <Editor
                     childClassName={tw`h-[32rem] rounded`}

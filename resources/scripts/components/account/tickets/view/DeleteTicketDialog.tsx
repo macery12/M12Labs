@@ -5,7 +5,7 @@ import type { ApplicationStore } from '@/state';
 import { Dialog } from '@/elements/dialog';
 import { useState } from 'react';
 import { Button } from '@/elements/button';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import { deleteTicket, useTicketFromRoute } from '@/api/routes/account/tickets';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
@@ -43,7 +43,7 @@ export default () => {
                 onClose={() => setOpen(false)}
                 title={'Confirm ticket deletion'}
             >
-                <FlashMessageRender byKey={'account:tickets:view'} />
+                <AlertRenderer filterByKey={'account:tickets:view'} position="top-center" />
                 Are you sure you want to delete this ticket and the associated messages?
             </Dialog.Confirm>
         </>

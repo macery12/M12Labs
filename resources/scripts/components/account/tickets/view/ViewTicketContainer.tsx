@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useFlashKey } from '@/plugins/useFlash';
 import ContentBox from '@/elements/ContentBox';
 import { useTicketFromRoute } from '@/api/routes/account/tickets';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import AlertRenderer from '@/components/AlertRenderer';
 import PageContentBlock from '@/elements/PageContentBlock';
 import AddTicketMessageForm from '@account/tickets/view/AddTicketMessageForm';
 import Spinner from '@/elements/Spinner';
@@ -35,7 +35,7 @@ export default () => {
 
     return (
         <PageContentBlock title={`View Ticket`}>
-            <FlashMessageRender byKey={'account:tickets'} />
+            <AlertRenderer filterByKey={'account:tickets'} position="top-center" />
             {isLoading || !ticket ? (
                 <Spinner size={'large'} centered />
             ) : (
