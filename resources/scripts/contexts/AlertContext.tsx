@@ -53,9 +53,17 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     // Load backend flash messages on mount
     useEffect(() => {
         if (!initialized && typeof window !== 'undefined') {
-            const flashMessages = (window as any).FlashMessages;
+            interface WindowWithFlashMessages extends Window {
+                FlashMessages?: Array<{
+                    type: 'success' | 'error' | 'info' | 'warning';
+                    message: string;
+                    title?: string;
+                }>;
+            }
+
+            const flashMessages = (window as WindowWithFlashMessages).FlashMessages;
             if (flashMessages && Array.isArray(flashMessages)) {
-                flashMessages.forEach((flash: any) => {
+                flashMessages.forEach(flash => {
                     const id = nanoid();
                     const newAlert: Alert = {
                         id,
@@ -68,7 +76,7 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
                     setAlerts(prev => [...prev, newAlert]);
                 });
                 // Clear flash messages from window to prevent re-adding on re-render
-                delete (window as any).FlashMessages;
+                delete (window as WindowWithFlashMessages).FlashMessages;
             }
             setInitialized(true);
         }

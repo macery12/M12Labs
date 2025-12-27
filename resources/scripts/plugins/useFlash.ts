@@ -1,5 +1,5 @@
 import { Actions, useStoreActions } from 'easy-peasy';
-import { FlashStore } from '@/state/flashes';
+import { FlashStore, FlashMessage } from '@/state/flashes';
 import { ApplicationStore } from '@/state';
 import { useAlerts } from '@/contexts/AlertContext';
 
@@ -18,7 +18,7 @@ const useFlash = (): Actions<FlashStore> => {
     const originalAddFlash = flashActions.addFlash;
 
     // Override addFlash to also add to AlertManager
-    const bridgedAddFlash = (flash: any) => {
+    const bridgedAddFlash = (flash: FlashMessage) => {
         originalAddFlash(flash);
 
         // Also add to new Alert Manager
@@ -39,7 +39,7 @@ const useFlash = (): Actions<FlashStore> => {
 
     return {
         ...flashActions,
-        addFlash: bridgedAddFlash as any,
+        addFlash: bridgedAddFlash,
     };
 };
 
