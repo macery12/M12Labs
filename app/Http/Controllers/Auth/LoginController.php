@@ -114,4 +114,23 @@ class LoginController extends AbstractLoginController
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }
+
+    /**
+     * Check if a username is available.
+     */
+    public function checkUsername(Request $request): JsonResponse
+    {
+        $username = $request->input('username');
+
+        if (!$username) {
+            return response()->json(['available' => false, 'message' => 'Username is required'], 400);
+        }
+
+        $exists = User::where('username', $username)->exists();
+
+        return response()->json([
+            'available' => !$exists,
+            'message' => $exists ? 'This username is already taken' : 'Username is available',
+        ]);
+    }
 }

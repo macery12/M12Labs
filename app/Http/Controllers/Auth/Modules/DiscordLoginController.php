@@ -2,10 +2,14 @@
 
 namespace Everest\Http\Controllers\Auth\Modules;
 
+use Carbon\Carbon;
 use Everest\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
+use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserCreationService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
@@ -43,6 +47,133 @@ class DiscordLoginController extends AbstractLoginController
     }
 
     /**
+     * Show the Discord registration form with pre-filled data from session.
+     */
+    public function showRegistrationForm(Request $request)
+    {
+        $discordData = $request->session()->get('discord_registration_data');
+
+        if (!$discordData) {
+            return redirect()->route('auth.login')->with('error', 'Discord registration data not found. Please try again.');
+        }
+
+        // Return to the React frontend which will handle the form
+        return redirect('/auth/discord/register');
+    }
+
+    /**
+     * Complete the Discord registration with user-provided details.
+     *
+     * @throws \Everest\Exceptions\DisplayException
+     */
+    public function completeRegistration(Request $request): JsonResponse
+    {
+        $discordData = $request->session()->get('discord_registration_data');
+
+        if (!$discordData) {
+            throw new DisplayException('Discord registration data not found. Please try again.');
+        }
+
+        // Check if Discord SSO is enabled
+        if (!config('modules.auth.discord.enabled', false)) {
+            throw new DisplayException('Discord authentication is currently disabled.');
+        }
+
+        $username = $request->input('username');
+        $password = $request->input('password');
+        $passwordConfirm = $request->input('confirm_password');
+        $useDiscordOnly = $request->input('use_discord_only', false);
+
+        if (!$username) {
+            throw new DisplayException('Username is required.');
+        }
+
+        // Validate password fields only if user wants to set a password
+        if (!$useDiscordOnly) {
+            if (!$password || !$passwordConfirm) {
+                throw new DisplayException('Password and password confirmation are required when not using Discord-only login.');
+            }
+
+            if ($password !== $passwordConfirm) {
+                throw new DisplayException('The passwords entered do not match.');
+            }
+        }
+
+        if (User::where('username', $username)->exists()) {
+            throw new DisplayException('This username is already in use.');
+        }
+
+        // Create the user with Discord data (bypassing regular registration check)
+        $userData = [
+            'username' => $username,
+            'email' => $discordData['discord_email'],
+            'external_id' => $discordData['discord_id'],
+        ];
+
+        // Only add password if user chose to set one
+        if (!$useDiscordOnly && $password) {
+            $userData['password'] = $password;
+        }
+
+        // Create user directly via UserCreationService, bypassing registration.enabled check
+        $user = $this->creationService->handle($userData);
+
+        // Apply jguard delay if configured
+        $delay = (int) config('modules.auth.jguard.delay') ?? 0;
+        $guard = config('modules.auth.jguard.enabled') ?? false;
+
+        if ($guard || $delay > 0) {
+            DB::table('jguard_delay')->insert([
+                'user_id' => $user->id,
+                'expires_at' => Carbon::now()->add($delay, 'minute'),
+            ]);
+        }
+
+        // Clear the session data
+        $request->session()->forget('discord_registration_data');
+
+        // Log the user in
+        return $this->sendLoginResponse($user, $request);
+    }
+
+    /**
+     * Get Discord registration data from session.
+     */
+    public function getRegistrationData(Request $request): JsonResponse
+    {
+        $discordData = $request->session()->get('discord_registration_data');
+
+        if (!$discordData) {
+            return response()->json(['error' => 'No Discord registration data found'], 404);
+        }
+
+        return response()->json([
+            'discord_username' => $discordData['discord_username'],
+            'discord_email' => $discordData['discord_email'],
+            'discord_id' => $discordData['discord_id'],
+        ]);
+    }
+
+    /**
+     * Check if a username is available.
+     */
+    public function checkUsername(Request $request): JsonResponse
+    {
+        $username = $request->input('username');
+
+        if (!$username) {
+            return response()->json(['available' => false, 'message' => 'Username is required'], 400);
+        }
+
+        $exists = User::where('username', $username)->exists();
+
+        return response()->json([
+            'available' => !$exists,
+            'message' => $exists ? 'This username is already taken' : 'Username is available',
+        ]);
+    }
+
+    /**
      * Authenticate with the Discord OAuth2 service.
      */
     public function authenticate(Request $request): RedirectResponse
@@ -57,27 +188,48 @@ class DiscordLoginController extends AbstractLoginController
 
         $response = json_decode($response);
 
+        if (!isset($response->access_token)) {
+            return redirect()->route('auth.login')->with('error', 'Failed to authenticate with Discord.');
+        }
+
         $account = Http::withHeaders([
             'Authorization' => 'Bearer ' . $response->access_token,
         ])->asForm()->get('https://discord.com/api/users/@me')->body();
 
         $account = json_decode($account);
 
-        if (User::where('email', $account->email)->exists()) {
-            $user = User::where('email', $account->email)->first();
-
-            $this->sendLoginResponse($user, $request);
-
-            return redirect('/');
-        } else {
-            $user = $this->createAccount(['email' => $account->email, 'username' => 'null_user_' . $this->randStr(16)]);
-
-            $this->sendLoginResponse($user, $request);
-
-            return redirect('/account/setup');
+        if (!isset($account->id)) {
+            return redirect()->route('auth.login')->with('error', 'Failed to retrieve Discord account information.');
         }
 
-        return redirect()->route('auth.login');
+        // Check if user exists with this Discord ID (external_id)
+        $user = User::where('external_id', $account->id)->first();
+
+        if ($user) {
+            // User exists with this Discord ID, log them in
+            $this->sendLoginResponse($user, $request);
+            return redirect('/');
+        }
+
+        // Check if user exists with the same email
+        $existingEmailUser = User::where('email', $account->email)->first();
+
+        if ($existingEmailUser) {
+            // Email exists but not linked to Discord
+            // For security, we don't auto-link - user should manually link in account settings
+            return redirect()->route('auth.login')->with('error', 
+                'An account with this email already exists. Please login with your password to link your Discord account.');
+        }
+
+        // New user - store Discord data in session and redirect to registration
+        $request->session()->put('discord_registration_data', [
+            'discord_id' => $account->id,
+            'discord_username' => $account->username,
+            'discord_email' => $account->email,
+            'discord_avatar' => $account->avatar ?? null,
+        ]);
+
+        return redirect('/auth/discord/register');
     }
 
     /**
