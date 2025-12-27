@@ -44,6 +44,7 @@ function DiscordRegistrationContainer() {
                 clearAndAddHttpError({ error });
                 // Redirect back to login if no Discord data found
                 setTimeout(() => navigate('/auth/login'), 2000);
+                setLoading(false);
             });
     }, []);
 
@@ -66,23 +67,24 @@ function DiscordRegistrationContainer() {
             });
     };
 
-    if (loading) {
+    if (loading || !discordData) {
         return (
-            <LoginFormContainer title={'Complete Your Registration'}>
-                <div css={tw`text-center py-8`}>
-                    <p css={tw`text-gray-400`}>Loading Discord information...</p>
+            <div className={'grid w-full 2xl:grid-cols-2'}>
+                <div className={'w-full lg:mx-auto lg:w-1/2'}>
+                    <h2 css={tw`text-3xl text-center text-neutral-100 font-medium py-4`}>
+                        {loading ? 'Complete Your Registration' : 'Error'}
+                    </h2>
+                    <div css={tw`w-full bg-zinc-800/50 shadow-lg rounded-lg p-6 mx-1`}>
+                        <div css={tw`text-center py-8`}>
+                            {loading ? (
+                                <p css={tw`text-gray-400`}>Loading Discord information...</p>
+                            ) : (
+                                <p css={tw`text-red-400`}>Discord registration data not found. Redirecting...</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
-            </LoginFormContainer>
-        );
-    }
-
-    if (!discordData) {
-        return (
-            <LoginFormContainer title={'Error'}>
-                <div css={tw`text-center py-8`}>
-                    <p css={tw`text-red-400`}>Discord registration data not found. Redirecting...</p>
-                </div>
-            </LoginFormContainer>
+            </div>
         );
     }
 
