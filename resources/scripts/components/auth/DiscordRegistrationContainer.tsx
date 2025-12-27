@@ -18,7 +18,7 @@ interface Values {
     username: string;
     password: string;
     confirm_password: string;
-    use_discord_only: boolean;
+    set_password: boolean;
 }
 
 function DiscordRegistrationContainer() {
@@ -55,7 +55,7 @@ function DiscordRegistrationContainer() {
             username: values.username,
             password: values.password,
             confirm_password: values.confirm_password,
-            use_discord_only: values.use_discord_only,
+            use_discord_only: !values.set_password,
         })
             .then(() => {
                 window.location.href = '/';
@@ -95,17 +95,17 @@ function DiscordRegistrationContainer() {
                 username: discordData.discord_username || '',
                 password: '',
                 confirm_password: '',
-                use_discord_only: false,
+                set_password: false,
             }}
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
-                password: string().when('use_discord_only', {
-                    is: false,
+                password: string().when('set_password', {
+                    is: true,
                     then: schema => schema.required('Please enter your account password.'),
                     otherwise: schema => schema.notRequired(),
                 }),
-                confirm_password: string().when('use_discord_only', {
-                    is: false,
+                confirm_password: string().when('set_password', {
+                    is: true,
                     then: schema => schema.required('Please enter the password confirmation.'),
                     otherwise: schema => schema.notRequired(),
                 }),
@@ -138,24 +138,23 @@ function DiscordRegistrationContainer() {
 
                     <div css={tw`mt-6`}>
                         <Checkbox
-                            name={'use_discord_only'}
-                            label={'Use Discord SSO only (no password)'}
-                            description={'You will only be able to login using Discord. This is more secure but requires Discord to be available.'}
+                            name={'set_password'}
+                            label={'Set a password (optional)'}
+                            description={'Enable traditional username/password login in addition to Discord SSO'}
                             disabled={isSubmitting}
                         />
                     </div>
 
-                    {!values.use_discord_only && (
+                    {values.set_password && (
                         <>
                             <div css={tw`mt-6`}>
                                 <Field
                                     type={'password'}
-                                    label={'Password (Optional with Discord)'}
+                                    label={'Password'}
                                     icon={faKey}
                                     name={'password'}
                                     placeholder={'••••••••••••'}
                                     disabled={isSubmitting}
-                                    description={'Set a password to enable traditional login in addition to Discord SSO'}
                                 />
                             </div>
                             <div css={tw`mt-6`}>
