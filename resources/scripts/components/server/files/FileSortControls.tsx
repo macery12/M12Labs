@@ -6,12 +6,13 @@ import { faSortAmountDown, faSortAmountUp } from '@fortawesome/free-solid-svg-ic
 import type { SortField } from '@/state/server/files';
 import { Button } from '@/elements/button/index';
 import { useStoreState } from '@/state/hooks';
+import Tooltip from '@/elements/tooltip/Tooltip';
 
-const sortOptions: Array<{ value: SortField; label: string }> = [
-    { value: 'name', label: 'Name' },
-    { value: 'modified', label: 'Modified' },
-    { value: 'size', label: 'Size' },
-    { value: 'type', label: 'Type' },
+const sortOptions: Array<{ value: SortField; label: string; tooltip: string }> = [
+    { value: 'name', label: 'Name', tooltip: 'Sort by file/folder name' },
+    { value: 'modified', label: 'Modified', tooltip: 'Sort by last modified date' },
+    { value: 'size', label: 'Size', tooltip: 'Sort by file size' },
+    { value: 'type', label: 'Type', tooltip: 'Sort by file type/extension' },
 ];
 
 const FileSortControls = () => {
@@ -37,27 +38,28 @@ const FileSortControls = () => {
             <span css={tw`text-sm text-neutral-400 font-medium`}>Sort by:</span>
             <div css={tw`flex flex-wrap gap-2`}>
                 {sortOptions.map(option => (
-                    <Button
-                        key={option.value}
-                        size={Button.Sizes.Small}
-                        variant={sortField === option.value ? Button.Variants.Primary : Button.Variants.Secondary}
-                        onClick={() => handleSortFieldChange(option.value)}
-                        css={tw`px-3 py-1.5 text-xs transition-all duration-150`}
-                        style={
-                            sortField === option.value
-                                ? { backgroundColor: colors.primary }
-                                : { backgroundColor: colors.secondary }
-                        }
-                    >
-                        {option.label}
-                        {sortField === option.value && (
-                            <FontAwesomeIcon
-                                icon={sortDirection === 'asc' ? faSortAmountUp : faSortAmountDown}
-                                css={tw`ml-1.5`}
-                                size="xs"
-                            />
-                        )}
-                    </Button>
+                    <Tooltip key={option.value} content={option.tooltip} placement="top">
+                        <Button
+                            size={Button.Sizes.Small}
+                            variant={sortField === option.value ? Button.Variants.Primary : Button.Variants.Secondary}
+                            onClick={() => handleSortFieldChange(option.value)}
+                            css={tw`px-3 py-1.5 text-xs transition-all duration-150`}
+                            style={
+                                sortField === option.value
+                                    ? { backgroundColor: colors.primary }
+                                    : { backgroundColor: colors.secondary }
+                            }
+                        >
+                            {option.label}
+                            {sortField === option.value && (
+                                <FontAwesomeIcon
+                                    icon={sortDirection === 'asc' ? faSortAmountUp : faSortAmountDown}
+                                    css={tw`ml-1.5`}
+                                    size="xs"
+                                />
+                            )}
+                        </Button>
+                    </Tooltip>
                 ))}
             </div>
         </div>
