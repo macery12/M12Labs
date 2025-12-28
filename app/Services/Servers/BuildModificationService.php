@@ -46,7 +46,19 @@ class BuildModificationService
 
             // If any of these values are passed through in the data array go ahead and set
             // them correctly on the server model.
-            $merge = Arr::only($data, ['oom_killer', 'memory', 'swap', 'io', 'cpu', 'threads', 'disk', 'allocation_id', 'renewal_date', 'billing_product_id', 'allow_plan_changes']);
+            $merge = Arr::only($data, ['oom_killer', 'memory', 'swap', 'io', 'cpu', 'threads', 'disk', 'allocation_id']);
+            
+            // Only include billing fields if they are actually present in the data
+            // to avoid overwriting with null values
+            if (array_key_exists('renewal_date', $data)) {
+                $merge['renewal_date'] = $data['renewal_date'];
+            }
+            if (array_key_exists('billing_product_id', $data)) {
+                $merge['billing_product_id'] = $data['billing_product_id'];
+            }
+            if (array_key_exists('allow_plan_changes', $data)) {
+                $merge['allow_plan_changes'] = $data['allow_plan_changes'];
+            }
 
             $server->forceFill(array_merge($merge, [
                 'allocation_limit' => Arr::get($data, 'allocation_limit', 0) ?? null,
