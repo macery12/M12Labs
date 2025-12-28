@@ -24,6 +24,7 @@ export default () => {
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
+    const { colors } = useStoreState(s => s.theme.data!);
     const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
 
@@ -107,7 +108,8 @@ export default () => {
                         {plans.map(plan => (
                             <div key={plan.id} css={tw`relative`}>
                                 <div
-                                    css={tw`flex items-center justify-between p-3 rounded bg-gray-600 hover:bg-gray-550 transition-colors border border-transparent hover:border-gray-500`}
+                                    css={tw`flex items-center justify-between p-3 rounded transition-colors border border-transparent hover:border-gray-500`}
+                                    style={{ backgroundColor: colors.secondary }}
                                 >
                                     <div css={tw`flex-1 min-w-0 mr-4`}>
                                         <div css={tw`flex items-baseline gap-2 mb-1`}>
@@ -118,28 +120,14 @@ export default () => {
                                             </span>
                                         </div>
                                         <div css={tw`flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400`}>
-                                            <span>
-                                                {plan.limits.cpu}% CPU
-                                            </span>
-                                            <span>
-                                                {plan.limits.memory} MB RAM
-                                            </span>
-                                            <span>
-                                                {plan.limits.disk} MB Disk
-                                            </span>
-                                            <span>
-                                                {plan.limits.database} DB
-                                            </span>
-                                            <span>
-                                                {plan.limits.backup} Backups
-                                            </span>
+                                            <span>{plan.limits.cpu}% CPU</span>
+                                            <span>{plan.limits.memory} MB RAM</span>
+                                            <span>{plan.limits.disk} MB Disk</span>
+                                            <span>{plan.limits.database} DB</span>
+                                            <span>{plan.limits.backup} Backups</span>
                                         </div>
                                     </div>
-                                    <Button
-                                        onClick={() => handlePlanSelect(plan)}
-                                        disabled={changing}
-                                        size="sm"
-                                    >
+                                    <Button onClick={() => handlePlanSelect(plan)} disabled={changing} size="sm">
                                         Select
                                     </Button>
                                 </div>
