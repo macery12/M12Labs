@@ -67,7 +67,8 @@ export default () => {
 
         try {
             await changePlan(serverUuid, selectedPlan.id);
-            // Reload the page to reflect the new plan
+            // Reload the page to reflect the new plan and resource limits
+            // This ensures the server context and all components are refreshed
             window.location.reload();
         } catch (error) {
             clearAndAddHttpError({ key: 'server:billing:plan-change', error });

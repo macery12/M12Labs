@@ -9,6 +9,8 @@ use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Repositories\Wings\DaemonServerRepository;
+use Everest\Exceptions\Http\Connection\DaemonConnectionException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Centralized validation service for billing operations.
@@ -20,6 +22,8 @@ class BillingValidationService
 {
     /**
      * BillingValidationService constructor.
+     * 
+     * @param DaemonServerRepository $daemonRepository Repository for interacting with Wings daemon
      */
     public function __construct(private DaemonServerRepository $daemonRepository)
     {
@@ -166,8 +170,13 @@ class BillingValidationService
         try {
             $stats = $this->daemonRepository->setServer($server)->getDetails();
             $currentUsage = $stats['utilization'] ?? [];
-        } catch (\Exception $e) {
-            // If we can't get stats, we'll only check against current allocations
+        } catch (DaemonConnectionException $e) {
+            // If we can't get stats from Wings, we'll only check against current allocations
+            // This ensures we can still validate even if the server is offline
+            Log::warning('Could not retrieve server stats for plan validation', [
+                'server_id' => $server->id,
+                'error' => $e->getMessage(),
+            ]);
             $currentUsage = [];
         }
 

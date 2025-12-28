@@ -85,6 +85,10 @@ class PlanChangeService
      * Determine if changing to a new product is a downgrade.
      * A downgrade is when any resource limit is being reduced.
      * 
+     * Note: This checks configured limits, not actual usage. The validation logic
+     * in validatePlanDowngrade() checks actual resource usage and will block downgrades
+     * if current usage exceeds the new limits.
+     * 
      * @param Server $server The current server
      * @param Product $newProduct The new product to switch to
      * @return bool True if this is a downgrade
