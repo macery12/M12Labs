@@ -81,11 +81,33 @@ export default () => {
     const [gridView, setGridView] = usePersistedState<boolean>(`${id}_file_manager_view`, false);
     const sortField = ServerContext.useStoreState(state => state.files.sortField);
     const sortDirection = ServerContext.useStoreState(state => state.files.sortDirection);
+    const setSortField = ServerContext.useStoreActions(actions => actions.files.setSortField);
+    const setSortDirection = ServerContext.useStoreActions(actions => actions.files.setSortDirection);
+    const [persistedSortField, setPersistedSortField] = usePersistedState<SortField>(
+        `${id}_file_manager_sort_field`,
+        'name',
+    );
+    const [persistedSortDirection, setPersistedSortDirection] = usePersistedState<SortDirection>(
+        `${id}_file_manager_sort_direction`,
+        'asc',
+    );
 
     const sftp = ServerContext.useStoreState(state => state.server.data!.sftpDetails);
     const username = useStoreState(state => state.user.data!.username);
     const setSelectedFiles = ServerContext.useStoreActions(actions => actions.files.setSelectedFiles);
     const selectedFilesLength = ServerContext.useStoreState(state => state.files.selectedFiles.length);
+
+    // Initialize sort settings from persisted state on mount
+    useEffect(() => {
+        setSortField(persistedSortField);
+        setSortDirection(persistedSortDirection);
+    }, []);
+
+    // Persist sort settings when they change
+    useEffect(() => {
+        setPersistedSortField(sortField);
+        setPersistedSortDirection(sortDirection);
+    }, [sortField, sortDirection]);
 
     useEffect(() => {
         clearFlashes('files');

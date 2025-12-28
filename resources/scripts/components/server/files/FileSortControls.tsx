@@ -33,16 +33,16 @@ const FileSortControls = () => {
     };
 
     return (
-        <div css={tw`flex items-center gap-2`}>
-            <span css={tw`text-sm text-neutral-400`}>Sort by:</span>
-            <div css={tw`flex gap-1`}>
+        <div css={tw`flex flex-wrap items-center gap-2 sm:gap-3`}>
+            <span css={tw`text-sm text-neutral-400 font-medium`}>Sort by:</span>
+            <div css={tw`flex flex-wrap gap-2`}>
                 {sortOptions.map(option => (
                     <Button
                         key={option.value}
                         size={Button.Sizes.Small}
                         variant={sortField === option.value ? Button.Variants.Primary : Button.Variants.Secondary}
                         onClick={() => handleSortFieldChange(option.value)}
-                        css={tw`px-3 py-1 text-xs`}
+                        css={tw`px-3 py-1.5 text-xs transition-all duration-150`}
                         style={
                             sortField === option.value
                                 ? { backgroundColor: colors.primary }
@@ -53,7 +53,7 @@ const FileSortControls = () => {
                         {sortField === option.value && (
                             <FontAwesomeIcon
                                 icon={sortDirection === 'asc' ? faSortAmountUp : faSortAmountDown}
-                                css={tw`ml-1`}
+                                css={tw`ml-1.5`}
                                 size="xs"
                             />
                         )}
