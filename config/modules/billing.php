@@ -50,4 +50,9 @@ return [
         'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
         'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
     ],
+
+    /*
+     * Plan change settings to prevent abuse.
+     */
+    'plan_change_cooldown_hours' => env('BILLING_PLAN_CHANGE_COOLDOWN_HOURS', 72),
 ];

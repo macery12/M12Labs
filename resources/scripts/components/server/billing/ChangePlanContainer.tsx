@@ -100,26 +100,26 @@ export default () => {
         <>
             <TitledGreyBox title={'Available Plans'} icon={faExchangeAlt}>
                 <div>
-                    <p css={tw`text-gray-400 text-xs mb-3`}>
-                        Upgrade or downgrade to a different plan within your category.
+                    <p css={tw`text-gray-400 text-xs mb-2`}>
+                        Upgrade or downgrade to a different plan.
                     </p>
 
-                    <div css={tw`space-y-2`}>
+                    <div css={tw`space-y-1.5`}>
                         {plans.map(plan => (
                             <div key={plan.id} css={tw`relative`}>
                                 <div
-                                    css={tw`flex items-center justify-between p-3 rounded transition-colors border border-transparent hover:border-gray-500`}
+                                    css={tw`flex items-center justify-between p-2.5 rounded transition-colors border border-transparent hover:border-gray-500`}
                                     style={{ backgroundColor: colors.secondary }}
                                 >
-                                    <div css={tw`flex-1 min-w-0 mr-4`}>
-                                        <div css={tw`flex items-baseline gap-2 mb-1`}>
+                                    <div css={tw`flex-1 min-w-0 mr-3`}>
+                                        <div css={tw`flex items-baseline gap-2 mb-0.5`}>
                                             <h4 css={tw`text-sm font-medium text-gray-200`}>{plan.name}</h4>
                                             <span css={tw`text-xs font-semibold text-gray-300`}>
                                                 {settings.currency.symbol}
                                                 {plan.price}
                                             </span>
                                         </div>
-                                        <div css={tw`flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400`}>
+                                        <div css={tw`flex flex-wrap gap-x-2.5 gap-y-0.5 text-xs text-gray-400`}>
                                             <span>{plan.limits.cpu}% CPU</span>
                                             <span>{plan.limits.memory} MB RAM</span>
                                             <span>{plan.limits.disk} MB Disk</span>
@@ -132,9 +132,9 @@ export default () => {
                                     </Button>
                                 </div>
                                 {selectedPlan?.id === plan.id && validation && !validation.valid && (
-                                    <Alert type={'danger'} className={'mt-2'}>
-                                        <p css={tw`text-xs font-medium mb-1`}>Cannot downgrade - usage exceeds limits:</p>
-                                        <ul css={tw`text-xs space-y-0.5 ml-4`}>
+                                    <Alert type={'danger'} className={'mt-1.5'}>
+                                        <p css={tw`text-xs font-medium mb-0.5`}>Cannot downgrade - usage exceeds limits:</p>
+                                        <ul css={tw`text-xs space-y-0.5 ml-3`}>
                                             {Object.entries(validation.violations || {}).map(([resource, data]) => (
                                                 <li key={resource}>
                                                     {resource}: {data.current} {data.unit} → {data.limit} {data.unit}
@@ -194,7 +194,7 @@ export default () => {
                         </div>
                         <Alert type={'info'} className={'mt-4'}>
                             <p css={tw`text-xs`}>
-                                Resources will be updated immediately. The page will reload after the change.
+                                Resources will be updated immediately. When downgrading, your renewal date will be adjusted proportionally to prevent abuse.
                             </p>
                         </Alert>
                     </>
