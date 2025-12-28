@@ -40,6 +40,9 @@ class DetailsModificationService
                 'allow_plan_changes' => array_key_exists('allow_plan_changes', $data) ? Arr::get($data, 'allow_plan_changes') : $server->allow_plan_changes,
             ])->saveOrFail();
 
+            // Refresh the model to ensure all casted attributes are properly loaded
+            $server->refresh();
+
             // If the owner_id value is changed we need to revoke any tokens that exist for the server
             // on the Wings instance so that the old owner no longer has any permission to access the
             // websockets.

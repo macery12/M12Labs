@@ -87,6 +87,16 @@ export default () => {
                                 )}
                             </p>
                         </div>
+                        <div>
+                            <Label>Plan Changes</Label>
+                            <p className={'text-gray-400'}>
+                                {server.allowPlanChanges ? (
+                                    <span className={'text-green-400'}>Allowed</span>
+                                ) : (
+                                    <span className={'text-red-400'}>Disabled</span>
+                                )}
+                            </p>
+                        </div>
                         <div className={'absolute top-2 right-2'}>
                             <EditServerBillingDialog server={server} />
                         </div>
