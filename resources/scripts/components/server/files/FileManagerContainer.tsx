@@ -101,13 +101,14 @@ export default () => {
     useEffect(() => {
         setSortField(persistedSortField);
         setSortDirection(persistedSortDirection);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Persist sort settings when they change
     useEffect(() => {
         setPersistedSortField(sortField);
         setPersistedSortDirection(sortDirection);
-    }, [sortField, sortDirection]);
+    }, [sortField, sortDirection, setPersistedSortField, setPersistedSortDirection]);
 
     useEffect(() => {
         clearFlashes('files');
