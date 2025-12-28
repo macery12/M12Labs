@@ -79,6 +79,11 @@ class EverestComposer
                 'enabled' => boolval(config('modules.ai.enabled', false)),
                 'key' => !empty(config('modules.ai.key')),
                 'user_access' => boolval(config('modules.ai.user_access', false)),
+                'endpoint' => config('modules.ai.endpoint', 'https://api.openai.com/v1'),
+                'model' => config('modules.ai.model', 'gpt-3.5-turbo'),
+                'mode' => config('modules.ai.mode', 'openai'),
+                'max_tokens' => (int)config('modules.ai.max_tokens', 200),
+                'system_prompt' => config('modules.ai.system_prompt', 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.'),
             ],
             'webhooks' => [
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),

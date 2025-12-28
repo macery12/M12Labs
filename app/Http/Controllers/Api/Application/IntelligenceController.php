@@ -2,12 +2,11 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
-use GeminiAPI\Client;
 use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use GeminiAPI\Resources\Parts\TextPart;
+use Everest\Services\AI\OpenAIService;
 use Everest\Http\Requests\Api\Application\Intelligence;
 
 class IntelligenceController extends ApplicationApiController
@@ -15,7 +14,7 @@ class IntelligenceController extends ApplicationApiController
     /**
      * IntelligenceController constructor.
      */
-    public function __construct()
+    public function __construct(private OpenAIService $aiService)
     {
         parent::__construct();
     }
@@ -44,22 +43,42 @@ class IntelligenceController extends ApplicationApiController
     }
 
     /**
-     * Send a query to Jexactyl AI through Gemini.
+     * Send a query to the AI service using OpenAI-compatible API.
      *
      * @throws \Throwable
      */
-    public function query(Intelligence\QueryRequest $request): JsonResponse
+    public function query(Intelligence\QueryRequest $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         if (!config('modules.ai.enabled')) {
             throw new \Exception('The Jexactyl AI module is not enabled.');
         }
 
-        $client = new Client(config('modules.ai.key'));
+        // Check if streaming is requested
+        if ($request->input('stream', false)) {
+            return response()->stream(function () use ($request) {
+                try {
+                    foreach ($this->aiService->queryStream($request->input('query')) as $chunk) {
+                        echo "data: " . json_encode(['content' => $chunk]) . "\n\n";
+                        ob_flush();
+                        flush();
+                    }
+                    echo "data: [DONE]\n\n";
+                    ob_flush();
+                    flush();
+                } catch (\Exception $e) {
+                    echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
+                    ob_flush();
+                    flush();
+                }
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'X-Accel-Buffering' => 'no',
+            ]);
+        }
 
-        $response = $client->geminiPro()->generateContent(
-            new TextPart($request->input('query')),
-        );
+        $result = $this->aiService->query($request->input('query'));
 
-        return response()->json($response->text());
+        return response()->json($result);
     }
 }

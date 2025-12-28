@@ -9,10 +9,61 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
 {
     public function rules(): array
     {
+        $mode = $this->input('mode', 'openai');
+        
         return [
             'enabled' => 'nullable|bool',
             'key' => 'nullable',
             'user_access' => 'nullable|bool',
+            'mode' => 'nullable|string|in:openai,ollama',
+            'max_tokens' => 'nullable|integer|min:50|max:4000',
+            'system_prompt' => 'nullable|string|min:10|max:1000',
+            'endpoint' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($mode) {
+                    // Only validate if value is provided (not null or empty)
+                    if ($value !== null && $value !== '') {
+                        // Validate it's a URL
+                        if (!filter_var($value, FILTER_VALIDATE_URL)) {
+                            $fail('The endpoint must be a valid URL.');
+                            return;
+                        }
+                        
+                        // For OpenAI mode, require HTTPS
+                        // For Ollama mode, allow both HTTP (for local) and HTTPS
+                        if ($mode === 'openai' && !str_starts_with($value, 'https://')) {
+                            $fail('The endpoint must use HTTPS for OpenAI mode.');
+                            return;
+                        }
+                        
+                        if (!str_starts_with($value, 'http://') && !str_starts_with($value, 'https://')) {
+                            $fail('The endpoint must start with http:// or https://.');
+                            return;
+                        }
+                        
+                        $parsed = parse_url($value);
+                        // Ensure no @ in the authority part (prevents URL confusion attacks)
+                        if (isset($parsed['user']) || strpos($value, '@') !== false) {
+                            $fail('The endpoint URL contains invalid characters.');
+                        }
+                    }
+                },
+            ],
+            'model' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    // Only validate if value is provided (not null or empty)
+                    if ($value !== null && $value !== '') {
+                        if (!is_string($value)) {
+                            $fail('The model must be a string.');
+                            return;
+                        }
+                        if (strlen($value) < 1 || strlen($value) > 100) {
+                            $fail('The model must be between 1 and 100 characters.');
+                        }
+                    }
+                },
+            ],
         ];
     }
 
