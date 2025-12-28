@@ -62,16 +62,28 @@ class OpenAIService
                 ],
             ]);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            $responseBody = $response->getBody()->getContents();
+            $data = json_decode($responseBody, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('AI Service JSON decode error: ' . json_last_error_msg());
+                throw new \RuntimeException('Failed to decode AI service response: ' . json_last_error_msg());
+            }
 
             if (isset($data['choices'][0]['message']['content'])) {
                 return trim($data['choices'][0]['message']['content']);
             }
 
-            throw new \Exception('Invalid response from AI service.');
+            if (isset($data['error'])) {
+                $errorMsg = $data['error']['message'] ?? 'Unknown error';
+                Log::error('AI Service returned error: ' . $errorMsg);
+                throw new \RuntimeException('AI service error: ' . $errorMsg);
+            }
+
+            throw new \RuntimeException('Invalid response format from AI service.');
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Error: ' . $e->getMessage());
-            throw new \Exception('Failed to communicate with AI service: ' . $e->getMessage());
+            throw new \RuntimeException('Failed to communicate with AI service: ' . $e->getMessage());
         }
     }
 
@@ -83,7 +95,7 @@ class OpenAIService
         try {
             $this->query('Hello, this is a test message. Please respond with OK.');
             return true;
-        } catch (\Exception $e) {
+        } catch (\RuntimeException $e) {
             return false;
         }
     }

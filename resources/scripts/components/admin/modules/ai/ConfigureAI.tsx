@@ -31,7 +31,10 @@ export default () => {
     };
 
     useEffect(() => {
-        if (key && key.length > 10) {
+        // API keys vary by provider - require minimum 20 characters for basic validation
+        // OpenAI keys typically start with "sk-" and are 50+ chars
+        // But other providers may have different formats
+        if (key && key.length >= 20) {
             submit();
         }
     }, [key]);
@@ -71,8 +74,8 @@ export default () => {
             <div className={'relative'}>
                 <label className={'block text-sm text-gray-400 mb-1'}>API Key</label>
                 <Input placeholder={'Enter API key here...'} onChange={e => setKey(e.currentTarget.value)} />
-                {!key || key.length < 10 ? (
-                    <Tooltip placement={'right'} content={'You must enter a valid API key to continue.'}>
+                {!key || key.length < 20 ? (
+                    <Tooltip placement={'right'} content={'You must enter a valid API key to continue (min 20 characters).'}>
                         <FontAwesomeIcon
                             icon={faExclamationTriangle}
                             className={'absolute top-2/3 right-4 text-yellow-500'}
