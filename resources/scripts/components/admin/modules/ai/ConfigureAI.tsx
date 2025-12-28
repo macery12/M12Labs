@@ -7,7 +7,8 @@ import { Dialog } from '@/elements/dialog';
 import { faCheckCircle, faExclamationTriangle, faExternalLink } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useStoreState } from 'easy-peasy';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Button } from '@/elements/button';
 
 export default () => {
     const [key, setKey] = useState<string>();
@@ -27,17 +28,13 @@ export default () => {
             .then(() => {
                 window.location.reload();
             })
-            .catch(error => clearAndAddHttpError(error));
+            .catch(error => {
+                setLoading(false);
+                clearAndAddHttpError(error);
+            });
     };
 
-    useEffect(() => {
-        // API keys vary by provider - require minimum 20 characters for basic validation
-        // OpenAI keys typically start with "sk-" and are 50+ chars
-        // But other providers may have different formats
-        if (key && key.length >= 20) {
-            submit();
-        }
-    }, [key]);
+    const isValidKey = key && key.length >= 20;
 
     return (
         <Dialog open onClose={() => undefined} preventExternalClose hideCloseIcon title={'Configure Jexactyl AI'}>
@@ -66,16 +63,20 @@ export default () => {
                     value={endpoint}
                     onChange={e => setEndpoint(e.currentTarget.value)}
                 />
+                <p className={'mt-1 text-xs text-gray-500'}>Must use HTTPS for security</p>
             </div>
             <div className={'mb-4'}>
                 <label className={'block text-sm text-gray-400 mb-1'}>Model Name</label>
                 <Input placeholder={'gpt-3.5-turbo'} value={model} onChange={e => setModel(e.currentTarget.value)} />
             </div>
-            <div className={'relative'}>
+            <div className={'relative mb-6'}>
                 <label className={'block text-sm text-gray-400 mb-1'}>API Key</label>
                 <Input placeholder={'Enter API key here...'} onChange={e => setKey(e.currentTarget.value)} />
-                {!key || key.length < 20 ? (
-                    <Tooltip placement={'right'} content={'You must enter a valid API key to continue (min 20 characters).'}>
+                {!isValidKey ? (
+                    <Tooltip
+                        placement={'right'}
+                        content={'You must enter a valid API key to continue (min 20 characters).'}
+                    >
                         <FontAwesomeIcon
                             icon={faExclamationTriangle}
                             className={'absolute top-2/3 right-4 text-yellow-500'}
@@ -84,6 +85,11 @@ export default () => {
                 ) : (
                     <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-2/3 right-4 text-green-500'} />
                 )}
+            </div>
+            <div className={'flex justify-end'}>
+                <Button onClick={submit} disabled={!isValidKey || loading}>
+                    Save Configuration
+                </Button>
             </div>
         </Dialog>
     );

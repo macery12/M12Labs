@@ -13,8 +13,8 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
             'enabled' => 'nullable|bool',
             'key' => 'nullable',
             'user_access' => 'nullable|bool',
-            'endpoint' => 'nullable|url',
-            'model' => 'nullable|string',
+            'endpoint' => 'nullable|url|regex:/^https:\/\//',
+            'model' => 'nullable|string|max:100',
         ];
     }
 

@@ -5,6 +5,7 @@ namespace Everest\Services\AI;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
+use Everest\Exceptions\Service\AI\AIServiceException;
 
 class OpenAIService
 {
@@ -22,12 +23,9 @@ class OpenAIService
         $this->endpoint = config('modules.ai.endpoint', 'https://api.openai.com/v1');
         $this->model = config('modules.ai.model', 'gpt-3.5-turbo');
 
+        // Initialize client without authorization header to prevent credential exposure in logs
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-            ],
             'timeout' => 30,
         ]);
     }
@@ -35,16 +33,20 @@ class OpenAIService
     /**
      * Send a query to the OpenAI-compatible endpoint and get a response.
      *
-     * @throws \Exception
+     * @throws AIServiceException
      */
     public function query(string $prompt, array $options = []): string
     {
         if (empty($this->apiKey)) {
-            throw new \Exception('AI API key is not configured.');
+            throw new AIServiceException('AI API key is not configured.');
         }
 
         try {
             $response = $this->client->post('chat/completions', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ],
                 'json' => [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => [
@@ -67,7 +69,7 @@ class OpenAIService
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 Log::error('AI Service JSON decode error: ' . json_last_error_msg());
-                throw new \RuntimeException('Failed to decode AI service response: ' . json_last_error_msg());
+                throw new AIServiceException('Failed to decode AI service response: ' . json_last_error_msg());
             }
 
             if (isset($data['choices'][0]['message']['content'])) {
@@ -77,13 +79,13 @@ class OpenAIService
             if (isset($data['error'])) {
                 $errorMsg = $data['error']['message'] ?? 'Unknown error';
                 Log::error('AI Service returned error: ' . $errorMsg);
-                throw new \RuntimeException('AI service error: ' . $errorMsg);
+                throw new AIServiceException('AI service error: ' . $errorMsg);
             }
 
-            throw new \RuntimeException('Invalid response format from AI service.');
+            throw new AIServiceException('Invalid response format from AI service.');
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Error: ' . $e->getMessage());
-            throw new \RuntimeException('Failed to communicate with AI service: ' . $e->getMessage());
+            throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());
         }
     }
 
@@ -95,7 +97,7 @@ class OpenAIService
         try {
             $this->query('Hello, this is a test message. Please respond with OK.');
             return true;
-        } catch (\RuntimeException $e) {
+        } catch (AIServiceException $e) {
             return false;
         }
     }
