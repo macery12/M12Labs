@@ -98,6 +98,7 @@ class OpenAIService
             $this->query('Hello, this is a test message. Please respond with OK.');
             return true;
         } catch (AIServiceException $e) {
+            Log::warning('AI Service connection test failed: ' . $e->getMessage());
             return false;
         }
     }
