@@ -19,6 +19,7 @@ const MB_TO_GB = 1024;
 export default ({ server }: { server: Server }) => {
     const [open, setOpen] = useState<boolean>(false);
     const [billable, setBillable] = useState<boolean>(Boolean(server.billingProductId));
+    const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(server.allowPlanChanges !== false);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(server.billingProductId || null);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -109,6 +110,9 @@ export default ({ server }: { server: Server }) => {
             payload.renewalDate = null;
             payload.billingProductId = null;
         }
+
+        // Always update the allow_plan_changes setting
+        payload.allowPlanChanges = allowPlanChanges;
 
         setError(null);
         updateServer(server.id, payload)
@@ -278,6 +282,40 @@ export default ({ server }: { server: Server }) => {
                                     onChange={e => setRenewalDateStr(e.target.value)}
                                 />
                                 <p>Server will be set to next renew on: {renewalDateStr.split('T')[0]}</p>
+                            </div>
+
+                            <div>
+                                <div className={'flex'}>
+                                    <Label>
+                                        <CashIcon className={'inline-flex w-4'} /> Allow Plan Changes
+                                    </Label>
+                                    <span className={'ml-2 text-sm italic text-gray-400'}>
+                                        Can users change plans for this server?
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setAllowPlanChanges(true)}
+                                    className={classNames(
+                                        allowPlanChanges ? 'bg-black/50' : 'bg-black/25',
+                                        'rounded-l py-3 px-6 font-bold text-white',
+                                    )}
+                                >
+                                    Allowed
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAllowPlanChanges(false)}
+                                    className={classNames(
+                                        !allowPlanChanges ? 'bg-black/50' : 'bg-black/25',
+                                        'rounded-r py-3 px-6 font-bold text-white',
+                                    )}
+                                >
+                                    Disabled
+                                </button>
+                                <p className={'mt-2 text-sm text-gray-400'}>
+                                    When disabled, users cannot upgrade or downgrade this server&apos;s plan.
+                                </p>
                             </div>
 
                             <div className={'ml-auto'}>

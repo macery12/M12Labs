@@ -36,6 +36,7 @@ class UpdateServerRequest extends ApplicationApiRequest
 
             'renewal_date' => $rules['renewal_date'],
             'billing_product_id' => $rules['billing_product_id'],
+            'allow_plan_changes' => 'sometimes|boolean',
 
             'allocation_id' => 'bail|exists:allocations,id',
             'add_allocations' => 'bail|array',
@@ -75,6 +76,7 @@ class UpdateServerRequest extends ApplicationApiRequest
 
             'renewal_date' => array_get($data, 'renewal_date'),
             'billing_product_id' => array_get($data, 'billing_product_id'),
+            'allow_plan_changes' => array_get($data, 'allow_plan_changes'),
 
             'allocation_id' => array_get($data, 'allocation_id'),
             'add_allocations' => array_get($data, 'add_allocations'),

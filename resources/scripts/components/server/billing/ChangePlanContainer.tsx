@@ -27,6 +27,7 @@ export default () => {
     const { colors } = useStoreState(s => s.theme.data!);
     const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
+    const allowPlanChanges = ServerContext.useStoreState(s => s.server.data!.allowPlanChanges);
 
     useEffect(() => {
         clearFlashes('server:billing:plan-change');
@@ -80,6 +81,11 @@ export default () => {
     };
 
     if (!billingProductId) {
+        return null;
+    }
+
+    // Check if plan changes are disabled for this server
+    if (allowPlanChanges === false) {
         return null;
     }
 

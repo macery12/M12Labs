@@ -30,6 +30,7 @@ class PlanChangeService
      * - Configurable cooldown between plan changes (admin settings)
      * - Must have active renewal date
      * - Resource usage validation on downgrades
+     * - Can be disabled per-server by admin
      * 
      * @param Server $server The server to change
      * @param Product $newProduct The new product/plan to switch to
@@ -39,6 +40,11 @@ class PlanChangeService
      */
     public function changePlan(Server $server, Product $newProduct, bool $force = false): Server
     {
+        // Check if plan changes are allowed for this server
+        if (!$server->allow_plan_changes) {
+            throw new DisplayException('Plan changes have been disabled for this server by an administrator.');
+        }
+
         // Ensure the new product is in the same category as the current one
         $currentProduct = $server->billingProductId ? Product::find($server->billingProductId) : null;
         
