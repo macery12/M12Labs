@@ -63,7 +63,9 @@ export default () => {
                     value={endpoint}
                     onChange={e => setEndpoint(e.currentTarget.value)}
                 />
-                <p className={'mt-1 text-xs text-gray-500'}>Must use HTTPS for security</p>
+                <p className={'mt-1 text-xs text-gray-500'}>
+                    Must use HTTPS for security. Example: https://api.openai.com/v1 or https://your-server.com/v1
+                </p>
             </div>
             <div className={'mb-4'}>
                 <label className={'block text-sm text-gray-400 mb-1'}>Model Name</label>
@@ -75,7 +77,9 @@ export default () => {
                 {!isValidKey ? (
                     <Tooltip
                         placement={'right'}
-                        content={'You must enter a valid API key to continue (min 20 characters).'}
+                        content={
+                            'API key must be at least 20 characters. OpenAI keys are typically 50+ characters and start with "sk-".'
+                        }
                     >
                         <FontAwesomeIcon
                             icon={faExclamationTriangle}
