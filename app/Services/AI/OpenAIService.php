@@ -19,9 +19,9 @@ class OpenAIService
      */
     public function __construct()
     {
-        $this->apiKey = config('modules.ai.key', '');
-        $this->endpoint = config('modules.ai.endpoint', 'https://api.openai.com/v1');
-        $this->model = config('modules.ai.model', 'gpt-3.5-turbo');
+        $this->apiKey = config('modules.ai.key') ?: '';
+        $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
+        $this->model = config('modules.ai.model') ?: 'gpt-3.5-turbo';
 
         // Initialize client without authorization header to prevent credential exposure in logs
         $this->client = new Client([
