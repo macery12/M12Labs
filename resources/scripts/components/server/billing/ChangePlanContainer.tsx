@@ -194,7 +194,7 @@ export default () => {
                         </div>
                         <Alert type={'info'} className={'mt-4'}>
                             <p css={tw`text-xs`}>
-                                Resources will be updated immediately. When downgrading, your renewal date will be adjusted proportionally to prevent abuse.
+                                Resources will be updated immediately. The page will reload after the change.
                             </p>
                         </Alert>
                     </>

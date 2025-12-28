@@ -150,6 +150,24 @@ export default () => {
                 Provide a link to your business&apos; ToS or privacy policy that users must accept before purchase.
                 <BillingLinksForm />
             </AdminBox>
+            <AdminBox title={'Plan Change Cooldown'} icon={faExchange}>
+                Configure how often users can change between plans to prevent abuse. Default is 72 hours (3 days).
+                <div className={'mt-4'}>
+                    <Label>Cooldown Period (hours)</Label>
+                    <input
+                        type="number"
+                        min="0"
+                        max="720"
+                        className="w-full rounded border-neutral-700 bg-neutral-900 px-4 py-2 text-sm text-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        value={settings.plan_change_cooldown_hours || 72}
+                        onChange={e => submit('plan_change_cooldown_hours', parseInt(e.target.value))}
+                    />
+                    <p className={'mt-2 text-xs text-gray-400'}>
+                        Users can only change plans once per cooldown period. Set to 0 to disable cooldown (not
+                        recommended).
+                    </p>
+                </div>
+            </AdminBox>
             <AdminBox title={'Disable Billing Module'} icon={faPowerOff}>
                 Clicking the button below will disable all modules of the billing system - such as subscriptions, server
                 purchasing and more. Make sure that this will not impact your users before disabling.
