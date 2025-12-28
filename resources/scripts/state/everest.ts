@@ -72,6 +72,11 @@ export interface EverestSettings {
         enabled: boolean;
         key: boolean | string;
         user_access: boolean;
+        endpoint?: string;
+        model?: string;
+        mode?: string;
+        max_tokens?: number;
+        system_prompt?: string;
     };
     webhooks: {
         enabled: boolean;
