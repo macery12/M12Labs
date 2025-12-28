@@ -13,6 +13,7 @@ class OpenAIService
     private string $apiKey;
     private string $endpoint;
     private string $model;
+    private string $mode;
 
     /**
      * OpenAIService constructor.
@@ -22,6 +23,7 @@ class OpenAIService
         $this->apiKey = config('modules.ai.key') ?: '';
         $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
         $this->model = config('modules.ai.model') ?: 'gpt-3.5-turbo';
+        $this->mode = config('modules.ai.mode') ?: 'openai';
 
         // Initialize client without authorization header to prevent credential exposure in logs
         $this->client = new Client([
@@ -37,16 +39,23 @@ class OpenAIService
      */
     public function query(string $prompt, array $options = []): string
     {
-        if (empty($this->apiKey)) {
+        // Only require API key for OpenAI mode, not for Ollama
+        if ($this->mode !== 'ollama' && empty($this->apiKey)) {
             throw new AIServiceException('AI API key is not configured.');
         }
 
         try {
+            $headers = [
+                'Content-Type' => 'application/json',
+            ];
+            
+            // Only add Authorization header if API key is provided (OpenAI mode)
+            if (!empty($this->apiKey)) {
+                $headers['Authorization'] = 'Bearer ' . $this->apiKey;
+            }
+            
             $response = $this->client->post('chat/completions', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
+                'headers' => $headers,
                 'json' => [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => [

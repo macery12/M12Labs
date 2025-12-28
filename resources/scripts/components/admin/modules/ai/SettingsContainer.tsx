@@ -23,6 +23,8 @@ export default () => {
                     key: 'admin:ai:settings',
                     message: 'Settings have been updated successfully.',
                 });
+                // Reload to apply new settings
+                setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
                 clearAndAddHttpError({
