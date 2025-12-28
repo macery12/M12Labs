@@ -15,10 +15,21 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
             'user_access' => 'nullable|bool',
             'endpoint' => [
                 'nullable',
-                'url',
-                'starts_with:https://',
                 function ($attribute, $value, $fail) {
-                    if ($value) {
+                    // Only validate if value is provided (not null or empty)
+                    if ($value !== null && $value !== '') {
+                        // Validate it's a URL
+                        if (!filter_var($value, FILTER_VALIDATE_URL)) {
+                            $fail('The endpoint must be a valid URL.');
+                            return;
+                        }
+                        
+                        // Validate it starts with https://
+                        if (!str_starts_with($value, 'https://')) {
+                            $fail('The endpoint must use HTTPS.');
+                            return;
+                        }
+                        
                         $parsed = parse_url($value);
                         // Ensure no @ in the authority part (prevents URL confusion attacks)
                         if (isset($parsed['user']) || strpos($value, '@') !== false) {
@@ -27,7 +38,21 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
                     }
                 },
             ],
-            'model' => 'nullable|string|min:1|max:100',
+            'model' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    // Only validate if value is provided (not null or empty)
+                    if ($value !== null && $value !== '') {
+                        if (!is_string($value)) {
+                            $fail('The model must be a string.');
+                            return;
+                        }
+                        if (strlen($value) < 1 || strlen($value) > 100) {
+                            $fail('The model must be between 1 and 100 characters.');
+                        }
+                    }
+                },
+            ],
         ];
     }
 
