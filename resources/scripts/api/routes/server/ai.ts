@@ -1,5 +1,20 @@
 import http from '@/api/http';
 
+// Get CSRF token from cookie
+const getCSRFToken = (): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; XSRF-TOKEN=`);
+    if (parts.length === 2) {
+        const token = parts.pop()?.split(';').shift();
+        return token ? decodeURIComponent(token) : null;
+    }
+    return null;
+};
+
+// Rate limiting: track last query time per server
+const lastQueryTimes: Record<string, number> = {};
+const MIN_QUERY_INTERVAL = 2000; // 2 seconds between queries
+
 export const handleQuery = (server: string, query: string, signal?: AbortSignal): Promise<string> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${server}/ai`, { query, stream: true }, { signal })
@@ -16,14 +31,31 @@ export const handleQueryStream = (
     onError: (error: Error) => void,
     signal?: AbortSignal
 ): void => {
+    // Rate limiting check
+    const now = Date.now();
+    const lastTime = lastQueryTimes[server] || 0;
+    if (now - lastTime < MIN_QUERY_INTERVAL) {
+        onError(new Error('Please wait a moment before sending another query.'));
+        return;
+    }
+    lastQueryTimes[server] = now;
+
+    const csrfToken = getCSRFToken();
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'X-Requested-With': 'XMLHttpRequest',
+    };
+    
+    if (csrfToken) {
+        headers['X-XSRF-TOKEN'] = csrfToken;
+    }
+
     fetch(`/api/client/servers/${server}/ai`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'text/event-stream',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
+        headers,
         body: JSON.stringify({ query, stream: true }),
+        credentials: 'same-origin',
         signal,
     })
         .then(response => {
