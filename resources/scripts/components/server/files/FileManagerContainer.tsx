@@ -33,12 +33,42 @@ import TitledGreyBox from '@/elements/TitledGreyBox';
 import { ip } from '@/lib/formatters';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { hashToPath } from '@/lib/helpers';
+import FileSortControls from '@server/files/FileSortControls';
+import type { SortField, SortDirection } from '@/state/server/files';
 
-const sortFiles = (files: FileObject[]): FileObject[] => {
-    const sortedFiles: FileObject[] = files
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .sort((a, b) => (a.isFile === b.isFile ? 0 : a.isFile ? 1 : -1));
-    return sortedFiles.filter((file, index) => index === 0 || file.name !== sortedFiles[index - 1]?.name);
+const sortFiles = (files: FileObject[], sortField: SortField, sortDirection: SortDirection): FileObject[] => {
+    const sorted = [...files].sort((a, b) => {
+        // Always put directories first, then files
+        if (a.isFile !== b.isFile) {
+            return a.isFile ? 1 : -1;
+        }
+
+        let comparison = 0;
+
+        switch (sortField) {
+            case 'name':
+                comparison = a.name.localeCompare(b.name);
+                break;
+            case 'modified':
+                comparison = a.modifiedAt.getTime() - b.modifiedAt.getTime();
+                break;
+            case 'size':
+                comparison = a.size - b.size;
+                break;
+            case 'type': {
+                // For type, we sort by file extension
+                const extA = a.isFile ? a.name.split('.').pop()?.toLowerCase() || '' : '';
+                const extB = b.isFile ? b.name.split('.').pop()?.toLowerCase() || '' : '';
+                comparison = extA.localeCompare(extB);
+                break;
+            }
+        }
+
+        return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    // Remove duplicates
+    return sorted.filter((file, index) => index === 0 || file.name !== sorted[index - 1]?.name);
 };
 
 export default () => {
@@ -49,6 +79,8 @@ export default () => {
     const clearFlashes = useStoreActions(actions => actions.flashes.clearFlashes);
     const setDirectory = ServerContext.useStoreActions(actions => actions.files.setDirectory);
     const [gridView, setGridView] = usePersistedState<boolean>(`${id}_file_manager_view`, false);
+    const sortField = ServerContext.useStoreState(state => state.files.sortField);
+    const sortDirection = ServerContext.useStoreState(state => state.files.sortDirection);
 
     const sftp = ServerContext.useStoreState(state => state.server.data!.sftpDetails);
     const username = useStoreState(state => state.user.data!.username);
@@ -106,6 +138,9 @@ export default () => {
                         </div>
                     </Can>
                 </div>
+                <div className={'mb-4'}>
+                    <FileSortControls />
+                </div>
             </ErrorBoundary>
             <div className={'grid gap-4 xl:grid-cols-4'}>
                 <div className={'xl:col-span-3'}>
@@ -128,13 +163,13 @@ export default () => {
                                         )}
                                         {gridView ? (
                                             <div className={'grid grid-cols-2 gap-2 lg:grid-cols-6 lg:gap-4'}>
-                                                {sortFiles(files.slice(0, 250)).map(file => (
+                                                {sortFiles(files.slice(0, 250), sortField, sortDirection).map(file => (
                                                     <FileObjectGrid key={file.key} file={file} />
                                                 ))}
                                             </div>
                                         ) : (
                                             <>
-                                                {sortFiles(files.slice(0, 250)).map(file => (
+                                                {sortFiles(files.slice(0, 250), sortField, sortDirection).map(file => (
                                                     <FileObjectList key={file.key} file={file} />
                                                 ))}
                                             </>
