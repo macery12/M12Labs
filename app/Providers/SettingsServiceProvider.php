@@ -80,6 +80,7 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:ai:endpoint',
         'modules:ai:model',
         'modules:ai:mode',
+        'modules:ai:max_tokens',
 
         // Webhook module settings
         'modules:webhooks:enabled',

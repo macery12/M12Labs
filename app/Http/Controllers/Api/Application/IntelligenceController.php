@@ -47,10 +47,34 @@ class IntelligenceController extends ApplicationApiController
      *
      * @throws \Throwable
      */
-    public function query(Intelligence\QueryRequest $request): JsonResponse
+    public function query(Intelligence\QueryRequest $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         if (!config('modules.ai.enabled')) {
             throw new \Exception('The Jexactyl AI module is not enabled.');
+        }
+
+        // Check if streaming is requested
+        if ($request->input('stream', false)) {
+            return response()->stream(function () use ($request) {
+                try {
+                    foreach ($this->aiService->queryStream($request->input('query')) as $chunk) {
+                        echo "data: " . json_encode(['content' => $chunk]) . "\n\n";
+                        ob_flush();
+                        flush();
+                    }
+                    echo "data: [DONE]\n\n";
+                    ob_flush();
+                    flush();
+                } catch (\Exception $e) {
+                    echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
+                    ob_flush();
+                    flush();
+                }
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'X-Accel-Buffering' => 'no',
+            ]);
         }
 
         $result = $this->aiService->query($request->input('query'));

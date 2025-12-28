@@ -3,7 +3,7 @@ import Label from '@/elements/Label';
 import { Form, Formik } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import { faKey, faUser, faLink, faCog, faServer } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faUser, faLink, faCog, faServer, faHashtag } from '@fortawesome/free-solid-svg-icons';
 import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
@@ -42,6 +42,7 @@ export default () => {
                 endpoint: ai.endpoint || 'https://api.openai.com/v1',
                 model: ai.model || 'gpt-3.5-turbo',
                 mode: ai.mode || 'openai',
+                max_tokens: ai.max_tokens || 200,
             }}
         >
             {({ values }) => (
@@ -104,6 +105,14 @@ export default () => {
                                     {values.mode === 'ollama'
                                         ? 'Ollama model name (e.g., llama2, mistral, codellama)'
                                         : 'The AI model to use (e.g., gpt-3.5-turbo, gpt-4, or any compatible model).'}
+                                </p>
+                            </div>
+                        </AdminBox>
+                        <AdminBox title={'Max Tokens'} icon={faHashtag}>
+                            <div>
+                                <Field id={'max_tokens'} name={'max_tokens'} type={'number'} min={50} max={4000} />
+                                <p className={'mt-1.5 text-xs text-gray-400'}>
+                                    Maximum number of tokens in the AI response (50-4000). Default: 200. Lower values = shorter responses, less cost.
                                 </p>
                             </div>
                         </AdminBox>

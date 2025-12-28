@@ -82,6 +82,7 @@ class EverestComposer
                 'endpoint' => config('modules.ai.endpoint', 'https://api.openai.com/v1'),
                 'model' => config('modules.ai.model', 'gpt-3.5-turbo'),
                 'mode' => config('modules.ai.mode', 'openai'),
+                'max_tokens' => (int)config('modules.ai.max_tokens', 200),
             ],
             'webhooks' => [
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),

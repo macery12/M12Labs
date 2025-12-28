@@ -75,6 +75,7 @@ export interface EverestSettings {
         endpoint?: string;
         model?: string;
         mode?: string;
+        max_tokens?: number;
     };
     webhooks: {
         enabled: boolean;

@@ -26,9 +26,11 @@ class OpenAIService
         $this->mode = config('modules.ai.mode') ?: 'openai';
 
         // Initialize client without authorization header to prevent credential exposure in logs
+        // Increase timeout to 120 seconds to handle longer AI responses
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
-            'timeout' => 30,
+            'timeout' => 120,
+            'stream' => true, // Enable streaming support
         ]);
     }
 
@@ -68,8 +70,9 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? 1000,
+                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
                     'temperature' => $options['temperature'] ?? 0.7,
+                    'stream' => $options['stream'] ?? false,
                 ],
             ]);
 
@@ -109,6 +112,82 @@ class OpenAIService
         } catch (AIServiceException $e) {
             Log::warning('AI Service connection test failed: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Stream a query to the OpenAI-compatible endpoint and yield chunks.
+     *
+     * @throws AIServiceException
+     */
+    public function queryStream(string $prompt, array $options = []): \Generator
+    {
+        // Only require API key for OpenAI mode, not for Ollama
+        if ($this->mode !== 'ollama' && empty($this->apiKey)) {
+            throw new AIServiceException('AI API key is not configured.');
+        }
+
+        try {
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'text/event-stream',
+            ];
+            
+            // Only add Authorization header if API key is provided (OpenAI mode)
+            if (!empty($this->apiKey)) {
+                $headers['Authorization'] = 'Bearer ' . $this->apiKey;
+            }
+            
+            $response = $this->client->post('chat/completions', [
+                'headers' => $headers,
+                'json' => [
+                    'model' => $options['model'] ?? $this->model,
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $prompt,
+                        ],
+                    ],
+                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'temperature' => $options['temperature'] ?? 0.7,
+                    'stream' => true,
+                ],
+            ]);
+
+            $body = $response->getBody();
+            $buffer = '';
+
+            while (!$body->eof()) {
+                $chunk = $body->read(1024);
+                $buffer .= $chunk;
+
+                // Process complete lines
+                while (($pos = strpos($buffer, "\n")) !== false) {
+                    $line = substr($buffer, 0, $pos);
+                    $buffer = substr($buffer, $pos + 1);
+
+                    $line = trim($line);
+                    if (empty($line) || $line === 'data: [DONE]') {
+                        continue;
+                    }
+
+                    if (str_starts_with($line, 'data: ')) {
+                        $jsonData = substr($line, 6);
+                        $data = json_decode($jsonData, true);
+
+                        if (json_last_error() === JSON_ERROR_NONE && isset($data['choices'][0]['delta']['content'])) {
+                            yield $data['choices'][0]['delta']['content'];
+                        }
+                    }
+                }
+            }
+        } catch (GuzzleException $e) {
+            Log::error('OpenAI Service Streaming Error: ' . $e->getMessage());
+            throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());
         }
     }
 }
