@@ -193,5 +193,11 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
             Route::post('/change-egg', [Client\Servers\SettingsController::class, 'changeEgg']);
         });
+
+        Route::group(['prefix' => '/billing'], function () {
+            Route::get('/plans', [Client\Billing\PlanChangeController::class, 'getAvailablePlans']);
+            Route::get('/plans/{product}/validate', [Client\Billing\PlanChangeController::class, 'validatePlanChange']);
+            Route::post('/plans/{product}/change', [Client\Billing\PlanChangeController::class, 'changePlan']);
+        });
     });
 });

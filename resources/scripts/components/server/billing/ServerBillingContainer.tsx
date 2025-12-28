@@ -29,6 +29,7 @@ import CouponInput from '@/components/account/billing/order/CouponInput';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
 import ScopedAlert from '@/components/account/ScopedAlert';
+import ChangePlanContainer from './ChangePlanContainer';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -231,7 +232,7 @@ export default () => {
             )}
 
             {/* Action Cards Section - Renewal and Server Type Change */}
-            <div css={tw`grid gap-4 md:grid-cols-2`}>
+            <div css={tw`grid gap-4 md:grid-cols-2 mb-4`}>
                 {/* Renewal Section */}
                 <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
                     {!product ? (
@@ -341,6 +342,11 @@ export default () => {
 
                 {/* Change Server Type Section */}
                 <ChangeEggContainer />
+            </div>
+
+            {/* Plan Change Section */}
+            <div css={tw`mt-4`}>
+                <ChangePlanContainer />
             </div>
         </PageContentBlock>
     );
