@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Label from '@/elements/Label';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import { ServerContext } from '@/state/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -66,10 +66,8 @@ export default () => {
     const [renewing, setRenewing] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
 
-    const navigate = useNavigate();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
-    const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);

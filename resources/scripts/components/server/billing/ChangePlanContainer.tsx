@@ -139,7 +139,9 @@ export default () => {
                                                 {settings.currency.symbol}
                                                 {plan.price}
                                             </p>
-                                            <p css={tw`text-xs text-gray-400`}>{settings.currency.code.toUpperCase()}</p>
+                                            <p css={tw`text-xs text-gray-400`}>
+                                                {settings.currency.code.toUpperCase()}
+                                            </p>
                                         </div>
                                     </div>
 
@@ -202,11 +204,7 @@ export default () => {
                 open={showConfirmDialog}
                 onClose={() => setShowConfirmDialog(false)}
                 title="Confirm Plan Change"
-                description={
-                    selectedPlan
-                        ? `Are you sure you want to change to the ${selectedPlan.name} plan?`
-                        : ''
-                }
+                description={selectedPlan ? `Are you sure you want to change to the ${selectedPlan.name} plan?` : ''}
             >
                 {selectedPlan && (
                     <>
@@ -219,9 +217,7 @@ export default () => {
                                 </div>
                                 <div>
                                     <span css={tw`text-gray-500`}>RAM:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>
-                                        {selectedPlan.limits.memory} MB
-                                    </span>
+                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.memory} MB</span>
                                 </div>
                                 <div>
                                     <span css={tw`text-gray-500`}>Disk:</span>
@@ -229,9 +225,7 @@ export default () => {
                                 </div>
                                 <div>
                                     <span css={tw`text-gray-500`}>Databases:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>
-                                        {selectedPlan.limits.database}
-                                    </span>
+                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.database}</span>
                                 </div>
                                 <div>
                                     <span css={tw`text-gray-500`}>Backups:</span>
@@ -239,9 +233,7 @@ export default () => {
                                 </div>
                                 <div>
                                     <span css={tw`text-gray-500`}>Allocations:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>
-                                        {selectedPlan.limits.allocation}
-                                    </span>
+                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.allocation}</span>
                                 </div>
                             </div>
                             <div css={tw`mt-3 pt-3 border-t border-gray-600`}>
@@ -256,8 +248,8 @@ export default () => {
                         </div>
                         <p css={tw`text-xs text-yellow-400 mt-4`}>
                             <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
-                            Your server will be updated with the new resource limits immediately. The page will
-                            reload after the change is complete.
+                            Your server will be updated with the new resource limits immediately. The page will reload
+                            after the change is complete.
                         </p>
                     </>
                 )}
