@@ -28,6 +28,7 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import CouponInput from '@/components/account/billing/order/CouponInput';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
+import ScopedAlert from '@/components/account/ScopedAlert';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -128,6 +129,7 @@ export default () => {
             header
             description={'Manage your server subscription, renewal, and billing settings.'}
         >
+            <ScopedAlert scope="server" position="top-center" />
             <FlashMessageRender byKey={'server:billing'} css={tw`mb-4`} />
             {!product && !loading && (
                 <Alert type={'warning'} className={'mb-6'}>
