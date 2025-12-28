@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import { ServerContext } from '@/state/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExchangeAlt, faTimesCircle, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faExchangeAlt, faInfoCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
@@ -12,6 +12,7 @@ import { Button } from '@/elements/button';
 import tw from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
 import { Dialog } from '@/elements/dialog';
+import Label from '@/elements/Label';
 
 export default () => {
     const [plans, setPlans] = useState<Product[]>([]);
@@ -77,127 +78,87 @@ export default () => {
         }
     };
 
-    const formatResourceViolations = () => {
-        if (!validation?.violations) return null;
-
-        return (
-            <div css={tw`mt-4 space-y-2`}>
-                <p css={tw`text-sm font-semibold text-red-400`}>Current usage exceeds the following limits:</p>
-                <ul css={tw`list-disc list-inside space-y-1`}>
-                    {Object.entries(validation.violations).map(([resource, data]) => (
-                        <li key={resource} css={tw`text-xs text-red-300`}>
-                            <strong>{resource.charAt(0).toUpperCase() + resource.slice(1)}:</strong> Using{' '}
-                            {data.current} {data.unit}, new limit is {data.limit} {data.unit}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        );
-    };
-
     if (!billingProductId) {
+        return null;
+    }
+
+    if (loading) {
         return (
-            <TitledGreyBox title={'Change Plan'} icon={faExchangeAlt}>
-                <Alert type={'warning'}>
-                    This server is not associated with a billing plan, so plan changes are not available.
-                </Alert>
+            <TitledGreyBox title={'Available Plans'} icon={faExchangeAlt}>
+                <SpinnerOverlay visible={loading} />
+                <p css={tw`text-gray-400 text-sm`}>Loading available plans...</p>
             </TitledGreyBox>
         );
     }
 
+    if (plans.length === 0) {
+        return null;
+    }
+
     return (
         <>
-            <TitledGreyBox title={'Change Plan'} icon={faExchangeAlt}>
-                <SpinnerOverlay visible={loading} />
-                {!loading && plans.length === 0 && (
-                    <Alert type={'info'}>
-                        <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-2`} />
-                        No other plans are available in your current category.
-                    </Alert>
-                )}
+            <TitledGreyBox title={'Available Plans'} icon={faExchangeAlt}>
+                <div>
+                    <p css={tw`text-gray-400 text-xs mb-3`}>
+                        Upgrade or downgrade to a different plan within your category.
+                    </p>
 
-                {!loading && plans.length > 0 && (
-                    <div>
-                        <p css={tw`text-gray-400 text-xs mb-4`}>
-                            Upgrade or downgrade your server to a different plan within the same category.
-                        </p>
-
-                        <div css={tw`space-y-3`}>
-                            {plans.map(plan => (
+                    <div css={tw`space-y-2`}>
+                        {plans.map(plan => (
+                            <div key={plan.id} css={tw`relative`}>
                                 <div
-                                    key={plan.id}
-                                    css={tw`bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-gray-500 transition-colors`}
+                                    css={tw`flex items-center justify-between p-3 rounded bg-gray-600 hover:bg-gray-550 transition-colors border border-transparent hover:border-gray-500`}
                                 >
-                                    <div css={tw`flex justify-between items-start mb-2`}>
-                                        <div css={tw`flex-1`}>
-                                            <h4 css={tw`text-gray-200 font-semibold text-sm`}>{plan.name}</h4>
-                                            {plan.description && (
-                                                <p css={tw`text-gray-400 text-xs mt-1`}>{plan.description}</p>
-                                            )}
-                                        </div>
-                                        <div css={tw`text-right ml-4`}>
-                                            <p css={tw`text-lg font-bold text-gray-200`}>
+                                    <div css={tw`flex-1 min-w-0 mr-4`}>
+                                        <div css={tw`flex items-baseline gap-2 mb-1`}>
+                                            <h4 css={tw`text-sm font-medium text-gray-200`}>{plan.name}</h4>
+                                            <span css={tw`text-xs font-semibold text-gray-300`}>
                                                 {settings.currency.symbol}
                                                 {plan.price}
-                                            </p>
-                                            <p css={tw`text-xs text-gray-400`}>
-                                                {settings.currency.code.toUpperCase()}
-                                            </p>
+                                            </span>
+                                        </div>
+                                        <div css={tw`flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400`}>
+                                            <span>
+                                                {plan.limits.cpu}% CPU
+                                            </span>
+                                            <span>
+                                                {plan.limits.memory} MB RAM
+                                            </span>
+                                            <span>
+                                                {plan.limits.disk} MB Disk
+                                            </span>
+                                            <span>
+                                                {plan.limits.database} DB
+                                            </span>
+                                            <span>
+                                                {plan.limits.backup} Backups
+                                            </span>
                                         </div>
                                     </div>
-
-                                    <div css={tw`grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 text-xs`}>
-                                        <div>
-                                            <span css={tw`text-gray-500`}>CPU:</span>
-                                            <span css={tw`text-gray-300 ml-1`}>{plan.limits.cpu}%</span>
-                                        </div>
-                                        <div>
-                                            <span css={tw`text-gray-500`}>RAM:</span>
-                                            <span css={tw`text-gray-300 ml-1`}>{plan.limits.memory} MB</span>
-                                        </div>
-                                        <div>
-                                            <span css={tw`text-gray-500`}>Disk:</span>
-                                            <span css={tw`text-gray-300 ml-1`}>{plan.limits.disk} MB</span>
-                                        </div>
-                                        <div>
-                                            <span css={tw`text-gray-500`}>Databases:</span>
-                                            <span css={tw`text-gray-300 ml-1`}>{plan.limits.database}</span>
-                                        </div>
-                                        <div>
-                                            <span css={tw`text-gray-500`}>Backups:</span>
-                                            <span css={tw`text-gray-300 ml-1`}>{plan.limits.backup}</span>
-                                        </div>
-                                        <div>
-                                            <span css={tw`text-gray-500`}>Allocations:</span>
-                                            <span css={tw`text-gray-300 ml-1`}>{plan.limits.allocation}</span>
-                                        </div>
-                                    </div>
-
                                     <Button
                                         onClick={() => handlePlanSelect(plan)}
                                         disabled={changing}
                                         size="sm"
-                                        css={tw`w-full`}
                                     >
-                                        Select This Plan
+                                        Select
                                     </Button>
-
-                                    {selectedPlan?.id === plan.id && validation && !validation.valid && (
-                                        <Alert type={'danger'} className={'mt-3'}>
-                                            <div css={tw`flex items-start`}>
-                                                <FontAwesomeIcon icon={faTimesCircle} css={tw`mr-2 mt-1`} />
-                                                <div css={tw`flex-1`}>
-                                                    <p css={tw`text-sm font-semibold`}>Cannot downgrade to this plan</p>
-                                                    {formatResourceViolations()}
-                                                </div>
-                                            </div>
-                                        </Alert>
-                                    )}
                                 </div>
-                            ))}
-                        </div>
+                                {selectedPlan?.id === plan.id && validation && !validation.valid && (
+                                    <Alert type={'danger'} className={'mt-2'}>
+                                        <p css={tw`text-xs font-medium mb-1`}>Cannot downgrade - usage exceeds limits:</p>
+                                        <ul css={tw`text-xs space-y-0.5 ml-4`}>
+                                            {Object.entries(validation.violations || {}).map(([resource, data]) => (
+                                                <li key={resource}>
+                                                    {resource}: {data.current} {data.unit} → {data.limit} {data.unit}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </Alert>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                )}
+                </div>
             </TitledGreyBox>
 
             {/* Confirmation Dialog */}
@@ -205,53 +166,49 @@ export default () => {
                 open={showConfirmDialog}
                 onClose={() => setShowConfirmDialog(false)}
                 title="Confirm Plan Change"
-                description={selectedPlan ? `Are you sure you want to change to the ${selectedPlan.name} plan?` : ''}
+                description={selectedPlan ? `Change to ${selectedPlan.name}?` : ''}
             >
                 {selectedPlan && (
                     <>
-                        <div css={tw`mt-4 bg-gray-700 rounded-lg p-4`}>
-                            <p css={tw`text-sm font-semibold text-gray-200 mb-2`}>New Plan Resources:</p>
-                            <div css={tw`grid grid-cols-2 gap-2 text-xs`}>
-                                <div>
-                                    <span css={tw`text-gray-500`}>CPU:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.cpu}%</span>
-                                </div>
-                                <div>
-                                    <span css={tw`text-gray-500`}>RAM:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.memory} MB</span>
-                                </div>
-                                <div>
-                                    <span css={tw`text-gray-500`}>Disk:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.disk} MB</span>
-                                </div>
-                                <div>
-                                    <span css={tw`text-gray-500`}>Databases:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.database}</span>
-                                </div>
-                                <div>
-                                    <span css={tw`text-gray-500`}>Backups:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.backup}</span>
-                                </div>
-                                <div>
-                                    <span css={tw`text-gray-500`}>Allocations:</span>
-                                    <span css={tw`text-gray-300 ml-1`}>{selectedPlan.limits.allocation}</span>
+                        <div css={tw`space-y-2`}>
+                            <div>
+                                <Label>New Resources</Label>
+                                <div css={tw`text-sm text-gray-300 space-y-1`}>
+                                    <div css={tw`flex justify-between`}>
+                                        <span>CPU:</span>
+                                        <span>{selectedPlan.limits.cpu}%</span>
+                                    </div>
+                                    <div css={tw`flex justify-between`}>
+                                        <span>RAM:</span>
+                                        <span>{selectedPlan.limits.memory} MB</span>
+                                    </div>
+                                    <div css={tw`flex justify-between`}>
+                                        <span>Disk:</span>
+                                        <span>{selectedPlan.limits.disk} MB</span>
+                                    </div>
+                                    <div css={tw`flex justify-between`}>
+                                        <span>Databases:</span>
+                                        <span>{selectedPlan.limits.database}</span>
+                                    </div>
+                                    <div css={tw`flex justify-between`}>
+                                        <span>Backups:</span>
+                                        <span>{selectedPlan.limits.backup}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div css={tw`mt-3 pt-3 border-t border-gray-600`}>
-                                <p css={tw`text-sm`}>
-                                    <span css={tw`text-gray-500`}>Price:</span>
-                                    <span css={tw`text-gray-200 font-bold ml-2`}>
-                                        {settings.currency.symbol}
-                                        {selectedPlan.price} {settings.currency.code.toUpperCase()}
-                                    </span>
+                            <div>
+                                <Label>Price</Label>
+                                <p css={tw`text-sm text-gray-300`}>
+                                    {settings.currency.symbol}
+                                    {selectedPlan.price} {settings.currency.code.toUpperCase()} per billing cycle
                                 </p>
                             </div>
                         </div>
-                        <p css={tw`text-xs text-yellow-400 mt-4`}>
-                            <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
-                            Your server will be updated with the new resource limits immediately. The page will reload
-                            after the change is complete.
-                        </p>
+                        <Alert type={'info'} className={'mt-4'}>
+                            <p css={tw`text-xs`}>
+                                Resources will be updated immediately. The page will reload after the change.
+                            </p>
+                        </Alert>
                     </>
                 )}
                 <Dialog.Footer>
@@ -259,7 +216,7 @@ export default () => {
                         Cancel
                     </Button.Text>
                     <Button onClick={handleConfirmChange} disabled={changing}>
-                        {changing ? 'Changing Plan...' : 'Confirm Change'}
+                        {changing ? 'Changing...' : 'Confirm'}
                     </Button>
                 </Dialog.Footer>
             </Dialog>

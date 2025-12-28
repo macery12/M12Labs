@@ -230,7 +230,7 @@ export default () => {
             )}
 
             {/* Action Cards Section - Renewal and Server Type Change */}
-            <div css={tw`grid gap-4 md:grid-cols-2 mb-4`}>
+            <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
                 {/* Renewal Section */}
                 <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
                     {!product ? (
@@ -340,10 +340,8 @@ export default () => {
 
                 {/* Change Server Type Section */}
                 <ChangeEggContainer />
-            </div>
 
-            {/* Plan Change Section */}
-            <div css={tw`mt-4`}>
+                {/* Plan Change Section */}
                 <ChangePlanContainer />
             </div>
         </PageContentBlock>
