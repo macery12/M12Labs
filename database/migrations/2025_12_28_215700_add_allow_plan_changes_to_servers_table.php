@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('servers', function (Blueprint $table) {
-            $table->boolean('allow_plan_changes')->default(true)->after('last_plan_change_at');
+            $table->boolean('allow_plan_changes')->default(false)->after('last_plan_change_at');
         });
     }
 

@@ -19,7 +19,7 @@ const MB_TO_GB = 1024;
 export default ({ server }: { server: Server }) => {
     const [open, setOpen] = useState<boolean>(false);
     const [billable, setBillable] = useState<boolean>(Boolean(server.billingProductId));
-    const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(server.allowPlanChanges !== false);
+    const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(server.allowPlanChanges === true);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(server.billingProductId || null);
     const [categories, setCategories] = useState<Category[]>([]);

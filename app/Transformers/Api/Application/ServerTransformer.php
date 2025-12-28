@@ -87,6 +87,7 @@ class ServerTransformer extends Transformer
             ],
             'billing_product_id' => $model->billing_product_id,
             'renewal_date' => $this->formatDate($model->renewal_date),
+            'allow_plan_changes' => $model->allow_plan_changes,
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String(),
         ];

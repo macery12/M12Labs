@@ -85,7 +85,8 @@ export default () => {
     }
 
     // Check if plan changes are disabled for this server
-    if (allowPlanChanges === false) {
+    // Default to false (disabled) if undefined
+    if (allowPlanChanges !== true) {
         return null;
     }
 
