@@ -9,13 +9,16 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
 {
     public function rules(): array
     {
+        $mode = $this->input('mode', 'openai');
+        
         return [
             'enabled' => 'nullable|bool',
             'key' => 'nullable',
             'user_access' => 'nullable|bool',
+            'mode' => 'nullable|string|in:openai,ollama',
             'endpoint' => [
                 'nullable',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($mode) {
                     // Only validate if value is provided (not null or empty)
                     if ($value !== null && $value !== '') {
                         // Validate it's a URL
@@ -24,9 +27,15 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
                             return;
                         }
                         
-                        // Validate it starts with https://
-                        if (!str_starts_with($value, 'https://')) {
-                            $fail('The endpoint must use HTTPS.');
+                        // For OpenAI mode, require HTTPS
+                        // For Ollama mode, allow both HTTP (for local) and HTTPS
+                        if ($mode === 'openai' && !str_starts_with($value, 'https://')) {
+                            $fail('The endpoint must use HTTPS for OpenAI mode.');
+                            return;
+                        }
+                        
+                        if (!str_starts_with($value, 'http://') && !str_starts_with($value, 'https://')) {
+                            $fail('The endpoint must start with http:// or https://.');
                             return;
                         }
                         

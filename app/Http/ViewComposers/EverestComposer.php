@@ -81,6 +81,7 @@ class EverestComposer
                 'user_access' => boolval(config('modules.ai.user_access', false)),
                 'endpoint' => config('modules.ai.endpoint', 'https://api.openai.com/v1'),
                 'model' => config('modules.ai.model', 'gpt-3.5-turbo'),
+                'mode' => config('modules.ai.mode', 'openai'),
             ],
             'webhooks' => [
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),

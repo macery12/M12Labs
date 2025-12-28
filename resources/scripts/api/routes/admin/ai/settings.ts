@@ -6,6 +6,7 @@ export interface AISettings {
     user_access?: boolean;
     endpoint?: string;
     model?: string;
+    mode?: string;
 }
 
 export const updateSettings = (settings: AISettings): Promise<void> => {
