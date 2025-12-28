@@ -8,6 +8,7 @@ export interface AISettings {
     model?: string;
     mode?: string;
     max_tokens?: number;
+    system_prompt?: string;
 }
 
 export const updateSettings = (settings: AISettings): Promise<void> => {

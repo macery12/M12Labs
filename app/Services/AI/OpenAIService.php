@@ -14,6 +14,7 @@ class OpenAIService
     private string $endpoint;
     private string $model;
     private string $mode;
+    private string $systemPrompt;
 
     /**
      * OpenAIService constructor.
@@ -24,6 +25,7 @@ class OpenAIService
         $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
         $this->model = config('modules.ai.model') ?: 'gpt-3.5-turbo';
         $this->mode = config('modules.ai.mode') ?: 'openai';
+        $this->systemPrompt = config('modules.ai.system_prompt') ?: 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.';
 
         // Initialize client without authorization header to prevent credential exposure in logs
         // Increase timeout to 120 seconds to handle longer AI responses
@@ -63,7 +65,7 @@ class OpenAIService
                     'messages' => [
                         [
                             'role' => 'system',
-                            'content' => 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
+                            'content' => $options['system_prompt'] ?? $this->systemPrompt,
                         ],
                         [
                             'role' => 'user',
@@ -145,7 +147,7 @@ class OpenAIService
                     'messages' => [
                         [
                             'role' => 'system',
-                            'content' => 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
+                            'content' => $options['system_prompt'] ?? $this->systemPrompt,
                         ],
                         [
                             'role' => 'user',

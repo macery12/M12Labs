@@ -3,7 +3,7 @@ import Label from '@/elements/Label';
 import { Form, Formik } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import { faKey, faUser, faLink, faCog, faServer, faHashtag } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faUser, faLink, faCog, faServer, faHashtag, faComment } from '@fortawesome/free-solid-svg-icons';
 import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
@@ -43,6 +43,7 @@ export default () => {
                 model: ai.model || 'gpt-3.5-turbo',
                 mode: ai.mode || 'openai',
                 max_tokens: ai.max_tokens || 200,
+                system_prompt: ai.system_prompt || 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
             }}
         >
             {({ values }) => (
@@ -113,6 +114,20 @@ export default () => {
                                 <Field id={'max_tokens'} name={'max_tokens'} type={'number'} min={50} max={4000} />
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     Maximum number of tokens in the AI response (50-4000). Default: 200. Lower values = shorter responses, less cost.
+                                </p>
+                            </div>
+                        </AdminBox>
+                        <AdminBox title={'System Prompt'} icon={faComment} className={'col-span-2'}>
+                            <div>
+                                <Field
+                                    as="textarea"
+                                    id={'system_prompt'}
+                                    name={'system_prompt'}
+                                    rows={3}
+                                    placeholder="You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses."
+                                />
+                                <p className={'mt-1.5 text-xs text-gray-400'}>
+                                    Customize the AI's behavior and response style. This message is sent with every query to define the AI's role and tone. (10-1000 characters)
                                 </p>
                             </div>
                         </AdminBox>
