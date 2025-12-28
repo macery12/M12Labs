@@ -34,7 +34,7 @@ export default () => {
             });
     };
 
-    const isValidKey = key && key.length >= 20;
+    const isValidKey = key !== undefined && key.length >= 20;
 
     return (
         <Dialog open onClose={() => undefined} preventExternalClose hideCloseIcon title={'Configure Jexactyl AI'}>

@@ -13,7 +13,20 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
             'enabled' => 'nullable|bool',
             'key' => 'nullable',
             'user_access' => 'nullable|bool',
-            'endpoint' => 'nullable|url|starts_with:https://',
+            'endpoint' => [
+                'nullable',
+                'url',
+                'starts_with:https://',
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        $parsed = parse_url($value);
+                        // Ensure no @ in the authority part (prevents URL confusion attacks)
+                        if (isset($parsed['user']) || strpos($value, '@') !== false) {
+                            $fail('The endpoint URL contains invalid characters.');
+                        }
+                    }
+                },
+            ],
             'model' => 'nullable|string|min:1|max:100',
         ];
     }
