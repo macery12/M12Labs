@@ -40,6 +40,20 @@
                     window.ThemeConfiguration = {!! json_encode($themeConfiguration) !!};
                 </script>
             @endif
+            @php
+                $flashMessages = [];
+                $flashTypes = ['success', 'error', 'info', 'warning'];
+                foreach($flashTypes as $type) {
+                    if(session()->has($type)) {
+                        $flashMessages[] = ['type' => $type, 'message' => session($type)];
+                    }
+                }
+            @endphp
+            @if(!empty($flashMessages))
+                <script>
+                    window.FlashMessages = {!! json_encode($flashMessages) !!};
+                </script>
+            @endif
         @show
         <style>
             @import url('//fonts.googleapis.com/css?family=Rubik:300,400,500&display=swap');

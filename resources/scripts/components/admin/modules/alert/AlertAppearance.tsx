@@ -10,6 +10,7 @@ import { updateAlertSettings } from '@/api/routes/admin/alerts';
 import { AlertPosition } from '@/state/everest';
 import useFlash from '@/plugins/useFlash';
 import MessageBox, { FlashMessageType } from '@/elements/MessageBox';
+import AlertComponent from '@/components/AlertComponent';
 import useStatus from '@/plugins/useStatus';
 import { Dialog } from '@/elements/dialog';
 import { capitalize } from '@/lib/strings';
@@ -74,6 +75,23 @@ export default () => {
             <AdminBox title={'Preview'} icon={faDesktop}>
                 {alert.enabled && alert.position === 'top-center' ? (
                     <Alert type={alert.type}>{alert.content}</Alert>
+                ) : alert.position === 'slide-out' ? (
+                    <>
+                        <p className={'mb-4 text-center text-lg font-semibold text-gray-400'}>
+                            Alert will slide out from the right side below the header
+                        </p>
+                        <div className={'fixed right-4 z-40'} style={{ top: '5rem', maxWidth: '420px' }}>
+                            <AlertComponent
+                                alert={{
+                                    id: 'preview',
+                                    type: alert.type === 'danger' ? 'error' : (alert.type as 'success' | 'error' | 'info' | 'warning'),
+                                    message: alert.content,
+                                    title: alert.title || undefined,
+                                    dismissible: true,
+                                }}
+                            />
+                        </div>
+                    </>
                 ) : alert.position === 'bottom-right' ? (
                     <>
                         <p className={'text-center text-lg font-semibold text-gray-400'}>

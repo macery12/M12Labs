@@ -14,6 +14,7 @@ import GreyRowBox from '@/elements/GreyRowBox';
 import { Dialog } from '@/elements/dialog';
 import { useFlashKey } from '@/plugins/useFlash';
 import Code from '@/elements/Code';
+import ScopedAlert from '@/components/account/ScopedAlert';
 
 export default () => {
     const [deleteIdentifier, setDeleteIdentifier] = useState('');
@@ -47,6 +48,7 @@ export default () => {
             header
             description={'Create, edit and delete API keys to access the Panel.'}
         >
+            <ScopedAlert scope="account" position="top-center" />
             <FlashMessageRender byKey={'account'} />
             <div css={tw`md:flex flex-nowrap my-10`}>
                 <ContentBox title={'Create API Key'} css={tw`flex-none w-full md:w-1/2`}>

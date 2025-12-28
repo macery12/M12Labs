@@ -93,9 +93,11 @@ export default () => {
 
     return (
         <>
-            {/* Legacy alert support */}
+            {/* Legacy alert support - keep at top for visibility */}
             {legacyAlert.enabled && legacyAlert.position === 'top-center' && (
-                <Alert type={legacyAlert.type}>{legacyAlert.content}</Alert>
+                <div className="mb-4">
+                    <Alert type={legacyAlert.type}>{legacyAlert.content}</Alert>
+                </div>
             )}
             {legacyAlert.enabled && legacyAlert.position === 'center' && open && (
                 <Dialog.Confirm
@@ -109,14 +111,18 @@ export default () => {
                 </Dialog.Confirm>
             )}
 
-            {/* New multi-alert system - Top Center */}
-            {topCenterAlerts.map(alert => (
-                <Alert key={alert.id} type={alert.type} onClose={() => handleTopCenterClose(alert.id)}>
-                    {renderAlertContent(alert)}
-                </Alert>
-            ))}
+            {/* New multi-alert system - Top Center with better spacing */}
+            {topCenterAlerts.length > 0 && (
+                <div className="mb-4 space-y-3">
+                    {topCenterAlerts.map(alert => (
+                        <Alert key={alert.id} type={alert.type} onClose={() => handleTopCenterClose(alert.id)}>
+                            {renderAlertContent(alert)}
+                        </Alert>
+                    ))}
+                </div>
+            )}
 
-            {/* Slide-out Alerts (replaces bottom-left and bottom-right) */}
+            {/* Slide-out Alerts - positioned to avoid header conflicts */}
             {slideOutAlerts.map((alert, index) => (
                 <SlideOutAlert
                     key={alert.id}

@@ -10,6 +10,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
+import ScopedAlert from '@/components/account/ScopedAlert';
 
 export const statusToColor = (status: string): string => {
     switch (status) {
@@ -42,6 +43,7 @@ export default () => {
 
     return (
         <PageContentBlock title={'Support Tickets'}>
+            <ScopedAlert scope="account" position="top-center" />
             <FlashMessageRender byKey={'account:tickets'} />
             <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                 Your Support Tickets

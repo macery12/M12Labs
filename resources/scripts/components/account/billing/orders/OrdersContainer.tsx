@@ -19,6 +19,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { useGetOrders } from '@/api/routes/account/billing/orders';
 import { Context as OrderContext } from '@/api/routes/account/billing/orders/index';
 import { OrderFilters } from '@/api/routes/account/billing/orders/types';
+import ScopedAlert from '@/components/account/ScopedAlert';
 
 export function format(date: number): string {
     let prefix = 'th';
@@ -83,6 +84,7 @@ function OrderTable() {
 
     return (
         <PageContentBlock>
+            <ScopedAlert scope="billing" position="top-center" />
             <div className={'mt-8 mb-12 text-3xl font-bold lg:text-5xl'}>
                 Billing Activity
                 <p className={'mt-1 text-sm font-normal text-gray-400'}>
