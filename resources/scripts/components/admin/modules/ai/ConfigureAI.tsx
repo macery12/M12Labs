@@ -11,6 +11,8 @@ import { useEffect, useState } from 'react';
 
 export default () => {
     const [key, setKey] = useState<string>();
+    const [endpoint, setEndpoint] = useState<string>('https://api.openai.com/v1');
+    const [model, setModel] = useState<string>('gpt-3.5-turbo');
     const settings = useStoreState(s => s.everest.data!.ai);
     const [loading, setLoading] = useState<boolean>(false);
     const { clearFlashes, clearAndAddHttpError } = useFlashKey('admin:ai');
@@ -21,7 +23,7 @@ export default () => {
         clearFlashes();
         setLoading(true);
 
-        updateSettings({ ...settings, key })
+        updateSettings({ ...settings, key, endpoint, model })
             .then(() => {
                 window.location.reload();
             })
@@ -29,7 +31,7 @@ export default () => {
     };
 
     useEffect(() => {
-        if (key && key.length > 30 && key.length < 60) {
+        if (key && key.length > 10) {
             submit();
         }
     }, [key]);
@@ -38,33 +40,46 @@ export default () => {
         <Dialog open onClose={() => undefined} preventExternalClose hideCloseIcon title={'Configure Jexactyl AI'}>
             <SpinnerOverlay visible={loading} />
             <p className={'text-gray-400'}>
-                In order to use <span style={{ color: theme.primary }}>Jexactyl AI</span>, you must get a Gemini API key
-                from Google.
+                In order to use <span style={{ color: theme.primary }}>Jexactyl AI</span>, you must configure an
+                OpenAI-compatible API endpoint.
             </p>
             <p className={'my-2 text-gray-400'}>
-                You can visit the{' '}
+                You can use{' '}
                 <a
-                    href={'https://aistudio.google.com/'}
+                    href={'https://platform.openai.com/api-keys'}
                     rel={'noreferrer'}
                     target={'_blank'}
                     className={'text-blue-400'}
                 >
-                    AI Studio
+                    OpenAI
                     <FontAwesomeIcon icon={faExternalLink} className={'mb-1.5 ml-0.5 h-2 w-2'} />
                 </a>
-                &nbsp;and obtain an API key to use.
+                , or any OpenAI-compatible service like LocalAI, Ollama, or other providers.
             </p>
+            <div className={'mb-4'}>
+                <label className={'block text-sm text-gray-400 mb-1'}>API Endpoint URL</label>
+                <Input
+                    placeholder={'https://api.openai.com/v1'}
+                    value={endpoint}
+                    onChange={e => setEndpoint(e.currentTarget.value)}
+                />
+            </div>
+            <div className={'mb-4'}>
+                <label className={'block text-sm text-gray-400 mb-1'}>Model Name</label>
+                <Input placeholder={'gpt-3.5-turbo'} value={model} onChange={e => setModel(e.currentTarget.value)} />
+            </div>
             <div className={'relative'}>
+                <label className={'block text-sm text-gray-400 mb-1'}>API Key</label>
                 <Input placeholder={'Enter API key here...'} onChange={e => setKey(e.currentTarget.value)} />
-                {!key || key.length < 30 || key.length > 60 ? (
-                    <Tooltip placement={'right'} content={'You must enter a valid Google AI key to continue.'}>
+                {!key || key.length < 10 ? (
+                    <Tooltip placement={'right'} content={'You must enter a valid API key to continue.'}>
                         <FontAwesomeIcon
                             icon={faExclamationTriangle}
-                            className={'absolute top-1/3 right-4 text-yellow-500'}
+                            className={'absolute top-2/3 right-4 text-yellow-500'}
                         />
                     </Tooltip>
                 ) : (
-                    <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-1/3 right-4 text-green-500'} />
+                    <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-2/3 right-4 text-green-500'} />
                 )}
             </div>
         </Dialog>

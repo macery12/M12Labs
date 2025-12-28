@@ -72,6 +72,8 @@ export interface EverestSettings {
         enabled: boolean;
         key: boolean | string;
         user_access: boolean;
+        endpoint?: string;
+        model?: string;
     };
     webhooks: {
         enabled: boolean;

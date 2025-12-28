@@ -3,7 +3,7 @@ import Label from '@/elements/Label';
 import { Form, Formik } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import { faKey, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faUser, faLink, faCog } from '@fortawesome/free-solid-svg-icons';
 import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
@@ -36,6 +36,8 @@ export default () => {
             onSubmit={submit}
             initialValues={{
                 user_access: ai.user_access,
+                endpoint: ai.endpoint || 'https://api.openai.com/v1',
+                model: ai.model || 'gpt-3.5-turbo',
             }}
         >
             <Form>
@@ -61,8 +63,23 @@ export default () => {
                         <div>
                             <Field id={'key'} name={'key'} type={'input'} />
                             <p className={'mt-1.5 text-xs text-gray-400'}>
-                                If you are experiencing &apos;Invalid API Key&apos; errors, you can enter a new one here
-                                to reset it.
+                                Enter your OpenAI API key or a compatible API key from another provider.
+                            </p>
+                        </div>
+                    </AdminBox>
+                    <AdminBox title={'API Endpoint'} icon={faLink}>
+                        <div>
+                            <Field id={'endpoint'} name={'endpoint'} type={'input'} />
+                            <p className={'mt-1.5 text-xs text-gray-400'}>
+                                The base URL for the OpenAI-compatible API endpoint. Default is OpenAI&apos;s API.
+                            </p>
+                        </div>
+                    </AdminBox>
+                    <AdminBox title={'Model Configuration'} icon={faCog}>
+                        <div>
+                            <Field id={'model'} name={'model'} type={'input'} />
+                            <p className={'mt-1.5 text-xs text-gray-400'}>
+                                The AI model to use (e.g., gpt-3.5-turbo, gpt-4, or any compatible model).
                             </p>
                         </div>
                     </AdminBox>

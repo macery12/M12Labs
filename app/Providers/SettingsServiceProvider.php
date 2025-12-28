@@ -77,6 +77,8 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:ai:enabled',
         'modules:ai:key',
         'modules:ai:user_access',
+        'modules:ai:endpoint',
+        'modules:ai:model',
 
         // Webhook module settings
         'modules:webhooks:enabled',

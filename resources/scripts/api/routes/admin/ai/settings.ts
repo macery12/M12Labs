@@ -4,6 +4,8 @@ export interface AISettings {
     key?: string | boolean;
     enabled?: boolean;
     user_access?: boolean;
+    endpoint?: string;
+    model?: string;
 }
 
 export const updateSettings = (settings: AISettings): Promise<void> => {
