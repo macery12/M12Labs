@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $egg_id
  * @property array $allowed_eggs
  * @property bool $allow_egg_changes
+ * @property bool $allow_plan_changes
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -38,7 +39,7 @@ class Category extends Model
     protected $fillable = [
         'uuid', 'name', 'visible', 'icon',
         'description', 'nest_id', 'egg_id',
-        'allowed_eggs', 'allow_egg_changes',
+        'allowed_eggs', 'allow_egg_changes', 'allow_plan_changes',
     ];
 
     public static array $validationRules = [
@@ -52,6 +53,7 @@ class Category extends Model
         'allowed_eggs' => 'nullable|array',
         'allowed_eggs.*' => 'integer|exists:eggs,id',
         'allow_egg_changes' => 'nullable|bool',
+        'allow_plan_changes' => 'nullable|bool',
     ];
 
     /**
@@ -60,6 +62,7 @@ class Category extends Model
     protected $casts = [
         'allowed_eggs' => 'array',
         'allow_egg_changes' => 'boolean',
+        'allow_plan_changes' => 'boolean',
     ];
 
     public function products(): HasMany

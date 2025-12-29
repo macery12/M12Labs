@@ -36,6 +36,15 @@ class PlanChangeController extends ClientApiController
 
         $currentProduct = Product::findOrFail($server->billing_product_id);
         
+        // Get the category to check if plan changes are allowed
+        $category = \Everest\Models\Billing\Category::where('uuid', $currentProduct->category_uuid)->first();
+        
+        if (!$category || !$category->allow_plan_changes) {
+            return $this->fractal->collection(collect([]))
+                ->transformWith(ProductTransformer::class)
+                ->toArray();
+        }
+        
         // Get all products in the same category
         $products = Product::where('category_uuid', $currentProduct->category_uuid)
             ->where('id', '!=', $currentProduct->id)

@@ -21,6 +21,7 @@ interface Category extends Model {
     description?: string;
     allowedEggs: number[];
     allowEggChanges: boolean;
+    allowPlanChanges: boolean;
 }
 
 interface Product extends Model {
