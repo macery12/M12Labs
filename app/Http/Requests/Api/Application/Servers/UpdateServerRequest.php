@@ -91,6 +91,15 @@ class UpdateServerRequest extends ApplicationApiRequest
             $response['allow_plan_changes'] = $data['allow_plan_changes'];
         }
 
+        // DEBUG: Log validated data
+        \Illuminate\Support\Facades\Log::info('UpdateServerRequest - validated() called', [
+            'data_keys' => array_keys($data),
+            'has_allow_plan_changes_in_data' => array_key_exists('allow_plan_changes', $data),
+            'allow_plan_changes_in_data' => $data['allow_plan_changes'] ?? 'NOT_SET',
+            'has_allow_plan_changes_in_response' => array_key_exists('allow_plan_changes', $response),
+            'allow_plan_changes_in_response' => $response['allow_plan_changes'] ?? 'NOT_SET',
+        ]);
+
         return is_null($key) ? $response : Arr::get($response, $key, $default);
     }
 
