@@ -30,15 +30,33 @@ class DetailsModificationService
         return $this->connection->transaction(function () use ($data, $server) {
             $owner = $server->owner_id;
 
-            $server->forceFill([
-                'external_id' => Arr::get($data, 'external_id'),
-                'owner_id' => Arr::get($data, 'owner_id'),
-                'name' => Arr::get($data, 'name'),
-                'description' => Arr::get($data, 'description') ?? '',
-                'renewal_date' => array_key_exists('renewal_date', $data) ? Arr::get($data, 'renewal_date') : $server->renewal_date,
-                'billing_product_id' => array_key_exists('billing_product_id', $data) ? Arr::get($data, 'billing_product_id') : $server->billing_product_id,
-                'allow_plan_changes' => array_key_exists('allow_plan_changes', $data) ? Arr::get($data, 'allow_plan_changes') : $server->allow_plan_changes,
-            ])->saveOrFail();
+            // Only update fields that are actually present in the request data
+            // to avoid overwriting existing values with null
+            $fillData = [];
+            
+            if (array_key_exists('external_id', $data)) {
+                $fillData['external_id'] = $data['external_id'];
+            }
+            if (array_key_exists('owner_id', $data)) {
+                $fillData['owner_id'] = $data['owner_id'];
+            }
+            if (array_key_exists('name', $data)) {
+                $fillData['name'] = $data['name'];
+            }
+            if (array_key_exists('description', $data)) {
+                $fillData['description'] = $data['description'] ?? '';
+            }
+            if (array_key_exists('renewal_date', $data)) {
+                $fillData['renewal_date'] = $data['renewal_date'];
+            }
+            if (array_key_exists('billing_product_id', $data)) {
+                $fillData['billing_product_id'] = $data['billing_product_id'];
+            }
+            if (array_key_exists('allow_plan_changes', $data)) {
+                $fillData['allow_plan_changes'] = $data['allow_plan_changes'];
+            }
+
+            $server->forceFill($fillData)->saveOrFail();
 
             // Refresh the model to ensure all casted attributes are properly loaded
             $server->refresh();
