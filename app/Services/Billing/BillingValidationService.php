@@ -8,6 +8,9 @@ use Everest\Models\Server;
 use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
+use Everest\Repositories\Wings\DaemonServerRepository;
+use Everest\Exceptions\Http\Connection\DaemonConnectionException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Centralized validation service for billing operations.
@@ -17,6 +20,14 @@ use Everest\Exceptions\DisplayException;
  */
 class BillingValidationService
 {
+    /**
+     * BillingValidationService constructor.
+     * 
+     * @param DaemonServerRepository $daemonRepository Repository for interacting with Wings daemon
+     */
+    public function __construct(private DaemonServerRepository $daemonRepository)
+    {
+    }
     /**
      * Validate that the billing module is enabled.
      * 
@@ -141,5 +152,100 @@ class BillingValidationService
                 throw new DisplayException('You already own one of this free product. Nice try!');
             }
         }
+    }
+
+    /**
+     * Validate that a server can be downgraded to a new product plan.
+     * Checks current resource usage against the new plan's limits.
+     * 
+     * @param Server $server The server to validate
+     * @param Product $newProduct The product plan to switch to
+     * @return array Empty array if validation passes, or array of exceeded resources with details
+     */
+    public function validatePlanDowngrade(Server $server, Product $newProduct): array
+    {
+        $violations = [];
+
+        // Get current resource usage from the daemon
+        try {
+            $stats = $this->daemonRepository->setServer($server)->getDetails();
+            $currentUsage = $stats['utilization'] ?? [];
+        } catch (DaemonConnectionException $e) {
+            // If we can't get stats from Wings, we'll only check against current allocations
+            // This ensures we can still validate even if the server is offline
+            Log::warning('Could not retrieve server stats for plan validation', [
+                'server_id' => $server->id,
+                'error' => $e->getMessage(),
+            ]);
+            $currentUsage = [];
+        }
+
+        // Check disk usage (in bytes)
+        if (isset($currentUsage['disk_bytes'])) {
+            $currentDiskMB = round($currentUsage['disk_bytes'] / 1024 / 1024);
+            if ($currentDiskMB > $newProduct->disk_limit) {
+                $violations['disk'] = [
+                    'current' => $currentDiskMB,
+                    'limit' => $newProduct->disk_limit,
+                    'unit' => 'MB',
+                ];
+            }
+        }
+
+        // Check memory usage (in bytes)
+        if (isset($currentUsage['memory_bytes'])) {
+            $currentMemoryMB = round($currentUsage['memory_bytes'] / 1024 / 1024);
+            if ($currentMemoryMB > $newProduct->memory_limit) {
+                $violations['memory'] = [
+                    'current' => $currentMemoryMB,
+                    'limit' => $newProduct->memory_limit,
+                    'unit' => 'MB',
+                ];
+            }
+        }
+
+        // Check CPU (percentage)
+        if (isset($currentUsage['cpu_absolute']) && $newProduct->cpu_limit > 0) {
+            $currentCpuPercent = round($currentUsage['cpu_absolute']);
+            if ($currentCpuPercent > $newProduct->cpu_limit) {
+                $violations['cpu'] = [
+                    'current' => $currentCpuPercent,
+                    'limit' => $newProduct->cpu_limit,
+                    'unit' => '%',
+                ];
+            }
+        }
+
+        // Check database count
+        $currentDatabases = $server->databases()->count();
+        if ($currentDatabases > $newProduct->database_limit) {
+            $violations['databases'] = [
+                'current' => $currentDatabases,
+                'limit' => $newProduct->database_limit,
+                'unit' => 'databases',
+            ];
+        }
+
+        // Check backup count
+        $currentBackups = $server->backups()->count();
+        if ($currentBackups > $newProduct->backup_limit) {
+            $violations['backups'] = [
+                'current' => $currentBackups,
+                'limit' => $newProduct->backup_limit,
+                'unit' => 'backups',
+            ];
+        }
+
+        // Check allocation count
+        $currentAllocations = $server->allocations()->count();
+        if ($currentAllocations > $newProduct->allocation_limit) {
+            $violations['allocations'] = [
+                'current' => $currentAllocations,
+                'limit' => $newProduct->allocation_limit,
+                'unit' => 'allocations',
+            ];
+        }
+
+        return $violations;
     }
 }

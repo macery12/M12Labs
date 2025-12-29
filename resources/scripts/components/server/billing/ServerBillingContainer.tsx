@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Label from '@/elements/Label';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import { ServerContext } from '@/state/server';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -29,6 +29,7 @@ import CouponInput from '@/components/account/billing/order/CouponInput';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
 import ScopedAlert from '@/components/account/ScopedAlert';
+import ChangePlanContainer from './ChangePlanContainer';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -65,10 +66,8 @@ export default () => {
     const [renewing, setRenewing] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
 
-    const navigate = useNavigate();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
-    const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
@@ -231,7 +230,7 @@ export default () => {
             )}
 
             {/* Action Cards Section - Renewal and Server Type Change */}
-            <div css={tw`grid gap-4 md:grid-cols-2`}>
+            <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
                 {/* Renewal Section */}
                 <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
                     {!product ? (
@@ -341,6 +340,9 @@ export default () => {
 
                 {/* Change Server Type Section */}
                 <ChangeEggContainer />
+
+                {/* Plan Change Section */}
+                <ChangePlanContainer />
             </div>
         </PageContentBlock>
     );

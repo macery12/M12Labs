@@ -60,6 +60,7 @@ export interface EverestSettings {
             free_suspension_days: number;
             paid_suspension_days: number;
         };
+        plan_change_cooldown_hours?: number;
     };
     alert: {
         enabled: boolean;
