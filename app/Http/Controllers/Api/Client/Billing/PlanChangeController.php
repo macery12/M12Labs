@@ -5,6 +5,7 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Server;
 use Everest\Models\Billing\Product;
+use Everest\Models\Billing\Category;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\PlanChangeService;
 use Everest\Services\Billing\BillingValidationService;
@@ -37,8 +38,9 @@ class PlanChangeController extends ClientApiController
         $currentProduct = Product::findOrFail($server->billing_product_id);
         
         // Get the category to check if plan changes are allowed
-        $category = \Everest\Models\Billing\Category::where('uuid', $currentProduct->category_uuid)->first();
+        $category = Category::where('uuid', $currentProduct->category_uuid)->first();
         
+        // If category doesn't exist or plan changes are not allowed, return empty list
         if (!$category || !$category->allow_plan_changes) {
             return $this->fractal->collection(collect([]))
                 ->transformWith(ProductTransformer::class)
