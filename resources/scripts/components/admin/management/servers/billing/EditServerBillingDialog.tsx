@@ -117,7 +117,10 @@ export default ({ server }: { server: Server }) => {
         setError(null);
         updateServer(server.id, payload)
             .then(() => {
-                window.location.reload();
+                // Wait a moment for the database transaction to complete before reloading
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             })
             .catch(error => {
                 console.error(error);

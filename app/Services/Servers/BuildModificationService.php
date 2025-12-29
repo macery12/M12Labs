@@ -60,15 +60,6 @@ class BuildModificationService
                 $merge['allow_plan_changes'] = $data['allow_plan_changes'];
             }
 
-            // DEBUG: Log what we're about to save
-            Log::info('BuildModificationService - About to save', [
-                'server_id' => $server->id,
-                'allow_plan_changes_in_data' => array_key_exists('allow_plan_changes', $data),
-                'allow_plan_changes_value' => $data['allow_plan_changes'] ?? 'NOT_SET',
-                'allow_plan_changes_in_merge' => array_key_exists('allow_plan_changes', $merge),
-                'merge_value' => $merge['allow_plan_changes'] ?? 'NOT_IN_MERGE',
-            ]);
-
             $server->forceFill(array_merge($merge, [
                 'allocation_limit' => Arr::get($data, 'allocation_limit', 0) ?? null,
                 'backup_limit' => Arr::get($data, 'backup_limit', 0) ?? 0,
@@ -77,12 +68,6 @@ class BuildModificationService
             ]))->saveOrFail();
 
             $server->refresh();
-            
-            // DEBUG: Log what was saved
-            Log::info('BuildModificationService - After save and refresh', [
-                'server_id' => $server->id,
-                'allow_plan_changes_value' => $server->allow_plan_changes,
-            ]);
 
             return $server;
         });
