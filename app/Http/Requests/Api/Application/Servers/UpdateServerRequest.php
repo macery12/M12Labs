@@ -36,7 +36,6 @@ class UpdateServerRequest extends ApplicationApiRequest
 
             'renewal_date' => $rules['renewal_date'],
             'billing_product_id' => $rules['billing_product_id'],
-            'allow_plan_changes' => 'sometimes|boolean',
 
             'allocation_id' => 'bail|exists:allocations,id',
             'add_allocations' => 'bail|array',
@@ -55,7 +54,6 @@ class UpdateServerRequest extends ApplicationApiRequest
     public function validated($key = null, $default = null)
     {
         $data = parent::validated();
-        
         $response = [
             'external_id' => array_get($data, 'external_id'),
             'name' => array_get($data, 'name'),
@@ -75,22 +73,13 @@ class UpdateServerRequest extends ApplicationApiRequest
             'database_limit' => array_get($data, 'feature_limits.databases'),
             'subuser_limit' => array_get($data, 'feature_limits.subusers'),
 
+            'renewal_date' => array_get($data, 'renewal_date'),
+            'billing_product_id' => array_get($data, 'billing_product_id'),
+
             'allocation_id' => array_get($data, 'allocation_id'),
             'add_allocations' => array_get($data, 'add_allocations'),
             'remove_allocations' => array_get($data, 'remove_allocations'),
         ];
-
-        // Only include billing fields if they are present in the original request
-        // to avoid overwriting existing values with null
-        if (array_key_exists('renewal_date', $data)) {
-            $response['renewal_date'] = $data['renewal_date'];
-        }
-        if (array_key_exists('billing_product_id', $data)) {
-            $response['billing_product_id'] = $data['billing_product_id'];
-        }
-        if (array_key_exists('allow_plan_changes', $data)) {
-            $response['allow_plan_changes'] = $data['allow_plan_changes'];
-        }
 
         return is_null($key) ? $response : Arr::get($response, $key, $default);
     }

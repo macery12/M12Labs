@@ -21,7 +21,7 @@ function timeUntil(targetDate: Date | string) {
 }
 
 export default () => {
-    const { data: server, mutate } = useServerFromRoute();
+    const { data: server } = useServerFromRoute();
     const billing = useStoreState(state => state.everest.data!.billing);
 
     // Get configurable renewal settings
@@ -87,18 +87,8 @@ export default () => {
                                 )}
                             </p>
                         </div>
-                        <div>
-                            <Label>Plan Changes</Label>
-                            <p className={'text-gray-400'}>
-                                {server.allowPlanChanges ? (
-                                    <span className={'text-green-400'}>Allowed</span>
-                                ) : (
-                                    <span className={'text-red-400'}>Disabled</span>
-                                )}
-                            </p>
-                        </div>
                         <div className={'absolute top-2 right-2'}>
-                            <EditServerBillingDialog server={server} mutate={mutate} />
+                            <EditServerBillingDialog server={server} />
                         </div>
                     </div>
                 </AdminBox>

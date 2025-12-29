@@ -231,7 +231,6 @@ class Server extends Model
         'egg_id' => 'integer',
         'billing_product_id' => 'integer',
         'renewal_date' => 'datetime',
-        'allow_plan_changes' => 'boolean',
         'database_limit' => 'integer',
         'allocation_limit' => 'integer',
         'backup_limit' => 'integer',

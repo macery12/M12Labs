@@ -77,10 +77,6 @@ export interface Server {
         environment: Map<string, string>;
     };
 
-    billingProductId?: number;
-    renewalDate?: Date;
-    allowPlanChanges?: boolean;
-
     createdAt: Date;
     updatedAt: Date;
 
@@ -131,10 +127,6 @@ export const rawDataToServer = ({ attributes }: FractalResponseData): Server =>
             image: attributes.container.image,
             environment: attributes.container.environment,
         },
-
-        billingProductId: attributes.billing_product_id,
-        renewalDate: attributes.renewal_date ? new Date(attributes.renewal_date) : undefined,
-        allowPlanChanges: attributes.allow_plan_changes,
 
         createdAt: new Date(attributes.created_at),
         updatedAt: new Date(attributes.updated_at),

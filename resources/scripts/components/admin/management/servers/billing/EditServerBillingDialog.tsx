@@ -16,10 +16,9 @@ import { Transformers } from '@definitions/admin';
 
 const MB_TO_GB = 1024;
 
-export default ({ server, mutate }: { server: Server; mutate: () => void }) => {
+export default ({ server }: { server: Server }) => {
     const [open, setOpen] = useState<boolean>(false);
     const [billable, setBillable] = useState<boolean>(Boolean(server.billingProductId));
-    const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(server.allowPlanChanges === true);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(server.billingProductId || null);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -111,15 +110,10 @@ export default ({ server, mutate }: { server: Server; mutate: () => void }) => {
             payload.billingProductId = null;
         }
 
-        // Always update the allow_plan_changes setting
-        payload.allowPlanChanges = allowPlanChanges;
-
         setError(null);
         updateServer(server.id, payload)
             .then(() => {
-                // Refresh the server data from the API
-                mutate();
-                setOpen(false);
+                window.location.reload();
             })
             .catch(error => {
                 console.error(error);
@@ -284,40 +278,6 @@ export default ({ server, mutate }: { server: Server; mutate: () => void }) => {
                                     onChange={e => setRenewalDateStr(e.target.value)}
                                 />
                                 <p>Server will be set to next renew on: {renewalDateStr.split('T')[0]}</p>
-                            </div>
-
-                            <div>
-                                <div className={'flex'}>
-                                    <Label>
-                                        <CashIcon className={'inline-flex w-4'} /> Allow Plan Changes
-                                    </Label>
-                                    <span className={'ml-2 text-sm italic text-gray-400'}>
-                                        Can users change plans for this server?
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setAllowPlanChanges(true)}
-                                    className={classNames(
-                                        allowPlanChanges ? 'bg-black/50' : 'bg-black/25',
-                                        'rounded-l py-3 px-6 font-bold text-white',
-                                    )}
-                                >
-                                    Allowed
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setAllowPlanChanges(false)}
-                                    className={classNames(
-                                        !allowPlanChanges ? 'bg-black/50' : 'bg-black/25',
-                                        'rounded-r py-3 px-6 font-bold text-white',
-                                    )}
-                                >
-                                    Disabled
-                                </button>
-                                <p className={'mt-2 text-sm text-gray-400'}>
-                                    When disabled, users cannot upgrade or downgrade this server&apos;s plan.
-                                </p>
                             </div>
 
                             <div className={'ml-auto'}>

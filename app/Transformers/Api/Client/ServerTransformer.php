@@ -63,7 +63,6 @@ class ServerTransformer extends Transformer
             'egg_features' => $server->egg->inherit_features,
             'egg_id' => $server->egg_id,
             'billing_product_id' => $server->billing_product_id,
-            'allow_plan_changes' => $server->allow_plan_changes,
             'feature_limits' => [
                 'databases' => $server->database_limit,
                 'allocations' => $server->allocation_limit,

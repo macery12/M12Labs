@@ -30,7 +30,6 @@ interface Server {
     eggFeatures: string[];
     billingProductId?: number;
     renewalDate?: Date | undefined;
-    allowPlanChanges?: boolean;
     featureLimits: {
         databases: number;
         allocations: number;
