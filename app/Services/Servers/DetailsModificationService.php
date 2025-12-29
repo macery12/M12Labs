@@ -4,7 +4,6 @@ namespace Everest\Services\Servers;
 
 use Everest\Models\Server;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Traits\Services\ReturnsUpdatedModels;
 use Everest\Repositories\Wings\DaemonServerRepository;
@@ -31,14 +30,6 @@ class DetailsModificationService
         return $this->connection->transaction(function () use ($data, $server) {
             $owner = $server->owner_id;
 
-            // DEBUG: Log what we're starting with
-            Log::info('DetailsModificationService - Starting', [
-                'server_id' => $server->id,
-                'current_allow_plan_changes' => $server->allow_plan_changes,
-                'data_has_allow_plan_changes' => array_key_exists('allow_plan_changes', $data),
-                'data_allow_plan_changes_value' => $data['allow_plan_changes'] ?? 'NOT_SET',
-            ]);
-            
             // Only update fields that are actually present in the request data
             // to avoid overwriting existing values with null
             $fillData = [];
@@ -65,24 +56,10 @@ class DetailsModificationService
                 $fillData['allow_plan_changes'] = $data['allow_plan_changes'];
             }
 
-            // DEBUG: Log what we're about to fill
-            Log::info('DetailsModificationService - About to forceFill', [
-                'server_id' => $server->id,
-                'fillData_keys' => array_keys($fillData),
-                'fillData_has_allow_plan_changes' => array_key_exists('allow_plan_changes', $fillData),
-                'fillData_allow_plan_changes' => $fillData['allow_plan_changes'] ?? 'NOT_IN_FILL_DATA',
-            ]);
-
             $server->forceFill($fillData)->saveOrFail();
 
             // Refresh the model to ensure all casted attributes are properly loaded
             $server->refresh();
-
-            // DEBUG: Log after save and refresh
-            Log::info('DetailsModificationService - After save and refresh', [
-                'server_id' => $server->id,
-                'allow_plan_changes_value' => $server->allow_plan_changes,
-            ]);
 
             // If the owner_id value is changed we need to revoke any tokens that exist for the server
             // on the Wings instance so that the old owner no longer has any permission to access the

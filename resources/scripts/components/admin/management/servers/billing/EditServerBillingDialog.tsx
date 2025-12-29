@@ -16,7 +16,7 @@ import { Transformers } from '@definitions/admin';
 
 const MB_TO_GB = 1024;
 
-export default ({ server }: { server: Server }) => {
+export default ({ server, mutate }: { server: Server; mutate: () => void }) => {
     const [open, setOpen] = useState<boolean>(false);
     const [billable, setBillable] = useState<boolean>(Boolean(server.billingProductId));
     const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(server.allowPlanChanges === true);
@@ -117,10 +117,9 @@ export default ({ server }: { server: Server }) => {
         setError(null);
         updateServer(server.id, payload)
             .then(() => {
-                // Wait a moment for the database transaction to complete before reloading
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
+                // Refresh the server data from the API
+                mutate();
+                setOpen(false);
             })
             .catch(error => {
                 console.error(error);

@@ -5,7 +5,6 @@ namespace Everest\Http\Requests\Api\Application\Servers;
 use Everest\Models\Server;
 use Illuminate\Support\Arr;
 use Everest\Models\AdminRole;
-use Illuminate\Support\Facades\Log;
 use Everest\Http\Requests\Api\Application\ApplicationApiRequest;
 
 class UpdateServerRequest extends ApplicationApiRequest
@@ -56,13 +55,6 @@ class UpdateServerRequest extends ApplicationApiRequest
     public function validated($key = null, $default = null)
     {
         $data = parent::validated();
-        
-        // DEBUG: Log what data we received
-        Log::info('UpdateServerRequest - validated() called', [
-            'data_keys' => array_keys($data),
-            'has_allow_plan_changes' => array_key_exists('allow_plan_changes', $data),
-            'allow_plan_changes_value' => $data['allow_plan_changes'] ?? 'NOT_SET',
-        ]);
         
         $response = [
             'external_id' => array_get($data, 'external_id'),
