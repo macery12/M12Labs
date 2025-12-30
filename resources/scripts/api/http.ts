@@ -13,47 +13,77 @@ const http: AxiosInstance = axios.create({
 export default http;
 
 /**
+ * Structured error response interfaces for type-safe error handling.
+ */
+interface ApiErrorDetail {
+    detail: string;
+}
+
+interface ApiErrorResponse {
+    errors?: ApiErrorDetail[];
+    error?: string;
+}
+
+interface HttpError {
+    message?: string;
+    response?: {
+        data?: unknown;
+    };
+}
+
+/**
+ * Type guard to check if error has response structure.
+ */
+function isHttpError(error: unknown): error is HttpError {
+    return error !== null && typeof error === 'object' && 'response' in error;
+}
+
+/**
  * Converts an error into a human readable response. Mostly just a generic helper to
  * make sure we display the message from the server back to the user if we can.
  */
 export function httpErrorToHuman(error: unknown): string {
-    if (error && typeof error === 'object' && 'response' in error) {
-        const response = (error as { response?: { data?: unknown } }).response;
-        if (response && response.data) {
-            let { data } = response;
+    if (!isHttpError(error)) {
+        if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+            return error.message;
+        }
+        return 'An unknown error occurred';
+    }
 
-            // Some non-JSON requests can still return the error as a JSON block. In those cases, attempt
-            // to parse it into JSON so we can display an actual error.
-            if (typeof data === 'string') {
-                try {
-                    data = JSON.parse(data);
-                } catch (e) {
-                    // do nothing, bad json
-                }
-            }
+    const { response } = error;
+    if (!response?.data) {
+        return error.message || 'An unknown error occurred';
+    }
 
-            if (
-                data &&
-                typeof data === 'object' &&
-                'errors' in data &&
-                Array.isArray((data as { errors: unknown }).errors) &&
-                (data as { errors: Array<{ detail?: string }> }).errors[0]?.detail
-            ) {
-                return (data as { errors: Array<{ detail: string }> }).errors[0].detail;
-            }
+    let data = response.data;
 
-            // Errors from wings directory, mostly just for file uploads.
-            if (data && typeof data === 'object' && 'error' in data && typeof (data as { error: unknown }).error === 'string') {
-                return (data as { error: string }).error;
-            }
+    // Some non-JSON requests can still return the error as a JSON block. In those cases, attempt
+    // to parse it into JSON so we can display an actual error.
+    if (typeof data === 'string') {
+        try {
+            data = JSON.parse(data) as unknown;
+        } catch {
+            // If parsing fails, return the original error message or a default
+            return error.message || 'An unknown error occurred';
         }
     }
 
-    if (error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string') {
-        return (error as { message: string }).message;
+    // Type guard and extraction for API error response
+    if (data && typeof data === 'object') {
+        const apiError = data as ApiErrorResponse;
+        
+        // Check for errors array with detail
+        if (apiError.errors && Array.isArray(apiError.errors) && apiError.errors[0]?.detail) {
+            return apiError.errors[0].detail;
+        }
+
+        // Check for single error string (from Wings)
+        if (typeof apiError.error === 'string') {
+            return apiError.error;
+        }
     }
 
-    return 'An unknown error occurred';
+    return error.message || 'An unknown error occurred';
 }
 
 export interface FractalResponseData {
