@@ -61,6 +61,7 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:billing:renewal:suspension_threshold',
         'modules:billing:renewal:free_suspension_days',
         'modules:billing:renewal:paid_suspension_days',
+        'modules:billing:plan_change_cooldown_hours',
 
         // Ticket module settings
         'modules:tickets:enabled',
