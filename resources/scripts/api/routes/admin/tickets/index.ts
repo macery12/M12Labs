@@ -42,7 +42,7 @@ export const updateTicket = (id: number, values: Values): Promise<Ticket> => {
     });
 };
 
-export const updateTicketSettings = (key: string, value: any): Promise<void> => {
+export const updateTicketSettings = (key: string, value: boolean | string | number): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/application/tickets/settings`, { key, value })
             .then(() => resolve())

@@ -8,7 +8,7 @@ export const toggleModule = (toggle: string, name: string): Promise<void> => {
     });
 };
 
-export const updateModule = (module: string, key: string, value: any): Promise<void> => {
+export const updateModule = (module: string, key: string, value: boolean | string): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/application/auth/modules`, { module, key, value })
             .then(() => resolve())

@@ -10,7 +10,7 @@ export interface WebhookEvent {
     updatedAt?: Date | null;
 }
 
-const update = (key: string, value: any): Promise<void> => {
+const update = (key: string, value: boolean | string): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/application/webhooks`, { key, value })
             .then(() => resolve())

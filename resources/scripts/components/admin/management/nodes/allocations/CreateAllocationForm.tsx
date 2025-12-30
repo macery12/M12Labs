@@ -18,7 +18,7 @@ interface Values {
     alias: string;
 }
 
-const distinct = (value: any, index: any, self: any) => {
+const distinct = <T>(value: T, index: number, self: T[]): boolean => {
     return self.indexOf(value) === index;
 };
 

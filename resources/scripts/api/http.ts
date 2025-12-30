@@ -16,40 +16,53 @@ export default http;
  * Converts an error into a human readable response. Mostly just a generic helper to
  * make sure we display the message from the server back to the user if we can.
  */
-export function httpErrorToHuman(error: any): string {
-    if (error.response && error.response.data) {
-        let { data } = error.response;
+export function httpErrorToHuman(error: unknown): string {
+    if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: unknown } }).response;
+        if (response && response.data) {
+            let { data } = response;
 
-        // Some non-JSON requests can still return the error as a JSON block. In those cases, attempt
-        // to parse it into JSON so we can display an actual error.
-        if (typeof data === 'string') {
-            try {
-                data = JSON.parse(data);
-            } catch (e) {
-                // do nothing, bad json
+            // Some non-JSON requests can still return the error as a JSON block. In those cases, attempt
+            // to parse it into JSON so we can display an actual error.
+            if (typeof data === 'string') {
+                try {
+                    data = JSON.parse(data);
+                } catch (e) {
+                    // do nothing, bad json
+                }
             }
-        }
 
-        if (data.errors && data.errors[0] && data.errors[0].detail) {
-            return data.errors[0].detail;
-        }
+            if (
+                data &&
+                typeof data === 'object' &&
+                'errors' in data &&
+                Array.isArray((data as { errors: unknown }).errors) &&
+                (data as { errors: Array<{ detail?: string }> }).errors[0]?.detail
+            ) {
+                return (data as { errors: Array<{ detail: string }> }).errors[0].detail;
+            }
 
-        // Errors from wings directory, mostly just for file uploads.
-        if (data.error && typeof data.error === 'string') {
-            return data.error;
+            // Errors from wings directory, mostly just for file uploads.
+            if (data && typeof data === 'object' && 'error' in data && typeof (data as { error: unknown }).error === 'string') {
+                return (data as { error: string }).error;
+            }
         }
     }
 
-    return error.message;
+    if (error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string') {
+        return (error as { message: string }).message;
+    }
+
+    return 'An unknown error occurred';
 }
 
 export interface FractalResponseData {
     object: string;
     attributes: {
-        [k: string]: any;
+        [k: string]: unknown;
         relationships?: Record<string, FractalResponseData | FractalResponseList | null | undefined>;
     };
-    meta?: any;
+    meta?: Record<string, unknown>;
 }
 
 export interface FractalResponseList {
@@ -84,7 +97,13 @@ export interface PaginationDataSet {
     totalPages: number;
 }
 
-export function getPaginationSet(data: any): PaginationDataSet {
+export function getPaginationSet(data: {
+    total: number;
+    count: number;
+    per_page: number;
+    current_page: number;
+    total_pages: number;
+}): PaginationDataSet {
     return {
         total: data.total,
         count: data.count,
