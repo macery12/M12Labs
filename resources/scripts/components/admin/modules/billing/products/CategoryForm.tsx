@@ -14,7 +14,7 @@ import { object, string, boolean, number, array } from 'yup';
 import { faShoppingBasket } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import Label from '@/elements/Label';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useState, useEffect } from 'react';
 import { ShoppingCartIcon } from '@heroicons/react/outline';
 import CategoryDeleteButton from './CategoryDeleteButton';
 import { Category } from '@definitions/admin';
@@ -168,6 +168,15 @@ export default ({ category }: { category?: Category }) => {
     const [visible, setVisible] = useState<boolean>(category?.visible || false);
     const [allowEggChanges, setAllowEggChanges] = useState<boolean>(category?.allowEggChanges ?? true);
     const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(category?.allowPlanChanges ?? true);
+
+    // Sync state when category prop changes (e.g., after save and refetch)
+    useEffect(() => {
+        if (category) {
+            setVisible(category.visible || false);
+            setAllowEggChanges(category.allowEggChanges ?? true);
+            setAllowPlanChanges(category.allowPlanChanges ?? true);
+        }
+    }, [category]);
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
