@@ -176,7 +176,7 @@ export default ({ category }: { category?: Category }) => {
             setAllowEggChanges(category.allowEggChanges ?? true);
             setAllowPlanChanges(category.allowPlanChanges ?? true);
         }
-    }, [category]);
+    }, [category?.visible, category?.allowEggChanges, category?.allowPlanChanges]);
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
