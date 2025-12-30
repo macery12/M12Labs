@@ -102,6 +102,8 @@ function ServerPresetsTable({ filters }: Props) {
                                                 </CopyOnClick>
                                             </td>
 
+                                            {<>{console.log(preset)}</>}
+
                                             <td css={tw`px-6 text-sm text-left whitespace-nowrap`}>
                                                 <NavLink
                                                     to={`/admin/servers/presets/${preset.id}`}

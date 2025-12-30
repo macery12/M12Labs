@@ -53,7 +53,7 @@ export default () => {
             .then(() => {
                 updateEverest({ billing: { ...settings, [key]: value } });
             })
-            .catch(error => console.error('Failed to update settings:', error));
+            .catch(error => console.log(error));
     };
 
     const confirm = ({ terms, privacy }: Values, { setSubmitting }: FormikHelpers<Values>) => {

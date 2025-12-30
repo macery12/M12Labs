@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Auth\Events\Failed;
-use Everest\Models\JGuardDelay;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Container\Container;
 use Everest\Events\Auth\DirectLogin;
 use Illuminate\Support\Facades\Event;
@@ -114,7 +114,7 @@ abstract class AbstractLoginController extends Controller
         $user = $this->creation->handle($data);
 
         if ($guard || $delay > 0) {
-            JGuardDelay::create([
+            DB::table('jguard_delay')->insert([
                 'user_id' => $user->id,
                 'expires_at' => Carbon::now()->add($delay, 'minute'),
             ]);

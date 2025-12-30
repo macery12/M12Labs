@@ -22,7 +22,7 @@ export default ({ selected }: { selected?: UserRole }) => {
     const onSearch = async (query: string) => {
         searchRoles({ name: query })
             .then(setUserRoles)
-            .catch(error => console.error('Failed to search roles:', error));
+            .catch(error => console.log(error));
     };
 
     const onSelect = (userRole: UserRole | null) => {

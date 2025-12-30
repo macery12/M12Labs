@@ -20,7 +20,7 @@ export default () => {
     useEffect(() => {
         getServerPreset(Number(params.id ?? null))
             .then(setPreset)
-            .catch(error => console.error('Failed to load server preset:', error));
+            .catch(error => console.log(error));
     }, []);
 
     if (!preset) return <Spinner size={'large'} centered />;

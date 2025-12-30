@@ -58,7 +58,7 @@ export default function UserForm({ title, initialValues, children, onSubmit, uui
     useEffect(() => {
         getRole(Number(admin_role_id))
             .then(setCurrentRole)
-            .catch(error => console.error('Failed to load role:', error));
+            .catch(error => console.log(error));
     }, []);
 
     if (!initialValues) {

@@ -42,7 +42,7 @@ export default () => {
     const onDeleteKeys = () => {
         deleteStripeKeys()
             .then(() => window.location.reload())
-            .catch(error => console.error('Failed to delete Stripe keys:', error));
+            .catch(error => console.log(error));
     };
 
     return (
@@ -109,6 +109,7 @@ export default () => {
                             <option
                                 key={code}
                                 value={code}
+                                onChange={() => console.log('hello')}
                                 selected={code === settings.currency.code.toUpperCase()}
                             >
                                 {code} - {currencyDictionary[code]!.name}

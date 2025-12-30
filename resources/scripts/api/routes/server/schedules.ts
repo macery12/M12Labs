@@ -10,6 +10,8 @@ const getSchedules = async (uuid: string): Promise<Schedule[]> => {
         },
     });
 
+    console.log(data.data);
+
     return (data.data || []).map(Transformers.toSchedule);
 };
 

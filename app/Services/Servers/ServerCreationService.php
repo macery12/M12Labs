@@ -19,18 +19,6 @@ use Everest\Repositories\Eloquent\ServerVariableRepository;
 use Everest\Services\Deployment\AllocationSelectionService;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 
-/**
- * Service for creating new game servers.
- * 
- * This service handles the complete server creation process including:
- * - Allocating resources (IP addresses, ports)
- * - Creating database records
- * - Communicating with the Wings daemon
- * - Setting up environment variables
- * - Handling deployment to specific nodes
- * 
- * @throws DaemonConnectionException if unable to communicate with the Wings daemon
- */
 class ServerCreationService
 {
     /**

@@ -18,21 +18,6 @@ use Everest\Services\Webhooks\WebhookEventService;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
-/**
- * Service for managing activity logs throughout the application.
- * 
- * This service provides a fluent interface for creating, tracking, and persisting
- * activity logs with support for actors, subjects, batches, and webhooks.
- * 
- * Example usage:
- * ```php
- * $activityLogService
- *     ->event('server:create')
- *     ->description('Created a new server')
- *     ->subject($server)
- *     ->save();
- * ```
- */
 class ActivityLogService
 {
     protected ?ActivityLog $activity = null;
