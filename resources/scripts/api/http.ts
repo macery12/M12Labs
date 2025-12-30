@@ -39,6 +39,31 @@ function isHttpError(error: unknown): error is HttpError {
 }
 
 /**
+ * Type guard to check if data matches ApiErrorResponse structure.
+ */
+function isApiErrorResponse(data: unknown): data is ApiErrorResponse {
+    if (!data || typeof data !== 'object') {
+        return false;
+    }
+    
+    const maybeError = data as Record<string, unknown>;
+    
+    // Check for errors array
+    if ('errors' in maybeError && Array.isArray(maybeError.errors)) {
+        return maybeError.errors.every(
+            (item) => item && typeof item === 'object' && 'detail' in item && typeof item.detail === 'string'
+        );
+    }
+    
+    // Check for single error string
+    if ('error' in maybeError && typeof maybeError.error === 'string') {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
  * Converts an error into a human readable response. Mostly just a generic helper to
  * make sure we display the message from the server back to the user if we can.
  */
@@ -69,17 +94,15 @@ export function httpErrorToHuman(error: unknown): string {
     }
 
     // Type guard and extraction for API error response
-    if (data && typeof data === 'object') {
-        const apiError = data as ApiErrorResponse;
-        
+    if (isApiErrorResponse(data)) {
         // Check for errors array with detail
-        if (apiError.errors && Array.isArray(apiError.errors) && apiError.errors[0]?.detail) {
-            return apiError.errors[0].detail;
+        if (data.errors && data.errors[0]?.detail) {
+            return data.errors[0].detail;
         }
 
         // Check for single error string (from Wings)
-        if (typeof apiError.error === 'string') {
-            return apiError.error;
+        if (data.error) {
+            return data.error;
         }
     }
 
