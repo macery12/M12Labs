@@ -53,9 +53,11 @@ class PlanChangeService
 
         // Enforce cooldown period to prevent rapid plan switching abuse
         // Users cannot switch plans more than once within the configured cooldown period
-        if ($server->last_plan_change_at) {
+        $cooldownHours = (int) \Everest\Models\Setting::get('settings::modules:billing:plan_change_cooldown_hours', 72);
+        
+        // Skip cooldown check if set to 0 (disabled)
+        if ($cooldownHours > 0 && $server->last_plan_change_at) {
             $hoursSinceLastChange = \Carbon\Carbon::parse($server->last_plan_change_at)->diffInHours(\Carbon\Carbon::now());
-            $cooldownHours = (int) \Everest\Models\Setting::get('settings::modules:billing:plan_change_cooldown_hours', 72);
             
             if ($hoursSinceLastChange < $cooldownHours) {
                 $hoursRemaining = $cooldownHours - $hoursSinceLastChange;
