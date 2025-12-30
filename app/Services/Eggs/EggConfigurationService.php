@@ -7,6 +7,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Everest\Services\Servers\ServerConfigurationStructureService;
 
+/**
+ * Service for generating and managing egg configuration for servers.
+ * 
+ * This service handles the transformation of egg configurations into the format
+ * required by the Wings daemon, including placeholder replacement and format conversion.
+ */
 class EggConfigurationService
 {
     /**

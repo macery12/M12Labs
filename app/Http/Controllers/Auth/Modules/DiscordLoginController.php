@@ -5,7 +5,7 @@ namespace Everest\Http\Controllers\Auth\Modules;
 use Carbon\Carbon;
 use Everest\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Everest\Models\JGuardDelay;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -123,7 +123,7 @@ class DiscordLoginController extends AbstractLoginController
         $guard = config('modules.auth.jguard.enabled') ?? false;
 
         if ($guard || $delay > 0) {
-            DB::table('jguard_delay')->insert([
+            JGuardDelay::create([
                 'user_id' => $user->id,
                 'expires_at' => Carbon::now()->add($delay, 'minute'),
             ]);
