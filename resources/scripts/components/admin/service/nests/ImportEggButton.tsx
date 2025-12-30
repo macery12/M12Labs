@@ -42,7 +42,6 @@ export default ({ className }: { className?: string }) => {
             const reader = new FileReader();
 
             reader.onload = async e => {
-                console.log('reader loaded');
                 try {
                     const jsonData = JSON.parse(e.target?.result as string);
                     const egg = await importEgg(Number(params.nestId), jsonData);

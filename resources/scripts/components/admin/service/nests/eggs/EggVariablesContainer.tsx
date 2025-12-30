@@ -32,8 +32,6 @@ export const validationSchema = object().shape({
 });
 
 export function EggVariableForm({ prefix, variable }: { prefix: string; variable?: EggVariable }) {
-    console.log(variable?.id === 5 && variable);
-
     return (
         <>
             <Field id={`${prefix}name`} name={`${prefix}name`} label={'Name'} type={'text'} css={tw`mb-6`} />

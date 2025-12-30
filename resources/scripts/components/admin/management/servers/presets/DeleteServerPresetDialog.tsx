@@ -16,7 +16,7 @@ export default ({ id }: { id: number }) => {
 
         deleteServerPreset(id)
             .then(() => navigate('/admin/servers/presets'))
-            .catch(e => console.log(e))
+            .catch(e => console.error('Failed to delete server preset:', e))
             .finally(() => setLoading(false));
     };
 

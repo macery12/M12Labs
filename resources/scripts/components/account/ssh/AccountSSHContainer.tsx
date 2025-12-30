@@ -21,9 +21,6 @@ export default () => {
 
     useEffect(() => {
         clearAndAddHttpError(error);
-        if (data) {
-            console.log('Fetched SSH Keys:', data);
-        }
     }, [error, data]);
 
     return (
