@@ -165,14 +165,14 @@ export default ({ category }: { category?: Category }) => {
     const navigate = useNavigate();
     const params = useParams<'id'>();
     const { mutate } = useSWRConfig();
-    const [visible, setVisible] = useState<boolean>(category?.visible || false);
+    const [visible, setVisible] = useState<boolean>(category?.visible ?? false);
     const [allowEggChanges, setAllowEggChanges] = useState<boolean>(category?.allowEggChanges ?? true);
     const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(category?.allowPlanChanges ?? true);
 
     // Sync state when category prop changes (e.g., after save and refetch)
     useEffect(() => {
         if (category) {
-            setVisible(category.visible || false);
+            setVisible(category.visible ?? false);
             setAllowEggChanges(category.allowEggChanges ?? true);
             setAllowPlanChanges(category.allowPlanChanges ?? true);
         }
