@@ -146,6 +146,7 @@ interface Category extends Model {
     eggId: number;
     allowedEggs: number[];
     allowEggChanges: boolean;
+    allowPlanChanges: boolean;
 
     createdAt: Date;
     updatedAt?: Date | null;

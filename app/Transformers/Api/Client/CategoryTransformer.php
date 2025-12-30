@@ -27,6 +27,7 @@ class CategoryTransformer extends Transformer
             'description' => $model->description,
             'allowedEggs' => $model->getAllowedEggs(),
             'allowEggChanges' => $model->allow_egg_changes ?? true,
+            'allowPlanChanges' => $model->allow_plan_changes ?? true,
         ];
     }
 }

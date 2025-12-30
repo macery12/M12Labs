@@ -14,7 +14,7 @@ import { object, string, boolean, number, array } from 'yup';
 import { faShoppingBasket } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import Label from '@/elements/Label';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useState, useEffect } from 'react';
 import { ShoppingCartIcon } from '@heroicons/react/outline';
 import CategoryDeleteButton from './CategoryDeleteButton';
 import { Category } from '@definitions/admin';
@@ -27,12 +27,14 @@ import AdminCheckbox from '@/elements/AdminCheckbox';
 interface Props {
     visible: boolean;
     allowEggChanges: boolean;
+    allowPlanChanges: boolean;
     category?: Category;
     setVisible: Dispatch<SetStateAction<boolean>>;
     setAllowEggChanges: Dispatch<SetStateAction<boolean>>;
+    setAllowPlanChanges: Dispatch<SetStateAction<boolean>>;
 }
 
-function InternalForm({ category, visible, setVisible, allowEggChanges, setAllowEggChanges }: Props) {
+function InternalForm({ category, visible, setVisible, allowEggChanges, setAllowEggChanges, allowPlanChanges, setAllowPlanChanges }: Props) {
     const { isSubmitting } = useFormikContext<CategoryValues>();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const [nestId, setNestId] = useState<number>(category?.nestId ?? 0);
@@ -113,6 +115,22 @@ function InternalForm({ category, visible, setVisible, allowEggChanges, setAllow
                                     this category.
                                 </p>
                             </div>
+                            <div className={'mt-4'}>
+                                <Label>Allow users to change billing plans after purchase</Label>
+                                <div css={tw`flex items-center mt-2`}>
+                                    <AdminCheckbox
+                                        name={'allowPlanChanges'}
+                                        checked={allowPlanChanges}
+                                        onChange={e => setAllowPlanChanges(e.target.checked)}
+                                    />
+                                    <span css={tw`ml-2 text-sm text-neutral-300`}>
+                                        {allowPlanChanges ? 'Enabled' : 'Disabled'}
+                                    </span>
+                                </div>
+                                <p className={'mt-2 text-xs text-neutral-400'}>
+                                    When enabled, users can upgrade or downgrade to other plans in this category.
+                                </p>
+                            </div>
                         </FieldRow>
                     </AdminBox>
                 </div>
@@ -147,8 +165,16 @@ export default ({ category }: { category?: Category }) => {
     const navigate = useNavigate();
     const params = useParams<'id'>();
     const { mutate } = useSWRConfig();
-    const [visible, setVisible] = useState<boolean>(category?.visible || false);
+    const [visible, setVisible] = useState<boolean>(category?.visible ?? false);
     const [allowEggChanges, setAllowEggChanges] = useState<boolean>(category?.allowEggChanges ?? true);
+    const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(category?.allowPlanChanges ?? true);
+
+    // Sync state when category data changes from server
+    useEffect(() => {
+        setVisible(category?.visible ?? false);
+        setAllowEggChanges(category?.allowEggChanges ?? true);
+        setAllowPlanChanges(category?.allowPlanChanges ?? true);
+    }, [category?.id, category?.visible, category?.allowEggChanges, category?.allowPlanChanges]);
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
@@ -159,6 +185,7 @@ export default ({ category }: { category?: Category }) => {
 
         values.visible = visible;
         values.allowEggChanges = allowEggChanges;
+        values.allowPlanChanges = allowPlanChanges;
 
         createCategory(values)
             .then(data => navigate(`/admin/billing/categories/${data.id}`))
@@ -174,6 +201,7 @@ export default ({ category }: { category?: Category }) => {
 
         values.visible = visible;
         values.allowEggChanges = allowEggChanges;
+        values.allowPlanChanges = allowPlanChanges;
 
         updateCategory(category!.id, values)
             .then(async () => {
@@ -198,6 +226,7 @@ export default ({ category }: { category?: Category }) => {
                 eggId: category?.eggId ?? 0,
                 allowedEggs: category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []),
                 allowEggChanges: category?.allowEggChanges ?? true,
+                allowPlanChanges: category?.allowPlanChanges ?? true,
             }}
             validationSchema={object().shape({
                 name: string().required().max(191).min(3),
@@ -208,6 +237,7 @@ export default ({ category }: { category?: Category }) => {
                 eggId: number().required(),
                 allowedEggs: array().of(number()).min(1).required(),
                 allowEggChanges: boolean(),
+                allowPlanChanges: boolean(),
             })}
         >
             <InternalForm
@@ -216,6 +246,8 @@ export default ({ category }: { category?: Category }) => {
                 setVisible={setVisible}
                 allowEggChanges={allowEggChanges}
                 setAllowEggChanges={setAllowEggChanges}
+                allowPlanChanges={allowPlanChanges}
+                setAllowPlanChanges={setAllowPlanChanges}
             />
         </Formik>
     );

@@ -40,6 +40,7 @@ class CategoryTransformer extends Transformer
             'egg_id' => $model->egg_id,
             'allowedEggs' => $model->getAllowedEggs(),
             'allowEggChanges' => $model->allow_egg_changes ?? true,
+            'allowPlanChanges' => $model->allow_plan_changes ?? true,
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at ? $model->updated_at->toIso8601String() : null,
         ];

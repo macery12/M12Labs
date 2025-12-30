@@ -29,6 +29,7 @@ export interface CategoryValues {
     eggId: number;
     allowedEggs?: number[];
     allowEggChanges?: boolean;
+    allowPlanChanges?: boolean;
 }
 
 export interface CouponValues {
