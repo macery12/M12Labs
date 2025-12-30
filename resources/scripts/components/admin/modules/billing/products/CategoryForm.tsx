@@ -169,14 +169,12 @@ export default ({ category }: { category?: Category }) => {
     const [allowEggChanges, setAllowEggChanges] = useState<boolean>(category?.allowEggChanges ?? true);
     const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(category?.allowPlanChanges ?? true);
 
-    // Sync state when category prop changes (e.g., after save and refetch)
+    // Sync state when category data changes from server
     useEffect(() => {
-        if (category) {
-            setVisible(category.visible ?? false);
-            setAllowEggChanges(category.allowEggChanges ?? true);
-            setAllowPlanChanges(category.allowPlanChanges ?? true);
-        }
-    }, [category?.visible, category?.allowEggChanges, category?.allowPlanChanges]);
+        setVisible(category?.visible ?? false);
+        setAllowEggChanges(category?.allowEggChanges ?? true);
+        setAllowPlanChanges(category?.allowPlanChanges ?? true);
+    }, [category?.id, category?.visible, category?.allowEggChanges, category?.allowPlanChanges]);
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
