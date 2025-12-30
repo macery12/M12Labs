@@ -68,12 +68,12 @@ class CategoryController extends ApplicationApiController
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
                 'description' => $request->input('description'),
-                'visible' => $request->boolean('visible'),
+                'visible' => $request->input('visible'),
                 'nest_id' => $egg->nest_id,
                 'egg_id' => $egg->id,
                 'allowed_eggs' => $allowedEggs,
-                'allow_egg_changes' => $request->has('allowEggChanges') ? $request->boolean('allowEggChanges') : true,
-                'allow_plan_changes' => $request->has('allowPlanChanges') ? $request->boolean('allowPlanChanges') : true,
+                'allow_egg_changes' => $request->input('allowEggChanges', true),
+                'allow_plan_changes' => $request->input('allowPlanChanges', true),
             ]);
         } catch (\Exception $ex) {
             throw new \Exception('Failed to create a new product category: ' . $ex->getMessage());
@@ -107,12 +107,12 @@ class CategoryController extends ApplicationApiController
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
                 'description' => $request->input('description'),
-                'visible' => $request->boolean('visible'),
+                'visible' => $request->input('visible'),
                 'nest_id' => $egg->nest_id,
                 'egg_id' => $egg->id,
                 'allowed_eggs' => $allowedEggs,
-                'allow_egg_changes' => $request->has('allowEggChanges') ? $request->boolean('allowEggChanges') : true,
-                'allow_plan_changes' => $request->has('allowPlanChanges') ? $request->boolean('allowPlanChanges') : true,
+                'allow_egg_changes' => $request->input('allowEggChanges', true),
+                'allow_plan_changes' => $request->input('allowPlanChanges', true),
             ]);
         } catch (\Exception $ex) {
             throw new \Exception('Failed to update a product category: ' . $ex->getMessage());
