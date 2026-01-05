@@ -1,17 +1,17 @@
 <?php
 
-namespace Pterodactyl\Tests\Integration\Http\Controllers\Auth;
+namespace Everest\Tests\Integration\Http\Controllers\Auth;
 
 use Carbon\Carbon;
-use Pterodactyl\Models\User;
+use Everest\Models\User;
 use PragmaRX\Google2FA\Google2FA;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Session;
-use Pterodactyl\Events\Auth\DirectLogin;
+use Everest\Events\Auth\DirectLogin;
 use PHPUnit\Framework\Attributes\TestWith;
-use Pterodactyl\Tests\Integration\Http\HttpTestCase;
-use Pterodactyl\Events\Auth\ProvidedAuthenticationToken;
+use Everest\Tests\Integration\Http\HttpTestCase;
+use Everest\Events\Auth\ProvidedAuthenticationToken;
 
 class LoginCheckpointControllerTest extends HttpTestCase
 {

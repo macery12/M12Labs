@@ -1,9 +1,9 @@
 <?php
 
-namespace Pterodactyl\Repositories\Wings;
+namespace Everest\Repositories\Wings;
 
 use GuzzleHttp\Exception\TransferException;
-use Pterodactyl\Exceptions\Http\Connection\DaemonConnectionException;
+use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 
 class DaemonRevocationRepository extends DaemonRepository
 {
