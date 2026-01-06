@@ -36,7 +36,7 @@ class IntelligenceController extends ApplicationApiController
 
         Activity::event('admin:ai:update')
             ->property('settings', $request->all())
-            ->description('Jexactyl AI settings were updated')
+            ->description('Jexpanel AI settings were updated')
             ->log();
 
         return $this->returnNoContent();
@@ -50,7 +50,7 @@ class IntelligenceController extends ApplicationApiController
     public function query(Intelligence\QueryRequest $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         if (!config('modules.ai.enabled')) {
-            throw new \Exception('The Jexactyl AI module is not enabled.');
+            throw new \Exception('The Jexpanel AI module is not enabled.');
         }
 
         // Check if streaming is requested
