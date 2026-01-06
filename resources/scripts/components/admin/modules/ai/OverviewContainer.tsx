@@ -133,7 +133,7 @@ export default () => {
                         <textarea
                             ref={textareaRef}
                             className={'flex-1 resize-none border-none bg-transparent font-mono text-sm focus:outline-none focus:ring-0'}
-                            placeholder={'Ask Jexactyl AI a question (Shift+Enter for new line, Enter to send)'}
+                            placeholder={'Ask Jexpanel AI a question (Shift+Enter for new line, Enter to send)'}
                             rows={3}
                             value={query}
                             onChange={e => setQuery(e.target.value)}
@@ -155,7 +155,7 @@ export default () => {
             </div>
             <div className={'col-span-2 space-y-4'}>
                 <Alert type={'warning'} className={'mt-16 md:mt-0'}>
-                    Jexactyl AI uses OpenAI-compatible endpoints. Information provided could be inaccurate or outdated.
+                    Jexpanel AI uses OpenAI-compatible endpoints. Information provided could be inaccurate or outdated.
                     Use with caution!
                 </Alert>
                 <Alert type={'info'}>
@@ -167,8 +167,8 @@ export default () => {
                         You can cancel ongoing requests at any time.
                     </div>
                 </Alert>
-                <AdminBox title={'Disable Jexactyl AI'} className={'col-span-2 h-min'}>
-                    Clicking the button below will disable Jexactyl AI for both clients and administrators. Your API key
+                <AdminBox title={'Disable Jexpanel AI'} className={'col-span-2 h-min'}>
+                    Clicking the button below will disable Jexpanel AI for both clients and administrators. Your API key
                     will remain in the database unless you choose to delete it manually.
                     <div className={'mt-2 text-right'}>
                         <ToggleFeatureButton />

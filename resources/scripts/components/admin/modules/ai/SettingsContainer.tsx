@@ -74,7 +74,7 @@ export default () => {
                                     />
                                 </div>
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    If enabled, standard Jexactyl users will be able to interact with Jexactyl AI as
+                                    If enabled, standard Jexpanel users will be able to interact with Jexpanel AI as
                                     well as administrators.
                                 </p>
                             </div>

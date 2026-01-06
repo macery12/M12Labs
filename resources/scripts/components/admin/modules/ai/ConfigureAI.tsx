@@ -51,10 +51,10 @@ export default () => {
     };
 
     return (
-        <Dialog open onClose={() => undefined} preventExternalClose hideCloseIcon title={'Configure Jexactyl AI'}>
+        <Dialog open onClose={() => undefined} preventExternalClose hideCloseIcon title={'Configure Jexpanel AI'}>
             <SpinnerOverlay visible={loading} />
             <p className={'text-gray-400'}>
-                In order to use <span style={{ color: theme.primary }}>Jexactyl AI</span>, you must configure an
+                In order to use <span style={{ color: theme.primary }}>Jexpanel AI</span>, you must configure an
                 OpenAI-compatible API endpoint.
             </p>
             <p className={'my-2 text-gray-400'}>
