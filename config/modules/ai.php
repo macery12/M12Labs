@@ -7,7 +7,7 @@ return [
     'enabled' => env('AI_ENABLED', false),
 
     /*
-     * Set the API key for OpenAI-compatible API.
+     * Set the API key for OpenAI or any OpenAI-compatible API.
      */
     'key' => env('AI_KEY', ''),
 
