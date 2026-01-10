@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
-
 /**
  * Everest\Models\User.
  *

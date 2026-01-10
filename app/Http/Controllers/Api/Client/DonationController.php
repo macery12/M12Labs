@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
-use Everest\Models\Billing\BillingException;
 
 /**
  * Donation Controller
@@ -38,7 +37,7 @@ class DonationController extends ClientApiController
      */
     public function getStripeKey(): JsonResponse
     {
-        $publicKey = (string) config('modules.billing.keys.publishable') ?? null;
+        $publicKey = config('modules.billing.keys.publishable');
 
         if (!$publicKey) {
             throw new DisplayException('Stripe is not configured. Please contact an administrator.');
