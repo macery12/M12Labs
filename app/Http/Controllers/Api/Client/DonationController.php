@@ -39,7 +39,7 @@ class DonationController extends ClientApiController
     {
         $publicKey = config('modules.billing.keys.publishable');
 
-        if (!$publicKey) {
+        if (empty($publicKey)) {
             throw new DisplayException('Stripe is not configured. Please contact an administrator.');
         }
 
