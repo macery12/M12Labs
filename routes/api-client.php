@@ -95,6 +95,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
     });
 
+    Route::prefix('/donations')->group(function () {
+        Route::get('/', [Client\DonationController::class, 'index']);
+        Route::get('/key', [Client\DonationController::class, 'getStripeKey']);
+        Route::post('/intent', [Client\DonationController::class, 'createIntent']);
+        Route::post('/complete', [Client\DonationController::class, 'complete']);
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Client Control API
