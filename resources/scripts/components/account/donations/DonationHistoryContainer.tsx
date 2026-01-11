@@ -8,7 +8,7 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { format } from 'date-fns';
 import ContentBox from '@/elements/ContentBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart, faCalendar, faDollarSign, faMessage, faCheckCircle, faClock, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faHeart, faCalendar, faDollarSign, faMessage, faCheckCircle, faClock, faTimesCircle, faUser } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -121,6 +121,12 @@ export default () => {
                                         <FontAwesomeIcon icon={faHeart} style={{ color: colors.primary }} />
                                     </div>
                                     <div>
+                                        {donation.user && (
+                                            <p css={tw`text-sm font-semibold text-gray-200 mb-1 flex items-center`}>
+                                                <FontAwesomeIcon icon={faUser} css={tw`mr-1`} />
+                                                {donation.user.username}
+                                            </p>
+                                        )}
                                         <p css={tw`text-xs text-gray-400 flex items-center`}>
                                             <FontAwesomeIcon icon={faCalendar} css={tw`mr-1`} />
                                             {format(new Date(donation.created_at), 'MMM dd, yyyy')}

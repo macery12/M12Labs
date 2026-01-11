@@ -1,5 +1,11 @@
 import http from '@/api/http';
 
+export interface DonationUser {
+    id: number;
+    username: string;
+    email: string;
+}
+
 export interface Donation {
     id: number;
     user_id: number;
@@ -10,6 +16,7 @@ export interface Donation {
     message?: string;
     created_at: string;
     updated_at: string;
+    user?: DonationUser;
 }
 
 export interface DonationIntent {

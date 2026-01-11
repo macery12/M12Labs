@@ -159,6 +159,7 @@ class DonationController extends ClientApiController
     {
         $donations = $request->user()
             ->donations()
+            ->with('user:id,username,email')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
