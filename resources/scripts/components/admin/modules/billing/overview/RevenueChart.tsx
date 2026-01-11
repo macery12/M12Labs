@@ -27,7 +27,7 @@ export default ({ data, history }: { data: BillingAnalytics; history: number }) 
     });
 
     const dailyRevenue = daysRange.map(date => {
-        const revenueForDay = data.orders
+        const revenueFromOrders = data.orders
             .filter(order => {
                 const createdAt = new Date(order.created_at);
                 return (
@@ -39,14 +39,26 @@ export default ({ data, history }: { data: BillingAnalytics; history: number }) 
                 return total + (order.total || 0);
             }, 0);
 
-        return revenueForDay;
+        const revenueFromDonations = (data.donations || [])
+            .filter(donation => {
+                const createdAt = new Date(donation.created_at);
+                return (
+                    donation.status === 'completed' &&
+                    isWithinInterval(createdAt, { start: startOfDay(date), end: endOfDay(date) })
+                );
+            })
+            .reduce((total, donation) => {
+                return total + (donation.amount || 0);
+            }, 0);
+
+        return revenueFromOrders + revenueFromDonations;
     });
 
     const chartData = {
         labels: daysRange.map(day => format(day, 'yyyy-MM-dd')),
         datasets: [
             {
-                label: 'Revenue from Successful Orders',
+                label: 'Revenue from Orders & Donations',
                 data: dailyRevenue,
                 fill: false,
                 borderColor: '#36A2EB',

@@ -130,7 +130,9 @@ const NavigationBar = () => {
                                 backgroundColor: theme.colors.primary,
                             }}
                         />
-                        <div className={'hidden lg:block'}>{renderPageContent()}</div>
+                        <div className="hidden lg:flex items-center gap-x-1">
+                         {renderPageContent()}
+                        </div>
                     </div>
                     <SearchContainer />
                     <AlertHistoryContainer />

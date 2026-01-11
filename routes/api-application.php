@@ -99,6 +99,10 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::delete('/{uuid}', [Application\Billing\BillingExceptionController::class, 'resolve']);
         });
 
+        Route::group(['prefix' => '/donations'], function () {
+            Route::get('/', [Application\Billing\DonationController::class, 'index']);
+        });
+
         Route::prefix('/config')->group(function () {
             Route::post('/import', [Application\Billing\ConfigController::class, 'import']);
             Route::post('/export', [Application\Billing\ConfigController::class, 'export']);
