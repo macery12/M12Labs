@@ -14,6 +14,7 @@ import ProductContainer from '@admin/modules/billing/products/ProductContainer';
 import CategoryContainer from '@admin/modules/billing/products/CategoryContainer';
 import CouponsContainer from '@admin/modules/billing/coupons/CouponsContainer';
 import CouponForm from '@admin/modules/billing/coupons/CouponForm';
+import DonationsContainer from '@admin/modules/billing/donations/DonationsContainer';
 import {
     CalendarIcon,
     CogIcon,
@@ -22,6 +23,7 @@ import {
     TicketIcon,
     ViewGridIcon,
     XCircleIcon,
+    HeartIcon,
 } from '@heroicons/react/outline';
 import Unfinished from '@/elements/Unfinished';
 import SettingsContainer from '@admin/modules/billing/SettingsContainer';
@@ -58,6 +60,9 @@ export default () => {
                 <SubNavigationLink to={'/admin/billing/orders'} name={'Orders'}>
                     <ShoppingCartIcon />
                 </SubNavigationLink>
+                <SubNavigationLink to={'/admin/billing/donations'} name={'Donations'}>
+                    <HeartIcon />
+                </SubNavigationLink>
                 <SubNavigationLink to={'/admin/billing/coupons'} name={'Coupons'}>
                     <TicketIcon />
                 </SubNavigationLink>
@@ -82,6 +87,8 @@ export default () => {
                 <Route path={'/categories/:id/products/:productId'} element={<ProductContainer />} />
 
                 <Route path={'/orders'} element={<OrdersContainer />} />
+
+                <Route path={'/donations'} element={<DonationsContainer />} />
 
                 <Route path={'/coupons'} element={<CouponsContainer />} />
                 <Route path={'/coupons/new'} element={<CouponForm />} />

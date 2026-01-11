@@ -46,6 +46,22 @@ class Donation extends Model
     ];
 
     /**
+     * Fields that should be visible in serialization.
+     */
+    protected $visible = [
+        'id',
+        'user_id',
+        'payment_intent_id',
+        'amount',
+        'currency',
+        'status',
+        'message',
+        'created_at',
+        'updated_at',
+        'user',
+    ];
+
+    /**
      * Cast values to correct type.
      */
     protected $casts = [
