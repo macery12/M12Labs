@@ -6,27 +6,40 @@ import { getDonations, Donation } from '@/api/routes/account/donations';
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { format } from 'date-fns';
+import ContentBox from '@/elements/ContentBox';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHeart, faCalendar, faDollarSign, faMessage, faCheckCircle, faClock, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 const StatusBadge = ({ status }: { status: string }) => {
-    const statusColors = {
-        completed: 'bg-green-500',
-        pending: 'bg-yellow-500',
-        failed: 'bg-red-500',
+    const getStatusConfig = () => {
+        switch (status) {
+            case 'completed':
+                return { color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/50', icon: faCheckCircle };
+            case 'pending':
+                return { color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/50', icon: faClock };
+            case 'failed':
+                return { color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/50', icon: faTimesCircle };
+            default:
+                return { color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/50', icon: faClock };
+        }
     };
 
+    const config = getStatusConfig();
+
     return (
-        <span
-            className={`px-2 py-1 rounded text-xs font-semibold text-white ${
-                statusColors[status as keyof typeof statusColors] || 'bg-gray-500'
-            }`}
-        >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
+        <div css={tw`inline-flex items-center px-3 py-1 rounded-full border`} className={`${config.bg} ${config.border}`}>
+            <FontAwesomeIcon icon={config.icon} className={config.color} css={tw`mr-2 text-xs`} />
+            <span className={config.color} css={tw`text-xs font-semibold uppercase`}>
+                {status}
+            </span>
+        </div>
     );
 };
 
 export default () => {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { colors } = useStoreState(state => state.theme.data!);
     const [donations, setDonations] = useState<Donation[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -46,57 +59,113 @@ export default () => {
             });
     }, []);
 
+    const totalDonated = donations
+        .filter(d => d.status === 'completed')
+        .reduce((sum, d) => sum + d.amount, 0);
+
     return (
         <PageContentBlock title={'Donation History'}>
             <FlashMessageRender byKey={'account:donation:history'} />
             <FlashMessageRender byKey={'account:donation'} />
 
+            <div css={tw`mt-8 mb-8 flex items-center justify-between`}>
+                <div>
+                    <h1 css={tw`text-3xl font-bold lg:text-5xl`}>
+                        <FontAwesomeIcon icon={faHeart} css={tw`mr-3`} style={{ color: colors.primary }} />
+                        Your Contributions
+                    </h1>
+                    <p css={tw`mt-2 text-sm font-normal text-gray-400`}>
+                        Thank you for supporting our platform!
+                    </p>
+                </div>
+                {totalDonated > 0 && (
+                    <div css={tw`text-right`}>
+                        <p css={tw`text-sm text-gray-400`}>Total Donated</p>
+                        <p css={tw`text-3xl font-bold`} style={{ color: colors.primary }}>
+                            ${totalDonated.toFixed(2)}
+                        </p>
+                    </div>
+                )}
+            </div>
+
             <SpinnerOverlay visible={loading} />
 
             {!loading && donations.length === 0 && (
-                <div className={'bg-neutral-800 rounded-lg p-8 text-center'}>
-                    <p className={'text-gray-400'}>You haven't made any donations yet.</p>
-                </div>
+                <ContentBox>
+                    <div css={tw`text-center py-12`}>
+                        <FontAwesomeIcon icon={faHeart} css={tw`text-6xl text-gray-600 mb-4`} />
+                        <p css={tw`text-xl font-semibold text-gray-300 mb-2`}>No donations yet</p>
+                        <p css={tw`text-gray-400 mb-6`}>You haven't made any donations. Support us today!</p>
+                        <a
+                            href="/account/donations"
+                            css={tw`inline-block px-6 py-3 rounded font-semibold text-white transition-all hover:brightness-110`}
+                            style={{ backgroundColor: colors.primary }}
+                        >
+                            <FontAwesomeIcon icon={faHeart} css={tw`mr-2`} />
+                            Make a Donation
+                        </a>
+                    </div>
+                </ContentBox>
             )}
 
             {!loading && donations.length > 0 && (
-                <div className={'bg-neutral-800 rounded-lg overflow-hidden'}>
-                    <table className={'w-full'}>
-                        <thead className={'bg-neutral-900'}>
-                            <tr>
-                                <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
-                                    Date
-                                </th>
-                                <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
-                                    Amount
-                                </th>
-                                <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
-                                    Status
-                                </th>
-                                <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
-                                    Message
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className={'divide-y divide-neutral-700'}>
-                            {donations.map(donation => (
-                                <tr key={donation.id} className={'hover:bg-neutral-700 transition-colors'}>
-                                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-300'}>
-                                        {format(new Date(donation.created_at), 'MMM dd, yyyy HH:mm')}
-                                    </td>
-                                    <td className={'px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-200'}>
-                                        ${donation.amount.toFixed(2)} {donation.currency.toUpperCase()}
-                                    </td>
-                                    <td className={'px-6 py-4 whitespace-nowrap text-sm'}>
-                                        <StatusBadge status={donation.status} />
-                                    </td>
-                                    <td className={'px-6 py-4 text-sm text-gray-400'}>
-                                        {donation.message || <span className={'italic'}>No message</span>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div css={tw`space-y-4`}>
+                    {donations.map(donation => (
+                        <ContentBox key={donation.id}>
+                            <div css={tw`grid grid-cols-1 md:grid-cols-4 gap-4`}>
+                                <div css={tw`flex items-center`}>
+                                    <div
+                                        css={tw`w-12 h-12 rounded-full flex items-center justify-center mr-4`}
+                                        style={{ backgroundColor: colors.primary + '20', border: `2px solid ${colors.primary}` }}
+                                    >
+                                        <FontAwesomeIcon icon={faHeart} style={{ color: colors.primary }} />
+                                    </div>
+                                    <div>
+                                        <p css={tw`text-xs text-gray-400 flex items-center`}>
+                                            <FontAwesomeIcon icon={faCalendar} css={tw`mr-1`} />
+                                            {format(new Date(donation.created_at), 'MMM dd, yyyy')}
+                                        </p>
+                                        <p css={tw`text-xs text-gray-500`}>
+                                            {format(new Date(donation.created_at), 'HH:mm:ss')}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div css={tw`flex items-center`}>
+                                    <div>
+                                        <p css={tw`text-xs text-gray-400 mb-1 flex items-center`}>
+                                            <FontAwesomeIcon icon={faDollarSign} css={tw`mr-1`} />
+                                            Amount
+                                        </p>
+                                        <p css={tw`text-2xl font-bold`} style={{ color: colors.primary }}>
+                                            ${donation.amount.toFixed(2)}
+                                        </p>
+                                        <p css={tw`text-xs text-gray-500 uppercase`}>{donation.currency}</p>
+                                    </div>
+                                </div>
+
+                                <div css={tw`flex items-center`}>
+                                    <StatusBadge status={donation.status} />
+                                </div>
+
+                                <div css={tw`flex items-start md:items-center`}>
+                                    {donation.message ? (
+                                        <div css={tw`w-full`}>
+                                            <p css={tw`text-xs text-gray-400 mb-1 flex items-center`}>
+                                                <FontAwesomeIcon icon={faMessage} css={tw`mr-1`} />
+                                                Message
+                                            </p>
+                                            <p css={tw`text-sm text-gray-300 italic line-clamp-2`}>
+                                                &quot;{donation.message}&quot;
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p css={tw`text-sm text-gray-500 italic`}>No message</p>
+                                    )}
+                                </div>
+                            </div>
+                        </ContentBox>
+                    ))}
                 </div>
             )}
         </PageContentBlock>
