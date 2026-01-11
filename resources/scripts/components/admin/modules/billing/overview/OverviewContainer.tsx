@@ -37,7 +37,14 @@ export default () => {
     );
     const successRate: string = ((successfulOrders.length / allOrders.length) * 100).toFixed(1);
 
-    const revenue: string = successfulOrders.reduce((total, order) => total + order.total, 0).toFixed(2);
+    const revenueFromOrders = successfulOrders.reduce((total, order) => total + order.total, 0);
+    const revenueFromDonations = (analytics.donations || [])
+        .filter(donation => 
+            donation.status === 'completed' && 
+            differenceInDays(now, parseISO(donation.created_at.toString())) <= history
+        )
+        .reduce((total, donation) => total + donation.amount, 0);
+    const revenue: string = (revenueFromOrders + revenueFromDonations).toFixed(2);
 
     return (
         <div className={'grid gap-4 lg:grid-cols-5'}>
@@ -92,7 +99,8 @@ export default () => {
                             <span className={'text-4xl'}>{revenue}</span> total revenue
                         </h1>
                         <p className={'mt-2 text-sm text-gray-400'}>
-                            Your {successfulOrders.length} successful orders have generated {settings.currency.symbol}
+                            Your {successfulOrders.length} successful orders and{' '}
+                            {(analytics.donations || []).filter(d => d.status === 'completed' && differenceInDays(now, parseISO(d.created_at.toString())) <= history).length} donations have generated {settings.currency.symbol}
                             {revenue} {settings.currency.code} over the last {history} days.
                         </p>
                         <RevenueChart data={analytics} history={history} />

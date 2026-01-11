@@ -92,6 +92,19 @@ interface BillingAnalytics extends Model {
     orders: Order[];
     products: Product[];
     categories: Category[];
+    donations?: Donation[];
+}
+
+interface Donation extends Model {
+    id: number;
+    user_id: number;
+    payment_intent_id: string;
+    amount: number;
+    currency: string;
+    status: 'pending' | 'completed' | 'failed';
+    message?: string;
+    created_at: Date;
+    updated_at?: Date | null;
 }
 
 interface Order extends Model {
