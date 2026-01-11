@@ -91,13 +91,16 @@ class DonationController extends ClientApiController
         }
 
         // Create donation record
+        $message = $request->input('message');
+        $message = ($message && trim($message) !== '') ? trim($message) : null;
+        
         Donation::create([
             'user_id' => $request->user()->id,
             'payment_intent_id' => $paymentIntent->id,
             'amount' => $amount,
             'currency' => $currency,
             'status' => Donation::STATUS_PENDING,
-            'message' => $request->input('message'),
+            'message' => $message,
         ]);
 
         return response()->json([

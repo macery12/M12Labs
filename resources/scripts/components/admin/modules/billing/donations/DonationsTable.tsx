@@ -5,7 +5,34 @@ import Pagination from '@/elements/Pagination';
 import AdminTable from '@/elements/AdminTable';
 import Spinner from '@/elements/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faClock, faTimesCircle, faHeart } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faClock, faTimesCircle, faHeart, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+
+const maskPaymentIntent = (intentId: string): string => {
+    if (intentId.length <= 8) return intentId;
+    const first4 = intentId.substring(0, 4);
+    const last4 = intentId.substring(intentId.length - 4);
+    const middle = '•'.repeat(intentId.length - 8);
+    return `${first4}${middle}${last4}`;
+};
+
+const PaymentIntentDisplay = ({ intentId }: { intentId: string }) => {
+    const [revealed, setRevealed] = useState(false);
+
+    return (
+        <div className={'flex items-center space-x-2'}>
+            <span className={'text-sm text-gray-500 font-mono'}>
+                {revealed ? intentId : maskPaymentIntent(intentId)}
+            </span>
+            <button
+                onClick={() => setRevealed(!revealed)}
+                className={'text-gray-400 hover:text-gray-200 transition-colors'}
+                title={revealed ? 'Hide' : 'Reveal'}
+            >
+                <FontAwesomeIcon icon={revealed ? faEyeSlash : faEye} className={'text-xs'} />
+            </button>
+        </div>
+    );
+};
 
 const StatusBadge = ({ status }: { status: string }) => {
     const getStatusConfig = () => {
@@ -132,8 +159,8 @@ export default () => {
                                             <div className={'text-sm text-gray-500 italic'}>No message</div>
                                         )}
                                     </td>
-                                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono'}>
-                                        {donation.payment_intent_id}
+                                    <td className={'px-6 py-4 whitespace-nowrap'}>
+                                        <PaymentIntentDisplay intentId={donation.payment_intent_id} />
                                     </td>
                                 </tr>
                             ))
