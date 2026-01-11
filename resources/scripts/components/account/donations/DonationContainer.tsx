@@ -12,7 +12,7 @@ import { createDonationIntent, getStripeKey } from '@/api/routes/account/donatio
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import DonationPaymentForm from './DonationPaymentForm';
-import Input from '@/elements/inputs/Input';
+import Input from '@/elements/Input';
 import Label from '@/elements/Label';
 
 const Container = styled.div`
