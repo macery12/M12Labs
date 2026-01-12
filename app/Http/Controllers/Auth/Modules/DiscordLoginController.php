@@ -82,21 +82,18 @@ class DiscordLoginController extends AbstractLoginController
         $username = $request->input('username');
         $password = $request->input('password');
         $passwordConfirm = $request->input('confirm_password');
-        $useDiscordOnly = $request->input('use_discord_only', false);
 
         if (!$username) {
             throw new DisplayException('Username is required.');
         }
 
-        // Validate password fields only if user wants to set a password
-        if (!$useDiscordOnly) {
-            if (!$password || !$passwordConfirm) {
-                throw new DisplayException('Password and password confirmation are required when not using Discord-only login.');
-            }
+        // Password is always required for SFTP access
+        if (!$password || !$passwordConfirm) {
+            throw new DisplayException('Password and password confirmation are required.');
+        }
 
-            if ($password !== $passwordConfirm) {
-                throw new DisplayException('The passwords entered do not match.');
-            }
+        if ($password !== $passwordConfirm) {
+            throw new DisplayException('The passwords entered do not match.');
         }
 
         if (User::where('username', $username)->exists()) {
@@ -108,12 +105,8 @@ class DiscordLoginController extends AbstractLoginController
             'username' => $username,
             'email' => $discordData['discord_email'],
             'external_id' => $discordData['discord_id'],
+            'password' => $password,
         ];
-
-        // Only add password if user chose to set one
-        if (!$useDiscordOnly && $password) {
-            $userData['password'] = $password;
-        }
 
         // Create user directly via UserCreationService, bypassing registration.enabled check
         $user = $this->creationService->handle($userData);

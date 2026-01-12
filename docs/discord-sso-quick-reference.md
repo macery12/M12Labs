@@ -9,9 +9,7 @@
    - Your Discord email
    - Your Discord ID
    - A pre-filled username (from Discord, editable)
-4. Choose your authentication method:
-   - **Discord-only**: Check the box to use only Discord SSO (no password needed)
-   - **Discord + Password**: Leave unchecked and set a password for dual authentication
+4. Set a password (required for SFTP access to your servers)
 5. Click "Complete Registration"
 6. You're logged in!
 
@@ -65,15 +63,14 @@ Completes Discord registration with user-provided details.
 {
   "username": "string",
   "password": "string",
-  "confirm_password": "string",
-  "use_discord_only": boolean
+  "confirm_password": "string"
 }
 ```
 
 **Validation**:
 - `username`: Required
-- `password`: Required if `use_discord_only` is false
-- `confirm_password`: Required if `use_discord_only` is false, must match `password`
+- `password`: Required (needed for SFTP access)
+- `confirm_password`: Required, must match `password`
 
 **Response**: Standard login response with user object and session token
 
@@ -90,9 +87,8 @@ Completes Discord registration with user-provided details.
 
 **Fields**:
 - Username (text input, required)
-- Use Discord-only (checkbox)
-- Password (password input, conditionally required)
-- Confirm Password (password input, conditionally required)
+- Password (password input, required)
+- Confirm Password (password input, required)
 
 ### Session Data Structure
 
@@ -121,7 +117,7 @@ User::create([
     'username' => $username,
     'email' => $email,
     'external_id' => $discordId,  // Discord ID stored here
-    'password' => $password,       // Optional
+    'password' => $password,       // Required for SFTP access
 ]);
 ```
 
@@ -170,8 +166,9 @@ SESSION_LIFETIME=120
 1. **External ID Uniqueness**: Discord IDs are unique in the database
 2. **No Auto-Linking**: Prevents security issues by not automatically linking Discord to existing emails
 3. **Session-based**: Discord data stored in secure Laravel sessions
-4. **Optional Passwords**: Users can choose Discord-only auth for better security
-5. **CSRF Protection**: All endpoints protected by Laravel's CSRF middleware
+4. **Required Passwords**: All users must set a password for SFTP access to servers
+5. **Dual Authentication**: Users can log in via Discord SSO or username/password
+6. **CSRF Protection**: All endpoints protected by Laravel's CSRF middleware
 
 ### Extending the Flow
 
