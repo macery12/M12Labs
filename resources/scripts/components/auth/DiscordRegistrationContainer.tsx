@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Formik, FormikHelpers, Field as FormikField } from 'formik';
-import { object, string } from 'yup';
+import { Formik, FormikHelpers } from 'formik';
+import { object, string, ref } from 'yup';
 import tw from 'twin.macro';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import Field from '@/elements/Field';
-import Label from '@/elements/Label';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
-import { getDiscordRegistrationData, completeDiscordRegistration, checkUsernameAvailability } from '@/api/routes/auth/discord';
+import {
+    getDiscordRegistrationData,
+    completeDiscordRegistration,
+    checkUsernameAvailability,
+} from '@/api/routes/auth/discord';
 import { faIdBadge, faKey, faUnlockKeyhole, faCheck, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,7 +21,6 @@ interface Values {
     username: string;
     password: string;
     confirm_password: string;
-    set_password: boolean;
 }
 
 function DiscordRegistrationContainer() {
@@ -34,29 +36,8 @@ function DiscordRegistrationContainer() {
     const [usernameMessage, setUsernameMessage] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-    useEffect(() => {
-        clearFlashes();
-
-        getDiscordRegistrationData()
-            .then(data => {
-                setDiscordData(data);
-                setLoading(false);
-                // Automatically check the pre-filled Discord username
-                if (data.discord_username) {
-                    checkUsername(data.discord_username);
-                }
-            })
-            .catch(error => {
-                console.error(error);
-                clearAndAddHttpError({ error });
-                // Redirect back to login if no Discord data found
-                setTimeout(() => navigate('/auth/login'), 2000);
-                setLoading(false);
-            });
-    }, []);
-
     const checkUsername = (username: string) => {
-        if (!username || username.length < 1) {
+        if (!username) {
             setUsernameStatus('idle');
             setUsernameMessage('');
             return;
@@ -83,6 +64,27 @@ function DiscordRegistrationContainer() {
         }, 500);
     };
 
+    useEffect(() => {
+        clearFlashes();
+
+        getDiscordRegistrationData()
+            .then(data => {
+                setDiscordData(data);
+                setLoading(false);
+                // Automatically check the pre-filled Discord username
+                if (data.discord_username) {
+                    checkUsername(data.discord_username);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                clearAndAddHttpError({ error });
+                // Redirect back to login if no Discord data found
+                setTimeout(() => navigate('/auth/login'), 2000);
+                setLoading(false);
+            });
+    }, []);
+
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes();
 
@@ -90,7 +92,6 @@ function DiscordRegistrationContainer() {
             username: values.username,
             password: values.password,
             confirm_password: values.confirm_password,
-            use_discord_only: !values.set_password,
         })
             .then(() => {
                 window.location.href = '/';
@@ -130,23 +131,16 @@ function DiscordRegistrationContainer() {
                 username: discordData.discord_username || '',
                 password: '',
                 confirm_password: '',
-                set_password: false,
             }}
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
-                password: string().when('set_password', {
-                    is: true,
-                    then: schema => schema.required('Please enter your account password.'),
-                    otherwise: schema => schema.notRequired(),
-                }),
-                confirm_password: string().when('set_password', {
-                    is: true,
-                    then: schema => schema.required('Please enter the password confirmation.'),
-                    otherwise: schema => schema.notRequired(),
-                }),
+                password: string().required('Please enter your account password.'),
+                confirm_password: string()
+                    .required('Please enter the password confirmation.')
+                    .oneOf([ref('password')], 'The passwords entered do not match.'),
             })}
         >
-            {({ isSubmitting, values, setFieldValue }) => (
+            {({ isSubmitting, setFieldValue }) => (
                 <LoginFormContainer title={'Complete Your Discord Registration'}>
                     <div css={tw`mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded`}>
                         <div css={tw`flex items-center mb-2`}>
@@ -199,47 +193,34 @@ function DiscordRegistrationContainer() {
                         )}
                     </div>
 
-                    <div css={tw`mt-6`}>
-                        <div className={'flex items-center'}>
-                            <FormikField
-                                type={'checkbox'}
-                                id={'set_password'}
-                                name={'set_password'}
-                                className={'mr-2'}
-                            />
-                            <Label htmlFor={'set_password'} className={'mb-0 cursor-pointer'}>
-                                Set a password (optional)
-                            </Label>
-                        </div>
-                        <p css={tw`mt-1 text-xs text-gray-400`}>
-                            Enable traditional username/password login in addition to Discord SSO
+                    <div css={tw`mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded`}>
+                        <p css={tw`text-xs text-yellow-400`}>
+                            <strong>Note:</strong> A password is required for SFTP connections to your servers. You can
+                            still log in via Discord SSO.
                         </p>
                     </div>
 
-                    {values.set_password && (
-                        <>
-                            <div css={tw`mt-6`}>
-                                <Field
-                                    type={'password'}
-                                    label={'Password'}
-                                    icon={faKey}
-                                    name={'password'}
-                                    placeholder={'••••••••••••'}
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-                            <div css={tw`mt-6`}>
-                                <Field
-                                    type={'password'}
-                                    label={'Confirm Password'}
-                                    icon={faUnlockKeyhole}
-                                    name={'confirm_password'}
-                                    placeholder={'••••••••••••'}
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-                        </>
-                    )}
+                    <div css={tw`mt-6`}>
+                        <Field
+                            type={'password'}
+                            label={'Password'}
+                            icon={faKey}
+                            name={'password'}
+                            placeholder={'••••••••••••'}
+                            disabled={isSubmitting}
+                            description={'Required for SFTP access to your servers'}
+                        />
+                    </div>
+                    <div css={tw`mt-6`}>
+                        <Field
+                            type={'password'}
+                            label={'Confirm Password'}
+                            icon={faUnlockKeyhole}
+                            name={'confirm_password'}
+                            placeholder={'••••••••••••'}
+                            disabled={isSubmitting}
+                        />
+                    </div>
 
                     <div css={tw`mt-6`}>
                         <Button

@@ -10,7 +10,6 @@ export interface CompleteDiscordRegistrationData {
     username: string;
     password: string;
     confirm_password: string;
-    use_discord_only?: boolean;
 }
 
 export interface UsernameCheckResponse {
@@ -42,7 +41,6 @@ export const completeDiscordRegistration = (data: CompleteDiscordRegistrationDat
                     username: data.username,
                     password: data.password,
                     confirm_password: data.confirm_password,
-                    use_discord_only: data.use_discord_only || false,
                 }),
             )
             .then(() => resolve())
