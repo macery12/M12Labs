@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Formik, FormikHelpers } from 'formik';
-import { object, string } from 'yup';
+import { object, string, ref } from 'yup';
 import tw from 'twin.macro';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
@@ -135,7 +135,9 @@ function DiscordRegistrationContainer() {
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
                 password: string().required('Please enter your account password.'),
-                confirm_password: string().required('Please enter the password confirmation.'),
+                confirm_password: string()
+                    .required('Please enter the password confirmation.')
+                    .oneOf([ref('password')], 'The passwords entered do not match.'),
             })}
         >
             {({ isSubmitting, setFieldValue }) => (
