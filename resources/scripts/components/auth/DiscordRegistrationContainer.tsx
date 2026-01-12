@@ -37,7 +37,7 @@ function DiscordRegistrationContainer() {
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     const checkUsername = (username: string) => {
-        if (!username || username.length < 1) {
+        if (!username) {
             setUsernameStatus('idle');
             setUsernameMessage('');
             return;
