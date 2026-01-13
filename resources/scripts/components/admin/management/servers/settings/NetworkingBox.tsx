@@ -2,11 +2,12 @@ import { faNetworkWired, faPlus, faTrash, faStar } from '@fortawesome/free-solid
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
+import { useFormikContext } from 'formik';
 
 import http from '@/api/http';
 import { Allocation } from '@/api/routes/admin/nodes/getAllocations';
 import { useServerFromRoute } from '@/api/routes/admin/server';
-import updateServer from '@/api/routes/admin/servers/updateServer';
+import updateServer, { Values } from '@/api/routes/admin/servers/updateServer';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { useStoreActions } from 'easy-peasy';
@@ -16,6 +17,7 @@ import Spinner from '@/elements/Spinner';
 
 export default () => {
     const { data: server, mutate } = useServerFromRoute();
+    const { setFieldValue } = useFormikContext<Values>();
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(actions => actions.flashes);
     const [availableAllocations, setAvailableAllocations] = useState<Allocation[]>([]);
     const [selectedAvailableId, setSelectedAvailableId] = useState<number | null>(null);
@@ -23,6 +25,13 @@ export default () => {
     const [loading, setLoading] = useState(false);
     const [loadingAvailable, setLoadingAvailable] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
+
+    // Sync the server's current primary allocation ID with the Formik form
+    useEffect(() => {
+        if (server) {
+            setFieldValue('allocationId', server.allocationId);
+        }
+    }, [server?.allocationId, setFieldValue]);
 
     // Load available allocations when modal opens
     useEffect(() => {
