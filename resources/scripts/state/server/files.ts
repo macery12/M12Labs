@@ -17,6 +17,7 @@ interface ServerFileStore {
     uploads: Record<string, FileUploadData>;
     sortField: SortField;
     sortDirection: SortDirection;
+    searchTerm: string;
 
     setDirectory: Action<ServerFileStore, string>;
     setSelectedFiles: Action<ServerFileStore, string[]>;
@@ -24,6 +25,7 @@ interface ServerFileStore {
     removeSelectedFile: Action<ServerFileStore, string>;
     setSortField: Action<ServerFileStore, SortField>;
     setSortDirection: Action<ServerFileStore, SortDirection>;
+    setSearchTerm: Action<ServerFileStore, string>;
 
     pushFileUpload: Action<ServerFileStore, { name: string; data: FileUploadData }>;
     setUploadProgress: Action<ServerFileStore, { name: string; loaded: number }>;
@@ -38,6 +40,7 @@ const files: ServerFileStore = {
     uploads: {},
     sortField: 'name',
     sortDirection: 'asc',
+    searchTerm: '',
 
     setDirectory: action((state, payload) => {
         state.directory = cleanDirectoryPath(payload);
@@ -61,6 +64,10 @@ const files: ServerFileStore = {
 
     setSortDirection: action((state, payload) => {
         state.sortDirection = payload;
+    }),
+
+    setSearchTerm: action((state, payload) => {
+        state.searchTerm = payload;
     }),
 
     clearFileUploads: action(state => {
