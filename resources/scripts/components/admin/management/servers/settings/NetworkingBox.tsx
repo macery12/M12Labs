@@ -43,6 +43,17 @@ export default () => {
     const handleAddAllocation = async () => {
         if (!selectedAvailableId) return;
 
+        // Check allocation limit before adding
+        if (!canAddMore) {
+            clearAndAddHttpError({
+                key: 'server:networking',
+                error: {
+                    message: `Allocation limit of ${allocationLimit} reached. Remove allocations or increase the limit.`,
+                },
+            });
+            return;
+        }
+
         setLoading(true);
         clearFlashes('server:networking');
 
@@ -227,6 +238,7 @@ export default () => {
                 onClose={() => setModalOpen(false)}
                 title="Manage Server Allocations"
                 description="Add, remove, or set primary allocations for this server"
+                size="xl"
             >
                 <Dialog.Icon position="top" type={loading ? 'loading' : 'info'} />
                 <div css={tw`mt-4`}>
