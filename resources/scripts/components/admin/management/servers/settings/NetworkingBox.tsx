@@ -25,7 +25,7 @@ export default () => {
     const { data: server } = useServerFromRoute();
     const [allocations, setAllocations] = useState<AllocationState[]>([]);
     const [selectedAllocationId, setSelectedAllocationId] = useState<number | null>(null);
-    const [newAllocationsToAdd, setNewAllocationsToAdd] = useState<Option[]>([]);
+    const [newAllocationsToAdd, setNewAllocationsToAdd] = useState<Option | null>(null);
 
     // Initialize allocations state from server data
     useEffect(() => {
@@ -46,6 +46,14 @@ export default () => {
         const existingIds = server?.relationships.allocations?.map(a => a.id) || [];
         const allocationsToAdd = allocations.filter(a => a.isNew && !existingIds.includes(a.id)).map(a => a.id);
         const allocationsToRemove = existingIds.filter(id => !allocations.find(a => a.id === id));
+
+        console.log('NetworkingBox - Syncing to Formik:', {
+            allocations,
+            existingIds,
+            allocationsToAdd,
+            allocationsToRemove,
+            primaryAllocation: primaryAllocation?.id,
+        });
 
         if (primaryAllocation) {
             setFieldValue('allocationId', primaryAllocation.id);
@@ -101,19 +109,24 @@ export default () => {
     };
 
     const handleAddAllocations = () => {
-        if (newAllocationsToAdd.length === 0) return;
+        if (!newAllocationsToAdd) return;
 
-        const newAllocs = newAllocationsToAdd.map(opt => ({
-            id: parseInt(opt.value),
-            displayText: opt.label,
+        const newAlloc: AllocationState = {
+            id: parseInt(newAllocationsToAdd.value),
+            displayText: newAllocationsToAdd.label,
             isPrimary: allocations.length === 0,
             isNew: true,
-        }));
+        };
 
-        setAllocations(prev => [...prev, ...newAllocs]);
-        setNewAllocationsToAdd([]);
+        console.log('NetworkingBox - Adding allocation:', newAlloc);
+        setAllocations(prev => {
+            const updated = [...prev, newAlloc];
+            console.log('NetworkingBox - Updated allocations:', updated);
+            return updated;
+        });
+        setNewAllocationsToAdd(null);
 
-        // Scroll to the allocation list to show the newly added items
+        // Scroll to the allocation list to show the newly added item
         const allocationList = document.querySelector('[data-allocation-list]');
         if (allocationList) {
             allocationList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -209,23 +222,32 @@ export default () => {
                             <AsyncSelectField
                                 id={'addAllocationsSelect'}
                                 name={'addAllocationsSelect'}
-                                label={'Add New Allocations'}
+                                label={'Add New Allocation'}
                                 loadOptions={loadOptions}
-                                isMulti
                                 value={newAllocationsToAdd}
-                                onChange={(selected: readonly Option[]) => setNewAllocationsToAdd(selected || [])}
+                                onChange={(selected: Option | null) => setNewAllocationsToAdd(selected)}
                                 isDisabled={!canAddMore}
                             />
                         </div>
                         <Button
                             type="button"
                             onClick={handleAddAllocations}
-                            disabled={newAllocationsToAdd.length === 0 || !canAddMore}
+                            disabled={!newAllocationsToAdd || !canAddMore}
                         >
                             <FontAwesomeIcon icon={faPlus} css={tw`mr-2`} />
                             Add
                         </Button>
                     </div>
+                    {newAllocationsToAdd && (
+                        <div
+                            css={tw`mt-2 p-2 bg-blue-900 bg-opacity-20 border border-blue-500 border-opacity-30 rounded`}
+                        >
+                            <p css={tw`text-sm text-blue-300`}>
+                                <strong>Ready to add:</strong>{' '}
+                                <span css={tw`font-mono`}>{newAllocationsToAdd.label}</span>
+                            </p>
+                        </div>
+                    )}
                     {!canAddMore && allocationLimit > 0 && (
                         <p css={tw`text-xs text-yellow-400 mt-1`}>
                             Allocation limit reached. Remove existing allocations or increase the limit to add more.
@@ -236,10 +258,10 @@ export default () => {
                 {/* Info Message */}
                 <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded`}>
                     <p>
-                        💡 <strong>Tip:</strong> Select allocations from the dropdown above and click &quot;Add&quot; to
-                        add them to the list. Click an allocation in the list to select it, then use &quot;Set
-                        Primary&quot; or &quot;Remove&quot;. All changes are staged locally - click &quot;Save
-                        Changes&quot; at the bottom to apply them.
+                        💡 <strong>Tip:</strong> Select an allocation from the dropdown above - it will show &quot;Ready
+                        to add&quot; below. Click &quot;Add&quot; to add it to the list. Then click any allocation in
+                        the list to select it and use &quot;Set Primary&quot; or &quot;Remove&quot;. Click &quot;Save
+                        Changes&quot; at the bottom to apply all changes.
                     </p>
                 </div>
             </div>
