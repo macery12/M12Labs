@@ -25,7 +25,7 @@ import { NavLink } from 'react-router-dom';
 
 export default () => {
     const [node, setNode] = useState<Node | undefined>();
-    const { data: server } = useServerFromRoute();
+    const { data: server, mutate } = useServerFromRoute();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(actions => actions.flashes);
 
@@ -36,14 +36,14 @@ export default () => {
 
         updateServer(server.id, values)
             .then(() => {
-                // Reload the page to refresh server data and reset allocation state
-                window.location.reload();
+                // Refresh server data to show updated allocations
+                mutate();
             })
             .catch(error => {
                 console.error(error);
                 clearAndAddHttpError({ key: 'server', error });
-                setSubmitting(false);
-            });
+            })
+            .finally(() => setSubmitting(false));
     };
 
     useEffect(() => {

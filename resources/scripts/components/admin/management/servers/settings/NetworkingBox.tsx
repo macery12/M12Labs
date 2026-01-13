@@ -6,6 +6,7 @@ import tw from 'twin.macro';
 
 import getAllocations from '@/api/routes/admin/nodes/getAllocations';
 import { useServerFromRoute } from '@/api/routes/admin/server';
+import type { Values } from '@/api/routes/admin/servers/updateServer';
 import AdminBox from '@/elements/AdminBox';
 import Label from '@/elements/Label';
 import type { Option } from '@/elements/SelectField';
@@ -21,7 +22,7 @@ interface AllocationState {
 }
 
 export default () => {
-    const { isSubmitting, setFieldValue } = useFormikContext<any>();
+    const { isSubmitting, setFieldValue } = useFormikContext<Values>();
     const { data: server } = useServerFromRoute();
     const [allocations, setAllocations] = useState<AllocationState[]>([]);
     const [newAllocationsToAdd, setNewAllocationsToAdd] = useState<Option[]>([]);
@@ -46,9 +47,16 @@ export default () => {
         const allocationsToRemove = allocations.filter(a => a.isMarkedForDeletion && !a.isNew).map(a => a.id);
         const allocationsToAdd = allocations.filter(a => a.isNew && !a.isMarkedForDeletion).map(a => a.id);
 
+        // Set the primary allocation ID, or use the first active allocation if none is marked as primary
         if (primaryAllocation) {
             setFieldValue('allocationId', primaryAllocation.id);
+        } else {
+            const firstActive = allocations.find(a => !a.isMarkedForDeletion);
+            if (firstActive) {
+                setFieldValue('allocationId', firstActive.id);
+            }
         }
+
         setFieldValue('removeAllocations', allocationsToRemove);
         setFieldValue('addAllocations', allocationsToAdd);
     }, [allocations, setFieldValue]);
@@ -78,29 +86,27 @@ export default () => {
     };
 
     const handleToggleDelete = (allocationId: number) => {
-        setAllocations(prev =>
-            prev.map(a => {
-                if (a.id === allocationId) {
-                    const newDeletionState = !a.isMarkedForDeletion;
+        setAllocations(prev => {
+            const allocation = prev.find(a => a.id === allocationId);
+            if (!allocation) return prev;
 
-                    // If this was the primary allocation and we're marking it for deletion,
-                    // set the first non-deleted allocation as primary
-                    if (a.isPrimary && newDeletionState) {
-                        const newPrimary = prev.find(x => x.id !== allocationId && !x.isMarkedForDeletion);
-                        if (newPrimary) {
-                            return prev.map(x => ({
-                                ...x,
-                                isPrimary: x.id === newPrimary.id,
-                                isMarkedForDeletion: x.id === allocationId ? newDeletionState : x.isMarkedForDeletion,
-                            }));
-                        }
-                    }
+            const newDeletionState = !allocation.isMarkedForDeletion;
 
-                    return { ...a, isMarkedForDeletion: newDeletionState };
+            // If this was the primary allocation and we're marking it for deletion,
+            // set the first non-deleted allocation as primary
+            if (allocation.isPrimary && newDeletionState) {
+                const newPrimary = prev.find(x => x.id !== allocationId && !x.isMarkedForDeletion);
+                if (newPrimary) {
+                    return prev.map(x => ({
+                        ...x,
+                        isPrimary: x.id === newPrimary.id,
+                        isMarkedForDeletion: x.id === allocationId ? newDeletionState : x.isMarkedForDeletion,
+                    }));
                 }
-                return a;
-            }),
-        );
+            }
+
+            return prev.map(a => (a.id === allocationId ? { ...a, isMarkedForDeletion: newDeletionState } : a));
+        });
     };
 
     const handleAddAllocations = (selectedOptions: readonly Option[]) => {
@@ -227,7 +233,7 @@ export default () => {
                         loadOptions={loadOptions}
                         isMulti
                         value={newAllocationsToAdd}
-                        onChange={(selected: any) => setNewAllocationsToAdd(selected || [])}
+                        onChange={(selected: readonly Option[]) => setNewAllocationsToAdd(selected || [])}
                         isDisabled={!canAddMore}
                     />
                     {!canAddMore && allocationLimit > 0 && (
