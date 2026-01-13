@@ -71,6 +71,15 @@ const sortFiles = (files: FileObject[], sortField: SortField, sortDirection: Sor
     return sorted.filter((file, index) => index === 0 || file.name !== sorted[index - 1]?.name);
 };
 
+const filterFiles = (files: FileObject[], searchTerm: string): FileObject[] => {
+    if (!searchTerm.trim()) {
+        return files;
+    }
+
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return files.filter(file => file.name.toLowerCase().includes(lowerSearchTerm));
+};
+
 export default () => {
     const id = ServerContext.useStoreState(state => state.server.data!.id);
     const { hash } = useLocation();
@@ -81,6 +90,7 @@ export default () => {
     const [gridView, setGridView] = usePersistedState<boolean>(`${id}_file_manager_view`, false);
     const sortField = ServerContext.useStoreState(state => state.files.sortField);
     const sortDirection = ServerContext.useStoreState(state => state.files.sortDirection);
+    const searchTerm = ServerContext.useStoreState(state => state.files.searchTerm);
     const setSortField = ServerContext.useStoreActions(actions => actions.files.setSortField);
     const setSortDirection = ServerContext.useStoreActions(actions => actions.files.setSortDirection);
     const [persistedSortField, setPersistedSortField] = usePersistedState<SortField>(
@@ -171,36 +181,63 @@ export default () => {
                         <Spinner size={'large'} centered />
                     ) : (
                         <>
-                            {!files.length ? (
-                                <p css={tw`text-sm text-neutral-400 text-center`}>This directory seems to be empty.</p>
-                            ) : (
-                                <FadeTransition duration="duration-150" appear show>
-                                    <div>
-                                        {files.length > 250 && (
-                                            <div css={tw`rounded bg-yellow-400 mb-px p-3`}>
-                                                <p css={tw`text-yellow-900 text-sm text-center`}>
-                                                    This directory is too large to display in the browser, limiting the
-                                                    output to the first 250 files.
-                                                </p>
-                                            </div>
-                                        )}
-                                        {gridView ? (
-                                            <div className={'grid grid-cols-2 gap-2 lg:grid-cols-6 lg:gap-4'}>
-                                                {sortFiles(files.slice(0, 250), sortField, sortDirection).map(file => (
-                                                    <FileObjectGrid key={file.key} file={file} />
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {sortFiles(files.slice(0, 250), sortField, sortDirection).map(file => (
-                                                    <FileObjectList key={file.key} file={file} />
-                                                ))}
-                                            </>
-                                        )}
-                                        <MassActionsBar />
-                                    </div>
-                                </FadeTransition>
-                            )}
+                            {(() => {
+                                // Filter files first based on search term
+                                const filteredFiles = filterFiles(files, searchTerm);
+                                // Then sort the filtered results
+                                const sortedFiles = sortFiles(filteredFiles, sortField, sortDirection);
+                                // Finally, limit to 250 files for display
+                                const displayFiles = sortedFiles.slice(0, 250);
+
+                                if (!filteredFiles.length) {
+                                    return (
+                                        <p css={tw`text-sm text-neutral-400 text-center`}>
+                                            {searchTerm
+                                                ? 'No files found matching your search.'
+                                                : 'This directory seems to be empty.'}
+                                        </p>
+                                    );
+                                }
+
+                                return (
+                                    <FadeTransition duration="duration-150" appear show>
+                                        <div>
+                                            {filteredFiles.length > 250 && (
+                                                <div css={tw`rounded bg-yellow-400 mb-px p-3`}>
+                                                    <p css={tw`text-yellow-900 text-sm text-center`}>
+                                                        {searchTerm
+                                                            ? `Found ${filteredFiles.length} files matching your search, showing first 250.`
+                                                            : 'This directory is too large to display in the browser, limiting the output to the first 250 files.'}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {searchTerm && filteredFiles.length <= 250 && (
+                                                <div css={tw`rounded bg-blue-500 mb-px p-3`}>
+                                                    <p css={tw`text-blue-50 text-sm text-center`}>
+                                                        Found {filteredFiles.length} file
+                                                        {filteredFiles.length !== 1 ? 's' : ''} matching &quot;
+                                                        {searchTerm}&quot;
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {gridView ? (
+                                                <div className={'grid grid-cols-2 gap-2 lg:grid-cols-6 lg:gap-4'}>
+                                                    {displayFiles.map(file => (
+                                                        <FileObjectGrid key={file.key} file={file} />
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {displayFiles.map(file => (
+                                                        <FileObjectList key={file.key} file={file} />
+                                                    ))}
+                                                </>
+                                            )}
+                                            <MassActionsBar />
+                                        </div>
+                                    </FadeTransition>
+                                );
+                            })()}
                         </>
                     )}
                 </div>
