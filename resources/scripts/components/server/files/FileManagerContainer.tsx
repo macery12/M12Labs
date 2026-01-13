@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import tw from 'twin.macro';
 
 import { httpErrorToHuman } from '@/api/http';
@@ -134,6 +134,19 @@ export default () => {
         setSelectedFiles(e.currentTarget.checked ? files?.map(file => file.name) || [] : []);
     };
 
+    // Memoized computation of filtered and sorted files
+    const { filteredFiles, displayFiles } = useMemo(() => {
+        if (!files) {
+            return { filteredFiles: [], displayFiles: [] };
+        }
+
+        const filtered = filterFiles(files, searchTerm);
+        const sorted = sortFiles(filtered, sortField, sortDirection);
+        const display = sorted.slice(0, 250);
+
+        return { filteredFiles: filtered, displayFiles: display };
+    }, [files, searchTerm, sortField, sortDirection]);
+
     if (error) {
         return <ServerError message={httpErrorToHuman(error)} onRetry={() => mutate()} />;
     }
@@ -181,63 +194,50 @@ export default () => {
                         <Spinner size={'large'} centered />
                     ) : (
                         <>
-                            {(() => {
-                                // Filter files first based on search term
-                                const filteredFiles = filterFiles(files, searchTerm);
-                                // Then sort the filtered results
-                                const sortedFiles = sortFiles(filteredFiles, sortField, sortDirection);
-                                // Finally, limit to 250 files for display
-                                const displayFiles = sortedFiles.slice(0, 250);
-
-                                if (!filteredFiles.length) {
-                                    return (
-                                        <p css={tw`text-sm text-neutral-400 text-center`}>
-                                            {searchTerm
-                                                ? 'No files found matching your search.'
-                                                : 'This directory seems to be empty.'}
-                                        </p>
-                                    );
-                                }
-
-                                return (
-                                    <FadeTransition duration="duration-150" appear show>
-                                        <div>
-                                            {filteredFiles.length > 250 && (
-                                                <div css={tw`rounded bg-yellow-400 mb-px p-3`}>
-                                                    <p css={tw`text-yellow-900 text-sm text-center`}>
-                                                        {searchTerm
-                                                            ? `Found ${filteredFiles.length} files matching your search, showing first 250.`
-                                                            : 'This directory is too large to display in the browser, limiting the output to the first 250 files.'}
-                                                    </p>
-                                                </div>
-                                            )}
-                                            {searchTerm && filteredFiles.length <= 250 && (
-                                                <div css={tw`rounded bg-blue-500 mb-px p-3`}>
-                                                    <p css={tw`text-blue-50 text-sm text-center`}>
-                                                        Found {filteredFiles.length} file
-                                                        {filteredFiles.length !== 1 ? 's' : ''} matching &quot;
-                                                        {searchTerm}&quot;
-                                                    </p>
-                                                </div>
-                                            )}
-                                            {gridView ? (
-                                                <div className={'grid grid-cols-2 gap-2 lg:grid-cols-6 lg:gap-4'}>
-                                                    {displayFiles.map(file => (
-                                                        <FileObjectGrid key={file.key} file={file} />
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    {displayFiles.map(file => (
-                                                        <FileObjectList key={file.key} file={file} />
-                                                    ))}
-                                                </>
-                                            )}
-                                            <MassActionsBar />
-                                        </div>
-                                    </FadeTransition>
-                                );
-                            })()}
+                            {!filteredFiles.length ? (
+                                <p css={tw`text-sm text-neutral-400 text-center`}>
+                                    {searchTerm
+                                        ? 'No files found matching your search.'
+                                        : 'This directory seems to be empty.'}
+                                </p>
+                            ) : (
+                                <FadeTransition duration="duration-150" appear show>
+                                    <div>
+                                        {filteredFiles.length > 250 && (
+                                            <div css={tw`rounded bg-yellow-400 mb-px p-3`}>
+                                                <p css={tw`text-yellow-900 text-sm text-center`}>
+                                                    {searchTerm
+                                                        ? `Found ${filteredFiles.length} files matching your search, showing first 250.`
+                                                        : 'This directory is too large to display in the browser, limiting the output to the first 250 files.'}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {searchTerm && filteredFiles.length <= 250 && (
+                                            <div css={tw`rounded bg-blue-500 mb-px p-3`}>
+                                                <p css={tw`text-blue-50 text-sm text-center`}>
+                                                    Found {filteredFiles.length} file
+                                                    {filteredFiles.length !== 1 ? 's' : ''} matching &quot;{searchTerm}
+                                                    &quot;
+                                                </p>
+                                            </div>
+                                        )}
+                                        {gridView ? (
+                                            <div className={'grid grid-cols-2 gap-2 lg:grid-cols-6 lg:gap-4'}>
+                                                {displayFiles.map(file => (
+                                                    <FileObjectGrid key={file.key} file={file} />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {displayFiles.map(file => (
+                                                    <FileObjectList key={file.key} file={file} />
+                                                ))}
+                                            </>
+                                        )}
+                                        <MassActionsBar />
+                                    </div>
+                                </FadeTransition>
+                            )}
                         </>
                     )}
                 </div>
