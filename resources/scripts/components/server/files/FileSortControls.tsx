@@ -73,7 +73,7 @@ const FileSortControls = () => {
                 <div css={tw`relative flex-1`}>
                     <FontAwesomeIcon
                         icon={faSearch}
-                        css={tw`absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400`}
+                        css={tw`absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 pointer-events-none`}
                         size="sm"
                     />
                     <Input
@@ -81,7 +81,7 @@ const FileSortControls = () => {
                         placeholder="Search files..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        css={tw`pl-10 pr-3 py-2 text-sm w-full`}
+                        style={{ paddingLeft: '2.5rem', fontSize: '0.875rem' }}
                         aria-label="Search files by name"
                         role="searchbox"
                     />
