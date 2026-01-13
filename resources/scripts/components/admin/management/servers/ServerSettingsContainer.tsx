@@ -31,22 +31,19 @@ export default () => {
 
     if (!server) return null;
 
-    const submit = (values: Values, { setSubmitting, setFieldValue }: FormikHelpers<Values>) => {
+    const submit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes('server');
 
         updateServer(server.id, values)
             .then(() => {
-                // setServer({ ...server, ...s });
-
-                // TODO: Figure out how to properly clear react-selects for allocations.
-                setFieldValue('addAllocations', []);
-                setFieldValue('removeAllocations', []);
+                // Reload the page to refresh server data and reset allocation state
+                window.location.reload();
             })
             .catch(error => {
                 console.error(error);
                 clearAndAddHttpError({ key: 'server', error });
-            })
-            .then(() => setSubmitting(false));
+                setSubmitting(false);
+            });
     };
 
     useEffect(() => {
