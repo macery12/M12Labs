@@ -93,6 +93,7 @@ export default () => {
     const searchTerm = ServerContext.useStoreState(state => state.files.searchTerm);
     const setSortField = ServerContext.useStoreActions(actions => actions.files.setSortField);
     const setSortDirection = ServerContext.useStoreActions(actions => actions.files.setSortDirection);
+    const { colors } = useStoreState(state => state.theme.data!);
     const [persistedSortField, setPersistedSortField] = usePersistedState<SortField>(
         `${id}_file_manager_sort_field`,
         'name',
@@ -213,8 +214,11 @@ export default () => {
                                             </div>
                                         )}
                                         {searchTerm && filteredFiles.length <= 250 && (
-                                            <div css={tw`rounded bg-blue-500 mb-px p-3`}>
-                                                <p css={tw`text-blue-50 text-sm text-center`}>
+                                            <div
+                                                css={tw`rounded mb-px p-3`}
+                                                style={{ backgroundColor: colors.primary }}
+                                            >
+                                                <p css={tw`text-white text-sm text-center`}>
                                                     Found {filteredFiles.length}{' '}
                                                     {filteredFiles.length === 1 ? 'file' : 'files'} matching &quot;
                                                     {searchTerm}&quot;
