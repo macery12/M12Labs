@@ -1,4 +1,4 @@
-import { faNetworkWired, faStar, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faNetworkWired, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useFormikContext } from 'formik';
 import { useEffect, useState } from 'react';
@@ -17,7 +17,6 @@ interface AllocationState {
     id: number;
     displayText: string;
     isPrimary: boolean;
-    isMarkedForDeletion: boolean;
     isNew: boolean;
 }
 
@@ -25,6 +24,7 @@ export default () => {
     const { isSubmitting, setFieldValue } = useFormikContext<Values>();
     const { data: server } = useServerFromRoute();
     const [allocations, setAllocations] = useState<AllocationState[]>([]);
+    const [selectedAllocationId, setSelectedAllocationId] = useState<number | null>(null);
     const [newAllocationsToAdd, setNewAllocationsToAdd] = useState<Option[]>([]);
 
     // Initialize allocations state from server data
@@ -34,7 +34,6 @@ export default () => {
                 id: a.id,
                 displayText: a.getDisplayText(),
                 isPrimary: a.id === server.allocationId,
-                isMarkedForDeletion: false,
                 isNew: false,
             }));
             setAllocations(initialAllocations);
@@ -43,23 +42,17 @@ export default () => {
 
     // Update Formik values whenever allocations state changes
     useEffect(() => {
-        const primaryAllocation = allocations.find(a => a.isPrimary && !a.isMarkedForDeletion);
-        const allocationsToRemove = allocations.filter(a => a.isMarkedForDeletion && !a.isNew).map(a => a.id);
-        const allocationsToAdd = allocations.filter(a => a.isNew && !a.isMarkedForDeletion).map(a => a.id);
+        const primaryAllocation = allocations.find(a => a.isPrimary);
+        const existingIds = server?.relationships.allocations?.map(a => a.id) || [];
+        const allocationsToAdd = allocations.filter(a => a.isNew && !existingIds.includes(a.id)).map(a => a.id);
+        const allocationsToRemove = existingIds.filter(id => !allocations.find(a => a.id === id));
 
-        // Set the primary allocation ID, or use the first active allocation if none is marked as primary
         if (primaryAllocation) {
             setFieldValue('allocationId', primaryAllocation.id);
-        } else {
-            const firstActive = allocations.find(a => !a.isMarkedForDeletion);
-            if (firstActive) {
-                setFieldValue('allocationId', firstActive.id);
-            }
         }
-
-        setFieldValue('removeAllocations', allocationsToRemove);
         setFieldValue('addAllocations', allocationsToAdd);
-    }, [allocations, setFieldValue]);
+        setFieldValue('removeAllocations', allocationsToRemove);
+    }, [allocations, server, setFieldValue]);
 
     const loadOptions = async (inputValue: string, callback: (options: Option[]) => void) => {
         if (!server) {
@@ -76,182 +69,169 @@ export default () => {
         );
     };
 
-    const handleSetPrimary = (allocationId: number) => {
+    const handleSelectAllocation = (allocationId: number) => {
+        setSelectedAllocationId(prev => (prev === allocationId ? null : allocationId));
+    };
+
+    const handleSetPrimary = () => {
+        if (selectedAllocationId === null) return;
+
         setAllocations(prev =>
             prev.map(a => ({
                 ...a,
-                isPrimary: a.id === allocationId,
+                isPrimary: a.id === selectedAllocationId,
             })),
         );
     };
 
-    const handleToggleDelete = (allocationId: number) => {
+    const handleRemoveSelected = () => {
+        if (selectedAllocationId === null) return;
+
         setAllocations(prev => {
-            const allocation = prev.find(a => a.id === allocationId);
-            if (!allocation) return prev;
+            const newAllocations = prev.filter(a => a.id !== selectedAllocationId);
 
-            const newDeletionState = !allocation.isMarkedForDeletion;
-
-            // If this was the primary allocation and we're marking it for deletion,
-            // set the first non-deleted allocation as primary
-            if (allocation.isPrimary && newDeletionState) {
-                const newPrimary = prev.find(x => x.id !== allocationId && !x.isMarkedForDeletion);
-                if (newPrimary) {
-                    return prev.map(x => ({
-                        ...x,
-                        isPrimary: x.id === newPrimary.id,
-                        isMarkedForDeletion: x.id === allocationId ? newDeletionState : x.isMarkedForDeletion,
-                    }));
-                }
+            // If we removed the primary, set the first allocation as primary
+            if (prev.find(a => a.id === selectedAllocationId)?.isPrimary && newAllocations.length > 0) {
+                newAllocations[0].isPrimary = true;
             }
 
-            return prev.map(a => (a.id === allocationId ? { ...a, isMarkedForDeletion: newDeletionState } : a));
+            return newAllocations;
         });
+        setSelectedAllocationId(null);
     };
 
-    const handleAddAllocations = (selectedOptions: readonly Option[]) => {
-        const newAllocs = selectedOptions.map(opt => ({
+    const handleAddAllocations = () => {
+        if (newAllocationsToAdd.length === 0) return;
+
+        const newAllocs = newAllocationsToAdd.map(opt => ({
             id: parseInt(opt.value),
             displayText: opt.label,
-            isPrimary: false,
-            isMarkedForDeletion: false,
+            isPrimary: allocations.length === 0,
             isNew: true,
         }));
 
-        setAllocations(prev => {
-            // Check if this is the first allocation
-            const hasActiveAllocations = prev.some(a => !a.isMarkedForDeletion);
-
-            // If no active allocations exist, make the first new allocation primary
-            if (!hasActiveAllocations && newAllocs.length > 0) {
-                newAllocs[0].isPrimary = true;
-            }
-
-            return [...prev, ...newAllocs];
-        });
+        setAllocations(prev => [...prev, ...newAllocs]);
         setNewAllocationsToAdd([]);
     };
 
-    const activeAllocations = allocations.filter(a => !a.isMarkedForDeletion);
-    const deletedAllocations = allocations.filter(a => a.isMarkedForDeletion);
     const allocationLimit = server?.featureLimits?.allocations || 0;
-    const canAddMore = allocationLimit === 0 || activeAllocations.length < allocationLimit;
+    const canAddMore = allocationLimit === 0 || allocations.length < allocationLimit;
 
     return (
         <AdminBox icon={faNetworkWired} title={'Networking'} isLoading={isSubmitting}>
             <div css={tw`grid grid-cols-1 gap-4 lg:gap-6`}>
+                {/* List Container */}
                 <div>
-                    <Label>Current Allocations</Label>
-                    <div css={tw`space-y-2 mt-2`}>
-                        {activeAllocations.length === 0 ? (
-                            <p css={tw`text-sm text-gray-400`}>No allocations assigned. Add allocations below.</p>
+                    <div css={tw`flex items-center justify-between mb-2`}>
+                        <Label>Allocations</Label>
+                        <div css={tw`flex gap-2`}>
+                            <Button
+                                type="button"
+                                onClick={handleSetPrimary}
+                                disabled={selectedAllocationId === null}
+                                title="Set selected as primary"
+                                css={tw`text-xs px-2 py-1`}
+                            >
+                                Set Primary
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleRemoveSelected}
+                                disabled={selectedAllocationId === null}
+                                title="Remove selected allocation"
+                                css={tw`text-xs px-2 py-1 bg-red-600 hover:bg-red-700`}
+                            >
+                                <FontAwesomeIcon icon={faTrash} css={tw`mr-1`} />
+                                Remove
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Allocation List */}
+                    <div css={tw`border border-gray-600 rounded overflow-hidden`}>
+                        {allocations.length === 0 ? (
+                            <div css={tw`p-4 text-center text-gray-400 text-sm`}>
+                                No allocations assigned. Add allocations below.
+                            </div>
                         ) : (
-                            activeAllocations.map(allocation => (
-                                <div
-                                    key={allocation.id}
-                                    css={tw`flex items-center justify-between p-3 bg-gray-700 rounded border-2 transition-colors`}
-                                    style={{
-                                        borderColor: allocation.isPrimary ? '#3b82f6' : 'transparent',
-                                    }}
-                                >
-                                    <div css={tw`flex items-center gap-3 flex-1`}>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSetPrimary(allocation.id)}
-                                            css={tw`focus:outline-none`}
-                                            title="Set as primary allocation"
-                                        >
-                                            <FontAwesomeIcon
-                                                icon={faStar}
-                                                css={tw`text-lg transition-colors`}
-                                                style={{
-                                                    color: allocation.isPrimary ? '#fbbf24' : '#6b7280',
-                                                }}
-                                            />
-                                        </button>
-                                        <span css={tw`text-sm font-mono`}>
-                                            {allocation.displayText}
-                                            {allocation.isNew && (
-                                                <span css={tw`ml-2 text-xs text-green-400`}>(New)</span>
-                                            )}
-                                        </span>
-                                        {allocation.isPrimary && (
-                                            <span css={tw`ml-2 text-xs bg-blue-500 px-2 py-1 rounded`}>Primary</span>
-                                        )}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleToggleDelete(allocation.id)}
-                                        css={tw`px-3 py-1 text-red-400 hover:text-red-300 transition-colors focus:outline-none`}
-                                        title="Remove allocation"
+                            <div css={tw`divide-y divide-gray-600`}>
+                                {allocations.map(allocation => (
+                                    <div
+                                        key={allocation.id}
+                                        onClick={() => handleSelectAllocation(allocation.id)}
+                                        css={tw`flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-gray-700`}
+                                        style={{
+                                            backgroundColor:
+                                                selectedAllocationId === allocation.id ? '#374151' : undefined,
+                                        }}
                                     >
-                                        <FontAwesomeIcon icon={faTrash} />
-                                    </button>
-                                </div>
-                            ))
+                                        <div css={tw`flex items-center gap-3`}>
+                                            <input
+                                                type="radio"
+                                                checked={selectedAllocationId === allocation.id}
+                                                onChange={() => handleSelectAllocation(allocation.id)}
+                                                css={tw`cursor-pointer`}
+                                                onClick={e => e.stopPropagation()}
+                                            />
+                                            <span css={tw`font-mono text-sm`}>{allocation.displayText}</span>
+                                            {allocation.isPrimary && (
+                                                <span css={tw`text-xs bg-blue-500 px-2 py-0.5 rounded`}>Primary</span>
+                                            )}
+                                            {allocation.isNew && (
+                                                <span css={tw`text-xs bg-green-500 px-2 py-0.5 rounded`}>New</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
 
                     {allocationLimit > 0 && (
                         <p css={tw`text-xs text-gray-400 mt-2`}>
-                            {activeAllocations.length} / {allocationLimit} allocations used
+                            {allocations.length} / {allocationLimit} allocations used
                         </p>
                     )}
                 </div>
 
-                {deletedAllocations.length > 0 && (
-                    <div>
-                        <Label>Allocations to Remove</Label>
-                        <div css={tw`space-y-2 mt-2`}>
-                            {deletedAllocations.map(allocation => (
-                                <div
-                                    key={allocation.id}
-                                    css={tw`flex items-center justify-between p-3 bg-red-900 bg-opacity-20 rounded border border-red-500 border-opacity-30`}
-                                >
-                                    <span css={tw`text-sm font-mono text-red-300`}>
-                                        {allocation.displayText}
-                                        {allocation.isNew && <span css={tw`ml-2 text-xs`}>(Was New)</span>}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleToggleDelete(allocation.id)}
-                                        css={tw`px-3 py-1 text-gray-400 hover:text-gray-300 text-sm transition-colors focus:outline-none`}
-                                    >
-                                        Undo
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
+                {/* Add Allocations Section */}
                 <div>
-                    <AsyncSelectField
-                        id={'addAllocationsSelect'}
-                        name={'addAllocationsSelect'}
-                        label={'Add New Allocations'}
-                        loadOptions={loadOptions}
-                        isMulti
-                        value={newAllocationsToAdd}
-                        onChange={(selected: readonly Option[]) => setNewAllocationsToAdd(selected || [])}
-                        isDisabled={!canAddMore}
-                    />
+                    <div css={tw`flex items-end gap-2`}>
+                        <div css={tw`flex-1`}>
+                            <AsyncSelectField
+                                id={'addAllocationsSelect'}
+                                name={'addAllocationsSelect'}
+                                label={'Add New Allocations'}
+                                loadOptions={loadOptions}
+                                isMulti
+                                value={newAllocationsToAdd}
+                                onChange={(selected: readonly Option[]) => setNewAllocationsToAdd(selected || [])}
+                                isDisabled={!canAddMore}
+                            />
+                        </div>
+                        <Button
+                            type="button"
+                            onClick={handleAddAllocations}
+                            disabled={newAllocationsToAdd.length === 0 || !canAddMore}
+                        >
+                            <FontAwesomeIcon icon={faPlus} css={tw`mr-2`} />
+                            Add
+                        </Button>
+                    </div>
                     {!canAddMore && allocationLimit > 0 && (
                         <p css={tw`text-xs text-yellow-400 mt-1`}>
                             Allocation limit reached. Remove existing allocations or increase the limit to add more.
                         </p>
                     )}
-                    {newAllocationsToAdd.length > 0 && (
-                        <Button
-                            type="button"
-                            onClick={() => handleAddAllocations(newAllocationsToAdd)}
-                            css={tw`mt-2`}
-                            disabled={!canAddMore}
-                        >
-                            <FontAwesomeIcon icon={faPlus} css={tw`mr-2`} />
-                            Add Selected Allocations
-                        </Button>
-                    )}
+                </div>
+
+                {/* Info Message */}
+                <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded`}>
+                    <p>
+                        💡 <strong>Tip:</strong> Click an allocation to select it, then use the action buttons to set it
+                        as primary or remove it. Remember to save your changes using the &quot;Save Changes&quot; button
+                        below.
+                    </p>
                 </div>
             </div>
         </AdminBox>
