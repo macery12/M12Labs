@@ -82,6 +82,8 @@ const FileSortControls = () => {
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                         css={tw`pl-10 pr-3 py-2 text-sm w-full`}
+                        aria-label="Search files by name"
+                        role="searchbox"
                     />
                 </div>
             </div>

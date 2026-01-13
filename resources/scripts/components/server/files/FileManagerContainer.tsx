@@ -215,9 +215,9 @@ export default () => {
                                         {searchTerm && filteredFiles.length <= 250 && (
                                             <div css={tw`rounded bg-blue-500 mb-px p-3`}>
                                                 <p css={tw`text-blue-50 text-sm text-center`}>
-                                                    Found {filteredFiles.length} file
-                                                    {filteredFiles.length !== 1 ? 's' : ''} matching &quot;{searchTerm}
-                                                    &quot;
+                                                    Found {filteredFiles.length}{' '}
+                                                    {filteredFiles.length === 1 ? 'file' : 'files'} matching &quot;
+                                                    {searchTerm}&quot;
                                                 </p>
                                             </div>
                                         )}
