@@ -112,6 +112,12 @@ export default () => {
 
         setAllocations(prev => [...prev, ...newAllocs]);
         setNewAllocationsToAdd([]);
+
+        // Scroll to the allocation list to show the newly added items
+        const allocationList = document.querySelector('[data-allocation-list]');
+        if (allocationList) {
+            allocationList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     };
 
     const allocationLimit = server?.featureLimits?.allocations || 0;
@@ -148,7 +154,7 @@ export default () => {
                     </div>
 
                     {/* Allocation List */}
-                    <div css={tw`border border-gray-600 rounded overflow-hidden`}>
+                    <div css={tw`border border-gray-600 rounded overflow-hidden`} data-allocation-list>
                         {allocations.length === 0 ? (
                             <div css={tw`p-4 text-center text-gray-400 text-sm`}>
                                 No allocations assigned. Add allocations below.
@@ -178,7 +184,9 @@ export default () => {
                                                 <span css={tw`text-xs bg-blue-500 px-2 py-0.5 rounded`}>Primary</span>
                                             )}
                                             {allocation.isNew && (
-                                                <span css={tw`text-xs bg-green-500 px-2 py-0.5 rounded`}>New</span>
+                                                <span css={tw`text-xs bg-green-500 px-2 py-0.5 rounded animate-pulse`}>
+                                                    New
+                                                </span>
                                             )}
                                         </div>
                                     </div>
@@ -228,9 +236,10 @@ export default () => {
                 {/* Info Message */}
                 <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded`}>
                     <p>
-                        💡 <strong>Tip:</strong> Click an allocation to select it, then use the action buttons to set it
-                        as primary or remove it. Remember to save your changes using the &quot;Save Changes&quot; button
-                        below.
+                        💡 <strong>Tip:</strong> Select allocations from the dropdown above and click &quot;Add&quot; to
+                        add them to the list. Click an allocation in the list to select it, then use &quot;Set
+                        Primary&quot; or &quot;Remove&quot;. All changes are staged locally - click &quot;Save
+                        Changes&quot; at the bottom to apply them.
                     </p>
                 </div>
             </div>
