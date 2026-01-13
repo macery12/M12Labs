@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import tw from 'twin.macro';
 
 import { httpErrorToHuman } from '@/api/http';
@@ -71,6 +71,15 @@ const sortFiles = (files: FileObject[], sortField: SortField, sortDirection: Sor
     return sorted.filter((file, index) => index === 0 || file.name !== sorted[index - 1]?.name);
 };
 
+const filterFiles = (files: FileObject[], searchTerm: string): FileObject[] => {
+    if (!searchTerm.trim()) {
+        return files;
+    }
+
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return files.filter(file => file.name.toLowerCase().includes(lowerSearchTerm));
+};
+
 export default () => {
     const id = ServerContext.useStoreState(state => state.server.data!.id);
     const { hash } = useLocation();
@@ -81,8 +90,10 @@ export default () => {
     const [gridView, setGridView] = usePersistedState<boolean>(`${id}_file_manager_view`, false);
     const sortField = ServerContext.useStoreState(state => state.files.sortField);
     const sortDirection = ServerContext.useStoreState(state => state.files.sortDirection);
+    const searchTerm = ServerContext.useStoreState(state => state.files.searchTerm);
     const setSortField = ServerContext.useStoreActions(actions => actions.files.setSortField);
     const setSortDirection = ServerContext.useStoreActions(actions => actions.files.setSortDirection);
+    const { colors } = useStoreState(state => state.theme.data!);
     const [persistedSortField, setPersistedSortField] = usePersistedState<SortField>(
         `${id}_file_manager_sort_field`,
         'name',
@@ -123,6 +134,19 @@ export default () => {
     const onSelectAllClick = (e: ChangeEvent<HTMLInputElement>) => {
         setSelectedFiles(e.currentTarget.checked ? files?.map(file => file.name) || [] : []);
     };
+
+    // Memoized computation of filtered and sorted files
+    const { filteredFiles, displayFiles } = useMemo(() => {
+        if (!files) {
+            return { filteredFiles: [], displayFiles: [] };
+        }
+
+        const filtered = filterFiles(files, searchTerm);
+        const sorted = sortFiles(filtered, sortField, sortDirection);
+        const display = sorted.slice(0, 250);
+
+        return { filteredFiles: filtered, displayFiles: display };
+    }, [files, searchTerm, sortField, sortDirection]);
 
     if (error) {
         return <ServerError message={httpErrorToHuman(error)} onRetry={() => mutate()} />;
@@ -171,28 +195,45 @@ export default () => {
                         <Spinner size={'large'} centered />
                     ) : (
                         <>
-                            {!files.length ? (
-                                <p css={tw`text-sm text-neutral-400 text-center`}>This directory seems to be empty.</p>
+                            {!filteredFiles.length ? (
+                                <p css={tw`text-sm text-neutral-400 text-center`}>
+                                    {searchTerm
+                                        ? 'No files found matching your search.'
+                                        : 'This directory seems to be empty.'}
+                                </p>
                             ) : (
                                 <FadeTransition duration="duration-150" appear show>
                                     <div>
-                                        {files.length > 250 && (
+                                        {filteredFiles.length > 250 && (
                                             <div css={tw`rounded bg-yellow-400 mb-px p-3`}>
                                                 <p css={tw`text-yellow-900 text-sm text-center`}>
-                                                    This directory is too large to display in the browser, limiting the
-                                                    output to the first 250 files.
+                                                    {searchTerm
+                                                        ? `Found ${filteredFiles.length} files matching your search, showing first 250.`
+                                                        : 'This directory is too large to display in the browser, limiting the output to the first 250 files.'}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {searchTerm && filteredFiles.length <= 250 && (
+                                            <div
+                                                css={tw`rounded mb-px p-3`}
+                                                style={{ backgroundColor: colors.primary }}
+                                            >
+                                                <p css={tw`text-white text-sm text-center`}>
+                                                    Found {filteredFiles.length}{' '}
+                                                    {filteredFiles.length === 1 ? 'file' : 'files'} matching &quot;
+                                                    {searchTerm}&quot;
                                                 </p>
                                             </div>
                                         )}
                                         {gridView ? (
                                             <div className={'grid grid-cols-2 gap-2 lg:grid-cols-6 lg:gap-4'}>
-                                                {sortFiles(files.slice(0, 250), sortField, sortDirection).map(file => (
+                                                {displayFiles.map(file => (
                                                     <FileObjectGrid key={file.key} file={file} />
                                                 ))}
                                             </div>
                                         ) : (
                                             <>
-                                                {sortFiles(files.slice(0, 250), sortField, sortDirection).map(file => (
+                                                {displayFiles.map(file => (
                                                     <FileObjectList key={file.key} file={file} />
                                                 ))}
                                             </>
