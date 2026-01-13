@@ -3,7 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 
-import getAllocations, { Allocation } from '@/api/routes/admin/nodes/getAllocations';
+import http from '@/api/http';
+import { Allocation } from '@/api/routes/admin/nodes/getAllocations';
 import { useServerFromRoute } from '@/api/routes/admin/server';
 import updateServer from '@/api/routes/admin/servers/updateServer';
 import AdminBox from '@/elements/AdminBox';
@@ -27,11 +28,57 @@ export default () => {
     useEffect(() => {
         if (!server || !modalOpen) return;
 
-        setLoadingAvailable(true);
-        getAllocations(server.nodeId, { server_id: '0' })
-            .then(allocs => setAvailableAllocations(allocs))
-            .catch(error => console.error('Failed to load allocations:', error))
-            .finally(() => setLoadingAvailable(false));
+        const fetchAllAllocations = async () => {
+            setLoadingAvailable(true);
+            try {
+                const allAllocations: Allocation[] = [];
+                let currentPage = 1;
+                let totalPages = 1;
+
+                // Fetch all pages
+                do {
+                    const response = await http.get(`/api/application/nodes/${server.nodeId}/allocations`, {
+                        params: {
+                            'filter[server_id]': '0',
+                            page: currentPage,
+                        },
+                    });
+
+                    const allocations = (response.data.data || []).map((item: any) => ({
+                        id: item.attributes.id,
+                        ip: item.attributes.ip,
+                        port: item.attributes.port,
+                        alias: item.attributes.alias || null,
+                        serverId: item.attributes.server_id,
+                        assigned: item.attributes.assigned,
+                        relations: {},
+                        getDisplayText(): string {
+                            if (item.attributes.alias !== null) {
+                                return `${item.attributes.ip}:${item.attributes.port} (${item.attributes.alias})`;
+                            }
+                            return `${item.attributes.ip}:${item.attributes.port}`;
+                        },
+                    }));
+
+                    allAllocations.push(...allocations);
+
+                    // Get pagination info
+                    if (response.data.meta?.pagination) {
+                        totalPages = response.data.meta.pagination.total_pages;
+                    }
+
+                    currentPage++;
+                } while (currentPage <= totalPages);
+
+                setAvailableAllocations(allAllocations);
+            } catch (error) {
+                console.error('Failed to load allocations:', error);
+            } finally {
+                setLoadingAvailable(false);
+            }
+        };
+
+        fetchAllAllocations();
     }, [server, modalOpen]);
 
     if (!server) return null;
