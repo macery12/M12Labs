@@ -1,163 +1,150 @@
-import { faNetworkWired, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faNetworkWired, faPlus, faTrash, faStar } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useFormikContext } from 'formik';
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 
-import getAllocations from '@/api/routes/admin/nodes/getAllocations';
+import getAllocations, { Allocation } from '@/api/routes/admin/nodes/getAllocations';
 import { useServerFromRoute } from '@/api/routes/admin/server';
-import type { Values } from '@/api/routes/admin/servers/updateServer';
+import updateServer from '@/api/routes/admin/servers/updateServer';
 import AdminBox from '@/elements/AdminBox';
 import Label from '@/elements/Label';
-import type { Option } from '@/elements/SelectField';
-import { AsyncSelectField } from '@/elements/SelectField';
 import { Button } from '@/elements/button';
-
-interface AllocationState {
-    id: number;
-    displayText: string;
-    isPrimary: boolean;
-    isNew: boolean;
-}
+import { useStoreActions } from 'easy-peasy';
+import Spinner from '@/elements/Spinner';
 
 export default () => {
-    const { isSubmitting, setFieldValue } = useFormikContext<Values>();
-    const { data: server } = useServerFromRoute();
-    const [allocations, setAllocations] = useState<AllocationState[]>([]);
-    const [selectedAllocationId, setSelectedAllocationId] = useState<number | null>(null);
-    const [newAllocationsToAdd, setNewAllocationsToAdd] = useState<Option | null>(null);
+    const { data: server, mutate } = useServerFromRoute();
+    const { clearFlashes, clearAndAddHttpError } = useStoreActions(actions => actions.flashes);
+    const [availableAllocations, setAvailableAllocations] = useState<Allocation[]>([]);
+    const [selectedAvailableId, setSelectedAvailableId] = useState<number | null>(null);
+    const [selectedCurrentId, setSelectedCurrentId] = useState<number | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [loadingAvailable, setLoadingAvailable] = useState(false);
 
-    // Initialize allocations state from server data
+    // Load available allocations
     useEffect(() => {
-        if (server?.relationships.allocations) {
-            const initialAllocations = server.relationships.allocations.map(a => ({
-                id: a.id,
-                displayText: a.getDisplayText(),
-                isPrimary: a.id === server.allocationId,
-                isNew: false,
-            }));
-            setAllocations(initialAllocations);
-        }
+        if (!server) return;
+
+        setLoadingAvailable(true);
+        getAllocations(server.nodeId, { server_id: '0' })
+            .then(allocs => setAvailableAllocations(allocs))
+            .catch(error => console.error('Failed to load allocations:', error))
+            .finally(() => setLoadingAvailable(false));
     }, [server]);
 
-    // Update Formik values whenever allocations state changes
-    useEffect(() => {
-        const primaryAllocation = allocations.find(a => a.isPrimary);
-        const existingIds = server?.relationships.allocations?.map(a => a.id) || [];
-        const allocationsToAdd = allocations.filter(a => a.isNew && !existingIds.includes(a.id)).map(a => a.id);
-        const allocationsToRemove = existingIds.filter(id => !allocations.find(a => a.id === id));
+    if (!server) return null;
 
-        console.log('NetworkingBox - Syncing to Formik:', {
-            allocations,
-            existingIds,
-            allocationsToAdd,
-            allocationsToRemove,
-            primaryAllocation: primaryAllocation?.id,
-        });
+    const currentAllocations = server.relationships.allocations || [];
+    const allocationLimit = server.featureLimits?.allocations || 0;
+    const canAddMore = allocationLimit === 0 || currentAllocations.length < allocationLimit;
 
-        if (primaryAllocation) {
-            setFieldValue('allocationId', primaryAllocation.id);
+    const handleAddAllocation = async () => {
+        if (!selectedAvailableId) return;
+
+        setLoading(true);
+        clearFlashes('server:networking');
+
+        try {
+            await updateServer(server.id, {
+                allocationId: server.allocationId,
+                addAllocations: [selectedAvailableId],
+                removeAllocations: [],
+            });
+
+            await mutate();
+            setSelectedAvailableId(null);
+        } catch (error) {
+            console.error('Failed to add allocation:', error);
+            clearAndAddHttpError({ key: 'server:networking', error });
+        } finally {
+            setLoading(false);
         }
-        setFieldValue('addAllocations', allocationsToAdd);
-        setFieldValue('removeAllocations', allocationsToRemove);
-    }, [allocations, server, setFieldValue]);
+    };
 
-    const loadOptions = async (inputValue: string, callback: (options: Option[]) => void) => {
-        if (!server) {
-            callback([] as Option[]);
+    const handleRemoveAllocation = async () => {
+        if (!selectedCurrentId) return;
+
+        // Can't remove the primary allocation without setting a new one
+        if (selectedCurrentId === server.allocationId && currentAllocations.length <= 1) {
+            clearAndAddHttpError({
+                key: 'server:networking',
+                error: { message: 'Cannot remove the only allocation. Add another allocation first.' },
+            });
             return;
         }
 
-        const availableAllocations = await getAllocations(server.nodeId, { search: inputValue, server_id: '0' });
+        setLoading(true);
+        clearFlashes('server:networking');
 
-        callback(
-            availableAllocations.map(a => {
-                return { value: a.id.toString(), label: a.getDisplayText() };
-            }),
-        );
-    };
-
-    const handleSelectAllocation = (allocationId: number) => {
-        setSelectedAllocationId(prev => (prev === allocationId ? null : allocationId));
-    };
-
-    const handleSetPrimary = () => {
-        if (selectedAllocationId === null) return;
-
-        setAllocations(prev =>
-            prev.map(a => ({
-                ...a,
-                isPrimary: a.id === selectedAllocationId,
-            })),
-        );
-    };
-
-    const handleRemoveSelected = () => {
-        if (selectedAllocationId === null) return;
-
-        setAllocations(prev => {
-            const newAllocations = prev.filter(a => a.id !== selectedAllocationId);
-
-            // If we removed the primary, set the first allocation as primary
-            if (prev.find(a => a.id === selectedAllocationId)?.isPrimary && newAllocations.length > 0) {
-                newAllocations[0].isPrimary = true;
+        try {
+            // If removing primary, set a new primary first
+            let newPrimaryId = server.allocationId;
+            if (selectedCurrentId === server.allocationId) {
+                const remaining = currentAllocations.find(a => a.id !== selectedCurrentId);
+                if (remaining) {
+                    newPrimaryId = remaining.id;
+                }
             }
 
-            return newAllocations;
-        });
-        setSelectedAllocationId(null);
-    };
+            await updateServer(server.id, {
+                allocationId: newPrimaryId,
+                addAllocations: [],
+                removeAllocations: [selectedCurrentId],
+            });
 
-    const handleAddAllocations = () => {
-        if (!newAllocationsToAdd) return;
-
-        const newAlloc: AllocationState = {
-            id: parseInt(newAllocationsToAdd.value),
-            displayText: newAllocationsToAdd.label,
-            isPrimary: allocations.length === 0,
-            isNew: true,
-        };
-
-        console.log('NetworkingBox - Adding allocation:', newAlloc);
-        setAllocations(prev => {
-            const updated = [...prev, newAlloc];
-            console.log('NetworkingBox - Updated allocations:', updated);
-            return updated;
-        });
-        setNewAllocationsToAdd(null);
-
-        // Scroll to the allocation list to show the newly added item
-        const allocationList = document.querySelector('[data-allocation-list]');
-        if (allocationList) {
-            allocationList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            await mutate();
+            setSelectedCurrentId(null);
+        } catch (error) {
+            console.error('Failed to remove allocation:', error);
+            clearAndAddHttpError({ key: 'server:networking', error });
+        } finally {
+            setLoading(false);
         }
     };
 
-    const allocationLimit = server?.featureLimits?.allocations || 0;
-    const canAddMore = allocationLimit === 0 || allocations.length < allocationLimit;
+    const handleSetPrimary = async () => {
+        if (!selectedCurrentId || selectedCurrentId === server.allocationId) return;
+
+        setLoading(true);
+        clearFlashes('server:networking');
+
+        try {
+            await updateServer(server.id, {
+                allocationId: selectedCurrentId,
+                addAllocations: [],
+                removeAllocations: [],
+            });
+
+            await mutate();
+        } catch (error) {
+            console.error('Failed to set primary allocation:', error);
+            clearAndAddHttpError({ key: 'server:networking', error });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <AdminBox icon={faNetworkWired} title={'Networking'} isLoading={isSubmitting}>
-            <div css={tw`grid grid-cols-1 gap-4 lg:gap-6`}>
-                {/* List Container */}
+        <AdminBox icon={faNetworkWired} title={'Networking'} isLoading={loading}>
+            <div css={tw`grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6`}>
+                {/* Current Allocations */}
                 <div>
                     <div css={tw`flex items-center justify-between mb-2`}>
-                        <Label>Allocations</Label>
+                        <Label>Current Allocations</Label>
                         <div css={tw`flex gap-2`}>
                             <Button
                                 type="button"
                                 onClick={handleSetPrimary}
-                                disabled={selectedAllocationId === null}
-                                title="Set selected as primary"
+                                disabled={!selectedCurrentId || selectedCurrentId === server.allocationId || loading}
                                 css={tw`text-xs px-2 py-1`}
                             >
+                                <FontAwesomeIcon icon={faStar} css={tw`mr-1`} />
                                 Set Primary
                             </Button>
                             <Button
                                 type="button"
-                                onClick={handleRemoveSelected}
-                                disabled={selectedAllocationId === null}
-                                title="Remove selected allocation"
+                                onClick={handleRemoveAllocation}
+                                disabled={!selectedCurrentId || loading}
                                 css={tw`text-xs px-2 py-1 bg-red-600 hover:bg-red-700`}
                             >
                                 <FontAwesomeIcon icon={faTrash} css={tw`mr-1`} />
@@ -166,39 +153,42 @@ export default () => {
                         </div>
                     </div>
 
-                    {/* Allocation List */}
-                    <div css={tw`border border-gray-600 rounded overflow-hidden`} data-allocation-list>
-                        {allocations.length === 0 ? (
+                    <div css={tw`border border-gray-600 rounded overflow-hidden min-h-[200px]`}>
+                        {currentAllocations.length === 0 ? (
                             <div css={tw`p-4 text-center text-gray-400 text-sm`}>
-                                No allocations assigned. Add allocations below.
+                                No allocations assigned. Add allocations from the right.
                             </div>
                         ) : (
                             <div css={tw`divide-y divide-gray-600`}>
-                                {allocations.map(allocation => (
+                                {currentAllocations.map(allocation => (
                                     <div
                                         key={allocation.id}
-                                        onClick={() => handleSelectAllocation(allocation.id)}
+                                        onClick={() =>
+                                            setSelectedCurrentId(prev =>
+                                                prev === allocation.id ? null : allocation.id,
+                                            )
+                                        }
                                         css={tw`flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                         style={{
                                             backgroundColor:
-                                                selectedAllocationId === allocation.id ? '#374151' : undefined,
+                                                selectedCurrentId === allocation.id ? '#374151' : undefined,
                                         }}
                                     >
                                         <div css={tw`flex items-center gap-3`}>
                                             <input
                                                 type="radio"
-                                                checked={selectedAllocationId === allocation.id}
-                                                onChange={() => handleSelectAllocation(allocation.id)}
+                                                checked={selectedCurrentId === allocation.id}
+                                                onChange={() => setSelectedCurrentId(allocation.id)}
                                                 css={tw`cursor-pointer`}
                                                 onClick={e => e.stopPropagation()}
                                             />
-                                            <span css={tw`font-mono text-sm`}>{allocation.displayText}</span>
-                                            {allocation.isPrimary && (
-                                                <span css={tw`text-xs bg-blue-500 px-2 py-0.5 rounded`}>Primary</span>
-                                            )}
-                                            {allocation.isNew && (
-                                                <span css={tw`text-xs bg-green-500 px-2 py-0.5 rounded animate-pulse`}>
-                                                    New
+                                            <span css={tw`font-mono text-sm`}>{allocation.getDisplayText()}</span>
+                                            {allocation.id === server.allocationId && (
+                                                <span
+                                                    css={tw`text-xs bg-blue-500 px-2 py-0.5 rounded flex items-center gap-1`}
+                                                >
+                                                    <FontAwesomeIcon icon={faStar} css={tw`text-xs`} />
+                                                    Primary
                                                 </span>
                                             )}
                                         </div>
@@ -210,60 +200,83 @@ export default () => {
 
                     {allocationLimit > 0 && (
                         <p css={tw`text-xs text-gray-400 mt-2`}>
-                            {allocations.length} / {allocationLimit} allocations used
+                            {currentAllocations.length} / {allocationLimit} allocations used
                         </p>
                     )}
                 </div>
 
-                {/* Add Allocations Section */}
+                {/* Available Allocations */}
                 <div>
-                    <div css={tw`flex items-end gap-2`}>
-                        <div css={tw`flex-1`}>
-                            <AsyncSelectField
-                                id={'addAllocationsSelect'}
-                                name={'addAllocationsSelect'}
-                                label={'Add New Allocation'}
-                                loadOptions={loadOptions}
-                                value={newAllocationsToAdd}
-                                onChange={(selected: Option | null) => setNewAllocationsToAdd(selected)}
-                                isDisabled={!canAddMore}
-                            />
-                        </div>
+                    <div css={tw`flex items-center justify-between mb-2`}>
+                        <Label>Available Allocations</Label>
                         <Button
                             type="button"
-                            onClick={handleAddAllocations}
-                            disabled={!newAllocationsToAdd || !canAddMore}
+                            onClick={handleAddAllocation}
+                            disabled={!selectedAvailableId || !canAddMore || loading}
+                            css={tw`text-xs px-2 py-1`}
                         >
-                            <FontAwesomeIcon icon={faPlus} css={tw`mr-2`} />
-                            Add
+                            <FontAwesomeIcon icon={faPlus} css={tw`mr-1`} />
+                            Add Selected
                         </Button>
                     </div>
-                    {newAllocationsToAdd && (
-                        <div
-                            css={tw`mt-2 p-2 bg-blue-900 bg-opacity-20 border border-blue-500 border-opacity-30 rounded`}
-                        >
-                            <p css={tw`text-sm text-blue-300`}>
-                                <strong>Ready to add:</strong>{' '}
-                                <span css={tw`font-mono`}>{newAllocationsToAdd.label}</span>
-                            </p>
-                        </div>
-                    )}
+
+                    <div
+                        css={tw`border border-gray-600 rounded overflow-hidden min-h-[200px] max-h-[400px] overflow-y-auto`}
+                    >
+                        {loadingAvailable ? (
+                            <div css={tw`p-4 flex items-center justify-center`}>
+                                <Spinner size="small" />
+                            </div>
+                        ) : availableAllocations.length === 0 ? (
+                            <div css={tw`p-4 text-center text-gray-400 text-sm`}>
+                                No available allocations on this node.
+                            </div>
+                        ) : (
+                            <div css={tw`divide-y divide-gray-600`}>
+                                {availableAllocations.map(allocation => (
+                                    <div
+                                        key={allocation.id}
+                                        onClick={() =>
+                                            setSelectedAvailableId(prev =>
+                                                prev === allocation.id ? null : allocation.id,
+                                            )
+                                        }
+                                        css={tw`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-gray-700`}
+                                        style={{
+                                            backgroundColor:
+                                                selectedAvailableId === allocation.id ? '#374151' : undefined,
+                                        }}
+                                    >
+                                        <input
+                                            type="radio"
+                                            checked={selectedAvailableId === allocation.id}
+                                            onChange={() => setSelectedAvailableId(allocation.id)}
+                                            css={tw`cursor-pointer`}
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                        <span css={tw`font-mono text-sm`}>{allocation.getDisplayText()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {!canAddMore && allocationLimit > 0 && (
-                        <p css={tw`text-xs text-yellow-400 mt-1`}>
-                            Allocation limit reached. Remove existing allocations or increase the limit to add more.
+                        <p css={tw`text-xs text-yellow-400 mt-2`}>
+                            Allocation limit reached. Remove allocations or increase the limit.
                         </p>
                     )}
                 </div>
+            </div>
 
-                {/* Info Message */}
-                <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded`}>
-                    <p>
-                        💡 <strong>Tip:</strong> Select an allocation from the dropdown above - it will show &quot;Ready
-                        to add&quot; below. Click &quot;Add&quot; to add it to the list. Then click any allocation in
-                        the list to select it and use &quot;Set Primary&quot; or &quot;Remove&quot;. Click &quot;Save
-                        Changes&quot; at the bottom to apply all changes.
-                    </p>
-                </div>
+            {/* Info Message */}
+            <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded mt-4`}>
+                <p>
+                    💡 <strong>How to use:</strong> Click an allocation from the &quot;Available Allocations&quot; list
+                    on the right and click &quot;Add Selected&quot; to add it immediately. Click allocations in the
+                    &quot;Current Allocations&quot; list to select them, then use &quot;Set Primary&quot; or
+                    &quot;Remove&quot;. Changes are saved automatically.
+                </p>
             </div>
         </AdminBox>
     );
