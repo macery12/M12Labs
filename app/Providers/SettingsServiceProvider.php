@@ -87,6 +87,10 @@ class SettingsServiceProvider extends ServiceProvider
         // Webhook module settings
         'modules:webhooks:enabled',
         'modules:webhooks:url',
+
+        // Mods module settings
+        'modules:mods:enabled',
+        'modules:mods:curseforge_api_key',
     ];
 
     /**

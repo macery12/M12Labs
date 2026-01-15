@@ -1,0 +1,51 @@
+<?php
+
+return [
+    /*
+     * Enable or disable the mods module.
+     */
+    'enabled' => env('MODS_ENABLED', false),
+
+    /*
+     * Set the API key for CurseForge API.
+     */
+    'curseforge_api_key' => env('CURSEFORGE_API_KEY', ''),
+
+    /*
+     * Rate limiting for CurseForge API requests
+     * CurseForge allows approximately 2000 requests per hour
+     */
+    'rate_limit' => [
+        'requests_per_minute' => env('MODS_RATE_LIMIT_PER_MINUTE', 30),
+        'requests_per_hour' => env('MODS_RATE_LIMIT_PER_HOUR', 1800),
+    ],
+
+    /*
+     * Cache settings for CurseForge API responses
+     */
+    'cache' => [
+        'enabled' => env('MODS_CACHE_ENABLED', true),
+        'ttl' => [
+            'search' => env('MODS_CACHE_SEARCH_TTL', 300), // 5 minutes
+            'mod_details' => env('MODS_CACHE_MOD_DETAILS_TTL', 1800), // 30 minutes
+            'mod_files' => env('MODS_CACHE_MOD_FILES_TTL', 600), // 10 minutes
+            'versions' => env('MODS_CACHE_VERSIONS_TTL', 3600), // 1 hour
+            'loaders' => env('MODS_CACHE_LOADERS_TTL', 3600), // 1 hour
+        ],
+    ],
+
+    /*
+     * CurseForge API endpoint
+     */
+    'curseforge_api_url' => env('CURSEFORGE_API_URL', 'https://api.curseforge.com/v1'),
+
+    /*
+     * Default page size for mod listings
+     */
+    'default_page_size' => env('MODS_DEFAULT_PAGE_SIZE', 20),
+
+    /*
+     * Maximum page size for mod listings
+     */
+    'max_page_size' => env('MODS_MAX_PAGE_SIZE', 50),
+];

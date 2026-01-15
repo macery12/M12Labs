@@ -95,6 +95,9 @@ class AdminRole extends Model
     public const AI_READ = 'ai.read';
     public const AI_UPDATE = 'ai.update';
 
+    public const MODS_READ = 'mods.read';
+    public const MODS_UPDATE = 'mods.update';
+
     public const WEBHOOKS_READ = 'webhooks.read';
     public const WEBHOOKS_UPDATE = 'webhooks.update';
 
@@ -232,6 +235,13 @@ class AdminRole extends Model
             'keys' => [
                 'read' => 'View the Admin AI console.',
                 'update' => 'Control the AI settings.',
+            ],
+        ],
+        'mods' => [
+            'description' => 'Permissions to configure the Mods module.',
+            'keys' => [
+                'read' => 'View the Mods module analytics and settings.',
+                'update' => 'Control the Mods module settings and API keys.',
             ],
         ],
         'webhooks' => [

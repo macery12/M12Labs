@@ -124,6 +124,20 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Mods Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/mods
+    |
+    */
+    Route::group(['prefix' => '/mods'], function () {
+        Route::put('/settings', [Application\ModsController::class, 'update']);
+        Route::get('/analytics', [Application\ModsController::class, 'analytics']);
+        Route::delete('/key', [Application\ModsController::class, 'resetKey']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | Webhook Controller Routes
     |--------------------------------------------------------------------------
     |
@@ -350,6 +364,7 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{server:id}/unsuspend', [Application\Servers\ServerManagementController::class, 'unsuspend']);
         Route::post('/{server:id}/reinstall', [Application\Servers\ServerManagementController::class, 'reinstall']);
         Route::post('/{server:id}/transfer', [Application\Servers\ServerManagementController::class, 'transfer']);
+        Route::post('/{server:id}/mods/toggle', [Application\Servers\ServerController::class, 'toggleMods']);
 
         Route::post('/{server:id}/delete', [Application\Servers\ServerController::class, 'delete']);
 

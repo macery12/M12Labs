@@ -62,6 +62,7 @@ class ServerTransformer extends Transformer
             'docker_image' => $server->image,
             'egg_features' => $server->egg->inherit_features,
             'egg_id' => $server->egg_id,
+            'mods_enabled' => $server->mods_enabled,
             'billing_product_id' => $server->billing_product_id,
             'feature_limits' => [
                 'databases' => $server->database_limit,
