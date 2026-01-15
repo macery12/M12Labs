@@ -28,6 +28,7 @@ interface Server {
         threads: string;
     };
     eggFeatures: string[];
+    modsEnabled: boolean;
     billingProductId?: number;
     renewalDate?: Date | undefined;
     featureLimits: {
