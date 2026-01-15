@@ -20,6 +20,7 @@ use Everest\Http\Requests\Api\Application\Servers\StoreServerRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Servers\DeleteServerRequest;
 use Everest\Http\Requests\Api\Application\Servers\UpdateServerRequest;
+use Everest\Http\Requests\Api\Application\Servers\ToggleModsRequest;
 use Everest\Http\Requests\Api\Application\Servers\StoreServerWithPresetRequest;
 
 class ServerController extends ApplicationApiController
@@ -168,7 +169,7 @@ class ServerController extends ApplicationApiController
      * @throws \Everest\Exceptions\Model\DataValidationException
      * @throws \Everest\Exceptions\Repository\RecordNotFoundException
      */
-    public function toggleMods(UpdateServerRequest $request, Server $server): JsonResponse
+    public function toggleMods(ToggleModsRequest $request, Server $server): JsonResponse
     {
         $modsEnabled = $request->input('mods_enabled', false);
         
