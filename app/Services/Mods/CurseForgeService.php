@@ -17,6 +17,8 @@ class CurseForgeService
     private int $requestsPerHour;
     private bool $cacheEnabled;
     private array $cacheTtl;
+    private int $baseThrottleSeconds = 10; // Base: 1 request every 10 seconds
+    private int $slowThrottleSeconds = 17; // Slow: 1 request every 15-20 seconds (avg 17.5)
 
     /**
      * CurseForgeService constructor.
@@ -28,18 +30,83 @@ class CurseForgeService
         $this->requestsPerMinute = config('modules.mods.rate_limit.requests_per_minute', 30);
         $this->requestsPerHour = config('modules.mods.rate_limit.requests_per_hour', 1800);
         $this->cacheEnabled = config('modules.mods.cache.enabled', true);
+        
+        // Aggressive 24-hour caching for all API responses
         $this->cacheTtl = config('modules.mods.cache.ttl', [
-            'search' => 300,
-            'mod_details' => 1800,
-            'mod_files' => 600,
-            'versions' => 3600,
-            'loaders' => 3600,
+            'search' => 86400,      // 24 hours
+            'mod_details' => 86400, // 24 hours
+            'mod_files' => 86400,   // 24 hours
+            'versions' => 86400,    // 24 hours
+            'loaders' => 86400,     // 24 hours
         ]);
 
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
             'timeout' => 30,
         ]);
+    }
+
+    /**
+     * Acquire a lock to serialize API requests (max concurrency = 1).
+     *
+     * @return bool
+     */
+    private function acquireApiLock(): bool
+    {
+        $lockKey = 'curseforge_api_lock';
+        $lockAcquired = Cache::lock($lockKey, 60)->get(function () {
+            // Lock acquired, can proceed with API request
+            return true;
+        });
+
+        if (!$lockAcquired) {
+            // Wait a bit and retry once
+            usleep(500000); // 500ms
+            return Cache::lock($lockKey, 60)->get(function () {
+                return true;
+            });
+        }
+
+        return $lockAcquired;
+    }
+
+    /**
+     * Enforce throttling based on rate limit headers and base rate.
+     *
+     * @param array|null $lastHeaders Rate limit headers from last request
+     * @throws ModsServiceException
+     */
+    private function enforceThrottling(?array $lastHeaders = null): void
+    {
+        $lastRequestKey = 'curseforge_last_request_time';
+        $lastRequestTime = Cache::get($lastRequestKey, 0);
+        $now = microtime(true);
+        
+        // Determine throttle delay based on rate limit headers
+        $throttleSeconds = $this->baseThrottleSeconds;
+        
+        if ($lastHeaders && isset($lastHeaders['x-rl-hourly-remaining'])) {
+            $remaining = (int) $lastHeaders['x-rl-hourly-remaining'][0];
+            
+            // If remaining quota is low, slow down significantly
+            if ($remaining < 100) {
+                $throttleSeconds = $this->slowThrottleSeconds;
+                Log::info("CurseForge hourly quota low ({$remaining} remaining), slowing to {$throttleSeconds}s per request");
+            }
+        }
+        
+        // Calculate time since last request
+        $timeSinceLastRequest = $now - $lastRequestTime;
+        
+        // If we haven't waited long enough, sleep for the remaining time
+        if ($timeSinceLastRequest < $throttleSeconds) {
+            $sleepTime = $throttleSeconds - $timeSinceLastRequest;
+            Log::debug("Throttling CurseForge API: sleeping for {$sleepTime}s");
+            usleep((int) ($sleepTime * 1000000));
+        }
+        
+        // Update last request time
+        Cache::put($lastRequestKey, microtime(true), 3600);
     }
 
     /**
@@ -89,16 +156,28 @@ class CurseForgeService
     }
 
     /**
-     * Make a request to the CurseForge API.
+     * Make a request to the CurseForge API with serialization, throttling, and exponential backoff.
      *
      * @throws ModsServiceException
      */
-    private function makeRequest(string $method, string $path, array $params = []): array
+    private function makeRequest(string $method, string $path, array $params = [], int $retryAttempt = 0): array
     {
         if (empty($this->apiKey)) {
             throw new ModsServiceException('CurseForge API key is not configured.');
         }
 
+        // Acquire lock to serialize all API requests (max concurrency = 1)
+        if (!$this->acquireApiLock()) {
+            throw new ModsServiceException('Failed to acquire API lock for CurseForge request.');
+        }
+
+        // Get last rate limit headers for dynamic throttling
+        $lastHeaders = Cache::get('curseforge_last_rate_headers');
+        
+        // Enforce throttling (1 req/10s base, 1 req/15-20s if quota low)
+        $this->enforceThrottling($lastHeaders);
+        
+        // Check internal rate limits
         $this->checkRateLimit();
 
         try {
@@ -118,6 +197,13 @@ class CurseForgeService
             }
 
             $response = $this->client->request($method, $path, $options);
+            
+            // Store rate limit headers for next request
+            $headers = $response->getHeaders();
+            if (isset($headers['x-rl-hourly-remaining'])) {
+                Cache::put('curseforge_last_rate_headers', $headers, 3600);
+            }
+            
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
@@ -128,17 +214,30 @@ class CurseForgeService
 
             return $data;
         } catch (GuzzleException $e) {
-            Log::error('CurseForge API request failed: ' . $e->getMessage());
-            
             if ($e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
+                
+                // Handle 429 with exponential backoff: 30s, 60s, 120s
                 if ($statusCode === 429) {
-                    throw new ModsServiceException('CurseForge API rate limit exceeded. Please try again later.');
+                    if ($retryAttempt < 3) {
+                        $backoffDelays = [30, 60, 120];
+                        $delay = $backoffDelays[$retryAttempt];
+                        
+                        Log::warning("CurseForge API rate limit (429), attempt {$retryAttempt}, waiting {$delay}s before retry");
+                        sleep($delay);
+                        
+                        // Retry with incremented attempt counter
+                        return $this->makeRequest($method, $path, $params, $retryAttempt + 1);
+                    } else {
+                        Log::error('CurseForge API rate limit exceeded after 3 retries with exponential backoff');
+                        throw new ModsServiceException('CurseForge API rate limit exceeded. Please try again later.');
+                    }
                 } elseif ($statusCode === 401 || $statusCode === 403) {
                     throw new ModsServiceException('Invalid CurseForge API key.');
                 }
             }
             
+            Log::error('CurseForge API request failed: ' . $e->getMessage());
             throw new ModsServiceException('Failed to connect to CurseForge API: ' . $e->getMessage());
         }
     }

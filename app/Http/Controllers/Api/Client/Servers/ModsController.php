@@ -421,21 +421,20 @@ class ModsController extends ClientApiController
             // Download and install each mod from the manifest
             $downloadedMods = [];
             $failedMods = [];
-            $totalMods = count($manifest['files']);
             
-            foreach ($manifest['files'] as $index => $modEntry) {
+            foreach ($manifest['files'] as $modEntry) {
                 try {
                     $modFileId = $modEntry['fileID'];
                     $projectId = $modEntry['projectID'];
 
-                    // Get the mod file download URL
+                    // Get the mod file download URL (cached, serialized API call)
                     $modDownloadUrl = $this->curseForgeService->getModFileDownloadUrl($projectId, $modFileId);
                     
-                    // Get mod file details to get the filename
+                    // Get mod file details to get the filename (cached, serialized API call)
                     $modFileDetails = $this->curseForgeService->getModFile($projectId, $modFileId);
                     $modFileName = $modFileDetails['data']['fileName'] ?? "mod_{$projectId}_{$modFileId}.jar";
 
-                    // Download the mod
+                    // Download the mod file (can be parallelized, not an API metadata call)
                     $modResponse = Http::timeout(120)->get($modDownloadUrl);
                     
                     if ($modResponse->successful()) {
@@ -445,18 +444,7 @@ class ModsController extends ClientApiController
                     } else {
                         $failedMods[] = ['projectId' => $projectId, 'fileId' => $modFileId];
                     }
-                    
-                    // Add a small delay between mod downloads to avoid rate limiting
-                    // Skip delay on the last mod
-                    if ($index < $totalMods - 1) {
-                        usleep(200000); // 200ms delay
-                    }
                 } catch (ModsServiceException $e) {
-                    // If we hit rate limit, wait a bit longer before continuing
-                    if (strpos($e->getMessage(), 'rate limit') !== false) {
-                        Log::warning("Rate limit hit while downloading mod {$modEntry['projectID']}, waiting 2 seconds...");
-                        sleep(2);
-                    }
                     Log::error("Failed to download mod {$modEntry['projectID']}: " . $e->getMessage());
                     $failedMods[] = ['projectId' => $modEntry['projectID'], 'fileId' => $modEntry['fileID']];
                 } catch (\Exception $e) {
