@@ -74,7 +74,7 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
     }
 
     const totalPages = Math.ceil(pagination.totalCount / pagination.pageSize);
-    const currentPage = pagination.index + 1;
+    const currentPage = Math.floor(pagination.index / pagination.pageSize) + 1;
     const isFirstPage = currentPage === 1;
     const isLastPage = currentPage >= totalPages;
 
@@ -85,6 +85,11 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
     for (let i = start; i <= end; i++) {
         pages.push(i);
     }
+
+    const handlePageClick = (pageNumber: number) => {
+        const newIndex = (pageNumber - 1) * pagination.pageSize;
+        onPageChange(newIndex);
+    };
 
     return (
         <div css={tw`mt-6`}>
@@ -122,7 +127,7 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                         {!isFirstPage && pages[0] > 1 && (
                             <PaginationButton.Text
                                 size={Button.Sizes.Small}
-                                onClick={() => onPageChange(0)}
+                                onClick={() => handlePageClick(1)}
                                 className={'mx-1'}
                             >
                                 <FontAwesomeIcon icon={faAngleDoubleLeft} />
@@ -133,7 +138,7 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                                 size={Button.Sizes.Small}
                                 className={'mx-1'}
                                 key={`page_${i}`}
-                                onClick={() => onPageChange(i - 1)}
+                                onClick={() => handlePageClick(i)}
                                 disabled={i === currentPage}
                             >
                                 {i}
@@ -142,7 +147,7 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                         {!isLastPage && pages[pages.length - 1] < totalPages && (
                             <PaginationButton.Text
                                 size={Button.Sizes.Small}
-                                onClick={() => onPageChange(totalPages - 1)}
+                                onClick={() => handlePageClick(totalPages)}
                                 className={'mx-1'}
                             >
                                 <FontAwesomeIcon icon={faAngleDoubleRight} />
@@ -153,8 +158,8 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
 
                 {pagination.totalCount > 0 && (
                     <p css={tw`text-center text-sm text-neutral-400 mt-4`}>
-                        Showing {pagination.index * pagination.pageSize + 1} -{' '}
-                        {Math.min((pagination.index + 1) * pagination.pageSize, pagination.totalCount)} of{' '}
+                        Showing {pagination.index + 1} -{' '}
+                        {Math.min(pagination.index + pagination.resultCount, pagination.totalCount)} of{' '}
                         {pagination.totalCount.toLocaleString()} mods
                     </p>
                 )}

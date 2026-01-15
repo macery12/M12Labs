@@ -54,12 +54,17 @@ export default () => {
     }, [uuid, searchParams, modsEnabled]);
 
     const handleSearch = (params: ModSearchParams) => {
+        setSelectedMod(null); // Close modal when searching
         setSearchParams({ ...params, index: 0 });
     };
 
     const handlePageChange = (newIndex: number) => {
         setSelectedMod(null); // Close modal when changing pages
         setSearchParams({ ...searchParams, index: newIndex });
+    };
+
+    const handleModClick = (mod: CurseForgeMod) => {
+        setSelectedMod(mod);
     };
 
     if (!globalModsEnabled) {
@@ -109,15 +114,14 @@ export default () => {
                     mods={mods}
                     loading={loading}
                     pagination={pagination}
-                    onModClick={(mod) => {
-                        setSelectedMod(mod);
-                    }}
+                    onModClick={handleModClick}
                     onPageChange={handlePageChange}
                 />
             )}
 
             {selectedMod && (
                 <ModDetails
+                    key={selectedMod.id}
                     mod={selectedMod}
                     onClose={() => setSelectedMod(null)}
                 />
