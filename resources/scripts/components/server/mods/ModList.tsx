@@ -24,7 +24,7 @@ const ModCard = styled.div`
     ${tw`bg-neutral-800 rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
     
     &:hover {
-        ${tw`bg-neutral-750 border-neutral-600`}
+        ${tw`bg-neutral-700 border-neutral-600`}
     }
 `;
 
