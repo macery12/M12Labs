@@ -22,6 +22,6 @@ class UpdateModsSettingsRequest extends ApplicationApiRequest
 
     public function permission(): string
     {
-        return AdminRole::MODS_UPDATE ?? 'admin.mods.update';
+        return AdminRole::MODS_UPDATE;
     }
 }

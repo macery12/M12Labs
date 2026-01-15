@@ -16,7 +16,7 @@ class SearchModsRequest extends ClientApiRequest
     {
         return [
             'searchFilter' => 'nullable|string|max:255',
-            'sortField' => 'nullable|string|in:Featured,Popularity,LastUpdated,Name,Author,TotalDownloads,Category,GameVersion',
+            'sortField' => 'nullable|integer|in:1,2,3,4,5,6', // 1=Featured, 2=Popularity, 3=LastUpdated, 4=Name, 5=Author, 6=TotalDownloads
             'sortOrder' => 'nullable|string|in:asc,desc',
             'gameVersion' => 'nullable|string|max:50',
             'modLoaderType' => 'nullable|integer|in:0,1,2,3,4,5,6', // 0=Any, 1=Forge, 2=Cauldron, 3=LiteLoader, 4=Fabric, 5=Quilt, 6=NeoForge

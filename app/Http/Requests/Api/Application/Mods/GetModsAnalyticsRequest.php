@@ -9,6 +9,6 @@ class GetModsAnalyticsRequest extends ApplicationApiRequest
 {
     public function permission(): string
     {
-        return AdminRole::MODS_READ ?? 'admin.mods.read';
+        return AdminRole::MODS_READ;
     }
 }
