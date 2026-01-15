@@ -214,10 +214,7 @@ export default ({ mod, onClose }: Props) => {
                                     src={screenshot.thumbnailUrl}
                                     alt={screenshot.title}
                                     css={tw`rounded cursor-pointer hover:opacity-80 transition-opacity`}
-                                    onClick={() => {
-                                        const win = window.open(screenshot.url, '_blank', 'noopener,noreferrer');
-                                        if (win) win.opener = null;
-                                    }}
+                                    onClick={() => window.open(screenshot.url, '_blank', 'noopener,noreferrer')}
                                 />
                             ))}
                         </div>
