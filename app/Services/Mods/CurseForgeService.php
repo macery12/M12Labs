@@ -243,7 +243,7 @@ class CurseForgeService
     }
 
     /**
-     * Make a cached request to the CurseForge API.
+     * Make a cached request to the CurseForge API with memory-safe handling.
      *
      * @throws ModsServiceException
      */
@@ -253,7 +253,32 @@ class CurseForgeService
             return $requestCallback();
         }
 
-        return Cache::remember($cacheKey, $ttl, $requestCallback);
+        // Check if cached data exists
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        // Execute the request
+        $data = $requestCallback();
+        
+        // Only cache if data size is reasonable (< 1MB when serialized)
+        $serialized = serialize($data);
+        $sizeInBytes = strlen($serialized);
+        $maxCacheSize = 1048576; // 1MB limit
+        
+        if ($sizeInBytes < $maxCacheSize) {
+            try {
+                Cache::put($cacheKey, $data, $ttl);
+            } catch (\Exception $e) {
+                // If caching fails due to memory, log but continue
+                Log::warning("Failed to cache CurseForge response (size: {$sizeInBytes} bytes): " . $e->getMessage());
+            }
+        } else {
+            Log::info("Skipping cache for large response (size: {$sizeInBytes} bytes, key: {$cacheKey})");
+        }
+        
+        return $data;
     }
 
     /**

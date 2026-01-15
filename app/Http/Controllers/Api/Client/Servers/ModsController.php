@@ -153,17 +153,41 @@ class ModsController extends ClientApiController
                 Log::info('Mods folder creation skipped: ' . $e->getMessage());
             }
 
-            // Download the mod file
-            $response = Http::timeout(300)->get($downloadUrl);
+            // Download the mod file using streaming to avoid memory issues
+            $tempPath = storage_path('app/temp/mod_' . uniqid() . '.jar');
+            $tempDir = dirname($tempPath);
             
-            if (!$response->successful()) {
-                throw new ModsServiceException('Failed to download mod file from CurseForge.');
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
             }
+            
+            $fileHandle = fopen($tempPath, 'w');
+            if (!$fileHandle) {
+                throw new ModsServiceException('Failed to create temporary file for mod download.');
+            }
+            
+            try {
+                $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
+                fclose($fileHandle);
+                
+                if (!$response->successful()) {
+                    @unlink($tempPath);
+                    throw new ModsServiceException('Failed to download mod file from CurseForge.');
+                }
 
-            $modContent = $response->body();
-
-            // Upload to server's /mods folder
-            $this->fileRepository->setServer($server)->putContent("/mods/{$fileName}", $modContent);
+                // Read and upload to server's /mods folder
+                $modContent = file_get_contents($tempPath);
+                $this->fileRepository->setServer($server)->putContent("/mods/{$fileName}", $modContent);
+                
+                // Clean up temp file
+                @unlink($tempPath);
+            } catch (\Exception $e) {
+                if (is_resource($fileHandle)) {
+                    fclose($fileHandle);
+                }
+                @unlink($tempPath);
+                throw $e;
+            }
 
             return response()->json([
                 'success' => true,
@@ -355,20 +379,6 @@ class ModsController extends ClientApiController
             // Get download URL
             $downloadUrl = $this->curseForgeService->getModFileDownloadUrl($modpackId, $fileId);
 
-            // Download the modpack file with size validation
-            $response = Http::timeout(300)->get($downloadUrl);
-            
-            if (!$response->successful()) {
-                throw new ModsServiceException('Failed to download modpack file from CurseForge.');
-            }
-
-            $modpackContent = $response->body();
-
-            // Validate downloaded content size
-            if (strlen($modpackContent) > $maxFileSize) {
-                throw new ModsServiceException('Downloaded modpack exceeds maximum allowed size.');
-            }
-
             // Create temporary directory for extraction in a secure location
             $baseTempDir = storage_path('app/temp');
             if (!is_dir($baseTempDir)) {
@@ -379,8 +389,34 @@ class ModsController extends ClientApiController
             mkdir($tempDir, 0755, true);
             $zipPath = $tempDir . '/modpack.zip';
 
-            // Save zip file temporarily
-            file_put_contents($zipPath, $modpackContent);
+            // Stream download to file to avoid loading entire file into memory
+            try {
+                $fileHandle = fopen($zipPath, 'w');
+                if (!$fileHandle) {
+                    throw new ModsServiceException('Failed to create temporary file for modpack download.');
+                }
+                
+                $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
+                fclose($fileHandle);
+                
+                if (!$response->successful()) {
+                    $this->deleteDirectory($tempDir);
+                    throw new ModsServiceException('Failed to download modpack file from CurseForge.');
+                }
+                
+                // Validate downloaded file size
+                $downloadedSize = filesize($zipPath);
+                if ($downloadedSize > $maxFileSize) {
+                    $this->deleteDirectory($tempDir);
+                    throw new ModsServiceException('Downloaded modpack exceeds maximum allowed size.');
+                }
+            } catch (\Exception $e) {
+                if (isset($fileHandle) && is_resource($fileHandle)) {
+                    fclose($fileHandle);
+                }
+                $this->deleteDirectory($tempDir);
+                throw $e;
+            }
 
             // Extract the zip file
             $zip = new \ZipArchive();
@@ -434,15 +470,39 @@ class ModsController extends ClientApiController
                     $modFileDetails = $this->curseForgeService->getModFile($projectId, $modFileId);
                     $modFileName = $modFileDetails['data']['fileName'] ?? "mod_{$projectId}_{$modFileId}.jar";
 
-                    // Download the mod file (can be parallelized, not an API metadata call)
-                    $modResponse = Http::timeout(120)->get($modDownloadUrl);
+                    // Download the mod file to a temporary location first to avoid memory issues
+                    $tempModPath = $tempDir . '/temp_' . $modFileName;
+                    $modFileHandle = fopen($tempModPath, 'w');
                     
-                    if ($modResponse->successful()) {
-                        // Upload to server's /mods folder
-                        $this->fileRepository->setServer($server)->putContent("/mods/{$modFileName}", $modResponse->body());
-                        $downloadedMods[] = $modFileName;
-                    } else {
+                    if (!$modFileHandle) {
+                        Log::warning("Failed to create temp file for mod {$projectId}");
                         $failedMods[] = ['projectId' => $projectId, 'fileId' => $modFileId];
+                        continue;
+                    }
+                    
+                    try {
+                        $modResponse = Http::timeout(120)->sink($modFileHandle)->get($modDownloadUrl);
+                        fclose($modFileHandle);
+                        
+                        if ($modResponse->successful()) {
+                            // Read and upload the file content
+                            $modContent = file_get_contents($tempModPath);
+                            $this->fileRepository->setServer($server)->putContent("/mods/{$modFileName}", $modContent);
+                            $downloadedMods[] = $modFileName;
+                            
+                            // Clean up temp file
+                            @unlink($tempModPath);
+                        } else {
+                            fclose($modFileHandle);
+                            @unlink($tempModPath);
+                            $failedMods[] = ['projectId' => $projectId, 'fileId' => $modFileId];
+                        }
+                    } catch (\Exception $modEx) {
+                        if (is_resource($modFileHandle)) {
+                            fclose($modFileHandle);
+                        }
+                        @unlink($tempModPath);
+                        throw $modEx;
                     }
                 } catch (ModsServiceException $e) {
                     Log::error("Failed to download mod {$modEntry['projectID']}: " . $e->getMessage());
