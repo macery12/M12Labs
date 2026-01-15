@@ -31,25 +31,25 @@ const ModCard = styled.div`
 `;
 
 const ModImage = styled.img`
-    ${tw`w-full h-24 object-cover`}
+    ${tw`w-full h-20 object-cover`}
 `;
 
 const ModContent = styled.div`
-    ${tw`p-3`}
+    ${tw`p-2.5`}
 `;
 
 const ModName = styled.h3`
-    ${tw`text-sm font-semibold text-neutral-100 mb-1 truncate`}
+    ${tw`text-xs font-semibold text-neutral-100 mb-1 truncate`}
 `;
 
 const ModDescription = styled.p`
-    ${tw`text-xs text-neutral-400 mb-2`}
+    ${tw`text-xs text-neutral-400 mb-1.5`}
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    line-height: 1.4;
-    height: 2.8em;
+    line-height: 1.3;
+    height: 2.6em;
 `;
 
 const ModMeta = styled.div`

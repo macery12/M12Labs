@@ -58,6 +58,7 @@ export default () => {
     };
 
     const handlePageChange = (newIndex: number) => {
+        setSelectedMod(null); // Close modal when changing pages
         setSearchParams({ ...searchParams, index: newIndex });
     };
 
@@ -108,12 +109,19 @@ export default () => {
                     mods={mods}
                     loading={loading}
                     pagination={pagination}
-                    onModClick={setSelectedMod}
+                    onModClick={(mod) => {
+                        setSelectedMod(mod);
+                    }}
                     onPageChange={handlePageChange}
                 />
             )}
 
-            {selectedMod && <ModDetails mod={selectedMod} onClose={() => setSelectedMod(null)} />}
+            {selectedMod && (
+                <ModDetails
+                    mod={selectedMod}
+                    onClose={() => setSelectedMod(null)}
+                />
+            )}
         </PageContentBlock>
     );
 };
