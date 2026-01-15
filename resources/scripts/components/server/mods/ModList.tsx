@@ -21,32 +21,39 @@ interface Props {
 }
 
 const ModCard = styled.div`
-    ${tw`bg-neutral-700 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:bg-neutral-600`}
+    ${tw`bg-neutral-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:bg-neutral-700 border border-neutral-700`}
     
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border-color: rgba(139, 92, 246, 0.5);
     }
 `;
 
 const ModImage = styled.img`
-    ${tw`w-full h-32 object-cover rounded mb-3`}
+    ${tw`w-full h-24 object-cover`}
+`;
+
+const ModContent = styled.div`
+    ${tw`p-3`}
 `;
 
 const ModName = styled.h3`
-    ${tw`text-lg font-semibold text-white mb-2 truncate`}
+    ${tw`text-sm font-semibold text-neutral-100 mb-1 truncate`}
 `;
 
 const ModDescription = styled.p`
-    ${tw`text-sm text-neutral-300 mb-3 line-clamp-2`}
+    ${tw`text-xs text-neutral-400 mb-2`}
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    line-height: 1.4;
+    height: 2.8em;
 `;
 
 const ModMeta = styled.div`
-    ${tw`flex justify-between items-center text-xs text-neutral-400`}
+    ${tw`flex justify-between items-center text-xs text-neutral-500`}
 `;
 
 const PaginationButton = styled(Button)`
@@ -82,7 +89,7 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
     return (
         <div css={tw`mt-6`}>
             <FadeTransition duration="duration-150" show={!loading}>
-                <div css={tw`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4`}>
+                <div css={tw`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4`}>
                     {mods.map(mod => (
                         <ModCard key={mod.id} onClick={() => onModClick(mod)}>
                             <ModImage
@@ -92,12 +99,14 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                                     e.currentTarget.src = '/assets/images/placeholder-mod.png';
                                 }}
                             />
-                            <ModName>{mod.name}</ModName>
-                            <ModDescription>{mod.summary}</ModDescription>
-                            <ModMeta>
-                                <span>By {mod.authors[0]?.name || 'Unknown'}</span>
-                                <span>{(mod.downloadCount / 1000000).toFixed(1)}M downloads</span>
-                            </ModMeta>
+                            <ModContent>
+                                <ModName>{mod.name}</ModName>
+                                <ModDescription>{mod.summary}</ModDescription>
+                                <ModMeta>
+                                    <span>{mod.authors[0]?.name || 'Unknown'}</span>
+                                    <span>{(mod.downloadCount / 1000000).toFixed(1)}M</span>
+                                </ModMeta>
+                            </ModContent>
                         </ModCard>
                     ))}
                 </div>

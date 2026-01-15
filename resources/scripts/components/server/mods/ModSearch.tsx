@@ -63,7 +63,19 @@ export default ({ onSearch, initialParams }: Props) => {
 
         getModLoaderTypes(uuid)
             .then(response => {
-                setModLoaders(response.data.map(ml => ({ id: ml.id, name: ml.name })));
+                // CurseForge mod loader API returns different structure
+                const loaders = response.data
+                    .filter((ml: any) => ml.name && (
+                        ml.name.toLowerCase().includes('forge') ||
+                        ml.name.toLowerCase().includes('fabric') ||
+                        ml.name.toLowerCase().includes('quilt') ||
+                        ml.name.toLowerCase() === 'neoforge'
+                    ))
+                    .map((ml: any) => ({
+                        id: ml.id || ml.type,
+                        name: ml.name
+                    }));
+                setModLoaders(loaders);
             })
             .catch(error => {
                 console.error(error);

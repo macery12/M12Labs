@@ -249,7 +249,7 @@ class CurseForgeService
      */
     public function getModLoaderTypes(): array
     {
-        // Game ID for Minecraft is 432
-        return $this->makeRequest('GET', 'games/432/version-types');
+        // Get Minecraft mod loaders (Forge, Fabric, NeoForge, etc.)
+        return $this->makeRequest('GET', 'minecraft/modloader');
     }
 }
