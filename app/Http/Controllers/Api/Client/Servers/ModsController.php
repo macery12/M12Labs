@@ -421,8 +421,9 @@ class ModsController extends ClientApiController
             // Download and install each mod from the manifest
             $downloadedMods = [];
             $failedMods = [];
+            $totalMods = count($manifest['files']);
             
-            foreach ($manifest['files'] as $modEntry) {
+            foreach ($manifest['files'] as $index => $modEntry) {
                 try {
                     $modFileId = $modEntry['fileID'];
                     $projectId = $modEntry['projectID'];
@@ -444,6 +445,20 @@ class ModsController extends ClientApiController
                     } else {
                         $failedMods[] = ['projectId' => $projectId, 'fileId' => $modFileId];
                     }
+                    
+                    // Add a small delay between mod downloads to avoid rate limiting
+                    // Skip delay on the last mod
+                    if ($index < $totalMods - 1) {
+                        usleep(200000); // 200ms delay
+                    }
+                } catch (ModsServiceException $e) {
+                    // If we hit rate limit, wait a bit longer before continuing
+                    if (strpos($e->getMessage(), 'rate limit') !== false) {
+                        Log::warning("Rate limit hit while downloading mod {$modEntry['projectID']}, waiting 2 seconds...");
+                        sleep(2);
+                    }
+                    Log::error("Failed to download mod {$modEntry['projectID']}: " . $e->getMessage());
+                    $failedMods[] = ['projectId' => $modEntry['projectID'], 'fileId' => $modEntry['fileID']];
                 } catch (\Exception $e) {
                     Log::error("Failed to download mod {$modEntry['projectID']}: " . $e->getMessage());
                     $failedMods[] = ['projectId' => $modEntry['projectID'], 'fileId' => $modEntry['fileID']];
