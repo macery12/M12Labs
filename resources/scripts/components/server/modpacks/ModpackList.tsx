@@ -7,6 +7,8 @@ import FadeTransition from '@/elements/transitions/FadeTransition';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDoubleLeft, faAngleDoubleRight, faDownload } from '@fortawesome/free-solid-svg-icons';
 
+const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';
+
 interface Props {
     modpacks: CurseForgeModpack[];
     loading: boolean;
@@ -116,10 +118,10 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                             <ModpackCard key={modpack.id} onClick={() => onModpackClick(modpack)}>
                                 <ModpackHeader>
                                     <ModpackIcon
-                                        src={modpack.logo?.thumbnailUrl || '/assets/images/placeholder-mod.png'}
+                                        src={modpack.logo?.thumbnailUrl || PLACEHOLDER_IMAGE}
                                         alt={modpack.name}
                                         onError={(e) => {
-                                            e.currentTarget.src = '/assets/images/placeholder-mod.png';
+                                            e.currentTarget.src = PLACEHOLDER_IMAGE;
                                         }}
                                     />
                                     <ModpackInfo>

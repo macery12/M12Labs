@@ -65,14 +65,14 @@ export default ({ onSearch, initialParams }: Props) => {
             .then(response => {
                 // CurseForge mod loader API returns different structure
                 const loaders = response.data
-                    .filter((ml: any) => ml.name && (
+                    .filter((ml) => ml.name && (
                         ml.name.toLowerCase().includes('forge') ||
                         ml.name.toLowerCase().includes('fabric') ||
                         ml.name.toLowerCase().includes('quilt') ||
                         ml.name.toLowerCase() === 'neoforge'
                     ))
-                    .map((ml: any) => ({
-                        id: ml.id || ml.type,
+                    .map((ml) => ({
+                        id: ml.id,
                         name: ml.name
                     }));
                 setModLoaders(loaders);

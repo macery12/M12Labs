@@ -344,11 +344,18 @@ class ModsController extends ClientApiController
 
             $fileData = $modpackFile['data'];
             $fileName = $fileData['fileName'] ?? 'modpack.zip';
+            $fileSize = $fileData['fileLength'] ?? 0;
+
+            // Check file size limit (500MB max)
+            $maxFileSize = config('modules.mods.max_modpack_size', 524288000); // 500MB default
+            if ($fileSize > $maxFileSize) {
+                throw new ModsServiceException('Modpack file size exceeds maximum allowed size.');
+            }
 
             // Get download URL
             $downloadUrl = $this->curseForgeService->getModFileDownloadUrl($modpackId, $fileId);
 
-            // Download the modpack file
+            // Download the modpack file with size validation
             $response = Http::timeout(300)->get($downloadUrl);
             
             if (!$response->successful()) {
@@ -357,10 +364,20 @@ class ModsController extends ClientApiController
 
             $modpackContent = $response->body();
 
-            // Create temporary directory for extraction
-            $tempDir = sys_get_temp_dir() . '/modpack_' . uniqid();
+            // Validate downloaded content size
+            if (strlen($modpackContent) > $maxFileSize) {
+                throw new ModsServiceException('Downloaded modpack exceeds maximum allowed size.');
+            }
+
+            // Create temporary directory for extraction in a secure location
+            $baseTempDir = storage_path('app/temp');
+            if (!is_dir($baseTempDir)) {
+                mkdir($baseTempDir, 0755, true);
+            }
+            
+            $tempDir = $baseTempDir . '/modpack_' . uniqid('', true);
             mkdir($tempDir, 0755, true);
-            $zipPath = $tempDir . '/' . $fileName;
+            $zipPath = $tempDir . '/modpack.zip';
 
             // Save zip file temporarily
             file_put_contents($zipPath, $modpackContent);
@@ -371,17 +388,20 @@ class ModsController extends ClientApiController
                 $zip->extractTo($tempDir);
                 $zip->close();
             } else {
+                $this->deleteDirectory($tempDir);
                 throw new ModsServiceException('Failed to extract modpack archive.');
             }
 
             // Parse manifest.json to get mod list
             $manifestPath = $tempDir . '/manifest.json';
             if (!file_exists($manifestPath)) {
+                $this->deleteDirectory($tempDir);
                 throw new ModsServiceException('Modpack manifest.json not found.');
             }
 
             $manifest = json_decode(file_get_contents($manifestPath), true);
             if (!isset($manifest['files']) || !is_array($manifest['files'])) {
+                $this->deleteDirectory($tempDir);
                 throw new ModsServiceException('Invalid modpack manifest format.');
             }
 

@@ -10,6 +10,8 @@ import useFlash from '@/plugins/useFlash';
 import ModpackDownloadButton from './ModpackDownloadButton';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 
+const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';
+
 interface Props {
     modpack: CurseForgeModpack;
     onClose: () => void;
@@ -125,10 +127,10 @@ export default ({ modpack, onClose }: Props) => {
             <ModalContent>
                 <ModpackHeader>
                     <ModpackLogo
-                        src={modpack.logo?.url || '/assets/images/placeholder-mod.png'}
+                        src={modpack.logo?.url || PLACEHOLDER_IMAGE}
                         alt={modpack.name}
                         onError={(e) => {
-                            e.currentTarget.src = '/assets/images/placeholder-mod.png';
+                            e.currentTarget.src = PLACEHOLDER_IMAGE;
                         }}
                     />
                     <div css={tw`flex-1`}>
