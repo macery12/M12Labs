@@ -297,4 +297,94 @@ class CurseForgeService
             return $this->makeRequest('GET', 'minecraft/modloader');
         });
     }
+
+    /**
+     * Search for modpacks in the CurseForge database.
+     *
+     * @param array $params Search parameters
+     * @return array
+     * @throws ModsServiceException
+     */
+    public function searchModpacks(array $params = []): array
+    {
+        // CurseForge Minecraft game ID is 432
+        $defaultParams = [
+            'gameId' => 432,
+            'classId' => 4471, // Modpacks class
+            'pageSize' => min($params['pageSize'] ?? 20, config('modules.mods.max_page_size', 50)),
+        ];
+
+        $searchParams = array_merge($defaultParams, array_filter([
+            'searchFilter' => $params['searchFilter'] ?? null,
+            'sortField' => $params['sortField'] ?? null,
+            'sortOrder' => $params['sortOrder'] ?? null,
+            'gameVersion' => $params['gameVersion'] ?? null,
+            'modLoaderType' => $params['modLoaderType'] ?? null,
+            'index' => $params['index'] ?? 0,
+        ], function ($value) {
+            return $value !== null;
+        }));
+
+        // Create cache key based on search parameters
+        $cacheKey = 'curseforge_modpack_search_' . md5(json_encode($searchParams));
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($searchParams) {
+            return $this->makeRequest('GET', 'mods/search', $searchParams);
+        });
+    }
+
+    /**
+     * Get details of a specific modpack.
+     *
+     * @param int $modpackId
+     * @return array
+     * @throws ModsServiceException
+     */
+    public function getModpack(int $modpackId): array
+    {
+        $cacheKey = "curseforge_modpack_{$modpackId}";
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_details'], function () use ($modpackId) {
+            return $this->makeRequest('GET', 'mods/' . $modpackId);
+        });
+    }
+
+    /**
+     * Get files for a specific modpack.
+     *
+     * @param int $modpackId
+     * @param array $params Filter parameters
+     * @return array
+     * @throws ModsServiceException
+     */
+    public function getModpackFiles(int $modpackId, array $params = []): array
+    {
+        $fileParams = array_filter([
+            'gameVersion' => $params['gameVersion'] ?? null,
+            'modLoaderType' => $params['modLoaderType'] ?? null,
+            'pageSize' => min($params['pageSize'] ?? 20, config('modules.mods.max_page_size', 50)),
+            'index' => $params['index'] ?? 0,
+        ], function ($value) {
+            return $value !== null;
+        });
+
+        $cacheKey = "curseforge_modpack_files_{$modpackId}_" . md5(json_encode($fileParams));
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_files'], function () use ($modpackId, $fileParams) {
+            return $this->makeRequest('GET', 'mods/' . $modpackId . '/files', $fileParams);
+        });
+    }
+
+    /**
+     * Get details of a specific modpack file.
+     *
+     * @param int $modpackId
+     * @param int $fileId
+     * @return array
+     * @throws ModsServiceException
+     */
+    public function getModpackFile(int $modpackId, int $fileId): array
+    {
+        return $this->makeRequest('GET', 'mods/' . $modpackId . '/files/' . $fileId);
+    }
 }
