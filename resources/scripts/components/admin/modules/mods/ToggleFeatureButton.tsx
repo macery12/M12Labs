@@ -7,8 +7,7 @@ export default () => {
 
     const submit = () => {
         updateSettings({ enabled: !mods.enabled }).then(() => {
-            // @ts-expect-error this is fine
-            window.location = '/admin/mods';
+            window.location.href = '/admin/mods';
         });
     };
 
