@@ -359,6 +359,10 @@ class ModsController extends ClientApiController
             ], 403);
         }
 
+        // Extend PHP execution time for large modpack downloads (10 minutes)
+        // This can take a while with many mods to download and extract
+        set_time_limit(600);
+
         try {
             // Get modpack file details
             $modpackFile = $this->curseForgeService->getModpackFile($modpackId, $fileId);

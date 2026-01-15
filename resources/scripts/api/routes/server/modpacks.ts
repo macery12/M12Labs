@@ -187,7 +187,11 @@ export const getModpackFiles = (uuid: string, modpackId: number, params: Modpack
 
 export const downloadModpack = (uuid: string, modpackId: number, fileId: number): Promise<void> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${uuid}/modpacks/${modpackId}/files/${fileId}/download`)
+        // Use extended timeout for modpack downloads (10 minutes) as they can take a long time
+        // with many mods to download and extract
+        http.post(`/api/client/servers/${uuid}/modpacks/${modpackId}/files/${fileId}/download`, {}, {
+            timeout: 600000, // 10 minutes
+        })
             .then(() => resolve())
             .catch(reject);
     });
