@@ -147,7 +147,7 @@ class ModsController extends ClientApiController
 
             // Create /mods folder if it doesn't exist
             try {
-                $this->fileRepository->setServer($server)->createDirectory('/mods');
+                $this->fileRepository->setServer($server)->createDirectory('mods', '/');
             } catch (\Exception $e) {
                 // Folder might already exist, that's fine
                 Log::info('Mods folder creation skipped: ' . $e->getMessage());
