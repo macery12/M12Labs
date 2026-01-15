@@ -5,7 +5,7 @@ import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faDownload, faClock } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     mods: CurseForgeMod[];
@@ -21,39 +21,47 @@ interface Props {
 }
 
 const ModCard = styled.div`
-    ${tw`bg-neutral-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:bg-neutral-700 border border-neutral-700`}
+    ${tw`bg-neutral-800 rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
     
     &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        border-color: rgba(139, 92, 246, 0.5);
+        ${tw`bg-neutral-750 border-neutral-600`}
     }
 `;
 
-const ModImage = styled.img`
-    ${tw`w-full h-20 object-cover`}
+const ModHeader = styled.div`
+    ${tw`flex items-start gap-3 p-3 border-b border-neutral-700/50`}
 `;
 
-const ModContent = styled.div`
-    ${tw`p-2.5`}
+const ModIcon = styled.img`
+    ${tw`w-12 h-12 rounded flex-shrink-0 bg-neutral-900`}
+`;
+
+const ModInfo = styled.div`
+    ${tw`flex-1 min-w-0`}
 `;
 
 const ModName = styled.h3`
-    ${tw`text-xs font-semibold text-neutral-100 mb-1 truncate`}
+    ${tw`text-sm font-semibold text-neutral-100 truncate mb-0.5`}
 `;
 
-const ModDescription = styled.p`
-    ${tw`text-xs text-neutral-400 mb-1.5`}
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.3;
-    height: 2.6em;
+const ModAuthor = styled.div`
+    ${tw`text-xs text-neutral-400 truncate`}
 `;
 
-const ModMeta = styled.div`
-    ${tw`flex justify-between items-center text-xs text-neutral-500`}
+const ModStats = styled.div`
+    ${tw`flex items-center gap-3 px-3 py-2 text-xs`}
+`;
+
+const StatItem = styled.div`
+    ${tw`flex items-center gap-1.5 text-neutral-400`}
+`;
+
+const StatLabel = styled.span`
+    ${tw`text-neutral-500`}
+`;
+
+const StatValue = styled.span`
+    ${tw`text-neutral-300 font-medium`}
 `;
 
 const PaginationButton = styled(Button)`
@@ -94,26 +102,54 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
     return (
         <div css={tw`mt-6`}>
             <FadeTransition duration="duration-150" show={!loading}>
-                <div css={tw`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4`}>
-                    {mods.map(mod => (
-                        <ModCard key={mod.id} onClick={() => onModClick(mod)}>
-                            <ModImage
-                                src={mod.logo?.thumbnailUrl || '/assets/images/placeholder-mod.png'}
-                                alt={mod.name}
-                                onError={(e) => {
-                                    e.currentTarget.src = '/assets/images/placeholder-mod.png';
-                                }}
-                            />
-                            <ModContent>
-                                <ModName>{mod.name}</ModName>
-                                <ModDescription>{mod.summary}</ModDescription>
-                                <ModMeta>
-                                    <span>{mod.authors[0]?.name || 'Unknown'}</span>
-                                    <span>{(mod.downloadCount / 1000000).toFixed(1)}M</span>
-                                </ModMeta>
-                            </ModContent>
-                        </ModCard>
-                    ))}
+                <div css={tw`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3`}>
+                    {mods.map(mod => {
+                        const latestFile = mod.latestFiles?.[0];
+                        const gameVersion = latestFile?.gameVersions?.[0] || 'Unknown';
+                        const downloadCount = mod.downloadCount >= 1000000 
+                            ? `${(mod.downloadCount / 1000000).toFixed(1)}M`
+                            : mod.downloadCount >= 1000
+                            ? `${(mod.downloadCount / 1000).toFixed(0)}K`
+                            : mod.downloadCount.toString();
+                        
+                        const lastUpdated = latestFile?.fileDate 
+                            ? new Date(latestFile.fileDate).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })
+                            : 'Unknown';
+
+                        return (
+                            <ModCard key={mod.id} onClick={() => onModClick(mod)}>
+                                <ModHeader>
+                                    <ModIcon
+                                        src={mod.logo?.thumbnailUrl || '/assets/images/placeholder-mod.png'}
+                                        alt={mod.name}
+                                        onError={(e) => {
+                                            e.currentTarget.src = '/assets/images/placeholder-mod.png';
+                                        }}
+                                    />
+                                    <ModInfo>
+                                        <ModName title={mod.name}>{mod.name}</ModName>
+                                        <ModAuthor title={mod.authors[0]?.name || 'Unknown'}>
+                                            by {mod.authors[0]?.name || 'Unknown'}
+                                        </ModAuthor>
+                                    </ModInfo>
+                                </ModHeader>
+                                <ModStats>
+                                    <StatItem>
+                                        <StatLabel>Version:</StatLabel>
+                                        <StatValue>{gameVersion}</StatValue>
+                                    </StatItem>
+                                    <StatItem css={tw`ml-auto`}>
+                                        <FontAwesomeIcon icon={faDownload} css={tw`text-neutral-500`} />
+                                        <StatValue>{downloadCount}</StatValue>
+                                    </StatItem>
+                                </ModStats>
+                            </ModCard>
+                        );
+                    })}
                 </div>
 
                 {loading && (
