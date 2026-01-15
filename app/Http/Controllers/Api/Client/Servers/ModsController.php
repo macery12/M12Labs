@@ -168,7 +168,7 @@ class ModsController extends ClientApiController
             
             try {
                 $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
-                fclose($fileHandle);
+                // Note: sink() automatically closes the file handle, so we don't call fclose() here
                 
                 if (!$response->successful()) {
                     @unlink($tempPath);
@@ -182,6 +182,7 @@ class ModsController extends ClientApiController
                 // Clean up temp file
                 @unlink($tempPath);
             } catch (\Exception $e) {
+                // Only close if still a valid resource (sink may not have been called yet)
                 if (is_resource($fileHandle)) {
                     fclose($fileHandle);
                 }
@@ -397,7 +398,7 @@ class ModsController extends ClientApiController
                 }
                 
                 $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
-                fclose($fileHandle);
+                // Note: sink() automatically closes the file handle, so we don't call fclose() here
                 
                 if (!$response->successful()) {
                     $this->deleteDirectory($tempDir);
@@ -411,6 +412,7 @@ class ModsController extends ClientApiController
                     throw new ModsServiceException('Downloaded modpack exceeds maximum allowed size.');
                 }
             } catch (\Exception $e) {
+                // Only close if still a valid resource (sink may not have been called yet)
                 if (isset($fileHandle) && is_resource($fileHandle)) {
                     fclose($fileHandle);
                 }
@@ -482,7 +484,7 @@ class ModsController extends ClientApiController
                     
                     try {
                         $modResponse = Http::timeout(120)->sink($modFileHandle)->get($modDownloadUrl);
-                        fclose($modFileHandle);
+                        // Note: sink() automatically closes the file handle, so we don't call fclose() here
                         
                         if ($modResponse->successful()) {
                             // Read and upload the file content
@@ -493,11 +495,11 @@ class ModsController extends ClientApiController
                             // Clean up temp file
                             @unlink($tempModPath);
                         } else {
-                            fclose($modFileHandle);
                             @unlink($tempModPath);
                             $failedMods[] = ['projectId' => $projectId, 'fileId' => $modFileId];
                         }
                     } catch (\Exception $modEx) {
+                        // Only close if still a valid resource (sink may not have been called yet)
                         if (is_resource($modFileHandle)) {
                             fclose($modFileHandle);
                         }
