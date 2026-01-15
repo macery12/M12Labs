@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import { ServerContext } from '@/state/server';
+import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import ModSearch from './ModSearch';
 import ModList from './ModList';
@@ -13,6 +14,7 @@ import Spinner from '@/elements/Spinner';
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
+    const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const { addError } = useFlash();
 
     const [loading, setLoading] = useState(false);
@@ -59,13 +61,29 @@ export default () => {
         setSearchParams({ ...searchParams, index: newIndex });
     };
 
+    if (!globalModsEnabled) {
+        return (
+            <PageContentBlock title={'Mods Browser'} header description={'Browse and install Minecraft mods.'}>
+                <div css={tw`text-center py-16`}>
+                    <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
+                    <p css={tw`text-neutral-400 text-sm`}>
+                        Contact your panel administrator to enable the Mods module in the admin area.
+                    </p>
+                </div>
+            </PageContentBlock>
+        );
+    }
+
     if (!modsEnabled) {
         return (
             <PageContentBlock title={'Mods Browser'} header description={'Browse and install Minecraft mods.'}>
                 <div css={tw`text-center py-16`}>
                     <p css={tw`text-neutral-300 text-lg mb-4`}>Mods are not enabled for this server.</p>
-                    <p css={tw`text-neutral-400 text-sm`}>
-                        Contact your server administrator to enable the mods feature.
+                    <p css={tw`text-neutral-400 text-sm mb-2`}>
+                        An administrator needs to enable the mods feature for this specific server.
+                    </p>
+                    <p css={tw`text-neutral-400 text-xs`}>
+                        This can be done in the admin panel under Servers → [Server Name] → Mods Toggle.
                     </p>
                 </div>
             </PageContentBlock>
