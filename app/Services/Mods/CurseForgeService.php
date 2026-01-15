@@ -15,6 +15,8 @@ class CurseForgeService
     private string $endpoint;
     private int $requestsPerMinute;
     private int $requestsPerHour;
+    private bool $cacheEnabled;
+    private array $cacheTtl;
 
     /**
      * CurseForgeService constructor.
@@ -25,6 +27,14 @@ class CurseForgeService
         $this->endpoint = config('modules.mods.curseforge_api_url') ?: 'https://api.curseforge.com/v1';
         $this->requestsPerMinute = config('modules.mods.rate_limit.requests_per_minute', 30);
         $this->requestsPerHour = config('modules.mods.rate_limit.requests_per_hour', 1800);
+        $this->cacheEnabled = config('modules.mods.cache.enabled', true);
+        $this->cacheTtl = config('modules.mods.cache.ttl', [
+            'search' => 300,
+            'mod_details' => 1800,
+            'mod_files' => 600,
+            'versions' => 3600,
+            'loaders' => 3600,
+        ]);
 
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
@@ -134,6 +144,20 @@ class CurseForgeService
     }
 
     /**
+     * Make a cached request to the CurseForge API.
+     *
+     * @throws ModsServiceException
+     */
+    private function makeCachedRequest(string $cacheKey, int $ttl, callable $requestCallback): array
+    {
+        if (!$this->cacheEnabled) {
+            return $requestCallback();
+        }
+
+        return Cache::remember($cacheKey, $ttl, $requestCallback);
+    }
+
+    /**
      * Search for mods in the CurseForge database.
      *
      * @param array $params Search parameters
@@ -160,7 +184,12 @@ class CurseForgeService
             return $value !== null;
         }));
 
-        return $this->makeRequest('GET', 'mods/search', $searchParams);
+        // Create cache key based on search parameters
+        $cacheKey = 'curseforge_search_' . md5(json_encode($searchParams));
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($searchParams) {
+            return $this->makeRequest('GET', 'mods/search', $searchParams);
+        });
     }
 
     /**
@@ -172,7 +201,11 @@ class CurseForgeService
      */
     public function getMod(int $modId): array
     {
-        return $this->makeRequest('GET', 'mods/' . $modId);
+        $cacheKey = "curseforge_mod_{$modId}";
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_details'], function () use ($modId) {
+            return $this->makeRequest('GET', 'mods/' . $modId);
+        });
     }
 
     /**
@@ -194,7 +227,11 @@ class CurseForgeService
             return $value !== null;
         });
 
-        return $this->makeRequest('GET', 'mods/' . $modId . '/files', $fileParams);
+        $cacheKey = "curseforge_mod_files_{$modId}_" . md5(json_encode($fileParams));
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_files'], function () use ($modId, $fileParams) {
+            return $this->makeRequest('GET', 'mods/' . $modId . '/files', $fileParams);
+        });
     }
 
     /**
@@ -237,8 +274,12 @@ class CurseForgeService
      */
     public function getMinecraftVersions(): array
     {
-        // Game ID for Minecraft is 432
-        return $this->makeRequest('GET', 'games/432/versions');
+        $cacheKey = 'curseforge_minecraft_versions';
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['versions'], function () {
+            // Game ID for Minecraft is 432
+            return $this->makeRequest('GET', 'games/432/versions');
+        });
     }
 
     /**
@@ -249,7 +290,11 @@ class CurseForgeService
      */
     public function getModLoaderTypes(): array
     {
-        // Get Minecraft mod loaders (Forge, Fabric, NeoForge, etc.)
-        return $this->makeRequest('GET', 'minecraft/modloader');
+        $cacheKey = 'curseforge_mod_loaders';
+        
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['loaders'], function () {
+            // Get Minecraft mod loaders (Forge, Fabric, NeoForge, etc.)
+            return $this->makeRequest('GET', 'minecraft/modloader');
+        });
     }
 }

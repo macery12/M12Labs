@@ -21,6 +21,20 @@ return [
     ],
 
     /*
+     * Cache settings for CurseForge API responses
+     */
+    'cache' => [
+        'enabled' => env('MODS_CACHE_ENABLED', true),
+        'ttl' => [
+            'search' => env('MODS_CACHE_SEARCH_TTL', 300), // 5 minutes
+            'mod_details' => env('MODS_CACHE_MOD_DETAILS_TTL', 1800), // 30 minutes
+            'mod_files' => env('MODS_CACHE_MOD_FILES_TTL', 600), // 10 minutes
+            'versions' => env('MODS_CACHE_VERSIONS_TTL', 3600), // 1 hour
+            'loaders' => env('MODS_CACHE_LOADERS_TTL', 3600), // 1 hour
+        ],
+    ],
+
+    /*
      * CurseForge API endpoint
      */
     'curseforge_api_url' => env('CURSEFORGE_API_URL', 'https://api.curseforge.com/v1'),
