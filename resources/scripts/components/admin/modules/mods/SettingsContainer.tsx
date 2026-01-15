@@ -14,7 +14,17 @@ export default () => {
     const submit = (values: ModsSettings) => {
         clearFlashes();
 
-        updateSettings(values)
+        // Only send values that are actually set
+        const payload: ModsSettings = {
+            enabled: values.enabled,
+        };
+
+        // Only include API key if it was provided
+        if (values.curseforge_api_key && typeof values.curseforge_api_key === 'string' && values.curseforge_api_key.length > 0) {
+            payload.curseforge_api_key = values.curseforge_api_key;
+        }
+
+        updateSettings(payload)
             .then(() => {
                 addFlash({
                     type: 'success',
@@ -48,7 +58,6 @@ export default () => {
         <Formik
             onSubmit={submit}
             initialValues={{
-                curseforge_api_key: undefined,
                 enabled: mods.enabled,
             }}
         >
