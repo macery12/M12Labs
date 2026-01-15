@@ -15,11 +15,6 @@ class UpdateModsSettingsRequest extends ApplicationApiRequest
         ];
     }
 
-    public function normalize(): array
-    {
-        return $this->only(['enabled', 'curseforge_api_key']);
-    }
-
     public function permission(): string
     {
         return AdminRole::MODS_UPDATE;
