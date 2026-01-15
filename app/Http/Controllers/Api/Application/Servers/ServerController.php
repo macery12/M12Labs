@@ -161,4 +161,27 @@ class ServerController extends ApplicationApiController
             ->transformWith(ServerTransformer::class)
             ->toArray();
     }
+
+    /**
+     * Toggle the mods module for a server.
+     *
+     * @throws \Everest\Exceptions\Model\DataValidationException
+     * @throws \Everest\Exceptions\Repository\RecordNotFoundException
+     */
+    public function toggleMods(UpdateServerRequest $request, Server $server): JsonResponse
+    {
+        $modsEnabled = $request->input('mods_enabled', false);
+        
+        $server->update(['mods_enabled' => $modsEnabled]);
+
+        Activity::event('admin:servers:mods.toggle')
+            ->property('server', $server)
+            ->property('mods_enabled', $modsEnabled)
+            ->description('Server mods module was ' . ($modsEnabled ? 'enabled' : 'disabled'))
+            ->log();
+
+        return response()->json([
+            'mods_enabled' => $server->mods_enabled,
+        ]);
+    }
 }

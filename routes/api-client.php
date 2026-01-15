@@ -150,6 +150,15 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/upload', Client\Servers\FileUploadController::class);
         });
 
+        Route::group(['prefix' => '/mods'], function () {
+            Route::get('/search', [Client\Servers\ModsController::class, 'search'])->middleware(['throttle:30,1']);
+            Route::get('/{modId}', [Client\Servers\ModsController::class, 'getMod'])->middleware(['throttle:30,1']);
+            Route::get('/{modId}/files', [Client\Servers\ModsController::class, 'getModFiles'])->middleware(['throttle:30,1']);
+            Route::post('/{modId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadMod'])->middleware(['throttle:5,1']);
+            Route::get('/minecraft/versions', [Client\Servers\ModsController::class, 'getMinecraftVersions'])->middleware(['throttle:10,1']);
+            Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:10,1']);
+        });
+
         Route::group(['prefix' => '/schedules'], function () {
             Route::get('/', [Client\Servers\ScheduleController::class, 'index']);
             Route::post('/', [Client\Servers\ScheduleController::class, 'store']);
