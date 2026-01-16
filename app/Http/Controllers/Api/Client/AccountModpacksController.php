@@ -9,6 +9,7 @@ use Everest\Models\User;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Servers\ServerCreationService;
 use Everest\Services\Servers\StartupModificationService;
+use Everest\Services\Servers\ReinstallServerService;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Transformers\Api\Client\ServerTransformer;
@@ -27,6 +28,7 @@ class AccountModpacksController extends ClientApiController
         private ServerRepository $serverRepository,
         private DaemonServerRepository $daemonServerRepository,
         private StartupModificationService $startupModificationService,
+        private ReinstallServerService $reinstallServerService,
     ) {
         parent::__construct();
     }
@@ -324,11 +326,9 @@ class AccountModpacksController extends ClientApiController
                     'environment' => $environment,
                 ]);
 
-            // Sync environment to Wings
-            $this->daemonServerRepository->setServer($server)->sync();
-
-            // Trigger server reinstall
-            $this->daemonServerRepository->setServer($server)->reinstall();
+            // Trigger server reinstall using the proper service
+            // This sets the server status to installing and triggers the daemon reinstall
+            $this->reinstallServerService->handle($server);
 
             Log::info('Modpack installation initiated', [
                 'server_id' => $server->id,
