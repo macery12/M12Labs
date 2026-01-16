@@ -38,6 +38,12 @@ class ModsController extends ApplicationApiController
             // Update the runtime config so the new value is available immediately
             config(['modules.mods.' . $key => $value]);
         }
+        
+        // Clear config cache to ensure changes persist across requests
+        if (function_exists('config_clear')) {
+            config_clear();
+        }
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
 
         Activity::event('admin:mods:update')
             ->property('settings', $request->all())
@@ -68,6 +74,12 @@ class ModsController extends ApplicationApiController
         
         // Clear the runtime config so it's not available
         config(['modules.mods.curseforge_api_key' => '']);
+        
+        // Clear config cache to ensure changes persist across requests
+        if (function_exists('config_clear')) {
+            config_clear();
+        }
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
 
         Activity::event('admin:mods:reset-key')
             ->description('CurseForge API key for mods was reset')
