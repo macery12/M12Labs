@@ -3,16 +3,11 @@ import tw from 'twin.macro';
 import styled from 'styled-components';
 import Modal from '@/elements/Modal';
 import { type CurseForgeModpack, type CurseForgeFile } from '@/api/routes/server/modpacks';
-import { getModpackFiles, installModpackToServer, getServerModpackInfo } from '@/api/routes/account/modpacks';
-import getServers from '@/api/getServers';
+import { getModpackFiles, installModpackToServer, getServerModpackInfo, getCompatibleServers } from '@/api/routes/account/modpacks';
 import Spinner from '@/elements/Spinner';
 import { httpErrorToHuman } from '@/api/http';
 import useFlash from '@/plugins/useFlash';
-import FadeTransition from '@/elements/transitions/FadeTransition';
 import { Button } from '@/elements/button';
-import Label from '@/elements/Label';
-import Select from '@/elements/Select';
-import type { Server } from '@definitions/server';
 import { Dialog } from '@/elements/dialog';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faServer, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
@@ -112,10 +107,10 @@ export default ({ modpack, onClose }: Props) => {
     const { addFlash, addError } = useFlash();
 
     const [files, setFiles] = useState<CurseForgeFile[]>([]);
-    const [servers, setServers] = useState<Server[]>([]);
+    const [servers, setServers] = useState<Array<{ uuid: string; name: string; eggId: number }>>([]);
     const [loading, setLoading] = useState(true);
     const [selectedFile, setSelectedFile] = useState<CurseForgeFile | null>(null);
-    const [selectedServer, setSelectedServer] = useState<Server | null>(null);
+    const [selectedServer, setSelectedServer] = useState<{ uuid: string; name: string; eggId: number } | null>(null);
     const [installing, setInstalling] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [serverModpackInfo, setServerModpackInfo] = useState<Record<string, { projectId?: string; versionId?: string; modpackName?: string }>>({});
@@ -125,16 +120,14 @@ export default ({ modpack, onClose }: Props) => {
         
         Promise.all([
             getModpackFiles(modpack.id, { pageSize: 20, index: 0 }),
-            getServers({ per_page: 100 })
+            getCompatibleServers()
         ])
-            .then(([filesResponse, serversResponse]) => {
+            .then(([filesResponse, compatibleServersResponse]) => {
                 setFiles(filesResponse.data);
-                // Filter servers that have mods enabled
-                const modsEnabledServers = serversResponse.items.filter(s => s.modsEnabled);
-                setServers(modsEnabledServers);
+                setServers(compatibleServersResponse.servers);
 
                 // Load current modpack info for each server
-                modsEnabledServers.forEach(server => {
+                compatibleServersResponse.servers.forEach(server => {
                     getServerModpackInfo(server.uuid)
                         .then(info => {
                             setServerModpackInfo(prev => ({

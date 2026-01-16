@@ -125,6 +125,55 @@ class AccountModpacksController extends ClientApiController
     }
 
     /**
+     * Get servers that are compatible with modpack installation.
+     * Only returns servers with CurseForge-compatible eggs (having PROJECT_ID and API_KEY variables).
+     */
+    public function getCompatibleServers(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            // Get all servers owned by the user with mods enabled
+            $servers = $this->serverRepository->getUserServers($user->id);
+            
+            // Filter servers to only those with CurseForge-compatible eggs
+            $compatibleServers = [];
+            
+            foreach ($servers as $server) {
+                if (!$server->mods_enabled) {
+                    continue;
+                }
+                
+                // Check if the egg has the required environment variables
+                $hasProjectId = EggVariable::where('egg_id', $server->egg_id)
+                    ->where('env_variable', 'PROJECT_ID')
+                    ->exists();
+                    
+                $hasApiKey = EggVariable::where('egg_id', $server->egg_id)
+                    ->where('env_variable', 'API_KEY')
+                    ->exists();
+                
+                if ($hasProjectId && $hasApiKey) {
+                    $compatibleServers[] = [
+                        'uuid' => $server->uuid,
+                        'name' => $server->name,
+                        'eggId' => $server->egg_id,
+                    ];
+                }
+            }
+            
+            return response()->json([
+                'servers' => $compatibleServers,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting compatible servers: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'An error occurred while fetching compatible servers.',
+            ], 500);
+        }
+    }
+
+    /**
      * Get current modpack info for a server.
      */
     public function getServerModpackInfo(Request $request, string $serverId): JsonResponse

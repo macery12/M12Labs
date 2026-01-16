@@ -50,6 +50,17 @@ export const getModpackFiles = (modpackId: number, params: ModpackFileParams): P
 };
 
 /**
+ * Get servers that are compatible with modpack installation
+ */
+export const getCompatibleServers = (): Promise<{ servers: Array<{ uuid: string; name: string; eggId: number }> }> => {
+    return new Promise((resolve, reject) => {
+        http.get('/api/client/account/modpacks/compatible-servers')
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+/**
  * Install a modpack to a specific server
  * This updates the server's environment variables and triggers a reinstall
  */

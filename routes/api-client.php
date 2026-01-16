@@ -68,13 +68,14 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         });
 
         Route::prefix('/modpacks')->group(function () {
-            Route::get('/search', [Client\AccountModpacksController::class, 'search'])->middleware(['throttle:30,1']);
-            Route::get('/{modpackId}', [Client\AccountModpacksController::class, 'getModpack'])->middleware(['throttle:30,1']);
-            Route::get('/{modpackId}/files', [Client\AccountModpacksController::class, 'getModpackFiles'])->middleware(['throttle:30,1']);
-            Route::get('/minecraft/versions', [Client\AccountModpacksController::class, 'getMinecraftVersions'])->middleware(['throttle:10,1']);
-            Route::get('/minecraft/loaders', [Client\AccountModpacksController::class, 'getModLoaderTypes'])->middleware(['throttle:10,1']);
-            Route::get('/server/{serverId}/info', [Client\AccountModpacksController::class, 'getServerModpackInfo'])->middleware(['throttle:30,1']);
-            Route::post('/install', [Client\AccountModpacksController::class, 'install'])->middleware(['throttle:5,1']);
+            Route::get('/search', [Client\AccountModpacksController::class, 'search']);
+            Route::get('/compatible-servers', [Client\AccountModpacksController::class, 'getCompatibleServers']);
+            Route::get('/{modpackId}', [Client\AccountModpacksController::class, 'getModpack']);
+            Route::get('/{modpackId}/files', [Client\AccountModpacksController::class, 'getModpackFiles']);
+            Route::get('/minecraft/versions', [Client\AccountModpacksController::class, 'getMinecraftVersions']);
+            Route::get('/minecraft/loaders', [Client\AccountModpacksController::class, 'getModLoaderTypes']);
+            Route::get('/server/{serverId}/info', [Client\AccountModpacksController::class, 'getServerModpackInfo']);
+            Route::post('/install', [Client\AccountModpacksController::class, 'install']);
         });
 
         Route::post('/setup', [Client\AccountController::class, 'setup']);
