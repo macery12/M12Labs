@@ -59,6 +59,7 @@ export default () => {
             onSubmit={submit}
             initialValues={{
                 enabled: mods.enabled,
+                curseforge_api_key: typeof mods.curseforge_api_key === 'string' ? '' : '',
             }}
         >
             {() => (

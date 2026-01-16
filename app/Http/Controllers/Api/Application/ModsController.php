@@ -36,6 +36,9 @@ class ModsController extends ApplicationApiController
             Setting::set('settings::modules:mods:' . $key, $value);
         }
 
+        // Clear config cache to ensure new settings are loaded
+        \Artisan::call('config:clear');
+
         Activity::event('admin:mods:update')
             ->property('settings', $request->all())
             ->description('Mods module settings were updated')
@@ -62,6 +65,9 @@ class ModsController extends ApplicationApiController
     public function resetKey(DeleteCurseForgeKeyRequest $request): Response
     {
         Setting::forget('settings::modules:mods:curseforge_api_key');
+
+        // Clear config cache to ensure key removal is reflected
+        \Artisan::call('config:clear');
 
         Activity::event('admin:mods:reset-key')
             ->description('CurseForge API key for mods was reset')
