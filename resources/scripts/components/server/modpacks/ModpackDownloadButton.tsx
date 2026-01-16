@@ -36,6 +36,7 @@ export default ({ modpackId, fileId, fileName, modpackName, onDownloadStart, onD
         downloadModpack(uuid, modpackId, fileId)
             .then(() => {
                 setDownloaded(true);
+                setDownloading(false);
                 addFlash({
                     key: 'modpacks',
                     type: 'success',
@@ -52,6 +53,10 @@ export default ({ modpackId, fileId, fileName, modpackName, onDownloadStart, onD
                 console.error(error);
                 addError({ key: 'modpacks', message: httpErrorToHuman(error) });
                 setDownloading(false);
+                // Also notify completion on error so UI can reset
+                if (onDownloadComplete) {
+                    onDownloadComplete();
+                }
             });
     };
 

@@ -31,6 +31,7 @@ export default () => {
     const [installedModpack, setInstalledModpack] = useState<InstalledModpackInfo | null>(null);
     const [checkingInstalled, setCheckingInstalled] = useState(true);
     const [installing, setInstalling] = useState(false);
+    const [downloadingModpack, setDownloadingModpack] = useState(false);
     const [pagination, setPagination] = useState({
         index: 0,
         pageSize: 20,
@@ -108,12 +109,16 @@ export default () => {
     const handleDownloadStart = () => {
         // When download starts, show the installing progress view
         setInstalling(true);
+        setDownloadingModpack(true);
         setSelectedModpack(null); // Close the modal
     };
 
     const handleDownloadComplete = () => {
-        // Refresh installed modpack status
+        // Mark download as complete
+        setDownloadingModpack(false);
+        // Installing state will be cleared by progress component calling this
         setInstalling(false);
+        // Refresh installed modpack status
         refreshInstalledModpack();
     };
 
@@ -158,7 +163,7 @@ export default () => {
                     <Spinner size={'large'} centered />
                 </div>
             ) : installing ? (
-                <ModpackInstallProgress onComplete={handleDownloadComplete} />
+                <ModpackInstallProgress isDownloading={downloadingModpack} onComplete={handleDownloadComplete} />
             ) : installedModpack?.installed ? (
                 <ModpackStatus installedModpack={installedModpack} onSwapModpack={handleSwapModpack} />
             ) : (
