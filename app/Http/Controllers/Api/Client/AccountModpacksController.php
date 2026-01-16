@@ -264,7 +264,7 @@ class AccountModpacksController extends ClientApiController
             }
 
             // Get the CurseForge API key from settings
-            $apiKey = config('everest.mods.curseforge_api_key', '');
+            $apiKey = config('modules.mods.curseforge_api_key', '');
             if (empty($apiKey)) {
                 return response()->json([
                     'error' => 'CurseForge API key is not configured.',

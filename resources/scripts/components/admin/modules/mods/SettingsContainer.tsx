@@ -7,7 +7,7 @@ import { ModsSettings, updateSettings, resetCurseForgeKey } from '@/api/routes/a
 import { useFlashKey } from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 
-export default () => {
+const SettingsContainer = () => {
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlashKey('admin:mods');
     const mods = useStoreState(s => s.everest.data!.mods);
 
@@ -130,3 +130,5 @@ export default () => {
         </Formik>
     );
 };
+
+export default SettingsContainer;
