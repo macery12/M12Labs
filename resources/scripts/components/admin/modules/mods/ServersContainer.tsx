@@ -46,9 +46,7 @@ export default () => {
 
         toggleServerMods(serverId, !currentState)
             .then(() => {
-                setServers(prev =>
-                    prev.map(s => (s.id === serverId ? { ...s, modsEnabled: !currentState } : s))
-                );
+                setServers(prev => prev.map(s => (s.id === serverId ? { ...s, modsEnabled: !currentState } : s)));
                 addFlash({
                     key: 'mods:servers',
                     type: 'success',

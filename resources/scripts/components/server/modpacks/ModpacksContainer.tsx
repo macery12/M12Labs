@@ -7,12 +7,12 @@ import ModpackSearch from './ModpackSearch';
 import ModpackList from './ModpackList';
 import ModpackDetails from './ModpackDetails';
 import ModpackStatus from './ModpackStatus';
-import { 
-    type CurseForgeModpack, 
-    type ModpackSearchParams, 
+import {
+    type CurseForgeModpack,
+    type ModpackSearchParams,
     searchModpacks,
     getInstalledModpack,
-    type InstalledModpackInfo
+    type InstalledModpackInfo,
 } from '@/api/routes/server/modpacks';
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
@@ -48,7 +48,7 @@ export default () => {
 
     useEffect(() => {
         if (!modsEnabled) return;
-        
+
         // Check for installed modpack first
         setCheckingInstalled(true);
         getInstalledModpack(uuid)
@@ -69,7 +69,7 @@ export default () => {
 
     useEffect(() => {
         if (!modsEnabled || installedModpack?.installed) return;
-        
+
         setLoading(true);
         searchModpacks(uuid, searchParams)
             .then(response => {
@@ -159,10 +159,7 @@ export default () => {
                     <Spinner size={'large'} centered />
                 </div>
             ) : installedModpack?.installed ? (
-                <ModpackStatus 
-                    installedModpack={installedModpack} 
-                    onSwapModpack={handleSwapModpack}
-                />
+                <ModpackStatus installedModpack={installedModpack} onSwapModpack={handleSwapModpack} />
             ) : (
                 <>
                     <ModpackSearch onSearch={handleSearch} initialParams={searchParams} />

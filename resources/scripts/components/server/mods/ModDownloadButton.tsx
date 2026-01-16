@@ -50,10 +50,7 @@ export default ({ modId, fileId, fileName }: Props) => {
                 size={Button.Sizes.Small}
                 onClick={handleDownload}
                 disabled={downloading || downloaded}
-                css={[
-                    downloaded && tw`bg-green-600 hover:bg-green-700`,
-                    tw`min-w-[100px]`
-                ]}
+                css={[downloaded && tw`bg-green-600 hover:bg-green-700`, tw`min-w-[100px]`]}
             >
                 {downloading ? (
                     <>

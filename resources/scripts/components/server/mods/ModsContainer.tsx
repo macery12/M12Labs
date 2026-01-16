@@ -39,7 +39,7 @@ export default () => {
 
     useEffect(() => {
         if (!modsEnabled) return;
-        
+
         setLoading(true);
         searchMods(uuid, searchParams)
             .then(response => {
@@ -119,13 +119,7 @@ export default () => {
                 />
             )}
 
-            {selectedMod && (
-                <ModDetails
-                    key={selectedMod.id}
-                    mod={selectedMod}
-                    onClose={() => setSelectedMod(null)}
-                />
-            )}
+            {selectedMod && <ModDetails key={selectedMod.id} mod={selectedMod} onClose={() => setSelectedMod(null)} />}
         </PageContentBlock>
     );
 };

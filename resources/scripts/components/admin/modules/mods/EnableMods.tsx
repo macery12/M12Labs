@@ -9,8 +9,8 @@ export default () => {
     return (
         <FeatureContainer icon={faCube} title={'Mods Module'}>
             Enable the Mods module to integrate CurseForge with Jexactyl, allowing users to search for and install
-            Minecraft mods directly from the panel. You&apos;ll need a CurseForge API key to use this feature, which
-            can be obtained from the CurseForge Console.
+            Minecraft mods directly from the panel. You&apos;ll need a CurseForge API key to use this feature, which can
+            be obtained from the CurseForge Console.
             <p className={'mt-2 text-right'}>
                 <ToggleFeatureButton />
             </p>

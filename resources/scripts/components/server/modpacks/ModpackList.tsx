@@ -24,7 +24,7 @@ interface Props {
 
 const ModpackCard = styled.div`
     ${tw`bg-neutral-800 rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
-    
+
     &:hover {
         ${tw`bg-neutral-700 border-neutral-600`}
     }
@@ -108,11 +108,12 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                     {modpacks.map(modpack => {
                         const latestFile = modpack.latestFiles?.[0];
                         const gameVersion = latestFile?.gameVersions?.[0] || 'Unknown';
-                        const downloadCount = modpack.downloadCount >= 1000000 
-                            ? `${(modpack.downloadCount / 1000000).toFixed(1)}M`
-                            : modpack.downloadCount >= 1000
-                            ? `${(modpack.downloadCount / 1000).toFixed(0)}K`
-                            : modpack.downloadCount.toString();
+                        const downloadCount =
+                            modpack.downloadCount >= 1000000
+                                ? `${(modpack.downloadCount / 1000000).toFixed(1)}M`
+                                : modpack.downloadCount >= 1000
+                                ? `${(modpack.downloadCount / 1000).toFixed(0)}K`
+                                : modpack.downloadCount.toString();
 
                         return (
                             <ModpackCard key={modpack.id} onClick={() => onModpackClick(modpack)}>
@@ -120,7 +121,7 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                                     <ModpackIcon
                                         src={modpack.logo?.thumbnailUrl || PLACEHOLDER_IMAGE}
                                         alt={modpack.name}
-                                        onError={(e) => {
+                                        onError={e => {
                                             e.currentTarget.src = PLACEHOLDER_IMAGE;
                                         }}
                                     />

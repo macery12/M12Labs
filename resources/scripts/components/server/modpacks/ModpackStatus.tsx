@@ -5,19 +5,19 @@ import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
-import { 
-    clearInstalledModpack, 
-    verifyModpackFiles, 
+import {
+    clearInstalledModpack,
+    verifyModpackFiles,
     type InstalledModpackInfo,
-    type ModpackVerificationResult 
+    type ModpackVerificationResult,
 } from '@/api/routes/server/modpacks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-    faCheckCircle, 
-    faTimesCircle, 
+import {
+    faCheckCircle,
+    faTimesCircle,
     faExclamationTriangle,
     faSync,
-    faExchangeAlt
+    faExchangeAlt,
 } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
@@ -87,12 +87,8 @@ export default ({ installedModpack, onSwapModpack }: Props) => {
         <div css={tw`bg-neutral-700 rounded-lg p-6 mb-6`}>
             <div css={tw`flex items-center justify-between mb-6`}>
                 <div>
-                    <h2 css={tw`text-2xl font-bold text-neutral-100`}>
-                        {installedModpack.name || 'Unknown Modpack'}
-                    </h2>
-                    <p css={tw`text-neutral-400 text-sm mt-1`}>
-                        Version: {installedModpack.version || 'Unknown'}
-                    </p>
+                    <h2 css={tw`text-2xl font-bold text-neutral-100`}>{installedModpack.name || 'Unknown Modpack'}</h2>
+                    <p css={tw`text-neutral-400 text-sm mt-1`}>Version: {installedModpack.version || 'Unknown'}</p>
                 </div>
                 <Button
                     size={Button.Sizes.Small}
@@ -198,21 +194,15 @@ export default ({ installedModpack, onSwapModpack }: Props) => {
                         <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-4 mb-4`}>
                             <div>
                                 <p css={tw`text-neutral-400 text-xs uppercase`}>Expected</p>
-                                <p css={tw`text-xl font-bold text-neutral-100`}>
-                                    {verificationResult.total_expected}
-                                </p>
+                                <p css={tw`text-xl font-bold text-neutral-100`}>{verificationResult.total_expected}</p>
                             </div>
                             <div>
                                 <p css={tw`text-neutral-400 text-xs uppercase`}>Verified</p>
-                                <p css={tw`text-xl font-bold text-green-400`}>
-                                    {verificationResult.verified}
-                                </p>
+                                <p css={tw`text-xl font-bold text-green-400`}>{verificationResult.verified}</p>
                             </div>
                             <div>
                                 <p css={tw`text-neutral-400 text-xs uppercase`}>Missing</p>
-                                <p css={tw`text-xl font-bold text-red-400`}>
-                                    {verificationResult.missing}
-                                </p>
+                                <p css={tw`text-xl font-bold text-red-400`}>{verificationResult.missing}</p>
                             </div>
                         </div>
 
@@ -242,10 +232,12 @@ export default ({ installedModpack, onSwapModpack }: Props) => {
                                     <FontAwesomeIcon icon={faExclamationTriangle} css={tw`text-yellow-400 mt-1`} />
                                     <div css={tw`flex-1`}>
                                         <p css={tw`text-yellow-400 font-semibold mb-2`}>
-                                            Failed During Installation ({verificationResult.failed_during_install.length})
+                                            Failed During Installation (
+                                            {verificationResult.failed_during_install.length})
                                         </p>
                                         <p css={tw`text-yellow-300 text-sm`}>
-                                            These mods failed to download during installation. You may need to reinstall the modpack.
+                                            These mods failed to download during installation. You may need to reinstall
+                                            the modpack.
                                         </p>
                                     </div>
                                 </div>
@@ -256,9 +248,7 @@ export default ({ installedModpack, onSwapModpack }: Props) => {
                             <div css={tw`bg-green-900 bg-opacity-20 border border-green-700 rounded-lg p-4 mt-4`}>
                                 <div css={tw`flex items-center gap-3`}>
                                     <FontAwesomeIcon icon={faCheckCircle} css={tw`text-green-400`} />
-                                    <p css={tw`text-green-400 font-semibold`}>
-                                        All files verified successfully!
-                                    </p>
+                                    <p css={tw`text-green-400 font-semibold`}>All files verified successfully!</p>
                                 </div>
                             </div>
                         )}
