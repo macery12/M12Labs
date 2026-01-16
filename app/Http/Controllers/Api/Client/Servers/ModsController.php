@@ -522,6 +522,18 @@ class ModsController extends ClientApiController
             // Clean up temporary files
             $this->deleteDirectory($tempDir);
 
+            // Save modpack information to server
+            $server->installed_modpack_id = $modpackId;
+            $server->installed_modpack_name = $manifest['name'] ?? 'Unknown';
+            $server->installed_modpack_version = $manifest['version'] ?? 'Unknown';
+            $server->installed_modpack_file_id = $fileId;
+            $server->installed_modpack_files = [
+                'total' => count($manifest['files']),
+                'downloaded' => $downloadedMods,
+                'failed' => $failedMods,
+            ];
+            $server->save();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Modpack downloaded and installed successfully.',
@@ -598,5 +610,110 @@ class ModsController extends ClientApiController
             }
         }
         rmdir($dir);
+    }
+
+    /**
+     * Get the currently installed modpack information for a server.
+     */
+    public function getInstalledModpack(Server $server): JsonResponse
+    {
+        if (!$server->mods_enabled) {
+            return response()->json([
+                'error' => 'Mods module is not enabled for this server.',
+            ], 403);
+        }
+
+        if (!$server->installed_modpack_id) {
+            return response()->json([
+                'installed' => false,
+            ]);
+        }
+
+        return response()->json([
+            'installed' => true,
+            'modpack_id' => $server->installed_modpack_id,
+            'name' => $server->installed_modpack_name,
+            'version' => $server->installed_modpack_version,
+            'file_id' => $server->installed_modpack_file_id,
+            'files' => $server->installed_modpack_files,
+        ]);
+    }
+
+    /**
+     * Clear the installed modpack information (swap modpack feature).
+     */
+    public function clearInstalledModpack(Server $server): JsonResponse
+    {
+        if (!$server->mods_enabled) {
+            return response()->json([
+                'error' => 'Mods module is not enabled for this server.',
+            ], 403);
+        }
+
+        $server->installed_modpack_id = null;
+        $server->installed_modpack_name = null;
+        $server->installed_modpack_version = null;
+        $server->installed_modpack_file_id = null;
+        $server->installed_modpack_files = null;
+        $server->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Modpack information cleared successfully.',
+        ]);
+    }
+
+    /**
+     * Verify modpack files by checking which files exist in /mods directory.
+     */
+    public function verifyModpackFiles(Server $server): JsonResponse
+    {
+        if (!$server->mods_enabled) {
+            return response()->json([
+                'error' => 'Mods module is not enabled for this server.',
+            ], 403);
+        }
+
+        if (!$server->installed_modpack_id || !$server->installed_modpack_files) {
+            return response()->json([
+                'error' => 'No modpack is currently installed on this server.',
+            ], 404);
+        }
+
+        try {
+            // Get list of files in /mods directory
+            $modsDirectory = $this->fileRepository->setServer($server)->getDirectory('/mods');
+            $existingFiles = collect($modsDirectory)->pluck('name')->toArray();
+
+            $installedFiles = $server->installed_modpack_files;
+            $downloadedMods = $installedFiles['downloaded'] ?? [];
+            
+            // Check which downloaded mods still exist
+            $verified = [];
+            $missing = [];
+            
+            foreach ($downloadedMods as $modFile) {
+                if (in_array($modFile, $existingFiles)) {
+                    $verified[] = $modFile;
+                } else {
+                    $missing[] = $modFile;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'total_expected' => count($downloadedMods),
+                'verified' => count($verified),
+                'missing' => count($missing),
+                'verified_files' => $verified,
+                'missing_files' => $missing,
+                'failed_during_install' => $installedFiles['failed'] ?? [],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Modpack verification failed: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to verify modpack files: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

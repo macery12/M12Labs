@@ -160,6 +160,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         });
 
         Route::group(['prefix' => '/modpacks'], function () {
+            Route::get('/installed', [Client\Servers\ModsController::class, 'getInstalledModpack']);
+            Route::delete('/installed', [Client\Servers\ModsController::class, 'clearInstalledModpack']);
+            Route::get('/installed/verify', [Client\Servers\ModsController::class, 'verifyModpackFiles']);
             Route::get('/search', [Client\Servers\ModsController::class, 'searchModpacks'])->middleware(['throttle:30,1']);
             Route::get('/{modpackId}', [Client\Servers\ModsController::class, 'getModpack'])->middleware(['throttle:30,1']);
             Route::get('/{modpackId}/files', [Client\Servers\ModsController::class, 'getModpackFiles'])->middleware(['throttle:30,1']);

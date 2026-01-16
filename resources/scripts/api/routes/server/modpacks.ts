@@ -212,3 +212,50 @@ export const getModLoaderTypes = (uuid: string): Promise<{ data: ModLoaderType[]
             .catch(reject);
     });
 };
+
+export interface InstalledModpackInfo {
+    installed: boolean;
+    modpack_id?: number;
+    name?: string;
+    version?: string;
+    file_id?: number;
+    files?: {
+        total: number;
+        downloaded: string[];
+        failed: Array<{ projectId: number; fileId: number }>;
+    };
+}
+
+export interface ModpackVerificationResult {
+    success: boolean;
+    total_expected: number;
+    verified: number;
+    missing: number;
+    verified_files: string[];
+    missing_files: string[];
+    failed_during_install: Array<{ projectId: number; fileId: number }>;
+}
+
+export const getInstalledModpack = (uuid: string): Promise<InstalledModpackInfo> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/servers/${uuid}/modpacks/installed`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const clearInstalledModpack = (uuid: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.delete(`/api/client/servers/${uuid}/modpacks/installed`)
+            .then(() => resolve())
+            .catch(reject);
+    });
+};
+
+export const verifyModpackFiles = (uuid: string): Promise<ModpackVerificationResult> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/servers/${uuid}/modpacks/installed/verify`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};

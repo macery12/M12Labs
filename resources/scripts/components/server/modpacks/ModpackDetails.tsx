@@ -15,6 +15,7 @@ const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';
 interface Props {
     modpack: CurseForgeModpack;
     onClose: () => void;
+    onDownloadComplete?: () => void;
 }
 
 const ModalContent = styled.div`
@@ -99,7 +100,7 @@ const getReleaseTypeColor = (type: number) => {
     }
 };
 
-export default ({ modpack, onClose }: Props) => {
+export default ({ modpack, onClose, onDownloadComplete }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -121,6 +122,13 @@ export default ({ modpack, onClose }: Props) => {
     }, [uuid, modpack.id]);
 
     const displayFiles = showAllFiles ? files : files.slice(0, 5);
+
+    const handleDownloadComplete = () => {
+        onClose();
+        if (onDownloadComplete) {
+            onDownloadComplete();
+        }
+    };
 
     return (
         <Modal visible onDismissed={onClose}>
@@ -186,6 +194,7 @@ export default ({ modpack, onClose }: Props) => {
                                             modpackId={modpack.id}
                                             fileId={file.id}
                                             fileName={file.fileName}
+                                            onDownloadComplete={handleDownloadComplete}
                                         />
                                     </FileItem>
                                 ))}

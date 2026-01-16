@@ -13,9 +13,10 @@ interface Props {
     modpackId: number;
     fileId: number;
     fileName: string;
+    onDownloadComplete?: () => void;
 }
 
-export default ({ modpackId, fileId, fileName }: Props) => {
+export default ({ modpackId, fileId, fileName, onDownloadComplete }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addFlash, addError } = useFlash();
 
@@ -32,7 +33,12 @@ export default ({ modpackId, fileId, fileName }: Props) => {
                     type: 'success',
                     message: `Modpack "${fileName}" downloaded and installed successfully! All mods have been extracted to the /mods folder.`,
                 });
-                setTimeout(() => setDownloaded(false), 3000);
+                setTimeout(() => {
+                    setDownloaded(false);
+                    if (onDownloadComplete) {
+                        onDownloadComplete();
+                    }
+                }, 2000);
             })
             .catch(error => {
                 console.error(error);
