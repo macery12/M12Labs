@@ -5,8 +5,10 @@ namespace Everest\Http\Controllers\Api\Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Everest\Models\Server;
+use Everest\Models\User;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Servers\ServerCreationService;
+use Everest\Services\Servers\StartupModificationService;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Transformers\Api\Client\ServerTransformer;
@@ -24,6 +26,7 @@ class AccountModpacksController extends ClientApiController
         private CurseForgeService $curseForgeService,
         private ServerRepository $serverRepository,
         private DaemonServerRepository $daemonServerRepository,
+        private StartupModificationService $startupModificationService,
     ) {
         parent::__construct();
     }
@@ -294,32 +297,32 @@ class AccountModpacksController extends ClientApiController
             $environment = [];
             
             // Update PROJECT_ID
-            $environment[$projectIdVar->env_variable] = (string)$modpackId;
+            $environment['PROJECT_ID'] = (string)$modpackId;
             
             // Update VERSION_ID if fileId is provided
             if ($fileId && $versionIdVar) {
-                $environment[$versionIdVar->env_variable] = (string)$fileId;
+                $environment['VERSION_ID'] = (string)$fileId;
             } elseif ($versionIdVar) {
-                $environment[$versionIdVar->env_variable] = '';
+                $environment['VERSION_ID'] = '';
             }
             
             // Update API_KEY
-            $environment[$apiKeyVar->env_variable] = $apiKey;
+            $environment['API_KEY'] = $apiKey;
 
-            // Update all other existing variables to maintain their current values
+            // Get all current server variables and add them to environment
+            // to maintain their current values
             foreach ($server->variables as $variable) {
                 if (!isset($environment[$variable->env_variable])) {
                     $environment[$variable->env_variable] = $variable->server_value;
                 }
             }
 
-            // Update server environment variables in database
-            foreach ($server->variables as $variable) {
-                if (isset($environment[$variable->env_variable])) {
-                    $variable->server_value = $environment[$variable->env_variable];
-                    $variable->save();
-                }
-            }
+            // Use StartupModificationService to properly update environment variables
+            $server = $this->startupModificationService
+                ->setUserLevel(User::USER_LEVEL_USER)
+                ->handle($server, [
+                    'environment' => $environment,
+                ]);
 
             // Sync environment to Wings
             $this->daemonServerRepository->setServer($server)->sync();
