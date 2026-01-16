@@ -163,7 +163,11 @@ export default () => {
                     <Spinner size={'large'} centered />
                 </div>
             ) : installing ? (
-                <ModpackInstallProgress isDownloading={downloadingModpack} onComplete={handleDownloadComplete} />
+                <ModpackInstallProgress 
+                    isDownloading={downloadingModpack} 
+                    loaderInfo={installedModpack?.files?.loader || null}
+                    onComplete={handleDownloadComplete} 
+                />
             ) : installedModpack?.installed ? (
                 <ModpackStatus installedModpack={installedModpack} onSwapModpack={handleSwapModpack} />
             ) : (

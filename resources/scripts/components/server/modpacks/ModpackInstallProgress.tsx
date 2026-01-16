@@ -2,37 +2,48 @@ import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import Spinner from '@/elements/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faDownload, faFileArchive, faFolderOpen } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faDownload, faFileArchive, faFolderOpen, faCube } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     isDownloading: boolean;
+    loaderInfo?: {
+        minecraft_version: string;
+        loader_version: string;
+        loader_type: string;
+    } | null;
     onComplete: () => void;
 }
 
-export default ({ isDownloading, onComplete }: Props) => {
+export default ({ isDownloading, loaderInfo, onComplete }: Props) => {
     const [currentStep, setCurrentStep] = useState(0);
+    
+    const loaderLabel = loaderInfo 
+        ? `Downloading mod loader (${loaderInfo.loader_type} ${loaderInfo.minecraft_version} - ${loaderInfo.loader_version})...`
+        : 'Downloading mod loader...';
+    
     const [steps] = useState([
         { icon: faDownload, label: 'Downloading modpack archive...', duration: 2000 },
         { icon: faFileArchive, label: 'Extracting modpack files...', duration: 1500 },
+        { icon: faCube, label: loaderLabel, duration: 1500 },
         { icon: faFolderOpen, label: 'Installing mods and server files...', duration: -1 }, // -1 means wait for isDownloading to become false
         { icon: faCheckCircle, label: 'Installation complete!', duration: 1000 },
     ]);
 
     useEffect(() => {
-        if (currentStep === 0 || currentStep === 1) {
-            // First two steps use timers
+        if (currentStep === 0 || currentStep === 1 || currentStep === 2) {
+            // First three steps use timers
             const timer = setTimeout(() => {
                 setCurrentStep(prev => prev + 1);
             }, steps[currentStep].duration);
 
             return () => clearTimeout(timer);
-        } else if (currentStep === 2) {
-            // Step 3: Wait for actual download to complete
+        } else if (currentStep === 3) {
+            // Step 4: Wait for actual download to complete
             if (!isDownloading) {
                 // Download finished, move to final step
-                setCurrentStep(3);
+                setCurrentStep(4);
             }
-        } else if (currentStep === 3) {
+        } else if (currentStep === 4) {
             // Final step: wait a bit then call onComplete
             const timer = setTimeout(() => {
                 onComplete();

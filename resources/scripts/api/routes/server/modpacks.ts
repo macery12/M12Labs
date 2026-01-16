@@ -231,6 +231,12 @@ export interface InstalledModpackInfo {
         total: number;
         downloaded: string[];
         failed: Array<{ projectId: number; fileId: number }>;
+        loader?: {
+            loader_type: string;
+            loader_version: string;
+            minecraft_version: string;
+            installer_filename: string;
+        };
     };
 }
 

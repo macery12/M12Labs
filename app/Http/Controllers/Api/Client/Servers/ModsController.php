@@ -449,21 +449,21 @@ class ModsController extends ClientApiController
                 throw new ModsServiceException('Invalid modpack manifest format.');
             }
 
-            // Install mod loader (Forge, NeoForge, Fabric, or Quilt)
+            // Download mod loader installer (Forge, NeoForge, Fabric, or Quilt)
+            $loaderInfo = null;
             try {
-                Log::info('Installing mod loader for modpack');
-                $loaderResult = $this->modLoaderInstaller->installModLoader($manifest, $tempDir . '/server_files');
-                Log::info("Mod loader installed successfully: {$loaderResult['loader']}");
+                Log::info('Downloading mod loader installer for modpack');
+                $loaderInfo = $this->modLoaderInstaller->downloadModLoaderInstaller($manifest);
+                Log::info("Mod loader installer downloaded: {$loaderInfo['loader_type']} {$loaderInfo['loader_version']} for Minecraft {$loaderInfo['minecraft_version']}");
                 
-                // Upload the installed mod loader files to the server
-                $serverFilesDir = $tempDir . '/server_files';
-                if (is_dir($serverFilesDir)) {
-                    $this->uploadDirectoryRecursively($server, $serverFilesDir, '/');
-                }
+                // Upload the installer to the server root directory
+                $installerContent = file_get_contents($loaderInfo['installer_path']);
+                $this->fileRepository->setServer($server)->putContent("/{$loaderInfo['installer_filename']}", $installerContent);
+                Log::info("Mod loader installer uploaded to server: /{$loaderInfo['installer_filename']}");
             } catch (ModsServiceException $e) {
-                Log::warning("Mod loader installation failed: " . $e->getMessage());
-                // Continue with modpack installation even if loader installation fails
-                // Some modpacks might not need server-side loader installation
+                Log::warning("Mod loader installer download failed: " . $e->getMessage());
+                // Continue with modpack installation even if loader download fails
+                // Some modpacks might not need server-side loaders
             }
 
             // Create /mods folder if it doesn't exist
@@ -550,6 +550,7 @@ class ModsController extends ClientApiController
                 'total' => count($manifest['files']),
                 'downloaded' => $downloadedMods,
                 'failed' => $failedMods,
+                'loader' => $loaderInfo,
             ];
             $server->save();
 
@@ -563,6 +564,7 @@ class ModsController extends ClientApiController
                     'mods_failed' => count($failedMods),
                     'downloaded_mods' => $downloadedMods,
                     'failed_mods' => $failedMods,
+                    'loader_info' => $loaderInfo,
                 ],
             ]);
         } catch (ModsServiceException $e) {
