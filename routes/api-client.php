@@ -159,6 +159,16 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:10,1']);
         });
 
+        Route::group(['prefix' => '/modpacks'], function () {
+            Route::get('/search', [Client\Servers\ModsController::class, 'searchModpacks'])->middleware(['throttle:30,1']);
+            Route::get('/{modpackId}', [Client\Servers\ModsController::class, 'getModpack'])->middleware(['throttle:30,1']);
+            Route::get('/{modpackId}/files', [Client\Servers\ModsController::class, 'getModpackFiles'])->middleware(['throttle:30,1']);
+            Route::post('/{modpackId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadModpack'])->middleware(['throttle:5,1']);
+            Route::get('/minecraft/versions', [Client\Servers\ModsController::class, 'getMinecraftVersions'])->middleware(['throttle:10,1']);
+            Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:10,1']);
+        });
+
+
         Route::group(['prefix' => '/schedules'], function () {
             Route::get('/', [Client\Servers\ScheduleController::class, 'index']);
             Route::post('/', [Client\Servers\ScheduleController::class, 'store']);
