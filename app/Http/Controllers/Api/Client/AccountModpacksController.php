@@ -133,17 +133,15 @@ class AccountModpacksController extends ClientApiController
         try {
             $user = $request->user();
             
-            // Get all servers owned by the user with mods enabled
-            $servers = $this->serverRepository->getUserServers($user->id);
+            // Get all servers owned by the user
+            $servers = Server::where('owner_id', $user->id)
+                ->where('mods_enabled', true)
+                ->get();
             
             // Filter servers to only those with CurseForge-compatible eggs
             $compatibleServers = [];
             
             foreach ($servers as $server) {
-                if (!$server->mods_enabled) {
-                    continue;
-                }
-                
                 // Check if the egg has the required environment variables
                 $hasProjectId = EggVariable::where('egg_id', $server->egg_id)
                     ->where('env_variable', 'PROJECT_ID')
