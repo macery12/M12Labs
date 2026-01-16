@@ -13,10 +13,12 @@ interface Props {
     modpackId: number;
     fileId: number;
     fileName: string;
+    modpackName: string;
+    onDownloadStart?: () => void;
     onDownloadComplete?: () => void;
 }
 
-export default ({ modpackId, fileId, fileName, onDownloadComplete }: Props) => {
+export default ({ modpackId, fileId, fileName, modpackName, onDownloadStart, onDownloadComplete }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addFlash, addError } = useFlash();
 
@@ -25,13 +27,19 @@ export default ({ modpackId, fileId, fileName, onDownloadComplete }: Props) => {
 
     const handleDownload = () => {
         setDownloading(true);
+        
+        // Notify parent that download is starting - this will switch to status view
+        if (onDownloadStart) {
+            onDownloadStart();
+        }
+        
         downloadModpack(uuid, modpackId, fileId)
             .then(() => {
                 setDownloaded(true);
                 addFlash({
                     key: 'modpacks',
                     type: 'success',
-                    message: `Modpack "${fileName}" downloaded and installed successfully! All mods have been extracted to the /mods folder.`,
+                    message: `Modpack "${modpackName}" downloaded and installed successfully! All mods have been extracted to the /mods folder.`,
                 });
                 setTimeout(() => {
                     setDownloaded(false);
@@ -43,8 +51,8 @@ export default ({ modpackId, fileId, fileName, onDownloadComplete }: Props) => {
             .catch(error => {
                 console.error(error);
                 addError({ key: 'modpacks', message: httpErrorToHuman(error) });
-            })
-            .finally(() => setDownloading(false));
+                setDownloading(false);
+            });
     };
 
     return (

@@ -7,6 +7,7 @@ import ModpackSearch from './ModpackSearch';
 import ModpackList from './ModpackList';
 import ModpackDetails from './ModpackDetails';
 import ModpackStatus from './ModpackStatus';
+import ModpackInstallProgress from './ModpackInstallProgress';
 import {
     type CurseForgeModpack,
     type ModpackSearchParams,
@@ -29,6 +30,7 @@ export default () => {
     const [selectedModpack, setSelectedModpack] = useState<CurseForgeModpack | null>(null);
     const [installedModpack, setInstalledModpack] = useState<InstalledModpackInfo | null>(null);
     const [checkingInstalled, setCheckingInstalled] = useState(true);
+    const [installing, setInstalling] = useState(false);
     const [pagination, setPagination] = useState({
         index: 0,
         pageSize: 20,
@@ -103,8 +105,15 @@ export default () => {
         setSearchParams({ ...searchParams, index: 0 });
     };
 
+    const handleDownloadStart = () => {
+        // When download starts, show the installing progress view
+        setInstalling(true);
+        setSelectedModpack(null); // Close the modal
+    };
+
     const handleDownloadComplete = () => {
         // Refresh installed modpack status
+        setInstalling(false);
         refreshInstalledModpack();
     };
 
@@ -148,6 +157,8 @@ export default () => {
                 <div css={tw`mt-8`}>
                     <Spinner size={'large'} centered />
                 </div>
+            ) : installing ? (
+                <ModpackInstallProgress onComplete={handleDownloadComplete} />
             ) : installedModpack?.installed ? (
                 <ModpackStatus installedModpack={installedModpack} onSwapModpack={handleSwapModpack} />
             ) : (
@@ -173,6 +184,7 @@ export default () => {
                             key={selectedModpack.id}
                             modpack={selectedModpack}
                             onClose={() => setSelectedModpack(null)}
+                            onDownloadStart={handleDownloadStart}
                             onDownloadComplete={handleDownloadComplete}
                         />
                     )}

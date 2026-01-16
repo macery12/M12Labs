@@ -15,6 +15,7 @@ const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';
 interface Props {
     modpack: CurseForgeModpack;
     onClose: () => void;
+    onDownloadStart?: () => void;
     onDownloadComplete?: () => void;
 }
 
@@ -100,7 +101,7 @@ const getReleaseTypeColor = (type: number) => {
     }
 };
 
-export default ({ modpack, onClose, onDownloadComplete }: Props) => {
+export default ({ modpack, onClose, onDownloadStart, onDownloadComplete }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -127,6 +128,14 @@ export default ({ modpack, onClose, onDownloadComplete }: Props) => {
         onClose();
         if (onDownloadComplete) {
             onDownloadComplete();
+        }
+    };
+
+    const handleDownloadStart = () => {
+        // Close modal immediately when download starts
+        // Then notify parent to switch to installation view
+        if (onDownloadStart) {
+            onDownloadStart();
         }
     };
 
@@ -186,6 +195,8 @@ export default ({ modpack, onClose, onDownloadComplete }: Props) => {
                                             modpackId={modpack.id}
                                             fileId={file.id}
                                             fileName={file.fileName}
+                                            modpackName={modpack.name}
+                                            onDownloadStart={handleDownloadStart}
                                             onDownloadComplete={handleDownloadComplete}
                                         />
                                     </FileItem>
