@@ -11,7 +11,6 @@ use Everest\Exceptions\Service\Mods\ModsServiceException;
 class CurseForgeService
 {
     private Client $client;
-    private string $apiKey;
     private string $endpoint;
     private bool $cacheEnabled;
     private array $cacheTtl;
@@ -24,7 +23,6 @@ class CurseForgeService
      */
     public function __construct()
     {
-        $this->apiKey = config('modules.mods.curseforge_api_key') ?: '';
         $this->endpoint = config('modules.mods.curseforge_api_url') ?: 'https://api.curseforge.com/v1';
         $this->cacheEnabled = config('modules.mods.cache.enabled', true);
         
@@ -41,6 +39,14 @@ class CurseForgeService
             'base_uri' => rtrim($this->endpoint, '/') . '/',
             'timeout' => 30,
         ]);
+    }
+
+    /**
+     * Get the current API key from config (loaded fresh from database settings).
+     */
+    private function getApiKey(): string
+    {
+        return config('modules.mods.curseforge_api_key') ?: '';
     }
 
     /**
@@ -167,7 +173,9 @@ class CurseForgeService
      */
     private function makeRequest(string $method, string $path, array $params = [], int $retryAttempt = 0): array
     {
-        if (empty($this->apiKey)) {
+        $apiKey = $this->getApiKey();
+        
+        if (empty($apiKey)) {
             throw new ModsServiceException('CurseForge API key is not configured.');
         }
 
@@ -186,7 +194,7 @@ class CurseForgeService
             $options = [
                 'headers' => [
                     'Accept' => 'application/json',
-                    'x-api-key' => $this->apiKey,
+                    'x-api-key' => $apiKey,
                 ],
             ];
 

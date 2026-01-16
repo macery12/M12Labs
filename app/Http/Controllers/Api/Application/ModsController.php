@@ -34,6 +34,9 @@ class ModsController extends ApplicationApiController
             }
 
             Setting::set('settings::modules:mods:' . $key, $value);
+            
+            // Update the runtime config so the new value is available immediately
+            config(['modules.mods.' . $key => $value]);
         }
 
         Activity::event('admin:mods:update')
@@ -62,6 +65,9 @@ class ModsController extends ApplicationApiController
     public function resetKey(DeleteCurseForgeKeyRequest $request): Response
     {
         Setting::forget('settings::modules:mods:curseforge_api_key');
+        
+        // Clear the runtime config so it's not available
+        config(['modules.mods.curseforge_api_key' => '']);
 
         Activity::event('admin:mods:reset-key')
             ->description('CurseForge API key for mods was reset')
