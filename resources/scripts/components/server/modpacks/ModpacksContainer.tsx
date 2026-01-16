@@ -46,18 +46,11 @@ export default () => {
         index: 0,
     });
 
-    useEffect(() => {
-        if (!modsEnabled) return;
-
-        // Check for installed modpack first
+    const refreshInstalledModpack = () => {
         setCheckingInstalled(true);
         getInstalledModpack(uuid)
             .then(result => {
-                if (result.installed) {
-                    setInstalledModpack(result);
-                } else {
-                    setInstalledModpack(null);
-                }
+                setInstalledModpack(result.installed ? result : null);
             })
             .catch(error => {
                 console.error(error);
@@ -65,6 +58,13 @@ export default () => {
                 setInstalledModpack(null);
             })
             .finally(() => setCheckingInstalled(false));
+    };
+
+    useEffect(() => {
+        if (!modsEnabled) return;
+
+        // Check for installed modpack first
+        refreshInstalledModpack();
     }, [uuid, modsEnabled]);
 
     useEffect(() => {
@@ -105,17 +105,7 @@ export default () => {
 
     const handleDownloadComplete = () => {
         // Refresh installed modpack status
-        setCheckingInstalled(true);
-        getInstalledModpack(uuid)
-            .then(result => {
-                if (result.installed) {
-                    setInstalledModpack(result);
-                }
-            })
-            .catch(error => {
-                console.error(error);
-            })
-            .finally(() => setCheckingInstalled(false));
+        refreshInstalledModpack();
     };
 
     if (!globalModsEnabled) {

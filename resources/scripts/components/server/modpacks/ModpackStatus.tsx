@@ -33,12 +33,16 @@ export default ({ installedModpack, onSwapModpack }: Props) => {
     const [verificationResult, setVerificationResult] = useState<ModpackVerificationResult | null>(null);
     const [swapping, setSwapping] = useState(false);
 
+    const isModpackFullyVerified = (result: ModpackVerificationResult): boolean => {
+        return result.missing === 0 && result.failed_during_install.length === 0;
+    };
+
     const handleVerify = () => {
         setVerifying(true);
         verifyModpackFiles(uuid)
             .then(result => {
                 setVerificationResult(result);
-                if (result.missing === 0 && result.failed_during_install.length === 0) {
+                if (isModpackFullyVerified(result)) {
                     addFlash({
                         key: 'modpacks',
                         type: 'success',
@@ -244,7 +248,7 @@ export default ({ installedModpack, onSwapModpack }: Props) => {
                             </div>
                         )}
 
-                        {verificationResult.missing === 0 && verificationResult.failed_during_install.length === 0 && (
+                        {verificationResult && isModpackFullyVerified(verificationResult) && (
                             <div css={tw`bg-green-900 bg-opacity-20 border border-green-700 rounded-lg p-4 mt-4`}>
                                 <div css={tw`flex items-center gap-3`}>
                                     <FontAwesomeIcon icon={faCheckCircle} css={tw`text-green-400`} />
