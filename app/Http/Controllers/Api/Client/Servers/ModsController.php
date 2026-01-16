@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\Mods\CurseForgeService;
+use Everest\Services\Mods\ModLoaderInstallerService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
@@ -23,7 +24,8 @@ class ModsController extends ClientApiController
      */
     public function __construct(
         private CurseForgeService $curseForgeService,
-        private DaemonFileRepository $fileRepository
+        private DaemonFileRepository $fileRepository,
+        private ModLoaderInstallerService $modLoaderInstaller
     ) {
         parent::__construct();
     }
@@ -445,6 +447,23 @@ class ModsController extends ClientApiController
             if (!isset($manifest['files']) || !is_array($manifest['files'])) {
                 $this->deleteDirectory($tempDir);
                 throw new ModsServiceException('Invalid modpack manifest format.');
+            }
+
+            // Install mod loader (Forge, NeoForge, Fabric, or Quilt)
+            try {
+                Log::info('Installing mod loader for modpack');
+                $loaderResult = $this->modLoaderInstaller->installModLoader($manifest, $tempDir . '/server_files');
+                Log::info("Mod loader installed successfully: {$loaderResult['loader']}");
+                
+                // Upload the installed mod loader files to the server
+                $serverFilesDir = $tempDir . '/server_files';
+                if (is_dir($serverFilesDir)) {
+                    $this->uploadDirectoryRecursively($server, $serverFilesDir, '/');
+                }
+            } catch (ModsServiceException $e) {
+                Log::warning("Mod loader installation failed: " . $e->getMessage());
+                // Continue with modpack installation even if loader installation fails
+                // Some modpacks might not need server-side loader installation
             }
 
             // Create /mods folder if it doesn't exist
