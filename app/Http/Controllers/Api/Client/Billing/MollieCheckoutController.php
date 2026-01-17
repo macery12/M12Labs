@@ -64,8 +64,9 @@ class MollieCheckoutController extends ClientApiController
         );
 
         // Store the token mapping in an order record (pending state, will be updated later)
+        // Use null for intent since Mollie doesn't use payment intents
         $this->orderService->create(
-            $payment->id,
+            null, // Mollie doesn't use payment_intent_id
             $request->user(),
             $product,
             Order::STATUS_PENDING,
