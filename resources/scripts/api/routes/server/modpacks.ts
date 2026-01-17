@@ -4,8 +4,6 @@ export interface ModpackSearchParams {
     searchFilter?: string;
     sortField?: string;
     sortOrder?: string;
-    gameVersion?: string;
-    modLoaderType?: number;
     pageSize?: number;
     index?: number;
 }
@@ -177,7 +175,11 @@ export const getModpack = (uuid: string, modpackId: number): Promise<ModpackResp
     });
 };
 
-export const getModpackFiles = (uuid: string, modpackId: number, params: ModpackFileParams): Promise<ModpackFilesResponse> => {
+export const getModpackFiles = (
+    uuid: string,
+    modpackId: number,
+    params: ModpackFileParams,
+): Promise<ModpackFilesResponse> => {
     return new Promise((resolve, reject) => {
         http.get(`/api/client/servers/${uuid}/modpacks/${modpackId}/files`, { params })
             .then(({ data }) => resolve(data))
@@ -189,9 +191,13 @@ export const downloadModpack = (uuid: string, modpackId: number, fileId: number)
     return new Promise((resolve, reject) => {
         // Use extended timeout for modpack downloads (10 minutes) as they can take a long time
         // with many mods to download and extract
-        http.post(`/api/client/servers/${uuid}/modpacks/${modpackId}/files/${fileId}/download`, {}, {
-            timeout: 600000, // 10 minutes
-        })
+        http.post(
+            `/api/client/servers/${uuid}/modpacks/${modpackId}/files/${fileId}/download`,
+            {},
+            {
+                timeout: 600000, // 10 minutes
+            },
+        )
             .then(() => resolve())
             .catch(reject);
     });

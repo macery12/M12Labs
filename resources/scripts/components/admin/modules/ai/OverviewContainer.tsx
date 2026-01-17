@@ -95,20 +95,20 @@ export default () => {
 
         handleQueryStream(
             query,
-            (chunk) => {
+            chunk => {
                 setResult(prev => prev + chunk);
             },
             () => {
                 setLoading(false);
                 abortControllerRef.current = null;
             },
-            (error) => {
+            error => {
                 setResult('error');
                 setLoading(false);
                 clearAndAddHttpError(error);
                 abortControllerRef.current = null;
             },
-            abortControllerRef.current.signal
+            abortControllerRef.current.signal,
         );
     };
 
@@ -132,7 +132,9 @@ export default () => {
                         <FontAwesomeIcon icon={faChevronRight} className={'mt-2 mr-4 flex-shrink-0'} />
                         <textarea
                             ref={textareaRef}
-                            className={'flex-1 resize-none border-none bg-transparent font-mono text-sm focus:outline-none focus:ring-0'}
+                            className={
+                                'flex-1 resize-none border-none bg-transparent font-mono text-sm focus:outline-none focus:ring-0'
+                            }
                             placeholder={'Ask Jexactyl AI a question (Shift+Enter for new line, Enter to send)'}
                             rows={3}
                             value={query}
@@ -163,8 +165,8 @@ export default () => {
                 </Alert>
                 <Alert type={'info'}>
                     <div className={'text-sm'}>
-                        <strong>Streaming enabled:</strong> Responses stream in real-time to prevent timeouts.
-                        You can cancel ongoing requests at any time.
+                        <strong>Streaming enabled:</strong> Responses stream in real-time to prevent timeouts. You can
+                        cancel ongoing requests at any time.
                     </div>
                 </Alert>
                 <AdminBox title={'Disable Jexactyl AI'} className={'col-span-2 h-min'}>

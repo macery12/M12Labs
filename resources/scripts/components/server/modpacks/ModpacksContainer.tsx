@@ -39,7 +39,7 @@ export default () => {
 
     useEffect(() => {
         if (!modsEnabled) return;
-        
+
         setLoading(true);
         searchModpacks(uuid, searchParams)
             .then(response => {

@@ -269,16 +269,16 @@ class ModsController extends ClientApiController
             ], 403);
         }
 
+        // Only accept valid modpack search parameters
         $params = array_filter([
             'searchFilter' => $request->input('searchFilter'),
             'sortField' => $request->input('sortField'),
             'sortOrder' => $request->input('sortOrder'),
-            'gameVersion' => $request->input('gameVersion'),
-            'modLoaderType' => $request->input('modLoaderType'),
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
         ], function ($value) {
-            return $value !== null;
+            // Filter out null, empty strings, and ensure only valid values pass through
+            return $value !== null && $value !== '';
         });
 
         try {

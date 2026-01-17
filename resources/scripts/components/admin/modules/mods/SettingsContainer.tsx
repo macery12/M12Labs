@@ -20,7 +20,11 @@ const SettingsContainer = () => {
         };
 
         // Only include API key if it was provided
-        if (values.curseforge_api_key && typeof values.curseforge_api_key === 'string' && values.curseforge_api_key.length > 0) {
+        if (
+            values.curseforge_api_key &&
+            typeof values.curseforge_api_key === 'string' &&
+            values.curseforge_api_key.length > 0
+        ) {
             payload.curseforge_api_key = values.curseforge_api_key;
         }
 
@@ -91,12 +95,7 @@ const SettingsContainer = () => {
                         <AdminBox title={'Module Status'} icon={faPowerOff}>
                             <div>
                                 <label className={'flex items-center'}>
-                                    <Field
-                                        id={'enabled'}
-                                        name={'enabled'}
-                                        type={'checkbox'}
-                                        className={'mr-2'}
-                                    />
+                                    <Field id={'enabled'} name={'enabled'} type={'checkbox'} className={'mr-2'} />
                                     <span>Enable Mods Module</span>
                                 </label>
                                 <p className={'mt-1.5 text-xs text-gray-400'}>

@@ -28,7 +28,7 @@ export const handleQueryStream = (
     onChunk: (chunk: string) => void,
     onComplete: () => void,
     onError: (error: Error) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
 ): void => {
     // Rate limiting check
     const now = Date.now();
@@ -41,10 +41,10 @@ export const handleQueryStream = (
     const csrfToken = getCSRFToken();
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
+        Accept: 'text/event-stream',
         'X-Requested-With': 'XMLHttpRequest',
     };
-    
+
     if (csrfToken) {
         headers['X-XSRF-TOKEN'] = csrfToken;
     }

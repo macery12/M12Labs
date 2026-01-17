@@ -14,7 +14,7 @@ export default () => {
     const [key, setKey] = useState<string>();
     const [mode, setMode] = useState<string>('openai');
     const [endpoint, setEndpoint] = useState<string>(
-        mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'
+        mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1',
     );
     const [model, setModel] = useState<string>(mode === 'ollama' ? 'llama2' : 'gpt-3.5-turbo');
     const settings = useStoreState(s => s.everest.data!.ai);
@@ -72,7 +72,7 @@ export default () => {
             </p>
 
             <div className={'mb-4'}>
-                <label className={'block text-sm text-gray-400 mb-1'}>AI Provider Mode</label>
+                <label className={'mb-1 block text-sm text-gray-400'}>AI Provider Mode</label>
                 <select
                     value={mode}
                     onChange={e => handleModeChange(e.currentTarget.value)}
@@ -89,7 +89,7 @@ export default () => {
             </div>
 
             <div className={'mb-4'}>
-                <label className={'block text-sm text-gray-400 mb-1'}>API Endpoint URL</label>
+                <label className={'mb-1 block text-sm text-gray-400'}>API Endpoint URL</label>
                 <Input
                     placeholder={mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'}
                     value={endpoint}
@@ -103,7 +103,7 @@ export default () => {
             </div>
 
             <div className={'mb-4'}>
-                <label className={'block text-sm text-gray-400 mb-1'}>Model Name</label>
+                <label className={'mb-1 block text-sm text-gray-400'}>Model Name</label>
                 <Input
                     placeholder={mode === 'ollama' ? 'llama2' : 'gpt-3.5-turbo'}
                     value={model}
@@ -118,7 +118,7 @@ export default () => {
 
             {mode === 'openai' && (
                 <div className={'relative mb-6'}>
-                    <label className={'block text-sm text-gray-400 mb-1'}>API Key</label>
+                    <label className={'mb-1 block text-sm text-gray-400'}>API Key</label>
                     <Input placeholder={'Enter API key here...'} onChange={e => setKey(e.currentTarget.value)} />
                     {!isValidKey ? (
                         <Tooltip
@@ -139,7 +139,7 @@ export default () => {
             )}
 
             {mode === 'ollama' && (
-                <div className={'mb-6 rounded bg-blue-900/20 border border-blue-700/30 p-3'}>
+                <div className={'mb-6 rounded border border-blue-700/30 bg-blue-900/20 p-3'}>
                     <p className={'text-sm text-blue-300'}>
                         <strong>Ollama Mode:</strong> No API key required. Make sure Ollama is running and the model is
                         pulled.

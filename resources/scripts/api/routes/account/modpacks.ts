@@ -99,7 +99,9 @@ export const getModLoaderTypes = (): Promise<{ data: ModLoaderType[] }> => {
 /**
  * Get current modpack info for a server
  */
-export const getServerModpackInfo = (serverId: string): Promise<{ 
+export const getServerModpackInfo = (
+    serverId: string,
+): Promise<{
     projectId?: string;
     versionId?: string;
     modpackName?: string;

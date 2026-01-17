@@ -54,7 +54,7 @@ export default () => {
         setVisible('dialog');
         setLoading(true);
         setResponse('');
-        
+
         const data = stripAnsi(log.map(it => it.replace('\r', '')).join('\n')) || '';
 
         // Cancel any existing request
@@ -68,20 +68,20 @@ export default () => {
         handleQueryStream(
             uuid,
             data,
-            (chunk) => {
+            chunk => {
                 setResponse(prev => prev + chunk);
             },
             () => {
                 setLoading(false);
                 abortControllerRef.current = null;
             },
-            (error) => {
+            error => {
                 console.error('AI query error:', error);
                 setResponse('Error: Failed to get AI response. Please try again.');
                 setLoading(false);
                 abortControllerRef.current = null;
             },
-            abortControllerRef.current.signal
+            abortControllerRef.current.signal,
         );
     };
 

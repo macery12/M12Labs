@@ -22,7 +22,7 @@ interface Props {
 
 const ModCard = styled.div`
     ${tw`bg-neutral-800 rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
-    
+
     &:hover {
         ${tw`bg-neutral-700 border-neutral-600`}
     }
@@ -106,17 +106,18 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                     {mods.map(mod => {
                         const latestFile = mod.latestFiles?.[0];
                         const gameVersion = latestFile?.gameVersions?.[0] || 'Unknown';
-                        const downloadCount = mod.downloadCount >= 1000000 
-                            ? `${(mod.downloadCount / 1000000).toFixed(1)}M`
-                            : mod.downloadCount >= 1000
-                            ? `${(mod.downloadCount / 1000).toFixed(0)}K`
-                            : mod.downloadCount.toString();
-                        
-                        const lastUpdated = latestFile?.fileDate 
-                            ? new Date(latestFile.fileDate).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric' 
+                        const downloadCount =
+                            mod.downloadCount >= 1000000
+                                ? `${(mod.downloadCount / 1000000).toFixed(1)}M`
+                                : mod.downloadCount >= 1000
+                                ? `${(mod.downloadCount / 1000).toFixed(0)}K`
+                                : mod.downloadCount.toString();
+
+                        const lastUpdated = latestFile?.fileDate
+                            ? new Date(latestFile.fileDate).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
                               })
                             : 'Unknown';
 
@@ -126,7 +127,7 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                                     <ModIcon
                                         src={mod.logo?.thumbnailUrl || '/assets/images/placeholder-mod.png'}
                                         alt={mod.name}
-                                        onError={(e) => {
+                                        onError={e => {
                                             e.currentTarget.src = '/assets/images/placeholder-mod.png';
                                         }}
                                     />

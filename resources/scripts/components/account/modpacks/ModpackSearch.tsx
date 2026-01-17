@@ -1,13 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import tw from 'twin.macro';
 import Input from '@/elements/Input';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
 import { type ModpackSearchParams } from '@/api/routes/server/modpacks';
-import { getMinecraftVersions, getModLoaderTypes } from '@/api/routes/account/modpacks';
-import { httpErrorToHuman } from '@/api/http';
-import useFlash from '@/plugins/useFlash';
 
 interface Props {
     onSearch: (params: ModpackSearchParams) => void;
@@ -23,77 +20,35 @@ const SORT_OPTIONS = [
     { value: '6', label: 'Total Downloads' },
 ];
 
-const MOD_LOADER_TYPES = [
-    { id: 1, name: 'Forge' },
-    { id: 4, name: 'Fabric' },
-    { id: 5, name: 'Quilt' },
-    { id: 6, name: 'NeoForge' },
-];
-
 export default ({ onSearch, initialParams }: Props) => {
-    const { addError } = useFlash();
-
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
     const [sortField, setSortField] = useState(initialParams.sortField || '2');
-    const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
-    const [modLoaderType, setModLoaderType] = useState<string>(
-        initialParams.modLoaderType?.toString() || ''
-    );
-
-    const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
-
-    useEffect(() => {
-        getMinecraftVersions()
-            .then(response => {
-                // Filter to only Minecraft release versions (gameVersionTypeId === 1)
-                // and exclude snapshots, pre-releases, etc.
-                const versions = response.data
-                    .filter(v => 
-                        v.versionString && 
-                        v.gameVersionTypeId === 1 &&
-                        // Only include versions that match X.X or X.X.X pattern (exclude snapshots/pre-releases)
-                        /^\d+\.\d+(\.\d+)?$/.test(v.versionString)
-                    )
-                    .map(v => v.versionString)
-                    // Remove duplicates
-                    .filter((v, i, arr) => arr.indexOf(v) === i)
-                    // Sort by version number (descending)
-                    .sort((a, b) => {
-                        const aParts = a.split('.').map(Number);
-                        const bParts = b.split('.').map(Number);
-                        for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-                            const aNum = aParts[i] || 0;
-                            const bNum = bParts[i] || 0;
-                            if (aNum !== bNum) return bNum - aNum;
-                        }
-                        return 0;
-                    });
-                setMinecraftVersions(versions);
-            })
-            .catch(error => {
-                console.error(error);
-                addError({ key: 'account:modpacks', message: httpErrorToHuman(error) });
-            });
-    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSearch({
-            searchFilter: searchFilter || undefined,
-            sortField,
-            sortOrder: 'desc',
-            gameVersion: gameVersion || undefined,
-            modLoaderType: modLoaderType ? parseInt(modLoaderType, 10) : undefined,
+        
+        // Build params object with only defined values (no empty strings)
+        const searchParams: ModpackSearchParams = {
             pageSize: 20,
             index: 0,
-        });
+        };
+        
+        if (searchFilter && searchFilter.trim()) {
+            searchParams.searchFilter = searchFilter.trim();
+        }
+        
+        if (sortField) {
+            searchParams.sortField = sortField;
+            searchParams.sortOrder = 'desc';
+        }
+        
+        console.log('Searching modpacks with params:', searchParams);
+        onSearch(searchParams);
     };
 
     const handleClear = () => {
         setSearchFilter('');
         setSortField('2');
-        setGameVersion('');
-        setModLoaderType('');
         onSearch({
             sortField: '2',
             sortOrder: 'desc',
@@ -104,7 +59,7 @@ export default ({ onSearch, initialParams }: Props) => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6`}>
+            <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6`}>
                 <div>
                     <Label>Search</Label>
                     <Input
@@ -113,30 +68,6 @@ export default ({ onSearch, initialParams }: Props) => {
                         value={searchFilter}
                         onChange={e => setSearchFilter(e.target.value)}
                     />
-                </div>
-
-                <div>
-                    <Label>Minecraft Version</Label>
-                    <Select value={gameVersion} onChange={e => setGameVersion(e.target.value)}>
-                        <option value="">All Versions</option>
-                        {minecraftVersions.map(version => (
-                            <option key={version} value={version}>
-                                {version}
-                            </option>
-                        ))}
-                    </Select>
-                </div>
-
-                <div>
-                    <Label>Mod Loader</Label>
-                    <Select value={modLoaderType} onChange={e => setModLoaderType(e.target.value)}>
-                        <option value="">All Loaders</option>
-                        {MOD_LOADER_TYPES.map(loader => (
-                            <option key={loader.id} value={loader.id}>
-                                {loader.name}
-                            </option>
-                        ))}
-                    </Select>
                 </div>
 
                 <div>

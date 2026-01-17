@@ -34,7 +34,15 @@ interface Props {
     setAllowPlanChanges: Dispatch<SetStateAction<boolean>>;
 }
 
-function InternalForm({ category, visible, setVisible, allowEggChanges, setAllowEggChanges, allowPlanChanges, setAllowPlanChanges }: Props) {
+function InternalForm({
+    category,
+    visible,
+    setVisible,
+    allowEggChanges,
+    setAllowEggChanges,
+    allowPlanChanges,
+    setAllowPlanChanges,
+}: Props) {
     const { isSubmitting } = useFormikContext<CategoryValues>();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const [nestId, setNestId] = useState<number>(category?.nestId ?? 0);

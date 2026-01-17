@@ -127,21 +127,17 @@ export default ({ mod, onClose }: Props) => {
                     <ModLogo
                         src={mod.logo?.url || '/assets/images/placeholder-mod.png'}
                         alt={mod.name}
-                        onError={(e) => {
+                        onError={e => {
                             e.currentTarget.src = '/assets/images/placeholder-mod.png';
                         }}
                     />
                     <div css={tw`flex-1`}>
                         <ModTitle>{mod.name}</ModTitle>
-                        <ModAuthors>
-                            By {mod.authors.map(a => a.name).join(', ') || 'Unknown'}
-                        </ModAuthors>
+                        <ModAuthors>By {mod.authors.map(a => a.name).join(', ') || 'Unknown'}</ModAuthors>
                         <ModStats>
                             <span>{mod.downloadCount.toLocaleString()} downloads</span>
                             <span>•</span>
-                            <span>
-                                Updated {new Date(mod.dateModified).toLocaleDateString()}
-                            </span>
+                            <span>Updated {new Date(mod.dateModified).toLocaleDateString()}</span>
                         </ModStats>
                     </div>
                 </ModHeader>
@@ -171,20 +167,12 @@ export default ({ mod, onClose }: Props) => {
                                                     {file.gameVersions.length > 3 && '...'}
                                                 </span>
                                                 {' • '}
-                                                <span>
-                                                    {new Date(file.fileDate).toLocaleDateString()}
-                                                </span>
+                                                <span>{new Date(file.fileDate).toLocaleDateString()}</span>
                                                 {' • '}
-                                                <span>
-                                                    {(file.fileLength / 1024 / 1024).toFixed(2)} MB
-                                                </span>
+                                                <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
                                             </FileDetails>
                                         </FileInfo>
-                                        <ModDownloadButton
-                                            modId={mod.id}
-                                            fileId={file.id}
-                                            fileName={file.fileName}
-                                        />
+                                        <ModDownloadButton modId={mod.id} fileId={file.id} fileName={file.fileName} />
                                     </FileItem>
                                 ))}
                             </FileList>
@@ -198,9 +186,7 @@ export default ({ mod, onClose }: Props) => {
                             )}
                         </FadeTransition>
                     ) : (
-                        <p css={tw`text-neutral-400 text-center py-6`}>
-                            No files available for download.
-                        </p>
+                        <p css={tw`text-neutral-400 text-center py-6`}>No files available for download.</p>
                     )}
                 </Section>
 
