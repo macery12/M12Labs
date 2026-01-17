@@ -57,8 +57,8 @@ export default ({ extOpen }: Props) => {
                         <ol className={'mb-4 list-inside list-decimal text-sm text-gray-400'}>
                             <li>Log in to your Mollie Dashboard</li>
                             <li>Navigate to Developers → API keys</li>
-                            <li>Copy your Live API key (starts with &quot;live_&quot;) for production</li>
-                            <li>Or use Test API key (starts with &quot;test_&quot;) for testing</li>
+                            <li>Copy your Live API key (starts with "live_") for production</li>
+                            <li>Or use Test API key (starts with "test_") for testing</li>
                             <li>Paste the API key below</li>
                         </ol>
                         <Field

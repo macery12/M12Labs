@@ -67,15 +67,18 @@ class MolliePaymentService
 
     /**
      * Update payment metadata.
+     * 
+     * Note: Mollie doesn't support updating payment metadata after creation.
+     * Metadata must be set during payment creation.
      *
      * @param string $paymentId
      * @param array $metadata
+     * @throws DisplayException
      * @return void
      */
     public function updatePaymentMetadata(string $paymentId, array $metadata): void
     {
-        // Mollie doesn't support updating payment metadata after creation
-        // Metadata must be set during payment creation
+        throw new DisplayException('Mollie does not support updating payment metadata after creation.');
     }
 
     /**

@@ -16,6 +16,8 @@ use Everest\Models\Model;
  * @property int|null $coupon_id
  * @property float|null $subtotal
  * @property float|null $discount
+ * @property int|null $node_id
+ * @property array|null $variables
  * @property string $type
  * @property int $threat_index
  * @property string $payment_intent_id
@@ -51,7 +53,7 @@ class Order extends Model
      */
     protected $fillable = [
         'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id',
-        'total', 'status', 'product_id', 'egg_id', 'type', 'threat_index',
+        'total', 'status', 'product_id', 'egg_id', 'node_id', 'variables', 'type', 'threat_index',
         'coupon_id', 'subtotal', 'discount',
     ];
 
@@ -63,6 +65,8 @@ class Order extends Model
         'total' => 'float',
         'product_id' => 'int',
         'egg_id' => 'int',
+        'node_id' => 'int',
+        'variables' => 'array',
         'threat_index' => 'int',
         'coupon_id' => 'int',
         'subtotal' => 'float',
