@@ -2,6 +2,7 @@ import http from '@/api/http';
 
 export interface MolliePayment {
     id: string;
+    token: string;
     checkout_url: string;
 }
 
@@ -9,6 +10,11 @@ export interface MolliePaymentStatus {
     processed: boolean;
     failed: boolean;
     pending: boolean;
+}
+
+export interface MolliePaymentFromToken {
+    payment_id: string;
+    user_id: number;
 }
 
 export const createMolliePayment = (id: number, couponId?: number, returnUrl?: string): Promise<MolliePayment> => {
@@ -66,6 +72,14 @@ export const checkMolliePaymentStatus = (paymentId?: string | null): Promise<Mol
             : `/api/client/billing/mollie/status`;
             
         http.get(url)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const getPaymentIdFromToken = (token: string): Promise<MolliePaymentFromToken> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/billing/mollie/token/${token}`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

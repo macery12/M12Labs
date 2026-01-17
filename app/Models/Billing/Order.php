@@ -53,7 +53,7 @@ class Order extends Model
      * Fields that are mass assignable.
      */
     protected $fillable = [
-        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id',
+        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'payment_token',
         'total', 'status', 'product_id', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'coupon_id', 'subtotal', 'discount',
     ];

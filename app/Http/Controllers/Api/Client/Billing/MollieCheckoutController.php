@@ -47,9 +47,14 @@ class MollieCheckoutController extends ClientApiController
         // Validate this is not a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
 
-        // Use the return_url from frontend request (includes payment_id parameter placeholder)
-        // We'll replace {payment_id} with the actual payment ID after creation
-        $returnUrl = $request->input('return_url', url('/account/billing/processing'));
+        // Generate a secure random token
+        $token = \Illuminate\Support\Str::uuid()->toString();
+
+        // Use the return_url from frontend request and append token
+        $baseReturnUrl = $request->input('return_url', url('/account/billing/processing'));
+        $returnUrl = str_contains($baseReturnUrl, '?')
+            ? $baseReturnUrl . '&token=' . $token
+            : $baseReturnUrl . '?token=' . $token;
         
         $payment = $this->mollieService->createPayment(
             $product,
@@ -58,16 +63,31 @@ class MollieCheckoutController extends ClientApiController
             $returnUrl
         );
 
-        // Add payment_id to the return URL
-        $finalReturnUrl = str_contains($returnUrl, '?')
-            ? $returnUrl . '&payment_id=' . $payment->id
-            : $returnUrl . '?payment_id=' . $payment->id;
+        // Store the token mapping in an order record (pending state, will be updated later)
+        $this->orderService->create(
+            $payment->id,
+            $request->user(),
+            $product,
+            Order::STATUS_PENDING,
+            Order::TYPE_NEW,
+            $couponId,
+            null, // egg_id will be set in updatePayment
+            [
+                'payment_processor' => 'mollie',
+                'mollie_payment_id' => $payment->id,
+                'payment_token' => $token,
+                'name' => 'Pending',
+                'node_id' => null,
+                'server_id' => null,
+                'variables' => [],
+            ]
+        );
 
-        // Return payment info with updated return URL
+        // Return payment info
         return response()->json([
             'id' => $payment->id,
+            'token' => $token,
             'checkout_url' => $payment->getCheckoutUrl(),
-            'return_url' => $finalReturnUrl,
         ]);
     }
 
@@ -106,24 +126,21 @@ class MollieCheckoutController extends ClientApiController
         $variables = $request->input('variables', []);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
 
-        // Create the order with coupon and egg
-        $this->orderService->create(
-            $paymentId,
-            $request->user(),
-            $product,
-            Order::STATUS_PENDING,
-            $orderType,
-            $couponId,
-            $eggId,
-            [
-                'payment_processor' => 'mollie',
-                'mollie_payment_id' => $paymentId,
-                'name' => $serverName,
-                'node_id' => $nodeId,
-                'server_id' => $serverId,
-                'variables' => $variables,
-            ]
-        );
+        // Find the existing pending order and update it
+        $order = Order::where('mollie_payment_id', $paymentId)
+            ->where('user_id', $request->user()->id)
+            ->where('status', Order::STATUS_PENDING)
+            ->firstOrFail();
+
+        $order->update([
+            'name' => $serverName,
+            'node_id' => $nodeId,
+            'server_id' => $serverId,
+            'egg_id' => $eggId,
+            'type' => $orderType,
+            'coupon_id' => $couponId,
+            'variables' => $variables,
+        ]);
 
         return $this->returnNoContent();
     }
@@ -157,10 +174,12 @@ class MollieCheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
-        // Check if the payment was successful
-        if ($this->mollieService->isPaymentPaid($paymentId)) {
+        // Fetch payment details from Mollie API
+        $payment = $this->mollieService->getPayment($paymentId);
+
+        // Check if the payment was successful (using API status)
+        if ($payment->isPaid()) {
             // Payment is successful, process the order
-            $payment = $this->mollieService->getPayment($paymentId);
             $metadata = $payment->metadata;
 
             $product = Product::findOrFail($metadata->product_id);
@@ -208,7 +227,7 @@ class MollieCheckoutController extends ClientApiController
             if ($order->type !== Order::TYPE_REN) {
                 $order->update(['status' => Order::STATUS_PROCESSED]);
             }
-        } elseif ($this->mollieService->isPaymentFailed($paymentId)) {
+        } elseif ($payment->isFailed() || $payment->isExpired() || $payment->isCanceled()) {
             // Payment failed
             $order->update(['status' => Order::STATUS_FAILED]);
         }
@@ -268,6 +287,30 @@ class MollieCheckoutController extends ClientApiController
             'failed' => $order->status === Order::STATUS_FAILED,
             'pending' => $order->status === Order::STATUS_PENDING,
             'payment_id' => $order->mollie_payment_id,
+        ]);
+    }
+
+    /**
+     * Get payment ID from token.
+     *
+     * @param string $token
+     * @return JsonResponse
+     */
+    public function getPaymentFromToken(string $token): JsonResponse
+    {
+        $order = Order::where('payment_token', $token)
+            ->where('payment_processor', 'mollie')
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'error' => 'Invalid or expired token',
+            ], 404);
+        }
+
+        return response()->json([
+            'payment_id' => $order->mollie_payment_id,
+            'user_id' => $order->user_id,
         ]);
     }
 }

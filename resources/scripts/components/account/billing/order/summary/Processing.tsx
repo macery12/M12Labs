@@ -6,7 +6,7 @@ import useFlash from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Spinner from '@/elements/Spinner';
 import { processPaidOrder } from '@/api/routes/account/billing/orders/process';
-import { checkMolliePaymentStatus } from '@/api/routes/account/billing/orders/mollie';
+import { checkMolliePaymentStatus, getPaymentIdFromToken } from '@/api/routes/account/billing/orders/mollie';
 
 export default () => {
     const location = useLocation();
@@ -17,7 +17,7 @@ export default () => {
     const { addFlash, clearFlashes } = useFlash();
 
     const stripeIntent = params.get('payment_intent');
-    const molliePaymentId = params.get('payment_id');
+    const mollieToken = params.get('token');
 
     useEffect(() => {
         clearFlashes();
@@ -43,36 +43,48 @@ export default () => {
         }
 
         // Handle Mollie payment
-        if (billing.processor === 'mollie' && molliePaymentId) {
-            // Poll for order status since Mollie processes via webhook
-            const checkStatus = async () => {
-                try {
-                    const status = await checkMolliePaymentStatus(molliePaymentId);
-                    
-                    if (status.processed) {
-                        // Order has been processed successfully
-                        if (renewal && serverUuid) {
-                            window.location.href = `/server/${serverUuid}/billing`;
-                        } else {
-                            navigate('/account/billing/success');
+        if (billing.processor === 'mollie' && mollieToken) {
+            // Get payment ID from token
+            getPaymentIdFromToken(mollieToken)
+                .then(({ payment_id }) => {
+                    // Poll for order status since Mollie processes via webhook
+                    const checkStatus = async () => {
+                        try {
+                            const status = await checkMolliePaymentStatus(payment_id);
+                            
+                            if (status.processed) {
+                                // Order has been processed successfully
+                                if (renewal && serverUuid) {
+                                    window.location.href = `/server/${serverUuid}/billing`;
+                                } else {
+                                    navigate('/account/billing/success');
+                                }
+                            } else if (status.failed) {
+                                navigate('/account/billing/cancel');
+                            } else {
+                                // Still processing, check again after a delay
+                                setTimeout(checkStatus, 2000);
+                            }
+                        } catch (error) {
+                            console.error('Error checking Mollie payment status:', error);
+                            addFlash({
+                                key: 'billing:process',
+                                type: 'error',
+                                message: 'Unable to verify payment status. Please contact an administrator.',
+                            });
                         }
-                    } else if (status.failed) {
-                        navigate('/account/billing/cancel');
-                    } else {
-                        // Still processing, check again after a delay
-                        setTimeout(checkStatus, 2000);
-                    }
-                } catch (error) {
-                    console.error('Error checking Mollie payment status:', error);
+                    };
+
+                    checkStatus();
+                })
+                .catch((error) => {
+                    console.error('Error retrieving payment ID from token:', error);
                     addFlash({
                         key: 'billing:process',
                         type: 'error',
-                        message: 'Unable to verify payment status. Please contact an administrator.',
+                        message: 'Invalid payment token. Please contact an administrator.',
                     });
-                }
-            };
-
-            checkStatus();
+                });
             return;
         }
 
@@ -99,7 +111,7 @@ export default () => {
                         Our systems are currently working on deploying your server to our systems. Sit tight while your
                         new server is deployed!
                     </p>
-                    <p className={'mt-8 text-2xs text-neutral-400'}>Session {stripeIntent || molliePaymentId || 'Unknown'}</p>
+                    <p className={'mt-8 text-2xs text-neutral-400'}>Session {stripeIntent || mollieToken || 'Unknown'}</p>
                 </div>
             </div>
         </PageContentBlock>

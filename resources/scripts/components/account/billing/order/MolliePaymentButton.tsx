@@ -48,7 +48,7 @@ export default (data: Props) => {
             });
 
             // Redirect to Mollie checkout
-            // After payment, Mollie will redirect back to return_url with payment_id parameter
+            // After payment, Mollie will redirect back to return_url with token parameter
             window.location.href = payment.checkout_url;
         } catch (error) {
             clearAndAddHttpError({ key: 'account:billing:order', error });
