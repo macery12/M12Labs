@@ -6,6 +6,7 @@ import { Button } from '@/elements/button';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDoubleLeft, faAngleDoubleRight, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';
 
@@ -22,11 +23,13 @@ interface Props {
     onPageChange: (index: number) => void;
 }
 
-const ModpackCard = styled.div`
-    ${tw`bg-neutral-800 rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
+const ModpackCard = styled.div<{ $backgroundColor: string }>`
+    ${tw`rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
+    background-color: ${props => props.$backgroundColor};
 
     &:hover {
-        ${tw`bg-neutral-700 border-neutral-600`}
+        ${tw`border-neutral-600`}
+        background-color: ${props => props.$backgroundColor}dd;
     }
 `;
 
@@ -75,6 +78,8 @@ const PaginationButton = styled(Button)`
 `;
 
 export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }: Props) => {
+    const { background } = useStoreState(state => state.theme.data!.colors);
+
     if (!modpacks.length && !loading) {
         return (
             <div css={tw`text-center py-16`}>
@@ -116,7 +121,11 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                                 : modpack.downloadCount.toString();
 
                         return (
-                            <ModpackCard key={modpack.id} onClick={() => onModpackClick(modpack)}>
+                            <ModpackCard
+                                key={modpack.id}
+                                onClick={() => onModpackClick(modpack)}
+                                $backgroundColor={background}
+                            >
                                 <ModpackHeader>
                                     <ModpackIcon
                                         src={modpack.logo?.thumbnailUrl || PLACEHOLDER_IMAGE}
