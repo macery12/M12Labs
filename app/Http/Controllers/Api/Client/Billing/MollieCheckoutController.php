@@ -327,6 +327,9 @@ class MollieCheckoutController extends ClientApiController
      * - payment_id: Mollie payment ID
      * - payment_status: Current Mollie payment status (paid, failed, expired, canceled, authorized, pending, open)
      *
+     * This endpoint also acts as a fallback processor - if the webhook hasn't run yet but
+     * the payment is actually paid, it will process the order.
+     *
      * @param Request $request
      * @return JsonResponse
      */
@@ -357,14 +360,37 @@ class MollieCheckoutController extends ClientApiController
             ]);
         }
 
-        // Get current payment status from Mollie for more accurate real-time status
+        // Get current payment status from Mollie for accurate real-time status
         $paymentStatus = 'unknown';
+        $payment = null;
         try {
             if ($order->mollie_payment_id) {
+                $payment = $this->mollieService->getPayment($order->mollie_payment_id);
                 $paymentStatus = $this->mollieService->getPaymentStatus($order->mollie_payment_id);
             }
         } catch (\Exception $e) {
             \Log::warning("Failed to fetch Mollie payment status for {$order->mollie_payment_id}: " . $e->getMessage());
+        }
+
+        // FALLBACK PROCESSING: If payment is paid but order is still pending, process it now
+        // This handles cases where webhook hasn't run yet or failed
+        if ($payment && $payment->isPaid() && $order->status === Order::STATUS_PENDING) {
+            try {
+                \Log::info("Status check triggering fallback fulfillment for order {$order->id}");
+                $this->fulfillOrder($request, $order, $payment);
+                // Reload order to get updated status
+                $order->refresh();
+            } catch (\Exception $e) {
+                \Log::error("Fallback fulfillment failed for order {$order->id}: " . $e->getMessage());
+            }
+        }
+        
+        // If payment failed/expired/canceled, update order status
+        if ($payment && $order->status === Order::STATUS_PENDING) {
+            if ($payment->isFailed() || $payment->isExpired() || $payment->isCanceled()) {
+                $order->update(['status' => Order::STATUS_FAILED]);
+                $order->refresh();
+            }
         }
 
         return response()->json([
