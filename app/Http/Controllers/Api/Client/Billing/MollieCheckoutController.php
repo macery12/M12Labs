@@ -147,6 +147,12 @@ class MollieCheckoutController extends ClientApiController
 
     /**
      * Process a Mollie payment (webhook handler).
+     * 
+     * Following Mollie best practices:
+     * - Webhook receives only payment ID for security
+     * - Fetch full payment details from Mollie API
+     * - Handle all payment statuses: paid, failed, expired, canceled, authorized, pending, open
+     * - Idempotent processing to prevent duplicate order fulfillment
      *
      * @param Request $request
      * @return Response
@@ -156,65 +162,130 @@ class MollieCheckoutController extends ClientApiController
         $paymentId = $request->input('id');
 
         if (!$paymentId) {
-            throw new DisplayException('Payment ID is required.');
+            // Return 200 to prevent Mollie retries, but log the issue
+            \Log::warning('Mollie webhook called without payment ID');
+            return $this->returnNoContent();
         }
 
         // Find the order by mollie_payment_id
         $order = Order::where('mollie_payment_id', $paymentId)->latest()->first();
 
         if (!$order) {
-            throw new DisplayException('Order not found for this payment.');
-        }
-
-        // Check if payment is already processed
-        if ($order->status === Order::STATUS_PROCESSED) {
+            // Return 200 to prevent Mollie retries for non-existent orders
+            \Log::warning("Mollie webhook: Order not found for payment ID: {$paymentId}");
             return $this->returnNoContent();
         }
 
-        // Validate billing is enabled
-        $this->validationService->validateBillingEnabled();
+        // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
+        // This prevents duplicate processing if webhook is called multiple times
+        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
+            \Log::info("Mollie webhook: Order {$order->id} already in final state: {$order->status}");
+            return $this->returnNoContent();
+        }
 
-        // Fetch payment details from Mollie API
-        $payment = $this->mollieService->getPayment($paymentId);
+        try {
+            // Validate billing is enabled
+            $this->validationService->validateBillingEnabled();
 
-        // Check if the payment was successful (using API status)
-        if ($payment->isPaid()) {
-            // Payment is successful, process the order
-            $metadata = $payment->metadata;
+            // SECURITY: Fetch payment details from Mollie API (never trust webhook data directly)
+            $payment = $this->mollieService->getPayment($paymentId);
 
-            $product = Product::findOrFail($metadata->product_id);
-
-            // Process the renewal or product purchase
-            if ($order->type === Order::TYPE_REN) {
-                // For renewals, get the server from the stored server_id
-                if (!$order->server_id) {
-                    throw new DisplayException('Server ID not found in order record for renewal.');
-                }
-                
-                $server = Server::findOrFail($order->server_id);
-
-                // Use the unified processor service for renewal
-                $result = $this->processorService->processRenewal($server, $product, $order->coupon_id);
+            // Handle different payment statuses according to Mollie documentation
+            if ($payment->isPaid()) {
+                // PAID: Payment successful - fulfill the order
+                $this->fulfillOrder($request, $order, $payment);
+            } elseif ($payment->isFailed()) {
+                // FAILED: Payment attempt failed definitively
+                \Log::info("Mollie payment {$paymentId} failed for order {$order->id}");
+                $order->update(['status' => Order::STATUS_FAILED]);
+            } elseif ($payment->isExpired()) {
+                // EXPIRED: Payment window expired (customer didn't complete in time)
+                \Log::info("Mollie payment {$paymentId} expired for order {$order->id}");
+                $order->update(['status' => Order::STATUS_FAILED]);
+            } elseif ($payment->isCanceled()) {
+                // CANCELED: Customer actively canceled the payment
+                \Log::info("Mollie payment {$paymentId} canceled by customer for order {$order->id}");
+                $order->update(['status' => Order::STATUS_FAILED]);
+            } elseif ($payment->isAuthorized()) {
+                // AUTHORIZED: Payment authorized but not captured yet (Klarna, credit cards)
+                // Keep as pending until captured
+                \Log::info("Mollie payment {$paymentId} authorized for order {$order->id}");
+                $order->update(['status' => Order::STATUS_PENDING]);
+            } elseif ($payment->isPending() || $payment->isOpen()) {
+                // PENDING/OPEN: Payment in progress or just created - no action needed yet
+                \Log::info("Mollie payment {$paymentId} is pending/open for order {$order->id}");
+                // Keep current status
             } else {
-                // For new purchases, create the server using stored order data
-                $user = \Everest\Models\User::findOrFail($order->user_id);
-                $request->setUserResolver(function () use ($user) {
-                    return $user;
-                });
-
-                $orderMetadata = (object) [
-                    'product_id' => $metadata->product_id,
-                    'node_id' => $order->node_id,
-                    'egg_id' => $order->egg_id,
-                    'name' => $order->name,
-                    'variables' => $order->variables ?? [],
-                ];
-
-                $server = $this->serverCreation->process($request, $product, $orderMetadata, $order);
+                // Unknown status - log for investigation
+                \Log::warning("Mollie payment {$paymentId} has unknown status: {$payment->status}");
             }
+        } catch (\Exception $e) {
+            // Log error but return 200 to prevent infinite Mollie retries
+            \Log::error("Mollie webhook error for payment {$paymentId}: " . $e->getMessage());
+        }
 
-            // Record coupon usage for non-renewal orders
-            if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
+        return $this->returnNoContent();
+    }
+
+    /**
+     * Fulfill an order after successful payment.
+     * 
+     * @param Request $request
+     * @param Order $order
+     * @param \Mollie\Api\Resources\Payment $payment
+     * @return void
+     */
+    private function fulfillOrder(Request $request, Order $order, $payment): void
+    {
+        // Double-check idempotency before fulfillment
+        if ($order->status === Order::STATUS_PROCESSED) {
+            \Log::info("Order {$order->id} already processed, skipping fulfillment");
+            return;
+        }
+
+        $metadata = $payment->metadata;
+        $product = Product::findOrFail($metadata->product_id);
+
+        \Log::info("Fulfilling order {$order->id} for payment {$payment->id}");
+
+        // Process the renewal or product purchase
+        if ($order->type === Order::TYPE_REN) {
+            // For renewals, get the server from the stored server_id
+            if (!$order->server_id) {
+                throw new DisplayException('Server ID not found in order record for renewal.');
+            }
+            
+            $server = Server::findOrFail($order->server_id);
+
+            // Use the unified processor service for renewal
+            $this->processorService->processRenewal($server, $product, $order->coupon_id);
+            
+            \Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
+        } else {
+            // For new purchases, create the server using stored order data
+            $user = \Everest\Models\User::findOrFail($order->user_id);
+            $request->setUserResolver(function () use ($user) {
+                return $user;
+            });
+
+            $orderMetadata = (object) [
+                'product_id' => $metadata->product_id,
+                'node_id' => $order->node_id,
+                'egg_id' => $order->egg_id,
+                'name' => $order->name,
+                'variables' => $order->variables ?? [],
+            ];
+
+            $server = $this->serverCreation->process($request, $product, $orderMetadata, $order);
+            
+            \Log::info("Created new server {$server->id} for order {$order->id}");
+        }
+
+        // Record coupon usage for non-renewal orders (idempotent - unique constraint prevents duplicates)
+        if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
+            // Check if coupon usage already exists to prevent duplicates
+            $existingUsage = CouponUsage::where('order_id', $order->id)->first();
+            if (!$existingUsage) {
                 CouponUsage::create([
                     'coupon_id' => $order->coupon_id,
                     'user_id' => $order->user_id,
@@ -222,17 +293,12 @@ class MollieCheckoutController extends ClientApiController
                     'used_at' => now(),
                 ]);
             }
-
-            // Mark the order as processed
-            if ($order->type !== Order::TYPE_REN) {
-                $order->update(['status' => Order::STATUS_PROCESSED]);
-            }
-        } elseif ($payment->isFailed() || $payment->isExpired() || $payment->isCanceled()) {
-            // Payment failed
-            $order->update(['status' => Order::STATUS_FAILED]);
         }
 
-        return $this->returnNoContent();
+        // Mark the order as processed (final state - idempotency checkpoint)
+        if ($order->type !== Order::TYPE_REN) {
+            $order->update(['status' => Order::STATUS_PROCESSED]);
+        }
     }
 
     /**
@@ -252,6 +318,13 @@ class MollieCheckoutController extends ClientApiController
 
     /**
      * Check the status of a specific Mollie payment by payment ID.
+     * 
+     * Returns detailed status information including:
+     * - processed: Order is completed
+     * - failed: Order failed (payment failed, expired, or canceled)
+     * - pending: Order is still pending (payment open, pending, or authorized)
+     * - payment_id: Mollie payment ID
+     * - payment_status: Current Mollie payment status (paid, failed, expired, canceled, authorized, pending, open)
      *
      * @param Request $request
      * @return JsonResponse
@@ -279,7 +352,18 @@ class MollieCheckoutController extends ClientApiController
                 'failed' => false,
                 'pending' => true,
                 'payment_id' => $paymentId,
+                'payment_status' => 'unknown',
             ]);
+        }
+
+        // Get current payment status from Mollie for more accurate real-time status
+        $paymentStatus = 'unknown';
+        try {
+            if ($order->mollie_payment_id) {
+                $paymentStatus = $this->mollieService->getPaymentStatus($order->mollie_payment_id);
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Failed to fetch Mollie payment status for {$order->mollie_payment_id}: " . $e->getMessage());
         }
 
         return response()->json([
@@ -287,6 +371,7 @@ class MollieCheckoutController extends ClientApiController
             'failed' => $order->status === Order::STATUS_FAILED,
             'pending' => $order->status === Order::STATUS_PENDING,
             'payment_id' => $order->mollie_payment_id,
+            'payment_status' => $paymentStatus,
         ]);
     }
 

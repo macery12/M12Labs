@@ -106,6 +106,80 @@ class MolliePaymentService
     }
 
     /**
+     * Get the current status of a payment.
+     * 
+     * Returns one of: open, pending, paid, failed, expired, canceled, authorized
+     *
+     * @param string $paymentId
+     * @return string
+     */
+    public function getPaymentStatus(string $paymentId): string
+    {
+        $payment = $this->getPayment($paymentId);
+        return $payment->status;
+    }
+
+    /**
+     * Check if payment is expired.
+     *
+     * @param string $paymentId
+     * @return bool
+     */
+    public function isPaymentExpired(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+        return $payment->isExpired();
+    }
+
+    /**
+     * Check if payment is canceled.
+     *
+     * @param string $paymentId
+     * @return bool
+     */
+    public function isPaymentCanceled(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+        return $payment->isCanceled();
+    }
+
+    /**
+     * Check if payment is authorized (but not yet captured).
+     *
+     * @param string $paymentId
+     * @return bool
+     */
+    public function isPaymentAuthorized(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+        return $payment->isAuthorized();
+    }
+
+    /**
+     * Check if payment is pending.
+     *
+     * @param string $paymentId
+     * @return bool
+     */
+    public function isPaymentPending(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+        return $payment->isPending();
+    }
+
+    /**
+     * Check if payment is open (created but no action taken).
+     *
+     * @param string $paymentId
+     * @return bool
+     */
+    public function isPaymentOpen(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+        return $payment->isOpen();
+    }
+
+    /**
      * Get the checkout URL for a payment.
      *
      * @param string $paymentId
