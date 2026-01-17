@@ -70,6 +70,6 @@ class ServerDatabaseTransformer extends Transformer
             return [
                 'password' => $this->encrypter->decrypt($model->password),
             ];
-        }, 'database_password');
+        });
     }
 }
