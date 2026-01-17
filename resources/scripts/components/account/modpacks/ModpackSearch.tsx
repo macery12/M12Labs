@@ -43,7 +43,6 @@ export default ({ onSearch, initialParams }: Props) => {
     useEffect(() => {
         getMinecraftVersions()
             .then(response => {
-                console.log('Minecraft versions response:', response);
                 // Filter to only valid Minecraft versions
                 // Less restrictive filter - include any version with a versionString
                 const versions = response.data
@@ -56,11 +55,11 @@ export default ({ onSearch, initialParams }: Props) => {
                         // Extract version numbers, handling formats like "1.20.1", "1.12.2-Snapshot", etc.
                         const aMatch = a.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
                         const bMatch = b.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
-                        
+
                         if (!aMatch || !bMatch) {
                             return a.localeCompare(b);
                         }
-                        
+
                         const aParts = [
                             parseInt(aMatch[1] || '0', 10),
                             parseInt(aMatch[2] || '0', 10),
@@ -71,7 +70,7 @@ export default ({ onSearch, initialParams }: Props) => {
                             parseInt(bMatch[2] || '0', 10),
                             parseInt(bMatch[3] || '0', 10),
                         ];
-                        
+
                         for (let i = 0; i < 3; i++) {
                             if (aParts[i] !== bParts[i]) {
                                 return bParts[i] - aParts[i];
@@ -79,7 +78,6 @@ export default ({ onSearch, initialParams }: Props) => {
                         }
                         return 0;
                     });
-                console.log('Filtered versions:', versions);
                 setMinecraftVersions(versions);
             })
             .catch(error => {
