@@ -58,7 +58,7 @@ class ServerTransformer extends Transformer
                 'threads' => $server->threads,
                 'oom_killer' => $server->oom_killer,
             ],
-            'invocation' => $server->egg->startup,
+            'invocation' => !is_null($server->startup) ? $server->startup : $server->egg->startup,
             'docker_image' => $server->image,
             'egg_features' => $server->egg->inherit_features,
             'billing_product_id' => $server->billing_product_id,
