@@ -447,12 +447,10 @@ class CurseForgeService
         ];
 
         // Only include valid modpack search parameters
-        // Note: gameVersion and modLoaderType are NOT used for modpack searches
         $searchParams = array_merge($defaultParams, array_filter([
             'searchFilter' => $params['searchFilter'] ?? null,
             'sortField' => $params['sortField'] ?? null,
             'sortOrder' => $params['sortOrder'] ?? null,
-            'gameVersionTypeId' => $params['gameVersionTypeId'] ?? null,
             'index' => $params['index'] ?? 0,
         ], function ($value) {
             // Filter out null and empty strings to prevent AND-filter conflicts

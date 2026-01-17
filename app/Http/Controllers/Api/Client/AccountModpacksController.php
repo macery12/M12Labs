@@ -39,12 +39,10 @@ class AccountModpacksController extends ClientApiController
     public function search(Request $request): JsonResponse
     {
         // Only accept valid modpack search parameters
-        // Note: modpacks do NOT use gameVersion or modLoaderType - these cause zero results
         $params = array_filter([
             'searchFilter' => $request->input('searchFilter'),
             'sortField' => $request->input('sortField'),
             'sortOrder' => $request->input('sortOrder'),
-            'gameVersionTypeId' => $request->input('gameVersionTypeId'),
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
         ], function ($value) {

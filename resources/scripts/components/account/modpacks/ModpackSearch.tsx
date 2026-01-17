@@ -20,32 +20,9 @@ const SORT_OPTIONS = [
     { value: '6', label: 'Total Downloads' },
 ];
 
-// Minecraft version groups mapped to their gameVersionTypeId
-// These are used to filter modpacks by major version ranges
-const MINECRAFT_VERSION_GROUPS = [
-    { typeId: '804', label: '1.21.x' },
-    { typeId: '775', label: '1.20.x' },
-    { typeId: '736', label: '1.19.x' },
-    { typeId: '732', label: '1.18.x' },
-    { typeId: '729', label: '1.17.x' },
-    { typeId: '708', label: '1.16.x' },
-    { typeId: '687', label: '1.15.x' },
-    { typeId: '648', label: '1.14.x' },
-    { typeId: '637', label: '1.13.x' },
-    { typeId: '628', label: '1.12.x' },
-    { typeId: '599', label: '1.11.x' },
-    { typeId: '572', label: '1.10.x' },
-    { typeId: '552', label: '1.9.x' },
-    { typeId: '445', label: '1.8.x' },
-    { typeId: '444', label: '1.7.10' },
-];
-
 export default ({ onSearch, initialParams }: Props) => {
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
     const [sortField, setSortField] = useState(initialParams.sortField || '2');
-    const [gameVersionTypeId, setGameVersionTypeId] = useState(initialParams.gameVersionTypeId || '');
-
-    // No need to fetch versions from API - using predefined version groups instead
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -65,10 +42,6 @@ export default ({ onSearch, initialParams }: Props) => {
             searchParams.sortOrder = 'desc';
         }
         
-        if (gameVersionTypeId) {
-            searchParams.gameVersionTypeId = parseInt(gameVersionTypeId, 10);
-        }
-        
         console.log('Searching modpacks with params:', searchParams);
         onSearch(searchParams);
     };
@@ -76,7 +49,6 @@ export default ({ onSearch, initialParams }: Props) => {
     const handleClear = () => {
         setSearchFilter('');
         setSortField('2');
-        setGameVersionTypeId('');
         onSearch({
             sortField: '2',
             sortOrder: 'desc',
@@ -87,7 +59,7 @@ export default ({ onSearch, initialParams }: Props) => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6`}>
+            <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6`}>
                 <div>
                     <Label>Search</Label>
                     <Input
@@ -96,18 +68,6 @@ export default ({ onSearch, initialParams }: Props) => {
                         value={searchFilter}
                         onChange={e => setSearchFilter(e.target.value)}
                     />
-                </div>
-
-                <div>
-                    <Label>Minecraft Version</Label>
-                    <Select value={gameVersionTypeId} onChange={e => setGameVersionTypeId(e.target.value)}>
-                        <option value="">All Versions</option>
-                        {MINECRAFT_VERSION_GROUPS.map(versionGroup => (
-                            <option key={versionGroup.typeId} value={versionGroup.typeId}>
-                                {versionGroup.label}
-                            </option>
-                        ))}
-                    </Select>
                 </div>
 
                 <div>
