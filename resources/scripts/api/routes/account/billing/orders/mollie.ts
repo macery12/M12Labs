@@ -59,9 +59,13 @@ export const updateMolliePayment = ({
     });
 };
 
-export const checkMolliePaymentStatus = (): Promise<MolliePaymentStatus> => {
+export const checkMolliePaymentStatus = (paymentId?: string | null): Promise<MolliePaymentStatus> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/billing/mollie/status`)
+        const url = paymentId 
+            ? `/api/client/billing/mollie/status?payment_id=${paymentId}`
+            : `/api/client/billing/mollie/status`;
+            
+        http.get(url)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

@@ -42,6 +42,9 @@ export default ({
                 name: 'Server Renewal',
             });
 
+            // Store payment ID in localStorage so processing page can check status
+            localStorage.setItem('mollie_payment_id', payment.id);
+
             // Redirect to Mollie checkout
             window.location.href = payment.checkout_url;
         } catch (error) {

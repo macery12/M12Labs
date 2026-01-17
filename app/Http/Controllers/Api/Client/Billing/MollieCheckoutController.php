@@ -47,8 +47,10 @@ class MollieCheckoutController extends ClientApiController
         // Validate this is not a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
 
-        $returnUrl = $request->input('return_url', url('/account/billing/processing'));
-
+        // Create the payment with basic redirectUrl
+        // The frontend will store the payment ID in localStorage for the processing page to use
+        $returnUrl = url('/account/billing/processing');
+        
         $payment = $this->mollieService->createPayment(
             $product,
             $priceInfo['finalPrice'],
@@ -56,6 +58,7 @@ class MollieCheckoutController extends ClientApiController
             $returnUrl
         );
 
+        // Return payment info - frontend will store payment ID before redirecting
         return response()->json([
             'id' => $payment->id,
             'checkout_url' => $payment->getCheckoutUrl(),
@@ -223,24 +226,34 @@ class MollieCheckoutController extends ClientApiController
     }
 
     /**
-     * Check the status of the latest Mollie payment for the current user.
+     * Check the status of a specific Mollie payment by payment ID.
      *
      * @param Request $request
      * @return JsonResponse
      */
     public function checkPaymentStatus(Request $request): JsonResponse
     {
-        // Get the latest order for this user
-        $order = Order::where('user_id', $request->user()->id)
-            ->where('payment_processor', 'mollie')
-            ->latest()
-            ->first();
+        $paymentId = $request->input('payment_id');
+        
+        if (!$paymentId) {
+            // Fallback: Get the latest order for this user if no payment_id provided
+            $order = Order::where('user_id', $request->user()->id)
+                ->where('payment_processor', 'mollie')
+                ->latest()
+                ->first();
+        } else {
+            // Get the order by mollie_payment_id
+            $order = Order::where('mollie_payment_id', $paymentId)
+                ->where('user_id', $request->user()->id)
+                ->first();
+        }
 
         if (!$order) {
             return response()->json([
                 'processed' => false,
-                'failed' => true,
-                'pending' => false,
+                'failed' => false,
+                'pending' => true,
+                'payment_id' => $paymentId,
             ]);
         }
 
@@ -248,6 +261,7 @@ class MollieCheckoutController extends ClientApiController
             'processed' => $order->status === Order::STATUS_PROCESSED,
             'failed' => $order->status === Order::STATUS_FAILED,
             'pending' => $order->status === Order::STATUS_PENDING,
+            'payment_id' => $order->mollie_payment_id,
         ]);
     }
 }
