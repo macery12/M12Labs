@@ -50,7 +50,7 @@ const MINECRAFT_VERSION_GROUPS = [
 export default ({ onSearch, initialParams }: Props) => {
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
     const [sortField, setSortField] = useState(initialParams.sortField || '2');
-    const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
+    const [gameVersionTypeId, setGameVersionTypeId] = useState(initialParams.gameVersionTypeId || '');
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
 
     // No need to fetch versions from API - using predefined version groups instead
@@ -61,7 +61,7 @@ export default ({ onSearch, initialParams }: Props) => {
             searchFilter: searchFilter || undefined,
             sortField,
             sortOrder: 'desc',
-            gameVersion: gameVersion || undefined,
+            gameVersionTypeId: gameVersionTypeId || undefined,
             modLoaderType: modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             pageSize: 20,
             index: 0,
@@ -71,7 +71,7 @@ export default ({ onSearch, initialParams }: Props) => {
     const handleClear = () => {
         setSearchFilter('');
         setSortField('2');
-        setGameVersion('');
+        setGameVersionTypeId('');
         setModLoaderType('');
         onSearch({
             sortField: '2',
@@ -96,7 +96,7 @@ export default ({ onSearch, initialParams }: Props) => {
 
                 <div>
                     <Label>Minecraft Version</Label>
-                    <Select value={gameVersion} onChange={e => setGameVersion(e.target.value)}>
+                    <Select value={gameVersionTypeId} onChange={e => setGameVersionTypeId(e.target.value)}>
                         <option value="">All Versions</option>
                         {MINECRAFT_VERSION_GROUPS.map(versionGroup => (
                             <option key={versionGroup.typeId} value={versionGroup.typeId}>

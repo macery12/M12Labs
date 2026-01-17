@@ -451,6 +451,7 @@ class CurseForgeService
             'sortField' => $params['sortField'] ?? null,
             'sortOrder' => $params['sortOrder'] ?? null,
             'gameVersion' => $params['gameVersion'] ?? null,
+            'gameVersionTypeId' => $params['gameVersionTypeId'] ?? null,
             'modLoaderType' => $params['modLoaderType'] ?? null,
             'index' => $params['index'] ?? 0,
         ], function ($value) {

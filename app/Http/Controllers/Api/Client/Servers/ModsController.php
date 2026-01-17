@@ -274,6 +274,7 @@ class ModsController extends ClientApiController
             'sortField' => $request->input('sortField'),
             'sortOrder' => $request->input('sortOrder'),
             'gameVersion' => $request->input('gameVersion'),
+            'gameVersionTypeId' => $request->input('gameVersionTypeId'),
             'modLoaderType' => $request->input('modLoaderType'),
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
