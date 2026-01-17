@@ -7,11 +7,23 @@ return [
     'enabled' => env('BILLING_ENABLED', false),
 
     /*
+     * Select the payment processor: 'stripe' or 'mollie'.
+     */
+    'processor' => env('BILLING_PROCESSOR', 'stripe'),
+
+    /*
      * Configure the publishable & secret API key for Stripe.
      */
     'keys' => [
         'publishable' => env('BILLING_PUBLISHABLE_KEY', ''),
         'secret' => env('BILLING_SECRET_KEY', ''),
+    ],
+
+    /*
+     * Configure the Mollie API key.
+     */
+    'mollie' => [
+        'api_key' => env('MOLLIE_API_KEY', ''),
     ],
 
     /*
