@@ -57,15 +57,17 @@ export default ({ onSearch, initialParams }: Props) => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSearch({
+        const searchParams = {
             searchFilter: searchFilter || undefined,
             sortField,
-            sortOrder: 'desc',
-            gameVersionTypeId: gameVersionTypeId || undefined,
+            sortOrder: 'desc' as const,
+            gameVersionTypeId: gameVersionTypeId ? parseInt(gameVersionTypeId, 10) : undefined,
             modLoaderType: modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             pageSize: 20,
             index: 0,
-        });
+        };
+        console.log('Searching modpacks with params:', searchParams);
+        onSearch(searchParams);
     };
 
     const handleClear = () => {

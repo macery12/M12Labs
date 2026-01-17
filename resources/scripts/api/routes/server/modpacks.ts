@@ -5,7 +5,7 @@ export interface ModpackSearchParams {
     sortField?: string;
     sortOrder?: string;
     gameVersion?: string;
-    gameVersionTypeId?: string;
+    gameVersionTypeId?: number;
     modLoaderType?: number;
     pageSize?: number;
     index?: number;

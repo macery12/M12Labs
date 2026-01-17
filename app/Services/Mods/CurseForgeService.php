@@ -458,6 +458,9 @@ class CurseForgeService
             return $value !== null;
         }));
 
+        // Log the search parameters for debugging
+        Log::info('CurseForge modpack search params:', $searchParams);
+
         // Create cache key based on search parameters
         $cacheKey = 'curseforge_modpack_search_' . md5(json_encode($searchParams));
         
