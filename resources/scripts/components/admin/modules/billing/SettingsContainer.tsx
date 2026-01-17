@@ -11,13 +11,16 @@ import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import currencyDictionary from '@/assets/currency';
 import SetupStripe from './guides/SetupStripe';
+import SetupMollie from './guides/SetupMollie';
 import ExportConfigButton from './config/ExportConfigButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import ImportConfigButton from './config/ImportConfigButton';
 import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
-export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'none';
+import SetupMollie from './guides/SetupMollie';
+
+export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'none';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
@@ -50,6 +53,26 @@ export default () => {
             {open === 'paypal' && <SetupPayPal setOpen={setOpen} />}
             {open === 'link' && <SetupLink setOpen={setOpen} />}
             {open === 'setup' && <SetupStripe extOpen />}
+            {open === 'mollie' && <SetupMollie extOpen />}
+            <AdminBox title={'Select Payment Processor'} icon={faExchange}>
+                Choose which payment processor to use for handling payments. You can switch between Stripe and Mollie.
+                <p className={'mt-2 text-gray-400'}>
+                    Current processor:{' '}
+                    <span className={'font-bold text-blue-500'}>
+                        {settings.processor === 'mollie' ? 'Mollie' : 'Stripe'}
+                    </span>
+                </p>
+                <div className={'mt-4'}>
+                    <Label>Payment Processor</Label>
+                    <Select
+                        value={settings.processor || 'stripe'}
+                        onChange={e => submit('processor', e.target.value)}
+                    >
+                        <option value="stripe">Stripe</option>
+                        <option value="mollie">Mollie</option>
+                    </Select>
+                </div>
+            </AdminBox>
             <AdminBox title={'Add PayPal integration'} icon={faPaypal}>
                 Adding PayPal to Jexactyl allows users to purchase products via another channel, improving order success
                 rate and global payment availability.
@@ -146,6 +169,24 @@ export default () => {
                     </div>
                 </AdminBox>
             )}
+            <AdminBox title={'Configure Mollie API Key'} icon={faKey}>
+                {!settings.mollie?.api_key ? (
+                    <>
+                        To use Mollie as your payment processor, you need to configure your Mollie API key. Click below
+                        to add your API key from the Mollie dashboard.
+                        <div className={'mt-3 text-right'}>
+                            <Button onClick={() => setOpen('mollie')}>Add Mollie API Key</Button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        Mollie API key is configured. You can update it by clicking the button below.
+                        <div className={'mt-3 text-right'}>
+                            <Button.Text onClick={() => setOpen('mollie')}>Update API Key</Button.Text>
+                        </div>
+                    </>
+                )}
+            </AdminBox>
             <AdminBox title={'Legal Document Links'} icon={faGavel}>
                 Provide a link to your business&apos; ToS or privacy policy that users must accept before purchase.
                 <BillingLinksForm />
