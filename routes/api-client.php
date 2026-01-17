@@ -67,6 +67,17 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/{ticket:id}/messages', [Client\TicketController::class, 'message']);
         });
 
+        Route::prefix('/modpacks')->group(function () {
+            Route::get('/search', [Client\AccountModpacksController::class, 'search']);
+            Route::get('/compatible-servers', [Client\AccountModpacksController::class, 'getCompatibleServers']);
+            Route::get('/{modpackId}', [Client\AccountModpacksController::class, 'getModpack']);
+            Route::get('/{modpackId}/files', [Client\AccountModpacksController::class, 'getModpackFiles']);
+            Route::get('/minecraft/versions', [Client\AccountModpacksController::class, 'getMinecraftVersions']);
+            Route::get('/minecraft/loaders', [Client\AccountModpacksController::class, 'getModLoaderTypes']);
+            Route::get('/server/{serverId}/info', [Client\AccountModpacksController::class, 'getServerModpackInfo']);
+            Route::post('/install', [Client\AccountModpacksController::class, 'install']);
+        });
+
         Route::post('/setup', [Client\AccountController::class, 'setup']);
     });
 

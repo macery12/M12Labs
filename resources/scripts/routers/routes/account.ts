@@ -19,6 +19,8 @@ const Cancel = lazy(() => import('@account/billing/order/summary/Cancel'));
 const DonationContainer = lazy(() => import('@account/donations/DonationContainer'));
 const DonationHistoryContainer = lazy(() => import('@account/donations/DonationHistoryContainer'));
 
+const ModpacksAccountContainer = lazy(() => import('@account/ModpacksAccountContainer'));
+
 const account: RouteDefinition[] = [
     /**
      * Account - General Routes
@@ -26,6 +28,11 @@ const account: RouteDefinition[] = [
     route('', AccountOverviewContainer, { name: 'Account', end: true, icon: Icon.UserIcon }),
     route('api', AccountApiContainer, { name: 'API Credentials', icon: Icon.CodeIcon }),
     route('ssh', AccountSSHContainer, { name: 'SSH Keys', icon: Icon.TerminalIcon }),
+    route('modpacks', ModpacksAccountContainer, {
+        name: 'Modpacks',
+        icon: Icon.CollectionIcon,
+        condition: flags => flags.mods?.enabled,
+    }),
 
     /**
      * Account - Ticket Routes

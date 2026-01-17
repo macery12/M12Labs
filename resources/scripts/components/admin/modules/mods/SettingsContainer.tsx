@@ -4,15 +4,15 @@ import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
 import { faKey, faPowerOff, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ModsSettings, updateSettings, resetCurseForgeKey } from '@/api/routes/admin/mods/settings';
-import { useFlashKey } from '@/plugins/useFlash';
+import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 
-export default () => {
-    const { clearFlashes, clearAndAddHttpError, addFlash } = useFlashKey('admin:mods');
+const SettingsContainer = () => {
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const mods = useStoreState(s => s.everest.data!.mods);
 
     const submit = (values: ModsSettings) => {
-        clearFlashes();
+        clearFlashes('admin:mods');
 
         // Only send values that are actually set
         const payload: ModsSettings = {
@@ -27,30 +27,32 @@ export default () => {
         updateSettings(payload)
             .then(() => {
                 addFlash({
+                    key: 'admin:mods',
                     type: 'success',
                     message: 'Settings have been updated successfully.',
                 });
                 setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
-                clearAndAddHttpError(error);
+                clearAndAddHttpError({ key: 'admin:mods', error });
             });
     };
 
     const handleResetKey = () => {
         if (!confirm('Are you sure you want to delete the CurseForge API key?')) return;
 
-        clearFlashes();
+        clearFlashes('admin:mods');
         resetCurseForgeKey()
             .then(() => {
                 addFlash({
+                    key: 'admin:mods',
                     type: 'success',
                     message: 'API key has been deleted successfully.',
                 });
                 setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
-                clearAndAddHttpError(error);
+                clearAndAddHttpError({ key: 'admin:mods', error });
             });
     };
 
@@ -59,6 +61,7 @@ export default () => {
             onSubmit={submit}
             initialValues={{
                 enabled: mods.enabled,
+                curseforge_api_key: typeof mods.curseforge_api_key === 'string' ? '' : '',
             }}
         >
             {() => (
@@ -129,3 +132,5 @@ export default () => {
         </Formik>
     );
 };
+
+export default SettingsContainer;
