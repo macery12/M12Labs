@@ -23,6 +23,13 @@ const SORT_OPTIONS = [
     { value: '6', label: 'Total Downloads' },
 ];
 
+const MOD_LOADER_TYPES = [
+    { id: 1, name: 'Forge' },
+    { id: 4, name: 'Fabric' },
+    { id: 5, name: 'Quilt' },
+    { id: 6, name: 'NeoForge' },
+];
+
 export default ({ onSearch, initialParams }: Props) => {
     const { addError } = useFlash();
 
@@ -34,7 +41,6 @@ export default ({ onSearch, initialParams }: Props) => {
     );
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
-    const [modLoaders, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
 
     useEffect(() => {
         getMinecraftVersions()
@@ -63,26 +69,6 @@ export default ({ onSearch, initialParams }: Props) => {
                         return 0;
                     });
                 setMinecraftVersions(versions);
-            })
-            .catch(error => {
-                console.error(error);
-                addError({ key: 'account:modpacks', message: httpErrorToHuman(error) });
-            });
-
-        getModLoaderTypes()
-            .then(response => {
-                const loaders = response.data
-                    .filter((ml) => ml.name && (
-                        ml.name.toLowerCase().includes('forge') ||
-                        ml.name.toLowerCase().includes('fabric') ||
-                        ml.name.toLowerCase().includes('quilt') ||
-                        ml.name.toLowerCase() === 'neoforge'
-                    ))
-                    .map((ml) => ({
-                        id: ml.id,
-                        name: ml.name
-                    }));
-                setModLoaders(loaders);
             })
             .catch(error => {
                 console.error(error);
@@ -145,7 +131,7 @@ export default ({ onSearch, initialParams }: Props) => {
                     <Label>Mod Loader</Label>
                     <Select value={modLoaderType} onChange={e => setModLoaderType(e.target.value)}>
                         <option value="">All Loaders</option>
-                        {modLoaders.map(loader => (
+                        {MOD_LOADER_TYPES.map(loader => (
                             <option key={loader.id} value={loader.id}>
                                 {loader.name}
                             </option>
