@@ -19,7 +19,7 @@ export interface MolliePaymentFromToken {
 
 export const createMolliePayment = (id: number, couponId?: number, returnUrl?: string): Promise<MolliePayment> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/billing/products/${id}/mollie/payment`, {
+        http.post(`/api/client/account/billing/products/${id}/mollie/payment`, {
             coupon_id: couponId,
             return_url: returnUrl,
         })
@@ -50,7 +50,7 @@ export const updateMolliePayment = ({
     name: string;
 }): Promise<void> => {
     return new Promise((resolve, reject) => {
-        http.put(`/api/client/billing/products/${id}/mollie/payment`, {
+        http.put(`/api/client/account/billing/products/${id}/mollie/payment`, {
             payment_id: paymentId,
             node_id: nodeId,
             variables: vars,
@@ -68,8 +68,8 @@ export const updateMolliePayment = ({
 export const checkMolliePaymentStatus = (paymentId?: string | null): Promise<MolliePaymentStatus> => {
     return new Promise((resolve, reject) => {
         const url = paymentId 
-            ? `/api/client/billing/mollie/status?payment_id=${paymentId}`
-            : `/api/client/billing/mollie/status`;
+            ? `/api/client/account/billing/mollie/status?payment_id=${paymentId}`
+            : `/api/client/account/billing/mollie/status`;
             
         http.get(url)
             .then(({ data }) => resolve(data))
@@ -79,7 +79,7 @@ export const checkMolliePaymentStatus = (paymentId?: string | null): Promise<Mol
 
 export const getPaymentIdFromToken = (token: string): Promise<MolliePaymentFromToken> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/billing/mollie/token/${token}`)
+        http.get(`/api/client/account/billing/mollie/token/${token}`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

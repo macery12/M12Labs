@@ -42,8 +42,14 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
     };
 
     useEffect(() => {
-        // Auto-open if no payment processor is configured
-        if (!existingKeys?.publishable && !existingMollie?.api_key) {
+        // Auto-open if the currently selected payment processor is not configured
+        const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
+        const isMollieSelected = currentProcessor === 'mollie';
+        
+        const stripeNotConfigured = isStripeSelected && !existingKeys?.publishable;
+        const mollieNotConfigured = isMollieSelected && !existingMollie?.api_key;
+        
+        if (stripeNotConfigured || mollieNotConfigured) {
             setOpen(true);
         }
         // Set current processor
