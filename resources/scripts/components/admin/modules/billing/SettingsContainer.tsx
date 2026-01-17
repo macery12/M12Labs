@@ -12,13 +12,14 @@ import Select from '@/elements/Select';
 import currencyDictionary from '@/assets/currency';
 import SetupStripe from './guides/SetupStripe';
 import SetupMollie from './guides/SetupMollie';
+import SetupPayment from './guides/SetupPayment';
 import ExportConfigButton from './config/ExportConfigButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import ImportConfigButton from './config/ImportConfigButton';
 import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
-export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'none';
+export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'payment' | 'none';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
@@ -52,6 +53,8 @@ export default () => {
             {open === 'link' && <SetupLink setOpen={setOpen} />}
             {open === 'setup' && <SetupStripe extOpen />}
             {open === 'mollie' && <SetupMollie extOpen />}
+            {open === 'payment' && <SetupPayment extOpen />}
+            <SetupPayment extOpen={false} />
             <AdminBox title={'Select Payment Processor'} icon={faExchange}>
                 Choose which payment processor to use for handling payments. You can switch between Stripe and Mollie.
                 <p className={'mt-2 text-gray-400'}>
@@ -155,7 +158,7 @@ export default () => {
                     will be met with errors unless you add valid API keys which can be obtained through the Stripe
                     dashboard.
                     <div className={'mt-3 text-right'}>
-                        <Button onClick={() => setOpen('setup')}>Add API keys</Button>
+                        <Button onClick={() => setOpen('payment')}>Add API keys</Button>
                     </div>
                 </AdminBox>
             ) : settings.processor === 'stripe' ? (
@@ -176,14 +179,14 @@ export default () => {
                             Mollie, you need to configure your Mollie API key. Click below to add your API key from the
                             Mollie dashboard.
                             <div className={'mt-3 text-right'}>
-                                <Button onClick={() => setOpen('mollie')}>Add Mollie API Key</Button>
+                                <Button onClick={() => setOpen('payment')}>Add Mollie API Key</Button>
                             </div>
                         </>
                     ) : (
                         <>
                             Mollie API key is configured. You can update it by clicking the button below.
                             <div className={'mt-3 text-right'}>
-                                <Button.Text onClick={() => setOpen('mollie')}>Update API Key</Button.Text>
+                                <Button.Text onClick={() => setOpen('payment')}>Update API Key</Button.Text>
                             </div>
                         </>
                     )}
@@ -196,14 +199,14 @@ export default () => {
                             select Mollie as the payment processor above, then add your API key from the Mollie
                             dashboard.
                             <div className={'mt-3 text-right'}>
-                                <Button onClick={() => setOpen('mollie')}>Add Mollie API Key</Button>
+                                <Button onClick={() => setOpen('payment')}>Add Mollie API Key</Button>
                             </div>
                         </>
                     ) : (
                         <>
                             Mollie API key is configured. You can update it by clicking the button below.
                             <div className={'mt-3 text-right'}>
-                                <Button.Text onClick={() => setOpen('mollie')}>Update API Key</Button.Text>
+                                <Button.Text onClick={() => setOpen('payment')}>Update API Key</Button.Text>
                             </div>
                         </>
                     )}
