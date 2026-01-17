@@ -38,24 +38,45 @@ export default ({ onSearch, initialParams }: Props) => {
     useEffect(() => {
         getMinecraftVersions(uuid)
             .then(response => {
+                console.log('Minecraft versions response:', response);
+                // Filter to only valid Minecraft versions
+                // Less restrictive filter - include any version with a versionString
                 const versions = response.data
-                    .filter(v => v.versionString && v.gameVersionTypeId === 1)
+                    .filter(v => v.versionString && v.versionString.trim() !== '')
                     .map(v => v.versionString)
                     .filter((v, i, arr) => arr.indexOf(v) === i)
                     .sort((a, b) => {
-                        const aParts = a.split('.').map(Number);
-                        const bParts = b.split('.').map(Number);
-                        for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-                            const aNum = aParts[i] || 0;
-                            const bNum = bParts[i] || 0;
-                            if (aNum !== bNum) return bNum - aNum;
+                        // Extract version numbers, handling various formats
+                        const aMatch = a.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
+                        const bMatch = b.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
+                        
+                        if (!aMatch || !bMatch) {
+                            return a.localeCompare(b);
+                        }
+                        
+                        const aParts = [
+                            parseInt(aMatch[1] || '0', 10),
+                            parseInt(aMatch[2] || '0', 10),
+                            parseInt(aMatch[3] || '0', 10),
+                        ];
+                        const bParts = [
+                            parseInt(bMatch[1] || '0', 10),
+                            parseInt(bMatch[2] || '0', 10),
+                            parseInt(bMatch[3] || '0', 10),
+                        ];
+                        
+                        for (let i = 0; i < 3; i++) {
+                            if (aParts[i] !== bParts[i]) {
+                                return bParts[i] - aParts[i];
+                            }
                         }
                         return 0;
                     });
+                console.log('Filtered versions:', versions);
                 setMinecraftVersions(versions);
             })
             .catch(error => {
-                console.error(error);
+                console.error('Error fetching Minecraft versions:', error);
                 addError({ key: 'modpacks', message: httpErrorToHuman(error) });
             });
 

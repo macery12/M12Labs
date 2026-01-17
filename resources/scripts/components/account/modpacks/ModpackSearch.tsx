@@ -43,34 +43,47 @@ export default ({ onSearch, initialParams }: Props) => {
     useEffect(() => {
         getMinecraftVersions()
             .then(response => {
-                // Filter to only Minecraft release versions (gameVersionTypeId === 1)
-                // and exclude snapshots, pre-releases, etc.
+                console.log('Minecraft versions response:', response);
+                // Filter to only valid Minecraft versions
+                // Less restrictive filter - include any version with a versionString
                 const versions = response.data
-                    .filter(
-                        v =>
-                            v.versionString &&
-                            v.gameVersionTypeId === 1 &&
-                            // Only include versions that match X.X or X.X.X pattern (exclude snapshots/pre-releases)
-                            /^\d+\.\d+(\.\d+)?$/.test(v.versionString),
-                    )
+                    .filter(v => v.versionString && v.versionString.trim() !== '')
                     .map(v => v.versionString)
                     // Remove duplicates
                     .filter((v, i, arr) => arr.indexOf(v) === i)
-                    // Sort by version number (descending)
+                    // Sort by version number (descending) - handle various formats
                     .sort((a, b) => {
-                        const aParts = a.split('.').map(Number);
-                        const bParts = b.split('.').map(Number);
-                        for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-                            const aNum = aParts[i] || 0;
-                            const bNum = bParts[i] || 0;
-                            if (aNum !== bNum) return bNum - aNum;
+                        // Extract version numbers, handling formats like "1.20.1", "1.12.2-Snapshot", etc.
+                        const aMatch = a.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
+                        const bMatch = b.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
+                        
+                        if (!aMatch || !bMatch) {
+                            return a.localeCompare(b);
+                        }
+                        
+                        const aParts = [
+                            parseInt(aMatch[1] || '0', 10),
+                            parseInt(aMatch[2] || '0', 10),
+                            parseInt(aMatch[3] || '0', 10),
+                        ];
+                        const bParts = [
+                            parseInt(bMatch[1] || '0', 10),
+                            parseInt(bMatch[2] || '0', 10),
+                            parseInt(bMatch[3] || '0', 10),
+                        ];
+                        
+                        for (let i = 0; i < 3; i++) {
+                            if (aParts[i] !== bParts[i]) {
+                                return bParts[i] - aParts[i];
+                            }
                         }
                         return 0;
                     });
+                console.log('Filtered versions:', versions);
                 setMinecraftVersions(versions);
             })
             .catch(error => {
-                console.error(error);
+                console.error('Error fetching Minecraft versions:', error);
                 addError({ key: 'account:modpacks', message: httpErrorToHuman(error) });
             });
     }, []);
