@@ -221,4 +221,33 @@ class MollieCheckoutController extends ClientApiController
 
         return Order::TYPE_NEW;
     }
+
+    /**
+     * Check the status of the latest Mollie payment for the current user.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function checkPaymentStatus(Request $request): JsonResponse
+    {
+        // Get the latest order for this user
+        $order = Order::where('user_id', $request->user()->id)
+            ->where('payment_processor', 'mollie')
+            ->latest()
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'processed' => false,
+                'failed' => true,
+                'pending' => false,
+            ]);
+        }
+
+        return response()->json([
+            'processed' => $order->status === Order::STATUS_PROCESSED,
+            'failed' => $order->status === Order::STATUS_FAILED,
+            'pending' => $order->status === Order::STATUS_PENDING,
+        ]);
+    }
 }

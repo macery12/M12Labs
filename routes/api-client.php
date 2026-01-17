@@ -89,6 +89,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::post('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'createPayment']);
         Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
         Route::post('/mollie/webhook', [Client\Billing\MollieCheckoutController::class, 'processPayment'])->name('api:client:billing:mollie:webhook');
+        Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
 
         Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
 

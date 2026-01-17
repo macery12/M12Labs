@@ -5,6 +5,12 @@ export interface MolliePayment {
     checkout_url: string;
 }
 
+export interface MolliePaymentStatus {
+    processed: boolean;
+    failed: boolean;
+    pending: boolean;
+}
+
 export const createMolliePayment = (id: number, couponId?: number, returnUrl?: string): Promise<MolliePayment> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/products/${id}/mollie/payment`, {
@@ -49,6 +55,14 @@ export const updateMolliePayment = ({
             name,
         })
             .then(() => resolve())
+            .catch(reject);
+    });
+};
+
+export const checkMolliePaymentStatus = (): Promise<MolliePaymentStatus> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/billing/mollie/status`)
+            .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
