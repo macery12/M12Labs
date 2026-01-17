@@ -183,9 +183,10 @@ export default () => {
     }, [product, selectedEggId]);
 
     if (!product) return <Spinner centered />;
-    // Only show spinner for paid products when Stripe hasn't loaded yet
-    // If a coupon makes it free, we don't need Stripe
-    const needsStripe = product.price !== 0 && (!couponData || couponData.total !== 0);
+    // Only show spinner for paid products when the selected processor hasn't loaded yet
+    // If a coupon makes it free, we don't need payment processor
+    const needsPaymentProcessor = product.price !== 0 && (!couponData || couponData.total !== 0);
+    const needsStripe = needsPaymentProcessor && billing.processor === 'stripe';
     if (needsStripe && (!intent || !stripe)) return <Spinner centered />;
 
     const options = {
