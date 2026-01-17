@@ -41,9 +41,13 @@ export interface EverestSettings {
         enabled: boolean;
         paypal: boolean;
         link: boolean;
+        processor?: string;
         keys: {
             publishable: boolean;
             secret: boolean;
+        };
+        mollie?: {
+            api_key?: string;
         };
         currency: {
             symbol: string;
