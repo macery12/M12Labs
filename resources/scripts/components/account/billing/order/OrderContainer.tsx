@@ -161,6 +161,7 @@ export default () => {
                         const stripePublicKey = await getStripeKey(Number(params.id));
                         const stripeInstance = await loadStripe(stripePublicKey.key);
                         setStripe(stripeInstance);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
