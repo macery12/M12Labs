@@ -14,13 +14,14 @@ export default () => {
     const settings = useStoreState(state => state.everest.data!.ai);
 
     if (!settings.enabled) return <EnableAI />;
-    
+
     // For Ollama mode, key is not required, only check for endpoint and model
     // For OpenAI mode, key is required
-    const needsConfiguration = settings.mode === 'ollama' 
-        ? !settings.endpoint || !settings.model
-        : !settings.key || !settings.endpoint || !settings.model;
-    
+    const needsConfiguration =
+        settings.mode === 'ollama'
+            ? !settings.endpoint || !settings.model
+            : !settings.key || !settings.endpoint || !settings.model;
+
     if (settings.enabled && needsConfiguration) return <ConfigureAI />;
 
     return (

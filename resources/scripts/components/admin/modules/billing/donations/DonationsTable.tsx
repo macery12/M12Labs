@@ -20,12 +20,12 @@ const PaymentIntentDisplay = ({ intentId }: { intentId: string }) => {
 
     return (
         <div className={'flex items-center space-x-2'}>
-            <span className={'text-sm text-gray-500 font-mono'}>
+            <span className={'font-mono text-sm text-gray-500'}>
                 {revealed ? intentId : maskPaymentIntent(intentId)}
             </span>
             <button
                 onClick={() => setRevealed(!revealed)}
-                className={'text-gray-400 hover:text-gray-200 transition-colors'}
+                className={'text-gray-400 transition-colors hover:text-gray-200'}
                 title={revealed ? 'Hide' : 'Reveal'}
             >
                 <FontAwesomeIcon icon={revealed ? faEyeSlash : faEye} className={'text-xs'} />
@@ -51,7 +51,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     const config = getStatusConfig();
 
     return (
-        <div className={`inline-flex items-center px-2 py-1 rounded ${config.bg}`}>
+        <div className={`inline-flex items-center rounded px-2 py-1 ${config.bg}`}>
             <FontAwesomeIcon icon={config.icon} className={`${config.color} mr-2 text-xs`} />
             <span className={`${config.color} text-xs font-semibold uppercase`}>{status}</span>
         </div>
@@ -72,7 +72,7 @@ export default () => {
 
     if (loading && !donations) {
         return (
-            <div className={'flex justify-center items-center py-12'}>
+            <div className={'flex items-center justify-center py-12'}>
                 <Spinner size={'large'} />
             </div>
         );
@@ -84,23 +84,47 @@ export default () => {
                 <table className={'min-w-full divide-y divide-gray-700'}>
                     <thead className={'bg-neutral-900'}>
                         <tr>
-                            <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
+                            <th
+                                className={
+                                    'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400'
+                                }
+                            >
                                 <FontAwesomeIcon icon={faHeart} className={'mr-2'} />
                                 Donor
                             </th>
-                            <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
+                            <th
+                                className={
+                                    'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400'
+                                }
+                            >
                                 Date
                             </th>
-                            <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
+                            <th
+                                className={
+                                    'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400'
+                                }
+                            >
                                 Amount
                             </th>
-                            <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
+                            <th
+                                className={
+                                    'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400'
+                                }
+                            >
                                 Status
                             </th>
-                            <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
+                            <th
+                                className={
+                                    'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400'
+                                }
+                            >
                                 Message
                             </th>
-                            <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
+                            <th
+                                className={
+                                    'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400'
+                                }
+                            >
                                 Payment Intent
                             </th>
                         </tr>
@@ -114,8 +138,8 @@ export default () => {
                             </tr>
                         ) : (
                             donations.data.map(donation => (
-                                <tr key={donation.id} className={'hover:bg-neutral-700 transition-colors'}>
-                                    <td className={'px-6 py-4 whitespace-nowrap'}>
+                                <tr key={donation.id} className={'transition-colors hover:bg-neutral-700'}>
+                                    <td className={'whitespace-nowrap px-6 py-4'}>
                                         <div className={'flex items-center'}>
                                             <div>
                                                 {donation.user ? (
@@ -128,38 +152,38 @@ export default () => {
                                                         </div>
                                                     </>
                                                 ) : (
-                                                    <div className={'text-sm text-gray-400 italic'}>
+                                                    <div className={'text-sm italic text-gray-400'}>
                                                         User ID: {donation.user_id}
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-300'}>
+                                    <td className={'whitespace-nowrap px-6 py-4 text-sm text-gray-300'}>
                                         <div>{format(new Date(donation.created_at), 'MMM dd, yyyy')}</div>
                                         <div className={'text-xs text-gray-500'}>
                                             {format(new Date(donation.created_at), 'HH:mm:ss')}
                                         </div>
                                     </td>
-                                    <td className={'px-6 py-4 whitespace-nowrap'}>
+                                    <td className={'whitespace-nowrap px-6 py-4'}>
                                         <div className={'text-sm font-bold text-green-400'}>
                                             ${donation.amount.toFixed(2)}
                                         </div>
-                                        <div className={'text-xs text-gray-500 uppercase'}>{donation.currency}</div>
+                                        <div className={'text-xs uppercase text-gray-500'}>{donation.currency}</div>
                                     </td>
-                                    <td className={'px-6 py-4 whitespace-nowrap'}>
+                                    <td className={'whitespace-nowrap px-6 py-4'}>
                                         <StatusBadge status={donation.status} />
                                     </td>
-                                    <td className={'px-6 py-4 max-w-xs'}>
+                                    <td className={'max-w-xs px-6 py-4'}>
                                         {donation.message ? (
-                                            <div className={'text-sm text-gray-300 italic truncate'}>
+                                            <div className={'truncate text-sm italic text-gray-300'}>
                                                 &quot;{donation.message}&quot;
                                             </div>
                                         ) : (
-                                            <div className={'text-sm text-gray-500 italic'}>No message</div>
+                                            <div className={'text-sm italic text-gray-500'}>No message</div>
                                         )}
                                     </td>
-                                    <td className={'px-6 py-4 whitespace-nowrap'}>
+                                    <td className={'whitespace-nowrap px-6 py-4'}>
                                         <PaymentIntentDisplay intentId={donation.payment_intent_id} />
                                     </td>
                                 </tr>
@@ -171,9 +195,7 @@ export default () => {
             {donations && donations.last_page > 1 && (
                 <Pagination data={donations} onPageSelect={setPage}>
                     {({ isLoading }) => (
-                        <div className={'flex justify-center mt-4'}>
-                            {isLoading && <Spinner size={'small'} />}
-                        </div>
+                        <div className={'mt-4 flex justify-center'}>{isLoading && <Spinner size={'small'} />}</div>
                     )}
                 </Pagination>
             )}

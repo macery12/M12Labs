@@ -101,7 +101,9 @@ function ServerRouter() {
                     <MobileSidebar.Home />
                     {routes.server
                         .filter(
-                            route => route.name && (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                            route =>
+                                route.name &&
+                                (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
                         )
                         .map(route => (
                             <MobileSidebar.Link
@@ -154,7 +156,10 @@ function ServerRouter() {
                             ))}
                         {categories.map(category => {
                             const categoryRoutes = routes.server.filter(
-                                route => route.category === category && route.name && (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                                route =>
+                                    route.category === category &&
+                                    route.name &&
+                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
                             );
                             if (categoryRoutes.length === 0) return null;
 

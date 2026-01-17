@@ -129,21 +129,17 @@ export default ({ modpack, onClose }: Props) => {
                     <ModpackLogo
                         src={modpack.logo?.url || PLACEHOLDER_IMAGE}
                         alt={modpack.name}
-                        onError={(e) => {
+                        onError={e => {
                             e.currentTarget.src = PLACEHOLDER_IMAGE;
                         }}
                     />
                     <div css={tw`flex-1`}>
                         <ModpackTitle>{modpack.name}</ModpackTitle>
-                        <ModpackAuthors>
-                            By {modpack.authors.map(a => a.name).join(', ') || 'Unknown'}
-                        </ModpackAuthors>
+                        <ModpackAuthors>By {modpack.authors.map(a => a.name).join(', ') || 'Unknown'}</ModpackAuthors>
                         <ModpackStats>
                             <span>{modpack.downloadCount.toLocaleString()} downloads</span>
                             <span>•</span>
-                            <span>
-                                Updated {new Date(modpack.dateModified).toLocaleDateString()}
-                            </span>
+                            <span>Updated {new Date(modpack.dateModified).toLocaleDateString()}</span>
                         </ModpackStats>
                     </div>
                 </ModpackHeader>
@@ -173,13 +169,9 @@ export default ({ modpack, onClose }: Props) => {
                                                     {file.gameVersions.length > 3 && '...'}
                                                 </span>
                                                 {' • '}
-                                                <span>
-                                                    {new Date(file.fileDate).toLocaleDateString()}
-                                                </span>
+                                                <span>{new Date(file.fileDate).toLocaleDateString()}</span>
                                                 {' • '}
-                                                <span>
-                                                    {(file.fileLength / 1024 / 1024).toFixed(2)} MB
-                                                </span>
+                                                <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
                                             </FileDetails>
                                         </FileInfo>
                                         <ModpackDownloadButton
@@ -200,9 +192,7 @@ export default ({ modpack, onClose }: Props) => {
                             )}
                         </FadeTransition>
                     ) : (
-                        <p css={tw`text-neutral-400 text-center py-6`}>
-                            No files available for download.
-                        </p>
+                        <p css={tw`text-neutral-400 text-center py-6`}>No files available for download.</p>
                     )}
                 </Section>
 

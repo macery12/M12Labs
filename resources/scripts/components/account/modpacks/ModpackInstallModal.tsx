@@ -3,7 +3,12 @@ import tw from 'twin.macro';
 import styled from 'styled-components';
 import Modal from '@/elements/Modal';
 import { type CurseForgeModpack, type CurseForgeFile } from '@/api/routes/server/modpacks';
-import { getModpackFiles, installModpackToServer, getServerModpackInfo, getCompatibleServers } from '@/api/routes/account/modpacks';
+import {
+    getModpackFiles,
+    installModpackToServer,
+    getServerModpackInfo,
+    getCompatibleServers,
+} from '@/api/routes/account/modpacks';
 import Spinner from '@/elements/Spinner';
 import { httpErrorToHuman } from '@/api/http';
 import useFlash from '@/plugins/useFlash';
@@ -61,7 +66,8 @@ const FileList = styled.div`
 
 const FileItem = styled.div<{ $selected?: boolean }>`
     ${tw`bg-neutral-700 rounded p-3 cursor-pointer border-2 transition-all`}
-    ${props => props.$selected ? tw`border-neutral-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
+    ${props =>
+        props.$selected ? tw`border-neutral-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
 `;
 
 const FileInfo = styled.div`
@@ -78,7 +84,8 @@ const FileDetails = styled.p`
 
 const ServerItem = styled.div<{ $selected?: boolean }>`
     ${tw`bg-neutral-700 rounded p-3 cursor-pointer border-2 transition-all flex items-center gap-3`}
-    ${props => props.$selected ? tw`border-neutral-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
+    ${props =>
+        props.$selected ? tw`border-neutral-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
 `;
 
 const ServerList = styled.div`
@@ -87,19 +94,27 @@ const ServerList = styled.div`
 
 const getReleaseTypeLabel = (type: number) => {
     switch (type) {
-        case 1: return 'Release';
-        case 2: return 'Beta';
-        case 3: return 'Alpha';
-        default: return 'Unknown';
+        case 1:
+            return 'Release';
+        case 2:
+            return 'Beta';
+        case 3:
+            return 'Alpha';
+        default:
+            return 'Unknown';
     }
 };
 
 const getReleaseTypeColor = (type: number) => {
     switch (type) {
-        case 1: return tw`text-green-400`;
-        case 2: return tw`text-yellow-400`;
-        case 3: return tw`text-red-400`;
-        default: return tw`text-neutral-400`;
+        case 1:
+            return tw`text-green-400`;
+        case 2:
+            return tw`text-yellow-400`;
+        case 3:
+            return tw`text-red-400`;
+        default:
+            return tw`text-neutral-400`;
     }
 };
 
@@ -113,15 +128,14 @@ export default ({ modpack, onClose }: Props) => {
     const [selectedServer, setSelectedServer] = useState<{ uuid: string; name: string; eggId: number } | null>(null);
     const [installing, setInstalling] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [serverModpackInfo, setServerModpackInfo] = useState<Record<string, { projectId?: string; versionId?: string; modpackName?: string }>>({});
+    const [serverModpackInfo, setServerModpackInfo] = useState<
+        Record<string, { projectId?: string; versionId?: string; modpackName?: string }>
+    >({});
 
     useEffect(() => {
         setLoading(true);
-        
-        Promise.all([
-            getModpackFiles(modpack.id, { pageSize: 20, index: 0 }),
-            getCompatibleServers()
-        ])
+
+        Promise.all([getModpackFiles(modpack.id, { pageSize: 20, index: 0 }), getCompatibleServers()])
             .then(([filesResponse, compatibleServersResponse]) => {
                 setFiles(filesResponse.data);
                 setServers(compatibleServersResponse.servers);
@@ -132,7 +146,7 @@ export default ({ modpack, onClose }: Props) => {
                         .then(info => {
                             setServerModpackInfo(prev => ({
                                 ...prev,
-                                [server.uuid]: info
+                                [server.uuid]: info,
                             }));
                         })
                         .catch(() => {
@@ -187,7 +201,7 @@ export default ({ modpack, onClose }: Props) => {
                         <ModpackLogo
                             src={modpack.logo?.url || PLACEHOLDER_IMAGE}
                             alt={modpack.name}
-                            onError={(e) => {
+                            onError={e => {
                                 e.currentTarget.src = PLACEHOLDER_IMAGE;
                             }}
                         />
@@ -200,7 +214,7 @@ export default ({ modpack, onClose }: Props) => {
                                     rel="noopener noreferrer"
                                     css={tw`text-neutral-400 hover:text-neutral-200 transition-colors mb-2`}
                                     title="View on CurseForge"
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={e => e.stopPropagation()}
                                 >
                                     <FontAwesomeIcon icon={faExternalLinkAlt} css={tw`text-base`} />
                                 </a>
@@ -211,9 +225,7 @@ export default ({ modpack, onClose }: Props) => {
                             <ModpackStats>
                                 <span>{modpack.downloadCount.toLocaleString()} downloads</span>
                                 <span>•</span>
-                                <span>
-                                    Updated {new Date(modpack.dateModified).toLocaleDateString()}
-                                </span>
+                                <span>Updated {new Date(modpack.dateModified).toLocaleDateString()}</span>
                             </ModpackStats>
                         </div>
                     </ModpackHeader>
@@ -232,8 +244,9 @@ export default ({ modpack, onClose }: Props) => {
                                     <ServerList>
                                         {servers.map(server => {
                                             const currentModpack = serverModpackInfo[server.uuid];
-                                            const isCurrentModpack = currentModpack?.projectId === modpack.id.toString();
-                                            
+                                            const isCurrentModpack =
+                                                currentModpack?.projectId === modpack.id.toString();
+
                                             return (
                                                 <ServerItem
                                                     key={server.uuid}
@@ -288,13 +301,9 @@ export default ({ modpack, onClose }: Props) => {
                                                                 {file.gameVersions.length > 3 && '...'}
                                                             </span>
                                                             {' • '}
-                                                            <span>
-                                                                {new Date(file.fileDate).toLocaleDateString()}
-                                                            </span>
+                                                            <span>{new Date(file.fileDate).toLocaleDateString()}</span>
                                                             {' • '}
-                                                            <span>
-                                                                {(file.fileLength / 1024 / 1024).toFixed(2)} MB
-                                                            </span>
+                                                            <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
                                                         </FileDetails>
                                                     </FileInfo>
                                                 </FileItem>
@@ -334,9 +343,7 @@ export default ({ modpack, onClose }: Props) => {
                         <FontAwesomeIcon icon={faExclamationTriangle} />
                         WARNING: This will overwrite server data
                     </p>
-                    <p css={tw`mb-2`}>
-                        Installing this modpack will:
-                    </p>
+                    <p css={tw`mb-2`}>Installing this modpack will:</p>
                     <ul css={tw`list-disc list-inside space-y-1 ml-2`}>
                         <li>Update the server's environment variables</li>
                         <li>Trigger a full server reinstall</li>

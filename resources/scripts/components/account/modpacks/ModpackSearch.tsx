@@ -36,9 +36,7 @@ export default ({ onSearch, initialParams }: Props) => {
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
     const [sortField, setSortField] = useState(initialParams.sortField || '2');
     const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
-    const [modLoaderType, setModLoaderType] = useState<string>(
-        initialParams.modLoaderType?.toString() || ''
-    );
+    const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
 
@@ -48,11 +46,12 @@ export default ({ onSearch, initialParams }: Props) => {
                 // Filter to only Minecraft release versions (gameVersionTypeId === 1)
                 // and exclude snapshots, pre-releases, etc.
                 const versions = response.data
-                    .filter(v => 
-                        v.versionString && 
-                        v.gameVersionTypeId === 1 &&
-                        // Only include versions that match X.X or X.X.X pattern (exclude snapshots/pre-releases)
-                        /^\d+\.\d+(\.\d+)?$/.test(v.versionString)
+                    .filter(
+                        v =>
+                            v.versionString &&
+                            v.gameVersionTypeId === 1 &&
+                            // Only include versions that match X.X or X.X.X pattern (exclude snapshots/pre-releases)
+                            /^\d+\.\d+(\.\d+)?$/.test(v.versionString),
                     )
                     .map(v => v.versionString)
                     // Remove duplicates

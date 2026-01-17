@@ -100,9 +100,7 @@ export default () => {
         <>
             <TitledGreyBox title={'Available Plans'} icon={faExchangeAlt}>
                 <div>
-                    <p css={tw`text-gray-400 text-xs mb-2`}>
-                        Upgrade or downgrade to a different plan.
-                    </p>
+                    <p css={tw`text-gray-400 text-xs mb-2`}>Upgrade or downgrade to a different plan.</p>
 
                     <div css={tw`space-y-1.5`}>
                         {plans.map(plan => (
@@ -133,7 +131,9 @@ export default () => {
                                 </div>
                                 {selectedPlan?.id === plan.id && validation && !validation.valid && (
                                     <Alert type={'danger'} className={'mt-1.5'}>
-                                        <p css={tw`text-xs font-medium mb-0.5`}>Cannot downgrade - usage exceeds limits:</p>
+                                        <p css={tw`text-xs font-medium mb-0.5`}>
+                                            Cannot downgrade - usage exceeds limits:
+                                        </p>
                                         <ul css={tw`text-xs space-y-0.5 ml-3`}>
                                             {Object.entries(validation.violations || {}).map(([resource, data]) => (
                                                 <li key={resource}>

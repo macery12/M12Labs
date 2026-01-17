@@ -80,7 +80,11 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
                 config.borderColor,
                 config.bgColor,
                 config.textColor,
-                isClosing ? 'scale-95 opacity-0 translate-x-4' : isVisible ? 'scale-100 opacity-100 translate-x-0' : 'scale-95 opacity-0 translate-x-4',
+                isClosing
+                    ? 'translate-x-4 scale-95 opacity-0'
+                    : isVisible
+                    ? 'translate-x-0 scale-100 opacity-100'
+                    : 'translate-x-4 scale-95 opacity-0',
                 className,
             )}
             role="alert"
@@ -88,14 +92,20 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
             aria-atomic="true"
         >
             {/* Icon */}
-            <div className={classNames('mr-3 flex-shrink-0 transition-transform', config.iconColor, isVisible && 'animate-pulse-once')}>
+            <div
+                className={classNames(
+                    'mr-3 flex-shrink-0 transition-transform',
+                    config.iconColor,
+                    isVisible && 'animate-pulse-once',
+                )}
+            >
                 <FontAwesomeIcon icon={config.icon} className={'h-5 w-5'} />
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0">
-                {alert.title && <div className="mb-1 font-semibold text-base">{alert.title}</div>}
-                <div className="text-sm leading-relaxed break-words">{alert.message}</div>
+            <div className="min-w-0 flex-1">
+                {alert.title && <div className="mb-1 text-base font-semibold">{alert.title}</div>}
+                <div className="break-words text-sm leading-relaxed">{alert.message}</div>
 
                 {/* Actions */}
                 {alert.actions && alert.actions.length > 0 && (
@@ -126,7 +136,9 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
             {alert.dismissible && (
                 <button
                     onClick={handleDismiss}
-                    className={'ml-3 flex-shrink-0 text-gray-400 transition-all hover:text-gray-200 hover:scale-110 active:scale-95'}
+                    className={
+                        'ml-3 flex-shrink-0 text-gray-400 transition-all hover:scale-110 hover:text-gray-200 active:scale-95'
+                    }
                     aria-label="Dismiss alert"
                 >
                     <FontAwesomeIcon icon={faTimes} className={'h-4 w-4'} />

@@ -22,7 +22,7 @@ export interface PaginatedDonations {
     total: number;
 }
 
-export const getAllDonations = (page: number = 1): Promise<PaginatedDonations> => {
+export const getAllDonations = (page = 1): Promise<PaginatedDonations> => {
     return new Promise((resolve, reject) => {
         http.get(`/api/application/billing/donations?page=${page}`)
             .then(({ data }) => resolve(data))

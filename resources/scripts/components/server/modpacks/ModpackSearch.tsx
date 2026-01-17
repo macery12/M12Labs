@@ -30,9 +30,7 @@ export default ({ onSearch, initialParams }: Props) => {
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
     const [sortField, setSortField] = useState(initialParams.sortField || '2');
     const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
-    const [modLoaderType, setModLoaderType] = useState<string>(
-        initialParams.modLoaderType?.toString() || ''
-    );
+    const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
     const [modLoaders, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
@@ -65,15 +63,17 @@ export default ({ onSearch, initialParams }: Props) => {
             .then(response => {
                 // CurseForge mod loader API returns different structure
                 const loaders = response.data
-                    .filter((ml) => ml.name && (
-                        ml.name.toLowerCase().includes('forge') ||
-                        ml.name.toLowerCase().includes('fabric') ||
-                        ml.name.toLowerCase().includes('quilt') ||
-                        ml.name.toLowerCase() === 'neoforge'
-                    ))
-                    .map((ml) => ({
+                    .filter(
+                        ml =>
+                            ml.name &&
+                            (ml.name.toLowerCase().includes('forge') ||
+                                ml.name.toLowerCase().includes('fabric') ||
+                                ml.name.toLowerCase().includes('quilt') ||
+                                ml.name.toLowerCase() === 'neoforge'),
+                    )
+                    .map(ml => ({
                         id: ml.id,
-                        name: ml.name
+                        name: ml.name,
                     }));
                 setModLoaders(loaders);
             })

@@ -84,7 +84,10 @@ export default () => {
                             <AlertComponent
                                 alert={{
                                     id: 'preview',
-                                    type: alert.type === 'danger' ? 'error' : (alert.type as 'success' | 'error' | 'info' | 'warning'),
+                                    type:
+                                        alert.type === 'danger'
+                                            ? 'error'
+                                            : (alert.type as 'success' | 'error' | 'info' | 'warning'),
                                     message: alert.content,
                                     title: alert.title || undefined,
                                     dismissible: true,

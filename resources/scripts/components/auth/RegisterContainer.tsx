@@ -13,7 +13,15 @@ import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import register, { checkUsernameAvailability } from '@/api/routes/auth/register';
 import { login } from '@/api/routes/auth/login';
-import { faAt, faIdBadge, faKey, faUnlockKeyhole, faCheck, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import {
+    faAt,
+    faIdBadge,
+    faKey,
+    faUnlockKeyhole,
+    faCheck,
+    faTimes,
+    faSpinner,
+} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 interface Values {

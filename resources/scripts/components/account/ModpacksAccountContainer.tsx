@@ -70,7 +70,11 @@ export default () => {
 
     if (!globalModsEnabled) {
         return (
-            <PageContentBlock title={'Modpacks'} header description={'Browse and install Minecraft modpacks to your servers.'}>
+            <PageContentBlock
+                title={'Modpacks'}
+                header
+                description={'Browse and install Minecraft modpacks to your servers.'}
+            >
                 <ScopedAlert scope="account" position="top-center" />
                 <ContentBox>
                     <div css={tw`text-center py-16`}>
