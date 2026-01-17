@@ -18,8 +18,6 @@ import ImportConfigButton from './config/ImportConfigButton';
 import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
-import SetupMollie from './guides/SetupMollie';
-
 export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'none';
 
 export default () => {
