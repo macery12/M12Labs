@@ -46,6 +46,7 @@ class CreateOrderService
         $order->type = $type;
         $order->payment_processor = $additionalData['payment_processor'] ?? 'stripe';
         $order->mollie_payment_id = $additionalData['mollie_payment_id'] ?? null;
+        $order->payment_token = $additionalData['payment_token'] ?? null;
 
         $order->saveOrFail();
 
