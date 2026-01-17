@@ -41,6 +41,7 @@ class CreateOrderService
         $order->coupon_id = $couponId;
         $order->egg_id = $eggId;
         $order->node_id = $additionalData['node_id'] ?? null;
+        $order->server_id = $additionalData['server_id'] ?? null;
         $order->variables = $additionalData['variables'] ?? null;
         $order->type = $type;
         $order->payment_processor = $additionalData['payment_processor'] ?? 'stripe';

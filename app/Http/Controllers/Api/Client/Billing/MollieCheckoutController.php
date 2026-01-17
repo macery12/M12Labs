@@ -95,6 +95,7 @@ class MollieCheckoutController extends ClientApiController
         $orderType = $this->getOrderType($request);
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $variables = $request->input('variables', []);
+        $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
 
         // Create the order with coupon and egg
         $this->orderService->create(
@@ -110,6 +111,7 @@ class MollieCheckoutController extends ClientApiController
                 'mollie_payment_id' => $paymentId,
                 'name' => $serverName,
                 'node_id' => $nodeId,
+                'server_id' => $serverId,
                 'variables' => $variables,
             ]
         );
@@ -156,16 +158,12 @@ class MollieCheckoutController extends ClientApiController
 
             // Process the renewal or product purchase
             if ($order->type === Order::TYPE_REN) {
-                // For renewals, we need to find the server by looking at the user's servers with this product
-                // This is a limitation - ideally we'd store server_id in the order or metadata
-                $user = \Everest\Models\User::findOrFail($order->user_id);
-                $server = $user->servers()
-                    ->where('billing_product_id', $product->id)
-                    ->first();
-
-                if (!$server) {
-                    throw new DisplayException('Server not found for renewal.');
+                // For renewals, get the server from the stored server_id
+                if (!$order->server_id) {
+                    throw new DisplayException('Server ID not found in order record for renewal.');
                 }
+                
+                $server = Server::findOrFail($order->server_id);
 
                 // Use the unified processor service for renewal
                 $result = $this->processorService->processRenewal($server, $product, $order->coupon_id);
