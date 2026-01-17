@@ -452,7 +452,7 @@ class CurseForgeService
             'sortOrder' => $params['sortOrder'] ?? null,
             'gameVersion' => $params['gameVersion'] ?? null,
             'gameVersionTypeId' => $params['gameVersionTypeId'] ?? null,
-            'modLoaderType' => $params['modLoaderType'] ?? null,
+            // Note: modLoaderType is NOT used for modpack searches
             'index' => $params['index'] ?? 0,
         ], function ($value) {
             return $value !== null;

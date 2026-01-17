@@ -40,18 +40,10 @@ const MINECRAFT_VERSION_GROUPS = [
     { typeId: '444', label: '1.7.10' },
 ];
 
-const MOD_LOADER_TYPES = [
-    { id: 1, name: 'Forge' },
-    { id: 4, name: 'Fabric' },
-    { id: 5, name: 'Quilt' },
-    { id: 6, name: 'NeoForge' },
-];
-
 export default ({ onSearch, initialParams }: Props) => {
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
     const [sortField, setSortField] = useState(initialParams.sortField || '2');
     const [gameVersionTypeId, setGameVersionTypeId] = useState(initialParams.gameVersionTypeId || '');
-    const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
 
     // No need to fetch versions from API - using predefined version groups instead
 
@@ -62,7 +54,7 @@ export default ({ onSearch, initialParams }: Props) => {
             sortField,
             sortOrder: 'desc' as const,
             gameVersionTypeId: gameVersionTypeId ? parseInt(gameVersionTypeId, 10) : undefined,
-            modLoaderType: modLoaderType ? parseInt(modLoaderType, 10) : undefined,
+            // Note: modLoaderType is NOT used for modpack searches - it causes zero results
             pageSize: 20,
             index: 0,
         };
@@ -74,7 +66,6 @@ export default ({ onSearch, initialParams }: Props) => {
         setSearchFilter('');
         setSortField('2');
         setGameVersionTypeId('');
-        setModLoaderType('');
         onSearch({
             sortField: '2',
             sortOrder: 'desc',
@@ -85,7 +76,7 @@ export default ({ onSearch, initialParams }: Props) => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6`}>
+            <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6`}>
                 <div>
                     <Label>Search</Label>
                     <Input
@@ -103,18 +94,6 @@ export default ({ onSearch, initialParams }: Props) => {
                         {MINECRAFT_VERSION_GROUPS.map(versionGroup => (
                             <option key={versionGroup.typeId} value={versionGroup.typeId}>
                                 {versionGroup.label}
-                            </option>
-                        ))}
-                    </Select>
-                </div>
-
-                <div>
-                    <Label>Mod Loader</Label>
-                    <Select value={modLoaderType} onChange={e => setModLoaderType(e.target.value)}>
-                        <option value="">All Loaders</option>
-                        {MOD_LOADER_TYPES.map(loader => (
-                            <option key={loader.id} value={loader.id}>
-                                {loader.name}
                             </option>
                         ))}
                     </Select>
