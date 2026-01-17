@@ -61,13 +61,26 @@ export default () => {
         });
     }, [category]);
 
-    if (!settings.keys.publishable) {
-        return (
-            <Alert type={'danger'}>
-                Due to a configuration error, the store is currently unavailable. Please try again later, or refresh the
-                page.
-            </Alert>
-        );
+    if (settings.processor === 'mollie') {
+        // Check if Mollie is configured
+        if (!settings.mollie?.api_key) {
+            return (
+                <Alert type={'danger'}>
+                    Due to a configuration error, the store is currently unavailable. Please try again later, or refresh
+                    the page.
+                </Alert>
+            );
+        }
+    } else {
+        // Check if Stripe is configured (default)
+        if (!settings.keys.publishable) {
+            return (
+                <Alert type={'danger'}>
+                    Due to a configuration error, the store is currently unavailable. Please try again later, or refresh
+                    the page.
+                </Alert>
+            );
+        }
     }
 
     return (

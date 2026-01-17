@@ -148,16 +148,17 @@ export default () => {
                     <ImportConfigButton />
                 </div>
             </AdminBox>
-            {!settings.keys.publishable || !settings.keys.secret ? (
+            {settings.processor === 'stripe' && (!settings.keys.publishable || !settings.keys.secret) ? (
                 <AdminBox title={'Input Stripe API Keys'} icon={faKey}>
-                    Without Stripe API authentication, your billing system will not work. Customers may proceed to the
-                    checkout area but will be met with errors unless you add valid API keys which can be obtained
-                    through the Stripe dashboard.
+                    Stripe is selected as your payment processor, but API keys are not configured. Without Stripe API
+                    authentication, your billing system will not work. Customers may proceed to the checkout area but
+                    will be met with errors unless you add valid API keys which can be obtained through the Stripe
+                    dashboard.
                     <div className={'mt-3 text-right'}>
                         <Button onClick={() => setOpen('setup')}>Add API keys</Button>
                     </div>
                 </AdminBox>
-            ) : (
+            ) : settings.processor === 'stripe' ? (
                 <AdminBox title={'Reset Stripe API keys'} icon={faKey}>
                     By resetting the Stripe API keys saved to the panel, all billing services (such as purchasing or
                     renewing a product) will stop working until new API keys are entered. Are you sure you wish to
@@ -166,25 +167,48 @@ export default () => {
                         <Button.Danger onClick={onDeleteKeys}>Yes, delete API keys</Button.Danger>
                     </div>
                 </AdminBox>
+            ) : null}
+            {settings.processor === 'mollie' ? (
+                <AdminBox title={'Configure Mollie API Key'} icon={faKey}>
+                    {!settings.mollie?.api_key ? (
+                        <>
+                            Mollie is selected as your payment processor, but the API key is not configured. To use
+                            Mollie, you need to configure your Mollie API key. Click below to add your API key from the
+                            Mollie dashboard.
+                            <div className={'mt-3 text-right'}>
+                                <Button onClick={() => setOpen('mollie')}>Add Mollie API Key</Button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            Mollie API key is configured. You can update it by clicking the button below.
+                            <div className={'mt-3 text-right'}>
+                                <Button.Text onClick={() => setOpen('mollie')}>Update API Key</Button.Text>
+                            </div>
+                        </>
+                    )}
+                </AdminBox>
+            ) : (
+                <AdminBox title={'Configure Mollie API Key (Optional)'} icon={faKey}>
+                    {!settings.mollie?.api_key ? (
+                        <>
+                            To use Mollie as your payment processor, you need to configure your Mollie API key. First,
+                            select Mollie as the payment processor above, then add your API key from the Mollie
+                            dashboard.
+                            <div className={'mt-3 text-right'}>
+                                <Button onClick={() => setOpen('mollie')}>Add Mollie API Key</Button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            Mollie API key is configured. You can update it by clicking the button below.
+                            <div className={'mt-3 text-right'}>
+                                <Button.Text onClick={() => setOpen('mollie')}>Update API Key</Button.Text>
+                            </div>
+                        </>
+                    )}
+                </AdminBox>
             )}
-            <AdminBox title={'Configure Mollie API Key'} icon={faKey}>
-                {!settings.mollie?.api_key ? (
-                    <>
-                        To use Mollie as your payment processor, you need to configure your Mollie API key. Click below
-                        to add your API key from the Mollie dashboard.
-                        <div className={'mt-3 text-right'}>
-                            <Button onClick={() => setOpen('mollie')}>Add Mollie API Key</Button>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        Mollie API key is configured. You can update it by clicking the button below.
-                        <div className={'mt-3 text-right'}>
-                            <Button.Text onClick={() => setOpen('mollie')}>Update API Key</Button.Text>
-                        </div>
-                    </>
-                )}
-            </AdminBox>
             <AdminBox title={'Legal Document Links'} icon={faGavel}>
                 Provide a link to your business&apos; ToS or privacy policy that users must accept before purchase.
                 <BillingLinksForm />
