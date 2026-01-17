@@ -1,13 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import tw from 'twin.macro';
 import Input from '@/elements/Input';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
 import { type ModpackSearchParams } from '@/api/routes/server/modpacks';
-import { getMinecraftVersions, getModLoaderTypes } from '@/api/routes/account/modpacks';
-import { httpErrorToHuman } from '@/api/http';
-import useFlash from '@/plugins/useFlash';
 
 interface Props {
     onSearch: (params: ModpackSearchParams) => void;
@@ -30,61 +27,33 @@ const MOD_LOADER_TYPES = [
     { id: 6, name: 'NeoForge' },
 ];
 
-export default ({ onSearch, initialParams }: Props) => {
-    const { addError } = useFlash();
+// Minecraft version groups mapped to their gameVersionTypeId
+// These are used to filter modpacks by major version ranges
+const MINECRAFT_VERSION_GROUPS = [
+    { typeId: '804', label: '1.21.x' },
+    { typeId: '775', label: '1.20.x' },
+    { typeId: '736', label: '1.19.x' },
+    { typeId: '732', label: '1.18.x' },
+    { typeId: '729', label: '1.17.x' },
+    { typeId: '708', label: '1.16.x' },
+    { typeId: '687', label: '1.15.x' },
+    { typeId: '648', label: '1.14.x' },
+    { typeId: '637', label: '1.13.x' },
+    { typeId: '628', label: '1.12.x' },
+    { typeId: '599', label: '1.11.x' },
+    { typeId: '572', label: '1.10.x' },
+    { typeId: '552', label: '1.9.x' },
+    { typeId: '445', label: '1.8.x' },
+    { typeId: '444', label: '1.7.10' },
+];
 
+export default ({ onSearch, initialParams }: Props) => {
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
     const [sortField, setSortField] = useState(initialParams.sortField || '2');
     const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
 
-    const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
-
-    useEffect(() => {
-        getMinecraftVersions()
-            .then(response => {
-                // Filter to only valid Minecraft versions
-                // Less restrictive filter - include any version with a versionString
-                const versions = response.data
-                    .filter(v => v.versionString && v.versionString.trim() !== '')
-                    .map(v => v.versionString)
-                    // Remove duplicates
-                    .filter((v, i, arr) => arr.indexOf(v) === i)
-                    // Sort by version number (descending) - handle various formats
-                    .sort((a, b) => {
-                        // Extract version numbers, handling formats like "1.20.1", "1.12.2-Snapshot", etc.
-                        const aMatch = a.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
-                        const bMatch = b.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
-
-                        if (!aMatch || !bMatch) {
-                            return a.localeCompare(b);
-                        }
-
-                        const aParts = [
-                            parseInt(aMatch[1] || '0', 10),
-                            parseInt(aMatch[2] || '0', 10),
-                            parseInt(aMatch[3] || '0', 10),
-                        ];
-                        const bParts = [
-                            parseInt(bMatch[1] || '0', 10),
-                            parseInt(bMatch[2] || '0', 10),
-                            parseInt(bMatch[3] || '0', 10),
-                        ];
-
-                        for (let i = 0; i < 3; i++) {
-                            if (aParts[i] !== bParts[i]) {
-                                return bParts[i] - aParts[i];
-                            }
-                        }
-                        return 0;
-                    });
-                setMinecraftVersions(versions);
-            })
-            .catch(error => {
-                console.error('Error fetching Minecraft versions:', error);
-                addError({ key: 'account:modpacks', message: httpErrorToHuman(error) });
-            });
-    }, []);
+    // No need to fetch versions from API - using predefined version groups instead
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -129,9 +98,9 @@ export default ({ onSearch, initialParams }: Props) => {
                     <Label>Minecraft Version</Label>
                     <Select value={gameVersion} onChange={e => setGameVersion(e.target.value)}>
                         <option value="">All Versions</option>
-                        {minecraftVersions.map(version => (
-                            <option key={version} value={version}>
-                                {version}
+                        {MINECRAFT_VERSION_GROUPS.map(versionGroup => (
+                            <option key={versionGroup.typeId} value={versionGroup.typeId}>
+                                {versionGroup.label}
                             </option>
                         ))}
                     </Select>
