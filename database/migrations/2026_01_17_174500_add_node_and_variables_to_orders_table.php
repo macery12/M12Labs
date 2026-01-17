@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('billing_orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table) {
             $table->integer('node_id')->nullable()->after('egg_id');
             $table->integer('server_id')->nullable()->after('node_id');
             $table->json('variables')->nullable()->after('server_id');
@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('billing_orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table) {
             $table->dropColumn(['node_id', 'server_id', 'variables']);
         });
     }
