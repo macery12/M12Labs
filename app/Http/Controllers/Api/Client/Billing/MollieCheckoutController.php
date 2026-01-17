@@ -47,9 +47,9 @@ class MollieCheckoutController extends ClientApiController
         // Validate this is not a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
 
-        // Create the payment with basic redirectUrl
-        // The frontend will store the payment ID in localStorage for the processing page to use
-        $returnUrl = url('/account/billing/processing');
+        // Use the return_url from frontend request (includes payment_id parameter placeholder)
+        // We'll replace {payment_id} with the actual payment ID after creation
+        $returnUrl = $request->input('return_url', url('/account/billing/processing'));
         
         $payment = $this->mollieService->createPayment(
             $product,
@@ -58,10 +58,16 @@ class MollieCheckoutController extends ClientApiController
             $returnUrl
         );
 
-        // Return payment info - frontend will store payment ID before redirecting
+        // Add payment_id to the return URL
+        $finalReturnUrl = str_contains($returnUrl, '?')
+            ? $returnUrl . '&payment_id=' . $payment->id
+            : $returnUrl . '?payment_id=' . $payment->id;
+
+        // Return payment info with updated return URL
         return response()->json([
             'id' => $payment->id,
             'checkout_url' => $payment->getCheckoutUrl(),
+            'return_url' => $finalReturnUrl,
         ]);
     }
 

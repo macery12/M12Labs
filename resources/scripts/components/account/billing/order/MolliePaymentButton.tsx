@@ -32,7 +32,7 @@ export default (data: Props) => {
         const returnUrl = window.location.origin + '/account/billing/processing';
 
         try {
-            // Create Mollie payment
+            // Create Mollie payment with return URL
             const payment = await createMolliePayment(Number(data.product.id), data.couponId, returnUrl);
 
             // Update payment with order details
@@ -47,10 +47,8 @@ export default (data: Props) => {
                 name: data.serverName,
             });
 
-            // Store payment ID in localStorage so processing page can check status
-            localStorage.setItem('mollie_payment_id', payment.id);
-
             // Redirect to Mollie checkout
+            // After payment, Mollie will redirect back to return_url with payment_id parameter
             window.location.href = payment.checkout_url;
         } catch (error) {
             clearAndAddHttpError({ key: 'account:billing:order', error });

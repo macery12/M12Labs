@@ -29,7 +29,7 @@ export default ({
             window.location.origin + `/account/billing/processing?renewal=true&server_uuid=${serverUuid}`;
 
         try {
-            // Create Mollie payment for renewal
+            // Create Mollie payment for renewal with return URL
             const payment = await createMolliePayment(id, couponId, returnUrl);
 
             // Update payment with renewal details
@@ -42,10 +42,8 @@ export default ({
                 name: 'Server Renewal',
             });
 
-            // Store payment ID in localStorage so processing page can check status
-            localStorage.setItem('mollie_payment_id', payment.id);
-
             // Redirect to Mollie checkout
+            // After payment, Mollie will redirect back to return_url with payment_id parameter
             window.location.href = payment.checkout_url;
         } catch (error) {
             clearAndAddHttpError({ key: 'account:billing:renewal', error });

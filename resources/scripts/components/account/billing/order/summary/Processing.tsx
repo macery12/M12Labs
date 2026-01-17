@@ -17,7 +17,7 @@ export default () => {
     const { addFlash, clearFlashes } = useFlash();
 
     const stripeIntent = params.get('payment_intent');
-    const molliePaymentId = params.get('payment_id') || localStorage.getItem('mollie_payment_id');
+    const molliePaymentId = params.get('payment_id');
 
     useEffect(() => {
         clearFlashes();
@@ -51,16 +51,12 @@ export default () => {
                     
                     if (status.processed) {
                         // Order has been processed successfully
-                        // Clear the stored payment ID
-                        localStorage.removeItem('mollie_payment_id');
-                        
                         if (renewal && serverUuid) {
                             window.location.href = `/server/${serverUuid}/billing`;
                         } else {
                             navigate('/account/billing/success');
                         }
                     } else if (status.failed) {
-                        localStorage.removeItem('mollie_payment_id');
                         navigate('/account/billing/cancel');
                     } else {
                         // Still processing, check again after a delay
