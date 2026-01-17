@@ -442,20 +442,21 @@ class CurseForgeService
         // CurseForge Minecraft game ID is 432
         $defaultParams = [
             'gameId' => 432,
-            'classId' => 4471, // Modpacks class
+            'classId' => 4471, // Modpacks class - REQUIRED for modpack searches
             'pageSize' => min($params['pageSize'] ?? 20, config('modules.mods.max_page_size', 50)),
         ];
 
+        // Only include valid modpack search parameters
+        // Note: gameVersion and modLoaderType are NOT used for modpack searches
         $searchParams = array_merge($defaultParams, array_filter([
             'searchFilter' => $params['searchFilter'] ?? null,
             'sortField' => $params['sortField'] ?? null,
             'sortOrder' => $params['sortOrder'] ?? null,
-            'gameVersion' => $params['gameVersion'] ?? null,
             'gameVersionTypeId' => $params['gameVersionTypeId'] ?? null,
-            // Note: modLoaderType is NOT used for modpack searches
             'index' => $params['index'] ?? 0,
         ], function ($value) {
-            return $value !== null;
+            // Filter out null and empty strings to prevent AND-filter conflicts
+            return $value !== null && $value !== '';
         }));
 
         // Log the search parameters for debugging

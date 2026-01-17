@@ -49,15 +49,26 @@ export default ({ onSearch, initialParams }: Props) => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const searchParams = {
-            searchFilter: searchFilter || undefined,
-            sortField,
-            sortOrder: 'desc' as const,
-            gameVersionTypeId: gameVersionTypeId ? parseInt(gameVersionTypeId, 10) : undefined,
-            // Note: modLoaderType is NOT used for modpack searches - it causes zero results
+        
+        // Build params object with only defined values (no empty strings)
+        const searchParams: ModpackSearchParams = {
             pageSize: 20,
             index: 0,
         };
+        
+        if (searchFilter && searchFilter.trim()) {
+            searchParams.searchFilter = searchFilter.trim();
+        }
+        
+        if (sortField) {
+            searchParams.sortField = sortField;
+            searchParams.sortOrder = 'desc';
+        }
+        
+        if (gameVersionTypeId) {
+            searchParams.gameVersionTypeId = parseInt(gameVersionTypeId, 10);
+        }
+        
         console.log('Searching modpacks with params:', searchParams);
         onSearch(searchParams);
     };
