@@ -39,10 +39,19 @@ export default ({ onSearch, initialParams }: Props) => {
     useEffect(() => {
         getMinecraftVersions()
             .then(response => {
+                // Filter to only Minecraft release versions (gameVersionTypeId === 1)
+                // and exclude snapshots, pre-releases, etc.
                 const versions = response.data
-                    .filter(v => v.versionString && v.gameVersionTypeId === 1)
+                    .filter(v => 
+                        v.versionString && 
+                        v.gameVersionTypeId === 1 &&
+                        // Only include versions that match X.X or X.X.X pattern (exclude snapshots/pre-releases)
+                        /^\d+\.\d+(\.\d+)?$/.test(v.versionString)
+                    )
                     .map(v => v.versionString)
+                    // Remove duplicates
                     .filter((v, i, arr) => arr.indexOf(v) === i)
+                    // Sort by version number (descending)
                     .sort((a, b) => {
                         const aParts = a.split('.').map(Number);
                         const bParts = b.split('.').map(Number);

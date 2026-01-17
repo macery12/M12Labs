@@ -10,7 +10,7 @@ import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import { Dialog } from '@/elements/dialog';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faServer, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faServer, faExclamationTriangle, faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
 
 const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';
 
@@ -61,7 +61,7 @@ const FileList = styled.div`
 
 const FileItem = styled.div<{ $selected?: boolean }>`
     ${tw`bg-neutral-700 rounded p-3 cursor-pointer border-2 transition-all`}
-    ${props => props.$selected ? tw`border-primary-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
+    ${props => props.$selected ? tw`border-neutral-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
 `;
 
 const FileInfo = styled.div`
@@ -78,7 +78,7 @@ const FileDetails = styled.p`
 
 const ServerItem = styled.div<{ $selected?: boolean }>`
     ${tw`bg-neutral-700 rounded p-3 cursor-pointer border-2 transition-all flex items-center gap-3`}
-    ${props => props.$selected ? tw`border-primary-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
+    ${props => props.$selected ? tw`border-neutral-500 bg-neutral-600` : tw`border-transparent hover:border-neutral-600`}
 `;
 
 const ServerList = styled.div`
@@ -192,7 +192,19 @@ export default ({ modpack, onClose }: Props) => {
                             }}
                         />
                         <div css={tw`flex-1`}>
-                            <ModpackTitle>{modpack.name}</ModpackTitle>
+                            <div css={tw`flex items-center gap-2`}>
+                                <ModpackTitle css={tw`mb-2`}>{modpack.name}</ModpackTitle>
+                                <a
+                                    href={modpack.links.websiteUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    css={tw`text-neutral-400 hover:text-neutral-200 transition-colors mb-2`}
+                                    title="View on CurseForge"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} css={tw`text-base`} />
+                                </a>
+                            </div>
                             <ModpackAuthors>
                                 By {modpack.authors.map(a => a.name).join(', ') || 'Unknown'}
                             </ModpackAuthors>
