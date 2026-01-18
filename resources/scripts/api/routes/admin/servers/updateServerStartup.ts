@@ -7,6 +7,7 @@ export interface Values {
     eggId: number;
     image: string;
     skipScripts: boolean;
+    eggStartup?: string; // Added to pass the egg's default startup
 }
 
 export default (id: number, values: Partial<Values>, include: string[] = []): Promise<Server> => {
@@ -14,7 +15,7 @@ export default (id: number, values: Partial<Values>, include: string[] = []): Pr
         http.patch(
             `/api/application/servers/${id}/startup`,
             {
-                startup: values.startup !== '' ? values.startup : null,
+                startup: values.startup !== '' ? values.startup : (values.eggStartup || null),
                 environment: values.environment,
                 egg_id: values.eggId,
                 image: values.image,
