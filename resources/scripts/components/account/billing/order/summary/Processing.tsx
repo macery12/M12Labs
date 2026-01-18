@@ -61,6 +61,15 @@ export default () => {
                                 }
                             } else if (status.failed) {
                                 navigate('/account/billing/cancel');
+                            } else if (status.payment_status === 'paid') {
+                                // For renewals, payment is paid but order won't be marked as "processed"
+                                // The renewal is already complete, redirect to server billing page
+                                if (renewal && serverUuid) {
+                                    window.location.href = `/server/${serverUuid}/billing`;
+                                } else {
+                                    // For new orders, keep checking - webhook will process it
+                                    setTimeout(checkStatus, 2000);
+                                }
                             } else {
                                 // Still processing, check again after a delay
                                 setTimeout(checkStatus, 2000);
