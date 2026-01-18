@@ -79,10 +79,10 @@ class StartupModificationService
             ]);
         }
 
-        // Convert empty startup string to null so it falls back to egg default
+        // If startup is empty or null, use the egg's default startup
         $startup = $data['startup'] ?? $server->startup;
-        if ($startup === '') {
-            $startup = null;
+        if ($startup === '' || is_null($startup)) {
+            $startup = $server->egg->startup;
         }
 
         $server->fill([
