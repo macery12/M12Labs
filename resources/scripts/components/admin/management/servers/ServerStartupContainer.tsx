@@ -216,7 +216,7 @@ function ServerStartupForm({
 }
 
 export default () => {
-    const { data: server } = useServerFromRoute();
+    const { data: server, mutate } = useServerFromRoute();
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
@@ -238,9 +238,10 @@ export default () => {
         clearFlashes('server');
 
         updateServerStartup(server.id, values)
-            // .then(s => {
-            //     mutate(data => { ...data, ...s });
-            // })
+            .then(updatedServer => {
+                // Update the SWR cache with the new server data
+                mutate(data => ({ ...data, ...updatedServer } as LoadedServer), false);
+            })
             .catch(error => {
                 console.error(error);
                 clearAndAddHttpError({ key: 'server', error });
