@@ -96,10 +96,10 @@ class MollieCheckoutController extends ClientApiController
      * Update a payment with order details.
      *
      * @param Request $request
-     * @param int|null $id Product ID
+     * @param int $id Product ID
      * @return Response
      */
-    public function updatePayment(Request $request, ?int $id = null): Response
+    public function updatePayment(Request $request, int $id): Response
     {
         $product = Product::findOrFail($id);
         $paymentId = $request->input('payment_id');
