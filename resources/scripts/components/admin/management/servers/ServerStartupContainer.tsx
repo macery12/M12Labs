@@ -236,7 +236,7 @@ export default () => {
     const submit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes('server');
 
-        updateServerStartup(server.id, { ...values, eggStartup: egg?.startup })
+        updateServerStartup(server.id, values)
             // .then(s => {
             //     mutate(data => { ...data, ...s });
             // })
