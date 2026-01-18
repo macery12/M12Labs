@@ -35,7 +35,6 @@ function ServerStartupLineContainer({ egg, server }: { egg?: Egg; server: Server
 
         if (server.eggId === egg.id) {
             setFieldValue('image', server.container.image);
-            // Use empty string for display when startup is null
             setFieldValue('startup', server.container.startup || '');
             return;
         }
@@ -43,7 +42,7 @@ function ServerStartupLineContainer({ egg, server }: { egg?: Egg; server: Server
         // Whenever the egg is changed, set the server's startup command to the egg's default.
         setFieldValue('image', Object.values(egg.dockerImages)[0] ?? '');
         setFieldValue('startup', '');
-    }, [egg, server.container.startup]);
+    }, [egg]);
 
     return (
         <AdminBox title={'Startup Command'} className="relative w-full">
@@ -216,7 +215,7 @@ function ServerStartupForm({
 }
 
 export default () => {
-    const { data: server, mutate } = useServerFromRoute();
+    const { data: server } = useServerFromRoute();
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
@@ -238,10 +237,9 @@ export default () => {
         clearFlashes('server');
 
         updateServerStartup(server.id, values)
-            .then(updatedServer => {
-                // Update the SWR cache with the new server data
-                mutate(data => ({ ...data, ...updatedServer } as LoadedServer), false);
-            })
+            // .then(s => {
+            //     mutate(data => { ...data, ...s });
+            // })
             .catch(error => {
                 console.error(error);
                 clearAndAddHttpError({ key: 'server', error });
