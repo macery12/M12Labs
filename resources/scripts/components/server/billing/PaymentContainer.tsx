@@ -3,9 +3,11 @@ import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
 import PaymentForm from './PaymentForm';
+import MolliePaymentForm from './MolliePaymentForm';
 import { ServerContext } from '@/state/server';
 import { StripeIntent } from '@definitions/account/billing';
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
+import { useStoreState } from '@/state/hooks';
 
 export default ({ id, couponId }: { id?: number; couponId?: number }) => {
     const [stripe, setStripe] = useState<Stripe | null>(null);
@@ -13,10 +15,11 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
 
     const serverId = ServerContext.useStoreState(state => state.server.data!.internalId);
     const serverUuid = ServerContext.useStoreState(state => state.server.data!.uuid);
+    const billing = useStoreState(state => state.everest.data!.billing);
 
     useEffect(() => {
         const fetchData = async () => {
-            if (id) {
+            if (id && billing.processor === 'stripe') {
                 try {
                     const intentData = await getStripeIntent(id, couponId);
                     setIntent({ id: intentData.id, secret: intentData.secret });
@@ -31,9 +34,17 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
         };
 
         fetchData();
-    }, [id, couponId]);
+    }, [id, couponId, billing.processor]);
 
-    if (!id || !intent || !stripe) return <Spinner size={'large'} centered />;
+    if (!id) return <Spinner size={'large'} centered />;
+
+    // For Mollie, we don't need to wait for intent or stripe
+    if (billing.processor === 'mollie') {
+        return <MolliePaymentForm id={id} serverId={Number(serverId)} serverUuid={serverUuid} couponId={couponId} />;
+    }
+
+    // For Stripe, we need both intent and stripe instance
+    if (!intent || !stripe) return <Spinner size={'large'} centered />;
 
     const options = {
         clientSecret: intent.secret,

@@ -18,6 +18,11 @@ use Everest\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 |
 */
 
+// Mollie webhook - must be outside authentication middleware
+Route::post('/billing/mollie/webhook', [Client\Billing\MollieCheckoutController::class, 'processPayment'])
+    ->withoutMiddleware('auth:sanctum')
+    ->name('api:client:billing:mollie:webhook');
+
 Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
@@ -84,6 +89,12 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::post('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'createIntent']);
         Route::put('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'updateIntent']);
+
+        // Mollie payment routes (webhook route is defined outside this group)
+        Route::post('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'createPayment']);
+        Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
+        Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
+        Route::get('/mollie/token/{token}', [Client\Billing\MollieCheckoutController::class, 'getPaymentFromToken']);
 
         Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
 

@@ -46,11 +46,15 @@ class EverestComposer
             ],
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
+                'processor' => config('modules.billing.processor', 'stripe'),
                 'paypal' => config('modules.billing.paypal'),
                 'link' => config('modules.billing.link'),
                 'keys' => [
                     'publishable' => boolval(config('modules.billing.keys.publishable')),
                     'secret' => boolval(config('modules.billing.keys.secret')),
+                ],
+                'mollie' => [
+                    'api_key' => !empty(config('modules.billing.mollie.api_key')) ? config('modules.billing.mollie.api_key') : null,
                 ],
                 'currency' => [
                     'symbol' => config('modules.billing.currency.symbol'),

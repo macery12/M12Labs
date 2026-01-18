@@ -11,7 +11,7 @@ class CreateOrderService
     /**
      * Process the creation of an order.
      */
-    public function create(?string $intent, User $user, Product $product, ?string $status, ?string $type, ?int $couponId = null, ?int $eggId = null): Order
+    public function create(?string $intent, User $user, Product $product, ?string $status, ?string $type, ?int $couponId = null, ?int $eggId = null, array $additionalData = []): Order
     {
         $order = new Order();
         $uuid = uuid_create();
@@ -29,7 +29,7 @@ class CreateOrderService
             }
         }
 
-        $order->name = $uuid;
+        $order->name = $additionalData['name'] ?? $uuid;
         $order->payment_intent_id = $intent ?? 'free-' . substr(uuid_create(), 0, 16);
         $order->user_id = $user->id;
         $order->description = substr($uuid, 0, 8) . ' - Order for ' . $product->name . ' by ' . $user->email;
@@ -40,7 +40,13 @@ class CreateOrderService
         $order->product_id = $product->id;
         $order->coupon_id = $couponId;
         $order->egg_id = $eggId;
+        $order->node_id = $additionalData['node_id'] ?? null;
+        $order->server_id = $additionalData['server_id'] ?? null;
+        $order->variables = $additionalData['variables'] ?? null;
         $order->type = $type;
+        $order->payment_processor = $additionalData['payment_processor'] ?? 'stripe';
+        $order->mollie_payment_id = $additionalData['mollie_payment_id'] ?? null;
+        $order->payment_token = $additionalData['payment_token'] ?? null;
 
         $order->saveOrFail();
 
