@@ -17,11 +17,19 @@ export interface MolliePaymentFromToken {
     user_id: number;
 }
 
-export const createMolliePayment = (id: number, couponId?: number, returnUrl?: string): Promise<MolliePayment> => {
+export const createMolliePayment = (
+    id: number, 
+    couponId?: number, 
+    returnUrl?: string, 
+    serverId?: number,
+    renewal?: boolean
+): Promise<MolliePayment> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/products/${id}/mollie/payment`, {
             coupon_id: couponId,
             return_url: returnUrl,
+            server_id: serverId,
+            renewal,
         })
             .then(({ data }) => resolve(data))
             .catch(reject);

@@ -29,18 +29,8 @@ export default ({
             window.location.origin + `/account/billing/processing?renewal=true&server_uuid=${serverUuid}`;
 
         try {
-            // Create Mollie payment for renewal with return URL
-            const payment = await createMolliePayment(id, couponId, returnUrl);
-
-            // Update payment with renewal details
-            await updateMolliePayment({
-                id,
-                paymentId: payment.id,
-                serverId,
-                renewal: true,
-                couponId,
-                name: 'Server Renewal',
-            });
+            // Create Mollie payment for renewal with all details in one request
+            const payment = await createMolliePayment(id, couponId, returnUrl, serverId, true);
 
             // Redirect to Mollie checkout
             // After payment, Mollie will redirect back to return_url with token parameter

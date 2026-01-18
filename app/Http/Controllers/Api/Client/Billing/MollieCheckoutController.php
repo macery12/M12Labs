@@ -40,9 +40,18 @@ class MollieCheckoutController extends ClientApiController
     {
         $product = Product::findOrFail($id);
 
-        // Calculate price with coupon using validation service for new purchase
+        // Check if this is a renewal payment
+        $isRenewal = $request->boolean('renewal', false);
+        $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
+
+        // Determine order type and calculate price
+        $orderType = $isRenewal ? Order::TYPE_RENEWAL : Order::TYPE_NEW;
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
+        $priceInfo = $this->validationService->calculatePriceWithCoupon(
+            $product,
+            $couponId,
+            $isRenewal ? 'renewal' : 'new'
+        );
 
         // Validate this is not a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
@@ -63,25 +72,29 @@ class MollieCheckoutController extends ClientApiController
             $returnUrl
         );
 
-        // Store the token mapping in an order record (pending state, will be updated later)
+        // For renewals, we have all the information upfront
+        // For new orders, some fields will be set later via updatePayment
+        $orderData = [
+            'payment_processor' => 'mollie',
+            'mollie_payment_id' => $payment->id,
+            'payment_token' => $token,
+            'name' => $isRenewal ? 'Server Renewal' : 'Pending',
+            'node_id' => null,
+            'server_id' => $isRenewal ? $serverId : null,
+            'variables' => [],
+        ];
+
+        // Store the token mapping in an order record (pending state)
         // Use null for intent since Mollie doesn't use payment intents
         $this->orderService->create(
             null, // Mollie doesn't use payment_intent_id
             $request->user(),
             $product,
             Order::STATUS_PENDING,
-            Order::TYPE_NEW,
+            $orderType,
             $couponId,
-            null, // egg_id will be set in updatePayment
-            [
-                'payment_processor' => 'mollie',
-                'mollie_payment_id' => $payment->id,
-                'payment_token' => $token,
-                'name' => 'Pending',
-                'node_id' => null,
-                'server_id' => null,
-                'variables' => [],
-            ]
+            null, // egg_id will be set in updatePayment for new orders
+            $orderData
         );
 
         // Return payment info
