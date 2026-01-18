@@ -45,7 +45,7 @@ class MollieCheckoutController extends ClientApiController
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
 
         // Determine order type and calculate price
-        $orderType = $isRenewal ? Order::TYPE_RENEWAL : Order::TYPE_NEW;
+        $orderType = $isRenewal ? Order::TYPE_REN : Order::TYPE_NEW;
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $priceInfo = $this->validationService->calculatePriceWithCoupon(
             $product,
