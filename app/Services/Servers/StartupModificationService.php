@@ -79,8 +79,14 @@ class StartupModificationService
             ]);
         }
 
+        // Convert empty startup string to null so it falls back to egg default
+        $startup = $data['startup'] ?? $server->startup;
+        if ($startup === '') {
+            $startup = null;
+        }
+
         $server->fill([
-            'startup' => $data['startup'] ?? $server->startup,
+            'startup' => $startup,
             'skip_scripts' => $data['skip_scripts'] ?? isset($data['skip_scripts']),
             'image' => $data['docker_image'] ?? $server->image,
         ])->save();

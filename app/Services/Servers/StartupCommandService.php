@@ -19,7 +19,7 @@ class StartupCommandService
             $replace[] = ($variable->user_viewable && !$hideAllValues) ? ($variable->server_value ?? $variable->default_value) : '[hidden]';
         }
 
-        $startup = !is_null($server->startup) ? $server->startup : $server->egg->startup;
+        $startup = (!is_null($server->startup) && $server->startup !== '') ? $server->startup : $server->egg->startup;
 
         return str_replace($find, $replace, $startup);
     }
