@@ -57,10 +57,16 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
 
     // Sync selected eggs when selectedEggIds prop changes (e.g., after form reinitialization)
     useEffect(() => {
-        if (selectedEggIds.length > 0 && JSON.stringify(selected) !== JSON.stringify(selectedEggIds)) {
+        // Simple array comparison: check length and all elements
+        const arraysEqual = selected.length === selectedEggIds.length && 
+            selected.every((id, index) => id === selectedEggIds[index]);
+        
+        if (!arraysEqual) {
             setSelected(selectedEggIds);
-            setEggIdValue(selectedEggIds[0]);
-            setEggIdTouched(true);
+            if (selectedEggIds.length > 0) {
+                setEggIdValue(selectedEggIds[0]);
+                setEggIdTouched(true);
+            }
             setAllowedEggsValue(selectedEggIds);
             setAllowedEggsTouched(true);
         }
