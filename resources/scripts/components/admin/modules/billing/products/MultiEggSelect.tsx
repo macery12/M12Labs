@@ -55,6 +55,17 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
             .catch(error => console.error(error));
     }, [nestId]);
 
+    // Sync selected eggs when selectedEggIds prop changes (e.g., after form reinitialization)
+    useEffect(() => {
+        if (selectedEggIds.length > 0 && JSON.stringify(selected) !== JSON.stringify(selectedEggIds)) {
+            setSelected(selectedEggIds);
+            setEggIdValue(selectedEggIds[0]);
+            setEggIdTouched(true);
+            setAllowedEggsValue(selectedEggIds);
+            setAllowedEggsTouched(true);
+        }
+    }, [selectedEggIds]);
+
     const handleEggToggle = (eggId: number, checked: boolean) => {
         let newSelected: number[];
 
