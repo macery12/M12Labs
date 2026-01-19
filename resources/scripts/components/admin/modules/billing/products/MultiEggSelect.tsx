@@ -56,8 +56,11 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
     }, [nestId]);
 
     // Sync selected eggs when selectedEggIds prop changes (e.g., after form reinitialization)
+    // Note: We intentionally don't include 'selected' in dependencies to avoid infinite loops.
+    // We only update when selectedEggIds changes externally, using selected for comparison only.
+    // Array order matters: the first egg is the primary egg for the category.
     useEffect(() => {
-        // Simple array comparison: check length and all elements
+        // Compare arrays: check length and all elements in order
         const arraysEqual = selected.length === selectedEggIds.length && 
             selected.every((id, index) => id === selectedEggIds[index]);
         
@@ -70,6 +73,7 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
             setAllowedEggsValue(selectedEggIds);
             setAllowedEggsTouched(true);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedEggIds]);
 
     const handleEggToggle = (eggId: number, checked: boolean) => {
