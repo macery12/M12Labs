@@ -32,6 +32,7 @@ import RenewalDatesContainer from '@admin/modules/billing/RenewalDatesContainer'
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.billing.enabled);
+    const donationsEnabled = useStoreState(state => state.everest.data!.billing.donations_enabled);
 
     if (!enabled) return <EnableBilling />;
 
@@ -60,9 +61,11 @@ export default () => {
                 <SubNavigationLink to={'/admin/billing/orders'} name={'Orders'}>
                     <ShoppingCartIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/billing/donations'} name={'Donations'}>
-                    <HeartIcon />
-                </SubNavigationLink>
+                {donationsEnabled && (
+                    <SubNavigationLink to={'/admin/billing/donations'} name={'Donations'}>
+                        <HeartIcon />
+                    </SubNavigationLink>
+                )}
                 <SubNavigationLink to={'/admin/billing/coupons'} name={'Coupons'}>
                     <TicketIcon />
                 </SubNavigationLink>

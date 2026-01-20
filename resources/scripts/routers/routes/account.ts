@@ -61,9 +61,11 @@ const account: RouteDefinition[] = [
     route('donations', DonationContainer, {
         name: 'Donate',
         icon: Icon.HeartIcon,
-        condition: flags => flags.billing.enabled,
+        condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
     }),
-    route('donations/history', DonationHistoryContainer),
+    route('donations/history', DonationHistoryContainer, {
+        condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
+    }),
 ];
 
 export default account;

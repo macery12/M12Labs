@@ -46,6 +46,7 @@ class EverestComposer
             ],
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
+                'donations_enabled' => boolval(config('modules.billing.donations_enabled', true)),
                 'paypal' => config('modules.billing.paypal'),
                 'link' => config('modules.billing.link'),
                 'keys' => [
