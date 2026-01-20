@@ -39,7 +39,7 @@ const inputStyle = () => {
         ${tw`py-2.5 px-3 border-2 rounded text-sm transition-all duration-150`};
         ${tw`border-zinc-700 hover:border-neutral-400 text-neutral-200 shadow-none`};
 
-        background-color: ${theme.colors.secondary};
+        background-color: ${theme.colors.background};
 
         & + .input-help {
             ${tw`mt-1 text-xs`};
