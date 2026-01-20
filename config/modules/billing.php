@@ -7,6 +7,11 @@ return [
     'enabled' => env('BILLING_ENABLED', false),
 
     /*
+     * Enable or disable donations feature.
+     */
+    'donations_enabled' => env('BILLING_DONATIONS_ENABLED', true),
+
+    /*
      * Configure the publishable & secret API key for Stripe.
      */
     'keys' => [
