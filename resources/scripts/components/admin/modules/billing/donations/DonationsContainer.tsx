@@ -12,7 +12,8 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
 
 export default () => {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const donationsEnabled = useStoreState(state => state.everest.data!.billing.donations_enabled);
+    const billing = useStoreState(state => state.everest.data!.billing);
+    const donationsEnabled = billing.donations_enabled;
     const updateEverest = useStoreActions(actions => actions.everest.updateEverest);
     const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,7 @@ export default () => {
             await updateSettings('donations_enabled', newValue);
             updateEverest({
                 billing: {
-                    ...useStoreState.getState().everest.data!.billing,
+                    ...billing,
                     donations_enabled: newValue,
                 },
             });
