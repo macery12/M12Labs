@@ -39,6 +39,7 @@ export interface EverestSettings {
     };
     billing: {
         enabled: boolean;
+        donations_enabled: boolean;
         paypal: boolean;
         link: boolean;
         processor?: string;
