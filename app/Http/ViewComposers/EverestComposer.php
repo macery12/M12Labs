@@ -2,6 +2,7 @@
 
 namespace Everest\Http\ViewComposers;
 
+use Everest\Models\Setting;
 use Illuminate\View\View;
 
 class EverestComposer
@@ -46,7 +47,7 @@ class EverestComposer
             ],
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
-                'donations_enabled' => boolval(config('modules.billing.donations_enabled', true)),
+                'donations_enabled' => boolval(Setting::get('settings::modules:billing:donations_enabled', config('modules.billing.donations_enabled', true))),
                 'paypal' => config('modules.billing.paypal'),
                 'link' => config('modules.billing.link'),
                 'keys' => [
