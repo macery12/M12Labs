@@ -6,6 +6,7 @@ import AdminTable from '@/elements/AdminTable';
 import Spinner from '@/elements/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faClock, faTimesCircle, faHeart, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 const maskPaymentIntent = (intentId: string): string => {
     if (intentId.length <= 8) return intentId;
@@ -59,6 +60,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 export default () => {
+    const { colors } = useStoreState(state => state.theme.data!);
     const [loading, setLoading] = useState(true);
     const [donations, setDonations] = useState<PaginatedDonations | null>(null);
     const [page, setPage] = useState(1);
@@ -82,7 +84,7 @@ export default () => {
         <>
             <AdminTable>
                 <table className={'min-w-full divide-y divide-gray-700'}>
-                    <thead className={'bg-neutral-900'}>
+                    <thead style={{ backgroundColor: colors.background }}>
                         <tr>
                             <th className={'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider'}>
                                 <FontAwesomeIcon icon={faHeart} className={'mr-2'} />

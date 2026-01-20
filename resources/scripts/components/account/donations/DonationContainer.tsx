@@ -193,9 +193,10 @@ export default () => {
                                                 as={'textarea'}
                                                 name={'message'}
                                                 placeholder={'Leave a message with your donation (optional)'}
-                                                css={tw`shadow-md bg-neutral-800 border border-neutral-700 rounded p-3 w-full text-sm text-neutral-200`}
+                                                css={tw`shadow-md border border-neutral-700 rounded p-3 w-full text-sm text-neutral-200`}
                                                 style={{
                                                     '--tw-ring-color': colors.primary,
+                                                    backgroundColor: colors.background,
                                                 } as React.CSSProperties}
                                                 className={'focus:border-[var(--tw-ring-color)] focus:ring-1 focus:ring-[var(--tw-ring-color)]'}
                                                 rows={4}
