@@ -118,9 +118,15 @@ export default () => {
                             </div>
                         </TitledGreyBox>
 
-                        <div css={tw`mt-6 p-4 rounded-lg bg-blue-900/20 border border-blue-700/50`}>
+                        <div
+                            css={tw`mt-6 p-4 rounded-lg border`}
+                            style={{
+                                backgroundColor: colors.secondary,
+                                borderColor: colors.primary,
+                            }}
+                        >
                             <div css={tw`flex items-center mb-2`}>
-                                <FontAwesomeIcon icon={faHeart} css={tw`mr-2 text-red-400`} />
+                                <FontAwesomeIcon icon={faHeart} css={tw`mr-2`} style={{ color: colors.primary }} />
                                 <p css={tw`text-sm font-semibold text-gray-200`}>Thank You!</p>
                             </div>
                             <p css={tw`text-xs text-gray-400`}>
@@ -187,7 +193,11 @@ export default () => {
                                                 as={'textarea'}
                                                 name={'message'}
                                                 placeholder={'Leave a message with your donation (optional)'}
-                                                css={tw`shadow-md bg-neutral-800 border border-neutral-700 rounded p-3 w-full text-sm text-neutral-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
+                                                css={tw`shadow-md bg-neutral-800 border border-neutral-700 rounded p-3 w-full text-sm text-neutral-200`}
+                                                style={{
+                                                    '--tw-ring-color': colors.primary,
+                                                } as React.CSSProperties}
+                                                className={'focus:border-[var(--tw-ring-color)] focus:ring-1 focus:ring-[var(--tw-ring-color)]'}
                                                 rows={4}
                                             />
                                             {errors.message && touched.message ? (
