@@ -66,12 +66,12 @@ export default () => {
             </div>
             <TitledGreyBox icon={faInfoCircle} title={'About Donations'} className={'mb-8'}>
                 <p className={'mb-2'}>
-                    Donations are voluntary contributions from users that do not grant any server resources or
-                    benefits. All donations are processed through Stripe and recorded here for tracking purposes.
+                    Donations are voluntary contributions from users that do not grant any server resources or benefits.
+                    All donations are processed through Stripe and recorded here for tracking purposes.
                 </p>
                 <p className={'text-sm text-yellow-400'}>
-                    <strong>Note:</strong> When donations are hidden, the &quot;Donate&quot; tab will not appear in
-                    user navigation. The donations functionality remains intact and can be re-enabled at any time.
+                    <strong>Note:</strong> When donations are hidden, the &quot;Donate&quot; tab will not appear in user
+                    navigation. The donations functionality remains intact and can be re-enabled at any time.
                 </p>
             </TitledGreyBox>
             <DonationsTable />
