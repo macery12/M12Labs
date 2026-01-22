@@ -35,6 +35,7 @@ export default ({ product }: { product?: Product }) => {
     const submit = (values: ProductFormValues, { setSubmitting }: FormikHelpers<ProductFormValues>) => {
         clearFlashes('admin:billing:product:create');
 
+        // categoryUuid is not needed in the request body - it's determined by the URL route parameter
         if (!product) {
             createProduct(Number(params.id), values as ProductValues)
                 .then(data => {
@@ -90,6 +91,7 @@ export default ({ product }: { product?: Product }) => {
                 enableReinitialize={true}
                 initialValues={{
                     name: product?.name ?? 'Plan Name',
+                    // Use || instead of ?? to convert empty strings to undefined (required by min(3) validation)
                     icon: product?.icon || undefined,
                     price: product?.price ?? 9.99,
                     description: product?.description || undefined,
