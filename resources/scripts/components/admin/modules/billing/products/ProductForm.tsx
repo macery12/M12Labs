@@ -91,6 +91,7 @@ export default ({ product }: { product?: Product }) => {
             </div>
             <Formik
                 onSubmit={submit}
+                enableReinitialize={true}
                 initialValues={{
                     categoryUuid: uuid!,
                     name: product?.name ?? 'Plan Name',
