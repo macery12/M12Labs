@@ -20,9 +20,6 @@ import { Product } from '@definitions/admin';
 import { ProductValues } from '@/api/routes/admin/billing/types';
 import { Alert } from '@/elements/alert';
 
-// Form values without categoryUuid since it's determined by the URL route
-type ProductFormValues = Omit<ProductValues, 'categoryUuid'>;
-
 export default ({ product }: { product?: Product }) => {
     const navigate = useNavigate();
     const params = useParams<'id'>();
@@ -32,12 +29,11 @@ export default ({ product }: { product?: Product }) => {
     );
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
-    const submit = (values: ProductFormValues, { setSubmitting }: FormikHelpers<ProductFormValues>) => {
+    const submit = (values: ProductValues, { setSubmitting }: FormikHelpers<ProductValues>) => {
         clearFlashes('admin:billing:product:create');
 
-        // categoryUuid is not needed in the request body - it's determined by the URL route parameter
         if (!product) {
-            createProduct(Number(params.id), values as ProductValues)
+            createProduct(Number(params.id), values)
                 .then(data => {
                     setSubmitting(false);
                     navigate(`/admin/billing/categories/${params.id}/products/${data.id}`);
@@ -47,7 +43,7 @@ export default ({ product }: { product?: Product }) => {
                     clearAndAddHttpError({ key: 'admin:billing:product:create', error });
                 });
         } else {
-            updateProduct(Number(params.id), product!.id, values as ProductValues)
+            updateProduct(Number(params.id), product!.id, values)
                 .then(() => {
                     setSubmitting(false);
                     navigate(`/admin/billing/categories/${params.id}`);
@@ -90,11 +86,11 @@ export default ({ product }: { product?: Product }) => {
                 onSubmit={submit}
                 enableReinitialize={true}
                 initialValues={{
+                    categoryUuid: params.id || '',
                     name: product?.name ?? 'Plan Name',
-                    // Use || instead of ?? to convert empty strings to undefined (required by min(3) validation)
-                    icon: product?.icon || undefined,
+                    icon: product?.icon ?? undefined,
                     price: product?.price ?? 9.99,
-                    description: product?.description || undefined,
+                    description: product?.description ?? 'This is a server plan.',
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
                         memory: product?.limits.memory ?? 1024,
