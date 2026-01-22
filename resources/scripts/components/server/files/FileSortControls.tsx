@@ -70,10 +70,10 @@ const FileSortControls = () => {
                 </div>
             </div>
             <div css={tw`flex items-center gap-2 flex-1 sm:max-w-xs`}>
-                <div css={tw`relative flex-1`}>
+                <div css={tw`relative flex-1 flex items-center h-10`}>
                     <FontAwesomeIcon
                         icon={faSearch}
-                        css={tw`absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 pointer-events-none`}
+                        css={tw`absolute left-4 text-neutral-400 pointer-events-none`}
                         size="sm"
                     />
                     <Input
