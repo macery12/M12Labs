@@ -96,8 +96,7 @@ export default ({ product }: { product?: Product }) => {
                     categoryUuid: uuid!,
                     name: product?.name ?? 'Plan Name',
                     icon: product?.icon ?? undefined,
-                    // @ts-expect-error this is fine
-                    price: product?.price?.toString() ?? '9.99',
+                    price: product?.price ?? 9.99,
                     description: product?.description ?? 'This is a server plan.',
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
@@ -123,7 +122,7 @@ export default ({ product }: { product?: Product }) => {
                     }),
                 })}
             >
-                {({ values, isSubmitting, isValid, handleChange }) => (
+                {({ values, isSubmitting, isValid }) => (
                     <Form>
                         <div css={tw`grid grid-cols-1 lg:grid-cols-2 gap-4`}>
                             <div css={tw`w-full flex flex-col mr-0 lg:mr-2`}>
@@ -153,8 +152,7 @@ export default ({ product }: { product?: Product }) => {
                                         <Field
                                             id={'price'}
                                             name={'price'}
-                                            type={'text'} // changed from number to text
-                                            onChange={handleChange}
+                                            type={'number'}
                                             label={'Monthly Cost'}
                                             description={
                                                 'The cost of this product monthly in the selected billing currency.'
