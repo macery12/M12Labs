@@ -196,7 +196,7 @@ export default () => {
                                                 css={tw`shadow-md border border-neutral-700 rounded p-3 w-full text-sm text-neutral-200`}
                                                 style={{
                                                     '--tw-ring-color': colors.primary,
-                                                    backgroundColor: colors.background,
+                                                    backgroundColor: colors.secondary,
                                                 } as React.CSSProperties}
                                                 className={'focus:border-[var(--tw-ring-color)] focus:ring-1 focus:ring-[var(--tw-ring-color)]'}
                                                 rows={4}
