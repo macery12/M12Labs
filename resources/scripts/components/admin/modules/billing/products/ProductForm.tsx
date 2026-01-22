@@ -16,27 +16,27 @@ import { createProduct, updateProduct } from '@/api/routes/admin/billing/product
 import ProductDeleteButton from './ProductDeleteButton';
 import { CubeIcon } from '@heroicons/react/outline';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useState } from 'react';
-import { getCategory } from '@/api/routes/admin/billing/categories';
 import { Product } from '@definitions/admin';
 import { ProductValues } from '@/api/routes/admin/billing/types';
 import { Alert } from '@/elements/alert';
 
+// Form values without categoryUuid since it's determined by the URL route
+type ProductFormValues = Omit<ProductValues, 'categoryUuid'>;
+
 export default ({ product }: { product?: Product }) => {
     const navigate = useNavigate();
     const params = useParams<'id'>();
-    const [uuid, setUuid] = useState<string>();
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
-    const submit = (values: ProductValues, { setSubmitting }: FormikHelpers<ProductValues>) => {
+    const submit = (values: ProductFormValues, { setSubmitting }: FormikHelpers<ProductFormValues>) => {
         clearFlashes('admin:billing:product:create');
 
         if (!product) {
-            createProduct(Number(params.id), values)
+            createProduct(Number(params.id), values as ProductValues)
                 .then(data => {
                     setSubmitting(false);
                     navigate(`/admin/billing/categories/${params.id}/products/${data.id}`);
@@ -46,7 +46,7 @@ export default ({ product }: { product?: Product }) => {
                     clearAndAddHttpError({ key: 'admin:billing:product:create', error });
                 });
         } else {
-            updateProduct(Number(params.id), product!.id, values)
+            updateProduct(Number(params.id), product!.id, values as ProductValues)
                 .then(() => {
                     setSubmitting(false);
                     navigate(`/admin/billing/categories/${params.id}`);
@@ -57,10 +57,6 @@ export default ({ product }: { product?: Product }) => {
                 });
         }
     };
-
-    useEffect(() => {
-        getCategory(Number(params.id)).then(category => setUuid(category.uuid));
-    }, [params.id]);
 
     return (
         <>
@@ -93,11 +89,10 @@ export default ({ product }: { product?: Product }) => {
                 onSubmit={submit}
                 enableReinitialize={true}
                 initialValues={{
-                    categoryUuid: uuid!,
                     name: product?.name ?? 'Plan Name',
-                    icon: product?.icon ?? undefined,
+                    icon: product?.icon || undefined,
                     price: product?.price ?? 9.99,
-                    description: product?.description ?? 'This is a server plan.',
+                    description: product?.description || undefined,
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
                         memory: product?.limits.memory ?? 1024,
