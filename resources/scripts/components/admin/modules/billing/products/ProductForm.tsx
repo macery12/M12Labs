@@ -86,11 +86,11 @@ export default ({ product }: { product?: Product }) => {
                 onSubmit={submit}
                 enableReinitialize={true}
                 initialValues={{
-                    categoryUuid: params.id || '',
+                    categoryUuid: params.id ?? '',
                     name: product?.name ?? 'Plan Name',
                     icon: product?.icon ?? undefined,
                     price: product?.price ?? 9.99,
-                    description: product?.description ?? 'This is a server plan.',
+                    description: product?.description ?? undefined,
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
                         memory: product?.limits.memory ?? 1024,
