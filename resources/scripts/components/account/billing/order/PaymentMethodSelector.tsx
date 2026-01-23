@@ -7,7 +7,8 @@ import { Elements } from '@stripe/react-stripe-js';
 import { Stripe } from '@stripe/stripe-js';
 import classNames from 'classnames';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCreditCard, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faCreditCard, faCheck, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { Alert } from '@/elements/alert';
 
 interface Props {
     selectedNode?: number;
@@ -44,6 +45,24 @@ export default (props: Props) => {
 
     // If only one processor is available, don't show selection UI
     const showSelection = availableProcessors.length > 1;
+
+    // If no processors are available, show error message
+    if (availableProcessors.length === 0) {
+        return (
+            <Alert type={'danger'}>
+                <div className={'flex items-start gap-3'}>
+                    <FontAwesomeIcon icon={faExclamationTriangle} className={'mt-0.5 h-5 w-5'} />
+                    <div>
+                        <p className={'font-semibold'}>No Payment Methods Available</p>
+                        <p className={'mt-1 text-sm'}>
+                            No payment integrations are currently enabled. Please contact an administrator or create
+                            a support ticket to enable payment processing for this product.
+                        </p>
+                    </div>
+                </div>
+            </Alert>
+        );
+    }
 
     const stripeOptions = {
         clientSecret: props.intent?.secret,
