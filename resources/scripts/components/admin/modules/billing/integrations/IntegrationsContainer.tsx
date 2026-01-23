@@ -79,13 +79,21 @@ export default () => {
                         </div>
 
                         <div className={'flex gap-2'}>
-                            <Button
-                                onClick={() => toggleIntegration(integration.id, integration.enabled)}
-                                disabled={loading === integration.id}
-                                variant={integration.enabled ? Button.Variants.Danger : Button.Variants.Primary}
-                            >
-                                {loading === integration.id ? 'Loading...' : integration.enabled ? 'Disable' : 'Enable'}
-                            </Button>
+                            {integration.enabled ? (
+                                <Button.Danger
+                                    onClick={() => toggleIntegration(integration.id, integration.enabled)}
+                                    disabled={loading === integration.id}
+                                >
+                                    {loading === integration.id ? 'Loading...' : 'Disable'}
+                                </Button.Danger>
+                            ) : (
+                                <Button
+                                    onClick={() => toggleIntegration(integration.id, integration.enabled)}
+                                    disabled={loading === integration.id}
+                                >
+                                    {loading === integration.id ? 'Loading...' : 'Enable'}
+                                </Button>
+                            )}
 
                             {integration.enabled && !integration.configured && (
                                 <p className={'flex items-center text-xs text-yellow-500'}>

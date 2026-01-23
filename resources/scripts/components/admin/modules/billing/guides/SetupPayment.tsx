@@ -42,21 +42,24 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
     };
 
     useEffect(() => {
-        // Auto-open if the currently selected payment processor is not configured
-        const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
-        const isMollieSelected = currentProcessor === 'mollie';
-        
-        const stripeNotConfigured = isStripeSelected && !existingKeys?.publishable;
-        const mollieNotConfigured = isMollieSelected && !existingMollie?.api_key;
-        
-        if (stripeNotConfigured || mollieNotConfigured) {
-            setOpen(true);
+        // Only auto-open if extOpen is explicitly false (meaning we're on the old Settings page)
+        // Don't auto-open when extOpen is undefined or true (used in integration tabs)
+        if (extOpen === false) {
+            const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
+            const isMollieSelected = currentProcessor === 'mollie';
+            
+            const stripeNotConfigured = isStripeSelected && !existingKeys?.publishable;
+            const mollieNotConfigured = isMollieSelected && !existingMollie?.api_key;
+            
+            if (stripeNotConfigured || mollieNotConfigured) {
+                setOpen(true);
+            }
         }
         // Set current processor
         if (currentProcessor) {
             setData(prev => ({ ...prev, processor: currentProcessor as 'stripe' | 'mollie' }));
         }
-    }, [existingKeys, existingMollie, currentProcessor]);
+    }, [existingKeys, existingMollie, currentProcessor, extOpen]);
 
     const isValid = () => {
         if (data.processor === 'stripe') {
