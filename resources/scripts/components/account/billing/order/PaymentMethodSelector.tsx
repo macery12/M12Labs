@@ -164,7 +164,7 @@ export default (props: Props) => {
             {selectedMethod === 'stripe' && props.intent && props.stripe ? (
                 <div>
                     {/* @ts-expect-error this is fine, stripe library is just weird */}
-                    <Elements stripe={props.stripe} options={stripeOptions} key={props.intent?.id}>
+                    <Elements stripe={props.stripe} options={stripeOptions} key={props.intent.id}>
                         <PaymentButton
                             selectedNode={props.selectedNode}
                             product={props.product}

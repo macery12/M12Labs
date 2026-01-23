@@ -51,7 +51,6 @@ export default () => {
 
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
-    const [mollieAvailable, setMollieAvailable] = useState<boolean>(false);
     const [nodes, setNodes] = useState<Node[] | undefined>();
     const [selectedNode, setSelectedNode] = useState<number>(0);
     const [product, setProduct] = useState<Product | undefined>();
@@ -153,9 +152,6 @@ export default () => {
                 if (productData.price !== 0) {
                     // Check which processors are available and fetch resources accordingly
                     const stripeAvailable = billing.processors?.stripe?.available ?? false;
-                    const mollieAvailableCheck = billing.processors?.mollie?.available ?? false;
-                    
-                    setMollieAvailable(mollieAvailableCheck);
 
                     // Fetch Stripe resources if Stripe is available
                     if (stripeAvailable) {
