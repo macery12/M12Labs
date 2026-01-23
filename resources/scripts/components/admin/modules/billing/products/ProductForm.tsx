@@ -113,12 +113,12 @@ export default ({ product }: { product?: Product }) => {
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
                     description: string().nullable().max(191),
                     limits: object().shape({
-                        cpu: number().required().min(10),
-                        memory: number().required().min(128),
-                        disk: number().required().min(128),
+                        cpu: number().required().min(0),
+                        memory: number().required().min(0),
+                        disk: number().required().min(0),
                         backup: number().required().min(0),
                         database: number().required().min(0),
-                        allocation: number().required().min(1),
+                        allocation: number().required().min(0),
                     }),
                 })}
             >
