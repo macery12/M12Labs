@@ -12,15 +12,20 @@ interface DropdownItemProps {
     children?: ReactNode;
 }
 
-const BillingDropdownItem = ({ to, name, icon: IconComponent, children }: DropdownItemProps) => (
+const BillingDropdownItem = ({ to, name, icon: IconComponent, children, theme }: DropdownItemProps & { theme: any }) => (
     <Menu.Item>
         {({ active }) => (
             <NavLink
                 to={to}
-                className={classNames(
-                    'flex items-center px-4 py-2 text-sm transition-colors',
-                    active ? 'bg-neutral-700 text-white' : 'text-neutral-300',
-                )}
+                className="flex items-center px-4 py-2 text-sm transition-colors text-neutral-300"
+                style={
+                    active
+                        ? {
+                              backgroundColor: theme.colors.headers,
+                              color: '#fff',
+                          }
+                        : undefined
+                }
             >
                 {IconComponent ? (
                     <IconComponent className="w-5 h-5 mr-2" />
@@ -41,7 +46,7 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
     const theme = useStoreState(state => state.theme.data!);
 
     return (
-        <Menu as="div" className="relative inline-block h-full">
+        <Menu as="div" className="relative inline-block h-full overflow-visible">
             {({ open }) => (
                 <>
                     <Menu.Button
@@ -71,8 +76,16 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
                         leaveFrom="transform scale-100 opacity-100"
                         leaveTo="transform scale-95 opacity-0"
                     >
-                        <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left bg-neutral-800 border border-neutral-700 rounded shadow-lg z-10 focus:outline-none">
-                            <div className="py-1">{items.map(item => <BillingDropdownItem key={item.to} {...item} />)}</div>
+                        <Menu.Items
+                            className="absolute left-0 mt-2 w-56 origin-top-left rounded shadow-lg focus:outline-none"
+                            style={{
+                                backgroundColor: theme.colors.sidebar,
+                                borderColor: theme.colors.headers,
+                                borderWidth: '1px',
+                                zIndex: 9999,
+                            }}
+                        >
+                            <div className="py-1">{items.map(item => <BillingDropdownItem key={item.to} {...item} theme={theme} />)}</div>
                         </Menu.Items>
                     </Transition>
                 </>
