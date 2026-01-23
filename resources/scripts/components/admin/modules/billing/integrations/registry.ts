@@ -1,0 +1,50 @@
+import { faStripe } from '@fortawesome/free-brands-svg-icons';
+import { faCreditCard } from '@fortawesome/free-solid-svg-icons';
+import { BillingIntegration } from './types';
+import StripeSettings from './StripeSettings';
+import MollieSettings from './MollieSettings';
+
+/**
+ * Creates the integration registry based on current billing settings
+ */
+export const createIntegrationRegistry = (billingSettings: any): BillingIntegration[] => {
+    const stripeConfigured = !!(billingSettings.keys?.publishable && billingSettings.keys?.secret);
+    const mollieConfigured = !!billingSettings.mollie?.api_key;
+
+    return [
+        {
+            id: 'stripe',
+            name: 'Stripe',
+            description:
+                'Accept credit cards, digital wallets, and bank transfers with Stripe. Industry-leading payment infrastructure.',
+            icon: faStripe,
+            enabled: billingSettings.integrations?.stripe?.enabled ?? (billingSettings.processor === 'stripe'),
+            configured: stripeConfigured,
+            settingsComponent: StripeSettings,
+        },
+        {
+            id: 'mollie',
+            name: 'Mollie',
+            description:
+                'European payment provider supporting iDEAL, credit cards, bank transfers, and more. Popular in Europe.',
+            icon: faCreditCard,
+            enabled: billingSettings.integrations?.mollie?.enabled ?? (billingSettings.processor === 'mollie'),
+            configured: mollieConfigured,
+            settingsComponent: MollieSettings,
+        },
+    ];
+};
+
+/**
+ * Get the list of enabled integrations
+ */
+export const getEnabledIntegrations = (integrations: BillingIntegration[]): BillingIntegration[] => {
+    return integrations.filter(integration => integration.enabled);
+};
+
+/**
+ * Check if at least one payment integration is configured and enabled
+ */
+export const hasActivePaymentIntegration = (integrations: BillingIntegration[]): boolean => {
+    return integrations.some(integration => integration.enabled && integration.configured);
+};

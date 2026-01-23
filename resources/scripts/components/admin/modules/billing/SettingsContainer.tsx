@@ -2,21 +2,15 @@ import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import ToggleFeatureButton from './ToggleFeatureButton';
-import { faDollar, faExchange, faGavel, faKey, faPowerOff } from '@fortawesome/free-solid-svg-icons';
+import { faDollar, faExchange, faGavel, faPowerOff } from '@fortawesome/free-solid-svg-icons';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import { faPaypal, faStripe } from '@fortawesome/free-brands-svg-icons';
-import SetupPayPal from './guides/SetupPayPal';
-import SetupLink from './guides/SetupLink';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import currencyDictionary from '@/assets/currency';
-import SetupStripe from './guides/SetupStripe';
-import SetupMollie from './guides/SetupMollie';
-import SetupPayment from './guides/SetupPayment';
 import ExportConfigButton from './config/ExportConfigButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import ImportConfigButton from './config/ImportConfigButton';
-import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
+import { updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
 export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'payment' | 'none';
@@ -24,7 +18,6 @@ export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'payme
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const updateEverest = useStoreActions(s => s.everest.updateEverest);
-    const [open, setOpen] = useState<BillingSetupDialog>('none');
 
     const submit = async (key: string, value: boolean | string) => {
         await updateSettings(key, value).then(() => {
@@ -41,89 +34,8 @@ export default () => {
         });
     };
 
-    const onDeleteKeys = () => {
-        deleteStripeKeys()
-            .then(() => window.location.reload())
-            .catch(error => console.log(error));
-    };
-
     return (
         <div className={'grid gap-4 lg:grid-cols-3'}>
-            {open === 'paypal' && <SetupPayPal setOpen={setOpen} />}
-            {open === 'link' && <SetupLink setOpen={setOpen} />}
-            {open === 'setup' && <SetupStripe extOpen />}
-            {open === 'mollie' && <SetupMollie extOpen />}
-            {open === 'payment' && <SetupPayment extOpen />}
-            <SetupPayment extOpen={false} />
-            <AdminBox title={'Select Payment Processor'} icon={faExchange}>
-                Choose which payment processor to use for handling payments. You can switch between Stripe and Mollie.
-                <p className={'mt-2 text-gray-400'}>
-                    Current processor:{' '}
-                    <span className={'font-bold text-blue-500'}>
-                        {settings.processor === 'mollie' ? 'Mollie' : 'Stripe'}
-                    </span>
-                </p>
-                <div className={'mt-4'}>
-                    <Label>Payment Processor</Label>
-                    <Select
-                        value={settings.processor || 'stripe'}
-                        onChange={e => submit('processor', e.target.value)}
-                    >
-                        <option value="stripe">Stripe</option>
-                        <option value="mollie">Mollie</option>
-                    </Select>
-                </div>
-            </AdminBox>
-            <AdminBox title={'Add PayPal integration'} icon={faPaypal}>
-                Adding PayPal to Jexactyl allows users to purchase products via another channel, improving order success
-                rate and global payment availability.
-                <p className={'mt-2 text-gray-400'}>
-                    PayPal module is currently{' '}
-                    <span className={settings.paypal ? 'text-green-500' : 'text-red-500'}>
-                        {settings.paypal ? 'enabled' : 'disabled'}
-                    </span>
-                    .
-                </p>
-                <div className={'mt-2 text-right'}>
-                    {settings.paypal && (
-                        <Button.Text
-                            className={'mr-2'}
-                            onClick={() => setOpen('paypal')}
-                            variant={Button.Variants.Secondary}
-                        >
-                            Setup Instructions
-                        </Button.Text>
-                    )}
-                    <Button.Text onClick={() => submit('paypal', !settings.paypal)}>
-                        {settings.paypal ? 'Disable' : 'Enable'}
-                    </Button.Text>
-                </div>
-            </AdminBox>
-            <AdminBox title={'Add Link integration'} icon={faStripe}>
-                Adding Link to Jexactyl allows users to purchase products via another channel, improving order success
-                rate and global payment availability.
-                <p className={'mt-2 text-gray-400'}>
-                    Link module is currently{' '}
-                    <span className={settings.link ? 'text-green-500' : 'text-red-500'}>
-                        {settings.link ? 'enabled' : 'disabled'}
-                    </span>
-                    .
-                </p>
-                <div className={'mt-2 text-right'}>
-                    {settings.link && (
-                        <Button.Text
-                            className={'mr-2'}
-                            onClick={() => setOpen('link')}
-                            variant={Button.Variants.Secondary}
-                        >
-                            Setup Instructions
-                        </Button.Text>
-                    )}
-                    <Button.Text onClick={() => submit('link', !settings.link)}>
-                        {settings.link ? 'Disable' : 'Enable'}
-                    </Button.Text>
-                </div>
-            </AdminBox>
             <AdminBox title={'Primary Currency'} icon={faDollar}>
                 Choose a primary currency to charge users.
                 <div className={'mt-4'}>
@@ -151,67 +63,6 @@ export default () => {
                     <ImportConfigButton />
                 </div>
             </AdminBox>
-            {settings.processor === 'stripe' && (!settings.keys.publishable || !settings.keys.secret) ? (
-                <AdminBox title={'Input Stripe API Keys'} icon={faKey}>
-                    Stripe is selected as your payment processor, but API keys are not configured. Without Stripe API
-                    authentication, your billing system will not work. Customers may proceed to the checkout area but
-                    will be met with errors unless you add valid API keys which can be obtained through the Stripe
-                    dashboard.
-                    <div className={'mt-3 text-right'}>
-                        <Button onClick={() => setOpen('payment')}>Add API keys</Button>
-                    </div>
-                </AdminBox>
-            ) : settings.processor === 'stripe' ? (
-                <AdminBox title={'Reset Stripe API keys'} icon={faKey}>
-                    By resetting the Stripe API keys saved to the panel, all billing services (such as purchasing or
-                    renewing a product) will stop working until new API keys are entered. Are you sure you wish to
-                    continue?
-                    <div className={'mt-3 text-right'}>
-                        <Button.Danger onClick={onDeleteKeys}>Yes, delete API keys</Button.Danger>
-                    </div>
-                </AdminBox>
-            ) : null}
-            {settings.processor === 'mollie' ? (
-                <AdminBox title={'Configure Mollie API Key'} icon={faKey}>
-                    {!settings.mollie?.api_key ? (
-                        <>
-                            Mollie is selected as your payment processor, but the API key is not configured. To use
-                            Mollie, you need to configure your Mollie API key. Click below to add your API key from the
-                            Mollie dashboard.
-                            <div className={'mt-3 text-right'}>
-                                <Button onClick={() => setOpen('payment')}>Add Mollie API Key</Button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            Mollie API key is configured. You can update it by clicking the button below.
-                            <div className={'mt-3 text-right'}>
-                                <Button.Text onClick={() => setOpen('payment')}>Update API Key</Button.Text>
-                            </div>
-                        </>
-                    )}
-                </AdminBox>
-            ) : (
-                <AdminBox title={'Configure Mollie API Key (Optional)'} icon={faKey}>
-                    {!settings.mollie?.api_key ? (
-                        <>
-                            To use Mollie as your payment processor, you need to configure your Mollie API key. First,
-                            select Mollie as the payment processor above, then add your API key from the Mollie
-                            dashboard.
-                            <div className={'mt-3 text-right'}>
-                                <Button onClick={() => setOpen('payment')}>Add Mollie API Key</Button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            Mollie API key is configured. You can update it by clicking the button below.
-                            <div className={'mt-3 text-right'}>
-                                <Button.Text onClick={() => setOpen('payment')}>Update API Key</Button.Text>
-                            </div>
-                        </>
-                    )}
-                </AdminBox>
-            )}
             <AdminBox title={'Legal Document Links'} icon={faGavel}>
                 Provide a link to your business&apos; ToS or privacy policy that users must accept before purchase.
                 <BillingLinksForm />
