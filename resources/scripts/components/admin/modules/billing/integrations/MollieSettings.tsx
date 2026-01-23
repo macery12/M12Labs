@@ -3,16 +3,15 @@ import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { faKey } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
-import SetupPayment from '../guides/SetupPayment';
-import { BillingSetupDialog } from '../SettingsContainer';
+import SetupMollieKeys from '../guides/SetupMollieKeys';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
-    const [open, setOpen] = useState<BillingSetupDialog>('none');
+    const [mollieKeysOpen, setMollieKeysOpen] = useState(false);
 
     return (
         <div className={'grid gap-4 lg:grid-cols-3'}>
-            {open === 'payment' && <SetupPayment extOpen />}
+            <SetupMollieKeys open={mollieKeysOpen} onClose={() => setMollieKeysOpen(false)} />
 
             <AdminBox title={'Configure Mollie API Key'} icon={faKey}>
                 {!settings.mollie?.api_key ? (
@@ -21,14 +20,15 @@ export default () => {
                         you need to configure your Mollie API key. Click below to add your API key from the Mollie
                         dashboard.
                         <div className={'mt-3 text-right'}>
-                            <Button onClick={() => setOpen('payment')}>Add Mollie API Key</Button>
+                            <Button onClick={() => setMollieKeysOpen(true)}>Add Mollie API Key</Button>
                         </div>
                     </>
                 ) : (
                     <>
-                        Mollie API key is configured. You can update it by clicking the button below.
+                        Mollie API key is configured and ready to process payments. You can update it by clicking the
+                        button below.
                         <div className={'mt-3 text-right'}>
-                            <Button.Text onClick={() => setOpen('payment')}>Update API Key</Button.Text>
+                            <Button onClick={() => setMollieKeysOpen(true)}>Update API Key</Button>
                         </div>
                     </>
                 )}

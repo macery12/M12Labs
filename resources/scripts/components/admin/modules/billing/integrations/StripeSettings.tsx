@@ -5,15 +5,16 @@ import { faKey } from '@fortawesome/free-solid-svg-icons';
 import { faPaypal, faStripe } from '@fortawesome/free-brands-svg-icons';
 import { useStoreState, useStoreActions } from '@/state/hooks';
 import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
-import SetupPayment from '../guides/SetupPayment';
+import SetupStripeKeys from '../guides/SetupStripeKeys';
 import SetupPayPal from '../guides/SetupPayPal';
 import SetupLink from '../guides/SetupLink';
-import { BillingSetupDialog } from '../SettingsContainer';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const updateEverest = useStoreActions(s => s.everest.updateEverest);
-    const [open, setOpen] = useState<BillingSetupDialog>('none');
+    const [stripeKeysOpen, setStripeKeysOpen] = useState(false);
+    const [paypalOpen, setPaypalOpen] = useState(false);
+    const [linkOpen, setLinkOpen] = useState(false);
 
     const submit = async (key: string, value: boolean | string) => {
         await updateSettings(key, value).then(() => {
@@ -29,9 +30,9 @@ export default () => {
 
     return (
         <div className={'grid gap-4 lg:grid-cols-3'}>
-            {open === 'paypal' && <SetupPayPal setOpen={setOpen} />}
-            {open === 'link' && <SetupLink setOpen={setOpen} />}
-            {open === 'payment' && <SetupPayment extOpen />}
+            <SetupStripeKeys open={stripeKeysOpen} onClose={() => setStripeKeysOpen(false)} />
+            {paypalOpen && <SetupPayPal setOpen={(val) => setPaypalOpen(val !== 'none')} />}
+            {linkOpen && <SetupLink setOpen={(val) => setLinkOpen(val !== 'none')} />}
 
             {!settings.keys.publishable || !settings.keys.secret ? (
                 <AdminBox title={'Input Stripe API Keys'} icon={faKey}>
@@ -39,16 +40,16 @@ export default () => {
                     system will not work. Customers may proceed to the checkout area but will be met with errors unless
                     you add valid API keys which can be obtained through the Stripe dashboard.
                     <div className={'mt-3 text-right'}>
-                        <Button onClick={() => setOpen('payment')}>Add API keys</Button>
+                        <Button onClick={() => setStripeKeysOpen(true)}>Add API keys</Button>
                     </div>
                 </AdminBox>
             ) : (
-                <AdminBox title={'Reset Stripe API keys'} icon={faKey}>
-                    By resetting the Stripe API keys saved to the panel, all billing services (such as purchasing or
-                    renewing a product) will stop working until new API keys are entered. Are you sure you wish to
-                    continue?
-                    <div className={'mt-3 text-right'}>
-                        <Button.Danger onClick={onDeleteKeys}>Yes, delete API keys</Button.Danger>
+                <AdminBox title={'Manage Stripe API keys'} icon={faKey}>
+                    Your Stripe API keys are configured and ready to process payments. You can update your keys or
+                    delete them if needed.
+                    <div className={'mt-3 flex justify-end gap-2'}>
+                        <Button onClick={() => setStripeKeysOpen(true)}>Update API keys</Button>
+                        <Button.Danger onClick={onDeleteKeys}>Delete API keys</Button.Danger>
                     </div>
                 </AdminBox>
             )}
@@ -67,7 +68,7 @@ export default () => {
                     {settings.paypal && (
                         <Button.Text
                             className={'mr-2'}
-                            onClick={() => setOpen('paypal')}
+                            onClick={() => setPaypalOpen(true)}
                             variant={Button.Variants.Secondary}
                         >
                             Setup Instructions
@@ -93,7 +94,7 @@ export default () => {
                     {settings.link && (
                         <Button.Text
                             className={'mr-2'}
-                            onClick={() => setOpen('link')}
+                            onClick={() => setLinkOpen(true)}
                             variant={Button.Variants.Secondary}
                         >
                             Setup Instructions
