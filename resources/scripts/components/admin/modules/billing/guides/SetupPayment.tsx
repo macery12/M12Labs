@@ -42,9 +42,12 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
     };
 
     useEffect(() => {
-        // Never auto-open when extOpen prop is provided (integration tabs use this)
-        // Only auto-open when extOpen is undefined (legacy behavior for main billing page)
-        if (extOpen === undefined) {
+        // When extOpen is true (controlled by parent), open the dialog
+        if (extOpen === true) {
+            setOpen(true);
+        }
+        // When extOpen is undefined, check if we should auto-open (legacy behavior)
+        else if (extOpen === undefined) {
             const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
             const isMollieSelected = currentProcessor === 'mollie';
             
@@ -55,6 +58,8 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                 setOpen(true);
             }
         }
+        // When extOpen is false, do nothing (don't auto-open)
+        
         // Set current processor
         if (currentProcessor) {
             setData(prev => ({ ...prev, processor: currentProcessor as 'stripe' | 'mollie' }));
