@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import type { ComponentType, ReactNode } from 'react';
 import { useStoreState } from '@/state/hooks';
 import type { SiteTheme } from '@/state/theme';
+import { useRef, useEffect, useState } from 'react';
 
 interface DropdownItemProps {
     to: string;
@@ -47,12 +48,36 @@ interface BillingDropdownProps {
 
 export const BillingDropdown = ({ items }: BillingDropdownProps) => {
     const theme = useStoreState(state => state.theme.data!);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+
+    useEffect(() => {
+        const updatePosition = () => {
+            if (buttonRef.current) {
+                const rect = buttonRef.current.getBoundingClientRect();
+                setDropdownPosition({
+                    top: rect.bottom + window.scrollY,
+                    left: rect.left + window.scrollX,
+                });
+            }
+        };
+
+        updatePosition();
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
+
+        return () => {
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, []);
 
     return (
-        <Menu as="div" className="relative inline-block h-full overflow-visible">
+        <Menu as="div" className="relative inline-block h-full">
             {({ open }) => (
                 <>
                     <Menu.Button
+                        ref={buttonRef}
                         className={classNames(
                             'flex flex-row items-center h-full px-4 border-b text-base whitespace-nowrap transition-colors',
                             open ? 'border-primary text-primary' : 'border-transparent text-neutral-300',
@@ -65,6 +90,15 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
                                   }
                                 : undefined
                         }
+                        onClick={() => {
+                            if (buttonRef.current) {
+                                const rect = buttonRef.current.getBoundingClientRect();
+                                setDropdownPosition({
+                                    top: rect.bottom + window.scrollY,
+                                    left: rect.left + window.scrollX,
+                                });
+                            }
+                        }}
                     >
                         <span>Billing</span>
                         <ChevronDownIcon
@@ -80,12 +114,14 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
                         leaveTo="transform scale-95 opacity-0"
                     >
                         <Menu.Items
-                            className="absolute left-0 mt-2 w-56 origin-top-left rounded shadow-lg focus:outline-none"
+                            className="fixed w-56 origin-top-left rounded shadow-lg focus:outline-none"
                             style={{
                                 backgroundColor: theme.colors.sidebar,
                                 borderColor: theme.colors.headers,
                                 borderWidth: '1px',
                                 zIndex: 9999,
+                                top: `${dropdownPosition.top}px`,
+                                left: `${dropdownPosition.left}px`,
                             }}
                         >
                             <div className="py-1">{items.map(item => <BillingDropdownItem key={item.to} {...item} theme={theme} />)}</div>
