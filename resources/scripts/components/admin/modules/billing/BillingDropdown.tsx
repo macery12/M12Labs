@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import type { ComponentType, ReactNode } from 'react';
 import { useStoreState } from '@/state/hooks';
 import type { SiteTheme } from '@/state/theme';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 
 interface DropdownItemProps {
     to: string;
@@ -51,17 +51,17 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
-    useEffect(() => {
-        const updatePosition = () => {
-            if (buttonRef.current) {
-                const rect = buttonRef.current.getBoundingClientRect();
-                setDropdownPosition({
-                    top: rect.bottom + window.scrollY,
-                    left: rect.left + window.scrollX,
-                });
-            }
-        };
+    const updatePosition = useCallback(() => {
+        if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+            });
+        }
+    }, []);
 
+    useEffect(() => {
         updatePosition();
         window.addEventListener('resize', updatePosition);
         window.addEventListener('scroll', updatePosition, true);
@@ -70,7 +70,7 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
             window.removeEventListener('resize', updatePosition);
             window.removeEventListener('scroll', updatePosition, true);
         };
-    }, []);
+    }, [updatePosition]);
 
     return (
         <Menu as="div" className="relative inline-block h-full">
@@ -90,15 +90,7 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
                                   }
                                 : undefined
                         }
-                        onClick={() => {
-                            if (buttonRef.current) {
-                                const rect = buttonRef.current.getBoundingClientRect();
-                                setDropdownPosition({
-                                    top: rect.bottom + window.scrollY,
-                                    left: rect.left + window.scrollX,
-                                });
-                            }
-                        }}
+                        onClick={updatePosition}
                     >
                         <span>Billing</span>
                         <ChevronDownIcon
