@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 import classNames from 'classnames';
 import type { ComponentType, ReactNode } from 'react';
 import { useStoreState } from '@/state/hooks';
+import type { SiteTheme } from '@/state/theme';
 
 interface DropdownItemProps {
     to: string;
@@ -12,19 +13,21 @@ interface DropdownItemProps {
     children?: ReactNode;
 }
 
-const BillingDropdownItem = ({ to, name, icon: IconComponent, children, theme }: DropdownItemProps & { theme: any }) => (
+const BillingDropdownItem = ({ to, name, icon: IconComponent, children, theme }: DropdownItemProps & { theme: SiteTheme }) => (
     <Menu.Item>
         {({ active }) => (
             <NavLink
                 to={to}
-                className="flex items-center px-4 py-2 text-sm transition-colors text-neutral-300"
+                className="flex items-center px-4 py-2 text-sm transition-colors"
                 style={
                     active
                         ? {
                               backgroundColor: theme.colors.headers,
-                              color: '#fff',
+                              color: theme.colors.primary,
                           }
-                        : undefined
+                        : {
+                              color: '#d1d5db', // neutral-300
+                          }
                 }
             >
                 {IconComponent ? (
