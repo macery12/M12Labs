@@ -147,6 +147,7 @@ export default ({ product }: { product?: Product }) => {
                                             id={'price'}
                                             name={'price'}
                                             type={'number'}
+                                            step={'0.01'}
                                             label={'Monthly Cost'}
                                             description={
                                                 'The cost of this product monthly in the selected billing currency.'
