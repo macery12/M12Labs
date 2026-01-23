@@ -105,14 +105,14 @@ export default ({ product }: { product?: Product }) => {
                     icon: string().nullable().max(191),
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
                     description: string().nullable().max(191),
-                    // Allow zero values for resource limits to support free/unlimited tier products
+                    // Allow appropriate minimums for resource limits to support free/unlimited tier products
                     limits: object().shape({
                         cpu: number().required().min(0),
-                        memory: number().required().min(0),
-                        disk: number().required().min(0),
+                        memory: number().required().min(128),
+                        disk: number().required().min(128),
                         backup: number().required().min(0),
                         database: number().required().min(0),
-                        allocation: number().required().min(0),
+                        allocation: number().required().min(1),
                     }),
                 })}
             >
