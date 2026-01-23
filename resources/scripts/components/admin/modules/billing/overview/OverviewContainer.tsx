@@ -8,7 +8,6 @@ import { differenceInDays, parseISO } from 'date-fns';
 import SuccessChart from './SuccessChart';
 import RevenueChart from './RevenueChart';
 import Select from '@/elements/Select';
-import SetupStripe from '@admin/modules/billing/guides/SetupStripe';
 import { getBillingAnalytics } from '@/api/routes/admin/billing';
 import { BillingAnalytics, Order } from '@definitions/admin';
 
@@ -48,7 +47,6 @@ export default () => {
 
     return (
         <div className={'grid gap-4 lg:grid-cols-5'}>
-            <SetupStripe />
             <ol className="w-full space-y-4">
                 <Select onChange={e => setHistory(Number(e.currentTarget.value))}>
                     <option value={7}>Last 7 days</option>
