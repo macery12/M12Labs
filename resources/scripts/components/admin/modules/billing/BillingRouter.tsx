@@ -33,6 +33,7 @@ import IntegrationsContainer from './integrations/IntegrationsContainer';
 import { createIntegrationRegistry, getEnabledIntegrations } from './integrations/registry';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
+import { BillingDropdown } from './BillingDropdown';
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.billing.enabled);
@@ -43,6 +44,35 @@ export default () => {
     // Get enabled integrations to dynamically render tabs
     const integrations = createIntegrationRegistry(billingSettings);
     const enabledIntegrations = getEnabledIntegrations(integrations);
+
+    // Define billing dropdown items
+    const billingDropdownItems = [
+        {
+            to: '/admin/billing/categories',
+            name: 'Products',
+            icon: ViewGridIcon,
+        },
+        {
+            to: '/admin/billing/orders',
+            name: 'Orders',
+            icon: ShoppingCartIcon,
+        },
+        {
+            to: '/admin/billing/donations',
+            name: 'Donations',
+            icon: HeartIcon,
+        },
+        {
+            to: '/admin/billing/coupons',
+            name: 'Coupons',
+            icon: TicketIcon,
+        },
+        {
+            to: '/admin/billing/renewal-dates',
+            name: 'Renewal Dates',
+            icon: CalendarIcon,
+        },
+    ];
 
     return (
         <AdminContentBlock title={'Billing'}>
@@ -63,23 +93,9 @@ export default () => {
                 <SubNavigationLink to={'/admin/billing'} name={'Overview'} base>
                     <DesktopComputerIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/billing/categories'} name={'Products'}>
-                    <ViewGridIcon />
-                </SubNavigationLink>
-                <SubNavigationLink to={'/admin/billing/orders'} name={'Orders'}>
-                    <ShoppingCartIcon />
-                </SubNavigationLink>
-                <SubNavigationLink to={'/admin/billing/donations'} name={'Donations'}>
-                    <HeartIcon />
-                </SubNavigationLink>
-                <SubNavigationLink to={'/admin/billing/coupons'} name={'Coupons'}>
-                    <TicketIcon />
-                </SubNavigationLink>
+                <BillingDropdown items={billingDropdownItems} />
                 <SubNavigationLink to={'/admin/billing/exceptions'} name={'Exceptions'}>
                     <XCircleIcon />
-                </SubNavigationLink>
-                <SubNavigationLink to={'/admin/billing/renewal-dates'} name={'Renewal Dates'}>
-                    <CalendarIcon />
                 </SubNavigationLink>
 
                 {/* Dynamically render tabs for enabled integrations */}
