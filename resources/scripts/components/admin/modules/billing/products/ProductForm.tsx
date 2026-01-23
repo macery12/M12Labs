@@ -16,8 +16,6 @@ import { createProduct, updateProduct } from '@/api/routes/admin/billing/product
 import ProductDeleteButton from './ProductDeleteButton';
 import { CubeIcon } from '@heroicons/react/outline';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useState } from 'react';
-import { getCategory } from '@/api/routes/admin/billing/categories';
 import { Product } from '@definitions/admin';
 import { ProductValues } from '@/api/routes/admin/billing/types';
 import { Alert } from '@/elements/alert';
@@ -25,7 +23,6 @@ import { Alert } from '@/elements/alert';
 export default ({ product }: { product?: Product }) => {
     const navigate = useNavigate();
     const params = useParams<'id'>();
-    const [uuid, setUuid] = useState<string>();
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
@@ -58,10 +55,6 @@ export default ({ product }: { product?: Product }) => {
         }
     };
 
-    useEffect(() => {
-        getCategory(Number(params.id)).then(category => setUuid(category.uuid));
-    }, [params.id]);
-
     return (
         <>
             <div css={tw`w-full flex flex-row items-center m-8`}>
@@ -91,13 +84,13 @@ export default ({ product }: { product?: Product }) => {
             </div>
             <Formik
                 onSubmit={submit}
+                enableReinitialize={true}
                 initialValues={{
-                    categoryUuid: uuid!,
+                    categoryUuid: params.id ?? '',
                     name: product?.name ?? 'Plan Name',
-                    icon: product?.icon ?? undefined,
-                    // @ts-expect-error this is fine
-                    price: product?.price?.toString() ?? '9.99',
-                    description: product?.description ?? 'This is a server plan.',
+                    icon: product?.icon ?? '',
+                    price: product?.price ?? 9.99,
+                    description: product?.description ?? '',
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
                         memory: product?.limits.memory ?? 1024,
@@ -109,11 +102,12 @@ export default ({ product }: { product?: Product }) => {
                 }}
                 validationSchema={object().shape({
                     name: string().required().max(191).min(3),
-                    icon: string().nullable().max(191).min(3),
+                    icon: string().nullable().max(191),
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
-                    description: string().nullable().max(191).min(3),
+                    description: string().nullable().max(191),
+                    // Allow appropriate minimums for resource limits to support free/unlimited tier products
                     limits: object().shape({
-                        cpu: number().required().min(10),
+                        cpu: number().required().min(0),
                         memory: number().required().min(128),
                         disk: number().required().min(128),
                         backup: number().required().min(0),
@@ -122,7 +116,7 @@ export default ({ product }: { product?: Product }) => {
                     }),
                 })}
             >
-                {({ values, isSubmitting, isValid, handleChange }) => (
+                {({ values, isSubmitting, isValid }) => (
                     <Form>
                         <div css={tw`grid grid-cols-1 lg:grid-cols-2 gap-4`}>
                             <div css={tw`w-full flex flex-col mr-0 lg:mr-2`}>
@@ -152,8 +146,7 @@ export default ({ product }: { product?: Product }) => {
                                         <Field
                                             id={'price'}
                                             name={'price'}
-                                            type={'text'} // changed from number to text
-                                            onChange={handleChange}
+                                            type={'number'}
                                             label={'Monthly Cost'}
                                             description={
                                                 'The cost of this product monthly in the selected billing currency.'
