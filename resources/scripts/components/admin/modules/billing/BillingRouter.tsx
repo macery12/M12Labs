@@ -94,7 +94,7 @@ export default () => {
                     </SubNavigationLink>
                 ))}
 
-                <SubNavigationLink to={'/admin/billing/integrations'} name={'Integrations'}>
+                <SubNavigationLink to={'/admin/billing/integrations'} name={'Integrations'} base>
                     <FontAwesomeIcon icon={faPuzzlePiece} />
                 </SubNavigationLink>
                 <SubNavigationLink to={'/admin/billing/settings'} name={'Settings'}>
