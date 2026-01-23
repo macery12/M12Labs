@@ -95,9 +95,9 @@ export default ({ product }: { product?: Product }) => {
                 initialValues={{
                     categoryUuid: params.id ?? '',
                     name: product?.name ?? 'Plan Name',
-                    icon: product?.icon ?? undefined,
+                    icon: product?.icon ?? '',
                     price: product?.price ?? 9.99,
-                    description: product?.description ?? undefined,
+                    description: product?.description ?? '',
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
                         memory: product?.limits.memory ?? 1024,
@@ -109,9 +109,9 @@ export default ({ product }: { product?: Product }) => {
                 }}
                 validationSchema={object().shape({
                     name: string().required().max(191).min(3),
-                    icon: string().nullable().max(191).min(3),
+                    icon: string().nullable().max(191),
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
-                    description: string().nullable().max(191).min(3),
+                    description: string().nullable().max(191),
                     limits: object().shape({
                         cpu: number().required().min(10),
                         memory: number().required().min(128),
