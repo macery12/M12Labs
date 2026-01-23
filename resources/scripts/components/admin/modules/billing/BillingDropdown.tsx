@@ -72,7 +72,7 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
                         leaveTo="transform scale-95 opacity-0"
                     >
                         <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left bg-neutral-800 border border-neutral-700 rounded shadow-lg z-10 focus:outline-none">
-                            <div className="py-1">{items.map((item, idx) => <BillingDropdownItem key={idx} {...item} />)}</div>
+                            <div className="py-1">{items.map(item => <BillingDropdownItem key={item.to} {...item} />)}</div>
                         </Menu.Items>
                     </Transition>
                 </>
