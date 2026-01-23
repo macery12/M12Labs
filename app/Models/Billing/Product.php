@@ -49,6 +49,7 @@ class Product extends Model
      * Cast values to correct type.
      */
     protected $casts = [
+        'price' => 'float',
         'cpu_limit' => 'integer',
         'memory_limit' => 'integer',
         'disk_limit' => 'integer',
@@ -63,7 +64,7 @@ class Product extends Model
 
         'name' => 'required|string|min:3|max:191',
         'icon' => 'nullable|string|min:3|max:300',
-        'price' => 'required',
+        'price' => 'required|numeric|min:0',
         'description' => 'nullable|string|max:300',
 
         'cpu_limit' => 'required|integer',
