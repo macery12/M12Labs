@@ -14,8 +14,11 @@ class PaymentProcessorConfigService
      */
     public function isStripeAvailable(): bool
     {
-        // Check if Stripe is enabled in config
-        $stripeEnabled = config('modules.billing.processors.stripe.enabled', false);
+        // Check if Stripe integration is enabled (this reads from database settings)
+        // Falls back to checking legacy processor config for backward compatibility
+        $stripeEnabled = config('modules.billing.integrations.stripe.enabled', 
+            config('modules.billing.processor') === 'stripe'
+        );
         
         // Check if required Stripe keys are configured
         $publishableKey = config('modules.billing.keys.publishable', '');
@@ -31,8 +34,11 @@ class PaymentProcessorConfigService
      */
     public function isMollieAvailable(): bool
     {
-        // Check if Mollie is enabled in config
-        $mollieEnabled = config('modules.billing.processors.mollie.enabled', false);
+        // Check if Mollie integration is enabled (this reads from database settings)
+        // Falls back to checking legacy processor config for backward compatibility
+        $mollieEnabled = config('modules.billing.integrations.mollie.enabled', 
+            config('modules.billing.processor') === 'mollie'
+        );
         
         // Check if Mollie API key is configured
         $apiKey = config('modules.billing.mollie.api_key', '');
@@ -80,11 +86,15 @@ class PaymentProcessorConfigService
         return [
             'stripe' => [
                 'available' => $this->isStripeAvailable(),
-                'enabled' => config('modules.billing.processors.stripe.enabled', false),
+                'enabled' => config('modules.billing.integrations.stripe.enabled', 
+                    config('modules.billing.processor') === 'stripe'
+                ),
             ],
             'mollie' => [
                 'available' => $this->isMollieAvailable(),
-                'enabled' => config('modules.billing.processors.mollie.enabled', false),
+                'enabled' => config('modules.billing.integrations.mollie.enabled', 
+                    config('modules.billing.processor') === 'mollie'
+                ),
             ],
         ];
     }
