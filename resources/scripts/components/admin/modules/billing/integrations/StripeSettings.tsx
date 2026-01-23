@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
-import { faKey, faStripe } from '@fortawesome/free-solid-svg-icons';
-import { faPaypal } from '@fortawesome/free-brands-svg-icons';
+import { faKey } from '@fortawesome/free-solid-svg-icons';
+import { faPaypal, faStripe } from '@fortawesome/free-brands-svg-icons';
 import { useStoreState, useStoreActions } from '@/state/hooks';
 import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
 import SetupPayment from '../guides/SetupPayment';

@@ -20,7 +20,7 @@ export default () => {
         try {
             const newState = !currentState;
             await updateSettings(`integrations:${integrationId}:enabled`, newState);
-            
+
             // Update local state
             const newIntegrations = {
                 ...settings.integrations,
@@ -29,7 +29,7 @@ export default () => {
                     enabled: newState,
                 },
             };
-            
+
             updateEverest({
                 billing: {
                     ...settings,
@@ -46,9 +46,9 @@ export default () => {
     return (
         <div>
             <FlashMessageRender byKey={'admin:billing:integrations'} className={'mb-4'} />
-            
+
             <div className={'mb-6'}>
-                <h3 className={'text-xl font-medium text-neutral-50 mb-2'}>Payment Integrations</h3>
+                <h3 className={'mb-2 text-xl font-medium text-neutral-50'}>Payment Integrations</h3>
                 <p className={'text-base text-neutral-400'}>
                     Enable and configure payment integrations for your billing system. Multiple integrations can be
                     enabled simultaneously to provide more payment options to your users.
@@ -65,22 +65,18 @@ export default () => {
                     >
                         <div className={'absolute top-4 right-4'}>
                             {integration.enabled ? (
-                                <FontAwesomeIcon icon={faCheckCircle} className={'text-green-500 text-xl'} />
+                                <FontAwesomeIcon icon={faCheckCircle} className={'text-xl text-green-500'} />
                             ) : (
-                                <FontAwesomeIcon icon={faTimesCircle} className={'text-gray-500 text-xl'} />
+                                <FontAwesomeIcon icon={faTimesCircle} className={'text-xl text-gray-500'} />
                             )}
                         </div>
 
-                        <p className={'text-sm text-neutral-400 mb-4'}>{integration.description}</p>
+                        <p className={'mb-4 text-sm text-neutral-400'}>{integration.description}</p>
 
                         <div className={'mb-4'}>
-                            <div className={'flex items-center gap-2 mb-2'}>
+                            <div className={'mb-2 flex items-center gap-2'}>
                                 <span className={'text-sm font-medium text-neutral-300'}>Status:</span>
-                                <span
-                                    className={`text-sm ${
-                                        integration.enabled ? 'text-green-500' : 'text-gray-500'
-                                    }`}
-                                >
+                                <span className={`text-sm ${integration.enabled ? 'text-green-500' : 'text-gray-500'}`}>
                                     {integration.enabled ? 'Enabled' : 'Disabled'}
                                 </span>
                             </div>
@@ -102,15 +98,11 @@ export default () => {
                                 disabled={loading === integration.id}
                                 variant={integration.enabled ? Button.Variants.Secondary : Button.Variants.Primary}
                             >
-                                {loading === integration.id
-                                    ? 'Loading...'
-                                    : integration.enabled
-                                    ? 'Disable'
-                                    : 'Enable'}
+                                {loading === integration.id ? 'Loading...' : integration.enabled ? 'Disable' : 'Enable'}
                             </Button>
-                            
+
                             {integration.enabled && !integration.configured && (
-                                <p className={'text-xs text-yellow-500 flex items-center'}>
+                                <p className={'flex items-center text-xs text-yellow-500'}>
                                     ⚠️ Configure in the {integration.name} tab to start accepting payments
                                 </p>
                             )}
@@ -119,11 +111,11 @@ export default () => {
                 ))}
             </div>
 
-            <div className={'mt-8 rounded-lg bg-blue-900/20 border border-blue-800/30 p-4'}>
+            <div className={'mt-8 rounded-lg border border-blue-800/30 bg-blue-900/20 p-4'}>
                 <div className={'flex items-start gap-3'}>
-                    <FontAwesomeIcon icon={faPuzzlePiece} className={'text-blue-400 text-xl mt-1'} />
+                    <FontAwesomeIcon icon={faPuzzlePiece} className={'mt-1 text-xl text-blue-400'} />
                     <div>
-                        <h4 className={'text-base font-medium text-blue-300 mb-1'}>Adding New Integrations</h4>
+                        <h4 className={'mb-1 text-base font-medium text-blue-300'}>Adding New Integrations</h4>
                         <p className={'text-sm text-blue-200/80'}>
                             This modular system makes it easy to add new payment integrations in the future. Each
                             integration can be enabled independently and has its own configuration tab when enabled.

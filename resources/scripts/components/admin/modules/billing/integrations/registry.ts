@@ -18,7 +18,7 @@ export const createIntegrationRegistry = (billingSettings: any): BillingIntegrat
             description:
                 'Accept credit cards, digital wallets, and bank transfers with Stripe. Industry-leading payment infrastructure.',
             icon: faStripe,
-            enabled: billingSettings.integrations?.stripe?.enabled ?? (billingSettings.processor === 'stripe'),
+            enabled: billingSettings.integrations?.stripe?.enabled ?? billingSettings.processor === 'stripe',
             configured: stripeConfigured,
             settingsComponent: StripeSettings,
         },
@@ -28,7 +28,7 @@ export const createIntegrationRegistry = (billingSettings: any): BillingIntegrat
             description:
                 'European payment provider supporting iDEAL, credit cards, bank transfers, and more. Popular in Europe.',
             icon: faCreditCard,
-            enabled: billingSettings.integrations?.mollie?.enabled ?? (billingSettings.processor === 'mollie'),
+            enabled: billingSettings.integrations?.mollie?.enabled ?? billingSettings.processor === 'mollie',
             configured: mollieConfigured,
             settingsComponent: MollieSettings,
         },

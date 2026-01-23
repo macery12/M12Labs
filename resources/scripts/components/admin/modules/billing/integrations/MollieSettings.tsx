@@ -17,9 +17,9 @@ export default () => {
             <AdminBox title={'Configure Mollie API Key'} icon={faKey}>
                 {!settings.mollie?.api_key ? (
                     <>
-                        Mollie is enabled as your payment integration, but the API key is not configured. To use
-                        Mollie, you need to configure your Mollie API key. Click below to add your API key from the
-                        Mollie dashboard.
+                        Mollie is enabled as your payment integration, but the API key is not configured. To use Mollie,
+                        you need to configure your Mollie API key. Click below to add your API key from the Mollie
+                        dashboard.
                         <div className={'mt-3 text-right'}>
                             <Button onClick={() => setOpen('payment')}>Add Mollie API Key</Button>
                         </div>
@@ -36,8 +36,8 @@ export default () => {
 
             <AdminBox title={'About Mollie'} icon={faKey}>
                 Mollie is a European payment service provider that supports various payment methods including iDEAL,
-                credit cards, bank transfers, and more. It&apos;s particularly popular in Europe and offers
-                competitive rates.
+                credit cards, bank transfers, and more. It&apos;s particularly popular in Europe and offers competitive
+                rates.
                 <div className={'mt-2'}>
                     <p className={'text-sm text-gray-400'}>
                         Current API key status:{' '}
