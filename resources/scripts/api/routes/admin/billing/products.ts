@@ -31,17 +31,10 @@ export const getProduct = async (id: number, productId: number): Promise<Product
 };
 
 export const updateProduct = (id: number, productId: number, values: ProductValues): Promise<void> => {
-    console.log('updateProduct API called:', { id, productId, values });
     return new Promise((resolve, reject) => {
         http.patch(`/api/application/billing/categories/${id}/products/${productId}`, values)
-            .then((response) => {
-                console.log('updateProduct API response:', response);
-                resolve();
-            })
-            .catch((error) => {
-                console.error('updateProduct API error:', error);
-                reject(error);
-            });
+            .then(() => resolve())
+            .catch(reject);
     });
 };
 

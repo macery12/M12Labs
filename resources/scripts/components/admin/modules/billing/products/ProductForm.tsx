@@ -30,32 +30,25 @@ export default ({ product }: { product?: Product }) => {
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
     const submit = (values: ProductValues, { setSubmitting }: FormikHelpers<ProductValues>) => {
-        console.log('ProductForm submit called:', { values, hasProduct: !!product, categoryId: params.id });
         clearFlashes('admin:billing:product:create');
 
         if (!product) {
-            console.log('Creating new product...');
             createProduct(Number(params.id), values)
                 .then(data => {
-                    console.log('Product created successfully:', data);
                     setSubmitting(false);
                     navigate(`/admin/billing/categories/${params.id}/products/${data.id}`);
                 })
                 .catch(error => {
-                    console.error('Error creating product:', error);
                     setSubmitting(false);
                     clearAndAddHttpError({ key: 'admin:billing:product:create', error });
                 });
         } else {
-            console.log('Updating product...', { productId: product.id, categoryId: params.id });
             updateProduct(Number(params.id), product!.id, values)
                 .then(() => {
-                    console.log('Product updated successfully');
                     setSubmitting(false);
                     navigate(`/admin/billing/categories/${params.id}`);
                 })
                 .catch(error => {
-                    console.error('Error updating product:', error);
                     setSubmitting(false);
                     clearAndAddHttpError({ key: 'admin:billing:product:create', error });
                 });
@@ -122,16 +115,7 @@ export default ({ product }: { product?: Product }) => {
                     }),
                 })}
             >
-                {({ values, isSubmitting, isValid }) => {
-                    // Debug logging to trace validation state
-                    console.log('ProductForm Debug:', {
-                        isValid,
-                        isSubmitting,
-                        values,
-                        hasProduct: !!product,
-                    });
-                    
-                    return (
+                {({ values, isSubmitting, isValid }) => (
                     <Form>
                         <div css={tw`grid grid-cols-1 lg:grid-cols-2 gap-4`}>
                             <div css={tw`w-full flex flex-col mr-0 lg:mr-2`}>
@@ -245,8 +229,7 @@ export default ({ product }: { product?: Product }) => {
                             </div>
                         </div>
                     </Form>
-                );
-                }}
+                )}
             </Formik>
         </>
     );
