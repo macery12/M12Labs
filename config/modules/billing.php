@@ -8,6 +8,9 @@ return [
 
     /*
      * Select the payment processor: 'stripe' or 'mollie'.
+     * NOTE: This is deprecated. Payment processors are now managed via
+     * the integrations system in the admin panel at /admin/billing/integrations.
+     * Kept for backward compatibility.
      */
     'processor' => env('BILLING_PROCESSOR', 'stripe'),
 
