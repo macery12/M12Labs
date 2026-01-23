@@ -3,7 +3,7 @@ import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { useStoreState, useStoreActions } from '@/state/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faTimesCircle, faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faTimesCircle, faPuzzlePiece, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { createIntegrationRegistry } from './registry';
 import { updateSettings } from '@/api/routes/admin/billing';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -103,7 +103,8 @@ export default () => {
 
                             {integration.enabled && !integration.configured && (
                                 <p className={'flex items-center text-xs text-yellow-500'}>
-                                    ⚠️ Configure in the {integration.name} tab to start accepting payments
+                                    <FontAwesomeIcon icon={faExclamationTriangle} className={'mr-1'} /> Configure in the{' '}
+                                    {integration.name} tab to start accepting payments
                                 </p>
                             )}
                         </div>

@@ -3,11 +3,12 @@ import { faCreditCard } from '@fortawesome/free-solid-svg-icons';
 import { BillingIntegration } from './types';
 import StripeSettings from './StripeSettings';
 import MollieSettings from './MollieSettings';
+import { EverestSettings } from '@/state/everest';
 
 /**
  * Creates the integration registry based on current billing settings
  */
-export const createIntegrationRegistry = (billingSettings: any): BillingIntegration[] => {
+export const createIntegrationRegistry = (billingSettings: EverestSettings['billing']): BillingIntegration[] => {
     const stripeConfigured = !!(billingSettings.keys?.publishable && billingSettings.keys?.secret);
     const mollieConfigured = !!billingSettings.mollie?.api_key;
 
