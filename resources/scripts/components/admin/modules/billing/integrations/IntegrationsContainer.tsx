@@ -21,24 +21,10 @@ export default () => {
             const newState = !currentState;
             await updateSettings(`integrations:${integrationId}:enabled`, newState);
 
-            // Update local state
-            const newIntegrations = {
-                ...settings.integrations,
-                [integrationId]: {
-                    ...settings.integrations?.[integrationId],
-                    enabled: newState,
-                },
-            };
-
-            updateEverest({
-                billing: {
-                    ...settings,
-                    integrations: newIntegrations,
-                },
-            });
+            // Reload the page to fetch updated settings from server
+            window.location.reload();
         } catch (error) {
             console.error('Failed to toggle integration:', error);
-        } finally {
             setLoading(null);
         }
     };
@@ -96,7 +82,7 @@ export default () => {
                             <Button
                                 onClick={() => toggleIntegration(integration.id, integration.enabled)}
                                 disabled={loading === integration.id}
-                                variant={integration.enabled ? Button.Variants.Secondary : Button.Variants.Primary}
+                                variant={integration.enabled ? Button.Variants.Danger : Button.Variants.Primary}
                             >
                                 {loading === integration.id ? 'Loading...' : integration.enabled ? 'Disable' : 'Enable'}
                             </Button>

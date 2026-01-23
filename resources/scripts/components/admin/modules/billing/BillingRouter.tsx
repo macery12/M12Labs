@@ -81,18 +81,19 @@ export default () => {
                 <SubNavigationLink to={'/admin/billing/renewal-dates'} name={'Renewal Dates'}>
                     <CalendarIcon />
                 </SubNavigationLink>
-                
+
                 {/* Dynamically render tabs for enabled integrations */}
                 {enabledIntegrations.map(integration => (
                     <SubNavigationLink
                         key={integration.id}
                         to={`/admin/billing/integrations/${integration.id}`}
                         name={integration.name}
+                        base
                     >
                         <FontAwesomeIcon icon={integration.icon} />
                     </SubNavigationLink>
                 ))}
-                
+
                 <SubNavigationLink to={'/admin/billing/integrations'} name={'Integrations'}>
                     <FontAwesomeIcon icon={faPuzzlePiece} />
                 </SubNavigationLink>
@@ -123,7 +124,7 @@ export default () => {
                 <Route path={'/renewal-dates'} element={<RenewalDatesContainer />} />
 
                 <Route path={'/integrations'} element={<IntegrationsContainer />} />
-                
+
                 {/* Dynamic routes for enabled integrations */}
                 {enabledIntegrations.map(integration => (
                     <Route
