@@ -42,6 +42,16 @@ export interface EverestSettings {
         paypal: boolean;
         link: boolean;
         processor?: string;
+        processors?: {
+            stripe: {
+                available: boolean;
+                enabled: boolean;
+            };
+            mollie: {
+                available: boolean;
+                enabled: boolean;
+            };
+        };
         keys: {
             publishable: boolean;
             secret: boolean;

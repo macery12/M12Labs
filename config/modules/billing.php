@@ -8,8 +8,23 @@ return [
 
     /*
      * Select the payment processor: 'stripe' or 'mollie'.
+     * NOTE: This is deprecated. Use the individual processor enabled flags below.
+     * Kept for backward compatibility.
      */
     'processor' => env('BILLING_PROCESSOR', 'stripe'),
+
+    /*
+     * Enable/disable individual payment processors.
+     * Multiple processors can be enabled at the same time.
+     */
+    'processors' => [
+        'stripe' => [
+            'enabled' => env('BILLING_STRIPE_ENABLED', true),
+        ],
+        'mollie' => [
+            'enabled' => env('BILLING_MOLLIE_ENABLED', true),
+        ],
+    ],
 
     /*
      * Configure the publishable & secret API key for Stripe.

@@ -3,14 +3,21 @@
 namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
+use Everest\Services\Billing\PaymentProcessorConfigService;
 
 class EverestComposer
 {
+    public function __construct(
+        private PaymentProcessorConfigService $processorConfigService
+    ) {
+    }
+
     /**
      * Provide access to the asset service in the views.
      */
     public function compose(View $view): void
     {
+        $processorConfig = $this->processorConfigService->getProcessorConfig();
         $view->with('everestConfiguration', [
             'auth' => [
                 'registration' => [
@@ -47,6 +54,7 @@ class EverestComposer
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
                 'processor' => config('modules.billing.processor', 'stripe'),
+                'processors' => $processorConfig,
                 'paypal' => config('modules.billing.paypal'),
                 'link' => config('modules.billing.link'),
                 'keys' => [

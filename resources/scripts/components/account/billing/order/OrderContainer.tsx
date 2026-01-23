@@ -20,8 +20,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
-import PaymentButton from './PaymentButton';
-import MolliePaymentButton from './MolliePaymentButton';
+import PaymentMethodSelector from './PaymentMethodSelector';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { EggVariable } from '@definitions/server';
@@ -52,6 +51,7 @@ export default () => {
 
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
+    const [mollieAvailable, setMollieAvailable] = useState<boolean>(false);
     const [nodes, setNodes] = useState<Node[] | undefined>();
     const [selectedNode, setSelectedNode] = useState<number>(0);
     const [product, setProduct] = useState<Product | undefined>();
@@ -96,7 +96,7 @@ export default () => {
         setCouponData(data);
 
         // Only regenerate intent if the final total is not zero and using Stripe
-        if (product && product.price !== 0 && billing.processor === 'stripe') {
+        if (product && product.price !== 0 && billing.processors?.stripe?.available) {
             const finalTotal = data ? data.total : product.price;
 
             // If coupon makes it free, don't fetch intent
@@ -151,17 +151,30 @@ export default () => {
                 setSelectedNode(Number(nodesData[0]?.id) ?? 0);
 
                 if (productData.price !== 0) {
-                    // Only fetch Stripe resources if Stripe is the processor
-                    if (billing.processor === 'stripe') {
-                        // Fetch payment intent
-                        const intentData = await getStripeIntent(Number(params.id));
-                        setIntent({ id: intentData.id, secret: intentData.secret });
+                    // Check which processors are available and fetch resources accordingly
+                    const stripeAvailable = billing.processors?.stripe?.available ?? false;
+                    const mollieAvailableCheck = billing.processors?.mollie?.available ?? false;
+                    
+                    setMollieAvailable(mollieAvailableCheck);
 
-                        // Fetch Stripe public key and initialize Stripe
-                        const stripePublicKey = await getStripeKey(Number(params.id));
-                        const stripeInstance = await loadStripe(stripePublicKey.key);
-                        setStripe(stripeInstance);
+                    // Fetch Stripe resources if Stripe is available
+                    if (stripeAvailable) {
+                        try {
+                            // Fetch payment intent
+                            const intentData = await getStripeIntent(Number(params.id));
+                            setIntent({ id: intentData.id, secret: intentData.secret });
+
+                            // Fetch Stripe public key and initialize Stripe
+                            const stripePublicKey = await getStripeKey(Number(params.id));
+                            const stripeInstance = await loadStripe(stripePublicKey.key);
+                            setStripe(stripeInstance);
+                        } catch (error) {
+                            console.error('Error initializing Stripe:', error);
+                        }
                     }
+                    
+                    // Mollie doesn't need pre-initialization like Stripe
+                    // Payment is created when user clicks the button
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -183,21 +196,6 @@ export default () => {
     }, [product, selectedEggId]);
 
     if (!product) return <Spinner centered />;
-    // Only show spinner for paid products when the selected processor hasn't loaded yet
-    // If a coupon makes it free, we don't need payment processor
-    const needsPaymentProcessor = product.price !== 0 && (!couponData || couponData.total !== 0);
-    const needsStripe = needsPaymentProcessor && billing.processor === 'stripe';
-    if (needsStripe && (!intent || !stripe)) return <Spinner centered />;
-
-    const options = {
-        clientSecret: intent?.secret,
-        appearance: {
-            theme: 'night',
-            variables: {
-                colorText: '#ffffff',
-            },
-        },
-    };
 
     return (
         <PageContentBlock title={'Your Order'}>
@@ -537,34 +535,19 @@ export default () => {
                                             Create Server
                                         </Button>
                                     </div>
-                                ) : intent && billing.processor === 'stripe' ? (
+                                ) : (
                                     <div>
-                                        {/* @ts-expect-error this is fine, stripe library is just weird */}
-                                        <Elements stripe={stripe} options={options} key={intent?.id}>
-                                            <PaymentButton
-                                                selectedNode={selectedNode}
-                                                product={product}
-                                                vars={vars}
-                                                intent={intent}
-                                                couponId={couponData?.coupon.id}
-                                                selectedEggId={selectedEggId}
-                                                serverName={serverName}
-                                            />
-                                        </Elements>
-                                    </div>
-                                ) : billing.processor === 'mollie' ? (
-                                    <div>
-                                        <MolliePaymentButton
+                                        <PaymentMethodSelector
                                             selectedNode={selectedNode}
                                             product={product}
                                             vars={vars}
+                                            intent={intent}
+                                            stripe={stripe}
                                             couponId={couponData?.coupon.id}
                                             selectedEggId={selectedEggId}
                                             serverName={serverName}
                                         />
                                     </div>
-                                ) : (
-                                    <Spinner centered />
                                 )}
                             </div>
                         )}
