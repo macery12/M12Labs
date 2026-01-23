@@ -56,7 +56,7 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             <div className={'relative mt-4'}>
                 <Input
                     placeholder={'Enter Mollie API key here...'}
-                    defaultValue={existingMollie?.api_key || ''}
+                    defaultValue={''}
                     onChange={e => setData({ ...data, apiKey: e.currentTarget.value })}
                 />
                 {!data?.apiKey || data.apiKey.length < 10 ? (

@@ -59,7 +59,7 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             <div className={'relative mt-4'}>
                 <Input
                     placeholder={'Enter "publishable" key here...'}
-                    defaultValue={existingKeys?.publishable || ''}
+                    defaultValue={''}
                     onChange={e => setData({ ...data, publishable: e.currentTarget.value })}
                 />
                 {!data?.publishable ||
@@ -81,7 +81,7 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             <div className={'relative mt-4'}>
                 <Input
                     placeholder={'Enter "secret" key here...'}
-                    defaultValue={existingKeys?.secret || ''}
+                    defaultValue={''}
                     onChange={e => setData({ ...data, secret: e.currentTarget.value })}
                 />
                 {!data?.secret || data.secret.length < 100 || data.secret.length > 120 ? (
