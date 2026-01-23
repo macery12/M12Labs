@@ -19,7 +19,7 @@ interface PaymentKeys {
 
 export default ({ extOpen }: { extOpen?: boolean }) => {
     const [data, setData] = useState<PaymentKeys>({ processor: 'stripe' });
-    const [open, setOpen] = useState<boolean>(extOpen ?? false);
+    const [open, setOpen] = useState<boolean>(false);
     const existingKeys = useStoreState(s => s.everest.data!.billing.keys);
     const existingMollie = useStoreState(s => s.everest.data!.billing.mollie);
     const currentProcessor = useStoreState(s => s.everest.data!.billing.processor);
@@ -42,21 +42,29 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
     };
 
     useEffect(() => {
-        // Auto-open if the currently selected payment processor is not configured
-        const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
-        const isMollieSelected = currentProcessor === 'mollie';
-        
-        const stripeNotConfigured = isStripeSelected && !existingKeys?.publishable;
-        const mollieNotConfigured = isMollieSelected && !existingMollie?.api_key;
-        
-        if (stripeNotConfigured || mollieNotConfigured) {
+        // When extOpen is true (controlled by parent), open the dialog
+        if (extOpen === true) {
             setOpen(true);
         }
+        // When extOpen is undefined, check if we should auto-open (legacy behavior)
+        else if (extOpen === undefined) {
+            const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
+            const isMollieSelected = currentProcessor === 'mollie';
+            
+            const stripeNotConfigured = isStripeSelected && !existingKeys?.publishable;
+            const mollieNotConfigured = isMollieSelected && !existingMollie?.api_key;
+            
+            if (stripeNotConfigured || mollieNotConfigured) {
+                setOpen(true);
+            }
+        }
+        // When extOpen is false, do nothing (don't auto-open)
+        
         // Set current processor
         if (currentProcessor) {
             setData(prev => ({ ...prev, processor: currentProcessor as 'stripe' | 'mollie' }));
         }
-    }, [existingKeys, existingMollie, currentProcessor]);
+    }, [existingKeys, existingMollie, currentProcessor, extOpen]);
 
     const isValid = () => {
         if (data.processor === 'stripe') {

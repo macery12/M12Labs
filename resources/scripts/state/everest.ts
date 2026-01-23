@@ -49,6 +49,11 @@ export interface EverestSettings {
         mollie?: {
             api_key?: string;
         };
+        integrations?: {
+            [key: string]: {
+                enabled: boolean;
+            };
+        };
         currency: {
             symbol: string;
             code: string;

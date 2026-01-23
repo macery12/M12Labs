@@ -72,6 +72,14 @@ class EverestComposer
                     'paid_suspension_days' => config('modules.billing.renewal.paid_suspension_days', 30),
                 ],
                 'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
+                'integrations' => [
+                    'stripe' => [
+                        'enabled' => boolval(config('modules.billing.integrations.stripe.enabled', false)),
+                    ],
+                    'mollie' => [
+                        'enabled' => boolval(config('modules.billing.integrations.mollie.enabled', false)),
+                    ],
+                ],
             ],
             'alert' => [
                 'enabled' => boolval(config('modules.alert.enabled', false)),

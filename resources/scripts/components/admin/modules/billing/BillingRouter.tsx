@@ -29,11 +29,20 @@ import Unfinished from '@/elements/Unfinished';
 import SettingsContainer from '@admin/modules/billing/SettingsContainer';
 import BillingExceptionsContainer from './exceptions/BillingExceptionsContainer';
 import RenewalDatesContainer from '@admin/modules/billing/RenewalDatesContainer';
+import IntegrationsContainer from './integrations/IntegrationsContainer';
+import { createIntegrationRegistry, getEnabledIntegrations } from './integrations/registry';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.billing.enabled);
+    const billingSettings = useStoreState(state => state.everest.data!.billing);
 
     if (!enabled) return <EnableBilling />;
+
+    // Get enabled integrations to dynamically render tabs
+    const integrations = createIntegrationRegistry(billingSettings);
+    const enabledIntegrations = getEnabledIntegrations(integrations);
 
     return (
         <AdminContentBlock title={'Billing'}>
@@ -72,6 +81,22 @@ export default () => {
                 <SubNavigationLink to={'/admin/billing/renewal-dates'} name={'Renewal Dates'}>
                     <CalendarIcon />
                 </SubNavigationLink>
+
+                {/* Dynamically render tabs for enabled integrations */}
+                {enabledIntegrations.map(integration => (
+                    <SubNavigationLink
+                        key={integration.id}
+                        to={`/admin/billing/integrations/${integration.id}`}
+                        name={integration.name}
+                        base
+                    >
+                        <FontAwesomeIcon icon={integration.icon} />
+                    </SubNavigationLink>
+                ))}
+
+                <SubNavigationLink to={'/admin/billing/integrations'} name={'Integrations'} base>
+                    <FontAwesomeIcon icon={faPuzzlePiece} />
+                </SubNavigationLink>
                 <SubNavigationLink to={'/admin/billing/settings'} name={'Settings'}>
                     <CogIcon />
                 </SubNavigationLink>
@@ -97,6 +122,17 @@ export default () => {
                 <Route path={'/exceptions'} element={<BillingExceptionsContainer />} />
 
                 <Route path={'/renewal-dates'} element={<RenewalDatesContainer />} />
+
+                <Route path={'/integrations'} element={<IntegrationsContainer />} />
+
+                {/* Dynamic routes for enabled integrations */}
+                {enabledIntegrations.map(integration => (
+                    <Route
+                        key={integration.id}
+                        path={`/integrations/${integration.id}`}
+                        element={<integration.settingsComponent />}
+                    />
+                ))}
 
                 <Route path={'/settings'} element={<SettingsContainer />} />
 
