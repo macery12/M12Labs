@@ -19,7 +19,7 @@ interface PaymentKeys {
 
 export default ({ extOpen }: { extOpen?: boolean }) => {
     const [data, setData] = useState<PaymentKeys>({ processor: 'stripe' });
-    const [open, setOpen] = useState<boolean>(extOpen ?? false);
+    const [open, setOpen] = useState<boolean>(false);
     const existingKeys = useStoreState(s => s.everest.data!.billing.keys);
     const existingMollie = useStoreState(s => s.everest.data!.billing.mollie);
     const currentProcessor = useStoreState(s => s.everest.data!.billing.processor);
@@ -42,9 +42,9 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
     };
 
     useEffect(() => {
-        // Only auto-open if extOpen is explicitly false (meaning we're on the old Settings page)
-        // Don't auto-open when extOpen is undefined or true (used in integration tabs)
-        if (extOpen === false) {
+        // Never auto-open when extOpen prop is provided (integration tabs use this)
+        // Only auto-open when extOpen is undefined (legacy behavior for main billing page)
+        if (extOpen === undefined) {
             const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
             const isMollieSelected = currentProcessor === 'mollie';
             
