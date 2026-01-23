@@ -6,6 +6,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { useStoreState } from '@/state/hooks';
 import type { SiteTheme } from '@/state/theme';
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface DropdownItemProps {
     to: string;
@@ -55,8 +56,8 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
         if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
             setDropdownPosition({
-                top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX,
+                top: rect.bottom,
+                left: rect.left,
             });
         }
     }, []);
@@ -97,28 +98,38 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
                             className={classNames('w-4 h-4 ml-2 transition-transform', open && 'rotate-180')}
                         />
                     </Menu.Button>
-                    <Transition
-                        enter="transition duration-100 ease-out"
-                        enterFrom="transform scale-95 opacity-0"
-                        enterTo="transform scale-100 opacity-100"
-                        leave="transition duration-75 ease-out"
-                        leaveFrom="transform scale-100 opacity-100"
-                        leaveTo="transform scale-95 opacity-0"
-                    >
-                        <Menu.Items
-                            className="fixed w-56 origin-top-left rounded shadow-lg focus:outline-none"
-                            style={{
-                                backgroundColor: theme.colors.sidebar,
-                                borderColor: theme.colors.headers,
-                                borderWidth: '1px',
-                                zIndex: 9999,
-                                top: `${dropdownPosition.top}px`,
-                                left: `${dropdownPosition.left}px`,
-                            }}
-                        >
-                            <div className="py-1">{items.map(item => <BillingDropdownItem key={item.to} {...item} theme={theme} />)}</div>
-                        </Menu.Items>
-                    </Transition>
+                    {open &&
+                        createPortal(
+                            <Transition
+                                show={open}
+                                enter="transition duration-100 ease-out"
+                                enterFrom="transform scale-95 opacity-0"
+                                enterTo="transform scale-100 opacity-100"
+                                leave="transition duration-75 ease-out"
+                                leaveFrom="transform scale-100 opacity-100"
+                                leaveTo="transform scale-95 opacity-0"
+                            >
+                                <Menu.Items
+                                    static
+                                    className="fixed w-56 origin-top-left rounded shadow-lg focus:outline-none"
+                                    style={{
+                                        backgroundColor: theme.colors.sidebar,
+                                        borderColor: theme.colors.headers,
+                                        borderWidth: '1px',
+                                        zIndex: 9999,
+                                        top: `${dropdownPosition.top}px`,
+                                        left: `${dropdownPosition.left}px`,
+                                    }}
+                                >
+                                    <div className="py-1">
+                                        {items.map(item => (
+                                            <BillingDropdownItem key={item.to} {...item} theme={theme} />
+                                        ))}
+                                    </div>
+                                </Menu.Items>
+                            </Transition>,
+                            document.body,
+                        )}
                 </>
             )}
         </Menu>
