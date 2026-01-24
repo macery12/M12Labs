@@ -45,7 +45,7 @@ export default () => {
         setDeletingKey(true);
         clearFlashes();
 
-        updateSettings({ ...ai, key: '' })
+        updateSettings({ key: '' })
             .then(() => {
                 addFlash({
                     type: 'success',
