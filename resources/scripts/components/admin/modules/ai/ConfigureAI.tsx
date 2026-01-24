@@ -54,14 +54,8 @@ export default ({ onDismiss }: ConfigureAIProps) => {
         }
     };
 
-    const handleClose = () => {
-        if (onDismiss) {
-            onDismiss();
-        }
-    };
-
     return (
-        <Dialog open onClose={handleClose} title={'Configure Jexactyl AI'}>
+        <Dialog open onClose={() => onDismiss?.()} title={'Configure Jexactyl AI'}>
             <SpinnerOverlay visible={loading} />
             <p className={'text-gray-400'}>
                 In order to use <span style={{ color: theme.primary }}>Jexactyl AI</span>, you must configure an
