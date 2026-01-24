@@ -14,7 +14,7 @@ return new class () extends Migration {
             Schema::create('coupon_usage', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('coupon_id');
-                $table->unsignedBigInteger('user_id');
+                $table->unsignedInteger('user_id');
                 $table->unsignedBigInteger('order_id');
                 $table->dateTime('used_at');
                 $table->timestamps();
