@@ -10,7 +10,11 @@ import { useStoreState } from 'easy-peasy';
 import { useState } from 'react';
 import { Button } from '@/elements/button';
 
-export default () => {
+interface ConfigureAIProps {
+    onDismiss?: () => void;
+}
+
+export default ({ onDismiss }: ConfigureAIProps) => {
     const [key, setKey] = useState<string>();
     const [mode, setMode] = useState<string>('openai');
     const [endpoint, setEndpoint] = useState<string>(
@@ -50,8 +54,14 @@ export default () => {
         }
     };
 
+    const handleClose = () => {
+        if (onDismiss) {
+            onDismiss();
+        }
+    };
+
     return (
-        <Dialog open onClose={() => undefined} preventExternalClose hideCloseIcon title={'Configure Jexactyl AI'}>
+        <Dialog open onClose={handleClose} title={'Configure Jexactyl AI'}>
             <SpinnerOverlay visible={loading} />
             <p className={'text-gray-400'}>
                 In order to use <span style={{ color: theme.primary }}>Jexactyl AI</span>, you must configure an

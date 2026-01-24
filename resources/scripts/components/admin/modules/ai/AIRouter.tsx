@@ -9,9 +9,11 @@ import EnableAI from '@admin/modules/ai/EnableAI';
 import OverviewContainer from '@admin/modules/ai/OverviewContainer';
 import ConfigureAI from '@admin/modules/ai/ConfigureAI';
 import SettingsContainer from './SettingsContainer';
+import { useState } from 'react';
 
 export default () => {
     const settings = useStoreState(state => state.everest.data!.ai);
+    const [configDismissed, setConfigDismissed] = useState(false);
 
     if (!settings.enabled) return <EnableAI />;
     
@@ -21,7 +23,9 @@ export default () => {
         ? !settings.endpoint || !settings.model
         : !settings.key || !settings.endpoint || !settings.model;
     
-    if (settings.enabled && needsConfiguration) return <ConfigureAI />;
+    if (settings.enabled && needsConfiguration && !configDismissed) {
+        return <ConfigureAI onDismiss={() => setConfigDismissed(true)} />;
+    }
 
     return (
         <AdminContentBlock title={'Jexactyl AI'}>
