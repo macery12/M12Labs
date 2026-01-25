@@ -37,7 +37,7 @@ jobs:
           git config --local user.name "Jexactyl Releases"
           git checkout -b $BRANCH
           git push -u origin $BRANCH
-          sed -i "s/    'version' => 'canary',/    'version' => '${REF:11}',/" config/app.php
+          sed -i "s/'version' => '[^']*'/'version' => '$VERSION'/" config/app.php
           git add config/app.php
           git commit -m "New release inbound!"
           git push
