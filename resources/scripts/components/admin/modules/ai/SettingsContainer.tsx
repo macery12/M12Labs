@@ -3,15 +3,18 @@ import Label from '@/elements/Label';
 import { Form, Formik } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import { faKey, faUser, faLink, faCog, faServer, faHashtag, faComment } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faUser, faLink, faCog, faServer, faHashtag, faComment, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import SelectField from '@/elements/SelectField';
+import { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default () => {
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
     const ai = useStoreState(s => s.everest.data!.ai);
+    const [deletingKey, setDeletingKey] = useState(false);
 
     const submit = (values: AISettings) => {
         clearFlashes();
@@ -27,6 +30,33 @@ export default () => {
                 setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
+                clearAndAddHttpError({
+                    key: 'admin:ai:settings',
+                    error: error,
+                });
+            });
+    };
+
+    const deleteApiKey = () => {
+        if (!confirm('Are you sure you want to delete the API key? This will disable AI functionality until a new key is configured.')) {
+            return;
+        }
+
+        setDeletingKey(true);
+        clearFlashes();
+
+        updateSettings({ key: '' })
+            .then(() => {
+                addFlash({
+                    type: 'success',
+                    key: 'admin:ai:settings',
+                    message: 'API key has been deleted successfully.',
+                });
+                // Reload to apply new settings
+                setTimeout(() => window.location.reload(), 500);
+            })
+            .catch(error => {
+                setDeletingKey(false);
                 clearAndAddHttpError({
                     key: 'admin:ai:settings',
                     error: error,
@@ -82,10 +112,21 @@ export default () => {
                         {values.mode === 'openai' && (
                             <AdminBox title={'Modify API Key'} icon={faKey}>
                                 <div>
-                                    <Field id={'key'} name={'key'} type={'input'} />
+                                    <Field id={'key'} name={'key'} type={'input'} placeholder="Enter new API key to update" />
                                     <p className={'mt-1.5 text-xs text-gray-400'}>
                                         Enter your OpenAI API key or a compatible API key from another provider.
                                     </p>
+                                    {ai.key && (
+                                        <button
+                                            type="button"
+                                            onClick={deleteApiKey}
+                                            disabled={deletingKey}
+                                            className={'mt-2 inline-flex items-center rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'}
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} className={'mr-1.5 h-3 w-3'} />
+                                            {deletingKey ? 'Deleting...' : 'Delete API Key'}
+                                        </button>
+                                    )}
                                 </div>
                             </AdminBox>
                         )}
