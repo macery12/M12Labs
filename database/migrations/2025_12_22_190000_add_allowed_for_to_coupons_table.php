@@ -12,10 +12,43 @@ return new class () extends Migration {
     {
         if (Schema::hasTable('coupons')) {
             Schema::table('coupons', function (Blueprint $table) {
-                // Add is_active column if it doesn't exist (should be created by create_coupons_table migration)
-                // This is a safety measure for databases where the initial migration didn't run properly
+                // Ensure all required columns from create_coupons_table exist
+                // This handles cases where the table was created manually or partially
+                
+                if (!Schema::hasColumn('coupons', 'code')) {
+                    $table->string('code')->unique();
+                }
+                
+                if (!Schema::hasColumn('coupons', 'type')) {
+                    $table->enum('type', ['percentage', 'fixed']);
+                }
+                
+                if (!Schema::hasColumn('coupons', 'value')) {
+                    $table->decimal('value', 10, 2);
+                }
+                
+                if (!Schema::hasColumn('coupons', 'max_uses')) {
+                    $table->integer('max_uses')->nullable();
+                }
+                
+                if (!Schema::hasColumn('coupons', 'max_uses_per_user')) {
+                    $table->integer('max_uses_per_user')->nullable();
+                }
+                
+                if (!Schema::hasColumn('coupons', 'min_order_total')) {
+                    $table->decimal('min_order_total', 10, 2)->nullable();
+                }
+                
+                if (!Schema::hasColumn('coupons', 'expires_at')) {
+                    $table->dateTime('expires_at')->nullable();
+                }
+                
                 if (!Schema::hasColumn('coupons', 'is_active')) {
                     $table->boolean('is_active')->default(true);
+                }
+                
+                if (!Schema::hasColumn('coupons', 'created_at')) {
+                    $table->timestamps();
                 }
                 
                 // Add allowed_for column if it doesn't exist
