@@ -47,7 +47,7 @@ return new class () extends Migration {
                     $table->boolean('is_active')->default(true);
                 }
                 
-                if (!Schema::hasColumn('coupons', 'created_at')) {
+                if (!Schema::hasColumn('coupons', 'created_at') && !Schema::hasColumn('coupons', 'updated_at')) {
                     $table->timestamps();
                 }
                 
