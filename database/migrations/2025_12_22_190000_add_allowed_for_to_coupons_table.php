@@ -14,7 +14,12 @@ return new class () extends Migration {
             Schema::table('coupons', function (Blueprint $table) {
                 // Add is_active column if it doesn't exist (for databases that don't have it)
                 if (!Schema::hasColumn('coupons', 'is_active')) {
-                    $table->boolean('is_active')->default(true)->after('expires_at');
+                    // Position after expires_at if it exists, otherwise just add it
+                    if (Schema::hasColumn('coupons', 'expires_at')) {
+                        $table->boolean('is_active')->default(true)->after('expires_at');
+                    } else {
+                        $table->boolean('is_active')->default(true);
+                    }
                 }
                 
                 // Add allowed_for column
