@@ -9,6 +9,7 @@ const currencyDictionary: Record<string, Currency> = {
     CAD: { symbol: 'C$', name: 'Canadian Dollar' },
     CHF: { symbol: 'CHF', name: 'Swiss Franc' },
     CNY: { symbol: '¥', name: 'Chinese Yuan' },
+    DKK: { symbol: 'kr', name: 'Danish Krone' },
     EUR: { symbol: '€', name: 'Euro' },
     GBP: { symbol: '£', name: 'British Pound' },
     HKD: { symbol: 'HK$', name: 'Hong Kong Dollar' },
