@@ -12,7 +12,15 @@ return new class () extends Migration {
     {
         if (Schema::hasTable('coupons')) {
             Schema::table('coupons', function (Blueprint $table) {
-                $table->enum('allowed_for', ['both', 'purchases', 'renewals'])->default('both')->after('is_active');
+                // Add is_active column if it doesn't exist (for databases that don't have it)
+                if (!Schema::hasColumn('coupons', 'is_active')) {
+                    $table->boolean('is_active')->default(true)->after('expires_at');
+                }
+                
+                // Add allowed_for column
+                if (!Schema::hasColumn('coupons', 'allowed_for')) {
+                    $table->enum('allowed_for', ['both', 'purchases', 'renewals'])->default('both')->after('is_active');
+                }
             });
         }
     }
@@ -24,7 +32,9 @@ return new class () extends Migration {
     {
         if (Schema::hasTable('coupons')) {
             Schema::table('coupons', function (Blueprint $table) {
-                $table->dropColumn('allowed_for');
+                if (Schema::hasColumn('coupons', 'allowed_for')) {
+                    $table->dropColumn('allowed_for');
+                }
             });
         }
     }
