@@ -14,6 +14,12 @@ return new class () extends Migration {
             Schema::table('coupons', function (Blueprint $table) {
                 // Ensure all required columns from create_coupons_table exist
                 // This handles cases where the table was created manually or partially
+                // Note: Column definitions are duplicated here intentionally to handle
+                // databases where the initial migration didn't run properly
+                
+                if (!Schema::hasColumn('coupons', 'id')) {
+                    $table->id();
+                }
                 
                 if (!Schema::hasColumn('coupons', 'code')) {
                     $table->string('code')->unique();
