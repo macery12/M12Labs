@@ -47,8 +47,12 @@ return new class () extends Migration {
                     $table->boolean('is_active')->default(true);
                 }
                 
-                if (!Schema::hasColumn('coupons', 'created_at') && !Schema::hasColumn('coupons', 'updated_at')) {
-                    $table->timestamps();
+                if (!Schema::hasColumn('coupons', 'created_at')) {
+                    $table->timestamp('created_at')->nullable();
+                }
+                
+                if (!Schema::hasColumn('coupons', 'updated_at')) {
+                    $table->timestamp('updated_at')->nullable();
                 }
                 
                 // Add allowed_for column if it doesn't exist
