@@ -45,9 +45,10 @@ const BillingDropdownItem = ({ to, name, icon: IconComponent, children, theme }:
 
 interface BillingDropdownProps {
     items: DropdownItemProps[];
+    icon?: ComponentType;
 }
 
-export const BillingDropdown = ({ items }: BillingDropdownProps) => {
+export const BillingDropdown = ({ items, icon: IconComponent }: BillingDropdownProps) => {
     const theme = useStoreState(state => state.theme.data!);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -93,6 +94,7 @@ export const BillingDropdown = ({ items }: BillingDropdownProps) => {
                         }
                         onClick={updatePosition}
                     >
+                        {IconComponent && <IconComponent className="w-5 h-5 mr-2" />}
                         <span>Billing</span>
                         <ChevronDownIcon
                             className={classNames('w-4 h-4 ml-2 transition-transform', open && 'rotate-180')}
