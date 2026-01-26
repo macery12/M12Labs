@@ -30,7 +30,7 @@ return [
     /*
      * AI model to use
      */
-    'model' => env('AI_MODEL', 'gpt-3.5-turbo'),
+    'model' => env('AI_MODEL', 'gpt-4.1-mini'),
 
     /*
      * Maximum tokens for AI responses
