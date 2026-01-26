@@ -222,6 +222,7 @@ class OpenAIService
 
             $body = $response->getBody();
             $buffer = '';
+            $currentEvent = null;
 
             while (!$body->eof()) {
                 $chunk = $body->read(1024);
@@ -237,6 +238,12 @@ class OpenAIService
                         continue;
                     }
 
+                    // Track event type for OpenAI's new streaming format
+                    if (str_starts_with($line, 'event: ')) {
+                        $currentEvent = substr($line, 7);
+                        continue;
+                    }
+
                     if (str_starts_with($line, 'data: ')) {
                         $jsonData = substr($line, 6);
                         $data = json_decode($jsonData, true);
@@ -247,6 +254,10 @@ class OpenAIService
                                 if (isset($data['output_text'])) {
                                     yield $data['output_text'];
                                 }
+                                // Also support delta field if the event type indicates it
+                                elseif ($currentEvent === 'response.output_text.delta' && isset($data['delta'])) {
+                                    yield $data['delta'];
+                                }
                             } else {
                                 // Ollama: use existing format
                                 if (isset($data['choices'][0]['delta']['content'])) {
@@ -254,10 +265,8 @@ class OpenAIService
                                 }
                             }
                         }
-                    } elseif ($this->mode === 'openai' && str_starts_with($line, 'event: response.output_text.delta')) {
-                        // Handle OpenAI's new event-based streaming format
-                        // The next line should contain the data
-                        continue;
+                        
+                        $currentEvent = null; // Reset event after processing data
                     }
                 }
             }
