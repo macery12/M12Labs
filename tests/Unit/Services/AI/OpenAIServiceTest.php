@@ -45,7 +45,7 @@ class OpenAIServiceTest extends TestCase
                 $this->assertEquals('system', $payload['input'][0]['role']);
                 $this->assertArrayHasKey('content', $payload['input'][0]);
                 $this->assertIsArray($payload['input'][0]['content']);
-                $this->assertEquals('text', $payload['input'][0]['content'][0]['type']);
+                $this->assertEquals('input_text', $payload['input'][0]['content'][0]['type']);
                 
                 return true;
             }))
