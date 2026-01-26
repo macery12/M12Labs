@@ -196,7 +196,6 @@ class OpenAIService
                         ]
                     ],
                     'max_output_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
-                    'stream' => true,
                 ];
             } else {
                 // Ollama format (keep existing)
@@ -255,13 +254,9 @@ class OpenAIService
 
                         if (json_last_error() === JSON_ERROR_NONE) {
                             if ($this->mode === 'openai') {
-                                // OpenAI new API: look for output_text in delta events
-                                if (isset($data['output_text'])) {
-                                    yield $data['output_text'];
-                                }
-                                // Also support delta field if the event type indicates it
-                                elseif ($currentEvent === 'response.output_text.delta' && isset($data['delta'])) {
-                                    yield $data['delta'];
+                                // OpenAI new API: streaming sends event-based chunks with 'text' field
+                                if ($currentEvent === 'response.output_text.delta' && isset($data['text'])) {
+                                    yield $data['text'];
                                 }
                             } else {
                                 // Ollama: use existing format
