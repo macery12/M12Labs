@@ -67,13 +67,13 @@ class OpenAIService
                         [
                             'role' => 'system',
                             'content' => [
-                                ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
                             ]
                         ],
                         [
                             'role' => 'user',
                             'content' => [
-                                ['type' => 'text', 'text' => $prompt]
+                                ['type' => 'input_text', 'text' => $prompt]
                             ]
                         ]
                     ],
@@ -135,6 +135,9 @@ class OpenAIService
             throw new AIServiceException('Invalid response format from AI service.');
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Error: ' . $e->getMessage());
+            if ($e->hasResponse()) {
+                Log::error('OpenAI Response Body: ' . (string) $e->getResponse()->getBody());
+            }
             throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());
         }
     }
@@ -185,13 +188,13 @@ class OpenAIService
                         [
                             'role' => 'system',
                             'content' => [
-                                ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
                             ]
                         ],
                         [
                             'role' => 'user',
                             'content' => [
-                                ['type' => 'text', 'text' => $prompt]
+                                ['type' => 'input_text', 'text' => $prompt]
                             ]
                         ]
                     ],
@@ -272,6 +275,9 @@ class OpenAIService
             }
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Streaming Error: ' . $e->getMessage());
+            if ($e->hasResponse()) {
+                Log::error('OpenAI Streaming Response Body: ' . (string) $e->getResponse()->getBody());
+            }
             throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());
         }
     }
