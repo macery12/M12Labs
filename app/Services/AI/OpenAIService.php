@@ -23,7 +23,7 @@ class OpenAIService
     {
         $this->apiKey = config('modules.ai.key') ?: '';
         $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
-        $this->model = config('modules.ai.model') ?: 'gpt-3.5-turbo';
+        $this->model = config('modules.ai.model') ?: 'gpt-4.1-mini';
         $this->mode = config('modules.ai.mode') ?: 'openai';
         $this->systemPrompt = config('modules.ai.system_prompt') ?: 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.';
 
@@ -32,7 +32,7 @@ class OpenAIService
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
             'timeout' => 120,
-            'stream' => true, // Enable streaming support
+            #'stream' => true, // Enable streaming support
         ]);
     }
 
@@ -58,9 +58,30 @@ class OpenAIService
                 $headers['Authorization'] = 'Bearer ' . $this->apiKey;
             }
             
-            $response = $this->client->post('chat/completions', [
-                'headers' => $headers,
-                'json' => [
+            // Build request payload based on mode
+            if ($this->mode === 'openai') {
+                // OpenAI new API format
+                $payload = [
+                    'model' => $options['model'] ?? $this->model,
+                    'input' => [
+                        [
+                            'role' => 'system',
+                            'content' => [
+                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                            ]
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                ['type' => 'input_text', 'text' => $prompt]
+                            ]
+                        ]
+                    ],
+                    'max_output_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                ];
+            } else {
+                // Ollama format (keep existing)
+                $payload = [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => [
                         [
@@ -75,7 +96,14 @@ class OpenAIService
                     'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
                     'temperature' => $options['temperature'] ?? 0.7,
                     'stream' => $options['stream'] ?? false,
-                ],
+                ];
+            }
+
+            $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
+            
+            $response = $this->client->post($endpoint, [
+                'headers' => $headers,
+                'json' => $payload,
             ]);
 
             $responseBody = $response->getBody()->getContents();
@@ -86,8 +114,16 @@ class OpenAIService
                 throw new AIServiceException('Failed to decode AI service response: ' . json_last_error_msg());
             }
 
-            if (isset($data['choices'][0]['message']['content'])) {
-                return trim($data['choices'][0]['message']['content']);
+            if ($this->mode === 'openai') {
+                // OpenAI new API response format
+                if (isset($data['output_text'])) {
+                    return trim($data['output_text']);
+                }
+            } else {
+                // Ollama response format
+                if (isset($data['choices'][0]['message']['content'])) {
+                    return trim($data['choices'][0]['message']['content']);
+                }
             }
 
             if (isset($data['error'])) {
@@ -99,6 +135,9 @@ class OpenAIService
             throw new AIServiceException('Invalid response format from AI service.');
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Error: ' . $e->getMessage());
+            if ($e->hasResponse()) {
+                Log::error('OpenAI Response Body: ' . (string) $e->getResponse()->getBody());
+            }
             throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());
         }
     }
@@ -140,9 +179,30 @@ class OpenAIService
                 $headers['Authorization'] = 'Bearer ' . $this->apiKey;
             }
             
-            $response = $this->client->post('chat/completions', [
-                'headers' => $headers,
-                'json' => [
+            // Build request payload based on mode
+            if ($this->mode === 'openai') {
+                // OpenAI new API format
+                $payload = [
+                    'model' => $options['model'] ?? $this->model,
+                    'input' => [
+                        [
+                            'role' => 'system',
+                            'content' => [
+                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                            ]
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                ['type' => 'input_text', 'text' => $prompt]
+                            ]
+                        ]
+                    ],
+                    'max_output_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                ];
+            } else {
+                // Ollama format (keep existing)
+                $payload = [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => [
                         [
@@ -157,11 +217,19 @@ class OpenAIService
                     'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
                     'temperature' => $options['temperature'] ?? 0.7,
                     'stream' => true,
-                ],
+                ];
+            }
+
+            $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
+            
+            $response = $this->client->post($endpoint, [
+                'headers' => $headers,
+                'json' => $payload,
             ]);
 
             $body = $response->getBody();
             $buffer = '';
+            $currentEvent = null;
 
             while (!$body->eof()) {
                 $chunk = $body->read(1024);
@@ -177,18 +245,39 @@ class OpenAIService
                         continue;
                     }
 
+                    // Track event type for OpenAI's new streaming format
+                    if (str_starts_with($line, 'event: ')) {
+                        $currentEvent = substr($line, 7);
+                        continue;
+                    }
+
                     if (str_starts_with($line, 'data: ')) {
                         $jsonData = substr($line, 6);
                         $data = json_decode($jsonData, true);
 
-                        if (json_last_error() === JSON_ERROR_NONE && isset($data['choices'][0]['delta']['content'])) {
-                            yield $data['choices'][0]['delta']['content'];
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            if ($this->mode === 'openai') {
+                                // OpenAI new API: streaming sends event-based chunks with 'text' field
+                                if ($currentEvent === 'response.output_text.delta' && isset($data['text'])) {
+                                    yield $data['text'];
+                                }
+                            } else {
+                                // Ollama: use existing format
+                                if (isset($data['choices'][0]['delta']['content'])) {
+                                    yield $data['choices'][0]['delta']['content'];
+                                }
+                            }
                         }
+                        
+                        $currentEvent = null; // Reset event after processing data
                     }
                 }
             }
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Streaming Error: ' . $e->getMessage());
+            if ($e->hasResponse()) {
+                Log::error('OpenAI Streaming Response Body: ' . (string) $e->getResponse()->getBody());
+            }
             throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());
         }
     }
