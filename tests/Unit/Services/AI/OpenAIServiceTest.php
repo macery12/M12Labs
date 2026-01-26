@@ -38,6 +38,7 @@ class OpenAIServiceTest extends TestCase
                 $this->assertArrayHasKey('max_output_tokens', $payload);
                 $this->assertArrayNotHasKey('max_tokens', $payload);
                 $this->assertArrayNotHasKey('stream', $payload);
+                $this->assertArrayNotHasKey('temperature', $payload);
                 
                 // Verify input structure
                 $this->assertIsArray($payload['input']);
@@ -93,6 +94,7 @@ class OpenAIServiceTest extends TestCase
                 $this->assertArrayHasKey('max_tokens', $payload);
                 $this->assertArrayNotHasKey('max_output_tokens', $payload);
                 $this->assertArrayHasKey('stream', $payload);
+                $this->assertArrayHasKey('temperature', $payload);
                 
                 return true;
             }))

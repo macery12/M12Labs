@@ -59,42 +59,44 @@ class OpenAIService
             }
             
             // Build request payload based on mode
-            $payload = [
-                'model' => $options['model'] ?? $this->model,
-                'temperature' => $options['temperature'] ?? 0.7,
-            ];
-
             if ($this->mode === 'openai') {
                 // OpenAI new API format
-                $payload['input'] = [
-                    [
-                        'role' => 'system',
-                        'content' => [
-                            ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                $payload = [
+                    'model' => $options['model'] ?? $this->model,
+                    'input' => [
+                        [
+                            'role' => 'system',
+                            'content' => [
+                                ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                            ]
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                ['type' => 'text', 'text' => $prompt]
+                            ]
                         ]
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => [
-                            ['type' => 'text', 'text' => $prompt]
-                        ]
-                    ]
+                    'max_output_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
                 ];
-                $payload['max_output_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
             } else {
                 // Ollama format (keep existing)
-                $payload['messages'] = [
-                    [
-                        'role' => 'system',
-                        'content' => $options['system_prompt'] ?? $this->systemPrompt,
+                $payload = [
+                    'model' => $options['model'] ?? $this->model,
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => $options['system_prompt'] ?? $this->systemPrompt,
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $prompt,
+                        ],
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => $prompt,
-                    ],
+                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'temperature' => $options['temperature'] ?? 0.7,
+                    'stream' => $options['stream'] ?? false,
                 ];
-                $payload['max_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
-                $payload['stream'] = $options['stream'] ?? false;
             }
 
             $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
@@ -175,42 +177,45 @@ class OpenAIService
             }
             
             // Build request payload based on mode
-            $payload = [
-                'model' => $options['model'] ?? $this->model,
-                'temperature' => $options['temperature'] ?? 0.7,
-                'stream' => true,
-            ];
-
             if ($this->mode === 'openai') {
                 // OpenAI new API format
-                $payload['input'] = [
-                    [
-                        'role' => 'system',
-                        'content' => [
-                            ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                $payload = [
+                    'model' => $options['model'] ?? $this->model,
+                    'input' => [
+                        [
+                            'role' => 'system',
+                            'content' => [
+                                ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                            ]
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                ['type' => 'text', 'text' => $prompt]
+                            ]
                         ]
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => [
-                            ['type' => 'text', 'text' => $prompt]
-                        ]
-                    ]
+                    'max_output_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'stream' => true,
                 ];
-                $payload['max_output_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
             } else {
                 // Ollama format (keep existing)
-                $payload['messages'] = [
-                    [
-                        'role' => 'system',
-                        'content' => $options['system_prompt'] ?? $this->systemPrompt,
+                $payload = [
+                    'model' => $options['model'] ?? $this->model,
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => $options['system_prompt'] ?? $this->systemPrompt,
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $prompt,
+                        ],
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => $prompt,
-                    ],
+                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'temperature' => $options['temperature'] ?? 0.7,
+                    'stream' => true,
                 ];
-                $payload['max_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
             }
 
             $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
