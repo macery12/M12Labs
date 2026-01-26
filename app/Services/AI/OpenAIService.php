@@ -23,7 +23,7 @@ class OpenAIService
     {
         $this->apiKey = config('modules.ai.key') ?: '';
         $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
-        $this->model = config('modules.ai.model') ?: 'gpt-3.5-turbo';
+        $this->model = config('modules.ai.model') ?: 'gpt-4.1-mini';
         $this->mode = config('modules.ai.mode') ?: 'openai';
         $this->systemPrompt = config('modules.ai.system_prompt') ?: 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.';
 
@@ -58,24 +58,50 @@ class OpenAIService
                 $headers['Authorization'] = 'Bearer ' . $this->apiKey;
             }
             
-            $response = $this->client->post('chat/completions', [
-                'headers' => $headers,
-                'json' => [
-                    'model' => $options['model'] ?? $this->model,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $options['system_prompt'] ?? $this->systemPrompt,
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $prompt,
-                        ],
+            // Build request payload based on mode
+            $payload = [
+                'model' => $options['model'] ?? $this->model,
+                'temperature' => $options['temperature'] ?? 0.7,
+            ];
+
+            if ($this->mode === 'openai') {
+                // OpenAI new API format
+                $payload['input'] = [
+                    [
+                        'role' => 'system',
+                        'content' => [
+                            ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                        ]
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
-                    'temperature' => $options['temperature'] ?? 0.7,
-                    'stream' => $options['stream'] ?? false,
-                ],
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            ['type' => 'text', 'text' => $prompt]
+                        ]
+                    ]
+                ];
+                $payload['max_output_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
+            } else {
+                // Ollama format (keep existing)
+                $payload['messages'] = [
+                    [
+                        'role' => 'system',
+                        'content' => $options['system_prompt'] ?? $this->systemPrompt,
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $prompt,
+                    ],
+                ];
+                $payload['max_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
+                $payload['stream'] = $options['stream'] ?? false;
+            }
+
+            $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
+            
+            $response = $this->client->post($endpoint, [
+                'headers' => $headers,
+                'json' => $payload,
             ]);
 
             $responseBody = $response->getBody()->getContents();
@@ -86,8 +112,16 @@ class OpenAIService
                 throw new AIServiceException('Failed to decode AI service response: ' . json_last_error_msg());
             }
 
-            if (isset($data['choices'][0]['message']['content'])) {
-                return trim($data['choices'][0]['message']['content']);
+            if ($this->mode === 'openai') {
+                // OpenAI new API response format
+                if (isset($data['output_text'])) {
+                    return trim($data['output_text']);
+                }
+            } else {
+                // Ollama response format
+                if (isset($data['choices'][0]['message']['content'])) {
+                    return trim($data['choices'][0]['message']['content']);
+                }
             }
 
             if (isset($data['error'])) {
@@ -140,24 +174,50 @@ class OpenAIService
                 $headers['Authorization'] = 'Bearer ' . $this->apiKey;
             }
             
-            $response = $this->client->post('chat/completions', [
-                'headers' => $headers,
-                'json' => [
-                    'model' => $options['model'] ?? $this->model,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $options['system_prompt'] ?? $this->systemPrompt,
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $prompt,
-                        ],
+            // Build request payload based on mode
+            $payload = [
+                'model' => $options['model'] ?? $this->model,
+                'temperature' => $options['temperature'] ?? 0.7,
+                'stream' => true,
+            ];
+
+            if ($this->mode === 'openai') {
+                // OpenAI new API format
+                $payload['input'] = [
+                    [
+                        'role' => 'system',
+                        'content' => [
+                            ['type' => 'text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
+                        ]
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
-                    'temperature' => $options['temperature'] ?? 0.7,
-                    'stream' => true,
-                ],
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            ['type' => 'text', 'text' => $prompt]
+                        ]
+                    ]
+                ];
+                $payload['max_output_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
+            } else {
+                // Ollama format (keep existing)
+                $payload['messages'] = [
+                    [
+                        'role' => 'system',
+                        'content' => $options['system_prompt'] ?? $this->systemPrompt,
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $prompt,
+                    ],
+                ];
+                $payload['max_tokens'] = $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200);
+            }
+
+            $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
+            
+            $response = $this->client->post($endpoint, [
+                'headers' => $headers,
+                'json' => $payload,
             ]);
 
             $body = $response->getBody();
@@ -181,9 +241,23 @@ class OpenAIService
                         $jsonData = substr($line, 6);
                         $data = json_decode($jsonData, true);
 
-                        if (json_last_error() === JSON_ERROR_NONE && isset($data['choices'][0]['delta']['content'])) {
-                            yield $data['choices'][0]['delta']['content'];
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            if ($this->mode === 'openai') {
+                                // OpenAI new API: look for output_text in delta events
+                                if (isset($data['output_text'])) {
+                                    yield $data['output_text'];
+                                }
+                            } else {
+                                // Ollama: use existing format
+                                if (isset($data['choices'][0]['delta']['content'])) {
+                                    yield $data['choices'][0]['delta']['content'];
+                                }
+                            }
                         }
+                    } elseif ($this->mode === 'openai' && str_starts_with($line, 'event: response.output_text.delta')) {
+                        // Handle OpenAI's new event-based streaming format
+                        // The next line should contain the data
+                        continue;
                     }
                 }
             }
