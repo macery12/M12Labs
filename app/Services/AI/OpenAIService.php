@@ -32,7 +32,7 @@ class OpenAIService
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
             'timeout' => 120,
-            'stream' => true, // Enable streaming support
+            #'stream' => true, // Enable streaming support
         ]);
     }
 
