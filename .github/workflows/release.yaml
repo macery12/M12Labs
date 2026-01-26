@@ -35,11 +35,8 @@ jobs:
           BRANCH=release/${REF:10}
           git config --local user.email "ci@jexactyl.com"
           git config --local user.name "Jexactyl Releases"
-          git checkout -b $BRANCH
-          git push -u origin $BRANCH
-          git add config/app.php
-          git commit -m "New release inbound!"
-          git push
+          git checkout -b "$BRANCH"
+          git push -u origin "$BRANCH"
 
       - name: Create release archive
         run: |
