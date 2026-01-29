@@ -14,6 +14,7 @@ const NetworkContainer = lazy(() => import('@server/network/NetworkContainer'));
 const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
+const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -34,6 +35,13 @@ const server: ServerRouteDefinition[] = [
         name: 'Databases',
         icon: Icon.DatabaseIcon,
         category: 'data',
+    }),
+    route('mods/*', ModsContainer, {
+        permission: 'file.create',
+        name: 'Mods',
+        icon: Icon.CubeIcon,
+        category: 'data',
+        condition: server => server.modsEnabled,
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',

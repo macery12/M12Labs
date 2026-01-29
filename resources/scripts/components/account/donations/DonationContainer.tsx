@@ -169,11 +169,17 @@ export default () => {
                                             {values.amount && !errors.amount && (
                                                 <div
                                                     css={tw`mt-3 p-3 rounded-lg border-2`}
-                                                    style={{ borderColor: colors.primary, backgroundColor: colors.secondary }}
+                                                    style={{
+                                                        borderColor: colors.primary,
+                                                        backgroundColor: colors.secondary,
+                                                    }}
                                                 >
                                                     <p css={tw`text-sm text-gray-300`}>
                                                         You are donating:{' '}
-                                                        <span css={tw`text-xl font-bold`} style={{ color: colors.primary }}>
+                                                        <span
+                                                            css={tw`text-xl font-bold`}
+                                                            style={{ color: colors.primary }}
+                                                        >
                                                             ${parseFloat(values.amount).toFixed(2)}
                                                         </span>
                                                     </p>

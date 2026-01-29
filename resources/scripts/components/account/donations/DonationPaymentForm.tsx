@@ -67,7 +67,7 @@ export default ({ intentId, amount }: Props) => {
             <div css={tw`mb-6`}>
                 <PaymentElement />
             </div>
-            
+
             <div css={tw`mb-4 p-3 rounded bg-gray-800/50 border border-gray-700`}>
                 <div css={tw`flex items-center text-sm text-gray-400`}>
                     <FontAwesomeIcon icon={faLock} css={tw`mr-2`} />
@@ -77,13 +77,8 @@ export default ({ intentId, amount }: Props) => {
 
             <SpinnerOverlay visible={loading} />
             <FlashMessageRender byKey={'account:donation'} css={tw`mb-4`} />
-            
-            <Button 
-                type={'submit'}
-                css={tw`w-full`} 
-                size={Button.Sizes.Large} 
-                disabled={!stripe || loading}
-            >
+
+            <Button type={'submit'} css={tw`w-full`} size={Button.Sizes.Large} disabled={!stripe || loading}>
                 <FontAwesomeIcon icon={faHeart} css={tw`mr-2`} />
                 {loading ? 'Processing...' : `Donate $${amount.toFixed(2)}`}
             </Button>

@@ -35,12 +35,12 @@ export const getStripeKey = (): Promise<{ key: string }> => {
 export const createDonationIntent = (amount: number, message?: string): Promise<DonationIntent> => {
     return new Promise((resolve, reject) => {
         const payload: { amount: number; message?: string } = { amount };
-        
+
         // Only include message if it's not empty
         if (message && message.trim() !== '') {
             payload.message = message.trim();
         }
-        
+
         http.post('/api/client/donations/intent', payload)
             .then(({ data }) => resolve(data))
             .catch(reject);

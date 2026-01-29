@@ -15,6 +15,7 @@ const AuthContainer = lazy(() => import('@/components/admin/modules/auth/AuthCon
 const BillingRouter = lazy(() => import('@/components/admin/modules/billing/BillingRouter'));
 const TicketRouter = lazy(() => import('@/components/admin/modules/tickets/TicketRouter'));
 const AIRouter = lazy(() => import('@/components/admin/modules/ai/AIRouter'));
+const ModsRouter = lazy(() => import('@/components/admin/modules/mods/ModsRouter'));
 const WebhookRouter = lazy(() => import('@/components/admin/modules/webhooks/WebhookRouter'));
 const ThemeContainer = lazy(() => import('@/components/admin/modules/theme/ThemeContainer'));
 const AlertRouter = lazy(() => import('@/components/admin/modules/alert/AlertRouter'));
@@ -60,6 +61,7 @@ const admin: AdminRouteDefinition[] = [
     route('billing/*', BillingRouter, { name: 'Billing', icon: Icon.CashIcon, category: 'modules', advanced: true }),
     route('tickets/*', TicketRouter, { name: 'Tickets', icon: Icon.TicketIcon, category: 'modules', advanced: true }),
     route('ai/*', AIRouter, { name: 'AI', icon: Icon.SparklesIcon, category: 'modules', advanced: true }),
+    route('mods/*', ModsRouter, { name: 'Mods', icon: Icon.CubeIcon, category: 'modules', advanced: true }),
     route('webhooks/*', WebhookRouter, {
         name: 'Webhooks',
         icon: Icon.CursorClickIcon,

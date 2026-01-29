@@ -43,7 +43,9 @@ export default () => {
                 model: ai.model || 'gpt-3.5-turbo',
                 mode: ai.mode || 'openai',
                 max_tokens: ai.max_tokens || 200,
-                system_prompt: ai.system_prompt || 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
+                system_prompt:
+                    ai.system_prompt ||
+                    'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
             }}
         >
             {({ values }) => (
@@ -113,7 +115,8 @@ export default () => {
                             <div>
                                 <Field id={'max_tokens'} name={'max_tokens'} type={'number'} min={50} max={4000} />
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Maximum number of tokens in the AI response (50-4000). Default: 200. Lower values = shorter responses, less cost.
+                                    Maximum number of tokens in the AI response (50-4000). Default: 200. Lower values =
+                                    shorter responses, less cost.
                                 </p>
                             </div>
                         </AdminBox>
@@ -127,7 +130,8 @@ export default () => {
                                     placeholder="You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses."
                                 />
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Customize the AI's behavior and response style. This message is sent with every query to define the AI's role and tone. (10-1000 characters)
+                                    Customize the AI's behavior and response style. This message is sent with every
+                                    query to define the AI's role and tone. (10-1000 characters)
                                 </p>
                             </div>
                         </AdminBox>

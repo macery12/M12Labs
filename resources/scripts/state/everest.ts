@@ -98,6 +98,10 @@ export interface EverestSettings {
         max_tokens?: number;
         system_prompt?: string;
     };
+    mods: {
+        enabled: boolean;
+        curseforge_api_key: boolean | string;
+    };
     webhooks: {
         enabled: boolean;
         url: boolean;

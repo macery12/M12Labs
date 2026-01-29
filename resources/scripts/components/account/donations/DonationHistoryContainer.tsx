@@ -8,16 +8,35 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { format } from 'date-fns';
 import ContentBox from '@/elements/ContentBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart, faCalendar, faDollarSign, faMessage, faCheckCircle, faClock, faTimesCircle, faUser } from '@fortawesome/free-solid-svg-icons';
+import {
+    faHeart,
+    faCalendar,
+    faDollarSign,
+    faMessage,
+    faCheckCircle,
+    faClock,
+    faTimesCircle,
+    faUser,
+} from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 
 const StatusBadge = ({ status }: { status: string }) => {
     const getStatusConfig = () => {
         switch (status) {
             case 'completed':
-                return { color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/50', icon: faCheckCircle };
+                return {
+                    color: 'text-green-400',
+                    bg: 'bg-green-500/20',
+                    border: 'border-green-500/50',
+                    icon: faCheckCircle,
+                };
             case 'pending':
-                return { color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/50', icon: faClock };
+                return {
+                    color: 'text-yellow-400',
+                    bg: 'bg-yellow-500/20',
+                    border: 'border-yellow-500/50',
+                    icon: faClock,
+                };
             case 'failed':
                 return { color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/50', icon: faTimesCircle };
             default:
@@ -28,7 +47,10 @@ const StatusBadge = ({ status }: { status: string }) => {
     const config = getStatusConfig();
 
     return (
-        <div css={tw`inline-flex items-center px-3 py-1 rounded-full border`} className={`${config.bg} ${config.border}`}>
+        <div
+            css={tw`inline-flex items-center px-3 py-1 rounded-full border`}
+            className={`${config.bg} ${config.border}`}
+        >
             <FontAwesomeIcon icon={config.icon} className={config.color} css={tw`mr-2 text-xs`} />
             <span className={config.color} css={tw`text-xs font-semibold uppercase`}>
                 {status}
@@ -59,9 +81,7 @@ export default () => {
             });
     }, []);
 
-    const totalDonated = donations
-        .filter(d => d.status === 'completed')
-        .reduce((sum, d) => sum + d.amount, 0);
+    const totalDonated = donations.filter(d => d.status === 'completed').reduce((sum, d) => sum + d.amount, 0);
 
     return (
         <PageContentBlock title={'Donation History'}>
@@ -74,9 +94,7 @@ export default () => {
                         <FontAwesomeIcon icon={faHeart} css={tw`mr-3`} style={{ color: colors.primary }} />
                         Your Contributions
                     </h1>
-                    <p css={tw`mt-2 text-sm font-normal text-gray-400`}>
-                        Thank you for supporting our platform!
-                    </p>
+                    <p css={tw`mt-2 text-sm font-normal text-gray-400`}>Thank you for supporting our platform!</p>
                 </div>
                 {totalDonated > 0 && (
                     <div css={tw`text-right`}>
@@ -116,7 +134,10 @@ export default () => {
                                 <div css={tw`flex items-center`}>
                                     <div
                                         css={tw`w-12 h-12 rounded-full flex items-center justify-center mr-4`}
-                                        style={{ backgroundColor: colors.primary + '20', border: `2px solid ${colors.primary}` }}
+                                        style={{
+                                            backgroundColor: colors.primary + '20',
+                                            border: `2px solid ${colors.primary}`,
+                                        }}
                                     >
                                         <FontAwesomeIcon icon={faHeart} style={{ color: colors.primary }} />
                                     </div>

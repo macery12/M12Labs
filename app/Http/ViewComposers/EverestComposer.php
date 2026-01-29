@@ -110,6 +110,14 @@ class EverestComposer
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),
                 'url' => !empty(config('modules.webhooks.url')),
             ],
+            'mods' => [
+                'enabled' => boolval(config('modules.mods.enabled', false)),
+                'curseforge_api_key' => !empty(config('modules.mods.curseforge_api_key')),
+                'rate_limit' => [
+                    'requests_per_minute' => config('modules.mods.rate_limit.requests_per_minute', 30),
+                    'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
+                ],
+            ],
         ]);
     }
 }
