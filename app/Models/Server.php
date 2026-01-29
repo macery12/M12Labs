@@ -181,7 +181,7 @@ class Server extends Model
 
     /**
      * Returns the rules for updating a server model.
-     * 
+     *
      * This override handles the billing_product_id validation to allow
      * existing (but now deleted) product IDs to remain on the server
      * when the field is not being changed.
@@ -195,13 +195,13 @@ class Server extends Model
         if ($model instanceof self && isset($rules['billing_product_id'])) {
             $originalValue = $model->getOriginal('billing_product_id');
             $currentValue = $model->getAttribute('billing_product_id');
-            
+
             // Only skip exists validation if the value hasn't changed
             if ($originalValue === $currentValue && !is_null($originalValue)) {
                 $rules['billing_product_id'] = array_values(array_filter($rules['billing_product_id'], function ($rule) {
                     return !is_string($rule) || !str_starts_with($rule, 'exists:');
                 }));
-                
+
                 // Ensure we still have basic validation
                 if (empty($rules['billing_product_id'])) {
                     $rules['billing_product_id'] = ['nullable', 'int'];

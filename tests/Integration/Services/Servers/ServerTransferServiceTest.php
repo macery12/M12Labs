@@ -37,10 +37,10 @@ class ServerTransferServiceTest extends IntegrationTestCase
     {
         /** @var \Everest\Models\Server $server */
         $server = $this->createServerModel();
-        
+
         /** @var \Everest\Models\Node $targetNode */
         $targetNode = Node::factory()->create();
-        
+
         /** @var \Everest\Models\Allocation $targetAllocation */
         $targetAllocation = Allocation::factory()->create([
             'node_id' => $targetNode->id,
@@ -151,7 +151,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
         ]);
 
         $this->assertEquals([$additionalAllocation->id], $transfer->new_additional_allocations);
-        
+
         // Verify both allocations were reserved
         $this->assertEquals($server->id, $targetAllocation->refresh()->server_id);
         $this->assertEquals($server->id, $additionalAllocation->refresh()->server_id);
