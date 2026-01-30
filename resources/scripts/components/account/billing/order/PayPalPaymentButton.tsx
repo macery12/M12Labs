@@ -29,7 +29,7 @@ export default (data: Props) => {
             return;
         }
 
-        const returnUrl = window.location.origin + '/account/billing/processing';
+        const returnUrl = window.location.origin + '/account/billing/processing?processor=paypal';
 
         try {
             // Create PayPal order with return URL
@@ -51,7 +51,7 @@ export default (data: Props) => {
             // After approval, PayPal will redirect back to return_url with token parameter
             window.location.href = order.approval_url;
         } catch (error) {
-            clearAndAddHttpError({ key: 'account:billing:order', error });
+            clearAndAddHttpError({ key: 'store:order', error });
             setLoading(false);
         }
     };

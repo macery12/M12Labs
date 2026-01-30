@@ -13,6 +13,7 @@ class PayPalPaymentService
     private ?string $clientSecret = null;
     private string $mode;
     private ?string $accessToken = null;
+    private ?int $tokenExpiresAt = null;
 
     public function __construct()
     {
@@ -39,7 +40,8 @@ class PayPalPaymentService
      */
     private function getAccessToken(): string
     {
-        if ($this->accessToken) {
+        // Check if we have a valid cached token
+        if ($this->accessToken && $this->tokenExpiresAt && time() < $this->tokenExpiresAt) {
             return $this->accessToken;
         }
 
@@ -52,10 +54,15 @@ class PayPalPaymentService
             ]);
 
         if (!$response->successful()) {
-            throw new DisplayException('Failed to authenticate with PayPal: ' . $response->body());
+            throw new DisplayException('Failed to authenticate with PayPal. Please check your credentials.');
         }
 
-        $this->accessToken = $response->json('access_token');
+        $data = $response->json();
+        $this->accessToken = $data['access_token'];
+        // Set expiration to 90% of the actual expiration time to be safe
+        $expiresIn = $data['expires_in'] ?? 32400; // Default to 9 hours if not provided
+        $this->tokenExpiresAt = time() + (int)($expiresIn * 0.9);
+        
         return $this->accessToken;
     }
 
@@ -103,7 +110,8 @@ class PayPalPaymentService
             ->post($this->getApiUrl() . '/v2/checkout/orders', $orderData);
 
         if (!$response->successful()) {
-            throw new DisplayException('Failed to create PayPal order: ' . $response->body());
+            \Log::error('PayPal order creation failed', ['response' => $response->body()]);
+            throw new DisplayException('Failed to create PayPal order. Please try again or contact support.');
         }
 
         return $response->json();
@@ -118,13 +126,19 @@ class PayPalPaymentService
      */
     public function getOrder(string $orderId): array
     {
+        // Validate order ID format (PayPal order IDs are alphanumeric with hyphens)
+        if (!preg_match('/^[A-Z0-9-]+$/i', $orderId)) {
+            throw new DisplayException('Invalid PayPal order ID format.');
+        }
+
         $token = $this->getAccessToken();
 
         $response = Http::withToken($token)
             ->get($this->getApiUrl() . '/v2/checkout/orders/' . $orderId);
 
         if (!$response->successful()) {
-            throw new DisplayException('Failed to fetch PayPal order: ' . $response->body());
+            \Log::error('PayPal order fetch failed', ['order_id' => $orderId, 'status' => $response->status()]);
+            throw new DisplayException('Failed to fetch PayPal order. Please try again or contact support.');
         }
 
         return $response->json();
@@ -145,7 +159,8 @@ class PayPalPaymentService
             ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture');
 
         if (!$response->successful()) {
-            throw new DisplayException('Failed to capture PayPal order: ' . $response->body());
+            \Log::error('PayPal order capture failed', ['order_id' => $orderId, 'status' => $response->status()]);
+            throw new DisplayException('Failed to capture PayPal order. Please try again or contact support.');
         }
 
         return $response->json();

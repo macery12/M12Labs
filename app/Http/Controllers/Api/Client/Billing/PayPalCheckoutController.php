@@ -308,59 +308,80 @@ class PayPalCheckoutController extends ClientApiController
             return;
         }
 
-        $product = Product::findOrFail($order->product_id);
-
-        \Log::info("Fulfilling PayPal order {$order->id} for PayPal order {$order->paypal_order_id}");
-
-        // Process the renewal or product purchase
-        if ($order->type === Order::TYPE_REN) {
-            // For renewals, get the server from the stored server_id
-            if (!$order->server_id) {
-                throw new DisplayException('Server ID not found in order record for renewal.');
+        \DB::beginTransaction();
+        try {
+            // Lock the order row to prevent concurrent fulfillment
+            $order = Order::where('id', $order->id)
+                ->lockForUpdate()
+                ->first();
+            
+            // Recheck status after acquiring lock
+            if ($order->status === Order::STATUS_PROCESSED) {
+                \DB::rollBack();
+                \Log::info("Order {$order->id} already processed during lock wait");
+                return;
             }
-            
-            $server = Server::findOrFail($order->server_id);
 
-            // Use the unified processor service for renewal
-            $this->processorService->processRenewal($server, $product, $order->coupon_id);
-            
-            \Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
-        } else {
-            // For new purchases, create the server using stored order data
-            $user = \Everest\Models\User::findOrFail($order->user_id);
-            $request->setUserResolver(function () use ($user) {
-                return $user;
-            });
+            $product = Product::findOrFail($order->product_id);
 
-            $orderMetadata = (object) [
-                'product_id' => $order->product_id,
-                'node_id' => $order->node_id,
-                'egg_id' => $order->egg_id,
-                'name' => $order->name,
-                'variables' => $order->variables ?? [],
-            ];
+            \Log::info("Fulfilling PayPal order {$order->id} for PayPal order {$order->paypal_order_id}");
 
-            $server = $this->serverCreation->process($request, $product, $orderMetadata, $order);
-            
-            \Log::info("Created new server {$server->id} for order {$order->id}");
-        }
+            // Process the renewal or product purchase
+            if ($order->type === Order::TYPE_REN) {
+                // For renewals, get the server from the stored server_id
+                if (!$order->server_id) {
+                    throw new DisplayException('Server ID not found in order record for renewal.');
+                }
+                
+                $server = Server::findOrFail($order->server_id);
 
-        // Record coupon usage for non-renewal orders
-        if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-            $existingUsage = CouponUsage::where('order_id', $order->id)->first();
-            if (!$existingUsage) {
-                CouponUsage::create([
-                    'coupon_id' => $order->coupon_id,
-                    'user_id' => $order->user_id,
-                    'order_id' => $order->id,
-                    'used_at' => now(),
-                ]);
+                // Use the unified processor service for renewal
+                $this->processorService->processRenewal($server, $product, $order->coupon_id);
+                
+                \Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
+            } else {
+                // For new purchases, create the server using stored order data
+                $user = \Everest\Models\User::findOrFail($order->user_id);
+                $request->setUserResolver(function () use ($user) {
+                    return $user;
+                });
+
+                $orderMetadata = (object) [
+                    'product_id' => $order->product_id,
+                    'node_id' => $order->node_id,
+                    'egg_id' => $order->egg_id,
+                    'name' => $order->name,
+                    'variables' => $order->variables ?? [],
+                ];
+
+                $server = $this->serverCreation->process($request, $product, $orderMetadata, $order);
+                
+                \Log::info("Created new server {$server->id} for order {$order->id}");
             }
-        }
 
-        // Mark the order as processed
-        if ($order->type !== Order::TYPE_REN) {
-            $order->update(['status' => Order::STATUS_PROCESSED]);
+            // Record coupon usage for non-renewal orders
+            if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
+                $existingUsage = CouponUsage::where('order_id', $order->id)->first();
+                if (!$existingUsage) {
+                    CouponUsage::create([
+                        'coupon_id' => $order->coupon_id,
+                        'user_id' => $order->user_id,
+                        'order_id' => $order->id,
+                        'used_at' => now(),
+                    ]);
+                }
+            }
+
+            // Mark the order as processed
+            if ($order->type !== Order::TYPE_REN) {
+                $order->update(['status' => Order::STATUS_PROCESSED]);
+            }
+
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error("Failed to fulfill order {$order->id}: " . $e->getMessage());
+            throw $e;
         }
     }
 

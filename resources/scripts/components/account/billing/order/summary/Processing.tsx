@@ -18,8 +18,8 @@ export default () => {
     const { addFlash, clearFlashes } = useFlash();
 
     const stripeIntent = params.get('payment_intent');
-    const mollieToken = params.get('token');
-    const paypalToken = params.get('token'); // PayPal also uses token parameter
+    const token = params.get('token');
+    const paymentProcessor = params.get('processor'); // New parameter to differentiate
 
     useEffect(() => {
         clearFlashes();
@@ -45,13 +45,27 @@ export default () => {
         }
 
         // Handle Mollie payment
-        if (billing.processors?.mollie?.available && mollieToken && !billing.processors?.paypal?.available) {
+        if (token && (paymentProcessor === 'mollie' || (billing.processors?.mollie?.available && !paymentProcessor && !billing.processors?.paypal?.available))) {
             // Get payment ID from token
-            getPaymentIdFromToken(mollieToken)
+            getPaymentIdFromToken(token)
                 .then(({ payment_id }) => {
                     // Poll for order status since Mollie processes via webhook
+                    let pollCount = 0;
+                    const maxPolls = 60; // 2 minutes max (60 * 2 seconds)
+                    
                     const checkStatus = async () => {
                         try {
+                            pollCount++;
+                            
+                            if (pollCount > maxPolls) {
+                                addFlash({
+                                    key: 'billing:process',
+                                    type: 'warning',
+                                    message: 'Payment verification is taking longer than expected. Please check your orders page or contact support.',
+                                });
+                                return;
+                            }
+                            
                             const status = await checkMolliePaymentStatus(payment_id);
                             
                             if (status.processed) {
@@ -100,16 +114,30 @@ export default () => {
         }
 
         // Handle PayPal payment
-        if (billing.processors?.paypal?.available && paypalToken) {
+        if (token && (paymentProcessor === 'paypal' || (billing.processors?.paypal?.available && !paymentProcessor && !billing.processors?.mollie?.available))) {
             // Get order ID from token
-            getOrderIdFromToken(paypalToken)
+            getOrderIdFromToken(token)
                 .then(({ order_id }) => {
                     // Capture the PayPal order
                     capturePayPalOrder(order_id)
                         .then(() => {
                             // Check if order has been fulfilled
+                            let pollCount = 0;
+                            const maxPolls = 60; // 2 minutes max (60 * 2 seconds)
+                            
                             const checkStatus = async () => {
                                 try {
+                                    pollCount++;
+                                    
+                                    if (pollCount > maxPolls) {
+                                        addFlash({
+                                            key: 'billing:process',
+                                            type: 'warning',
+                                            message: 'Payment verification is taking longer than expected. Please check your orders page or contact support.',
+                                        });
+                                        return;
+                                    }
+                                    
                                     const status = await checkPayPalOrderStatus(order_id);
                                     
                                     if (status.processed) {
@@ -181,7 +209,7 @@ export default () => {
                         Our systems are currently working on deploying your server to our systems. Sit tight while your
                         new server is deployed!
                     </p>
-                    <p className={'mt-8 text-2xs text-neutral-400'}>Session {stripeIntent || mollieToken || paypalToken || 'Unknown'}</p>
+                    <p className={'mt-8 text-2xs text-neutral-400'}>Session {stripeIntent || token || 'Unknown'}</p>
                 </div>
             </div>
         </PageContentBlock>
