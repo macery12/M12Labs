@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ children, shape, size, variant, className, loading, icon: Icon, disabled = false, ...rest }, ref) => {
+    ({ children, shape, size, variant, className, loading, icon: Icon, ...rest }, ref) => {
         return (
             <button
                 ref={ref}
@@ -25,7 +25,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     loading && 'text-gray-300',
                 )}
                 {...rest}
-                disabled={disabled || loading}
             >
                 {children}
                 {Icon && <Icon className={'ml-1 mt-1 h-4 w-4'} />}
