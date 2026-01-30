@@ -215,25 +215,3 @@ export default () => {
         </PageContentBlock>
     );
 };
-
-    return (
-        <PageContentBlock>
-            <div className={'flex justify-center'}>
-                <div
-                    className={'relative w-full rounded-lg p-12 text-center shadow-lg sm:w-3/4 md:w-1/2'}
-                    style={{ backgroundColor: colors.secondary }}
-                >
-                    <FlashMessageRender byKey={'billing:process'} className={'mb-6'} />
-                    <h2 className={'text-4xl font-bold text-white'}>
-                        Processing Order <Spinner centered />
-                    </h2>
-                    <p className={'mt-2 text-sm text-neutral-200'}>
-                        Our systems are currently working on deploying your server to our systems. Sit tight while your
-                        new server is deployed!
-                    </p>
-                    <p className={'mt-8 text-2xs text-neutral-400'}>Session {stripeIntent || mollieToken || 'Unknown'}</p>
-                </div>
-            </div>
-        </PageContentBlock>
-    );
-};
