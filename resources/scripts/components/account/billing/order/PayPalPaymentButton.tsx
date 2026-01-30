@@ -61,6 +61,7 @@ export default (data: Props) => {
             <SpinnerOverlay visible={loading} />
             <FlashMessageRender byKey={'store:order'} className={'mb-4'} />
             <Button
+                type={'submit'}
                 disabled={!data.selectedNode || !data.serverName.trim()}
                 className={'mt-4 w-full'}
                 size={Button.Sizes.Large}
