@@ -47,9 +47,26 @@ class PaymentProcessorConfigService
     }
 
     /**
+     * Check if PayPal standalone is properly configured and enabled.
+     *
+     * @return bool
+     */
+    public function isPayPalAvailable(): bool
+    {
+        // Check if PayPal integration is enabled
+        $paypalEnabled = config('modules.billing.integrations.paypal.enabled', false);
+        
+        // Check if PayPal credentials are configured
+        $clientId = config('modules.billing.paypal_standalone.client_id', '');
+        $clientSecret = config('modules.billing.paypal_standalone.client_secret', '');
+        
+        return $paypalEnabled && !empty($clientId) && !empty($clientSecret);
+    }
+
+    /**
      * Get all available payment processors.
      *
-     * @return array Array of available processor names ['stripe', 'mollie']
+     * @return array Array of available processor names ['stripe', 'mollie', 'paypal']
      */
     public function getAvailableProcessors(): array
     {
@@ -63,6 +80,10 @@ class PaymentProcessorConfigService
             $processors[] = 'mollie';
         }
         
+        if ($this->isPayPalAvailable()) {
+            $processors[] = 'paypal';
+        }
+        
         return $processors;
     }
 
@@ -73,7 +94,7 @@ class PaymentProcessorConfigService
      */
     public function hasAnyProcessor(): bool
     {
-        return $this->isStripeAvailable() || $this->isMollieAvailable();
+        return $this->isStripeAvailable() || $this->isMollieAvailable() || $this->isPayPalAvailable();
     }
 
     /**
@@ -95,6 +116,10 @@ class PaymentProcessorConfigService
                 'enabled' => config('modules.billing.integrations.mollie.enabled', 
                     config('modules.billing.processor') === 'mollie'
                 ),
+            ],
+            'paypal' => [
+                'available' => $this->isPayPalAvailable(),
+                'enabled' => config('modules.billing.integrations.paypal.enabled', false),
             ],
         ];
     }

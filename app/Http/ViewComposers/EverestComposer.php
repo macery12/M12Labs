@@ -64,6 +64,11 @@ class EverestComposer
                 'mollie' => [
                     'api_key' => !empty(config('modules.billing.mollie.api_key')) ? config('modules.billing.mollie.api_key') : null,
                 ],
+                'paypal_standalone' => [
+                    'client_id' => !empty(config('modules.billing.paypal_standalone.client_id')) ? config('modules.billing.paypal_standalone.client_id') : null,
+                    'client_secret' => boolval(config('modules.billing.paypal_standalone.client_secret')),
+                    'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
+                ],
                 'currency' => [
                     'symbol' => config('modules.billing.currency.symbol'),
                     'code' => config('modules.billing.currency.code'),
@@ -86,6 +91,9 @@ class EverestComposer
                     ],
                     'mollie' => [
                         'enabled' => boolval(config('modules.billing.integrations.mollie.enabled', false)),
+                    ],
+                    'paypal' => [
+                        'enabled' => boolval(config('modules.billing.integrations.paypal.enabled', false)),
                     ],
                 ],
             ],

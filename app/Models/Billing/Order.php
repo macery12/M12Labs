@@ -24,6 +24,7 @@ use Everest\Models\Model;
  * @property string $payment_intent_id
  * @property string $payment_processor
  * @property string|null $mollie_payment_id
+ * @property string|null $paypal_order_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -53,7 +54,7 @@ class Order extends Model
      * Fields that are mass assignable.
      */
     protected $fillable = [
-        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'payment_token',
+        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id', 'payment_token',
         'total', 'status', 'product_id', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'coupon_id', 'subtotal', 'discount',
     ];
