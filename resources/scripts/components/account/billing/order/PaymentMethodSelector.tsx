@@ -3,11 +3,13 @@ import { useStoreState } from '@/state/hooks';
 import { Product, StripeIntent } from '@definitions/account/billing';
 import PaymentButton from './PaymentButton';
 import MolliePaymentButton from './MolliePaymentButton';
+import PayPalPaymentButton from './PayPalPaymentButton';
 import { Elements } from '@stripe/react-stripe-js';
 import { Stripe } from '@stripe/stripe-js';
 import classNames from 'classnames';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCreditCard, faCheck, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faPaypal } from '@fortawesome/free-brands-svg-icons';
 import { Alert } from '@/elements/alert';
 
 interface Props {
@@ -21,7 +23,7 @@ interface Props {
     serverName: string;
 }
 
-type PaymentMethod = 'stripe' | 'mollie';
+type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
 
 export default (props: Props) => {
     const { colors } = useStoreState(state => state.theme.data!);
@@ -36,6 +38,10 @@ export default (props: Props) => {
     
     if (billing.processors?.mollie?.available) {
         availableProcessors.push('mollie');
+    }
+    
+    if (billing.processors?.paypal?.available) {
+        availableProcessors.push('paypal');
     }
 
     // Default to first available processor
@@ -175,6 +181,54 @@ export default (props: Props) => {
                                 </div>
                             </button>
                         )}
+
+                        {availableProcessors.includes('paypal') && (
+                            <button
+                                type={'button'}
+                                onClick={() => setSelectedMethod('paypal')}
+                                className={classNames(
+                                    'relative flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
+                                    'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2',
+                                    selectedMethod === 'paypal'
+                                        ? 'border-primary bg-opacity-20'
+                                        : 'border-gray-600 bg-transparent'
+                                )}
+                                style={
+                                    selectedMethod === 'paypal'
+                                        ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                        : {}
+                                }
+                            >
+                                <div
+                                    className={classNames(
+                                        'flex h-10 w-10 items-center justify-center rounded-lg',
+                                        selectedMethod === 'paypal' ? 'text-white' : 'text-gray-400'
+                                    )}
+                                    style={
+                                        selectedMethod === 'paypal'
+                                            ? { backgroundColor: colors.primary }
+                                            : { backgroundColor: colors.secondary }
+                                    }
+                                >
+                                    <FontAwesomeIcon icon={faPaypal} className={'h-5 w-5'} />
+                                </div>
+                                <div className={'flex-1'}>
+                                    <div className={'flex items-center gap-2'}>
+                                        <p className={'font-semibold text-gray-100'}>PayPal</p>
+                                        {selectedMethod === 'paypal' && (
+                                            <FontAwesomeIcon
+                                                icon={faCheck}
+                                                className={'h-4 w-4'}
+                                                style={{ color: colors.primary }}
+                                            />
+                                        )}
+                                    </div>
+                                    <p className={'mt-0.5 text-xs text-gray-400'}>
+                                        PayPal account or card
+                                    </p>
+                                </div>
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -198,6 +252,17 @@ export default (props: Props) => {
             ) : selectedMethod === 'mollie' ? (
                 <div>
                     <MolliePaymentButton
+                        selectedNode={props.selectedNode}
+                        product={props.product}
+                        vars={props.vars}
+                        couponId={props.couponId}
+                        selectedEggId={props.selectedEggId}
+                        serverName={props.serverName}
+                    />
+                </div>
+            ) : selectedMethod === 'paypal' ? (
+                <div>
+                    <PayPalPaymentButton
                         selectedNode={props.selectedNode}
                         product={props.product}
                         vars={props.vars}

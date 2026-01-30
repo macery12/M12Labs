@@ -1,0 +1,113 @@
+import http from '@/api/http';
+
+export interface PayPalOrder {
+    id: string;
+    token: string;
+    approval_url: string;
+}
+
+export interface PayPalOrderStatus {
+    processed: boolean;
+    failed: boolean;
+    pending: boolean;
+    order_id: string;
+    order_status: string;
+}
+
+export interface PayPalOrderFromToken {
+    order_id: string;
+    status: string;
+    product_id: number;
+}
+
+export interface PayPalCaptureResponse {
+    success: boolean;
+    message: string;
+    order_id: number;
+}
+
+export const createPayPalOrder = (
+    id: number,
+    couponId?: number,
+    returnUrl?: string,
+    serverId?: number,
+    renewal?: boolean
+): Promise<PayPalOrder> => {
+    return new Promise((resolve, reject) => {
+        http.post(`/api/client/billing/products/${id}/paypal/order`, {
+            coupon_id: couponId,
+            return_url: returnUrl,
+            server_id: serverId,
+            renewal,
+        })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const updatePayPalOrder = ({
+    id,
+    orderId,
+    nodeId,
+    vars,
+    serverId,
+    renewal,
+    couponId,
+    eggId,
+    name,
+}: {
+    id: number;
+    orderId: string;
+    nodeId?: number;
+    vars?: Array<{ key: string; value: string }>;
+    serverId?: number;
+    renewal?: boolean;
+    couponId?: number;
+    eggId?: number;
+    name: string;
+}): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.put(`/api/client/billing/products/${id}/paypal/order`, {
+            order_id: orderId,
+            node_id: nodeId,
+            variables: vars,
+            server_id: serverId,
+            renewal,
+            coupon_id: couponId,
+            egg_id: eggId,
+            name,
+        })
+            .then(() => resolve())
+            .catch(reject);
+    });
+};
+
+export const capturePayPalOrder = (orderId: string): Promise<PayPalCaptureResponse> => {
+    return new Promise((resolve, reject) => {
+        http.post(`/api/client/billing/paypal/capture`, {
+            order_id: orderId,
+        })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const checkPayPalOrderStatus = (orderId?: string | null): Promise<PayPalOrderStatus> => {
+    return new Promise((resolve, reject) => {
+        const url = orderId
+            ? `/api/client/billing/paypal/status?order_id=${orderId}`
+            : `/api/client/billing/paypal/status`;
+
+        http.get(url)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const getOrderIdFromToken = (token: string): Promise<PayPalOrderFromToken> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/billing/paypal/token/${token}`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};

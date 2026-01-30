@@ -7,6 +7,7 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import Spinner from '@/elements/Spinner';
 import { processPaidOrder } from '@/api/routes/account/billing/orders/process';
 import { checkMolliePaymentStatus, getPaymentIdFromToken } from '@/api/routes/account/billing/orders/mollie';
+import { capturePayPalOrder, checkPayPalOrderStatus, getOrderIdFromToken } from '@/api/routes/account/billing/orders/paypal';
 
 export default () => {
     const location = useLocation();
@@ -18,6 +19,7 @@ export default () => {
 
     const stripeIntent = params.get('payment_intent');
     const mollieToken = params.get('token');
+    const paypalToken = params.get('token'); // PayPal also uses token parameter
 
     useEffect(() => {
         clearFlashes();
@@ -43,7 +45,7 @@ export default () => {
         }
 
         // Handle Mollie payment
-        if (billing.processor === 'mollie' && mollieToken) {
+        if (billing.processors?.mollie?.available && mollieToken && !billing.processors?.paypal?.available) {
             // Get payment ID from token
             getPaymentIdFromToken(mollieToken)
                 .then(({ payment_id }) => {
@@ -97,6 +99,65 @@ export default () => {
             return;
         }
 
+        // Handle PayPal payment
+        if (billing.processors?.paypal?.available && paypalToken) {
+            // Get order ID from token
+            getOrderIdFromToken(paypalToken)
+                .then(({ order_id }) => {
+                    // Capture the PayPal order
+                    capturePayPalOrder(order_id)
+                        .then(() => {
+                            // Check if order has been fulfilled
+                            const checkStatus = async () => {
+                                try {
+                                    const status = await checkPayPalOrderStatus(order_id);
+                                    
+                                    if (status.processed) {
+                                        // Order has been processed successfully
+                                        if (renewal && serverUuid) {
+                                            window.location.href = `/server/${serverUuid}/billing`;
+                                        } else {
+                                            navigate('/account/billing/success');
+                                        }
+                                    } else if (status.failed) {
+                                        navigate('/account/billing/cancel');
+                                    } else {
+                                        // Still processing, check again after a delay
+                                        setTimeout(checkStatus, 2000);
+                                    }
+                                } catch (error) {
+                                    console.error('Error checking PayPal order status:', error);
+                                    addFlash({
+                                        key: 'billing:process',
+                                        type: 'error',
+                                        message: 'Unable to verify payment status. Please contact an administrator.',
+                                    });
+                                }
+                            };
+
+                            checkStatus();
+                        })
+                        .catch((error) => {
+                            console.error('Error capturing PayPal order:', error);
+                            addFlash({
+                                key: 'billing:process',
+                                type: 'error',
+                                message: 'Unable to capture PayPal payment. Please contact an administrator.',
+                            });
+                            navigate('/account/billing/cancel');
+                        });
+                })
+                .catch((error) => {
+                    console.error('Error retrieving order ID from token:', error);
+                    addFlash({
+                        key: 'billing:process',
+                        type: 'error',
+                        message: 'Invalid payment token. Please contact an administrator.',
+                    });
+                });
+            return;
+        }
+
         // No payment method detected
         addFlash({
             key: 'billing:process',
@@ -104,6 +165,28 @@ export default () => {
             message: 'Your order could not be fulfilled. Please contact an administrator.',
         });
     }, []);
+
+    return (
+        <PageContentBlock>
+            <div className={'flex justify-center'}>
+                <div
+                    className={'relative w-full rounded-lg p-12 text-center shadow-lg sm:w-3/4 md:w-1/2'}
+                    style={{ backgroundColor: colors.secondary }}
+                >
+                    <FlashMessageRender byKey={'billing:process'} className={'mb-6'} />
+                    <h2 className={'text-4xl font-bold text-white'}>
+                        Processing Order <Spinner centered />
+                    </h2>
+                    <p className={'mt-2 text-sm text-neutral-200'}>
+                        Our systems are currently working on deploying your server to our systems. Sit tight while your
+                        new server is deployed!
+                    </p>
+                    <p className={'mt-8 text-2xs text-neutral-400'}>Session {stripeIntent || mollieToken || paypalToken || 'Unknown'}</p>
+                </div>
+            </div>
+        </PageContentBlock>
+    );
+};
 
     return (
         <PageContentBlock>
