@@ -138,6 +138,26 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
                 </p>
             </div>
 
+            <div className={'mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3'}>
+                <p className={'text-sm font-semibold text-yellow-300'}>
+                    <FontAwesomeIcon icon={faExclamationTriangle} className={'mr-2'} />
+                    Don&apos;t Forget: Configure Webhooks
+                </p>
+                <p className={'mt-2 text-xs text-gray-300'}>
+                    After saving your credentials, you <strong>must</strong> configure webhooks in PayPal for reliable
+                    payment processing:
+                </p>
+                <ol className={'mt-2 list-inside list-decimal space-y-1 text-xs text-gray-300'}>
+                    <li>Go to your app in the PayPal Developer Dashboard</li>
+                    <li>Navigate to the &quot;Webhooks&quot; section</li>
+                    <li>Copy the webhook URL from the settings page</li>
+                    <li>
+                        Subscribe to events: <code className={'text-yellow-400'}>CHECKOUT.ORDER.COMPLETED</code> and{' '}
+                        <code className={'text-yellow-400'}>PAYMENT.CAPTURE.COMPLETED</code>
+                    </li>
+                </ol>
+            </div>
+
             <div className={'mt-4 w-full text-right'}>
                 <Button onClick={submit} disabled={!isValid()}>
                     Save PayPal Credentials

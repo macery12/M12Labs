@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
-import { faKey, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faInfoCircle, faWebhook, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { faPaypal } from '@fortawesome/free-brands-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,9 +10,19 @@ import SetupPayPalKeys from '../guides/SetupPayPalKeys';
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const [paypalKeysOpen, setPaypalKeysOpen] = useState(false);
+    const [copiedWebhook, setCopiedWebhook] = useState(false);
 
     const hasCredentials = !!(settings.paypal_standalone?.client_id && settings.paypal_standalone?.client_secret);
     const mode = settings.paypal_standalone?.mode || 'sandbox';
+    
+    // Generate webhook URL based on current domain
+    const webhookUrl = `${window.location.origin}/api/client/billing/paypal/webhook`;
+
+    const copyWebhookUrl = () => {
+        navigator.clipboard.writeText(webhookUrl);
+        setCopiedWebhook(true);
+        setTimeout(() => setCopiedWebhook(false), 2000);
+    };
 
     return (
         <div className={'grid gap-4 lg:grid-cols-3'}>
@@ -45,6 +55,39 @@ export default () => {
                         </div>
                     </>
                 )}
+            </AdminBox>
+
+            <AdminBox title={'PayPal Webhook URL'} icon={faWebhook}>
+                <p className={'mb-3 text-sm text-gray-400'}>
+                    Configure this webhook URL in your PayPal Developer Dashboard to receive payment notifications.
+                    This is <strong className={'text-yellow-400'}>required</strong> for reliable payment processing.
+                </p>
+                <div className={'rounded-lg bg-black/50 p-3'}>
+                    <p className={'mb-2 text-xs font-semibold text-gray-400'}>Webhook URL:</p>
+                    <div className={'flex items-center gap-2'}>
+                        <code className={'flex-1 overflow-x-auto rounded bg-gray-900 px-2 py-1 text-xs text-green-400'}>
+                            {webhookUrl}
+                        </code>
+                        <Button.Text
+                            size={Button.Sizes.Small}
+                            onClick={copyWebhookUrl}
+                            className={'flex items-center gap-2'}
+                        >
+                            <FontAwesomeIcon icon={copiedWebhook ? faCheck : faCopy} />
+                            {copiedWebhook ? 'Copied!' : 'Copy'}
+                        </Button.Text>
+                    </div>
+                </div>
+                <div className={'mt-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3'}>
+                    <p className={'text-xs font-semibold text-yellow-400'}>
+                        <FontAwesomeIcon icon={faInfoCircle} className={'mr-2'} />
+                        Important
+                    </p>
+                    <p className={'mt-1 text-xs text-gray-300'}>
+                        Subscribe to these events: <code className={'text-yellow-400'}>CHECKOUT.ORDER.COMPLETED</code>,{' '}
+                        <code className={'text-yellow-400'}>PAYMENT.CAPTURE.COMPLETED</code>
+                    </p>
+                </div>
             </AdminBox>
 
             <AdminBox title={'About PayPal Standalone'} icon={faPaypal}>

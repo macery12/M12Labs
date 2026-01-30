@@ -399,4 +399,100 @@ class PayPalCheckoutController extends ClientApiController
 
         return Order::TYPE_NEW;
     }
+
+    /**
+     * Process PayPal webhook notifications.
+     * 
+     * This endpoint receives asynchronous notifications from PayPal about payment events.
+     * It verifies the webhook, fetches the actual payment status from PayPal API,
+     * and fulfills orders for successful payments.
+     * 
+     * Important: This route is outside authentication middleware as PayPal calls it directly.
+     * 
+     * @param Request $request
+     * @return Response
+     */
+    public function processPayment(Request $request): Response
+    {
+        // PayPal sends the order ID in the resource field
+        $eventType = $request->input('event_type');
+        $resource = $request->input('resource', []);
+        $paypalOrderId = $resource['id'] ?? null;
+
+        if (!$paypalOrderId) {
+            // Return 200 to prevent PayPal retries, but log the issue
+            \Log::warning('PayPal webhook called without order ID', ['request' => $request->all()]);
+            return $this->returnNoContent();
+        }
+
+        // Log webhook event for debugging
+        \Log::info("PayPal webhook received: {$eventType} for order {$paypalOrderId}");
+
+        // Find the order by paypal_order_id
+        $order = Order::where('paypal_order_id', $paypalOrderId)->latest()->first();
+
+        if (!$order) {
+            // Return 200 to prevent PayPal retries for non-existent orders
+            \Log::warning("PayPal webhook: Order not found for PayPal order ID: {$paypalOrderId}");
+            return $this->returnNoContent();
+        }
+
+        // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
+        // This prevents duplicate processing if webhook is called multiple times
+        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
+            \Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
+            return $this->returnNoContent();
+        }
+
+        try {
+            // Validate billing is enabled
+            $this->validationService->validateBillingEnabled();
+
+            // SECURITY: Fetch order details from PayPal API (never trust webhook data directly)
+            // This also verifies the webhook is legitimate
+            $paypalOrder = $this->paypalService->getOrder($paypalOrderId);
+
+            // Handle different order statuses according to PayPal documentation
+            // https://developer.paypal.com/docs/api/orders/v2/#orders_get
+            $status = $paypalOrder['status'] ?? 'UNKNOWN';
+
+            switch ($status) {
+                case 'COMPLETED':
+                    // Payment captured successfully - fulfill the order
+                    \Log::info("PayPal order {$paypalOrderId} completed for order {$order->id}");
+                    $this->fulfillOrder($request, $order);
+                    break;
+
+                case 'APPROVED':
+                    // Order approved but not yet captured
+                    // This shouldn't happen if we auto-capture, but keep order as pending
+                    \Log::info("PayPal order {$paypalOrderId} approved but not captured for order {$order->id}");
+                    break;
+
+                case 'VOIDED':
+                case 'EXPIRED':
+                    // Order voided or expired - mark as failed
+                    \Log::info("PayPal order {$paypalOrderId} {$status} for order {$order->id}");
+                    $order->update(['status' => Order::STATUS_FAILED]);
+                    break;
+
+                case 'CREATED':
+                case 'SAVED':
+                case 'PAYER_ACTION_REQUIRED':
+                    // Order in progress - keep as pending
+                    \Log::info("PayPal order {$paypalOrderId} status {$status} for order {$order->id}");
+                    break;
+
+                default:
+                    // Unknown status - log for investigation
+                    \Log::warning("PayPal order {$paypalOrderId} has unknown status: {$status}");
+            }
+        } catch (\Exception $e) {
+            // Log error but return 200 to prevent infinite PayPal retries
+            \Log::error("PayPal webhook error for order {$paypalOrderId}: " . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+        }
+
+        return $this->returnNoContent();
+    }
 }
