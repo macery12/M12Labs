@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
-import { faKey, faInfoCircle, faWebhook, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faInfoCircle, faLink, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { faPaypal } from '@fortawesome/free-brands-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -57,7 +57,7 @@ export default () => {
                 )}
             </AdminBox>
 
-            <AdminBox title={'PayPal Webhook URL'} icon={faWebhook}>
+            <AdminBox title={'PayPal Webhook URL'} icon={faLink}>
                 <p className={'mb-3 text-sm text-gray-400'}>
                     Configure this webhook URL in your PayPal Developer Dashboard to receive payment notifications.
                     This is <strong className={'text-yellow-400'}>required</strong> for reliable payment processing.
