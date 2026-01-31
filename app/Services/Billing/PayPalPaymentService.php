@@ -178,7 +178,8 @@ class PayPalPaymentService
                 'Accept' => 'application/json',
                 'Prefer' => 'return=representation',
             ])
-            ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture', []);
+            ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture', new \stdClass());
+
 
         if (!$response->successful()) {
             \Log::error('PayPal order capture failed', [

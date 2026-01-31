@@ -115,16 +115,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         // PayPal payment routes
         Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);
         Route::put('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'updateOrder']);
-        Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder'])
-            ->middleware(function ($request, $next) {
-                \Log::info("=== PAYPAL CAPTURE ROUTE HIT ===", [
-                    'url' => $request->fullUrl(),
-                    'method' => $request->method(),
-                    'user_id' => $request->user()->id ?? 'not authenticated',
-                    'input' => $request->all(),
-                ]);
-                return $next($request);
-            });
+	Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
         Route::get('/paypal/status', [Client\Billing\PayPalCheckoutController::class, 'checkOrderStatus']);
         Route::get('/paypal/token/{token}', [Client\Billing\PayPalCheckoutController::class, 'getOrderFromToken']);
 
