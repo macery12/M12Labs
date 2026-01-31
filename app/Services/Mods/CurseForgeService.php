@@ -6,7 +6,9 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
+use Everest\Models\CurseForgeRequestLog;
 
 class CurseForgeService
 {
@@ -143,11 +145,65 @@ class CurseForgeService
     }
 
     /**
-     * Get current rate limit usage (deprecated - now tracking 429 errors instead).
+     * Track a CurseForge API request in the database.
+     *
+     * @param string $endpoint
+     * @param int $statusCode
+     * @return void
+     */
+    private function trackRequest(string $endpoint, int $statusCode): void
+    {
+        try {
+            CurseForgeRequestLog::create([
+                'requested_at' => now(),
+                'endpoint' => $endpoint,
+                'status_code' => $statusCode,
+            ]);
+            
+            // Clean up old logs (older than 25 hours to ensure we have data for the last full hour)
+            CurseForgeRequestLog::where('requested_at', '<', now()->subHours(25))->delete();
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::error('Failed to track CurseForge request: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get current rate limit usage with hourly and daily analytics.
      *
      * @return array
      */
     public function getRateLimitUsage(): array
+    {
+        $now = now();
+        $oneMinuteAgo = $now->copy()->subMinute();
+        $oneHourAgo = $now->copy()->subHour();
+        
+        // Get requests in the last minute
+        $requestsThisMinute = CurseForgeRequestLog::where('requested_at', '>=', $oneMinuteAgo)->count();
+        
+        // Get requests in the last hour
+        $requestsThisHour = CurseForgeRequestLog::where('requested_at', '>=', $oneHourAgo)->count();
+        
+        // CurseForge rate limits (as per their API documentation)
+        // These are conservative estimates - actual limits may vary
+        $limitPerMinute = 20; // Conservative estimate
+        $limitPerHour = 1000; // Conservative estimate
+        
+        return [
+            'requests_this_minute' => $requestsThisMinute,
+            'requests_this_hour' => $requestsThisHour,
+            'limit_per_minute' => $limitPerMinute,
+            'limit_per_hour' => $limitPerHour,
+        ];
+    }
+
+    /**
+     * Get legacy 429 error tracking data (deprecated but kept for compatibility).
+     *
+     * @return array
+     */
+    public function get429ErrorTracking(): array
     {
         $counter429 = Cache::get('curseforge_429_counter', 0);
         $lockoutUntil = Cache::get('curseforge_lockout_until');
@@ -200,6 +256,7 @@ class CurseForgeService
 
             $response = $this->client->request($method, $path, $options);
             
+            $statusCode = $response->getStatusCode();
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
@@ -207,6 +264,9 @@ class CurseForgeService
                 Log::error('CurseForge API JSON decode error: ' . json_last_error_msg());
                 throw new ModsServiceException('Failed to decode CurseForge API response.');
             }
+
+            // Track successful request
+            $this->trackRequest($path, $statusCode);
 
             // Reset 429 counter on successful request
             $this->reset429Counter();
@@ -218,7 +278,10 @@ class CurseForgeService
                 
                 // Handle 429 with delay and tracking
                 if ($statusCode === 429) {
-                    // Track this 429 error
+                    // Track this 429 error in the database
+                    $this->trackRequest($path, $statusCode);
+                    
+                    // Track this 429 error for lockout purposes
                     $this->track429Error();
                     
                     // Get current counter to determine delay
