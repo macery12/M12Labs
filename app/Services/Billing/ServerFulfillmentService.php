@@ -92,14 +92,14 @@ class ServerFulfillmentService
                 
                 // Record coupon usage for non-renewal orders
                 // (Renewals are handled by OrderProcessorService)
-                if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-                    $this->recordCouponUsage($order);
+                if ($currentOrder->type !== Order::TYPE_REN && $currentOrder->coupon_id) {
+                    $this->recordCouponUsage($currentOrder);
                 }
 
                 // Mark the order as processed (only for non-renewal orders)
                 // Renewal orders maintain their own status lifecycle
-                if ($order->type !== Order::TYPE_REN) {
-                    $order->update(['status' => Order::STATUS_PROCESSED]);
+                if ($currentOrder->type !== Order::TYPE_REN) {
+                    $currentOrder->update(['status' => Order::STATUS_PROCESSED]);
                 }
 
                 DB::commit();
