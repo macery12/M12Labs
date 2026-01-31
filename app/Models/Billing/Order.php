@@ -25,6 +25,13 @@ use Everest\Models\Model;
  * @property string $payment_processor
  * @property string|null $mollie_payment_id
  * @property string|null $paypal_order_id
+ * @property string|null $paypal_capture_id
+ * @property string|null $paypal_payer_id
+ * @property string|null $paypal_payer_email
+ * @property string|null $paypal_status
+ * @property float|null $paypal_amount
+ * @property string|null $paypal_currency
+ * @property \Carbon\Carbon|null $paypal_captured_at
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -54,8 +61,9 @@ class Order extends Model
      * Fields that are mass assignable.
      */
     protected $fillable = [
-        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id', 'payment_token',
-        'total', 'status', 'product_id', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
+        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id', 
+        'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
+        'payment_token', 'total', 'status', 'product_id', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'coupon_id', 'subtotal', 'discount',
     ];
 
@@ -74,6 +82,8 @@ class Order extends Model
         'coupon_id' => 'int',
         'subtotal' => 'float',
         'discount' => 'float',
+        'paypal_amount' => 'float',
+        'paypal_captured_at' => 'datetime',
     ];
 
     public static array $validationRules = [

@@ -244,6 +244,34 @@ class PayPalCheckoutController extends ClientApiController
             throw new DisplayException('Failed to capture PayPal payment: ' . $captureStatus);
         }
 
+        // Extract and save PayPal transaction details
+        $purchaseUnit = $captureResult['purchase_units'][0] ?? null;
+        $capture = $purchaseUnit['payments']['captures'][0] ?? null;
+        $payer = $captureResult['payer'] ?? null;
+        
+        if ($capture) {
+            $order->paypal_capture_id = $capture['id'] ?? null;
+            $order->paypal_status = $capture['status'] ?? null;
+            $order->paypal_amount = isset($capture['amount']['value']) ? (float) $capture['amount']['value'] : null;
+            $order->paypal_currency = $capture['amount']['currency_code'] ?? null;
+            $order->paypal_captured_at = isset($capture['create_time']) ? \Carbon\Carbon::parse($capture['create_time']) : null;
+        }
+        
+        if ($payer) {
+            $order->paypal_payer_id = $payer['payer_id'] ?? null;
+            $order->paypal_payer_email = $payer['email_address'] ?? null;
+        }
+        
+        $order->save();
+        
+        Log::info("Saved PayPal transaction details", [
+            'order_id' => $order->id,
+            'capture_id' => $order->paypal_capture_id,
+            'payer_email' => $order->paypal_payer_email,
+            'amount' => $order->paypal_amount,
+            'currency' => $order->paypal_currency,
+        ]);
+
         // Fulfill the order
         Log::info("Starting order fulfillment", ['order_id' => $order->id]);
         try {
