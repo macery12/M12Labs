@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import tw from 'twin.macro';
 import AdminBox from '@/elements/AdminBox';
 import { faServer } from '@fortawesome/free-solid-svg-icons';
@@ -88,11 +88,15 @@ export default () => {
         );
     }
 
-    const filteredServers = servers.filter(server => {
-        if (filter === 'enabled') return server.modsEnabled;
-        if (filter === 'disabled') return !server.modsEnabled;
-        return true;
-    });
+    // Memoize filtered servers and counts to avoid recalculation on every render
+    const filteredServers = useMemo(() => {
+        if (filter === 'enabled') return servers.filter(s => s.modsEnabled);
+        if (filter === 'disabled') return servers.filter(s => !s.modsEnabled);
+        return servers;
+    }, [servers, filter]);
+
+    const enabledCount = useMemo(() => servers.filter(s => s.modsEnabled).length, [servers]);
+    const disabledCount = useMemo(() => servers.length - enabledCount, [servers, enabledCount]);
 
     return (
         <AdminBox title={'Server Mods Management'} icon={faServer}>
@@ -114,14 +118,14 @@ export default () => {
                         onClick={() => setFilter('enabled')}
                         css={[filter === 'enabled' && tw`bg-primary-500/20 text-primary-400`]}
                     >
-                        Enabled ({servers.filter(s => s.modsEnabled).length})
+                        Enabled ({enabledCount})
                     </Button.Text>
                     <Button.Text
                         size={Button.Sizes.Small}
                         onClick={() => setFilter('disabled')}
                         css={[filter === 'disabled' && tw`bg-primary-500/20 text-primary-400`]}
                     >
-                        Disabled ({servers.filter(s => !s.modsEnabled).length})
+                        Disabled ({disabledCount})
                     </Button.Text>
                 </div>
             </div>

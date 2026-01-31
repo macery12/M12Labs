@@ -53,8 +53,15 @@ const server: ServerRouteDefinition[] = [
             // Only show modpacks if server has mods enabled and has both PROJECT_ID and VERSION_ID variables
             if (!server.modsEnabled) return false;
             
-            const hasProjectId = server.variables.some(v => v.envVariable === 'PROJECT_ID');
-            const hasVersionId = server.variables.some(v => v.envVariable === 'VERSION_ID');
+            // Single iteration to check for both variables
+            let hasProjectId = false;
+            let hasVersionId = false;
+            
+            for (const variable of server.variables) {
+                if (variable.envVariable === 'PROJECT_ID') hasProjectId = true;
+                if (variable.envVariable === 'VERSION_ID') hasVersionId = true;
+                if (hasProjectId && hasVersionId) break; // Early exit once both found
+            }
             
             return hasProjectId && hasVersionId;
         },
