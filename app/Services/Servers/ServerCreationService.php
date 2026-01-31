@@ -42,6 +42,10 @@ class ServerCreationService
      * as possible given the input data. For example, if an allocation_id is passed with
      * no node_id the node_is will be picked from the allocation.
      *
+     * @param array $data Server creation data
+     * @param DeploymentObject|null $deployment Deployment configuration
+     * @param bool $skipCleanupOnFailure If true, don't delete server from DB when daemon creation fails (used for billing)
+     *
      * @throws \Throwable
      * @throws \Everest\Exceptions\DisplayException
      * @throws \Illuminate\Validation\ValidationException
@@ -49,7 +53,7 @@ class ServerCreationService
      * @throws \Everest\Exceptions\Service\Deployment\NoViableNodeException
      * @throws \Everest\Exceptions\Service\Deployment\NoViableAllocationException
      */
-    public function handle(array $data, DeploymentObject $deployment = null): Server
+    public function handle(array $data, DeploymentObject $deployment = null, bool $skipCleanupOnFailure = false): Server
     {
         // If a deployment object has been passed we need to get the allocation
         // that the server should use, and assign the node from that allocation.
@@ -98,7 +102,12 @@ class ServerCreationService
                 Arr::get($data, 'start_on_completion', false) ?? false
             );
         } catch (DaemonConnectionException $exception) {
-            $this->serverDeletionService->withForce()->handle($server);
+            // For billing operations, we don't want to delete the server on daemon failure
+            // because the payment has already been processed. Instead, leave the server
+            // in INSTALLING status so the user can see it and an admin can troubleshoot.
+            if (!$skipCleanupOnFailure) {
+                $this->serverDeletionService->withForce()->handle($server);
+            }
 
             throw $exception;
         }
