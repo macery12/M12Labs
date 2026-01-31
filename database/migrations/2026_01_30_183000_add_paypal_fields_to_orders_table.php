@@ -12,6 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
+            // PayPal order ID - The PayPal order identifier
+            $table->string('paypal_order_id')->nullable()->after('mollie_payment_id');
+            
             // PayPal capture/transaction ID - Required for refunds
             $table->string('paypal_capture_id')->nullable()->after('paypal_order_id');
             
@@ -42,8 +45,9 @@ return new class extends Migration
         Schema::table('orders', function (Blueprint $table) {
             $table->dropIndex(['paypal_capture_id']);
             $table->dropColumn([
+                'paypal_order_id',
                 'paypal_capture_id',
-                'paypal_payer_id', 
+                'paypal_payer_id',
                 'paypal_payer_email',
                 'paypal_status',
                 'paypal_amount',
