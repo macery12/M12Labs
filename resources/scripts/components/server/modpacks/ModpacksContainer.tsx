@@ -10,6 +10,7 @@ import { type CurseForgeModpack, type ModpackSearchParams, searchModpacks } from
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
+import { getServerStartup } from '@/api/routes/server/startup';
 
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
@@ -18,6 +19,8 @@ export default () => {
     const { addError } = useFlash();
 
     const [loading, setLoading] = useState(false);
+    const [checkingSupport, setCheckingSupport] = useState(true);
+    const [modpacksSupported, setModpacksSupported] = useState(false);
     const [modpacks, setModpacks] = useState<CurseForgeModpack[]>([]);
     const [selectedModpack, setSelectedModpack] = useState<CurseForgeModpack | null>(null);
     const [pagination, setPagination] = useState({
@@ -37,8 +40,24 @@ export default () => {
         index: 0,
     });
 
+    // Check if server supports modpacks by fetching startup variables
+    const { data: startupData, error: startupError } = getServerStartup(uuid);
+
     useEffect(() => {
-        if (!modsEnabled) return;
+        if (startupData) {
+            // Check if PROJECT_ID and VERSION_ID variables exist
+            const hasProjectId = startupData.variables.some(v => v.envVariable === 'PROJECT_ID');
+            const hasVersionId = startupData.variables.some(v => v.envVariable === 'VERSION_ID');
+            setModpacksSupported(hasProjectId && hasVersionId);
+            setCheckingSupport(false);
+        } else if (startupError) {
+            setModpacksSupported(false);
+            setCheckingSupport(false);
+        }
+    }, [startupData, startupError]);
+
+    useEffect(() => {
+        if (!modsEnabled || !modpacksSupported) return;
 
         setLoading(true);
         searchModpacks(uuid, searchParams)
@@ -51,7 +70,7 @@ export default () => {
                 addError({ key: 'modpacks', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, searchParams, modsEnabled]);
+    }, [uuid, searchParams, modsEnabled, modpacksSupported]);
 
     const handleSearch = (params: ModpackSearchParams) => {
         setSelectedModpack(null); // Close modal when searching
@@ -90,6 +109,32 @@ export default () => {
                     </p>
                     <p css={tw`text-neutral-400 text-xs`}>
                         This can be done in the admin panel under Servers → [Server Name] → Mods Toggle.
+                    </p>
+                </div>
+            </PageContentBlock>
+        );
+    }
+
+    if (checkingSupport) {
+        return (
+            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
+                <div css={tw`flex justify-center py-16`}>
+                    <Spinner size={'large'} />
+                </div>
+            </PageContentBlock>
+        );
+    }
+
+    if (!modpacksSupported) {
+        return (
+            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
+                <div css={tw`text-center py-16`}>
+                    <p css={tw`text-neutral-300 text-lg mb-4`}>Your server does not have modpack support.</p>
+                    <p css={tw`text-neutral-400 text-sm mb-2`}>
+                        This server is not configured with the required environment variables for modpack installation.
+                    </p>
+                    <p css={tw`text-neutral-400 text-xs`}>
+                        Please contact an administrator to change your server to use a modpack-compatible egg (e.g., CurseForge Generic).
                     </p>
                 </div>
             </PageContentBlock>

@@ -49,7 +49,7 @@ const server: ServerRouteDefinition[] = [
         name: 'Modpacks',
         icon: Icon.CollectionIcon,
         category: 'data',
-        condition: server => server.modsEnabled && server.modpacksSupported,
+        condition: server => server.modsEnabled,
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',
