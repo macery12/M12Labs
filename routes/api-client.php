@@ -25,7 +25,13 @@ Route::post('/billing/mollie/webhook', [Client\Billing\MollieCheckoutController:
 
 // PayPal webhook - must be outside authentication middleware
 Route::post('/billing/paypal/webhook', [Client\Billing\PayPalCheckoutController::class, 'processPayment'])
-    ->withoutMiddleware('auth:sanctum')
+    ->withoutMiddleware([
+        'auth:sanctum',
+        \Everest\Http\Middleware\Activity\TrackAPIKey::class,
+        \Everest\Http\Middleware\Api\AuthenticateIPAccess::class,
+        \Everest\Http\Middleware\Api\Client\RequireClientApiKey::class,
+        \Everest\Http\Middleware\RequireTwoFactorAuthentication::class,
+    ])
     ->name('api:client:billing:paypal:webhook');
 
 Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
