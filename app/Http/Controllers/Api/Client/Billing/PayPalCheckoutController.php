@@ -453,14 +453,6 @@ class PayPalCheckoutController extends ClientApiController
     {
         $eventType = $request->input('event_type');
         $resource = $request->input('resource', []);
-        
-        // Log webhook event (excluding sensitive data)
-        Log::info("PayPal webhook received", [
-            'event_type' => $eventType,
-            'resource_type' => $request->input('resource_type'),
-            'resource_id' => $resource['id'] ?? null,
-            'resource_status' => $resource['status'] ?? null,
-        ]);
 
         // Extract PayPal order ID based on event type
         // Different event types have order ID in different locations
@@ -471,7 +463,8 @@ class PayPalCheckoutController extends ClientApiController
             case 'PAYMENT.CAPTURE.DENIED':
             case 'PAYMENT.CAPTURE.REFUNDED':
             case 'PAYMENT.CAPTURE.REVERSED':
-                // For capture events, order ID is in supplementary_data
+                // For all capture-related events, order ID is in supplementary_data
+                // These events all relate to the same order and need the same extraction logic
                 // Use safe array access to handle potentially missing nested keys
                 if (isset($resource['supplementary_data']['related_ids']['order_id'])) {
                     $paypalOrderId = $resource['supplementary_data']['related_ids']['order_id'];
