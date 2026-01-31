@@ -37,14 +37,23 @@ class ServerTransformer extends Transformer
         
         // Check if server supports modpacks by checking for required environment variables
         $modpacksSupported = false;
-        if ($server->mods_enabled) {
-            $variables = $server->variables;
-            $hasProjectId = $variables->contains(function ($variable) {
-                return $variable->env_variable === 'PROJECT_ID';
-            });
-            $hasVersionId = $variables->contains(function ($variable) {
-                return $variable->env_variable === 'VERSION_ID';
-            });
+        if ($server->mods_enabled && $server->relationLoaded('variables')) {
+            $hasProjectId = false;
+            $hasVersionId = false;
+            
+            foreach ($server->variables as $variable) {
+                if ($variable->env_variable === 'PROJECT_ID') {
+                    $hasProjectId = true;
+                }
+                if ($variable->env_variable === 'VERSION_ID') {
+                    $hasVersionId = true;
+                }
+                // Early exit if both found
+                if ($hasProjectId && $hasVersionId) {
+                    break;
+                }
+            }
+            
             $modpacksSupported = $hasProjectId && $hasVersionId;
         }
 
