@@ -192,8 +192,8 @@ Potential improvements:
 
 ## Compatibility
 
-- **PHP:** 8.0+
-- **Laravel:** 9.x/10.x
+- **PHP:** 8.1+ (required by Jexactyl framework)
+- **Laravel:** 10.x (as used by Jexactyl)
 - **MySQL:** 5.7+ or MariaDB 10.3+
 - **PostgreSQL:** 11+ (if using Postgres)
 

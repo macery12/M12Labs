@@ -160,8 +160,11 @@ class CurseForgeService
                 'status_code' => $statusCode,
             ]);
             
-            // Clean up old logs (older than 25 hours to ensure we have data for the last full hour)
-            CurseForgeRequestLog::where('requested_at', '<', now()->subHours(25))->delete();
+            // Probabilistic cleanup (5% chance) to reduce overhead under high load
+            // Full cleanup happens every ~20 requests on average
+            if (rand(1, 20) === 1) {
+                CurseForgeRequestLog::where('requested_at', '<', now()->subHours(25))->delete();
+            }
         } catch (\Exception $e) {
             // Log error but don't fail the request
             Log::error('Failed to track CurseForge request: ' . $e->getMessage());
