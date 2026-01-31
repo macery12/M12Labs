@@ -4,17 +4,16 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
-use Everest\Models\Billing\CouponUsage;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\MolliePaymentService;
 use Everest\Services\Billing\BillingValidationService;
+use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class MollieCheckoutController extends ClientApiController
@@ -25,6 +24,7 @@ class MollieCheckoutController extends ClientApiController
         private OrderProcessorService $processorService,
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
+        private ServerFulfillmentService $fulfillmentService,
     ) {
         parent::__construct();
     }
@@ -251,68 +251,10 @@ class MollieCheckoutController extends ClientApiController
      */
     private function fulfillOrder(Request $request, Order $order, $payment): void
     {
-        // Double-check idempotency before fulfillment
-        if ($order->status === Order::STATUS_PROCESSED) {
-            \Log::info("Order {$order->id} already processed, skipping fulfillment");
-            return;
-        }
-
+        // Use centralized fulfillment service
+        // Pass payment metadata for compatibility
         $metadata = $payment->metadata;
-        $product = Product::findOrFail($metadata->product_id);
-
-        \Log::info("Fulfilling order {$order->id} for payment {$payment->id}");
-
-        // Process the renewal or product purchase
-        if ($order->type === Order::TYPE_REN) {
-            // For renewals, get the server from the stored server_id
-            if (!$order->server_id) {
-                throw new DisplayException('Server ID not found in order record for renewal.');
-            }
-            
-            $server = Server::findOrFail($order->server_id);
-
-            // Use the unified processor service for renewal
-            $this->processorService->processRenewal($server, $product, $order->coupon_id);
-            
-            \Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
-        } else {
-            // For new purchases, create the server using stored order data
-            $user = \Everest\Models\User::findOrFail($order->user_id);
-            $request->setUserResolver(function () use ($user) {
-                return $user;
-            });
-
-            $orderMetadata = (object) [
-                'product_id' => $metadata->product_id,
-                'node_id' => $order->node_id,
-                'egg_id' => $order->egg_id,
-                'name' => $order->name,
-                'variables' => $order->variables ?? [],
-            ];
-
-            $server = $this->serverCreation->process($request, $product, $orderMetadata, $order);
-            
-            \Log::info("Created new server {$server->id} for order {$order->id}");
-        }
-
-        // Record coupon usage for non-renewal orders (idempotent - unique constraint prevents duplicates)
-        if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-            // Check if coupon usage already exists to prevent duplicates
-            $existingUsage = CouponUsage::where('order_id', $order->id)->first();
-            if (!$existingUsage) {
-                CouponUsage::create([
-                    'coupon_id' => $order->coupon_id,
-                    'user_id' => $order->user_id,
-                    'order_id' => $order->id,
-                    'used_at' => now(),
-                ]);
-            }
-        }
-
-        // Mark the order as processed (final state - idempotency checkpoint)
-        if ($order->type !== Order::TYPE_REN) {
-            $order->update(['status' => Order::STATUS_PROCESSED]);
-        }
+        $this->fulfillmentService->fulfillOrder($request, $order, $metadata);
     }
 
     /**

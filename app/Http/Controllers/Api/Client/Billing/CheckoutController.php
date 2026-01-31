@@ -3,19 +3,18 @@
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Stripe\StripeClient;
-use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
-use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
+use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
@@ -35,6 +34,7 @@ class CheckoutController extends ClientApiController
         private OrderProcessorService $processorService,
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
+        private ServerFulfillmentService $fulfillmentService,
     ) {
         parent::__construct();
 
@@ -328,24 +328,8 @@ class CheckoutController extends ClientApiController
             throw new DisplayException('The order has been canceled.');
         }
 
-        // Process the renewal or product purchase
-        if ($order->type === Order::TYPE_REN && ((int) $intent->metadata->server_id != 0)) {
-            $server = Server::findOrFail((int) $intent->metadata->server_id);
-            $product = Product::findOrFail($intent->metadata->product_id);
-
-            // Use the unified processor service for renewal
-            $result = $this->processorService->processRenewal($server, $product, $order->coupon_id);
-            $server = $result['server'];
-        } else {
-            $product = Product::findOrFail($intent->metadata->product_id);
-
-            $metadata = $intent->metadata;
-            if (!empty($metadata->variables)) {
-                $metadata->variables = json_decode($metadata->variables, true) ?? [];
-            }
-
-            $server = $this->serverCreation->process($request, $product, $metadata, $order);
-        }
+        // Use centralized fulfillment service to create/renew server
+        $server = $this->fulfillmentService->fulfillOrder($request, $order, $intent->metadata);
 
         // Capture the payment after processing the order
         if ($intent->status === 'requires_capture') {
@@ -363,21 +347,6 @@ class CheckoutController extends ClientApiController
 
                 throw new DisplayException('Unable to capture payment for this order.');
             }
-        }
-
-        // Record coupon usage for non-renewal orders (renewals are handled by OrderProcessorService)
-        if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-            CouponUsage::create([
-                'coupon_id' => $order->coupon_id,
-                'user_id' => $order->user_id,
-                'order_id' => $order->id,
-                'used_at' => now(),
-            ]);
-        }
-
-        // Mark the order as processed (only for non-renewal orders)
-        if ($order->type !== Order::TYPE_REN) {
-            $order->update(['status' => Order::STATUS_PROCESSED, 'name' => $order->name]);
         }
 
         return $this->returnNoContent();
