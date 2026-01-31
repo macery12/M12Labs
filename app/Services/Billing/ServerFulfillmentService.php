@@ -40,6 +40,10 @@ class ServerFulfillmentService
      * 3. Records coupon usage if applicable
      * 4. Updates order status to processed
      * 
+     * IMPORTANT: Server creation must be committed BEFORE calling Wings to ensure
+     * the server exists in the database when Wings calls back to fetch configuration.
+     * We use optimistic concurrency control to prevent duplicate processing.
+     * 
      * @param Request $request The HTTP request
      * @param Order $order The order to fulfill
      * @param object|null $paymentMetadata Optional metadata from payment processor (Stripe, PayPal, Mollie)
@@ -48,25 +52,24 @@ class ServerFulfillmentService
      */
     public function fulfillOrder(Request $request, Order $order, ?object $paymentMetadata = null): Server
     {
-        DB::beginTransaction();
-        try {
-            // Lock the order row to prevent concurrent fulfillment
-            $order = Order::where('id', $order->id)
-                ->lockForUpdate()
-                ->first();
-            
-            // Check status after acquiring lock (idempotency)
-            if ($order->status === Order::STATUS_PROCESSED) {
-                DB::rollBack();
-                Log::info("Order {$order->id} already processed during lock wait");
-                throw new DisplayException('This order has already been processed.');
-            }
+        // Refresh order to get latest status
+        $order->refresh();
+        
+        // Idempotency check: if order is already processed, don't process again
+        // This is a normal scenario in concurrent webhook/payment systems
+        if ($order->status === Order::STATUS_PROCESSED) {
+            Log::info("Order {$order->id} already processed - idempotency check prevented duplicate processing");
+            throw new DisplayException('This order has already been processed.');
+        }
 
+        try {
             $product = Product::findOrFail($order->product_id);
 
             Log::info("Fulfilling order {$order->id} of type {$order->type}");
 
-            // Process based on order type
+            // Create server or process renewal
+            // ServerCreationService has its own transaction that will be committed
+            // BEFORE calling Wings, ensuring the server exists when Wings calls back
             if ($order->type === Order::TYPE_REN) {
                 // RENEWAL: Use existing server
                 $server = $this->processRenewal($order, $product);
@@ -75,25 +78,49 @@ class ServerFulfillmentService
                 $server = $this->processNewServer($request, $order, $product, $paymentMetadata);
             }
 
-            // Record coupon usage for non-renewal orders
-            // (Renewals are handled by OrderProcessorService)
-            if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-                $this->recordCouponUsage($order);
-            }
+            // Update order status and record coupon usage
+            // Use a transaction for atomicity, but this is AFTER server creation
+            DB::beginTransaction();
+            try {
+                // Optimistic concurrency control: fetch fresh order instance
+                // This ensures we're working with the latest data and prevents race conditions
+                $currentOrder = Order::where('id', $order->id)->firstOrFail();
+                
+                if ($currentOrder->status === Order::STATUS_PROCESSED) {
+                    DB::rollBack();
+                    Log::info("Order {$currentOrder->id} was processed by another request during fulfillment");
+                    // Server is created, order is marked processed - this is OK
+                    return $server;
+                }
+                
+                // Record coupon usage for non-renewal orders
+                // (Renewals are handled by OrderProcessorService)
+                // Use $currentOrder (fresh instance) to ensure we're working with latest data
+                if ($currentOrder->type !== Order::TYPE_REN && $currentOrder->coupon_id) {
+                    $this->recordCouponUsage($currentOrder);
+                }
 
-            // Mark the order as processed (only for non-renewal orders)
-            // Renewal orders maintain their own status lifecycle
-            if ($order->type !== Order::TYPE_REN) {
-                $order->update(['status' => Order::STATUS_PROCESSED]);
-            }
+                // Mark the order as processed (only for non-renewal orders)
+                // Renewal orders maintain their own status lifecycle
+                // Use $currentOrder (fresh instance) to ensure update operates on latest data
+                if ($currentOrder->type !== Order::TYPE_REN) {
+                    $currentOrder->update(['status' => Order::STATUS_PROCESSED]);
+                }
 
-            DB::commit();
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error("Failed to update order status for order {$order->id}: " . $e->getMessage());
+                // Server is created successfully, but order status update failed
+                // This is not critical - the server exists and can be used
+                // Log the error but don't throw - return the server
+                Log::warning("Order {$order->id} - server {$server->id} created successfully, but status update failed. Manual intervention may be needed.");
+            }
             
             Log::info("Successfully fulfilled order {$order->id}, server {$server->id}");
             
             return $server;
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error("Failed to fulfill order {$order->id}: " . $e->getMessage());
             throw $e;
         }

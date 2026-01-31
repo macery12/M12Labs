@@ -451,19 +451,54 @@ class PayPalCheckoutController extends ClientApiController
      */
     public function processPayment(Request $request): Response
     {
-        // PayPal sends the order ID in the resource field
         $eventType = $request->input('event_type');
         $resource = $request->input('resource', []);
-        $paypalOrderId = $resource['id'] ?? null;
+
+        // Extract PayPal order ID based on event type
+        // Different event types have order ID in different locations
+        $paypalOrderId = null;
+        
+        switch ($eventType) {
+            case 'PAYMENT.CAPTURE.COMPLETED':
+            case 'PAYMENT.CAPTURE.DENIED':
+            case 'PAYMENT.CAPTURE.REFUNDED':
+            case 'PAYMENT.CAPTURE.REVERSED':
+                // For all capture-related events, order ID is in supplementary_data
+                // These events all relate to the same order and need the same extraction logic
+                // Use safe array access to handle potentially missing nested keys
+                if (isset($resource['supplementary_data']['related_ids']['order_id'])) {
+                    $paypalOrderId = $resource['supplementary_data']['related_ids']['order_id'];
+                }
+                break;
+
+            case 'CHECKOUT.ORDER.APPROVED':
+            case 'CHECKOUT.ORDER.COMPLETED':
+            case 'CHECKOUT.ORDER.SAVED':
+                // For order events, ID is directly in the resource
+                $paypalOrderId = $resource['id'] ?? null;
+                break;
+
+            default:
+                // Unsupported event type - this may be a new PayPal event we haven't implemented yet
+                // or an event not relevant to our billing flow. Return 200 to acknowledge receipt.
+                Log::warning("Unsupported PayPal webhook event type received", [
+                    'event_type' => $eventType,
+                    'resource_id' => $resource['id'] ?? null,
+                    'resource_type' => $request->input('resource_type'),
+                    'note' => 'This may be expected for certain PayPal events. Review PayPal webhook settings if unexpected.',
+                ]);
+                return $this->returnNoContent();
+        }
 
         if (!$paypalOrderId) {
             // Return 200 to prevent PayPal retries, but log the issue
-            Log::warning('PayPal webhook called without order ID', ['request' => $request->all()]);
+            Log::warning('PayPal webhook: Could not extract order ID from event', [
+                'event_type' => $eventType,
+                'resource_id' => $resource['id'] ?? null,
+                'resource_type' => $request->input('resource_type'),
+            ]);
             return $this->returnNoContent();
         }
-
-        // Log webhook event for debugging
-        Log::info("PayPal webhook received: {$eventType} for order {$paypalOrderId}");
 
         // Find the order by paypal_order_id
         $order = Order::where('paypal_order_id', $paypalOrderId)->latest()->first();
@@ -492,6 +527,14 @@ class PayPalCheckoutController extends ClientApiController
             // Handle different order statuses according to PayPal documentation
             // https://developer.paypal.com/docs/api/orders/v2/#orders_get
             $status = $paypalOrder['status'] ?? 'UNKNOWN';
+
+            Log::info("Processing PayPal webhook", [
+                'event_type' => $eventType,
+                'paypal_order_id' => $paypalOrderId,
+                'order_id' => $order->id,
+                'paypal_status' => $status,
+                'order_status' => $order->status,
+            ]);
 
             switch ($status) {
                 case 'COMPLETED':
@@ -526,8 +569,10 @@ class PayPalCheckoutController extends ClientApiController
             }
         } catch (\Exception $e) {
             // Log error but return 200 to prevent infinite PayPal retries
-            Log::error("PayPal webhook error for order {$paypalOrderId}: " . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error("PayPal webhook error for order {$paypalOrderId}: " . $e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         return $this->returnNoContent();
