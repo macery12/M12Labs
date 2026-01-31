@@ -110,7 +110,11 @@ class PayPalPaymentService
             ->post($this->getApiUrl() . '/v2/checkout/orders', $orderData);
 
         if (!$response->successful()) {
-            \Log::error('PayPal order creation failed', ['response' => $response->body()]);
+            \Log::error('PayPal order creation failed', [
+                'status' => $response->status(),
+                'error_response' => $response->json(),
+                'raw_body' => $response->body(),
+            ]);
             throw new DisplayException('Failed to create PayPal order. Please try again or contact support.');
         }
 
@@ -137,7 +141,12 @@ class PayPalPaymentService
             ->get($this->getApiUrl() . '/v2/checkout/orders/' . $orderId);
 
         if (!$response->successful()) {
-            \Log::error('PayPal order fetch failed', ['order_id' => $orderId, 'status' => $response->status()]);
+            \Log::error('PayPal order fetch failed', [
+                'order_id' => $orderId,
+                'status' => $response->status(),
+                'error_response' => $response->json(),
+                'raw_body' => $response->body(),
+            ]);
             throw new DisplayException('Failed to fetch PayPal order. Please try again or contact support.');
         }
 
@@ -159,7 +168,12 @@ class PayPalPaymentService
             ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture');
 
         if (!$response->successful()) {
-            \Log::error('PayPal order capture failed', ['order_id' => $orderId, 'status' => $response->status()]);
+            \Log::error('PayPal order capture failed', [
+                'order_id' => $orderId,
+                'status' => $response->status(),
+                'error_response' => $response->json(),
+                'raw_body' => $response->body(),
+            ]);
             throw new DisplayException('Failed to capture PayPal order. Please try again or contact support.');
         }
 
