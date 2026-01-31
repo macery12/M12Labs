@@ -49,22 +49,7 @@ const server: ServerRouteDefinition[] = [
         name: 'Modpacks',
         icon: Icon.CollectionIcon,
         category: 'data',
-        condition: server => {
-            // Only show modpacks if server has mods enabled and has both PROJECT_ID and VERSION_ID variables
-            if (!server.modsEnabled) return false;
-            
-            // Single iteration to check for both variables
-            let hasProjectId = false;
-            let hasVersionId = false;
-            
-            for (const variable of server.variables) {
-                if (variable.envVariable === 'PROJECT_ID') hasProjectId = true;
-                if (variable.envVariable === 'VERSION_ID') hasVersionId = true;
-                if (hasProjectId && hasVersionId) break; // Early exit once both found
-            }
-            
-            return hasProjectId && hasVersionId;
-        },
+        condition: server => server.modsEnabled && server.modpacksSupported,
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',

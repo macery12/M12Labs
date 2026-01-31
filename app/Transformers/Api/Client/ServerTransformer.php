@@ -34,6 +34,19 @@ class ServerTransformer extends Transformer
         $service = Container::getInstance()->make(StartupCommandService::class);
 
         $user = $this->request->user();
+        
+        // Check if server supports modpacks by checking for required environment variables
+        $modpacksSupported = false;
+        if ($server->mods_enabled) {
+            $variables = $server->variables;
+            $hasProjectId = $variables->contains(function ($variable) {
+                return $variable->env_variable === 'PROJECT_ID';
+            });
+            $hasVersionId = $variables->contains(function ($variable) {
+                return $variable->env_variable === 'VERSION_ID';
+            });
+            $modpacksSupported = $hasProjectId && $hasVersionId;
+        }
 
         return [
             'server_owner' => $user->id === $server->owner_id,
@@ -63,6 +76,7 @@ class ServerTransformer extends Transformer
             'egg_features' => $server->egg->inherit_features,
             'egg_id' => $server->egg_id,
             'mods_enabled' => $server->mods_enabled,
+            'modpacks_supported' => $modpacksSupported,
             'billing_product_id' => $server->billing_product_id,
             'feature_limits' => [
                 'databases' => $server->database_limit,
