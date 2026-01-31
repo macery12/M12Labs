@@ -3,13 +3,11 @@
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Stripe\StripeClient;
-use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
-use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;

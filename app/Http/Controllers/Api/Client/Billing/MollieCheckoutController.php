@@ -7,6 +7,7 @@ use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
+use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
