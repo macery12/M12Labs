@@ -107,6 +107,10 @@ class PayPalPaymentService
         ];
 
         $response = Http::withToken($token)
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
             ->post($this->getApiUrl() . '/v2/checkout/orders', $orderData);
 
         if (!$response->successful()) {
@@ -138,6 +142,10 @@ class PayPalPaymentService
         $token = $this->getAccessToken();
 
         $response = Http::withToken($token)
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
             ->get($this->getApiUrl() . '/v2/checkout/orders/' . $orderId);
 
         if (!$response->successful()) {
@@ -165,6 +173,10 @@ class PayPalPaymentService
         $token = $this->getAccessToken();
 
         $response = Http::withToken($token)
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
             ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture');
 
         if (!$response->successful()) {
