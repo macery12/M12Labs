@@ -62,8 +62,8 @@ class PayPalCheckoutController extends ClientApiController
         // Setup return and cancel URLs
         $baseReturnUrl = $request->input('return_url', url('/account/billing/processing'));
         $returnUrl = str_contains($baseReturnUrl, '?')
-            ? $baseReturnUrl . '&token=' . $token
-            : $baseReturnUrl . '?token=' . $token;
+            ? $baseReturnUrl . '&token=' . $token . '&processor=paypal'
+            : $baseReturnUrl . '?token=' . $token . '&processor=paypal';
         
         $cancelUrl = url('/account/billing/cancel');
 

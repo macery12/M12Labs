@@ -62,8 +62,8 @@ class MollieCheckoutController extends ClientApiController
         // Use the return_url from frontend request and append token
         $baseReturnUrl = $request->input('return_url', url('/account/billing/processing'));
         $returnUrl = str_contains($baseReturnUrl, '?')
-            ? $baseReturnUrl . '&token=' . $token
-            : $baseReturnUrl . '?token=' . $token;
+            ? $baseReturnUrl . '&token=' . $token . '&processor=mollie'
+            : $baseReturnUrl . '?token=' . $token . '&processor=mollie';
         
         $payment = $this->mollieService->createPayment(
             $product,
