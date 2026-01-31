@@ -51,7 +51,7 @@
 - PUT `/api/client/billing/products/{id}/paypal/order` (auth)
 - POST `/api/client/billing/paypal/capture` (auth)
 - GET `/api/client/billing/paypal/status` (auth)
-- POST `/api/client/billing/paypal/webhook` (no auth - webhook)
+- POST `/api/webhooks/paypal` (no auth - webhook)
 
 **Essential Logging:**
 - Capture endpoint hit
