@@ -32,10 +32,12 @@ This implementation adds full Mollie payment processor support to Jexactyl, allo
   - Includes validation and error handling
 
 #### Routes
+- **routes/webhooks.php** (NEW)
+  - Added `POST /api/webhooks/paypal` - PayPal webhook handler
+  - Added `POST /api/webhooks/mollie` - Mollie webhook handler
 - **routes/api-client.php**
   - Added `POST /api/client/billing/products/{id}/mollie/payment`
   - Added `PUT /api/client/billing/products/{id}/mollie/payment`
-  - Added `POST /api/client/billing/mollie/webhook`
 
 #### Dependencies
 - **composer.json & composer.lock**
@@ -188,7 +190,7 @@ Orders store both `payment_intent_id` (Stripe) and `mollie_payment_id`:
 4. Payment metadata stored in database as pending order
 5. User redirected to Mollie checkout page
 6. User completes payment on Mollie
-7. Mollie sends webhook to `/api/client/billing/mollie/webhook`
+7. Mollie sends webhook to `/api/webhooks/mollie`
 8. Backend validates payment and deploys server
 9. Order marked as processed
 10. User redirected back to Jexactyl

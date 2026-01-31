@@ -67,7 +67,7 @@ For Mollie to notify your application about payment status changes, you need to 
 1. In your Mollie Dashboard, go to **Developers → Webhooks**
 2. Add the following webhook URL:
    ```
-   https://your-domain.com/api/client/billing/mollie/webhook
+   https://your-domain.com/api/webhooks/mollie
    ```
 3. Save the webhook
 
@@ -177,7 +177,7 @@ Mollie supports multiple currencies, but:
 
 - `POST /api/client/billing/products/{id}/mollie/payment` - Create Mollie payment
 - `PUT /api/client/billing/products/{id}/mollie/payment` - Update payment with order details
-- `POST /api/client/billing/mollie/webhook` - Webhook endpoint (called by Mollie)
+- `POST /api/webhooks/mollie` - Webhook endpoint (called by Mollie)
 
 ## Development & Testing
 

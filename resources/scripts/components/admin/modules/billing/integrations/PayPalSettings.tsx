@@ -16,7 +16,7 @@ export default () => {
     const mode = settings.paypal_standalone?.mode || 'sandbox';
     
     // Generate webhook URL based on current domain
-    const webhookUrl = `${window.location.origin}/api/client/billing/paypal/webhook`;
+    const webhookUrl = `${window.location.origin}/api/webhooks/paypal`;
 
     const copyWebhookUrl = () => {
         navigator.clipboard.writeText(webhookUrl);

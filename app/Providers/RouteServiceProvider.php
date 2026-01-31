@@ -62,6 +62,10 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('/api/remote')
                 ->scopeBindings()
                 ->group(base_path('routes/api-remote.php'));
+
+            // Payment webhooks - no authentication required
+            Route::prefix('/api')
+                ->group(base_path('routes/webhooks.php'));
         });
     }
 
