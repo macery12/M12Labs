@@ -83,12 +83,23 @@ export const updatePayPalOrder = ({
 };
 
 export const capturePayPalOrder = (orderId: string): Promise<PayPalCaptureResponse> => {
+    console.log('[PayPal] Capture API call - Order ID:', orderId);
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/paypal/capture`, {
             order_id: orderId,
         })
-            .then(({ data }) => resolve(data))
-            .catch(reject);
+            .then(({ data }) => {
+                console.log('[PayPal] Capture successful:', data);
+                resolve(data);
+            })
+            .catch((error) => {
+                console.error('[PayPal] Capture failed:', {
+                    status: error.response?.status,
+                    message: error.response?.data?.message || error.message,
+                    fullError: error,
+                });
+                reject(error);
+            });
     });
 };
 
