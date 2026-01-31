@@ -473,11 +473,6 @@ class PayPalCheckoutController extends ClientApiController
             case 'PAYMENT.CAPTURE.REVERSED':
                 // For capture events, order ID is in supplementary_data
                 $paypalOrderId = $resource['supplementary_data']['related_ids']['order_id'] ?? null;
-                Log::info("Extracted order ID from capture event", [
-                    'event_type' => $eventType,
-                    'capture_id' => $resource['id'] ?? null,
-                    'order_id' => $paypalOrderId,
-                ]);
                 break;
 
             case 'CHECKOUT.ORDER.APPROVED':
@@ -485,17 +480,16 @@ class PayPalCheckoutController extends ClientApiController
             case 'CHECKOUT.ORDER.SAVED':
                 // For order events, ID is directly in the resource
                 $paypalOrderId = $resource['id'] ?? null;
-                Log::info("Extracted order ID from order event", [
-                    'event_type' => $eventType,
-                    'order_id' => $paypalOrderId,
-                ]);
                 break;
 
             default:
-                Log::warning("Unsupported PayPal webhook event type", [
+                // Unsupported event type - this may be a new PayPal event we haven't implemented yet
+                // or an event not relevant to our billing flow. Return 200 to acknowledge receipt.
+                Log::warning("Unsupported PayPal webhook event type received", [
                     'event_type' => $eventType,
                     'resource_id' => $resource['id'] ?? null,
                     'resource_type' => $request->input('resource_type'),
+                    'note' => 'This may be expected for certain PayPal events. Review PayPal webhook settings if unexpected.',
                 ]);
                 return $this->returnNoContent();
         }
