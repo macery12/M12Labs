@@ -48,12 +48,6 @@ class ServerFulfillmentService
      */
     public function fulfillOrder(Request $request, Order $order, ?object $paymentMetadata = null): Server
     {
-        // IDEMPOTENCY: Check if order is already processed
-        if ($order->status === Order::STATUS_PROCESSED) {
-            Log::info("Order {$order->id} already processed, skipping fulfillment");
-            throw new DisplayException('This order has already been processed.');
-        }
-
         DB::beginTransaction();
         try {
             // Lock the order row to prevent concurrent fulfillment
@@ -61,7 +55,7 @@ class ServerFulfillmentService
                 ->lockForUpdate()
                 ->first();
             
-            // Recheck status after acquiring lock
+            // Check status after acquiring lock (idempotency)
             if ($order->status === Order::STATUS_PROCESSED) {
                 DB::rollBack();
                 Log::info("Order {$order->id} already processed during lock wait");
@@ -172,13 +166,16 @@ class ServerFulfillmentService
     {
         // If payment metadata is provided (Stripe), use it
         if ($paymentMetadata !== null) {
+            // Create a copy to avoid modifying the original
+            $metadata = clone $paymentMetadata;
+            
             // Decode variables if they're JSON encoded
-            if (isset($paymentMetadata->variables) && !empty($paymentMetadata->variables)) {
-                if (is_string($paymentMetadata->variables)) {
-                    $paymentMetadata->variables = json_decode($paymentMetadata->variables, true) ?? [];
+            if (isset($metadata->variables) && !empty($metadata->variables)) {
+                if (is_string($metadata->variables)) {
+                    $metadata->variables = json_decode($metadata->variables, true) ?? [];
                 }
             }
-            return $paymentMetadata;
+            return $metadata;
         }
 
         // Otherwise, build from order data (PayPal, Mollie)
@@ -194,23 +191,22 @@ class ServerFulfillmentService
     /**
      * Record coupon usage for an order.
      * 
-     * Idempotent - checks if usage already exists before creating.
+     * Uses firstOrCreate to be idempotent and avoid race conditions.
      * 
      * @param Order $order The order to record coupon usage for
      */
     private function recordCouponUsage(Order $order): void
     {
-        // Check if coupon usage already exists to prevent duplicates
-        $existingUsage = CouponUsage::where('order_id', $order->id)->first();
-        if (!$existingUsage) {
-            CouponUsage::create([
+        // Use firstOrCreate for idempotent coupon usage recording
+        CouponUsage::firstOrCreate(
+            ['order_id' => $order->id],
+            [
                 'coupon_id' => $order->coupon_id,
                 'user_id' => $order->user_id,
-                'order_id' => $order->id,
                 'used_at' => now(),
-            ]);
-            
-            Log::info("Recorded coupon usage for order {$order->id}");
-        }
+            ]
+        );
+        
+        Log::info("Recorded coupon usage for order {$order->id}");
     }
 }
