@@ -202,7 +202,12 @@ export default ({ modpack, onClose }: Props) => {
                             src={modpack.logo?.url || PLACEHOLDER_IMAGE}
                             alt={modpack.name}
                             onError={e => {
-                                e.currentTarget.src = PLACEHOLDER_IMAGE;
+                                const target = e.currentTarget;
+                                // Prevent infinite loop by checking if already set to placeholder
+                                if (!target.dataset.fallbackAttempted) {
+                                    target.dataset.fallbackAttempted = 'true';
+                                    target.src = PLACEHOLDER_IMAGE;
+                                }
                             }}
                         />
                         <div css={tw`flex-1`}>

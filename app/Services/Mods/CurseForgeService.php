@@ -190,8 +190,8 @@ class CurseForgeService
         
         // CurseForge rate limits (as per their API documentation)
         // These are conservative estimates - actual limits may vary
-        $limitPerMinute = 20; // Conservative estimate
-        $limitPerHour = 1000; // Conservative estimate
+        $limitPerMinute = 100; // Conservative estimate
+        $limitPerHour = 2500; // Conservative estimate
         
         return [
             'requests_this_minute' => $requestsThisMinute,

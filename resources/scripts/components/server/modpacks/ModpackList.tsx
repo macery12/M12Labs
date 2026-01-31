@@ -131,7 +131,12 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                                         src={modpack.logo?.thumbnailUrl || PLACEHOLDER_IMAGE}
                                         alt={modpack.name}
                                         onError={e => {
-                                            e.currentTarget.src = PLACEHOLDER_IMAGE;
+                                            const target = e.currentTarget;
+                                            // Prevent infinite loop by checking if already set to placeholder
+                                            if (!target.dataset.fallbackAttempted) {
+                                                target.dataset.fallbackAttempted = 'true';
+                                                target.src = PLACEHOLDER_IMAGE;
+                                            }
                                         }}
                                     />
                                     <ModpackInfo>

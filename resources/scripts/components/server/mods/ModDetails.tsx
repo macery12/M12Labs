@@ -128,7 +128,12 @@ export default ({ mod, onClose }: Props) => {
                         src={mod.logo?.url || '/assets/images/placeholder-mod.png'}
                         alt={mod.name}
                         onError={e => {
-                            e.currentTarget.src = '/assets/images/placeholder-mod.png';
+                            const target = e.currentTarget;
+                            // Prevent infinite loop by checking if already set to placeholder
+                            if (!target.dataset.fallbackAttempted) {
+                                target.dataset.fallbackAttempted = 'true';
+                                target.src = '/assets/images/placeholder-mod.png';
+                            }
                         }}
                     />
                     <div css={tw`flex-1`}>

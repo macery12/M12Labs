@@ -49,7 +49,15 @@ const server: ServerRouteDefinition[] = [
         name: 'Modpacks',
         icon: Icon.CollectionIcon,
         category: 'data',
-        condition: server => server.modsEnabled,
+        condition: server => {
+            // Only show modpacks if server has mods enabled and has both PROJECT_ID and VERSION_ID variables
+            if (!server.modsEnabled) return false;
+            
+            const hasProjectId = server.variables.some(v => v.envVariable === 'PROJECT_ID');
+            const hasVersionId = server.variables.some(v => v.envVariable === 'VERSION_ID');
+            
+            return hasProjectId && hasVersionId;
+        },
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',
