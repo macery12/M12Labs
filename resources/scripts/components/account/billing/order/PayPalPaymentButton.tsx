@@ -20,23 +20,39 @@ export default (data: Props) => {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
 
     const handleSubmit = async (event: FormEvent) => {
+        console.log('[PayPal] Form submit initiated');
         clearFlashes();
         setLoading(true);
         event.preventDefault();
 
+        console.log('[PayPal] Validating inputs:', {
+            product: data.product?.id,
+            selectedNode: data.selectedNode,
+            serverName: data.serverName,
+        });
+
         if (!data.product || !data.selectedNode) {
+            console.warn('[PayPal] Validation failed: missing product or node');
             setLoading(false);
             return;
         }
 
         const returnUrl = window.location.origin + '/account/billing/processing?processor=paypal';
+        console.log('[PayPal] Return URL:', returnUrl);
 
         try {
             // Create PayPal order with return URL
+            console.log('[PayPal] Step 1: Creating PayPal order...');
             const order = await createPayPalOrder(Number(data.product.id), data.couponId, returnUrl);
+            console.log('[PayPal] Order created:', order);
 
             // Update order with order details
             const variables = Array.from(data.vars, ([key, value]) => ({ key, value }));
+            console.log('[PayPal] Step 2: Updating order with details...', {
+                orderId: order.id,
+                nodeId: data.selectedNode,
+                serverName: data.serverName,
+            });
             await updatePayPalOrder({
                 id: Number(data.product.id),
                 orderId: order.id,
@@ -46,11 +62,14 @@ export default (data: Props) => {
                 eggId: data.selectedEggId,
                 name: data.serverName,
             });
+            console.log('[PayPal] Order updated successfully');
 
             // Redirect to PayPal approval page
             // After approval, PayPal will redirect back to return_url with token parameter
+            console.log('[PayPal] Redirecting to approval URL:', order.approval_url);
             window.location.href = order.approval_url;
         } catch (error) {
+            console.error('[PayPal] Error during checkout:', error);
             clearAndAddHttpError({ key: 'store:order', error });
             setLoading(false);
         }

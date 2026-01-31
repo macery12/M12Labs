@@ -4,6 +4,7 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
@@ -170,15 +171,23 @@ class PayPalCheckoutController extends ClientApiController
      */
     public function captureOrder(Request $request): JsonResponse
     {
+        // IMMEDIATE TEST LOG - This should ALWAYS appear if endpoint is hit
+        Log::info("=== PAYPAL CAPTURE ENDPOINT HIT ===", [
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'user_id' => $request->user()->id ?? 'not authenticated',
+            'all_input' => $request->all(),
+        ]);
+        
         $paypalOrderId = $request->input('order_id');
         
-        \Log::info("PayPal capture requested", [
+        Log::info("PayPal capture requested", [
             'paypal_order_id' => $paypalOrderId,
             'user_id' => $request->user()->id,
         ]);
         
         if (!$paypalOrderId) {
-            \Log::error("PayPal capture failed: No order ID provided");
+            Log::error("PayPal capture failed: No order ID provided");
             throw new DisplayException('PayPal order ID is required.');
         }
 
@@ -187,7 +196,7 @@ class PayPalCheckoutController extends ClientApiController
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
-        \Log::info("Found order for capture", [
+        Log::info("Found order for capture", [
             'order_id' => $order->id,
             'order_status' => $order->status,
             'paypal_order_id' => $paypalOrderId,
@@ -195,7 +204,7 @@ class PayPalCheckoutController extends ClientApiController
 
         // Check idempotency - already processed?
         if ($order->status === Order::STATUS_PROCESSED) {
-            \Log::info("Order already processed, returning success", ['order_id' => $order->id]);
+            Log::info("Order already processed, returning success", ['order_id' => $order->id]);
             return response()->json([
                 'success' => true,
                 'message' => 'Order already processed',
@@ -205,29 +214,29 @@ class PayPalCheckoutController extends ClientApiController
 
         // Verify the PayPal order is approved
         $isApproved = $this->paypalService->isOrderApproved($paypalOrderId);
-        \Log::info("PayPal order approval status", [
+        Log::info("PayPal order approval status", [
             'paypal_order_id' => $paypalOrderId,
             'is_approved' => $isApproved,
         ]);
         
         if (!$isApproved) {
-            \Log::warning("PayPal order not approved yet", ['paypal_order_id' => $paypalOrderId]);
+            Log::warning("PayPal order not approved yet", ['paypal_order_id' => $paypalOrderId]);
             throw new DisplayException('PayPal order is not approved yet.');
         }
 
         // Capture the payment
-        \Log::info("Attempting to capture PayPal payment", ['paypal_order_id' => $paypalOrderId]);
+        Log::info("Attempting to capture PayPal payment", ['paypal_order_id' => $paypalOrderId]);
         $captureResult = $this->paypalService->captureOrder($paypalOrderId);
         
         // Verify capture was successful
         $captureStatus = $captureResult['status'] ?? '';
-        \Log::info("PayPal capture result", [
+        Log::info("PayPal capture result", [
             'paypal_order_id' => $paypalOrderId,
             'capture_status' => $captureStatus,
         ]);
         
         if ($captureStatus !== 'COMPLETED') {
-            \Log::error("PayPal capture failed", [
+            Log::error("PayPal capture failed", [
                 'paypal_order_id' => $paypalOrderId,
                 'expected_status' => 'COMPLETED',
                 'actual_status' => $captureStatus,
@@ -236,12 +245,12 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         // Fulfill the order
-        \Log::info("Starting order fulfillment", ['order_id' => $order->id]);
+        Log::info("Starting order fulfillment", ['order_id' => $order->id]);
         try {
             $this->fulfillOrder($request, $order);
-            \Log::info("Order fulfillment completed successfully", ['order_id' => $order->id]);
+            Log::info("Order fulfillment completed successfully", ['order_id' => $order->id]);
         } catch (\Exception $e) {
-            \Log::error("Order fulfillment failed", [
+            Log::error("Order fulfillment failed", [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -251,7 +260,7 @@ class PayPalCheckoutController extends ClientApiController
 
         // Reload order to get updated status
         $order->refresh();
-        \Log::info("Final order status after fulfillment", [
+        Log::info("Final order status after fulfillment", [
             'order_id' => $order->id,
             'status' => $order->status,
         ]);
@@ -273,7 +282,7 @@ class PayPalCheckoutController extends ClientApiController
     {
         $paypalOrderId = $request->input('order_id');
         
-        \Log::info("PayPal order status check requested", [
+        Log::info("PayPal order status check requested", [
             'paypal_order_id' => $paypalOrderId,
             'user_id' => $request->user()->id,
         ]);
@@ -292,7 +301,7 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         if (!$order) {
-            \Log::warning("PayPal status check: Order not found", [
+            Log::warning("PayPal status check: Order not found", [
                 'paypal_order_id' => $paypalOrderId,
                 'user_id' => $request->user()->id,
             ]);
@@ -312,7 +321,7 @@ class PayPalCheckoutController extends ClientApiController
                 $orderStatus = $this->paypalService->getOrderStatus($order->paypal_order_id);
             }
         } catch (\Exception $e) {
-            \Log::warning("Failed to fetch PayPal order status for {$order->paypal_order_id}: " . $e->getMessage());
+            Log::warning("Failed to fetch PayPal order status for {$order->paypal_order_id}: " . $e->getMessage());
         }
 
         // Map order status
@@ -320,7 +329,7 @@ class PayPalCheckoutController extends ClientApiController
         $failed = $order->status === Order::STATUS_FAILED;
         $pending = !$processed && !$failed;
 
-        \Log::info("PayPal order status check result", [
+        Log::info("PayPal order status check result", [
             'order_id' => $order->id,
             'paypal_order_id' => $order->paypal_order_id,
             'internal_status' => $order->status,
@@ -372,7 +381,7 @@ class PayPalCheckoutController extends ClientApiController
     {
         // Double-check idempotency before fulfillment
         if ($order->status === Order::STATUS_PROCESSED) {
-            \Log::info("Order {$order->id} already processed, skipping fulfillment");
+            Log::info("Order {$order->id} already processed, skipping fulfillment");
             return;
         }
 
@@ -386,13 +395,13 @@ class PayPalCheckoutController extends ClientApiController
             // Recheck status after acquiring lock
             if ($order->status === Order::STATUS_PROCESSED) {
                 \DB::rollBack();
-                \Log::info("Order {$order->id} already processed during lock wait");
+                Log::info("Order {$order->id} already processed during lock wait");
                 return;
             }
 
             $product = Product::findOrFail($order->product_id);
 
-            \Log::info("Fulfilling PayPal order {$order->id} for PayPal order {$order->paypal_order_id}");
+            Log::info("Fulfilling PayPal order {$order->id} for PayPal order {$order->paypal_order_id}");
 
             // Process the renewal or product purchase
             if ($order->type === Order::TYPE_REN) {
@@ -406,7 +415,7 @@ class PayPalCheckoutController extends ClientApiController
                 // Use the unified processor service for renewal
                 $this->processorService->processRenewal($server, $product, $order->coupon_id);
                 
-                \Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
+                Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
             } else {
                 // For new purchases, create the server using stored order data
                 $user = \Everest\Models\User::findOrFail($order->user_id);
@@ -424,7 +433,7 @@ class PayPalCheckoutController extends ClientApiController
 
                 $server = $this->serverCreation->process($request, $product, $orderMetadata, $order);
                 
-                \Log::info("Created new server {$server->id} for order {$order->id}");
+                Log::info("Created new server {$server->id} for order {$order->id}");
             }
 
             // Record coupon usage for non-renewal orders
@@ -448,7 +457,7 @@ class PayPalCheckoutController extends ClientApiController
             \DB::commit();
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error("Failed to fulfill order {$order->id}: " . $e->getMessage());
+            Log::error("Failed to fulfill order {$order->id}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -489,26 +498,26 @@ class PayPalCheckoutController extends ClientApiController
 
         if (!$paypalOrderId) {
             // Return 200 to prevent PayPal retries, but log the issue
-            \Log::warning('PayPal webhook called without order ID', ['request' => $request->all()]);
+            Log::warning('PayPal webhook called without order ID', ['request' => $request->all()]);
             return $this->returnNoContent();
         }
 
         // Log webhook event for debugging
-        \Log::info("PayPal webhook received: {$eventType} for order {$paypalOrderId}");
+        Log::info("PayPal webhook received: {$eventType} for order {$paypalOrderId}");
 
         // Find the order by paypal_order_id
         $order = Order::where('paypal_order_id', $paypalOrderId)->latest()->first();
 
         if (!$order) {
             // Return 200 to prevent PayPal retries for non-existent orders
-            \Log::warning("PayPal webhook: Order not found for PayPal order ID: {$paypalOrderId}");
+            Log::warning("PayPal webhook: Order not found for PayPal order ID: {$paypalOrderId}");
             return $this->returnNoContent();
         }
 
         // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
         // This prevents duplicate processing if webhook is called multiple times
         if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
-            \Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
+            Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
             return $this->returnNoContent();
         }
 
@@ -527,20 +536,20 @@ class PayPalCheckoutController extends ClientApiController
             switch ($status) {
                 case 'COMPLETED':
                     // Payment captured successfully - fulfill the order
-                    \Log::info("PayPal order {$paypalOrderId} completed for order {$order->id}");
+                    Log::info("PayPal order {$paypalOrderId} completed for order {$order->id}");
                     $this->fulfillOrder($request, $order);
                     break;
 
                 case 'APPROVED':
                     // Order approved but not yet captured
                     // This shouldn't happen if we auto-capture, but keep order as pending
-                    \Log::info("PayPal order {$paypalOrderId} approved but not captured for order {$order->id}");
+                    Log::info("PayPal order {$paypalOrderId} approved but not captured for order {$order->id}");
                     break;
 
                 case 'VOIDED':
                 case 'EXPIRED':
                     // Order voided or expired - mark as failed
-                    \Log::info("PayPal order {$paypalOrderId} {$status} for order {$order->id}");
+                    Log::info("PayPal order {$paypalOrderId} {$status} for order {$order->id}");
                     $order->update(['status' => Order::STATUS_FAILED]);
                     break;
 
@@ -548,17 +557,17 @@ class PayPalCheckoutController extends ClientApiController
                 case 'SAVED':
                 case 'PAYER_ACTION_REQUIRED':
                     // Order in progress - keep as pending
-                    \Log::info("PayPal order {$paypalOrderId} status {$status} for order {$order->id}");
+                    Log::info("PayPal order {$paypalOrderId} status {$status} for order {$order->id}");
                     break;
 
                 default:
                     // Unknown status - log for investigation
-                    \Log::warning("PayPal order {$paypalOrderId} has unknown status: {$status}");
+                    Log::warning("PayPal order {$paypalOrderId} has unknown status: {$status}");
             }
         } catch (\Exception $e) {
             // Log error but return 200 to prevent infinite PayPal retries
-            \Log::error("PayPal webhook error for order {$paypalOrderId}: " . $e->getMessage());
-            \Log::error($e->getTraceAsString());
+            Log::error("PayPal webhook error for order {$paypalOrderId}: " . $e->getMessage());
+            Log::error($e->getTraceAsString());
         }
 
         return $this->returnNoContent();

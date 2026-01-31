@@ -115,12 +115,23 @@ export default () => {
 
         // Handle PayPal payment
         if (token && (paymentProcessor === 'paypal' || (billing.processors?.paypal?.available && !paymentProcessor && !billing.processors?.mollie?.available))) {
+            console.log('[PayPal Processing] Starting PayPal payment processing', {
+                token,
+                paymentProcessor,
+                hasPayPalAvailable: billing.processors?.paypal?.available,
+            });
+            
             // Get order ID from token
             getOrderIdFromToken(token)
                 .then(({ order_id }) => {
+                    console.log('[PayPal Processing] Order ID retrieved:', order_id);
+                    
                     // Capture the PayPal order
+                    console.log('[PayPal Processing] Calling capturePayPalOrder...');
                     capturePayPalOrder(order_id)
                         .then(() => {
+                            console.log('[PayPal Processing] Capture successful, polling for status...');
+                            
                             // Check if order has been fulfilled
                             let pollCount = 0;
                             const maxPolls = 60; // 2 minutes max (60 * 2 seconds)
@@ -128,8 +139,10 @@ export default () => {
                             const checkStatus = async () => {
                                 try {
                                     pollCount++;
+                                    console.log('[PayPal Processing] Status check #' + pollCount);
                                     
                                     if (pollCount > maxPolls) {
+                                        console.warn('[PayPal Processing] Max polls reached');
                                         addFlash({
                                             key: 'billing:process',
                                             type: 'warning',
@@ -139,8 +152,10 @@ export default () => {
                                     }
                                     
                                     const status = await checkPayPalOrderStatus(order_id);
+                                    console.log('[PayPal Processing] Status result:', status);
                                     
                                     if (status.processed) {
+                                        console.log('[PayPal Processing] Order processed successfully!');
                                         // Order has been processed successfully
                                         if (renewal && serverUuid) {
                                             window.location.href = `/server/${serverUuid}/billing`;
