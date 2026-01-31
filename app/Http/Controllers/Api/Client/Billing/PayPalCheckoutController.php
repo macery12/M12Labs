@@ -454,12 +454,12 @@ class PayPalCheckoutController extends ClientApiController
         $eventType = $request->input('event_type');
         $resource = $request->input('resource', []);
         
-        // Log full webhook for debugging
+        // Log webhook event (excluding sensitive data)
         Log::info("PayPal webhook received", [
             'event_type' => $eventType,
             'resource_type' => $request->input('resource_type'),
             'resource_id' => $resource['id'] ?? null,
-            'full_payload' => $request->all(),
+            'resource_status' => $resource['status'] ?? null,
         ]);
 
         // Extract PayPal order ID based on event type
@@ -494,7 +494,8 @@ class PayPalCheckoutController extends ClientApiController
             default:
                 Log::warning("Unsupported PayPal webhook event type", [
                     'event_type' => $eventType,
-                    'resource' => $resource,
+                    'resource_id' => $resource['id'] ?? null,
+                    'resource_type' => $request->input('resource_type'),
                 ]);
                 return $this->returnNoContent();
         }
@@ -503,7 +504,8 @@ class PayPalCheckoutController extends ClientApiController
             // Return 200 to prevent PayPal retries, but log the issue
             Log::warning('PayPal webhook: Could not extract order ID from event', [
                 'event_type' => $eventType,
-                'resource' => $resource,
+                'resource_id' => $resource['id'] ?? null,
+                'resource_type' => $request->input('resource_type'),
             ]);
             return $this->returnNoContent();
         }
