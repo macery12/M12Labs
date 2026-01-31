@@ -12,6 +12,9 @@ import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
 import { getServerStartup } from '@/api/routes/server/startup';
 
+// Environment variable names required for modpack support
+const REQUIRED_MODPACK_VARIABLES = ['PROJECT_ID', 'VERSION_ID'] as const;
+
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
@@ -40,21 +43,33 @@ export default () => {
         index: 0,
     });
 
-    // Check if server supports modpacks by fetching startup variables
-    const { data: startupData, error: startupError } = getServerStartup(uuid);
+    // Only fetch startup data if mods are enabled
+    const shouldFetchStartup = modsEnabled && globalModsEnabled;
+    const { data: startupData, error: startupError } = getServerStartup(
+        uuid,
+        shouldFetchStartup ? undefined : { invocation: '', variables: [], dockerImages: {} },
+        { revalidateOnFocus: false, revalidateOnReconnect: false }
+    );
 
     useEffect(() => {
+        if (!shouldFetchStartup) {
+            setCheckingSupport(false);
+            setModpacksSupported(false);
+            return;
+        }
+
         if (startupData) {
-            // Check if PROJECT_ID and VERSION_ID variables exist
-            const hasProjectId = startupData.variables.some(v => v.envVariable === 'PROJECT_ID');
-            const hasVersionId = startupData.variables.some(v => v.envVariable === 'VERSION_ID');
-            setModpacksSupported(hasProjectId && hasVersionId);
+            // Check if all required modpack variables exist
+            const hasAllVariables = REQUIRED_MODPACK_VARIABLES.every(
+                varName => startupData.variables.some(v => v.envVariable === varName)
+            );
+            setModpacksSupported(hasAllVariables);
             setCheckingSupport(false);
         } else if (startupError) {
             setModpacksSupported(false);
             setCheckingSupport(false);
         }
-    }, [startupData, startupError]);
+    }, [startupData, startupError, shouldFetchStartup]);
 
     useEffect(() => {
         if (!modsEnabled || !modpacksSupported) return;
