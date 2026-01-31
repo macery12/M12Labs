@@ -472,7 +472,10 @@ class PayPalCheckoutController extends ClientApiController
             case 'PAYMENT.CAPTURE.REFUNDED':
             case 'PAYMENT.CAPTURE.REVERSED':
                 // For capture events, order ID is in supplementary_data
-                $paypalOrderId = $resource['supplementary_data']['related_ids']['order_id'] ?? null;
+                // Use safe array access to handle potentially missing nested keys
+                if (isset($resource['supplementary_data']['related_ids']['order_id'])) {
+                    $paypalOrderId = $resource['supplementary_data']['related_ids']['order_id'];
+                }
                 break;
 
             case 'CHECKOUT.ORDER.APPROVED':
