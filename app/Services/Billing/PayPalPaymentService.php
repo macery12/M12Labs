@@ -176,8 +176,9 @@ class PayPalPaymentService
             ->withHeaders([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
+                'Prefer' => 'return=representation',
             ])
-            ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture');
+            ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture', []);
 
         if (!$response->successful()) {
             \Log::error('PayPal order capture failed', [
