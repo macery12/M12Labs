@@ -66,6 +66,10 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:billing:plan_change_cooldown_hours',
         'modules:billing:integrations:stripe:enabled',
         'modules:billing:integrations:mollie:enabled',
+        'modules:billing:integrations:paypal:enabled',
+        'modules:billing:paypal_standalone:client_id',
+        'modules:billing:paypal_standalone:client_secret',
+        'modules:billing:paypal_standalone:mode',
 
         // Ticket module settings
         'modules:tickets:enabled',

@@ -30,9 +30,20 @@ return [
     ],
 
     /*
-     * Choose whether to add PayPal integration to the Panel.
+     * Choose whether to add PayPal integration to the Panel (via Stripe).
+     * This is for PayPal integration through Stripe's payment methods.
      */
     'paypal' => env('BILLING_PAYPAL', false),
+
+    /*
+     * Configure standalone PayPal integration.
+     * Credentials are stored in database via Settings model.
+     */
+    'paypal_standalone' => [
+        'client_id' => '',
+        'client_secret' => '',
+        'mode' => 'sandbox', // 'sandbox' or 'live'
+    ],
 
     /*
      * Choose whether to add Link integration to the Panel.

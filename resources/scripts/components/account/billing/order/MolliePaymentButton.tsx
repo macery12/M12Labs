@@ -29,7 +29,7 @@ export default (data: Props) => {
             return;
         }
 
-        const returnUrl = window.location.origin + '/account/billing/processing';
+        const returnUrl = window.location.origin + '/account/billing/processing?processor=mollie';
 
         try {
             // Create Mollie payment with return URL

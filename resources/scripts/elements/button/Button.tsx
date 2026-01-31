@@ -25,7 +25,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     loading && 'text-gray-300',
                 )}
                 {...rest}
-                disabled={loading}
             >
                 {children}
                 {Icon && <Icon className={'ml-1 mt-1 h-4 w-4'} />}
