@@ -40,6 +40,9 @@ class ServerFulfillmentService
      * 3. Records coupon usage if applicable
      * 4. Updates order status to processed
      * 
+     * IMPORTANT: Server creation is committed BEFORE calling Wings to ensure
+     * the server exists in the database when Wings calls back to fetch configuration.
+     * 
      * @param Request $request The HTTP request
      * @param Order $order The order to fulfill
      * @param object|null $paymentMetadata Optional metadata from payment processor (Stripe, PayPal, Mollie)
@@ -48,6 +51,7 @@ class ServerFulfillmentService
      */
     public function fulfillOrder(Request $request, Order $order, ?object $paymentMetadata = null): Server
     {
+        // Step 1: Check order status with locking to prevent duplicate processing
         DB::beginTransaction();
         try {
             // Lock the order row to prevent concurrent fulfillment
@@ -61,12 +65,22 @@ class ServerFulfillmentService
                 Log::info("Order {$order->id} already processed during lock wait");
                 throw new DisplayException('This order has already been processed.');
             }
+            
+            // Keep the order locked while we process
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
 
+        try {
             $product = Product::findOrFail($order->product_id);
 
             Log::info("Fulfilling order {$order->id} of type {$order->type}");
 
-            // Process based on order type
+            // Step 2: Create server or process renewal
+            // ServerCreationService has its own transaction that will be committed
+            // BEFORE calling Wings, ensuring the server exists when Wings calls back
             if ($order->type === Order::TYPE_REN) {
                 // RENEWAL: Use existing server
                 $server = $this->processRenewal($order, $product);
@@ -75,25 +89,34 @@ class ServerFulfillmentService
                 $server = $this->processNewServer($request, $order, $product, $paymentMetadata);
             }
 
-            // Record coupon usage for non-renewal orders
-            // (Renewals are handled by OrderProcessorService)
-            if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
-                $this->recordCouponUsage($order);
-            }
+            // Step 3: Update order status and record coupon usage
+            // This is done in a separate transaction AFTER server creation
+            DB::beginTransaction();
+            try {
+                // Record coupon usage for non-renewal orders
+                // (Renewals are handled by OrderProcessorService)
+                if ($order->type !== Order::TYPE_REN && $order->coupon_id) {
+                    $this->recordCouponUsage($order);
+                }
 
-            // Mark the order as processed (only for non-renewal orders)
-            // Renewal orders maintain their own status lifecycle
-            if ($order->type !== Order::TYPE_REN) {
-                $order->update(['status' => Order::STATUS_PROCESSED]);
-            }
+                // Mark the order as processed (only for non-renewal orders)
+                // Renewal orders maintain their own status lifecycle
+                if ($order->type !== Order::TYPE_REN) {
+                    $order->update(['status' => Order::STATUS_PROCESSED]);
+                }
 
-            DB::commit();
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error("Failed to update order status for {$order->id}: " . $e->getMessage());
+                // Don't throw - server is already created successfully
+                // Just log the error and continue
+            }
             
             Log::info("Successfully fulfilled order {$order->id}, server {$server->id}");
             
             return $server;
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error("Failed to fulfill order {$order->id}: " . $e->getMessage());
             throw $e;
         }
