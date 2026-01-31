@@ -172,6 +172,7 @@ class PayPalWebhookController
     private function fulfillOrder(Request $request, Order $order): void
     {
         // Use centralized fulfillment service
-        $this->fulfillmentService->fulfillOrder($request, $order);
+        // PayPal doesn't provide additional metadata like Mollie does
+        $this->fulfillmentService->fulfillOrder($request, $order, null);
     }
 }
