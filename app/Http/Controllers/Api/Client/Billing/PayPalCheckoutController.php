@@ -172,7 +172,13 @@ class PayPalCheckoutController extends ClientApiController
     {
         $paypalOrderId = $request->input('order_id');
         
+        \Log::info("PayPal capture requested", [
+            'paypal_order_id' => $paypalOrderId,
+            'user_id' => $request->user()->id,
+        ]);
+        
         if (!$paypalOrderId) {
+            \Log::error("PayPal capture failed: No order ID provided");
             throw new DisplayException('PayPal order ID is required.');
         }
 
@@ -181,8 +187,15 @@ class PayPalCheckoutController extends ClientApiController
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
+        \Log::info("Found order for capture", [
+            'order_id' => $order->id,
+            'order_status' => $order->status,
+            'paypal_order_id' => $paypalOrderId,
+        ]);
+
         // Check idempotency - already processed?
         if ($order->status === Order::STATUS_PROCESSED) {
+            \Log::info("Order already processed, returning success", ['order_id' => $order->id]);
             return response()->json([
                 'success' => true,
                 'message' => 'Order already processed',
@@ -191,21 +204,57 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         // Verify the PayPal order is approved
-        if (!$this->paypalService->isOrderApproved($paypalOrderId)) {
+        $isApproved = $this->paypalService->isOrderApproved($paypalOrderId);
+        \Log::info("PayPal order approval status", [
+            'paypal_order_id' => $paypalOrderId,
+            'is_approved' => $isApproved,
+        ]);
+        
+        if (!$isApproved) {
+            \Log::warning("PayPal order not approved yet", ['paypal_order_id' => $paypalOrderId]);
             throw new DisplayException('PayPal order is not approved yet.');
         }
 
         // Capture the payment
+        \Log::info("Attempting to capture PayPal payment", ['paypal_order_id' => $paypalOrderId]);
         $captureResult = $this->paypalService->captureOrder($paypalOrderId);
         
         // Verify capture was successful
         $captureStatus = $captureResult['status'] ?? '';
+        \Log::info("PayPal capture result", [
+            'paypal_order_id' => $paypalOrderId,
+            'capture_status' => $captureStatus,
+        ]);
+        
         if ($captureStatus !== 'COMPLETED') {
+            \Log::error("PayPal capture failed", [
+                'paypal_order_id' => $paypalOrderId,
+                'expected_status' => 'COMPLETED',
+                'actual_status' => $captureStatus,
+            ]);
             throw new DisplayException('Failed to capture PayPal payment: ' . $captureStatus);
         }
 
         // Fulfill the order
-        $this->fulfillOrder($request, $order);
+        \Log::info("Starting order fulfillment", ['order_id' => $order->id]);
+        try {
+            $this->fulfillOrder($request, $order);
+            \Log::info("Order fulfillment completed successfully", ['order_id' => $order->id]);
+        } catch (\Exception $e) {
+            \Log::error("Order fulfillment failed", [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+
+        // Reload order to get updated status
+        $order->refresh();
+        \Log::info("Final order status after fulfillment", [
+            'order_id' => $order->id,
+            'status' => $order->status,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -224,6 +273,11 @@ class PayPalCheckoutController extends ClientApiController
     {
         $paypalOrderId = $request->input('order_id');
         
+        \Log::info("PayPal order status check requested", [
+            'paypal_order_id' => $paypalOrderId,
+            'user_id' => $request->user()->id,
+        ]);
+        
         if (!$paypalOrderId) {
             // Fallback: Get the latest PayPal order for this user
             $order = Order::where('user_id', $request->user()->id)
@@ -238,6 +292,10 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         if (!$order) {
+            \Log::warning("PayPal status check: Order not found", [
+                'paypal_order_id' => $paypalOrderId,
+                'user_id' => $request->user()->id,
+            ]);
             return response()->json([
                 'processed' => false,
                 'failed' => false,
@@ -261,6 +319,16 @@ class PayPalCheckoutController extends ClientApiController
         $processed = $order->status === Order::STATUS_PROCESSED;
         $failed = $order->status === Order::STATUS_FAILED;
         $pending = !$processed && !$failed;
+
+        \Log::info("PayPal order status check result", [
+            'order_id' => $order->id,
+            'paypal_order_id' => $order->paypal_order_id,
+            'internal_status' => $order->status,
+            'paypal_status' => $orderStatus,
+            'processed' => $processed,
+            'failed' => $failed,
+            'pending' => $pending,
+        ]);
 
         return response()->json([
             'processed' => $processed,
