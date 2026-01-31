@@ -18,28 +18,6 @@ use Everest\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 |
 */
 
-// Mollie webhook - must be outside authentication middleware
-Route::post('/billing/mollie/webhook', [Client\Billing\MollieCheckoutController::class, 'processPayment'])
-    ->withoutMiddleware([
-        'auth:sanctum',
-        \Everest\Http\Middleware\Activity\TrackAPIKey::class,
-        \Everest\Http\Middleware\Api\AuthenticateIPAccess::class,
-        \Everest\Http\Middleware\Api\Client\RequireClientApiKey::class,
-        \Everest\Http\Middleware\RequireTwoFactorAuthentication::class,
-    ])
-    ->name('api:client:billing:mollie:webhook');
-
-// PayPal webhook - must be outside authentication middleware
-Route::post('/billing/paypal/webhook', [Client\Billing\PayPalCheckoutController::class, 'processPayment'])
-    ->withoutMiddleware([
-        'auth:sanctum',
-        \Everest\Http\Middleware\Activity\TrackAPIKey::class,
-        \Everest\Http\Middleware\Api\AuthenticateIPAccess::class,
-        \Everest\Http\Middleware\Api\Client\RequireClientApiKey::class,
-        \Everest\Http\Middleware\RequireTwoFactorAuthentication::class,
-    ])
-    ->name('api:client:billing:paypal:webhook');
-
 Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
