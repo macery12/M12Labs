@@ -118,12 +118,6 @@ class PayPalCheckoutController extends ClientApiController
      */
     public function updateOrder(Request $request, int $id): Response
     {
-        Log::info("PayPal updateOrder called", [
-            'product_id' => $id,
-            'paypal_order_id' => $request->input('order_id'),
-            'request_data' => $request->all(),
-        ]);
-        
         $product = Product::findOrFail($id);
         $paypalOrderId = $request->input('order_id');
 
@@ -463,18 +457,6 @@ class PayPalCheckoutController extends ClientApiController
                 Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
             } else {
                 // For new purchases, create the server using stored order data
-                Log::info("Preparing to create server for PayPal order", [
-                    'order_id' => $order->id,
-                    'order_data' => [
-                        'product_id' => $order->product_id,
-                        'node_id' => $order->node_id,
-                        'egg_id' => $order->egg_id,
-                        'name' => $order->name,
-                        'variables' => $order->variables,
-                        'user_id' => $order->user_id,
-                    ],
-                ]);
-                
                 $user = \Everest\Models\User::findOrFail($order->user_id);
                 $request->setUserResolver(function () use ($user) {
                     return $user;
@@ -487,10 +469,6 @@ class PayPalCheckoutController extends ClientApiController
                     'name' => $order->name,
                     'variables' => $order->variables ?? [],
                 ];
-
-                Log::info("Server creation metadata prepared", [
-                    'metadata' => (array) $orderMetadata,
-                ]);
 
                 $server = $this->serverCreation->process($request, $product, $orderMetadata, $order);
                 

@@ -102,7 +102,7 @@ class CreateServerService
                 'backup_limit' => $product->backup_limit,
                 'allocation_limit' => $product->allocation_limit,
                 'subuser_limit' => 3,
-            ], null, true); // skipCleanupOnFailure = true for billing operations
+            ]);
         } catch (DisplayException $ex) {
             BillingException::create([
                 'order_id' => $order->id,
