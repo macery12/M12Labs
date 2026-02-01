@@ -163,7 +163,7 @@ class CheckoutController extends ClientApiController
         if (str_starts_with($publicKey, 'sk_')) {
             // Log this critical security issue
             \Log::critical('SECURITY: Secret key detected in publishable key field!', [
-                'key_prefix' => substr($publicKey, 0, 10),
+                'detected_type' => 'secret_key',
                 'user_id' => $request->user()?->id,
             ]);
             
