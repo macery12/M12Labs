@@ -67,11 +67,6 @@ class EverestComposer
                 'paypal_standalone' => [
                     'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
                 ],
-                'paypal_standalone' => [
-                    'client_id' => !empty(config('modules.billing.paypal_standalone.client_id')) ? config('modules.billing.paypal_standalone.client_id') : null,
-                    'client_secret' => !empty(config('modules.billing.paypal_standalone.client_secret')),
-                    'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
-                ],
                 'currency' => [
                     'symbol' => config('modules.billing.currency.symbol'),
                     'code' => config('modules.billing.currency.code'),
