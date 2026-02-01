@@ -16,8 +16,8 @@ class CreateOrderService
         $order = new Order();
         $uuid = uuid_create();
 
-        // Get price from billing cycle or legacy product price
-        $subtotal = $billingCycleId ? $product->getPriceForCycle($billingCycleId) : ($product->price ?? 0);
+        // Always use product's price - billing cycle only affects duration
+        $subtotal = $product->price ?? 0;
         $discount = 0;
         $total = $subtotal;
 

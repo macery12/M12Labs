@@ -59,9 +59,8 @@ class ServerRenewalService
 
         // Calculate renewal date based on billing cycle
         $renewalDays = $cycleId ? $product->getRenewalDays($cycleId) : $product->getRenewalDays();
-        $isFree = $cycleId ? $product->isFree($cycleId) : $product->isFree();
         
-        if ($isFree) {
+        if ($product->isFree()) {
             // Free servers: Reset renewal date to configured days from now
             $newRenewalDate = Carbon::now()->addDays($renewalDays)->toDateTimeString();
         } else {

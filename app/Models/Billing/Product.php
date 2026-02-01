@@ -90,37 +90,16 @@ class Product extends Model
     public function billingCycles(): BelongsToMany
     {
         return $this->belongsToMany(BillingCycle::class, 'product_billing_cycles')
-            ->withPivot('price')
             ->withTimestamps()
             ->orderBy('sort_order');
     }
 
     /**
-     * Determine if this product is free for a given billing cycle.
+     * Determine if this product is free.
      */
-    public function isFree(?int $billingCycleId = null): bool
+    public function isFree(): bool
     {
-        // Legacy support: check old price field if no billing cycle specified
-        if ($billingCycleId === null && isset($this->price)) {
-            return (float) $this->price === 0.0;
-        }
-
-        if ($billingCycleId === null) {
-            // Check if any billing cycle has a price > 0
-            return !$this->billingCycles()->wherePivot('price', '>', 0)->exists();
-        }
-
-        $cycle = $this->billingCycles()->where('billing_cycles.id', $billingCycleId)->first();
-        return $cycle ? (float) $cycle->pivot->price === 0.0 : true;
-    }
-
-    /**
-     * Get the price for a specific billing cycle.
-     */
-    public function getPriceForCycle(int $billingCycleId): float
-    {
-        $cycle = $this->billingCycles()->where('billing_cycles.id', $billingCycleId)->first();
-        return $cycle ? (float) $cycle->pivot->price : 0.0;
+        return (float) $this->price === 0.0;
     }
 
     /**
@@ -141,9 +120,9 @@ class Product extends Model
     /**
      * Get the suspension threshold in days for this product.
      */
-    public function getSuspensionThresholdDays(?int $billingCycleId = null): int
+    public function getSuspensionThresholdDays(): int
     {
-        return $this->isFree($billingCycleId)
+        return $this->isFree()
             ? config('modules.billing.renewal.free_suspension_days', 7)
             : config('modules.billing.renewal.paid_suspension_days', 30);
     }

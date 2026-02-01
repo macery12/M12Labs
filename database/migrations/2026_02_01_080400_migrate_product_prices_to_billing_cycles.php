@@ -22,14 +22,13 @@ return new class extends Migration
             'updated_at' => now(),
         ]);
 
-        // Migrate existing product prices to the default 30-day cycle
+        // Migrate existing products to use the default 30-day cycle
         $products = DB::table('products')->get();
         
         foreach ($products as $product) {
             DB::table('product_billing_cycles')->insert([
                 'product_id' => $product->id,
                 'billing_cycle_id' => $defaultCycleId,
-                'price' => $product->price,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

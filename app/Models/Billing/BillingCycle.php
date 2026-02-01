@@ -59,7 +59,6 @@ class BillingCycle extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'product_billing_cycles')
-            ->withPivot('price')
             ->withTimestamps();
     }
 }

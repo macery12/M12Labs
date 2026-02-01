@@ -8,7 +8,7 @@ export interface ProductValues {
 
     name: string;
     icon: string | undefined;
-    price?: number; // Legacy field, optional
+    price: number; // Single price for all billing cycles
     description: string;
 
     limits: {
@@ -20,10 +20,7 @@ export interface ProductValues {
         allocation: number;
     };
 
-    billingCycles?: Array<{
-        id: number;
-        price: number;
-    }>;
+    billingCycles?: number[]; // Array of billing cycle IDs
 }
 
 export interface CategoryValues {

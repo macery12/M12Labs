@@ -164,7 +164,6 @@ interface ProductBillingCycle {
     id: number;
     name: string;
     durationDays: number;
-    price: number;
     sortOrder: number;
     isActive: boolean;
 }

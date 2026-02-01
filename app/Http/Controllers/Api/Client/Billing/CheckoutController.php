@@ -78,13 +78,13 @@ class CheckoutController extends ClientApiController
 
         // Calculate price with coupon for new purchase
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $billingCycleId, $couponId, 'new');
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
 
         // Validate this is a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
 
         // Validate user doesn't already own this free product
-        $this->validationService->validateFreeProductOwnership($user->id, $product, $billingCycleId);
+        $this->validationService->validateFreeProductOwnership($user->id, $product);
 
         // Validate node deployment
         $nodeId = (int) $request->input('node');
@@ -134,7 +134,7 @@ class CheckoutController extends ClientApiController
 
         // Calculate price with coupon for renewal
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $billingCycleId, $couponId, 'ren');
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren');
 
         // Validate this is a free renewal
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -233,7 +233,7 @@ class CheckoutController extends ClientApiController
             
             // Calculate price with coupon using validation service for new purchase
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $billingCycleId, $couponId, 'new');
+            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
 
             // Validate this is not a free order
             $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
