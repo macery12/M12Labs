@@ -51,6 +51,10 @@ export interface EverestSettings {
                 available: boolean;
                 enabled: boolean;
             };
+            paypal: {
+                available: boolean;
+                enabled: boolean;
+            };
         };
         keys: {
             publishable: boolean;
