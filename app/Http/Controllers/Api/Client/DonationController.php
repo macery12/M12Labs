@@ -33,7 +33,11 @@ class DonationController extends ClientApiController
     /**
      * Get Stripe public key for donations.
      * 
+     * This endpoint is safe to call from the frontend as it only returns
+     * the publishable key, which is meant to be public.
+     * 
      * @return JsonResponse
+     * @throws DisplayException if publishable key is missing or appears to be a secret key
      */
     public function getStripeKey(): JsonResponse
     {
@@ -41,6 +45,27 @@ class DonationController extends ClientApiController
 
         if (empty($publicKey)) {
             throw new DisplayException('Stripe is not configured. Please contact an administrator.');
+        }
+
+        // SECURITY: Verify this is actually a publishable key, not a secret key
+        // Publishable keys start with 'pk_', secret keys start with 'sk_'
+        if (str_starts_with($publicKey, 'sk_')) {
+            // Log this critical security issue
+            \Log::critical('SECURITY: Secret key detected in publishable key field (donations)!', [
+                'key_prefix' => substr($publicKey, 0, 10),
+            ]);
+            
+            throw new DisplayException(
+                'Critical configuration error: A secret key has been detected in the publishable key field. ' .
+                'This is a severe security risk. Please reconfigure your Stripe keys immediately with the correct key types.'
+            );
+        }
+
+        // Verify it looks like a valid Stripe publishable key
+        if (!str_starts_with($publicKey, 'pk_')) {
+            throw new DisplayException(
+                'Invalid Stripe publishable key format. Publishable keys must start with \'pk_test_\' or \'pk_live_\'.'
+            );
         }
 
         return response()->json(['key' => $publicKey]);
