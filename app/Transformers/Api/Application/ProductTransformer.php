@@ -49,7 +49,7 @@ class ProductTransformer extends Transformer
             ],
             'billingCycles' => $billingCycles,
             'created_at' => $model->created_at->toIso8601String(),
-            'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,
+            'updated_at' => $model->updated_at ? $model->updated_at->toIso8601String() : null,
         ];
     }
 }

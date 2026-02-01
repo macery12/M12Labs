@@ -75,8 +75,12 @@ class ProductController extends ApplicationApiController
 
             // Attach billing cycles (no prices - just associations)
             if ($request->has('billingCycles')) {
-                $cycleIds = array_column($request->input('billingCycles'), 'id');
-                $product->billingCycles()->attach($cycleIds);
+                $cycleIds = is_array($request->input('billingCycles')) 
+                    ? array_filter($request->input('billingCycles'), 'is_numeric')
+                    : [];
+                if (!empty($cycleIds)) {
+                    $product->billingCycles()->attach($cycleIds);
+                }
             }
         } catch (\Exception $ex) {
             throw new \Exception('Failed to create a new product: ' . $ex->getMessage());
@@ -118,8 +122,12 @@ class ProductController extends ApplicationApiController
                 // Detach all existing cycles and re-attach
                 $product->billingCycles()->detach();
                 
-                $cycleIds = array_column($request->input('billingCycles'), 'id');
-                $product->billingCycles()->attach($cycleIds);
+                $cycleIds = is_array($request->input('billingCycles')) 
+                    ? array_filter($request->input('billingCycles'), 'is_numeric')
+                    : [];
+                if (!empty($cycleIds)) {
+                    $product->billingCycles()->attach($cycleIds);
+                }
             }
         } catch (\Exception $ex) {
             throw new \Exception('Failed to update a product: ' . $ex->getMessage());
