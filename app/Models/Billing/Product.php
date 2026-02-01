@@ -4,6 +4,7 @@ namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -84,18 +85,54 @@ class Product extends Model
     }
 
     /**
-     * Determine if this product is free.
+     * Get the billing cycles associated with this product.
      */
-    public function isFree(): bool
+    public function billingCycles(): BelongsToMany
     {
-        return (float) $this->price === 0.0;
+        return $this->belongsToMany(BillingCycle::class, 'product_billing_cycles')
+            ->withPivot('price')
+            ->withTimestamps()
+            ->orderBy('sort_order');
     }
 
     /**
-     * Get the renewal period in days for this product.
+     * Determine if this product is free for a given billing cycle.
      */
-    public function getRenewalDays(): int
+    public function isFree(?int $billingCycleId = null): bool
     {
+        // Legacy support: check old price field if no billing cycle specified
+        if ($billingCycleId === null && isset($this->price)) {
+            return (float) $this->price === 0.0;
+        }
+
+        if ($billingCycleId === null) {
+            // Check if any billing cycle has a price > 0
+            return !$this->billingCycles()->wherePivot('price', '>', 0)->exists();
+        }
+
+        $cycle = $this->billingCycles()->where('billing_cycles.id', $billingCycleId)->first();
+        return $cycle ? (float) $cycle->pivot->price === 0.0 : true;
+    }
+
+    /**
+     * Get the price for a specific billing cycle.
+     */
+    public function getPriceForCycle(int $billingCycleId): float
+    {
+        $cycle = $this->billingCycles()->where('billing_cycles.id', $billingCycleId)->first();
+        return $cycle ? (float) $cycle->pivot->price : 0.0;
+    }
+
+    /**
+     * Get the renewal period in days for a specific billing cycle.
+     */
+    public function getRenewalDays(?int $billingCycleId = null): int
+    {
+        if ($billingCycleId) {
+            $cycle = BillingCycle::find($billingCycleId);
+            return $cycle ? $cycle->duration_days : config('modules.billing.renewal.days', 30);
+        }
+
         return $this->isFree()
             ? config('modules.billing.renewal.free_renewal_days', 30)
             : config('modules.billing.renewal.days', 30);
@@ -104,9 +141,9 @@ class Product extends Model
     /**
      * Get the suspension threshold in days for this product.
      */
-    public function getSuspensionThresholdDays(): int
+    public function getSuspensionThresholdDays(?int $billingCycleId = null): int
     {
-        return $this->isFree()
+        return $this->isFree($billingCycleId)
             ? config('modules.billing.renewal.free_suspension_days', 7)
             : config('modules.billing.renewal.paid_suspension_days', 30);
     }

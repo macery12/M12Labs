@@ -3,6 +3,7 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -12,6 +13,7 @@ use Everest\Models\Model;
  * @property float $total
  * @property string $status
  * @property int $product_id
+ * @property int|null $billing_cycle_id
  * @property int|null $egg_id
  * @property int|null $coupon_id
  * @property float|null $subtotal
@@ -63,7 +65,7 @@ class Order extends Model
     protected $fillable = [
         'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id', 
         'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
-        'payment_token', 'total', 'status', 'product_id', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
+        'payment_token', 'total', 'status', 'product_id', 'billing_cycle_id', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'coupon_id', 'subtotal', 'discount',
     ];
 
@@ -74,6 +76,7 @@ class Order extends Model
         'user_id' => 'int',
         'total' => 'float',
         'product_id' => 'int',
+        'billing_cycle_id' => 'int',
         'egg_id' => 'int',
         'node_id' => 'int',
         'server_id' => 'int',
@@ -105,8 +108,24 @@ class Order extends Model
     /**
      * Get the coupon associated with this order.
      */
-    public function coupon()
+    public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    /**
+     * Get the billing cycle associated with this order.
+     */
+    public function billingCycle(): BelongsTo
+    {
+        return $this->belongsTo(BillingCycle::class);
+    }
+
+    /**
+     * Get the product associated with this order.
+     */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 }
