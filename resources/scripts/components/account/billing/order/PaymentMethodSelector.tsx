@@ -28,26 +28,24 @@ type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
 export default (props: Props) => {
     const { colors } = useStoreState(state => state.theme.data!);
     const billing = useStoreState(state => state.everest.data!.billing);
-    
+
     // Determine available payment methods
     const availableProcessors: PaymentMethod[] = [];
-    
+
     if (billing.processors?.stripe?.available) {
         availableProcessors.push('stripe');
     }
-    
+
     if (billing.processors?.mollie?.available) {
         availableProcessors.push('mollie');
     }
-    
+
     if (billing.processors?.paypal?.available) {
         availableProcessors.push('paypal');
     }
 
     // Default to first available processor
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(
-        availableProcessors[0] || 'stripe'
-    );
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(availableProcessors[0] || 'stripe');
 
     // If only one processor is available, don't show selection UI
     const showSelection = availableProcessors.length > 1;
@@ -61,8 +59,8 @@ export default (props: Props) => {
                     <div>
                         <p className={'font-semibold'}>No Payment Methods Available</p>
                         <p className={'mt-1 text-sm'}>
-                            No payment integrations are currently enabled. Please contact an administrator or create
-                            a support ticket to enable payment processing for this product.
+                            No payment integrations are currently enabled. Please contact an administrator or create a
+                            support ticket to enable payment processing for this product.
                         </p>
                     </div>
                 </div>
@@ -95,7 +93,7 @@ export default (props: Props) => {
                                     'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2',
                                     selectedMethod === 'stripe'
                                         ? 'border-primary bg-opacity-20'
-                                        : 'border-gray-600 bg-transparent'
+                                        : 'border-gray-600 bg-transparent',
                                 )}
                                 style={
                                     selectedMethod === 'stripe'
@@ -106,7 +104,7 @@ export default (props: Props) => {
                                 <div
                                     className={classNames(
                                         'flex h-10 w-10 items-center justify-center rounded-lg',
-                                        selectedMethod === 'stripe' ? 'text-white' : 'text-gray-400'
+                                        selectedMethod === 'stripe' ? 'text-white' : 'text-gray-400',
                                     )}
                                     style={
                                         selectedMethod === 'stripe'
@@ -143,7 +141,7 @@ export default (props: Props) => {
                                     'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2',
                                     selectedMethod === 'mollie'
                                         ? 'border-primary bg-opacity-20'
-                                        : 'border-gray-600 bg-transparent'
+                                        : 'border-gray-600 bg-transparent',
                                 )}
                                 style={
                                     selectedMethod === 'mollie'
@@ -154,7 +152,7 @@ export default (props: Props) => {
                                 <div
                                     className={classNames(
                                         'flex h-10 w-10 items-center justify-center rounded-lg',
-                                        selectedMethod === 'mollie' ? 'text-white' : 'text-gray-400'
+                                        selectedMethod === 'mollie' ? 'text-white' : 'text-gray-400',
                                     )}
                                     style={
                                         selectedMethod === 'mollie'
@@ -175,9 +173,7 @@ export default (props: Props) => {
                                             />
                                         )}
                                     </div>
-                                    <p className={'mt-0.5 text-xs text-gray-400'}>
-                                        Card, iDEAL, and more
-                                    </p>
+                                    <p className={'mt-0.5 text-xs text-gray-400'}>Card, iDEAL, and more</p>
                                 </div>
                             </button>
                         )}
@@ -191,7 +187,7 @@ export default (props: Props) => {
                                     'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2',
                                     selectedMethod === 'paypal'
                                         ? 'border-primary bg-opacity-20'
-                                        : 'border-gray-600 bg-transparent'
+                                        : 'border-gray-600 bg-transparent',
                                 )}
                                 style={
                                     selectedMethod === 'paypal'
@@ -202,7 +198,7 @@ export default (props: Props) => {
                                 <div
                                     className={classNames(
                                         'flex h-10 w-10 items-center justify-center rounded-lg',
-                                        selectedMethod === 'paypal' ? 'text-white' : 'text-gray-400'
+                                        selectedMethod === 'paypal' ? 'text-white' : 'text-gray-400',
                                     )}
                                     style={
                                         selectedMethod === 'paypal'
@@ -223,9 +219,7 @@ export default (props: Props) => {
                                             />
                                         )}
                                     </div>
-                                    <p className={'mt-0.5 text-xs text-gray-400'}>
-                                        PayPal account or card
-                                    </p>
+                                    <p className={'mt-0.5 text-xs text-gray-400'}>PayPal account or card</p>
                                 </div>
                             </button>
                         )}

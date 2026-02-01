@@ -168,7 +168,7 @@ export default () => {
                             console.error('Error initializing Stripe:', error);
                         }
                     }
-                    
+
                     // Mollie doesn't need pre-initialization like Stripe
                     // Payment is created when user clicks the button
                 }

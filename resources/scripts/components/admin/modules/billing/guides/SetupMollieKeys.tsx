@@ -40,8 +40,8 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             </div>
 
             <p className={'mb-4'}>
-                Before you can use the Mollie API, you must provide Jexactyl with your API key. Visit the
-                Mollie dashboard
+                Before you can use the Mollie API, you must provide Jexactyl with your API key. Visit the Mollie
+                dashboard
                 <a
                     target={'_blank'}
                     rel={'noreferrer'}
@@ -50,8 +50,7 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
                 >
                     here
                 </a>
-                to obtain your API key (starts with &quot;live_&quot; or &quot;test_&quot;), then paste it
-                here.
+                to obtain your API key (starts with &quot;live_&quot; or &quot;test_&quot;), then paste it here.
             </p>
             <div className={'relative mt-4'}>
                 <Input

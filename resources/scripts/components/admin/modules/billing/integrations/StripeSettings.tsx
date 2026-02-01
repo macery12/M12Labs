@@ -31,8 +31,8 @@ export default () => {
     return (
         <div className={'grid gap-4 lg:grid-cols-3'}>
             <SetupStripeKeys open={stripeKeysOpen} onClose={() => setStripeKeysOpen(false)} />
-            {paypalOpen && <SetupPayPal setOpen={(val) => setPaypalOpen(val !== 'none')} />}
-            {linkOpen && <SetupLink setOpen={(val) => setLinkOpen(val !== 'none')} />}
+            {paypalOpen && <SetupPayPal setOpen={val => setPaypalOpen(val !== 'none')} />}
+            {linkOpen && <SetupLink setOpen={val => setLinkOpen(val !== 'none')} />}
 
             {!settings.keys.publishable || !settings.keys.secret ? (
                 <AdminBox title={'Input Stripe API Keys'} icon={faKey}>

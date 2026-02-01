@@ -178,7 +178,12 @@ export default ({ mod, onClose, source }: Props) => {
                                                 <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
                                             </FileDetails>
                                         </FileInfo>
-                                        <ModDownloadButton modId={mod.id} fileId={file.id} fileName={file.fileName} source={source} />
+                                        <ModDownloadButton
+                                            modId={mod.id}
+                                            fileId={file.id}
+                                            fileName={file.fileName}
+                                            source={source}
+                                        />
                                     </FileItem>
                                 ))}
                             </FileList>

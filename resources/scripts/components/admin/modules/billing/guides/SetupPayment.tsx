@@ -50,16 +50,16 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
         else if (extOpen === undefined) {
             const isStripeSelected = !currentProcessor || currentProcessor === 'stripe';
             const isMollieSelected = currentProcessor === 'mollie';
-            
+
             const stripeNotConfigured = isStripeSelected && !existingKeys?.publishable;
             const mollieNotConfigured = isMollieSelected && !existingMollie?.api_key;
-            
+
             if (stripeNotConfigured || mollieNotConfigured) {
                 setOpen(true);
             }
         }
         // When extOpen is false, do nothing (don't auto-open)
-        
+
         // Set current processor
         if (currentProcessor) {
             setData(prev => ({ ...prev, processor: currentProcessor as 'stripe' | 'mollie' }));
@@ -68,9 +68,14 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
 
     const isValid = () => {
         if (data.processor === 'stripe') {
-            return data.stripePublishable && data.stripeSecret &&
-                   data.stripePublishable.length >= 100 && data.stripePublishable.length <= 120 &&
-                   data.stripeSecret.length >= 100 && data.stripeSecret.length <= 120;
+            return (
+                data.stripePublishable &&
+                data.stripeSecret &&
+                data.stripePublishable.length >= 100 &&
+                data.stripePublishable.length <= 120 &&
+                data.stripeSecret.length >= 100 &&
+                data.stripeSecret.length <= 120
+            );
         } else if (data.processor === 'mollie') {
             return data.mollieApiKey && data.mollieApiKey.length > 10;
         }
@@ -104,8 +109,8 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
             {data.processor === 'stripe' ? (
                 <>
                     <p className={'mb-4'}>
-                        Before you can use the Stripe API, you must provide Jexactyl with API keys to authenticate
-                        with Stripe. Visit the Stripe dashboard
+                        Before you can use the Stripe API, you must provide Jexactyl with API keys to authenticate with
+                        Stripe. Visit the Stripe dashboard
                         <a
                             target={'_blank'}
                             rel={'noreferrer'}
@@ -134,7 +139,10 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                                 />
                             </Tooltip>
                         ) : (
-                            <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-1/3 right-4 text-green-500'} />
+                            <FontAwesomeIcon
+                                icon={faCheckCircle}
+                                className={'absolute top-1/3 right-4 text-green-500'}
+                            />
                         )}
                     </div>
                     <div className={'relative mt-4'}>
@@ -143,22 +151,28 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                             onChange={e => setData({ ...data, stripeSecret: e.currentTarget.value })}
                         />
                         {!data?.stripeSecret || data.stripeSecret.length < 100 || data.stripeSecret.length > 120 ? (
-                            <Tooltip placement={'right'} content={'You must enter a valid Stripe secret key to continue.'}>
+                            <Tooltip
+                                placement={'right'}
+                                content={'You must enter a valid Stripe secret key to continue.'}
+                            >
                                 <FontAwesomeIcon
                                     icon={faExclamationTriangle}
                                     className={'absolute top-1/3 right-4 text-yellow-500'}
                                 />
                             </Tooltip>
                         ) : (
-                            <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-1/3 right-4 text-green-500'} />
+                            <FontAwesomeIcon
+                                icon={faCheckCircle}
+                                className={'absolute top-1/3 right-4 text-green-500'}
+                            />
                         )}
                     </div>
                 </>
             ) : (
                 <>
                     <p className={'mb-4'}>
-                        Before you can use the Mollie API, you must provide Jexactyl with your API key. Visit the
-                        Mollie dashboard
+                        Before you can use the Mollie API, you must provide Jexactyl with your API key. Visit the Mollie
+                        dashboard
                         <a
                             target={'_blank'}
                             rel={'noreferrer'}
@@ -167,8 +181,7 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                         >
                             here
                         </a>
-                        to obtain your API key (starts with &quot;live_&quot; or &quot;test_&quot;), then paste it
-                        here.
+                        to obtain your API key (starts with &quot;live_&quot; or &quot;test_&quot;), then paste it here.
                     </p>
                     <div className={'relative mt-4'}>
                         <Input
@@ -183,7 +196,10 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                                 />
                             </Tooltip>
                         ) : (
-                            <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-1/3 right-4 text-green-500'} />
+                            <FontAwesomeIcon
+                                icon={faCheckCircle}
+                                className={'absolute top-1/3 right-4 text-green-500'}
+                            />
                         )}
                     </div>
                 </>

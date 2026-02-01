@@ -74,8 +74,8 @@ export default () => {
     const handleSourceChange = (source: string) => {
         setActiveSource(source);
         setSelectedMod(null);
-        setSearchParams({ 
-            ...searchParams, 
+        setSearchParams({
+            ...searchParams,
             source,
             index: 0,
             // Reset filters when switching sources
@@ -118,7 +118,9 @@ export default () => {
         <PageContentBlock
             title={'Mods Browser'}
             header
-            description={`Browse and install Minecraft mods from ${activeSource === 'modrinth' ? 'Modrinth' : 'CurseForge'}.`}
+            description={`Browse and install Minecraft mods from ${
+                activeSource === 'modrinth' ? 'Modrinth' : 'CurseForge'
+            }.`}
             showFlashKey={'mods'}
         >
             {/* Source Tabs */}
@@ -166,7 +168,12 @@ export default () => {
             )}
 
             {selectedMod && (
-                <ModDetails key={selectedMod.id} mod={selectedMod} onClose={() => setSelectedMod(null)} source={activeSource} />
+                <ModDetails
+                    key={selectedMod.id}
+                    mod={selectedMod}
+                    onClose={() => setSelectedMod(null)}
+                    source={activeSource}
+                />
             )}
         </PageContentBlock>
     );

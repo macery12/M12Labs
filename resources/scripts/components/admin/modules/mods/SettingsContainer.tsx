@@ -95,7 +95,7 @@ const SettingsContainer = () => {
                                     <option value="curseforge">CurseForge (Requires API Key)</option>
                                 </FormikField>
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Select the default mod source. Modrinth is free and doesn&apos;t require an API key. 
+                                    Select the default mod source. Modrinth is free and doesn&apos;t require an API key.
                                     Users can switch between sources if both are configured.
                                 </p>
                             </div>

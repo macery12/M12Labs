@@ -31,7 +31,7 @@ export const createPayPalOrder = (
     couponId?: number,
     returnUrl?: string,
     serverId?: number,
-    renewal?: boolean
+    renewal?: boolean,
 ): Promise<PayPalOrder> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/products/${id}/paypal/order`, {
@@ -92,7 +92,7 @@ export const capturePayPalOrder = (orderId: string): Promise<PayPalCaptureRespon
                 console.log('[PayPal] Capture successful:', data);
                 resolve(data);
             })
-            .catch((error) => {
+            .catch(error => {
                 console.error('[PayPal] Capture failed:', {
                     status: error.response?.status,
                     message: error.response?.data?.message || error.message,

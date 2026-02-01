@@ -187,7 +187,12 @@ export const getModFiles = (uuid: string, modId: number | string, params: ModFil
     });
 };
 
-export const downloadMod = (uuid: string, modId: number | string, fileId: number | string, source?: string): Promise<void> => {
+export const downloadMod = (
+    uuid: string,
+    modId: number | string,
+    fileId: number | string,
+    source?: string,
+): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${uuid}/mods/${modId}/files/${fileId}/download`, { source })
             .then(() => resolve())
