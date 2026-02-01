@@ -63,7 +63,7 @@ class ProductController extends ApplicationApiController
                 'category_uuid' => $category->uuid,
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
-                'price' => (float) $request->input('price'),
+                'price' => (float) $request->input('price', 0), // Legacy price field
                 'description' => $request->input('description'),
                 'cpu_limit' => $request['limits']['cpu'],
                 'memory_limit' => $request['limits']['memory'],
@@ -72,6 +72,15 @@ class ProductController extends ApplicationApiController
                 'database_limit' => $request['limits']['database'],
                 'allocation_limit' => $request['limits']['allocation'],
             ]);
+
+            // Attach billing cycles with prices
+            if ($request->has('billingCycles')) {
+                foreach ($request->input('billingCycles') as $cycleData) {
+                    $product->billingCycles()->attach($cycleData['id'], [
+                        'price' => (float) $cycleData['price'],
+                    ]);
+                }
+            }
         } catch (\Exception $ex) {
             throw new \Exception('Failed to create a new product: ' . $ex->getMessage());
         }
@@ -97,7 +106,7 @@ class ProductController extends ApplicationApiController
             $product->update([
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
-                'price' => (float) $request->input('price'),
+                'price' => (float) $request->input('price', $product->price), // Legacy price field
                 'description' => $request->input('description'),
                 'cpu_limit' => $request['limits']['cpu'],
                 'memory_limit' => $request['limits']['memory'],
@@ -106,6 +115,18 @@ class ProductController extends ApplicationApiController
                 'database_limit' => $request['limits']['database'],
                 'allocation_limit' => $request['limits']['allocation'],
             ]);
+
+            // Update billing cycles if provided
+            if ($request->has('billingCycles')) {
+                // Detach all existing cycles and re-attach with new prices
+                $product->billingCycles()->detach();
+                
+                foreach ($request->input('billingCycles') as $cycleData) {
+                    $product->billingCycles()->attach($cycleData['id'], [
+                        'price' => (float) $cycleData['price'],
+                    ]);
+                }
+            }
         } catch (\Exception $ex) {
             throw new \Exception('Failed to update a product: ' . $ex->getMessage());
         }

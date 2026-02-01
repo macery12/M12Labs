@@ -20,13 +20,25 @@ class ProductTransformer extends Transformer
      */
     public function transform(Product $model): array
     {
+        // Get billing cycles with prices
+        $billingCycles = $model->billingCycles->map(function ($cycle) {
+            return [
+                'id' => $cycle->id,
+                'name' => $cycle->name,
+                'durationDays' => $cycle->duration_days,
+                'price' => (float) $cycle->pivot->price,
+                'sortOrder' => $cycle->sort_order,
+                'isActive' => $cycle->is_active,
+            ];
+        })->toArray();
+
         return [
             'id' => $model->id,
             'uuid' => $model->uuid,
             'category_uuid' => $model->category_uuid,
             'name' => $model->name,
             'icon' => $model->icon,
-            'price' => $model->price,
+            'price' => $model->price, // Legacy field, kept for backward compatibility
             'description' => $model->description,
             'limits' => [
                 'cpu' => $model->cpu_limit,
@@ -36,6 +48,7 @@ class ProductTransformer extends Transformer
                 'database' => $model->database_limit,
                 'allocation' => $model->allocation_limit,
             ],
+            'billingCycles' => $billingCycles,
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,
         ];
