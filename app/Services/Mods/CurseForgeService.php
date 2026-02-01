@@ -29,7 +29,7 @@ class CurseForgeService
         $this->apiKey = config('modules.mods.curseforge_api_key') ?: '';
         $this->endpoint = config('modules.mods.curseforge_api_url') ?: 'https://api.curseforge.com/v1';
         $this->cacheEnabled = config('modules.mods.cache.enabled', true);
-        
+
         // Aggressive 24-hour caching for all API responses
         $this->cacheTtl = config('modules.mods.cache.ttl', [
             'search' => 86400,      // 24 hours
@@ -78,7 +78,7 @@ class CurseForgeService
     {
         $lockoutKey = 'curseforge_lockout_until';
         $lockoutUntil = Cache::get($lockoutKey);
-        
+
         if ($lockoutUntil && time() < $lockoutUntil) {
             $remainingSeconds = $lockoutUntil - time();
             $remainingHours = round($remainingSeconds / 3600, 1);
@@ -95,18 +95,18 @@ class CurseForgeService
     {
         $counterKey = 'curseforge_429_counter';
         $count = Cache::get($counterKey, 0) + 1;
-        
+
         // Store count with 1 hour expiry (resets if we go without 429s)
         Cache::put($counterKey, $count, 3600);
-        
+
         Log::warning("CurseForge 429 error count: {$count}/{$this->max429BeforeLockout}");
-        
+
         // If we hit the threshold, trigger 24-hour lockout
         if ($count >= $this->max429BeforeLockout) {
             $lockoutUntil = time() + $this->lockoutDurationSeconds;
             Cache::put('curseforge_lockout_until', $lockoutUntil, $this->lockoutDurationSeconds);
             Cache::forget($counterKey); // Reset counter
-            
+
             Log::error("CurseForge API locked out for 24 hours after {$count} consecutive 429 errors");
         }
     }
@@ -131,15 +131,15 @@ class CurseForgeService
         $lastRequestKey = 'curseforge_last_request_time';
         $lastRequestTime = Cache::get($lastRequestKey, 0);
         $now = microtime(true);
-        
+
         $timeSinceLastRequest = $now - $lastRequestTime;
-        
+
         // Wait if we haven't waited long enough
         if ($timeSinceLastRequest < $this->requestDelaySeconds) {
             $sleepTime = $this->requestDelaySeconds - $timeSinceLastRequest;
             usleep((int) ($sleepTime * 1000000));
         }
-        
+
         // Update last request time
         Cache::put($lastRequestKey, microtime(true), 3600);
     }
@@ -159,7 +159,7 @@ class CurseForgeService
                 'endpoint' => $endpoint,
                 'status_code' => $statusCode,
             ]);
-            
+
             // Probabilistic cleanup (5% chance) to reduce overhead under high load
             // Full cleanup happens every ~20 requests on average
             if (rand(1, 20) === 1) {
@@ -181,18 +181,18 @@ class CurseForgeService
         $now = now();
         $oneMinuteAgo = $now->copy()->subMinute();
         $oneHourAgo = $now->copy()->subHour();
-        
+
         // Get requests in the last minute
         $requestsThisMinute = CurseForgeRequestLog::where('requested_at', '>=', $oneMinuteAgo)->count();
-        
+
         // Get requests in the last hour
         $requestsThisHour = CurseForgeRequestLog::where('requested_at', '>=', $oneHourAgo)->count();
-        
+
         // CurseForge rate limits (as per their API documentation)
         // These are conservative estimates - actual limits may vary
         $limitPerMinute = 100; // Conservative estimate
         $limitPerHour = 2500; // Conservative estimate
-        
+
         return [
             'requests_this_minute' => $requestsThisMinute,
             'requests_this_hour' => $requestsThisHour,
@@ -210,7 +210,7 @@ class CurseForgeService
     {
         $counter429 = Cache::get('curseforge_429_counter', 0);
         $lockoutUntil = Cache::get('curseforge_lockout_until');
-        
+
         return [
             '429_errors' => $counter429,
             'max_429_before_lockout' => $this->max429BeforeLockout,
@@ -258,7 +258,7 @@ class CurseForgeService
             }
 
             $response = $this->client->request($method, $path, $options);
-            
+
             $statusCode = $response->getStatusCode();
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
@@ -278,18 +278,18 @@ class CurseForgeService
         } catch (GuzzleException $e) {
             if ($e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
-                
+
                 // Handle 429 with delay and tracking
                 if ($statusCode === 429) {
                     // Track this 429 error in the database
                     $this->trackRequest($path, $statusCode);
-                    
+
                     // Track this 429 error for lockout purposes
                     $this->track429Error();
-                    
+
                     // Get current counter to determine delay
                     $count = Cache::get('curseforge_429_counter', 0);
-                    
+
                     // If we're near the threshold, use longer delays (30-60s)
                     if ($count >= $this->max429BeforeLockout - 10) {
                         $delay = rand(30, 60); // 30-60 second delay when approaching lockout
@@ -298,7 +298,7 @@ class CurseForgeService
                         $delay = rand(5, 10); // 5-10 second delay for normal 429s
                         Log::warning("CurseForge 429, waiting {$delay}s before retry");
                     }
-                    
+
                     // Only retry a few times per call to avoid infinite loops
                     if ($retryAttempt < 3) {
                         sleep($delay);
@@ -310,7 +310,7 @@ class CurseForgeService
                     throw new ModsServiceException('Invalid CurseForge API key.');
                 }
             }
-            
+
             Log::error('CurseForge API request failed: ' . $e->getMessage());
             throw new ModsServiceException('Failed to connect to CurseForge API: ' . $e->getMessage());
         }
@@ -335,12 +335,12 @@ class CurseForgeService
 
         // Execute the request
         $data = $requestCallback();
-        
+
         // Only cache if data size is reasonable (< 1MB when serialized)
         $serialized = serialize($data);
         $sizeInBytes = strlen($serialized);
         $maxCacheSize = 1048576; // 1MB limit
-        
+
         if ($sizeInBytes < $maxCacheSize) {
             try {
                 Cache::put($cacheKey, $data, $ttl);
@@ -351,7 +351,7 @@ class CurseForgeService
         } else {
             Log::info("Skipping cache for large response (size: {$sizeInBytes} bytes, key: {$cacheKey})");
         }
-        
+
         return $data;
     }
 
@@ -384,7 +384,7 @@ class CurseForgeService
 
         // Create cache key based on search parameters
         $cacheKey = 'curseforge_search_' . md5(json_encode($searchParams));
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($searchParams) {
             return $this->makeRequest('GET', 'mods/search', $searchParams);
         });
@@ -400,7 +400,7 @@ class CurseForgeService
     public function getMod(int $modId): array
     {
         $cacheKey = "curseforge_mod_{$modId}";
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_details'], function () use ($modId) {
             return $this->makeRequest('GET', 'mods/' . $modId);
         });
@@ -426,7 +426,7 @@ class CurseForgeService
         });
 
         $cacheKey = "curseforge_mod_files_{$modId}_" . md5(json_encode($fileParams));
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_files'], function () use ($modId, $fileParams) {
             return $this->makeRequest('GET', 'mods/' . $modId . '/files', $fileParams);
         });
@@ -456,7 +456,7 @@ class CurseForgeService
     public function getModFileDownloadUrl(int $modId, int $fileId): string
     {
         $response = $this->makeRequest('GET', 'mods/' . $modId . '/files/' . $fileId . '/download-url');
-        
+
         if (!isset($response['data'])) {
             throw new ModsServiceException('Failed to retrieve download URL from CurseForge API.');
         }
@@ -473,7 +473,7 @@ class CurseForgeService
     public function getMinecraftVersions(): array
     {
         $cacheKey = 'curseforge_minecraft_versions';
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['versions'], function () {
             // Game ID for Minecraft is 432
             return $this->makeRequest('GET', 'games/432/versions');
@@ -489,7 +489,7 @@ class CurseForgeService
     public function getModLoaderTypes(): array
     {
         $cacheKey = 'curseforge_mod_loaders';
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['loaders'], function () {
             // Get Minecraft mod loaders (Forge, Fabric, NeoForge, etc.)
             return $this->makeRequest('GET', 'minecraft/modloader');
@@ -528,7 +528,7 @@ class CurseForgeService
 
         // Create cache key based on search parameters
         $cacheKey = 'curseforge_modpack_search_' . md5(json_encode($searchParams));
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($searchParams) {
             return $this->makeRequest('GET', 'mods/search', $searchParams);
         });
@@ -544,7 +544,7 @@ class CurseForgeService
     public function getModpack(int $modpackId): array
     {
         $cacheKey = "curseforge_modpack_{$modpackId}";
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_details'], function () use ($modpackId) {
             return $this->makeRequest('GET', 'mods/' . $modpackId);
         });
@@ -570,7 +570,7 @@ class CurseForgeService
         });
 
         $cacheKey = "curseforge_modpack_files_{$modpackId}_" . md5(json_encode($fileParams));
-        
+
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_files'], function () use ($modpackId, $fileParams) {
             return $this->makeRequest('GET', 'mods/' . $modpackId . '/files', $fileParams);
         });

@@ -24,7 +24,7 @@ class ModrinthService
     {
         $this->endpoint = config('modules.mods.modrinth_api_url') ?: 'https://api.modrinth.com/v2';
         $this->cacheEnabled = config('modules.mods.cache.enabled', true);
-        
+
         // Use the same cache TTL as CurseForge
         $this->cacheTtl = config('modules.mods.cache.ttl', [
             'search' => 86400,      // 24 hours
@@ -50,15 +50,15 @@ class ModrinthService
         $lastRequestKey = 'modrinth_last_request_time';
         $lastRequestTime = Cache::get($lastRequestKey, 0);
         $now = microtime(true);
-        
+
         $timeSinceLastRequest = $now - $lastRequestTime;
-        
+
         // Wait if we haven't waited long enough
         if ($timeSinceLastRequest < $this->requestDelaySeconds) {
             $sleepTime = $this->requestDelaySeconds - $timeSinceLastRequest;
             usleep((int) ($sleepTime * 1000000));
         }
-        
+
         // Update last request time
         Cache::put($lastRequestKey, microtime(true), 3600);
     }
@@ -72,7 +72,7 @@ class ModrinthService
     {
         $counterKey = 'modrinth_requests_this_minute';
         $count = Cache::get($counterKey, 0);
-        
+
         if ($count >= $this->rateLimitPerMinute) {
             throw new ModsServiceException('Modrinth API rate limit reached. Please wait a minute before trying again.');
         }
@@ -87,7 +87,7 @@ class ModrinthService
     {
         $counterKey = 'modrinth_requests_this_minute';
         $count = Cache::get($counterKey, 0) + 1;
-        
+
         // Store count with 60 second expiry
         Cache::put($counterKey, $count, 60);
     }
@@ -122,7 +122,7 @@ class ModrinthService
             }
 
             $response = $this->client->request($method, $path, $options);
-            
+
             $statusCode = $response->getStatusCode();
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
@@ -139,7 +139,7 @@ class ModrinthService
         } catch (GuzzleException $e) {
             if ($e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
-                
+
                 if ($statusCode === 429) {
                     throw new ModsServiceException('Modrinth API rate limit exceeded. Please wait before trying again.');
                 } elseif ($statusCode === 400) {
@@ -148,7 +148,7 @@ class ModrinthService
                     throw new ModsServiceException('Mod not found on Modrinth.');
                 }
             }
-            
+
             Log::error('Modrinth API request failed: ' . $e->getMessage());
             throw new ModsServiceException('Failed to connect to Modrinth API: ' . $e->getMessage());
         }
@@ -173,12 +173,12 @@ class ModrinthService
 
         // Execute the request
         $data = $requestCallback();
-        
+
         // Only cache if data size is reasonable (< 1MB when serialized)
         $serialized = serialize($data);
         $sizeInBytes = strlen($serialized);
         $maxCacheSize = 1048576; // 1MB limit
-        
+
         if ($sizeInBytes < $maxCacheSize) {
             try {
                 Cache::put($cacheKey, $data, $ttl);
@@ -188,7 +188,7 @@ class ModrinthService
         } else {
             Log::warning("Modrinth response too large to cache: {$sizeInBytes} bytes");
         }
-        
+
         return $data;
     }
 
@@ -213,15 +213,15 @@ class ModrinthService
 
         // Build facets array for filtering
         $facets = [];
-        
+
         // Always filter for Minecraft mods
         $facets[] = ['project_type:mod'];
-        
+
         // Add game version facet if provided
         if (!empty($params['gameVersion'])) {
             $facets[] = ['versions:' . $params['gameVersion']];
         }
-        
+
         // Add loader facet if provided (map from CurseForge IDs to Modrinth loader names)
         if (!empty($params['modLoaderType'])) {
             $loaderMap = [
@@ -232,12 +232,12 @@ class ModrinthService
                 5 => 'quilt',
                 6 => 'neoforge',
             ];
-            
+
             if (isset($loaderMap[$params['modLoaderType']])) {
                 $facets[] = ['categories:' . $loaderMap[$params['modLoaderType']]];
             }
         }
-        
+
         // Add facets as JSON array if any exist
         if (!empty($facets)) {
             $searchParams['facets'] = json_encode($facets);
@@ -253,14 +253,14 @@ class ModrinthService
                 '5' => 'author',     // Author
                 '6' => 'downloads',  // Total Downloads
             ];
-            
+
             $modrinthIndex = $sortMap[$params['sortField']] ?? 'relevance';
             $searchParams['index'] = $modrinthIndex;
         }
 
         // Create cache key based on search parameters
         $cacheKey = 'modrinth_search_' . md5(json_encode($searchParams));
-        
+
         $response = $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($searchParams) {
             return $this->makeRequest('GET', 'search', $searchParams);
         });
@@ -280,7 +280,7 @@ class ModrinthService
     {
         $hits = $response['hits'] ?? [];
         $totalHits = $response['total_hits'] ?? 0;
-        
+
         $transformedMods = array_map(function ($hit) {
             return $this->transformModToCommonFormat($hit);
         }, $hits);
@@ -359,7 +359,7 @@ class ModrinthService
     public function getMod(string $modId): array
     {
         $cacheKey = "modrinth_mod_{$modId}";
-        
+
         $response = $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_details'], function () use ($modId) {
             return $this->makeRequest('GET', 'project/' . $modId);
         });
@@ -443,12 +443,12 @@ class ModrinthService
     public function getModFiles(string $modId, array $params = []): array
     {
         $fileParams = [];
-        
+
         // Add game version filter if provided
         if (!empty($params['gameVersion'])) {
             $fileParams['game_versions'] = json_encode([$params['gameVersion']]);
         }
-        
+
         // Add loader filter if provided
         if (!empty($params['modLoaderType'])) {
             $loaderMap = [
@@ -459,14 +459,14 @@ class ModrinthService
                 5 => 'quilt',
                 6 => 'neoforge',
             ];
-            
+
             if (isset($loaderMap[$params['modLoaderType']])) {
                 $fileParams['loaders'] = json_encode([$loaderMap[$params['modLoaderType']]]);
             }
         }
 
         $cacheKey = "modrinth_mod_files_{$modId}_" . md5(json_encode($fileParams));
-        
+
         $response = $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_files'], function () use ($modId, $fileParams) {
             return $this->makeRequest('GET', 'project/' . $modId . '/version', $fileParams);
         });
@@ -486,10 +486,10 @@ class ModrinthService
     {
         $pageSize = min($params['pageSize'] ?? 20, config('modules.mods.max_page_size', 50));
         $index = $params['index'] ?? 0;
-        
+
         // Paginate
         $paginatedVersions = array_slice($versions, $index, $pageSize);
-        
+
         $transformedFiles = array_map(function ($version) {
             return $this->transformVersionToFile($version);
         }, $paginatedVersions);
@@ -514,7 +514,7 @@ class ModrinthService
     private function transformVersionToFile(array $version): array
     {
         $primaryFile = $version['files'][0] ?? [];
-        
+
         return [
             'id' => $version['id'] ?? '',
             'gameId' => 432,
@@ -589,12 +589,12 @@ class ModrinthService
     public function getDownloadUrl(string $versionId): string
     {
         $version = $this->makeRequest('GET', 'version/' . $versionId);
-        
+
         $primaryFile = $version['files'][0] ?? null;
         if (!$primaryFile || empty($primaryFile['url'])) {
             throw new ModsServiceException('No download URL found for this version.');
         }
-        
+
         return $primaryFile['url'];
     }
 
@@ -607,7 +607,7 @@ class ModrinthService
     public function getMinecraftVersions(): array
     {
         $cacheKey = 'modrinth_minecraft_versions';
-        
+
         $response = $this->makeCachedRequest($cacheKey, $this->cacheTtl['versions'], function () {
             return $this->makeRequest('GET', 'tag/game_version');
         });
@@ -640,7 +640,7 @@ class ModrinthService
     public function getModLoaderTypes(): array
     {
         $cacheKey = 'modrinth_loader_types';
-        
+
         $response = $this->makeCachedRequest($cacheKey, $this->cacheTtl['loaders'], function () {
             return $this->makeRequest('GET', 'tag/loader');
         });
@@ -676,7 +676,7 @@ class ModrinthService
     public function getRateLimitUsage(): array
     {
         $requestsThisMinute = Cache::get('modrinth_requests_this_minute', 0);
-        
+
         return [
             'requests_this_minute' => $requestsThisMinute,
             'requests_this_hour' => 0, // Modrinth only tracks per minute
