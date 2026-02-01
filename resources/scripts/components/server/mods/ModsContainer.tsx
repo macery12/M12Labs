@@ -15,11 +15,14 @@ export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
+    const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
+    const defaultSource = useStoreState(state => state.everest.data?.mods?.default_source ?? 'modrinth');
     const { addError } = useFlash();
 
     const [loading, setLoading] = useState(false);
     const [mods, setMods] = useState<CurseForgeMod[]>([]);
     const [selectedMod, setSelectedMod] = useState<CurseForgeMod | null>(null);
+    const [activeSource, setActiveSource] = useState<string>(defaultSource);
     const [pagination, setPagination] = useState({
         index: 0,
         pageSize: 20,
@@ -35,6 +38,7 @@ export default () => {
         modLoaderType: undefined,
         pageSize: 20,
         index: 0,
+        source: activeSource,
     });
 
     useEffect(() => {
@@ -55,7 +59,7 @@ export default () => {
 
     const handleSearch = (params: ModSearchParams) => {
         setSelectedMod(null); // Close modal when searching
-        setSearchParams({ ...params, index: 0 });
+        setSearchParams({ ...params, index: 0, source: activeSource });
     };
 
     const handlePageChange = (newIndex: number) => {
@@ -65,6 +69,20 @@ export default () => {
 
     const handleModClick = (mod: CurseForgeMod) => {
         setSelectedMod(mod);
+    };
+
+    const handleSourceChange = (source: string) => {
+        setActiveSource(source);
+        setSelectedMod(null);
+        setSearchParams({ 
+            ...searchParams, 
+            source,
+            index: 0,
+            // Reset filters when switching sources
+            searchFilter: '',
+            gameVersion: undefined,
+            modLoaderType: undefined,
+        });
     };
 
     if (!globalModsEnabled) {
@@ -100,10 +118,38 @@ export default () => {
         <PageContentBlock
             title={'Mods Browser'}
             header
-            description={'Browse and install Minecraft mods from CurseForge.'}
+            description={`Browse and install Minecraft mods from ${activeSource === 'modrinth' ? 'Modrinth' : 'CurseForge'}.`}
             showFlashKey={'mods'}
         >
-            <ModSearch onSearch={handleSearch} initialParams={searchParams} />
+            {/* Source Tabs */}
+            <div css={tw`flex gap-2 mb-6 border-b border-neutral-700`}>
+                <button
+                    css={[
+                        tw`px-4 py-2 font-medium transition-colors`,
+                        activeSource === 'modrinth'
+                            ? tw`text-blue-400 border-b-2 border-blue-400`
+                            : tw`text-neutral-400 hover:text-neutral-300`,
+                    ]}
+                    onClick={() => handleSourceChange('modrinth')}
+                >
+                    Modrinth
+                </button>
+                {curseforgeConfigured && (
+                    <button
+                        css={[
+                            tw`px-4 py-2 font-medium transition-colors`,
+                            activeSource === 'curseforge'
+                                ? tw`text-blue-400 border-b-2 border-blue-400`
+                                : tw`text-neutral-400 hover:text-neutral-300`,
+                        ]}
+                        onClick={() => handleSourceChange('curseforge')}
+                    >
+                        CurseForge
+                    </button>
+                )}
+            </div>
+
+            <ModSearch onSearch={handleSearch} initialParams={searchParams} source={activeSource} />
 
             {loading && !mods.length ? (
                 <div css={tw`mt-8`}>
@@ -119,7 +165,9 @@ export default () => {
                 />
             )}
 
-            {selectedMod && <ModDetails key={selectedMod.id} mod={selectedMod} onClose={() => setSelectedMod(null)} />}
+            {selectedMod && (
+                <ModDetails key={selectedMod.id} mod={selectedMod} onClose={() => setSelectedMod(null)} source={activeSource} />
+            )}
         </PageContentBlock>
     );
 };

@@ -3,6 +3,7 @@ import http from '@/api/http';
 export interface ModsSettings {
     curseforge_api_key?: string | boolean;
     enabled?: boolean;
+    default_source?: string;
 }
 
 export const updateSettings = (settings: ModsSettings): Promise<void> => {

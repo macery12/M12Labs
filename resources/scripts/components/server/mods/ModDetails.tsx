@@ -13,6 +13,7 @@ import FadeTransition from '@/elements/transitions/FadeTransition';
 interface Props {
     mod: CurseForgeMod;
     onClose: () => void;
+    source: string;
 }
 
 const ModalContent = styled.div`
@@ -97,7 +98,7 @@ const getReleaseTypeColor = (type: number) => {
     }
 };
 
-export default ({ mod, onClose }: Props) => {
+export default ({ mod, onClose, source }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -107,7 +108,7 @@ export default ({ mod, onClose }: Props) => {
 
     useEffect(() => {
         setLoading(true);
-        getModFiles(uuid, mod.id, { pageSize: 20, index: 0 })
+        getModFiles(uuid, mod.id, { pageSize: 20, index: 0, source })
             .then(response => {
                 setFiles(response.data);
             })
@@ -116,7 +117,7 @@ export default ({ mod, onClose }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, mod.id]);
+    }, [uuid, mod.id, source]);
 
     const displayFiles = showAllFiles ? files : files.slice(0, 5);
 
@@ -177,7 +178,7 @@ export default ({ mod, onClose }: Props) => {
                                                 <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
                                             </FileDetails>
                                         </FileInfo>
-                                        <ModDownloadButton modId={mod.id} fileId={file.id} fileName={file.fileName} />
+                                        <ModDownloadButton modId={mod.id} fileId={file.id} fileName={file.fileName} source={source} />
                                     </FileItem>
                                 ))}
                             </FileList>

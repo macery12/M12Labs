@@ -12,6 +12,7 @@ import useFlash from '@/plugins/useFlash';
 interface Props {
     onSearch: (params: ModSearchParams) => void;
     initialParams: ModSearchParams;
+    source: string;
 }
 
 const SORT_OPTIONS = [
@@ -23,7 +24,7 @@ const SORT_OPTIONS = [
     { value: '6', label: 'Total Downloads' },
 ];
 
-export default ({ onSearch, initialParams }: Props) => {
+export default ({ onSearch, initialParams, source }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -36,7 +37,7 @@ export default ({ onSearch, initialParams }: Props) => {
     const [modLoaders, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
 
     useEffect(() => {
-        getMinecraftVersions(uuid)
+        getMinecraftVersions(uuid, source)
             .then(response => {
                 const versions = response.data
                     .filter(v => v.versionString && v.gameVersionTypeId === 1)
@@ -59,7 +60,7 @@ export default ({ onSearch, initialParams }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             });
 
-        getModLoaderTypes(uuid)
+        getModLoaderTypes(uuid, source)
             .then(response => {
                 // CurseForge mod loader API returns different structure
                 const loaders = response.data
@@ -81,7 +82,7 @@ export default ({ onSearch, initialParams }: Props) => {
                 console.error(error);
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             });
-    }, [uuid]);
+    }, [uuid, source]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
