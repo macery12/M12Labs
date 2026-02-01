@@ -173,6 +173,8 @@ export default () => {
                     mod={selectedMod}
                     onClose={() => setSelectedMod(null)}
                     source={activeSource}
+                    gameVersion={searchParams.gameVersion}
+                    modLoaderType={searchParams.modLoaderType}
                 />
             )}
         </PageContentBlock>

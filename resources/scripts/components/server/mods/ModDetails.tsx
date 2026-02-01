@@ -14,6 +14,8 @@ interface Props {
     mod: CurseForgeMod;
     onClose: () => void;
     source: string;
+    gameVersion?: string;
+    modLoaderType?: number;
 }
 
 const ModalContent = styled.div`
@@ -98,7 +100,7 @@ const getReleaseTypeColor = (type: number) => {
     }
 };
 
-export default ({ mod, onClose, source }: Props) => {
+export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -106,9 +108,28 @@ export default ({ mod, onClose, source }: Props) => {
     const [loading, setLoading] = useState(true);
     const [showAllFiles, setShowAllFiles] = useState(false);
 
+    // Map loader type ID to name for display
+    const getLoaderName = (loaderId?: number): string => {
+        const loaderMap: { [key: number]: string } = {
+            1: 'Forge',
+            2: 'Cauldron',
+            3: 'LiteLoader',
+            4: 'Fabric',
+            5: 'Quilt',
+            6: 'NeoForge',
+        };
+        return loaderId ? loaderMap[loaderId] || 'Unknown' : '';
+    };
+
     useEffect(() => {
         setLoading(true);
-        getModFiles(uuid, mod.id, { pageSize: 20, index: 0, source })
+        getModFiles(uuid, mod.id, {
+            pageSize: 20,
+            index: 0,
+            source,
+            gameVersion,
+            modLoaderType,
+        })
             .then(response => {
                 setFiles(response.data);
             })
@@ -117,7 +138,7 @@ export default ({ mod, onClose, source }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, mod.id, source]);
+    }, [uuid, mod.id, source, gameVersion, modLoaderType]);
 
     const displayFiles = showAllFiles ? files : files.slice(0, 5);
 
@@ -151,7 +172,16 @@ export default ({ mod, onClose, source }: Props) => {
                 <ModSummary>{mod.summary}</ModSummary>
 
                 <Section>
-                    <SectionTitle>Available Files</SectionTitle>
+                    <SectionTitle>
+                        Available Files
+                        {(gameVersion || modLoaderType) && (
+                            <span css={tw`ml-2 text-sm font-normal text-neutral-400`}>
+                                (Filtered: {gameVersion && <span css={tw`text-blue-400`}>{gameVersion}</span>}
+                                {gameVersion && modLoaderType && ' • '}
+                                {modLoaderType && <span css={tw`text-blue-400`}>{getLoaderName(modLoaderType)}</span>})
+                            </span>
+                        )}
+                    </SectionTitle>
                     {loading ? (
                         <div css={tw`flex justify-center py-6`}>
                             <Spinner />
