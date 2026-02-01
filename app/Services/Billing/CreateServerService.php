@@ -12,6 +12,7 @@ use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Services\Servers\ServerCreationService;
 use Everest\Services\Servers\VariableValidatorService;
 use Everest\Exceptions\Service\Deployment\NoViableAllocationException;
@@ -103,15 +104,40 @@ class CreateServerService
                 'allocation_limit' => $product->allocation_limit,
                 'subuser_limit' => 3,
             ]);
+        } catch (BillingExceptionClass $e) {
+            // Re-throw billing exceptions as-is
+            throw $e;
         } catch (DisplayException $ex) {
-            BillingException::create([
-                'order_id' => $order->id,
-                'exception_type' => BillingException::TYPE_DEPLOYMENT,
-                'title' => 'Failed to create billable server',
-                'description' => $ex->getMessage(),
-            ]);
-
-            throw new DisplayException('Unable to create server: ' . $ex->getMessage());
+            throw new BillingExceptionClass(
+                'Failed to create billable server',
+                'Unable to create server: ' . $ex->getMessage(),
+                BillingException::TYPE_DEPLOYMENT,
+                $order->id,
+                null,
+                null,
+                [
+                    'product_id' => $product->id,
+                    'node_id' => $metadata->node_id,
+                    'egg_id' => $egg->id,
+                ],
+                $ex
+            );
+        } catch (\Exception $ex) {
+            throw new BillingExceptionClass(
+                'Unexpected server creation error',
+                'An unexpected error occurred while creating server: ' . $ex->getMessage(),
+                BillingException::TYPE_DEPLOYMENT,
+                $order->id,
+                null,
+                null,
+                [
+                    'product_id' => $product->id,
+                    'node_id' => $metadata->node_id,
+                    'egg_id' => $egg->id,
+                    'error' => $ex->getMessage(),
+                ],
+                $ex
+            );
         }
 
         return $server;
@@ -171,20 +197,23 @@ class CreateServerService
 
     /**
      * Get a suitable allocation to deploy to.
+     *
+     * @throws BillingExceptionClass
      */
     private function getAllocation(int $nodeId, int $orderId): int
     {
         $allocation = Allocation::where('node_id', $nodeId)->where('server_id', null)->first();
 
         if (!$allocation) {
-            BillingException::create([
-                'order_id' => $orderId,
-                'exception_type' => BillingException::TYPE_DEPLOYMENT,
-                'title' => 'Failed to find allocation to assign to server',
-                'description' => 'Create more allocations (ports) for node ' . $nodeId,
-            ]);
-
-            throw new NoViableAllocationException('No allocations are available for deployment.');
+            throw new BillingExceptionClass(
+                'Failed to find allocation to assign to server',
+                'No allocations are available for deployment. Please create more allocations (ports) for node ' . $nodeId,
+                BillingException::TYPE_DEPLOYMENT,
+                $orderId,
+                null,
+                null,
+                ['node_id' => $nodeId]
+            );
         }
 
         return $allocation->id;

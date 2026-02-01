@@ -4,6 +4,7 @@ namespace Everest\Services\Billing;
 
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\BillingException;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Support\Facades\Http;
 
@@ -36,7 +37,7 @@ class PayPalPaymentService
     /**
      * Get OAuth2 access token from PayPal.
      *
-     * @throws DisplayException
+     * @throws BillingExceptionClass
      */
     private function getAccessToken(): string
     {
@@ -47,23 +48,56 @@ class PayPalPaymentService
 
         $this->ensurePayPalInitialized();
 
-        $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
-            ->asForm()
-            ->post($this->getApiUrl() . '/v1/oauth2/token', [
-                'grant_type' => 'client_credentials',
+        try {
+            $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+                ->asForm()
+                ->post($this->getApiUrl() . '/v1/oauth2/token', [
+                    'grant_type' => 'client_credentials',
+                ]);
+
+            if (!$response->successful()) {
+                \Log::error('PayPal authentication failed', [
+                    'status' => $response->status(),
+                    'response' => $response->json(),
+                ]);
+                
+                throw new BillingExceptionClass(
+                    'PayPal authentication failed',
+                    'Failed to authenticate with PayPal. Please check your credentials.',
+                    BillingException::TYPE_PAYMENT,
+                    null,
+                    'paypal',
+                    null,
+                    ['status' => $response->status(), 'response' => $response->json()]
+                );
+            }
+
+            $data = $response->json();
+            $this->accessToken = $data['access_token'];
+            // Set expiration to 90% of the actual expiration time to be safe
+            $expiresIn = $data['expires_in'] ?? 32400; // Default to 9 hours if not provided
+            $this->tokenExpiresAt = time() + (int)($expiresIn * 0.9);
+            
+            return $this->accessToken;
+        } catch (BillingExceptionClass $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('PayPal authentication exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-
-        if (!$response->successful()) {
-            throw new DisplayException('Failed to authenticate with PayPal. Please check your credentials.');
+            
+            throw new BillingExceptionClass(
+                'PayPal authentication error',
+                'An unexpected error occurred while authenticating with PayPal: ' . $e->getMessage(),
+                BillingException::TYPE_PAYMENT,
+                null,
+                'paypal',
+                null,
+                ['error' => $e->getMessage()],
+                $e
+            );
         }
-
-        $data = $response->json();
-        $this->accessToken = $data['access_token'];
-        // Set expiration to 90% of the actual expiration time to be safe
-        $expiresIn = $data['expires_in'] ?? 32400; // Default to 9 hours if not provided
-        $this->tokenExpiresAt = time() + (int)($expiresIn * 0.9);
-        
-        return $this->accessToken;
     }
 
     /**
@@ -75,54 +109,89 @@ class PayPalPaymentService
      * @param string $returnUrl
      * @param string $cancelUrl
      * @return array PayPal order data
-     * @throws DisplayException
+     * @throws BillingExceptionClass
      */
     public function createOrder(Product $product, float $amount, ?int $couponId, string $returnUrl, string $cancelUrl): array
     {
-        $token = $this->getAccessToken();
+        try {
+            $token = $this->getAccessToken();
 
-        $orderData = [
-            'intent' => 'CAPTURE',
-            'purchase_units' => [
-                [
-                    'reference_id' => 'product_' . $product->id,
-                    'description' => $product->name,
-                    'amount' => [
-                        'currency_code' => strtoupper(config('modules.billing.currency.code')),
-                        'value' => number_format($amount, 2, '.', ''),
+            $orderData = [
+                'intent' => 'CAPTURE',
+                'purchase_units' => [
+                    [
+                        'reference_id' => 'product_' . $product->id,
+                        'description' => $product->name,
+                        'amount' => [
+                            'currency_code' => strtoupper(config('modules.billing.currency.code')),
+                            'value' => number_format($amount, 2, '.', ''),
+                        ],
+                        'custom_id' => json_encode([
+                            'product_id' => $product->id,
+                            'coupon_id' => $couponId,
+                        ]),
                     ],
-                    'custom_id' => json_encode([
-                        'product_id' => $product->id,
-                        'coupon_id' => $couponId,
-                    ]),
                 ],
-            ],
-            'application_context' => [
-                'brand_name' => config('app.name'),
-                'landing_page' => 'BILLING',
-                'user_action' => 'PAY_NOW',
-                'return_url' => $returnUrl,
-                'cancel_url' => $cancelUrl,
-            ],
-        ];
+                'application_context' => [
+                    'brand_name' => config('app.name'),
+                    'landing_page' => 'BILLING',
+                    'user_action' => 'PAY_NOW',
+                    'return_url' => $returnUrl,
+                    'cancel_url' => $cancelUrl,
+                ],
+            ];
 
-        $response = Http::withToken($token)
-            ->withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])
-            ->post($this->getApiUrl() . '/v2/checkout/orders', $orderData);
+            $response = Http::withToken($token)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->post($this->getApiUrl() . '/v2/checkout/orders', $orderData);
 
-        if (!$response->successful()) {
-            \Log::error('PayPal order creation failed', [
-                'status' => $response->status(),
-                'error_response' => $response->json(),
-                'raw_body' => $response->body(),
+            if (!$response->successful()) {
+                \Log::error('PayPal order creation failed', [
+                    'status' => $response->status(),
+                    'error_response' => $response->json(),
+                    'raw_body' => $response->body(),
+                ]);
+                
+                throw new BillingExceptionClass(
+                    'PayPal order creation failed',
+                    'Failed to create PayPal order. Please try again or contact support.',
+                    BillingException::TYPE_PAYMENT,
+                    null,
+                    'paypal',
+                    null,
+                    [
+                        'product_id' => $product->id,
+                        'amount' => $amount,
+                        'status' => $response->status(),
+                        'response' => $response->json(),
+                    ]
+                );
+            }
+
+            return $response->json();
+        } catch (BillingExceptionClass $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('PayPal order creation exception', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            throw new DisplayException('Failed to create PayPal order. Please try again or contact support.');
+            
+            throw new BillingExceptionClass(
+                'PayPal order creation error',
+                'An unexpected error occurred while creating PayPal order: ' . $e->getMessage(),
+                BillingException::TYPE_PAYMENT,
+                null,
+                'paypal',
+                null,
+                ['product_id' => $product->id, 'error' => $e->getMessage()],
+                $e
+            );
         }
-
-        return $response->json();
     }
 
     /**
@@ -130,35 +199,72 @@ class PayPalPaymentService
      *
      * @param string $orderId
      * @return array
-     * @throws DisplayException
+     * @throws BillingExceptionClass
      */
     public function getOrder(string $orderId): array
     {
-        // Validate order ID format (PayPal order IDs are alphanumeric with hyphens)
-        if (!preg_match('/^[A-Z0-9-]+$/i', $orderId)) {
-            throw new DisplayException('Invalid PayPal order ID format.');
-        }
+        try {
+            // Validate order ID format (PayPal order IDs are alphanumeric with hyphens)
+            if (!preg_match('/^[A-Z0-9-]+$/i', $orderId)) {
+                throw new BillingExceptionClass(
+                    'Invalid PayPal order ID format',
+                    'Invalid PayPal order ID format.',
+                    BillingException::TYPE_VALIDATION,
+                    null,
+                    'paypal',
+                    $orderId,
+                    ['order_id' => $orderId]
+                );
+            }
 
-        $token = $this->getAccessToken();
+            $token = $this->getAccessToken();
 
-        $response = Http::withToken($token)
-            ->withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])
-            ->get($this->getApiUrl() . '/v2/checkout/orders/' . $orderId);
+            $response = Http::withToken($token)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->get($this->getApiUrl() . '/v2/checkout/orders/' . $orderId);
 
-        if (!$response->successful()) {
-            \Log::error('PayPal order fetch failed', [
+            if (!$response->successful()) {
+                \Log::error('PayPal order fetch failed', [
+                    'order_id' => $orderId,
+                    'status' => $response->status(),
+                    'error_response' => $response->json(),
+                    'raw_body' => $response->body(),
+                ]);
+                
+                throw new BillingExceptionClass(
+                    'PayPal order fetch failed',
+                    'Failed to fetch PayPal order. Please try again or contact support.',
+                    BillingException::TYPE_PAYMENT,
+                    null,
+                    'paypal',
+                    $orderId,
+                    ['status' => $response->status(), 'response' => $response->json()]
+                );
+            }
+
+            return $response->json();
+        } catch (BillingExceptionClass $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('PayPal order fetch exception', [
                 'order_id' => $orderId,
-                'status' => $response->status(),
-                'error_response' => $response->json(),
-                'raw_body' => $response->body(),
+                'error' => $e->getMessage(),
             ]);
-            throw new DisplayException('Failed to fetch PayPal order. Please try again or contact support.');
+            
+            throw new BillingExceptionClass(
+                'PayPal order fetch error',
+                'An unexpected error occurred while fetching PayPal order: ' . $e->getMessage(),
+                BillingException::TYPE_PAYMENT,
+                null,
+                'paypal',
+                $orderId,
+                ['error' => $e->getMessage()],
+                $e
+            );
         }
-
-        return $response->json();
     }
 
     /**
@@ -166,32 +272,61 @@ class PayPalPaymentService
      *
      * @param string $orderId
      * @return array
-     * @throws DisplayException
+     * @throws BillingExceptionClass
      */
     public function captureOrder(string $orderId): array
     {
-        $token = $this->getAccessToken();
+        try {
+            $token = $this->getAccessToken();
 
-        $response = Http::withToken($token)
-            ->withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Prefer' => 'return=representation',
-            ])
-            ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture', new \stdClass());
+            $response = Http::withToken($token)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation',
+                ])
+                ->post($this->getApiUrl() . '/v2/checkout/orders/' . $orderId . '/capture', new \stdClass());
 
 
-        if (!$response->successful()) {
-            \Log::error('PayPal order capture failed', [
+            if (!$response->successful()) {
+                \Log::error('PayPal order capture failed', [
+                    'order_id' => $orderId,
+                    'status' => $response->status(),
+                    'error_response' => $response->json(),
+                    'raw_body' => $response->body(),
+                ]);
+                
+                throw new BillingExceptionClass(
+                    'PayPal order capture failed',
+                    'Failed to capture PayPal order. Please try again or contact support.',
+                    BillingException::TYPE_PAYMENT,
+                    null,
+                    'paypal',
+                    $orderId,
+                    ['status' => $response->status(), 'response' => $response->json()]
+                );
+            }
+
+            return $response->json();
+        } catch (BillingExceptionClass $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('PayPal order capture exception', [
                 'order_id' => $orderId,
-                'status' => $response->status(),
-                'error_response' => $response->json(),
-                'raw_body' => $response->body(),
+                'error' => $e->getMessage(),
             ]);
-            throw new DisplayException('Failed to capture PayPal order. Please try again or contact support.');
+            
+            throw new BillingExceptionClass(
+                'PayPal order capture error',
+                'An unexpected error occurred while capturing PayPal order: ' . $e->getMessage(),
+                BillingException::TYPE_PAYMENT,
+                null,
+                'paypal',
+                $orderId,
+                ['error' => $e->getMessage()],
+                $e
+            );
         }
-
-        return $response->json();
     }
 
     /**
@@ -265,17 +400,20 @@ class PayPalPaymentService
     /**
      * Ensure PayPal client is initialized.
      *
-     * @throws DisplayException if PayPal is not configured
+     * @throws BillingExceptionClass if PayPal is not configured
      */
     private function ensurePayPalInitialized(): void
     {
         if (!$this->clientId || !$this->clientSecret) {
-            BillingException::create([
-                'exception_type' => BillingException::TYPE_STOREFRONT,
-                'title' => 'PayPal credentials are missing',
-                'description' => 'Add the PayPal Client ID and Client Secret to your billing configuration',
-            ]);
-            throw new DisplayException('PayPal is not configured. Please add your PayPal credentials.');
+            throw new BillingExceptionClass(
+                'PayPal credentials are missing',
+                'PayPal is not configured. Please add your PayPal credentials.',
+                BillingException::TYPE_STOREFRONT,
+                null,
+                'paypal',
+                null,
+                ['configured' => false]
+            );
         }
     }
 }
