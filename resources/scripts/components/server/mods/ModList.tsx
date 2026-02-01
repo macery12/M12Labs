@@ -6,6 +6,7 @@ import { Button } from '@/elements/button';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDoubleLeft, faAngleDoubleRight, faDownload, faClock } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     mods: CurseForgeMod[];
@@ -20,11 +21,13 @@ interface Props {
     onPageChange: (index: number) => void;
 }
 
-const ModCard = styled.div`
-    ${tw`bg-neutral-800 rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
+const ModCard = styled.div<{ $backgroundColor: string }>`
+    ${tw`rounded border border-neutral-700 cursor-pointer transition-colors duration-150`}
+    background-color: ${props => props.$backgroundColor};
 
     &:hover {
-        ${tw`bg-neutral-700 border-neutral-600`}
+        ${tw`border-neutral-600`}
+        background-color: ${props => props.$backgroundColor}dd;
     }
 `;
 
@@ -73,6 +76,8 @@ const PaginationButton = styled(Button)`
 `;
 
 export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) => {
+    const { background } = useStoreState(state => state.theme.data!.colors);
+
     if (!mods.length && !loading) {
         return (
             <div css={tw`text-center py-16`}>
@@ -122,13 +127,18 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                             : 'Unknown';
 
                         return (
-                            <ModCard key={mod.id} onClick={() => onModClick(mod)}>
+                            <ModCard key={mod.id} onClick={() => onModClick(mod)} $backgroundColor={background}>
                                 <ModHeader>
                                     <ModIcon
                                         src={mod.logo?.thumbnailUrl || '/assets/images/placeholder-mod.png'}
                                         alt={mod.name}
                                         onError={e => {
-                                            e.currentTarget.src = '/assets/images/placeholder-mod.png';
+                                            const target = e.currentTarget;
+                                            // Prevent infinite loop by checking if already set to placeholder
+                                            if (!target.dataset.fallbackAttempted) {
+                                                target.dataset.fallbackAttempted = 'true';
+                                                target.src = '/assets/images/placeholder-mod.png';
+                                            }
                                         }}
                                     />
                                     <ModInfo>

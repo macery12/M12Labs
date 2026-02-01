@@ -1,8 +1,8 @@
-# Modpacks Dashboard Implementation Guide
+# Modpacks Implementation Guide
 
 ## Overview
 
-This implementation moves the modpacks browsing functionality from the server-level pages to the account dashboard, allowing users to browse CurseForge modpacks and install them to any of their servers with proper environment variable configuration and server reinstallation.
+This implementation provides modpacks browsing functionality at the server level, allowing users to browse CurseForge modpacks and install them to their servers with proper environment variable configuration and server reinstallation.
 
 ## Architecture
 
@@ -10,23 +10,31 @@ This implementation moves the modpacks browsing functionality from the server-le
 
 ```
 resources/scripts/
-├── api/routes/account/
-│   └── modpacks.ts                 # Account-level API client
-├── components/account/
-│   ├── ModpacksAccountContainer.tsx # Main container
-│   └── modpacks/
-│       ├── ModpackSearch.tsx       # Search/filter interface
-│       ├── ModpackList.tsx         # Grid display with pagination
-│       └── ModpackInstallModal.tsx # Server + version selection
+├── api/routes/
+│   ├── account/modpacks.ts           # Account-level API client (legacy)
+│   └── server/modpacks.ts            # Server-level API client
+├── components/
+│   ├── account/modpacks/             # Account-level components (legacy)
+│   │   ├── ModpackSearch.tsx
+│   │   ├── ModpackList.tsx
+│   │   └── ModpackInstallModal.tsx
+│   └── server/modpacks/              # Server-level components
+│       ├── ModpacksContainer.tsx     # Main container
+│       ├── ModpackSearch.tsx         # Search/filter interface
+│       ├── ModpackList.tsx           # Grid display with pagination
+│       ├── ModpackDetails.tsx        # Modpack detail modal
+│       └── ModpackDownloadButton.tsx # Download functionality
 └── routers/routes/
-    └── account.ts                  # Route configuration
+    ├── account.ts                    # Account route configuration (modpacks removed)
+    └── server.ts                     # Server route configuration (modpacks added)
 ```
 
 ### Backend Structure
 
 ```
 app/Http/Controllers/Api/Client/
-└── AccountModpacksController.php  # Controller with 7 endpoints
+├── AccountModpacksController.php  # Account-level controller (legacy)
+└── Servers/ModsController.php     # Server-level modpacks/mods controller
 
 routes/
 └── api-client.php                 # API route definitions
@@ -34,8 +42,12 @@ routes/
 
 ## API Endpoints
 
-### GET `/api/client/account/modpacks/search`
-Search for modpacks on CurseForge.
+### Server-Level Endpoints (Primary)
+
+All server-level modpack endpoints are prefixed with `/api/client/servers/{server}/modpacks/`
+
+#### GET `/api/client/servers/{server}/modpacks/search`
+Search for modpacks on CurseForge within a server context.
 
 **Query Parameters:**
 - `searchFilter` (string, optional) - Search term
@@ -147,9 +159,10 @@ The target server must have a Curseforge_generic egg (or compatible) with these 
 ## User Interface Flow
 
 ### 1. Access Modpacks Page
-- Navigate to dashboard
-- Click "Modpacks" in sidebar (appears when mods module enabled)
-- Shows if `everest.mods.enabled` is true
+- Navigate to a server dashboard
+- Click "Modpacks" in the server sidebar (next to "Mods" tab)
+- Shows if server has `modsEnabled = true` and global mods module is enabled
+- Located under the "Data" category alongside Files, Databases, Mods, and Backups
 
 ### 2. Browse Modpacks
 - Search by name/description

@@ -15,6 +15,7 @@ const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
 const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
+const ModpacksContainer = lazy(() => import('@server/modpacks/ModpacksContainer'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -40,6 +41,13 @@ const server: ServerRouteDefinition[] = [
         permission: 'file.create',
         name: 'Mods',
         icon: Icon.CubeIcon,
+        category: 'data',
+        condition: server => server.modsEnabled,
+    }),
+    route('modpacks/*', ModpacksContainer, {
+        permission: 'file.create',
+        name: 'Modpacks',
+        icon: Icon.CollectionIcon,
         category: 'data',
         condition: server => server.modsEnabled,
     }),

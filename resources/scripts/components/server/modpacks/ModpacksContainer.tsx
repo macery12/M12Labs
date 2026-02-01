@@ -10,6 +10,10 @@ import { type CurseForgeModpack, type ModpackSearchParams, searchModpacks } from
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
+import { getServerStartup } from '@/api/routes/server/startup';
+
+// Environment variable names required for modpack support
+const REQUIRED_MODPACK_VARIABLES = ['PROJECT_ID', 'VERSION_ID'] as const;
 
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
@@ -18,6 +22,8 @@ export default () => {
     const { addError } = useFlash();
 
     const [loading, setLoading] = useState(false);
+    const [checkingSupport, setCheckingSupport] = useState(true);
+    const [modpacksSupported, setModpacksSupported] = useState(false);
     const [modpacks, setModpacks] = useState<CurseForgeModpack[]>([]);
     const [selectedModpack, setSelectedModpack] = useState<CurseForgeModpack | null>(null);
     const [pagination, setPagination] = useState({
@@ -37,8 +43,36 @@ export default () => {
         index: 0,
     });
 
+    // Only fetch startup data if mods are enabled
+    const shouldFetchStartup = modsEnabled && globalModsEnabled;
+    const { data: startupData, error: startupError } = getServerStartup(
+        uuid,
+        shouldFetchStartup ? undefined : { invocation: '', variables: [], dockerImages: {} },
+        { revalidateOnFocus: false, revalidateOnReconnect: false }
+    );
+
     useEffect(() => {
-        if (!modsEnabled) return;
+        if (!shouldFetchStartup) {
+            setCheckingSupport(false);
+            setModpacksSupported(false);
+            return;
+        }
+
+        if (startupData) {
+            // Check if all required modpack variables exist
+            const hasAllVariables = REQUIRED_MODPACK_VARIABLES.every(
+                varName => startupData.variables.some(v => v.envVariable === varName)
+            );
+            setModpacksSupported(hasAllVariables);
+            setCheckingSupport(false);
+        } else if (startupError) {
+            setModpacksSupported(false);
+            setCheckingSupport(false);
+        }
+    }, [startupData, startupError, shouldFetchStartup]);
+
+    useEffect(() => {
+        if (!modsEnabled || !modpacksSupported) return;
 
         setLoading(true);
         searchModpacks(uuid, searchParams)
@@ -51,7 +85,7 @@ export default () => {
                 addError({ key: 'modpacks', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, searchParams, modsEnabled]);
+    }, [uuid, searchParams, modsEnabled, modpacksSupported]);
 
     const handleSearch = (params: ModpackSearchParams) => {
         setSelectedModpack(null); // Close modal when searching
@@ -90,6 +124,32 @@ export default () => {
                     </p>
                     <p css={tw`text-neutral-400 text-xs`}>
                         This can be done in the admin panel under Servers → [Server Name] → Mods Toggle.
+                    </p>
+                </div>
+            </PageContentBlock>
+        );
+    }
+
+    if (checkingSupport) {
+        return (
+            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
+                <div css={tw`flex justify-center py-16`}>
+                    <Spinner size={'large'} />
+                </div>
+            </PageContentBlock>
+        );
+    }
+
+    if (!modpacksSupported) {
+        return (
+            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
+                <div css={tw`text-center py-16`}>
+                    <p css={tw`text-neutral-300 text-lg mb-4`}>Your server does not have modpack support.</p>
+                    <p css={tw`text-neutral-400 text-sm mb-2`}>
+                        This server is not configured with the required environment variables for modpack installation.
+                    </p>
+                    <p css={tw`text-neutral-400 text-xs`}>
+                        Please contact an administrator to change your server to use a modpack-compatible egg (e.g., CurseForge Generic).
                     </p>
                 </div>
             </PageContentBlock>
