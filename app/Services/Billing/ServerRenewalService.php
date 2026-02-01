@@ -24,14 +24,21 @@ class ServerRenewalService
      * For free servers: Resets renewal date to configured days from now
      * For paid servers: Adds configured days to existing renewal date (extends the time)
      * 
+     * @param Server $server The server to renew
+     * @param Product $product The product to renew with
+     * @param int|null $couponId The coupon ID (optional)
+     * @param int|null $billingCycleId The billing cycle ID (optional, defaults to server's current cycle)
      * @return array{server: Server, order: Order}
      */
-    public function renew(Server $server, Product $product, ?int $couponId = null): array
+    public function renew(Server $server, Product $product, ?int $couponId = null, ?int $billingCycleId = null): array
     {
         // Verify that the server uses this product
         if ($server->billing_product_id !== $product->id) {
             throw new DisplayException('This server does not use this product.');
         }
+
+        // Use provided billing cycle or server's current cycle
+        $cycleId = $billingCycleId ?? $server->billing_cycle_id;
 
         // Create an order record for the renewal
         $order = $this->orderService->create(
@@ -40,7 +47,9 @@ class ServerRenewalService
             $product,
             Order::STATUS_PENDING,
             Order::TYPE_REN,
-            $couponId
+            $couponId,
+            null, // No egg change on renewal
+            $cycleId
         );
 
         // Unsuspend the server if it was suspended due to billing
@@ -48,10 +57,11 @@ class ServerRenewalService
             $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
         }
 
-        // Calculate renewal date based on product type
-        $renewalDays = $product->getRenewalDays();
+        // Calculate renewal date based on billing cycle
+        $renewalDays = $cycleId ? $product->getRenewalDays($cycleId) : $product->getRenewalDays();
+        $isFree = $cycleId ? $product->isFree($cycleId) : $product->isFree();
         
-        if ($product->isFree()) {
+        if ($isFree) {
             // Free servers: Reset renewal date to configured days from now
             $newRenewalDate = Carbon::now()->addDays($renewalDays)->toDateTimeString();
         } else {
@@ -66,6 +76,7 @@ class ServerRenewalService
         
         $server->update([
             'renewal_date' => $newRenewalDate,
+            'billing_cycle_id' => $cycleId, // Update to new cycle if changed
         ]);
 
         // Mark order as processed

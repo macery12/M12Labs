@@ -36,6 +36,7 @@ class CheckoutController extends ClientApiController
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
         private ServerFulfillmentService $fulfillmentService,
+        private ServerRenewalService $renewalService,
     ) {
         parent::__construct();
 
@@ -72,15 +73,18 @@ class CheckoutController extends ClientApiController
             throw new DisplayException('Server name is required.');
         }
 
+        // Get billing cycle ID
+        $billingCycleId = $request->input('billing_cycle_id') ? (int) $request->input('billing_cycle_id') : null;
+
         // Calculate price with coupon for new purchase
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $billingCycleId, $couponId, 'new');
 
         // Validate this is a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
 
         // Validate user doesn't already own this free product
-        $this->validationService->validateFreeProductOwnership($user->id, $product);
+        $this->validationService->validateFreeProductOwnership($user->id, $product, $billingCycleId);
 
         // Validate node deployment
         $nodeId = (int) $request->input('node');
@@ -101,7 +105,8 @@ class CheckoutController extends ClientApiController
             $couponId,
             $variables,
             null, // No payment intent ID for free orders
-            $serverName
+            $serverName,
+            $billingCycleId
         );
 
         return $this->fractal->item($result['server'])
@@ -124,9 +129,12 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
+        // Get billing cycle ID (optional, defaults to server's current cycle)
+        $billingCycleId = $request->input('billing_cycle_id') ? (int) $request->input('billing_cycle_id') : null;
+
         // Calculate price with coupon for renewal
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren');
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $billingCycleId, $couponId, 'ren');
 
         // Validate this is a free renewal
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -135,7 +143,7 @@ class CheckoutController extends ClientApiController
         $server = $user->servers()->findOrFail($serverId);
 
         // Process the renewal
-        $result = $this->processorService->processRenewal($server, $product, $couponId);
+        $result = $this->renewalService->renew($server, $product, $couponId, $billingCycleId);
 
         return $this->fractal->item($result['server'])
             ->transformWith(ServerTransformer::class)
@@ -220,9 +228,12 @@ class CheckoutController extends ClientApiController
         $product = Product::findOrFail($id);
 
         try {
+            // Get billing cycle ID
+            $billingCycleId = $request->input('billing_cycle_id') ? (int) $request->input('billing_cycle_id') : null;
+            
             // Calculate price with coupon using validation service for new purchase
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
+            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $billingCycleId, $couponId, 'new');
 
             // Validate this is not a free order
             $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
