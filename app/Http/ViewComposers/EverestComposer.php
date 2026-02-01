@@ -65,8 +65,6 @@ class EverestComposer
                     'api_key' => !empty(config('modules.billing.mollie.api_key')),
                 ],
                 'paypal_standalone' => [
-                    'client_id' => !empty(config('modules.billing.paypal_standalone.client_id')),
-                    'client_secret' => !empty(config('modules.billing.paypal_standalone.client_secret')),
                     'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
                 ],
                 'currency' => [

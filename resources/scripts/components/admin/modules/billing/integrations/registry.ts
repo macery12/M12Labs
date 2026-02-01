@@ -12,9 +12,7 @@ import { EverestSettings } from '@/state/everest';
 export const createIntegrationRegistry = (billingSettings: EverestSettings['billing']): BillingIntegration[] => {
     const stripeConfigured = !!(billingSettings.keys?.publishable && billingSettings.keys?.secret);
     const mollieConfigured = !!billingSettings.mollie?.api_key;
-    const paypalConfigured = !!(
-        billingSettings.paypal_standalone?.client_id && billingSettings.paypal_standalone?.client_secret
-    );
+    const paypalConfigured = billingSettings.processors?.paypal?.available ?? false;
 
     return [
         {

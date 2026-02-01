@@ -60,8 +60,6 @@ export interface EverestSettings {
             api_key?: boolean;
         };
         paypal_standalone?: {
-            client_id?: boolean;
-            client_secret?: boolean;
             mode?: string;
         };
         integrations?: {
