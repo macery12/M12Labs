@@ -7,6 +7,12 @@ return [
     'enabled' => env('MODS_ENABLED', false),
 
     /*
+     * Default mod source (modrinth or curseforge).
+     * Modrinth is the default as it doesn't require an API key.
+     */
+    'default_source' => env('MODS_DEFAULT_SOURCE', 'modrinth'),
+
+    /*
      * Set the API key for CurseForge API.
      */
     'curseforge_api_key' => env('CURSEFORGE_API_KEY', ''),
@@ -38,6 +44,11 @@ return [
      * CurseForge API endpoint
      */
     'curseforge_api_url' => env('CURSEFORGE_API_URL', 'https://api.curseforge.com/v1'),
+
+    /*
+     * Modrinth API endpoint
+     */
+    'modrinth_api_url' => env('MODRINTH_API_URL', 'https://api.modrinth.com/v2'),
 
     /*
      * Default page size for mod listings

@@ -46,16 +46,15 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
                     PayPal REST API Credentials
                 </p>
                 <p className={'text-sm text-gray-400'}>
-                    You need both a Client ID and Client Secret from your PayPal Developer account to process
-                    payments.
+                    You need both a Client ID and Client Secret from your PayPal Developer account to process payments.
                 </p>
             </div>
 
             <div className={'mb-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3'}>
                 <p className={'text-sm text-yellow-300'}>
                     <FontAwesomeIcon icon={faExclamationTriangle} className={'mr-2'} />
-                    <strong>Important:</strong> Make sure to create credentials for the REST API (not the classic
-                    API). Use sandbox credentials for testing and live credentials for production.
+                    <strong>Important:</strong> Make sure to create credentials for the REST API (not the classic API).
+                    Use sandbox credentials for testing and live credentials for production.
                 </p>
             </div>
 
@@ -115,10 +114,7 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
                     onChange={e => setData({ ...data, clientSecret: e.currentTarget.value })}
                 />
                 {!data?.clientSecret || data.clientSecret.length < 10 ? (
-                    <Tooltip
-                        placement={'right'}
-                        content={'You must enter a valid PayPal Client Secret to continue.'}
-                    >
+                    <Tooltip placement={'right'} content={'You must enter a valid PayPal Client Secret to continue.'}>
                         <FontAwesomeIcon
                             icon={faExclamationTriangle}
                             className={'absolute top-10 right-4 text-yellow-500'}
@@ -132,9 +128,9 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             <div className={'mt-6 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3'}>
                 <p className={'text-sm text-blue-300'}>
                     <FontAwesomeIcon icon={faInfoCircle} className={'mr-2'} />
-                    <strong>Getting Started:</strong> Create a new app in the PayPal Developer Dashboard, then copy
-                    the Client ID and Client Secret from the app details page. For sandbox testing, use sandbox
-                    credentials. For production, switch to live mode and use live credentials.
+                    <strong>Getting Started:</strong> Create a new app in the PayPal Developer Dashboard, then copy the
+                    Client ID and Client Secret from the app details page. For sandbox testing, use sandbox credentials.
+                    For production, switch to live mode and use live credentials.
                 </p>
             </div>
 

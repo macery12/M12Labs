@@ -3,6 +3,7 @@ import http from '@/api/http';
 export interface ModsSettings {
     curseforge_api_key?: string | boolean;
     enabled?: boolean;
+    default_source?: string;
 }
 
 export const updateSettings = (settings: ModsSettings): Promise<void> => {
@@ -21,7 +22,8 @@ export interface RateLimitUsage {
 }
 
 export interface ModsAnalytics {
-    rate_limit: RateLimitUsage;
+    curseforge_rate_limit: RateLimitUsage;
+    modrinth_rate_limit: RateLimitUsage;
 }
 
 export const getModsAnalytics = (): Promise<ModsAnalytics> => {

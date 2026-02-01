@@ -26,22 +26,22 @@ export default ({ onSearch, initialParams }: Props) => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Build params object with only defined values (no empty strings)
         const searchParams: ModpackSearchParams = {
             pageSize: 20,
             index: 0,
         };
-        
+
         if (searchFilter && searchFilter.trim()) {
             searchParams.searchFilter = searchFilter.trim();
         }
-        
+
         if (sortField) {
             searchParams.sortField = sortField;
             searchParams.sortOrder = 'desc';
         }
-        
+
         console.log('Searching modpacks with params:', searchParams);
         onSearch(searchParams);
     };

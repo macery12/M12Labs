@@ -35,16 +35,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPuzzlePiece, faBoxesStacked } from '@fortawesome/free-solid-svg-icons';
 import { BillingDropdown } from './BillingDropdown';
 const ProductsIcon = ({ className }: { className?: string }) => (
-  <span className={`inline-flex items-center justify-center ${className ?? ''}`}>
-    <FontAwesomeIcon
-      icon={faBoxesStacked}
-      fixedWidth
-      style={{ verticalAlign: 'middle' }}   // overrides FA default (-0.125em)
-      className="h-4 w-4"
-    />
-  </span>
+    <span className={`inline-flex items-center justify-center ${className ?? ''}`}>
+        <FontAwesomeIcon
+            icon={faBoxesStacked}
+            fixedWidth
+            style={{ verticalAlign: 'middle' }} // overrides FA default (-0.125em)
+            className="h-4 w-4"
+        />
+    </span>
 );
-
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.billing.enabled);

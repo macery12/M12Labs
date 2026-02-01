@@ -15,7 +15,13 @@ interface DropdownItemProps {
     children?: ReactNode;
 }
 
-const BillingDropdownItem = ({ to, name, icon: IconComponent, children, theme }: DropdownItemProps & { theme: SiteTheme }) => (
+const BillingDropdownItem = ({
+    to,
+    name,
+    icon: IconComponent,
+    children,
+    theme,
+}: DropdownItemProps & { theme: SiteTheme }) => (
     <Menu.Item>
         {({ active }) => (
             <NavLink
@@ -33,9 +39,9 @@ const BillingDropdownItem = ({ to, name, icon: IconComponent, children, theme }:
                 }
             >
                 {IconComponent ? (
-                    <IconComponent className="w-5 h-5 mr-2" />
+                    <IconComponent className="mr-2 h-5 w-5" />
                 ) : (
-                    children && <div className="w-5 h-5 mr-2">{children}</div>
+                    children && <div className="mr-2 h-5 w-5">{children}</div>
                 )}
                 {name}
             </NavLink>
@@ -81,7 +87,7 @@ export const BillingDropdown = ({ items, icon: IconComponent }: BillingDropdownP
                     <Menu.Button
                         ref={buttonRef}
                         className={classNames(
-                            'flex flex-row items-center h-full px-4 border-b text-base whitespace-nowrap transition-colors',
+                            'flex h-full flex-row items-center whitespace-nowrap border-b px-4 text-base transition-colors',
                             open ? 'border-primary text-primary' : 'border-transparent text-neutral-300',
                         )}
                         style={
@@ -94,10 +100,10 @@ export const BillingDropdown = ({ items, icon: IconComponent }: BillingDropdownP
                         }
                         onClick={updatePosition}
                     >
-                        {IconComponent && <IconComponent className="w-5 h-5 mr-2" />}
+                        {IconComponent && <IconComponent className="mr-2 h-5 w-5" />}
                         <span>Billing</span>
                         <ChevronDownIcon
-                            className={classNames('w-4 h-4 ml-2 transition-transform', open && 'rotate-180')}
+                            className={classNames('ml-2 h-4 w-4 transition-transform', open && 'rotate-180')}
                         />
                     </Menu.Button>
                     {open &&

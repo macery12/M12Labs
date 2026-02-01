@@ -25,8 +25,7 @@ export default ({
 
         if (!id) return;
 
-        const returnUrl =
-            window.location.origin + `/account/billing/processing?renewal=true&server_uuid=${serverUuid}`;
+        const returnUrl = window.location.origin + `/account/billing/processing?renewal=true&server_uuid=${serverUuid}`;
 
         try {
             // Create Mollie payment for renewal with all details in one request

@@ -13,7 +13,20 @@ import FadeTransition from '@/elements/transitions/FadeTransition';
 interface Props {
     mod: CurseForgeMod;
     onClose: () => void;
+    source: string;
+    gameVersion?: string;
+    modLoaderType?: number;
 }
+
+// Mod loader type ID to name mapping
+const LOADER_NAMES: { [key: number]: string } = {
+    1: 'Forge',
+    2: 'Cauldron',
+    3: 'LiteLoader',
+    4: 'Fabric',
+    5: 'Quilt',
+    6: 'NeoForge',
+};
 
 const ModalContent = styled.div`
     ${tw`text-white`}
@@ -97,7 +110,7 @@ const getReleaseTypeColor = (type: number) => {
     }
 };
 
-export default ({ mod, onClose }: Props) => {
+export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -107,7 +120,13 @@ export default ({ mod, onClose }: Props) => {
 
     useEffect(() => {
         setLoading(true);
-        getModFiles(uuid, mod.id, { pageSize: 20, index: 0 })
+        getModFiles(uuid, mod.id, {
+            pageSize: 20,
+            index: 0,
+            source,
+            gameVersion,
+            modLoaderType,
+        })
             .then(response => {
                 setFiles(response.data);
             })
@@ -116,7 +135,7 @@ export default ({ mod, onClose }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, mod.id]);
+    }, [uuid, mod.id, source, gameVersion, modLoaderType]);
 
     const displayFiles = showAllFiles ? files : files.slice(0, 5);
 
@@ -150,7 +169,19 @@ export default ({ mod, onClose }: Props) => {
                 <ModSummary>{mod.summary}</ModSummary>
 
                 <Section>
-                    <SectionTitle>Available Files</SectionTitle>
+                    <SectionTitle>
+                        Available Files
+                        {(gameVersion || modLoaderType) && (
+                            <span css={tw`ml-2 text-sm font-normal text-neutral-400`}>
+                                (Filtered: {gameVersion && <span css={tw`text-blue-400`}>{gameVersion}</span>}
+                                {gameVersion && modLoaderType && ' • '}
+                                {modLoaderType && (
+                                    <span css={tw`text-blue-400`}>{LOADER_NAMES[modLoaderType] || 'Unknown'}</span>
+                                )}
+                                )
+                            </span>
+                        )}
+                    </SectionTitle>
                     {loading ? (
                         <div css={tw`flex justify-center py-6`}>
                             <Spinner />
@@ -177,7 +208,12 @@ export default ({ mod, onClose }: Props) => {
                                                 <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
                                             </FileDetails>
                                         </FileInfo>
-                                        <ModDownloadButton modId={mod.id} fileId={file.id} fileName={file.fileName} />
+                                        <ModDownloadButton
+                                            modId={mod.id}
+                                            fileId={file.id}
+                                            fileName={file.fileName}
+                                            source={source}
+                                        />
                                     </FileItem>
                                 ))}
                             </FileList>

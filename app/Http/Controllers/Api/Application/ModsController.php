@@ -7,6 +7,7 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Mods\CurseForgeService;
+use Everest\Services\Mods\ModrinthService;
 use Everest\Http\Requests\Api\Application\Mods\UpdateModsSettingsRequest;
 use Everest\Http\Requests\Api\Application\Mods\DeleteCurseForgeKeyRequest;
 use Everest\Http\Requests\Api\Application\Mods\GetModsAnalyticsRequest;
@@ -16,8 +17,10 @@ class ModsController extends ApplicationApiController
     /**
      * ModsController constructor.
      */
-    public function __construct(private CurseForgeService $curseForgeService)
-    {
+    public function __construct(
+        private CurseForgeService $curseForgeService,
+        private ModrinthService $modrinthService
+    ) {
         parent::__construct();
     }
 
@@ -52,10 +55,12 @@ class ModsController extends ApplicationApiController
      */
     public function analytics(GetModsAnalyticsRequest $request): JsonResponse
     {
-        $rateLimitUsage = $this->curseForgeService->getRateLimitUsage();
+        $curseForgeRateLimit = $this->curseForgeService->getRateLimitUsage();
+        $modrinthRateLimit = $this->modrinthService->getRateLimitUsage();
 
         return response()->json([
-            'rate_limit' => $rateLimitUsage,
+            'curseforge_rate_limit' => $curseForgeRateLimit,
+            'modrinth_rate_limit' => $modrinthRateLimit,
         ]);
     }
 

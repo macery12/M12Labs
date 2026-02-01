@@ -11,12 +11,13 @@ import { faDownload, faCheck } from '@fortawesome/free-solid-svg-icons';
 import Can from '@/elements/Can';
 
 interface Props {
-    modId: number;
-    fileId: number;
+    modId: number | string;
+    fileId: number | string;
     fileName: string;
+    source: string;
 }
 
-export default ({ modId, fileId, fileName }: Props) => {
+export default ({ modId, fileId, fileName, source }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addFlash, addError } = useFlash();
 
@@ -27,7 +28,7 @@ export default ({ modId, fileId, fileName }: Props) => {
         setDownloading(true);
         setDownloaded(false);
 
-        downloadMod(uuid, modId, fileId)
+        downloadMod(uuid, modId, fileId, source)
             .then(() => {
                 setDownloaded(true);
                 addFlash({

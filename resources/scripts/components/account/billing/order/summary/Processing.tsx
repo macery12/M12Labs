@@ -7,7 +7,11 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import Spinner from '@/elements/Spinner';
 import { processPaidOrder } from '@/api/routes/account/billing/orders/process';
 import { checkMolliePaymentStatus, getPaymentIdFromToken } from '@/api/routes/account/billing/orders/mollie';
-import { capturePayPalOrder, checkPayPalOrderStatus, getOrderIdFromToken } from '@/api/routes/account/billing/orders/paypal';
+import {
+    capturePayPalOrder,
+    checkPayPalOrderStatus,
+    getOrderIdFromToken,
+} from '@/api/routes/account/billing/orders/paypal';
 
 export default () => {
     const location = useLocation();
@@ -45,29 +49,34 @@ export default () => {
         }
 
         // Handle Mollie payment
-        if (token && (paymentProcessor === 'mollie' || (billing.processors?.mollie?.available && !paymentProcessor && !billing.processors?.paypal?.available))) {
+        if (
+            token &&
+            (paymentProcessor === 'mollie' ||
+                (billing.processors?.mollie?.available && !paymentProcessor && !billing.processors?.paypal?.available))
+        ) {
             // Get payment ID from token
             getPaymentIdFromToken(token)
                 .then(({ payment_id }) => {
                     // Poll for order status since Mollie processes via webhook
                     let pollCount = 0;
                     const maxPolls = 60; // 2 minutes max (60 * 2 seconds)
-                    
+
                     const checkStatus = async () => {
                         try {
                             pollCount++;
-                            
+
                             if (pollCount > maxPolls) {
                                 addFlash({
                                     key: 'billing:process',
                                     type: 'warning',
-                                    message: 'Payment verification is taking longer than expected. Please check your orders page or contact support.',
+                                    message:
+                                        'Payment verification is taking longer than expected. Please check your orders page or contact support.',
                                 });
                                 return;
                             }
-                            
+
                             const status = await checkMolliePaymentStatus(payment_id);
-                            
+
                             if (status.processed) {
                                 // Order has been processed successfully
                                 if (renewal && serverUuid) {
@@ -102,7 +111,7 @@ export default () => {
 
                     checkStatus();
                 })
-                .catch((error) => {
+                .catch(error => {
                     console.error('Error retrieving payment ID from token:', error);
                     addFlash({
                         key: 'billing:process',
@@ -114,46 +123,51 @@ export default () => {
         }
 
         // Handle PayPal payment
-        if (token && (paymentProcessor === 'paypal' || (billing.processors?.paypal?.available && !paymentProcessor && !billing.processors?.mollie?.available))) {
+        if (
+            token &&
+            (paymentProcessor === 'paypal' ||
+                (billing.processors?.paypal?.available && !paymentProcessor && !billing.processors?.mollie?.available))
+        ) {
             console.log('[PayPal Processing] Starting PayPal payment processing', {
                 token,
                 paymentProcessor,
                 hasPayPalAvailable: billing.processors?.paypal?.available,
             });
-            
+
             // Get order ID from token
             getOrderIdFromToken(token)
                 .then(({ order_id }) => {
                     console.log('[PayPal Processing] Order ID retrieved:', order_id);
-                    
+
                     // Capture the PayPal order
                     console.log('[PayPal Processing] Calling capturePayPalOrder...');
                     capturePayPalOrder(order_id)
                         .then(() => {
                             console.log('[PayPal Processing] Capture successful, polling for status...');
-                            
+
                             // Check if order has been fulfilled
                             let pollCount = 0;
                             const maxPolls = 60; // 2 minutes max (60 * 2 seconds)
-                            
+
                             const checkStatus = async () => {
                                 try {
                                     pollCount++;
                                     console.log('[PayPal Processing] Status check #' + pollCount);
-                                    
+
                                     if (pollCount > maxPolls) {
                                         console.warn('[PayPal Processing] Max polls reached');
                                         addFlash({
                                             key: 'billing:process',
                                             type: 'warning',
-                                            message: 'Payment verification is taking longer than expected. Please check your orders page or contact support.',
+                                            message:
+                                                'Payment verification is taking longer than expected. Please check your orders page or contact support.',
                                         });
                                         return;
                                     }
-                                    
+
                                     const status = await checkPayPalOrderStatus(order_id);
                                     console.log('[PayPal Processing] Status result:', status);
-                                    
+
                                     if (status.processed) {
                                         console.log('[PayPal Processing] Order processed successfully!');
                                         // Order has been processed successfully
@@ -180,7 +194,7 @@ export default () => {
 
                             checkStatus();
                         })
-                        .catch((error) => {
+                        .catch(error => {
                             console.error('Error capturing PayPal order:', error);
                             addFlash({
                                 key: 'billing:process',
@@ -190,7 +204,7 @@ export default () => {
                             navigate('/account/billing/cancel');
                         });
                 })
-                .catch((error) => {
+                .catch(error => {
                     console.error('Error retrieving order ID from token:', error);
                     addFlash({
                         key: 'billing:process',

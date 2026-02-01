@@ -14,7 +14,7 @@ export default () => {
 
     const hasCredentials = !!(settings.paypal_standalone?.client_id && settings.paypal_standalone?.client_secret);
     const mode = settings.paypal_standalone?.mode || 'sandbox';
-    
+
     // Generate webhook URL based on current domain
     const webhookUrl = `${window.location.origin}/api/webhooks/paypal`;
 
@@ -31,9 +31,9 @@ export default () => {
             <AdminBox title={'Configure PayPal API Credentials'} icon={faKey}>
                 {!hasCredentials ? (
                     <>
-                        PayPal standalone integration is enabled, but API credentials are not configured. To use
-                        PayPal as a standalone payment processor, you need to configure your PayPal Client ID and
-                        Client Secret. Click below to add your credentials from the PayPal Developer Dashboard.
+                        PayPal standalone integration is enabled, but API credentials are not configured. To use PayPal
+                        as a standalone payment processor, you need to configure your PayPal Client ID and Client
+                        Secret. Click below to add your credentials from the PayPal Developer Dashboard.
                         <div className={'mt-3 text-right'}>
                             <Button onClick={() => setPaypalKeysOpen(true)}>Add PayPal Credentials</Button>
                         </div>
@@ -59,8 +59,8 @@ export default () => {
 
             <AdminBox title={'PayPal Webhook URL'} icon={faLink}>
                 <p className={'mb-3 text-sm text-gray-400'}>
-                    Configure this webhook URL in your PayPal Developer Dashboard to receive payment notifications.
-                    This is <strong className={'text-yellow-400'}>required</strong> for reliable payment processing.
+                    Configure this webhook URL in your PayPal Developer Dashboard to receive payment notifications. This
+                    is <strong className={'text-yellow-400'}>required</strong> for reliable payment processing.
                 </p>
                 <div className={'rounded-lg bg-black/50 p-3'}>
                     <p className={'mb-2 text-xs font-semibold text-gray-400'}>Webhook URL:</p>
@@ -92,8 +92,7 @@ export default () => {
 
             <AdminBox title={'About PayPal Standalone'} icon={faPaypal}>
                 PayPal standalone integration allows direct PayPal checkout without requiring Stripe. This provides
-                native PayPal order management, better customer experience, and direct access to PayPal&apos;s
-                features.
+                native PayPal order management, better customer experience, and direct access to PayPal&apos;s features.
                 <div className={'mt-3 rounded-lg bg-black/50 p-3'}>
                     <p className={'text-sm font-semibold text-gray-200'}>
                         <FontAwesomeIcon icon={faInfoCircle} className={'mr-2 text-blue-400'} />
@@ -124,9 +123,7 @@ export default () => {
                     </div>
                     <div className={'flex items-center justify-between'}>
                         <span className={'text-sm text-gray-400'}>Mode:</span>
-                        <span className={'text-gray-200'}>
-                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                        </span>
+                        <span className={'text-gray-200'}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
                     </div>
                 </div>
             </AdminBox>

@@ -26,9 +26,14 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
     };
 
     const isValid = () => {
-        return data.publishable && data.secret &&
-               data.publishable.length >= 100 && data.publishable.length <= 120 &&
-               data.secret.length >= 100 && data.secret.length <= 120;
+        return (
+            data.publishable &&
+            data.secret &&
+            data.publishable.length >= 100 &&
+            data.publishable.length <= 120 &&
+            data.secret.length >= 100 &&
+            data.secret.length <= 120
+        );
     };
 
     return (
@@ -44,8 +49,8 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             </div>
 
             <p className={'mb-4'}>
-                Before you can use the Stripe API, you must provide Jexactyl with API keys to authenticate
-                with Stripe. Visit the Stripe dashboard
+                Before you can use the Stripe API, you must provide Jexactyl with API keys to authenticate with Stripe.
+                Visit the Stripe dashboard
                 <a
                     target={'_blank'}
                     rel={'noreferrer'}
@@ -62,13 +67,8 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
                     defaultValue={''}
                     onChange={e => setData({ ...data, publishable: e.currentTarget.value })}
                 />
-                {!data?.publishable ||
-                data.publishable.length < 100 ||
-                data.publishable.length > 120 ? (
-                    <Tooltip
-                        placement={'right'}
-                        content={'You must enter a valid Stripe publishable key to continue.'}
-                    >
+                {!data?.publishable || data.publishable.length < 100 || data.publishable.length > 120 ? (
+                    <Tooltip placement={'right'} content={'You must enter a valid Stripe publishable key to continue.'}>
                         <FontAwesomeIcon
                             icon={faExclamationTriangle}
                             className={'absolute top-1/3 right-4 text-yellow-500'}

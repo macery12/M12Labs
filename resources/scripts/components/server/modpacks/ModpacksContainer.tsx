@@ -48,7 +48,7 @@ export default () => {
     const { data: startupData, error: startupError } = getServerStartup(
         uuid,
         shouldFetchStartup ? undefined : { invocation: '', variables: [], dockerImages: {} },
-        { revalidateOnFocus: false, revalidateOnReconnect: false }
+        { revalidateOnFocus: false, revalidateOnReconnect: false },
     );
 
     useEffect(() => {
@@ -60,8 +60,8 @@ export default () => {
 
         if (startupData) {
             // Check if all required modpack variables exist
-            const hasAllVariables = REQUIRED_MODPACK_VARIABLES.every(
-                varName => startupData.variables.some(v => v.envVariable === varName)
+            const hasAllVariables = REQUIRED_MODPACK_VARIABLES.every(varName =>
+                startupData.variables.some(v => v.envVariable === varName),
             );
             setModpacksSupported(hasAllVariables);
             setCheckingSupport(false);
@@ -149,7 +149,8 @@ export default () => {
                         This server is not configured with the required environment variables for modpack installation.
                     </p>
                     <p css={tw`text-neutral-400 text-xs`}>
-                        Please contact an administrator to change your server to use a modpack-compatible egg (e.g., CurseForge Generic).
+                        Please contact an administrator to change your server to use a modpack-compatible egg (e.g.,
+                        CurseForge Generic).
                     </p>
                 </div>
             </PageContentBlock>
