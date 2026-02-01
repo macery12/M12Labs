@@ -62,10 +62,10 @@ class EverestComposer
                     'secret' => boolval(config('modules.billing.keys.secret')),
                 ],
                 'mollie' => [
-                    'api_key' => !empty(config('modules.billing.mollie.api_key')) ? config('modules.billing.mollie.api_key') : null,
+                    'api_key' => !empty(config('modules.billing.mollie.api_key')),
                 ],
                 'paypal_standalone' => [
-                    'client_id' => !empty(config('modules.billing.paypal_standalone.client_id')) ? config('modules.billing.paypal_standalone.client_id') : null,
+                    'client_id' => !empty(config('modules.billing.paypal_standalone.client_id')),
                     'client_secret' => !empty(config('modules.billing.paypal_standalone.client_secret')),
                     'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
                 ],

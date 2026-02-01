@@ -57,7 +57,12 @@ export interface EverestSettings {
             secret: boolean;
         };
         mollie?: {
-            api_key?: string;
+            api_key?: boolean;
+        };
+        paypal_standalone?: {
+            client_id?: boolean;
+            client_secret?: boolean;
+            mode?: string;
         };
         integrations?: {
             [key: string]: {
