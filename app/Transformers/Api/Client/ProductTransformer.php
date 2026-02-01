@@ -23,11 +23,25 @@ class ProductTransformer extends Transformer
         $allowedEggs = $model->category->getAllowedEggs();
         $defaultEggId = $model->category->getDefaultEggId();
 
+        // Get billing cycles with prices
+        $billingCycles = $model->billingCycles->map(function ($cycle) {
+            return [
+                'id' => $cycle->id,
+                'name' => $cycle->name,
+                'durationDays' => $cycle->duration_days,
+                'price' => (float) $cycle->pivot->price,
+                'sortOrder' => $cycle->sort_order,
+                'isActive' => $cycle->is_active,
+            ];
+        })->filter(function ($cycle) {
+            return $cycle['isActive'];
+        })->values()->toArray();
+
         return [
             'id' => $model->id,
             'name' => $model->name,
             'icon' => $model->icon,
-            'price' => $model->price,
+            'price' => $model->price, // Legacy field, kept for backward compatibility
             'description' => $model->description,
             'egg_id' => $defaultEggId,
             'allowed_eggs' => $allowedEggs,
@@ -40,6 +54,7 @@ class ProductTransformer extends Transformer
                 'database' => $model->database_limit,
                 'allocation' => $model->allocation_limit,
             ],
+            'billingCycles' => $billingCycles,
         ];
     }
 }

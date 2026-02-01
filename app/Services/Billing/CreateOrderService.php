@@ -11,12 +11,13 @@ class CreateOrderService
     /**
      * Process the creation of an order.
      */
-    public function create(?string $intent, User $user, Product $product, ?string $status, ?string $type, ?int $couponId = null, ?int $eggId = null, array $additionalData = []): Order
+    public function create(?string $intent, User $user, Product $product, ?string $status, ?string $type, ?int $couponId = null, ?int $eggId = null, ?int $billingCycleId = null, array $additionalData = []): Order
     {
         $order = new Order();
         $uuid = uuid_create();
 
-        $subtotal = $product->price ?? 0;
+        // Get price from billing cycle or legacy product price
+        $subtotal = $billingCycleId ? $product->getPriceForCycle($billingCycleId) : ($product->price ?? 0);
         $discount = 0;
         $total = $subtotal;
 
@@ -38,6 +39,7 @@ class CreateOrderService
         $order->total = $total;
         $order->status = $status ?? Order::STATUS_EXPIRED;
         $order->product_id = $product->id;
+        $order->billing_cycle_id = $billingCycleId;
         $order->coupon_id = $couponId;
         $order->egg_id = $eggId;
         $order->node_id = $additionalData['node_id'] ?? null;

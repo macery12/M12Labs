@@ -89,26 +89,35 @@ class BillingValidationService
      * Calculate the final price after applying a coupon.
      * 
      * @param Product $product The product being purchased
+     * @param int|null $billingCycleId The billing cycle ID (optional, defaults to product price if not provided)
      * @param int|null $couponId The coupon ID to apply (optional)
      * @param string $orderType The order type (default: 'new')
-     * @return array{finalPrice: float, discount: float} The final price and discount amount
+     * @return array{finalPrice: float, discount: float, subtotal: float} The final price, discount amount, and subtotal
      */
-    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new'): array
+    public function calculatePriceWithCoupon(Product $product, ?int $billingCycleId = null, ?int $couponId = null, string $orderType = 'new'): array
     {
-        $finalPrice = $product->price;
+        // Get the base price from billing cycle or legacy product price
+        if ($billingCycleId) {
+            $subtotal = $product->getPriceForCycle($billingCycleId);
+        } else {
+            $subtotal = $product->price;
+        }
+        
+        $finalPrice = $subtotal;
         $discount = 0.0;
         
         if ($couponId) {
             $coupon = Coupon::find($couponId);
             if ($coupon && $coupon->isAllowedForOrderType($orderType)) {
-                $discount = $coupon->calculateDiscount($product->price);
-                $finalPrice = max(0, $product->price - $discount);
+                $discount = $coupon->calculateDiscount($subtotal);
+                $finalPrice = max(0, $subtotal - $discount);
             }
         }
 
         return [
             'finalPrice' => $finalPrice,
             'discount' => $discount,
+            'subtotal' => $subtotal,
         ];
     }
 
@@ -138,12 +147,18 @@ class BillingValidationService
      * 
      * @param int $userId The user ID
      * @param Product $product The product being purchased
+     * @param int|null $billingCycleId The billing cycle ID (optional)
      * @throws DisplayException if user already owns a free product
      */
-    public function validateFreeProductOwnership(int $userId, Product $product): void
+    public function validateFreeProductOwnership(int $userId, Product $product, ?int $billingCycleId = null): void
     {
+        // Check if the product is free for this billing cycle
+        $isFree = $billingCycleId 
+            ? $product->isFree($billingCycleId)
+            : ((float) $product->price === 0.0);
+        
         // Only check for originally free products
-        if ((float) $product->price === 0.0) {
+        if ($isFree) {
             $existingCount = Server::where('owner_id', $userId)
                 ->where('billing_product_id', $product->id)
                 ->count();

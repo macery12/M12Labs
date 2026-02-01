@@ -79,8 +79,10 @@ class CreateServerService
         }
 
         try {
-            // Use product-based renewal days (automatically handles free vs paid)
-            $renewalDays = $product->getRenewalDays();
+            // Use billing cycle duration or product-based renewal days
+            $renewalDays = $order->billing_cycle_id 
+                ? $product->getRenewalDays($order->billing_cycle_id)
+                : $product->getRenewalDays();
             
             $server = $this->creation->handle([
                 'node_id' => $metadata->node_id,
@@ -98,6 +100,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
+                'billing_cycle_id' => $order->billing_cycle_id,
                 'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
