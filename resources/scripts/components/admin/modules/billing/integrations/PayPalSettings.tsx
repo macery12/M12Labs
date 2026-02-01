@@ -12,7 +12,7 @@ export default () => {
     const [paypalKeysOpen, setPaypalKeysOpen] = useState(false);
     const [copiedWebhook, setCopiedWebhook] = useState(false);
 
-    const hasCredentials = !!(settings.paypal_standalone?.client_id && settings.paypal_standalone?.client_secret);
+    const hasCredentials = settings.processors?.paypal?.available ?? false;
     const mode = settings.paypal_standalone?.mode || 'sandbox';
 
     // Generate webhook URL based on current domain

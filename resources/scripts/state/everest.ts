@@ -51,13 +51,20 @@ export interface EverestSettings {
                 available: boolean;
                 enabled: boolean;
             };
+            paypal: {
+                available: boolean;
+                enabled: boolean;
+            };
         };
         keys: {
             publishable: boolean;
             secret: boolean;
         };
         mollie?: {
-            api_key?: string;
+            api_key?: boolean;
+        };
+        paypal_standalone?: {
+            mode?: string;
         };
         integrations?: {
             [key: string]: {
