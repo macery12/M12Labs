@@ -2,9 +2,6 @@
 
 namespace Everest\Services\Files;
 
-use SebastianBergmann\Diff\Differ;
-use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
-
 class FileDiffService
 {
     /**
@@ -30,6 +27,11 @@ class FileDiffService
      * Maximum file size in bytes for diff calculation (1MB).
      */
     public const MAX_DIFF_SIZE = 1048576;
+
+    /**
+     * Maximum number of lines for detailed diff (for performance).
+     */
+    public const MAX_DIFF_LINES = 5000;
 
     /**
      * Check if a file is a text file based on its extension.
@@ -60,35 +62,31 @@ class FileDiffService
         $originalLines = explode("\n", $originalContent);
         $newLines = explode("\n", $newContent);
 
-        $builder = new UnifiedDiffOutputBuilder(
-            "--- a/{$filename}\n+++ b/{$filename}\n",
-            true
-        );
-        $differ = new Differ($builder);
-
-        $diff = $differ->diff($originalContent, $newContent);
-
-        // Calculate additions and deletions
-        $additions = 0;
-        $deletions = 0;
-
-        $diffLines = explode("\n", $diff);
-        foreach ($diffLines as $line) {
-            if (str_starts_with($line, '+') && !str_starts_with($line, '+++')) {
-                $additions++;
-            } elseif (str_starts_with($line, '-') && !str_starts_with($line, '---')) {
-                $deletions++;
-            }
+        // If too many lines, skip detailed diff
+        if (count($originalLines) > self::MAX_DIFF_LINES || count($newLines) > self::MAX_DIFF_LINES) {
+            return $this->createLargeDiffSummary($originalContent, $newContent);
         }
 
-        // Create a summary of changes
-        $hunks = $this->parseHunks($diff);
+        // Calculate the diff using Myers algorithm (simplified LCS-based approach)
+        $hunks = $this->computeHunks($originalLines, $newLines);
+
+        // Count additions and deletions
+        $additions = 0;
+        $deletions = 0;
+        foreach ($hunks as $hunk) {
+            foreach ($hunk['changes'] as $change) {
+                if ($change['type'] === 'addition') {
+                    $additions++;
+                } elseif ($change['type'] === 'deletion') {
+                    $deletions++;
+                }
+            }
+        }
 
         return [
             'file' => $filename,
             'additions' => $additions,
             'deletions' => $deletions,
-            'diff' => $diff,
             'hunks' => $hunks,
             'original_lines' => count($originalLines),
             'new_lines' => count($newLines),
@@ -107,7 +105,6 @@ class FileDiffService
         return [
             'additions' => max(0, $newLines - $originalLines),
             'deletions' => max(0, $originalLines - $newLines),
-            'diff' => null,
             'hunks' => [],
             'original_lines' => $originalLines,
             'new_lines' => $newLines,
@@ -116,60 +113,226 @@ class FileDiffService
     }
 
     /**
-     * Parse diff output into hunks for easier frontend rendering.
+     * Compute diff hunks between two arrays of lines.
      */
-    private function parseHunks(string $diff): array
+    private function computeHunks(array $oldLines, array $newLines): array
     {
-        $lines = explode("\n", $diff);
-        $hunks = [];
-        $currentHunk = null;
+        $lcs = $this->longestCommonSubsequence($oldLines, $newLines);
+        $changes = $this->buildChangeList($oldLines, $newLines, $lcs);
+        
+        return $this->groupChangesIntoHunks($changes, $oldLines, $newLines);
+    }
 
-        foreach ($lines as $line) {
-            // Skip header lines
-            if (str_starts_with($line, '---') || str_starts_with($line, '+++')) {
-                continue;
-            }
-
-            // New hunk
-            if (preg_match('/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$/', $line, $matches)) {
-                if ($currentHunk !== null) {
-                    $hunks[] = $currentHunk;
+    /**
+     * Compute the Longest Common Subsequence between two arrays.
+     */
+    private function longestCommonSubsequence(array $old, array $new): array
+    {
+        $oldLen = count($old);
+        $newLen = count($new);
+        
+        // Build LCS length table
+        $lengths = array_fill(0, $oldLen + 1, array_fill(0, $newLen + 1, 0));
+        
+        for ($i = 1; $i <= $oldLen; $i++) {
+            for ($j = 1; $j <= $newLen; $j++) {
+                if ($old[$i - 1] === $new[$j - 1]) {
+                    $lengths[$i][$j] = $lengths[$i - 1][$j - 1] + 1;
+                } else {
+                    $lengths[$i][$j] = max($lengths[$i - 1][$j], $lengths[$i][$j - 1]);
                 }
-
-                $currentHunk = [
-                    'old_start' => (int) $matches[1],
-                    'old_lines' => isset($matches[2]) ? (int) $matches[2] : 1,
-                    'new_start' => (int) $matches[3],
-                    'new_lines' => isset($matches[4]) ? (int) $matches[4] : 1,
-                    'context' => trim($matches[5] ?? ''),
-                    'changes' => [],
-                ];
-                continue;
-            }
-
-            if ($currentHunk !== null) {
-                $type = 'context';
-                $content = $line;
-
-                if (str_starts_with($line, '+')) {
-                    $type = 'addition';
-                    $content = substr($line, 1);
-                } elseif (str_starts_with($line, '-')) {
-                    $type = 'deletion';
-                    $content = substr($line, 1);
-                } elseif (str_starts_with($line, ' ')) {
-                    $content = substr($line, 1);
-                }
-
-                $currentHunk['changes'][] = [
-                    'type' => $type,
-                    'content' => $content,
-                ];
             }
         }
 
+        // Backtrack to find LCS with positions
+        $lcs = [];
+        $i = $oldLen;
+        $j = $newLen;
+        
+        while ($i > 0 && $j > 0) {
+            if ($old[$i - 1] === $new[$j - 1]) {
+                array_unshift($lcs, ['old' => $i - 1, 'new' => $j - 1, 'line' => $old[$i - 1]]);
+                $i--;
+                $j--;
+            } elseif ($lengths[$i - 1][$j] > $lengths[$i][$j - 1]) {
+                $i--;
+            } else {
+                $j--;
+            }
+        }
+
+        return $lcs;
+    }
+
+    /**
+     * Build a list of changes (additions, deletions, unchanged) from the LCS.
+     */
+    private function buildChangeList(array $oldLines, array $newLines, array $lcs): array
+    {
+        $changes = [];
+        $oldIdx = 0;
+        $newIdx = 0;
+        $lcsIdx = 0;
+
+        while ($oldIdx < count($oldLines) || $newIdx < count($newLines)) {
+            if ($lcsIdx < count($lcs)) {
+                $lcsItem = $lcs[$lcsIdx];
+                
+                // Add deletions (lines in old but not in LCS)
+                while ($oldIdx < $lcsItem['old']) {
+                    $changes[] = [
+                        'type' => 'deletion',
+                        'content' => $oldLines[$oldIdx],
+                        'old_line' => $oldIdx + 1,
+                        'new_line' => null,
+                    ];
+                    $oldIdx++;
+                }
+                
+                // Add additions (lines in new but not in LCS)
+                while ($newIdx < $lcsItem['new']) {
+                    $changes[] = [
+                        'type' => 'addition',
+                        'content' => $newLines[$newIdx],
+                        'old_line' => null,
+                        'new_line' => $newIdx + 1,
+                    ];
+                    $newIdx++;
+                }
+                
+                // Add unchanged line
+                $changes[] = [
+                    'type' => 'context',
+                    'content' => $lcsItem['line'],
+                    'old_line' => $oldIdx + 1,
+                    'new_line' => $newIdx + 1,
+                ];
+                $oldIdx++;
+                $newIdx++;
+                $lcsIdx++;
+            } else {
+                // Handle remaining lines after LCS is exhausted
+                while ($oldIdx < count($oldLines)) {
+                    $changes[] = [
+                        'type' => 'deletion',
+                        'content' => $oldLines[$oldIdx],
+                        'old_line' => $oldIdx + 1,
+                        'new_line' => null,
+                    ];
+                    $oldIdx++;
+                }
+                while ($newIdx < count($newLines)) {
+                    $changes[] = [
+                        'type' => 'addition',
+                        'content' => $newLines[$newIdx],
+                        'old_line' => null,
+                        'new_line' => $newIdx + 1,
+                    ];
+                    $newIdx++;
+                }
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Group changes into hunks with context lines.
+     */
+    private function groupChangesIntoHunks(array $changes, array $oldLines, array $newLines, int $contextLines = 3): array
+    {
+        if (empty($changes)) {
+            return [];
+        }
+
+        $hunks = [];
+        $currentHunk = null;
+        $lastChangeIdx = -1;
+
+        foreach ($changes as $idx => $change) {
+            $isChange = $change['type'] !== 'context';
+            
+            if ($isChange) {
+                if ($currentHunk === null) {
+                    // Start new hunk with context before
+                    $contextStart = max(0, $idx - $contextLines);
+                    $currentHunk = [
+                        'old_start' => null,
+                        'old_lines' => 0,
+                        'new_start' => null,
+                        'new_lines' => 0,
+                        'context' => '',
+                        'changes' => [],
+                    ];
+                    
+                    // Add context lines before the change
+                    for ($i = $contextStart; $i < $idx; $i++) {
+                        $ctx = $changes[$i];
+                        if ($currentHunk['old_start'] === null && $ctx['old_line'] !== null) {
+                            $currentHunk['old_start'] = $ctx['old_line'];
+                        }
+                        if ($currentHunk['new_start'] === null && $ctx['new_line'] !== null) {
+                            $currentHunk['new_start'] = $ctx['new_line'];
+                        }
+                        $currentHunk['changes'][] = [
+                            'type' => 'context',
+                            'content' => $ctx['content'],
+                        ];
+                        if ($ctx['old_line'] !== null) $currentHunk['old_lines']++;
+                        if ($ctx['new_line'] !== null) $currentHunk['new_lines']++;
+                    }
+                }
+                
+                // Set start positions if not set
+                if ($currentHunk['old_start'] === null) {
+                    $currentHunk['old_start'] = $change['old_line'] ?? 1;
+                }
+                if ($currentHunk['new_start'] === null) {
+                    $currentHunk['new_start'] = $change['new_line'] ?? 1;
+                }
+                
+                // Add the change
+                $currentHunk['changes'][] = [
+                    'type' => $change['type'],
+                    'content' => $change['content'],
+                ];
+                if ($change['type'] === 'deletion') {
+                    $currentHunk['old_lines']++;
+                } elseif ($change['type'] === 'addition') {
+                    $currentHunk['new_lines']++;
+                }
+                
+                $lastChangeIdx = $idx;
+            } elseif ($currentHunk !== null) {
+                // Context line after a change
+                $distanceFromLastChange = $idx - $lastChangeIdx;
+                
+                if ($distanceFromLastChange <= $contextLines * 2) {
+                    // Within context range, add to current hunk
+                    $currentHunk['changes'][] = [
+                        'type' => 'context',
+                        'content' => $change['content'],
+                    ];
+                    $currentHunk['old_lines']++;
+                    $currentHunk['new_lines']++;
+                } else {
+                    // Too far from last change, close current hunk
+                    // But first add trailing context
+                    $hunks[] = $currentHunk;
+                    $currentHunk = null;
+                }
+            }
+        }
+
+        // Don't forget the last hunk
         if ($currentHunk !== null) {
             $hunks[] = $currentHunk;
+        }
+
+        // Ensure all hunks have valid start positions
+        foreach ($hunks as &$hunk) {
+            if ($hunk['old_start'] === null) $hunk['old_start'] = 1;
+            if ($hunk['new_start'] === null) $hunk['new_start'] = 1;
         }
 
         return $hunks;
