@@ -8,6 +8,7 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Nodes\NodeJWTService;
+use Everest\Services\Files\FileDiffService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Transformers\Api\Client\FileObjectTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -22,6 +23,7 @@ use Everest\Http\Requests\Api\Client\Servers\Files\CompressFilesRequest;
 use Everest\Http\Requests\Api\Client\Servers\Files\DecompressFilesRequest;
 use Everest\Http\Requests\Api\Client\Servers\Files\GetFileContentsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Files\WriteFileContentRequest;
+use Everest\Http\Requests\Api\Client\Servers\Files\WriteFileWithDiffRequest;
 
 class FileController extends ClientApiController
 {
@@ -30,7 +32,8 @@ class FileController extends ClientApiController
      */
     public function __construct(
         private NodeJWTService $jwtService,
-        private DaemonFileRepository $fileRepository
+        private DaemonFileRepository $fileRepository,
+        private FileDiffService $diffService
     ) {
         parent::__construct();
     }
@@ -109,6 +112,41 @@ class FileController extends ClientApiController
         $this->fileRepository->setServer($server)->putContent($request->get('file'), $request->getContent());
 
         Activity::event('server:file.write')->property('file', $request->get('file'))->log();
+
+        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Writes the contents of the specified file to the server with diff tracking.
+     * This endpoint accepts JSON with original and new content to calculate diffs.
+     *
+     * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
+     */
+    public function writeWithDiff(WriteFileWithDiffRequest $request, Server $server): JsonResponse
+    {
+        $file = $request->input('file');
+        $content = $request->input('content');
+        $originalContent = $request->input('original_content', '');
+
+        // Write the new content to the file
+        $this->fileRepository->setServer($server)->putContent($file, $content);
+
+        // Build activity log with diff information if it's a text file
+        $activity = Activity::event('server:file.write')->property('file', $file);
+
+        if ($this->diffService->isTextFile($file) && $originalContent !== null) {
+            $diff = $this->diffService->calculateDiff($originalContent, $content, $file);
+            
+            $activity->property('diff', [
+                'additions' => $diff['additions'],
+                'deletions' => $diff['deletions'],
+                'hunks' => $diff['hunks'],
+                'is_new_file' => $diff['is_new_file'] ?? false,
+                'large_file' => $diff['large_file'] ?? false,
+            ]);
+        }
+
+        $activity->log();
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

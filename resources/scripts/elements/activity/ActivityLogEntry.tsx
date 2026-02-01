@@ -5,6 +5,7 @@ import Translate from '@/elements/Translate';
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import { ActivityLog } from '@definitions/account';
 import ActivityLogMetaButton from '@/elements/activity/ActivityLogMetaButton';
+import FileDiffViewer, { FileDiff } from '@/elements/activity/FileDiffViewer';
 import { FolderOpenIcon, TerminalIcon } from '@heroicons/react/solid';
 import classNames from 'classnames';
 import style from './style.module.css';
@@ -39,11 +40,32 @@ function wrapProperties(value: unknown): any {
     return value;
 }
 
+function hasFileDiff(activity: ActivityLog): boolean {
+    return activity.event === 'server:file.write' && 
+        activity.properties?.diff !== undefined &&
+        typeof activity.properties.diff === 'object';
+}
+
+function getFileDiff(activity: ActivityLog): FileDiff | null {
+    if (!hasFileDiff(activity)) return null;
+    
+    const diff = activity.properties.diff as Record<string, unknown>;
+    return {
+        file: activity.properties.file as string | undefined,
+        additions: (diff.additions as number) || 0,
+        deletions: (diff.deletions as number) || 0,
+        hunks: (diff.hunks as FileDiff['hunks']) || [],
+        is_new_file: (diff.is_new_file as boolean) || false,
+        large_file: (diff.large_file as boolean) || false,
+    };
+}
+
 export default ({ activity, children }: Props) => {
     const { pathTo } = useLocationHash();
     const actor = activity.relationships.actor;
     const properties = wrapProperties(activity.properties);
     const { colors } = useStoreState(state => state.theme.data!);
+    const fileDiff = getFileDiff(activity);
 
     return (
         <div
@@ -55,51 +77,66 @@ export default ({ activity, children }: Props) => {
                     <Avatar name={actor?.uuid || 'system'} />
                 </div>
             </div>
-            <div className={'col-span-10 flex sm:col-span-9'}>
-                <div className={'flex-1 px-4 sm:px-0'}>
-                    <div className={'flex items-center text-slate-50'}>
-                        <Tooltip placement={'top'} content={actor?.email || 'System User'}>
-                            <span className={'font-bold'}>{actor?.username || 'System'}</span>
-                        </Tooltip>
-                        <span className={'text-slate-400 mx-2'}>&bull;</span>
-                        <Link
-                            to={`#${pathTo({ event: activity.event })}`}
-                            className={
-                                'text-gray-300 transition-colors duration-75 hover:text-cyan-400 active:text-cyan-400'
-                            }
-                        >
-                            {activity.description ?? activity.event}
-                        </Link>
-                        <div className={classNames(style.icons, 'group-hover:text-slate-300')}>
-                            {activity.isApi && (
-                                <Tooltip placement={'top'} content={'Using API Key'}>
-                                    <TerminalIcon />
-                                </Tooltip>
+            <div className={'col-span-10 flex flex-col sm:col-span-9'}>
+                <div className={'flex'}>
+                    <div className={'flex-1 px-4 sm:px-0'}>
+                        <div className={'flex items-center text-slate-50'}>
+                            <Tooltip placement={'top'} content={actor?.email || 'System User'}>
+                                <span className={'font-bold'}>{actor?.username || 'System'}</span>
+                            </Tooltip>
+                            <span className={'text-slate-400 mx-2'}>&bull;</span>
+                            <Link
+                                to={`#${pathTo({ event: activity.event })}`}
+                                className={
+                                    'text-gray-300 transition-colors duration-75 hover:text-cyan-400 active:text-cyan-400'
+                                }
+                            >
+                                {activity.description ?? activity.event}
+                            </Link>
+                            <div className={classNames(style.icons, 'group-hover:text-slate-300')}>
+                                {activity.isApi && (
+                                    <Tooltip placement={'top'} content={'Using API Key'}>
+                                        <TerminalIcon />
+                                    </Tooltip>
+                                )}
+                                {activity.event.startsWith('server:sftp.') && (
+                                    <Tooltip placement={'top'} content={'Using SFTP'}>
+                                        <FolderOpenIcon />
+                                    </Tooltip>
+                                )}
+                                {children}
+                            </div>
+                        </div>
+                        <p className={style.description}>
+                            <Translate ns={'activity'} values={properties} i18nKey={activity.event.replace(':', '.')} />
+                        </p>
+                        {fileDiff && (
+                            <div className="mt-2 text-xs text-slate-400">
+                                <span className="text-green-400">+{fileDiff.additions}</span>
+                                <span className="mx-1">/</span>
+                                <span className="text-red-400">-{fileDiff.deletions}</span>
+                                <span className="ml-1">lines changed</span>
+                            </div>
+                        )}
+                        <div className={'mt-1 flex items-center text-sm'}>
+                            {activity.ip && (
+                                <span>
+                                    {activity.ip}
+                                    <span className={'text-slate-400'}>&nbsp;|&nbsp;</span>
+                                </span>
                             )}
-                            {activity.event.startsWith('server:sftp.') && (
-                                <Tooltip placement={'top'} content={'Using SFTP'}>
-                                    <FolderOpenIcon />
-                                </Tooltip>
-                            )}
-                            {children}
+                            <Tooltip placement={'right'} content={format(activity.timestamp, 'MMM do, yyyy H:mm:ss')}>
+                                <span>{formatDistanceToNowStrict(activity.timestamp, { addSuffix: true })}</span>
+                            </Tooltip>
                         </div>
                     </div>
-                    <p className={style.description}>
-                        <Translate ns={'activity'} values={properties} i18nKey={activity.event.replace(':', '.')} />
-                    </p>
-                    <div className={'mt-1 flex items-center text-sm'}>
-                        {activity.ip && (
-                            <span>
-                                {activity.ip}
-                                <span className={'text-slate-400'}>&nbsp;|&nbsp;</span>
-                            </span>
-                        )}
-                        <Tooltip placement={'right'} content={format(activity.timestamp, 'MMM do, yyyy H:mm:ss')}>
-                            <span>{formatDistanceToNowStrict(activity.timestamp, { addSuffix: true })}</span>
-                        </Tooltip>
-                    </div>
+                    {activity.hasAdditionalMetadata && <ActivityLogMetaButton meta={activity.properties} />}
                 </div>
-                {activity.hasAdditionalMetadata && <ActivityLogMetaButton meta={activity.properties} />}
+                {fileDiff && (
+                    <div className="mt-3 px-4 sm:px-0">
+                        <FileDiffViewer diff={fileDiff} />
+                    </div>
+                )}
             </div>
         </div>
     );
