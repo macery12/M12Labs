@@ -22,7 +22,8 @@ export interface RateLimitUsage {
 }
 
 export interface ModsAnalytics {
-    rate_limit: RateLimitUsage;
+    curseforge_rate_limit: RateLimitUsage;
+    modrinth_rate_limit: RateLimitUsage;
 }
 
 export const getModsAnalytics = (): Promise<ModsAnalytics> => {

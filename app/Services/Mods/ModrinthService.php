@@ -623,7 +623,7 @@ class ModrinthService
                     'jsonDownloadUrl' => '',
                     'approved' => true,
                     'dateModified' => '',
-                    'gameVersionTypeId' => 0,
+                    'gameVersionTypeId' => 1, // Set to 1 (release) for consistency with CurseForge
                     'gameVersionStatus' => 1,
                     'gameVersionTypeStatus' => 1,
                 ];
