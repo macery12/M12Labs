@@ -9,6 +9,8 @@ use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
+use Everest\Models\Billing\BillingException;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
@@ -179,6 +181,7 @@ class PayPalCheckoutController extends ClientApiController
      *
      * @param Request $request
      * @return JsonResponse
+     * @throws BillingExceptionClass
      */
     public function captureOrder(Request $request): JsonResponse
     {
@@ -199,116 +202,166 @@ class PayPalCheckoutController extends ClientApiController
         
         if (!$paypalOrderId) {
             Log::error("PayPal capture failed: No order ID provided");
-            throw new DisplayException('PayPal order ID is required.');
+            throw new BillingExceptionClass(
+                'PayPal order ID missing',
+                'PayPal order ID is required to capture payment.',
+                BillingException::TYPE_VALIDATION,
+                null,
+                'paypal',
+                null,
+                ['user_id' => $request->user()->id]
+            );
         }
 
-        // Find our order record
-        $order = Order::where('paypal_order_id', $paypalOrderId)
-            ->where('user_id', $request->user()->id)
-            ->firstOrFail();
+        try {
+            // Find our order record
+            $order = Order::where('paypal_order_id', $paypalOrderId)
+                ->where('user_id', $request->user()->id)
+                ->firstOrFail();
 
-        Log::info("Found order for capture", [
-            'order_id' => $order->id,
-            'order_status' => $order->status,
-            'paypal_order_id' => $paypalOrderId,
-        ]);
+            Log::info("Found order for capture", [
+                'order_id' => $order->id,
+                'order_status' => $order->status,
+                'paypal_order_id' => $paypalOrderId,
+            ]);
 
-        // Check idempotency - already processed?
-        if ($order->status === Order::STATUS_PROCESSED) {
-            Log::info("Order already processed, returning success", ['order_id' => $order->id]);
+            // Check idempotency - already processed?
+            if ($order->status === Order::STATUS_PROCESSED) {
+                Log::info("Order already processed, returning success", ['order_id' => $order->id]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order already processed',
+                    'order_id' => $order->id,
+                ]);
+            }
+
+            // Verify the PayPal order is approved
+            $isApproved = $this->paypalService->isOrderApproved($paypalOrderId);
+            Log::info("PayPal order approval status", [
+                'paypal_order_id' => $paypalOrderId,
+                'is_approved' => $isApproved,
+            ]);
+            
+            if (!$isApproved) {
+                Log::warning("PayPal order not approved yet", ['paypal_order_id' => $paypalOrderId]);
+                throw new BillingExceptionClass(
+                    'PayPal order not approved',
+                    'PayPal order is not approved yet. Please complete the payment on PayPal.',
+                    BillingException::TYPE_PAYMENT,
+                    $order->id,
+                    'paypal',
+                    $paypalOrderId,
+                    ['order_status' => 'not_approved']
+                );
+            }
+
+            // Capture the payment
+            Log::info("Attempting to capture PayPal payment", ['paypal_order_id' => $paypalOrderId]);
+            $captureResult = $this->paypalService->captureOrder($paypalOrderId);
+            
+            // Verify capture was successful
+            $captureStatus = $captureResult['status'] ?? '';
+            Log::info("PayPal capture result", [
+                'paypal_order_id' => $paypalOrderId,
+                'capture_status' => $captureStatus,
+            ]);
+            
+            if ($captureStatus !== 'COMPLETED') {
+                Log::error("PayPal capture failed", [
+                    'paypal_order_id' => $paypalOrderId,
+                    'expected_status' => 'COMPLETED',
+                    'actual_status' => $captureStatus,
+                ]);
+                throw new BillingExceptionClass(
+                    'PayPal capture failed',
+                    'Failed to capture PayPal payment. Status: ' . $captureStatus . '. Please try again or contact support.',
+                    BillingException::TYPE_PAYMENT,
+                    $order->id,
+                    'paypal',
+                    $paypalOrderId,
+                    ['capture_status' => $captureStatus, 'capture_result' => $captureResult]
+                );
+            }
+
+            // Extract and save PayPal transaction details
+            $purchaseUnit = $captureResult['purchase_units'][0] ?? null;
+            $capture = $purchaseUnit['payments']['captures'][0] ?? null;
+            $payer = $captureResult['payer'] ?? null;
+            
+            if ($capture) {
+                $order->paypal_capture_id = $capture['id'] ?? null;
+                $order->paypal_status = $capture['status'] ?? null;
+                $order->paypal_amount = isset($capture['amount']['value']) ? (float) $capture['amount']['value'] : null;
+                $order->paypal_currency = $capture['amount']['currency_code'] ?? null;
+                $order->paypal_captured_at = isset($capture['create_time']) ? \Carbon\Carbon::parse($capture['create_time']) : null;
+            }
+            
+            if ($payer) {
+                $order->paypal_payer_id = $payer['payer_id'] ?? null;
+                $order->paypal_payer_email = $payer['email_address'] ?? null;
+            }
+            
+            $order->save();
+            
+            Log::info("Saved PayPal transaction details", [
+                'order_id' => $order->id,
+                'capture_id' => $order->paypal_capture_id,
+                'payer_email' => $order->paypal_payer_email,
+                'amount' => $order->paypal_amount,
+                'currency' => $order->paypal_currency,
+            ]);
+
+            // Fulfill the order
+            Log::info("Starting order fulfillment", ['order_id' => $order->id]);
+            try {
+                $this->fulfillOrder($request, $order);
+                Log::info("Order fulfillment completed successfully", ['order_id' => $order->id]);
+            } catch (\Exception $e) {
+                Log::error("Order fulfillment failed", [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                throw $e;
+            }
+
+            // Reload order to get updated status
+            $order->refresh();
+            Log::info("Final order status after fulfillment", [
+                'order_id' => $order->id,
+                'status' => $order->status,
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Order already processed',
+                'message' => 'Order processed successfully',
                 'order_id' => $order->id,
             ]);
-        }
-
-        // Verify the PayPal order is approved
-        $isApproved = $this->paypalService->isOrderApproved($paypalOrderId);
-        Log::info("PayPal order approval status", [
-            'paypal_order_id' => $paypalOrderId,
-            'is_approved' => $isApproved,
-        ]);
-        
-        if (!$isApproved) {
-            Log::warning("PayPal order not approved yet", ['paypal_order_id' => $paypalOrderId]);
-            throw new DisplayException('PayPal order is not approved yet.');
-        }
-
-        // Capture the payment
-        Log::info("Attempting to capture PayPal payment", ['paypal_order_id' => $paypalOrderId]);
-        $captureResult = $this->paypalService->captureOrder($paypalOrderId);
-        
-        // Verify capture was successful
-        $captureStatus = $captureResult['status'] ?? '';
-        Log::info("PayPal capture result", [
-            'paypal_order_id' => $paypalOrderId,
-            'capture_status' => $captureStatus,
-        ]);
-        
-        if ($captureStatus !== 'COMPLETED') {
-            Log::error("PayPal capture failed", [
-                'paypal_order_id' => $paypalOrderId,
-                'expected_status' => 'COMPLETED',
-                'actual_status' => $captureStatus,
-            ]);
-            throw new DisplayException('Failed to capture PayPal payment: ' . $captureStatus);
-        }
-
-        // Extract and save PayPal transaction details
-        $purchaseUnit = $captureResult['purchase_units'][0] ?? null;
-        $capture = $purchaseUnit['payments']['captures'][0] ?? null;
-        $payer = $captureResult['payer'] ?? null;
-        
-        if ($capture) {
-            $order->paypal_capture_id = $capture['id'] ?? null;
-            $order->paypal_status = $capture['status'] ?? null;
-            $order->paypal_amount = isset($capture['amount']['value']) ? (float) $capture['amount']['value'] : null;
-            $order->paypal_currency = $capture['amount']['currency_code'] ?? null;
-            $order->paypal_captured_at = isset($capture['create_time']) ? \Carbon\Carbon::parse($capture['create_time']) : null;
-        }
-        
-        if ($payer) {
-            $order->paypal_payer_id = $payer['payer_id'] ?? null;
-            $order->paypal_payer_email = $payer['email_address'] ?? null;
-        }
-        
-        $order->save();
-        
-        Log::info("Saved PayPal transaction details", [
-            'order_id' => $order->id,
-            'capture_id' => $order->paypal_capture_id,
-            'payer_email' => $order->paypal_payer_email,
-            'amount' => $order->paypal_amount,
-            'currency' => $order->paypal_currency,
-        ]);
-
-        // Fulfill the order
-        Log::info("Starting order fulfillment", ['order_id' => $order->id]);
-        try {
-            $this->fulfillOrder($request, $order);
-            Log::info("Order fulfillment completed successfully", ['order_id' => $order->id]);
+        } catch (BillingExceptionClass $e) {
+            // Re-throw billing exceptions to display to user
+            throw $e;
         } catch (\Exception $e) {
-            Log::error("Order fulfillment failed", [
-                'order_id' => $order->id,
+            Log::error("PayPal capture exception", [
+                'paypal_order_id' => $paypalOrderId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            throw $e;
+            
+            $order = Order::where('paypal_order_id', $paypalOrderId)
+                ->where('user_id', $request->user()->id)
+                ->first();
+            
+            throw new BillingExceptionClass(
+                'PayPal capture error',
+                'An unexpected error occurred while capturing PayPal payment: ' . $e->getMessage(),
+                BillingException::TYPE_PAYMENT,
+                $order?->id,
+                'paypal',
+                $paypalOrderId,
+                ['error' => $e->getMessage()],
+                $e
+            );
         }
-
-        // Reload order to get updated status
-        $order->refresh();
-        Log::info("Final order status after fulfillment", [
-            'order_id' => $order->id,
-            'status' => $order->status,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Order processed successfully',
-            'order_id' => $order->id,
-        ]);
     }
 
     /**
@@ -567,12 +620,36 @@ class PayPalCheckoutController extends ClientApiController
                     // Unknown status - log for investigation
                     Log::warning("PayPal order {$paypalOrderId} has unknown status: {$status}");
             }
+        } catch (BillingExceptionClass $e) {
+            // Log the billing exception but return 200 to prevent PayPal retries
+            // The exception is already logged to the database by BillingException
+            Log::error("PayPal webhook billing exception for order {$paypalOrderId}", [
+                'exception_type' => $e->getExceptionType(),
+                'message' => $e->getMessage(),
+                'order_id' => $e->getOrderId(),
+            ]);
         } catch (\Exception $e) {
             // Log error but return 200 to prevent infinite PayPal retries
+            // Create a billing exception for admin review
             Log::error("PayPal webhook error for order {$paypalOrderId}: " . $e->getMessage(), [
                 'exception' => get_class($e),
                 'trace' => $e->getTraceAsString(),
             ]);
+            
+            try {
+                throw new BillingExceptionClass(
+                    'PayPal webhook processing error',
+                    'Failed to process PayPal webhook: ' . $e->getMessage(),
+                    BillingException::TYPE_WEBHOOK,
+                    $order->id,
+                    'paypal',
+                    $paypalOrderId,
+                    ['event_type' => $eventType, 'error' => $e->getMessage()],
+                    $e
+                );
+            } catch (BillingExceptionClass $billingEx) {
+                // Exception is now logged, continue to return 200
+            }
         }
 
         return $this->returnNoContent();

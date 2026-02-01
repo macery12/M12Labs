@@ -8,6 +8,8 @@ use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
+use Everest\Models\Billing\BillingException;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
@@ -233,9 +235,33 @@ class MollieCheckoutController extends ClientApiController
                 // Unknown status - log for investigation
                 \Log::warning("Mollie payment {$paymentId} has unknown status: {$payment->status}");
             }
+        } catch (BillingExceptionClass $e) {
+            // Log the billing exception but return 200 to prevent Mollie retries
+            // The exception is already logged to the database by BillingException
+            \Log::error("Mollie webhook billing exception for payment {$paymentId}", [
+                'exception_type' => $e->getExceptionType(),
+                'message' => $e->getMessage(),
+                'order_id' => $e->getOrderId(),
+            ]);
         } catch (\Exception $e) {
             // Log error but return 200 to prevent infinite Mollie retries
+            // Create a billing exception for admin review
             \Log::error("Mollie webhook error for payment {$paymentId}: " . $e->getMessage());
+            
+            try {
+                throw new BillingExceptionClass(
+                    'Mollie webhook processing error',
+                    'Failed to process Mollie webhook: ' . $e->getMessage(),
+                    BillingException::TYPE_WEBHOOK,
+                    $order->id,
+                    'mollie',
+                    $paymentId,
+                    ['payment_status' => $payment->status ?? 'unknown', 'error' => $e->getMessage()],
+                    $e
+                );
+            } catch (BillingExceptionClass $billingEx) {
+                // Exception is now logged, continue to return 200
+            }
         }
 
         return $this->returnNoContent();

@@ -2,7 +2,7 @@ import { ModelWithRelationships, Model, UUID } from '@definitions';
 import { Server } from '@/api/routes/admin/server';
 import { OrderType } from '@/api/routes/account/billing/orders/types';
 
-type BillingExceptionType = 'payment' | 'deployment' | 'storefront';
+type BillingExceptionType = 'payment' | 'deployment' | 'storefront' | 'webhook' | 'refund' | 'validation';
 type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
 
 interface User extends ModelWithRelationships {

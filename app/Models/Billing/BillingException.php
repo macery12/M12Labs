@@ -23,6 +23,9 @@ class BillingException extends Model
     public const TYPE_DEPLOYMENT = 'deployment';
     public const TYPE_PAYMENT = 'payment';
     public const TYPE_STOREFRONT = 'storefront';
+    public const TYPE_WEBHOOK = 'webhook';
+    public const TYPE_REFUND = 'refund';
+    public const TYPE_VALIDATION = 'validation';
 
     /**
      * Fields that are mass assignable.
@@ -42,9 +45,9 @@ class BillingException extends Model
     public static array $validationRules = [
         'uuid' => 'string|required',
         'title' => 'string|required|min:3',
-        'order_id' => 'required|exists:orders,id',
+        'order_id' => 'nullable|exists:orders,id',
         'description' => 'required|string|min:3',
-        'exception_type' => 'required|string|in:deployment,payment,storefront',
+        'exception_type' => 'required|string|in:deployment,payment,storefront,webhook,refund,validation',
     ];
 
     /**
