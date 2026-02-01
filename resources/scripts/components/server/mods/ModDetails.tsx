@@ -18,6 +18,16 @@ interface Props {
     modLoaderType?: number;
 }
 
+// Mod loader type ID to name mapping
+const LOADER_NAMES: { [key: number]: string } = {
+    1: 'Forge',
+    2: 'Cauldron',
+    3: 'LiteLoader',
+    4: 'Fabric',
+    5: 'Quilt',
+    6: 'NeoForge',
+};
+
 const ModalContent = styled.div`
     ${tw`text-white`}
 `;
@@ -108,19 +118,6 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
     const [loading, setLoading] = useState(true);
     const [showAllFiles, setShowAllFiles] = useState(false);
 
-    // Map loader type ID to name for display
-    const getLoaderName = (loaderId?: number): string => {
-        const loaderMap: { [key: number]: string } = {
-            1: 'Forge',
-            2: 'Cauldron',
-            3: 'LiteLoader',
-            4: 'Fabric',
-            5: 'Quilt',
-            6: 'NeoForge',
-        };
-        return loaderId ? loaderMap[loaderId] || 'Unknown' : '';
-    };
-
     useEffect(() => {
         setLoading(true);
         getModFiles(uuid, mod.id, {
@@ -178,7 +175,10 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                             <span css={tw`ml-2 text-sm font-normal text-neutral-400`}>
                                 (Filtered: {gameVersion && <span css={tw`text-blue-400`}>{gameVersion}</span>}
                                 {gameVersion && modLoaderType && ' • '}
-                                {modLoaderType && <span css={tw`text-blue-400`}>{getLoaderName(modLoaderType)}</span>})
+                                {modLoaderType && (
+                                    <span css={tw`text-blue-400`}>{LOADER_NAMES[modLoaderType] || 'Unknown'}</span>
+                                )}
+                                )
                             </span>
                         )}
                     </SectionTitle>
