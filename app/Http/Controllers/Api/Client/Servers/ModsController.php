@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\Mods\CurseForgeService;
+use Everest\Services\Mods\ModrinthService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
@@ -23,13 +24,28 @@ class ModsController extends ClientApiController
      */
     public function __construct(
         private CurseForgeService $curseForgeService,
+        private ModrinthService $modrinthService,
         private DaemonFileRepository $fileRepository
     ) {
         parent::__construct();
     }
 
     /**
-     * Search for mods in the CurseForge database.
+     * Get the mod service based on the request source parameter.
+     */
+    private function getModService(string $source = null): CurseForgeService|ModrinthService
+    {
+        $source = $source ?? config('modules.mods.default_source', 'modrinth');
+        
+        if ($source === 'curseforge') {
+            return $this->curseForgeService;
+        }
+        
+        return $this->modrinthService;
+    }
+
+    /**
+     * Search for mods in the selected database.
      *
      * @throws ModsServiceException
      */
@@ -40,6 +56,9 @@ class ModsController extends ClientApiController
                 'error' => 'Mods module is not enabled for this server.',
             ], 403);
         }
+
+        $source = $request->input('source');
+        $modService = $this->getModService($source);
 
         $params = array_filter([
             'searchFilter' => $request->input('searchFilter'),
@@ -54,7 +73,7 @@ class ModsController extends ClientApiController
         });
 
         try {
-            $result = $this->curseForgeService->searchMods($params);
+            $result = $modService->searchMods($params);
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -68,7 +87,7 @@ class ModsController extends ClientApiController
      *
      * @throws ModsServiceException
      */
-    public function getMod(GetModRequest $request, Server $server, int $modId): JsonResponse
+    public function getMod(GetModRequest $request, Server $server, string $modId): JsonResponse
     {
         if (!$server->mods_enabled) {
             return response()->json([
@@ -76,8 +95,11 @@ class ModsController extends ClientApiController
             ], 403);
         }
 
+        $source = $request->input('source');
+        $modService = $this->getModService($source);
+
         try {
-            $result = $this->curseForgeService->getMod($modId);
+            $result = $modService->getMod($modId);
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -91,13 +113,16 @@ class ModsController extends ClientApiController
      *
      * @throws ModsServiceException
      */
-    public function getModFiles(GetModFilesRequest $request, Server $server, int $modId): JsonResponse
+    public function getModFiles(GetModFilesRequest $request, Server $server, string $modId): JsonResponse
     {
         if (!$server->mods_enabled) {
             return response()->json([
                 'error' => 'Mods module is not enabled for this server.',
             ], 403);
         }
+
+        $source = $request->input('source');
+        $modService = $this->getModService($source);
 
         $params = array_filter([
             'gameVersion' => $request->input('gameVersion'),
@@ -109,7 +134,7 @@ class ModsController extends ClientApiController
         });
 
         try {
-            $result = $this->curseForgeService->getModFiles($modId, $params);
+            $result = $modService->getModFiles($modId, $params);
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -123,7 +148,7 @@ class ModsController extends ClientApiController
      *
      * @throws ModsServiceException
      */
-    public function downloadMod(DownloadModRequest $request, Server $server, int $modId, int $fileId): JsonResponse
+    public function downloadMod(DownloadModRequest $request, Server $server, string $modId, string $fileId): JsonResponse
     {
         if (!$server->mods_enabled) {
             return response()->json([
@@ -131,19 +156,33 @@ class ModsController extends ClientApiController
             ], 403);
         }
 
+        $source = $request->input('source');
+        $modService = $this->getModService($source);
+
         try {
-            // Get mod file details
-            $modFile = $this->curseForgeService->getModFile($modId, $fileId);
-            
-            if (!isset($modFile['data'])) {
-                throw new ModsServiceException('Failed to retrieve mod file details.');
+            // Get download URL based on source
+            if ($source === 'curseforge') {
+                $modFile = $this->curseForgeService->getModFile((int)$modId, (int)$fileId);
+                
+                if (!isset($modFile['data'])) {
+                    throw new ModsServiceException('Failed to retrieve mod file details.');
+                }
+
+                $fileData = $modFile['data'];
+                $fileName = $fileData['fileName'] ?? 'mod.jar';
+                $downloadUrl = $this->curseForgeService->getModFileDownloadUrl((int)$modId, (int)$fileId);
+            } else {
+                // Modrinth
+                $downloadUrl = $this->modrinthService->getDownloadUrl($fileId);
+                
+                // Extract filename from URL or use a default
+                $urlParts = explode('/', $downloadUrl);
+                $fileName = end($urlParts);
+                
+                if (empty($fileName) || !str_contains($fileName, '.')) {
+                    $fileName = 'mod_' . $fileId . '.jar';
+                }
             }
-
-            $fileData = $modFile['data'];
-            $fileName = $fileData['fileName'] ?? 'mod.jar';
-
-            // Get download URL
-            $downloadUrl = $this->curseForgeService->getModFileDownloadUrl($modId, $fileId);
 
             // Create /mods folder if it doesn't exist
             try {
@@ -223,8 +262,11 @@ class ModsController extends ClientApiController
             ], 403);
         }
 
+        $source = $request->input('source');
+        $modService = $this->getModService($source);
+
         try {
-            $result = $this->curseForgeService->getMinecraftVersions();
+            $result = $modService->getMinecraftVersions();
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -246,8 +288,11 @@ class ModsController extends ClientApiController
             ], 403);
         }
 
+        $source = $request->input('source');
+        $modService = $this->getModService($source);
+
         try {
-            $result = $this->curseForgeService->getModLoaderTypes();
+            $result = $modService->getModLoaderTypes();
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
