@@ -128,7 +128,7 @@ interface Product extends Model {
 
     name: string;
     icon?: string;
-    price: number;
+    price: number; // Legacy field, kept for backward compatibility
     description: string;
 
     limits: {
@@ -140,12 +140,33 @@ interface Product extends Model {
         allocation: number;
     };
 
+    billingCycles: ProductBillingCycle[];
+
     createdAt: Date;
     updatedAt?: Date | null;
 
     relationships: {
         category?: Category;
     };
+}
+
+interface BillingCycle extends Model {
+    id: number;
+    name: string;
+    durationDays: number;
+    sortOrder: number;
+    isActive: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+interface ProductBillingCycle {
+    id: number;
+    name: string;
+    durationDays: number;
+    price: number;
+    sortOrder: number;
+    isActive: boolean;
 }
 
 interface Category extends Model {
