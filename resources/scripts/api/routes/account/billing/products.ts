@@ -48,3 +48,30 @@ export const getViableNodes = (productId: number): Promise<Node[]> => {
             .catch(reject);
     });
 };
+
+export interface BillingCycle {
+    id?: number;
+    days: number;
+    price: number;
+    multiplier: number;
+    discountPercent: number;
+    isDefault: boolean;
+}
+
+export const getProductBillingCycles = (productId: number): Promise<BillingCycle[]> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/billing/products/${productId}/billing-cycles`)
+            .then(({ data }) => {
+                const cycles = (data.data || []).map((cycle: any) => ({
+                    id: cycle.id,
+                    days: cycle.days,
+                    price: cycle.price,
+                    multiplier: cycle.multiplier,
+                    discountPercent: cycle.discount_percent,
+                    isDefault: cycle.is_default || false,
+                }));
+                resolve(cycles);
+            })
+            .catch(reject);
+    });
+};
