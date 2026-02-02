@@ -30,18 +30,21 @@ class BillingCycleService
      */
     public function getAvailableCycles(Product $product, ?int $couponId = null): array
     {
+        // Get default billing days from settings
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
+        
         // Query enabled billing cycles directly with proper where clause
         $cycles = BillingCycle::where('product_id', $product->id)
             ->where('is_enabled', true)
             ->orderBy('days')
             ->get();
         
-        // If no billing cycles defined, return default 30-day cycle
+        // If no billing cycles defined, return default cycle based on global setting
         if ($cycles->isEmpty()) {
-            $priceInfo = $this->calculatePrice($product, 30);
+            $priceInfo = $this->calculatePrice($product, $defaultBillingDays);
             return [
                 [
-                    'days' => 30,
+                    'days' => $defaultBillingDays,
                     'price' => $priceInfo['price'],
                     'multiplier' => $priceInfo['multiplier'],
                     'discount_percent' => $priceInfo['discount_percent'],
@@ -59,7 +62,7 @@ class BillingCycleService
                 'price' => $priceInfo['price'],
                 'multiplier' => $priceInfo['multiplier'],
                 'discount_percent' => $priceInfo['discount_percent'],
-                'is_default' => $cycle->days === 30,
+                'is_default' => $cycle->days === $defaultBillingDays,
             ];
         }
 
