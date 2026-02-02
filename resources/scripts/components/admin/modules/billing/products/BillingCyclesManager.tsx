@@ -6,6 +6,7 @@ import Input from '@/elements/Input';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPlus, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
+import { useStoreState } from '@/state/hooks';
 
 interface BillingCycle {
     id?: number;
@@ -25,7 +26,7 @@ interface BillingCyclesManagerProps {
 const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown, onChange }: BillingCyclesManagerProps) => {
     const [newCycleDays, setNewCycleDays] = useState<string>('');
     const [error, setError] = useState<string>('');
-
+    const { colors } = useStoreState(state => state.theme.data!);
     const calculatePrice = (days: number): number => {
         const validatedBasePrice = basePrice || 0;
         const ratio = days / 30;
@@ -124,7 +125,8 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                         return (
                             <div
                                 key={cycle.id || `new-${index}`}
-                                css={tw`flex items-center gap-3 p-3 rounded bg-neutral-700`}
+                                css={tw`flex items-center gap-3 p-3 rounded`}
+                                style={{ backgroundColor: colors.secondary }}
                             >
                                 <input
                                     type="checkbox"
@@ -162,7 +164,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
             )}
 
             {cycles.length > 0 && (
-                <div css={tw`mt-4 p-3 rounded bg-neutral-700`}>
+                <div css={tw`mt-4 p-3 rounded`} style={{ backgroundColor: colors.secondary }}>
                     <div css={tw`text-xs text-neutral-400 mb-2`}>
                         <FontAwesomeIcon icon={faInfoCircle} className="mr-1" />
                         Price Calculation Preview

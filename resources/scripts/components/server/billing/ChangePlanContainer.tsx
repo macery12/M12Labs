@@ -27,6 +27,35 @@ export default () => {
     const { colors } = useStoreState(s => s.theme.data!);
     const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
+    
+    // Use default 30-day billing cycle for plan pricing
+    const currentBillingDays = 30;
+    
+    // Get global multipliers for price calculation
+    const globalMultiplierUp = settings.renewal?.multiplier_up || 0.85;
+    const globalMultiplierDown = settings.renewal?.multiplier_down || 1.25;
+
+    // Calculate price for a plan based on current billing cycle
+    const calculatePlanPrice = (plan: Product): { price: number; discount: number } => {
+        const basePrice = plan.basePrice || plan.price;
+        const perDayPrice = basePrice / 30;
+        
+        let multiplier = 1.0;
+        if (currentBillingDays > 30) {
+            multiplier = globalMultiplierUp;
+        } else if (currentBillingDays < 30) {
+            multiplier = globalMultiplierDown;
+        }
+        
+        const finalPrice = perDayPrice * currentBillingDays * multiplier;
+        const standardPrice = perDayPrice * currentBillingDays;
+        const discountPercent = standardPrice > 0 ? ((standardPrice - finalPrice) / standardPrice) * 100 : 0;
+        
+        return {
+            price: Math.round(finalPrice * 100) / 100,
+            discount: Math.round(discountPercent * 10) / 10,
+        };
+    };
 
     useEffect(() => {
         clearFlashes('server:billing:plan-change');
@@ -103,48 +132,57 @@ export default () => {
                     <p css={tw`text-gray-400 text-xs mb-2`}>Upgrade or downgrade to a different plan.</p>
 
                     <div css={tw`space-y-1.5`}>
-                        {plans.map(plan => (
-                            <div key={plan.id} css={tw`relative`}>
-                                <div
-                                    css={tw`flex items-center justify-between p-2.5 rounded transition-colors border border-transparent hover:border-gray-500`}
-                                    style={{ backgroundColor: colors.secondary }}
-                                >
-                                    <div css={tw`flex-1 min-w-0 mr-3`}>
-                                        <div css={tw`flex items-baseline gap-2 mb-0.5`}>
-                                            <h4 css={tw`text-sm font-medium text-gray-200`}>{plan.name}</h4>
-                                            <span css={tw`text-xs font-semibold text-gray-300`}>
-                                                {settings.currency.symbol}
-                                                {plan.price}
-                                            </span>
+                        {plans.map(plan => {
+                            const { price, discount } = calculatePlanPrice(plan);
+                            
+                            return (
+                                <div key={plan.id} css={tw`relative`}>
+                                    <div
+                                        css={tw`flex items-center justify-between p-2.5 rounded transition-colors border border-transparent hover:border-gray-500`}
+                                        style={{ backgroundColor: colors.secondary }}
+                                    >
+                                        <div css={tw`flex-1 min-w-0 mr-3`}>
+                                            <div css={tw`flex items-baseline gap-2 mb-0.5`}>
+                                                <h4 css={tw`text-sm font-medium text-gray-200`}>{plan.name}</h4>
+                                <span css={tw`text-xs font-semibold text-gray-300`}>
+                                                    {settings.currency.symbol}
+                                                    {price.toFixed(2)}
+                                                </span>
+                                                {discount !== 0 && (
+                                                    <span css={tw`text-xs text-green-400`}>
+                                                        ({Math.abs(discount).toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div css={tw`flex flex-wrap gap-x-2.5 gap-y-0.5 text-xs text-gray-400`}>
+                                                <span>{plan.limits.cpu}% CPU</span>
+                                                <span>{plan.limits.memory} MB RAM</span>
+                                                <span>{plan.limits.disk} MB Disk</span>
+                                                <span>{plan.limits.database} DB</span>
+                                                <span>{plan.limits.backup} Backups</span>
+                                            </div>
                                         </div>
-                                        <div css={tw`flex flex-wrap gap-x-2.5 gap-y-0.5 text-xs text-gray-400`}>
-                                            <span>{plan.limits.cpu}% CPU</span>
-                                            <span>{plan.limits.memory} MB RAM</span>
-                                            <span>{plan.limits.disk} MB Disk</span>
-                                            <span>{plan.limits.database} DB</span>
-                                            <span>{plan.limits.backup} Backups</span>
-                                        </div>
+                                        <Button onClick={() => handlePlanSelect(plan)} disabled={changing} size="sm">
+                                            Select
+                                        </Button>
                                     </div>
-                                    <Button onClick={() => handlePlanSelect(plan)} disabled={changing} size="sm">
-                                        Select
-                                    </Button>
+                                    {selectedPlan?.id === plan.id && validation && !validation.valid && (
+                                        <Alert type={'danger'} className={'mt-1.5'}>
+                                            <p css={tw`text-xs font-medium mb-0.5`}>
+                                                Cannot downgrade - usage exceeds limits:
+                                            </p>
+                                            <ul css={tw`text-xs space-y-0.5 ml-3`}>
+                                                {Object.entries(validation.violations || {}).map(([resource, data]) => (
+                                                    <li key={resource}>
+                                                        {resource}: {data.current} {data.unit} → {data.limit} {data.unit}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </Alert>
+                                    )}
                                 </div>
-                                {selectedPlan?.id === plan.id && validation && !validation.valid && (
-                                    <Alert type={'danger'} className={'mt-1.5'}>
-                                        <p css={tw`text-xs font-medium mb-0.5`}>
-                                            Cannot downgrade - usage exceeds limits:
-                                        </p>
-                                        <ul css={tw`text-xs space-y-0.5 ml-3`}>
-                                            {Object.entries(validation.violations || {}).map(([resource, data]) => (
-                                                <li key={resource}>
-                                                    {resource}: {data.current} {data.unit} → {data.limit} {data.unit}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </Alert>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </TitledGreyBox>
@@ -156,49 +194,58 @@ export default () => {
                 title="Confirm Plan Change"
                 description={selectedPlan ? `Change to ${selectedPlan.name}?` : ''}
             >
-                {selectedPlan && (
-                    <>
-                        <div css={tw`space-y-2`}>
-                            <div>
-                                <Label>New Resources</Label>
-                                <div css={tw`text-sm text-gray-300 space-y-1`}>
-                                    <div css={tw`flex justify-between`}>
-                                        <span>CPU:</span>
-                                        <span>{selectedPlan.limits.cpu}%</span>
-                                    </div>
-                                    <div css={tw`flex justify-between`}>
-                                        <span>RAM:</span>
-                                        <span>{selectedPlan.limits.memory} MB</span>
-                                    </div>
-                                    <div css={tw`flex justify-between`}>
-                                        <span>Disk:</span>
-                                        <span>{selectedPlan.limits.disk} MB</span>
-                                    </div>
-                                    <div css={tw`flex justify-between`}>
-                                        <span>Databases:</span>
-                                        <span>{selectedPlan.limits.database}</span>
-                                    </div>
-                                    <div css={tw`flex justify-between`}>
-                                        <span>Backups:</span>
-                                        <span>{selectedPlan.limits.backup}</span>
+                {selectedPlan && (() => {
+                    const { price, discount } = calculatePlanPrice(selectedPlan);
+                    
+                    return (
+                        <>
+                            <div css={tw`space-y-2`}>
+                                <div>
+                                    <Label>New Resources</Label>
+                                    <div css={tw`text-sm text-gray-300 space-y-1`}>
+                                        <div css={tw`flex justify-between`}>
+                                            <span>CPU:</span>
+                                            <span>{selectedPlan.limits.cpu}%</span>
+                                        </div>
+                                        <div css={tw`flex justify-between`}>
+                                            <span>RAM:</span>
+                                            <span>{selectedPlan.limits.memory} MB</span>
+                                        </div>
+                                        <div css={tw`flex justify-between`}>
+                                            <span>Disk:</span>
+                                            <span>{selectedPlan.limits.disk} MB</span>
+                                        </div>
+                                        <div css={tw`flex justify-between`}>
+                                            <span>Databases:</span>
+                                            <span>{selectedPlan.limits.database}</span>
+                                        </div>
+                                        <div css={tw`flex justify-between`}>
+                                            <span>Backups:</span>
+                                            <span>{selectedPlan.limits.backup}</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div>
+                                    <Label>Price</Label>
+                                    <p css={tw`text-sm text-gray-300`}>
+                                        {settings.currency.symbol}
+                                        {price.toFixed(2)} {settings.currency.code.toUpperCase()} per month
+                                        {discount !== 0 && (
+                                            <span css={tw`ml-2 text-green-400 text-xs`}>
+                                                ({Math.abs(discount).toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
+                                            </span>
+                                        )}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <Label>Price</Label>
-                                <p css={tw`text-sm text-gray-300`}>
-                                    {settings.currency.symbol}
-                                    {selectedPlan.price} {settings.currency.code.toUpperCase()} per billing cycle
+                            <Alert type={'info'} className={'mt-4'}>
+                                <p css={tw`text-xs`}>
+                                    Resources will be updated immediately. The page will reload after the change.
                                 </p>
-                            </div>
-                        </div>
-                        <Alert type={'info'} className={'mt-4'}>
-                            <p css={tw`text-xs`}>
-                                Resources will be updated immediately. The page will reload after the change.
-                            </p>
-                        </Alert>
-                    </>
-                )}
+                            </Alert>
+                        </>
+                    );
+                })()}
                 <Dialog.Footer>
                     <Button.Text onClick={() => setShowConfirmDialog(false)} disabled={changing}>
                         Cancel

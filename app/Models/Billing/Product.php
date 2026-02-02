@@ -154,11 +154,15 @@ class Product extends Model
         $basePrice = $this->getEffectiveBasePrice();
         $perDayPrice = $basePrice / 30;
 
+        // Use global multipliers from settings, fallback to product-specific if set
+        $globalMultiplierUp = (float) Setting::get('settings::modules:billing:renewal:multiplier_up', 0.85);
+        $globalMultiplierDown = (float) Setting::get('settings::modules:billing:renewal:multiplier_down', 1.25);
+
         // Determine multiplier based on billing days
         if ($days < 30) {
-            $multiplier = $this->multiplier_down ?? 1.0;
+            $multiplier = $this->multiplier_down ?? $globalMultiplierDown;
         } elseif ($days > 30) {
-            $multiplier = $this->multiplier_up ?? 1.0;
+            $multiplier = $this->multiplier_up ?? $globalMultiplierUp;
         } else {
             $multiplier = 1.0;
         }

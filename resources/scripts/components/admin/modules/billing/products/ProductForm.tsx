@@ -35,6 +35,8 @@ export default ({ product }: { product?: Product }) => {
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
     const { secondary } = useStoreState(state => state.theme.data!.colors);
+    const globalMultiplierUp = useStoreState(state => state.everest.data!.billing.renewal?.multiplier_up || 0.85);
+    const globalMultiplierDown = useStoreState(state => state.everest.data!.billing.renewal?.multiplier_down || 1.25);
 
     useEffect(() => {
         getCategory(Number(params.id)).then(category => setUuid(category.uuid));
@@ -53,8 +55,8 @@ export default ({ product }: { product?: Product }) => {
         const submitData = {
             ...values,
             base_price: values.basePrice,
-            multiplier_up: values.multiplierUp,
-            multiplier_down: values.multiplierDown,
+            multiplier_up: globalMultiplierUp,
+            multiplier_down: globalMultiplierDown,
         };
 
         if (!product) {
@@ -139,8 +141,8 @@ export default ({ product }: { product?: Product }) => {
                     price: product?.price?.toString() ?? '9.99',
                     // @ts-expect-error this is fine
                     basePrice: product?.basePrice?.toString() ?? undefined,
-                    multiplierUp: product?.multiplierUp ?? 1.0,
-                    multiplierDown: product?.multiplierDown ?? 1.0,
+                    multiplierUp: product?.multiplierUp ?? globalMultiplierUp,
+                    multiplierDown: product?.multiplierDown ?? globalMultiplierDown,
                     description: product?.description ?? 'This is a server plan.',
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
@@ -156,8 +158,6 @@ export default ({ product }: { product?: Product }) => {
                     icon: string().nullable().max(191).min(3),
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
                     basePrice: number().nullable().typeError('Base price must be a number').min(0, 'Base price cannot be negative'),
-                    multiplierUp: number().typeError('Multiplier must be a number').min(0.5).max(1.0),
-                    multiplierDown: number().typeError('Multiplier must be a number').min(1.0).max(2.0),
                     description: string().nullable().max(191).min(3),
                     limits: object().shape({
                         cpu: number().required().min(10),
@@ -221,31 +221,21 @@ export default ({ product }: { product?: Product }) => {
                                                 'The base price for 30 days. Leave empty to use legacy price.'
                                             }
                                         />
-                                        <Field
-                                            id={'multiplierUp'}
-                                            name={'multiplierUp'}
-                                            type={'text'}
-                                            onChange={handleChange}
-                                            label={'Multiplier Up (>30 days)'}
-                                            description={
-                                                multiplierRanges
-                                                    ? `${multiplierRanges.multiplier_up.description} (Suggested: ${multiplierRanges.multiplier_up.suggested})`
-                                                    : 'Discount for longer billing cycles (e.g., 0.85 = 15% discount)'
-                                            }
-                                        />
-                                        <Field
-                                            id={'multiplierDown'}
-                                            name={'multiplierDown'}
-                                            type={'text'}
-                                            onChange={handleChange}
-                                            label={'Multiplier Down (<30 days)'}
-                                            description={
-                                                multiplierRanges
-                                                    ? `${multiplierRanges.multiplier_down.description} (Suggested: ${multiplierRanges.multiplier_down.suggested})`
-                                                    : 'Premium for shorter billing cycles (e.g., 1.25 = 25% premium)'
-                                            }
-                                        />
                                     </FieldRow>
+                                    <Alert type={'info'} className={'mt-3'}>
+                                        <div className="text-xs">
+                                            <strong>Global Multipliers (Read-Only):</strong>
+                                            <div className="mt-1">
+                                                • Multiplier Up (&gt;30 days): {globalMultiplierUp.toFixed(2)} ({((1 - globalMultiplierUp) * 100).toFixed(0)}% discount)
+                                            </div>
+                                            <div>
+                                                • Multiplier Down (&lt;30 days): {globalMultiplierDown.toFixed(2)} ({((globalMultiplierDown - 1) * 100).toFixed(0)}% premium)
+                                            </div>
+                                            <div className="mt-2 text-gray-400">
+                                                To change these multipliers, go to <strong>Billing → Renewal Dates</strong> in the admin panel.
+                                            </div>
+                                        </div>
+                                    </Alert>
                                 </AdminBox>
                                 
                                 <AdminBox title={'Resource Limits'} className={'lg:mt-4'} icon={faMicrochip}>
@@ -305,8 +295,8 @@ export default ({ product }: { product?: Product }) => {
                                     <BillingCyclesManager
                                         cycles={billingCycles}
                                         basePrice={Number(values.basePrice || values.price)}
-                                        multiplierUp={Number(values.multiplierUp)}
-                                        multiplierDown={Number(values.multiplierDown)}
+                                        multiplierUp={globalMultiplierUp}
+                                        multiplierDown={globalMultiplierDown}
                                         onChange={setBillingCycles}
                                     />
                                 </AdminBox>

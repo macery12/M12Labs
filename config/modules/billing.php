@@ -75,6 +75,8 @@ return [
         'suspension_threshold' => env('BILLING_SUSPENSION_THRESHOLD', 7),
         'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
         'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
+        'multiplier_up' => env('BILLING_MULTIPLIER_UP', 0.85),
+        'multiplier_down' => env('BILLING_MULTIPLIER_DOWN', 1.25),
     ],
 
     /*
