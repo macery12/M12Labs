@@ -18,12 +18,10 @@ interface BillingCycle {
 interface BillingCyclesManagerProps {
     cycles: BillingCycle[];
     basePrice: number;
-    multiplierUp: number;
-    multiplierDown: number;
     onChange: (cycles: BillingCycle[]) => void;
 }
 
-const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown, onChange }: BillingCyclesManagerProps) => {
+const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesManagerProps) => {
     const [newCycleDays, setNewCycleDays] = useState<string>('');
     const [error, setError] = useState<string>('');
     const { colors } = useStoreState(state => state.theme.data!);
@@ -60,15 +58,8 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                 }
             }
             // If no match found, use last step's multiplier
-            if (multiplier === 1.0) {
+            if (multiplier === 1.0 && sortedSteps.length > 0) {
                 multiplier = sortedSteps[sortedSteps.length - 1].multiplier;
-            }
-        } else {
-            // Fallback to old binary logic if no steps configured
-            if (days > defaultBillingDays) {
-                multiplier = multiplierUp;
-            } else if (days < defaultBillingDays) {
-                multiplier = multiplierDown;
             }
         }
         
@@ -205,7 +196,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                     </div>
                     <div css={tw`text-xs space-y-1`}>
                         <div>Base Price ({defaultBillingDays} days): ${basePrice.toFixed(2)}</div>
-                        {multiplierSteps.length > 0 ? (
+                        {multiplierSteps.length > 0 && (
                             <div>
                                 <div className="font-semibold mt-2">Multiplier Steps:</div>
                                 <ul className="list-disc list-inside ml-2 mt-1">
@@ -216,19 +207,6 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                                     ))}
                                 </ul>
                             </div>
-                        ) : (
-                            <>
-                                <div>
-                                    Multiplier Up (&gt;{defaultBillingDays} days): {multiplierUp.toFixed(2)}{' '}
-                                    {multiplierUp < 1.0 ? `(${((1 - multiplierUp) * 100).toFixed(0)}% discount)` : 
-                                     multiplierUp > 1.0 ? `(${((multiplierUp - 1) * 100).toFixed(0)}% premium)` : ''}
-                                </div>
-                                <div>
-                                    Multiplier Down (&lt;{defaultBillingDays} days): {multiplierDown.toFixed(2)}{' '}
-                                    {multiplierDown > 1.0 ? `(${((multiplierDown - 1) * 100).toFixed(0)}% premium)` : 
-                                     multiplierDown < 1.0 ? `(${((1 - multiplierDown) * 100).toFixed(0)}% discount)` : ''}
-                                </div>
-                            </>
                         )}
                     </div>
                 </div>

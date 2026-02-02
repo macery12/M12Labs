@@ -337,8 +337,6 @@ export default ({ product }: { product?: Product }) => {
                                     <BillingCyclesManager
                                         cycles={billingCycles}
                                         basePrice={Number(values.basePrice || values.price)}
-                                        multiplierUp={globalMultiplierUp}
-                                        multiplierDown={globalMultiplierDown}
                                         onChange={setBillingCycles}
                                     />
                                 </AdminBox>
