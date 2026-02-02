@@ -72,9 +72,12 @@ class CheckoutController extends ClientApiController
             throw new DisplayException('Server name is required.');
         }
 
+        // Get billing days (default to 30 if not provided)
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
+
         // Calculate price with coupon for new purchase
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays);
 
         // Validate this is a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -101,7 +104,8 @@ class CheckoutController extends ClientApiController
             $couponId,
             $variables,
             null, // No payment intent ID for free orders
-            $serverName
+            $serverName,
+            $billingDays
         );
 
         return $this->fractal->item($result['server'])
@@ -124,9 +128,12 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
+        // Get billing days (default to 30 if not provided)
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
+
         // Calculate price with coupon for renewal
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren');
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren', $billingDays);
 
         // Validate this is a free renewal
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -135,7 +142,7 @@ class CheckoutController extends ClientApiController
         $server = $user->servers()->findOrFail($serverId);
 
         // Process the renewal
-        $result = $this->processorService->processRenewal($server, $product, $couponId);
+        $result = $this->processorService->processRenewal($server, $product, $couponId, $billingDays);
 
         return $this->fractal->item($result['server'])
             ->transformWith(ServerTransformer::class)
@@ -220,9 +227,12 @@ class CheckoutController extends ClientApiController
         $product = Product::findOrFail($id);
 
         try {
+            // Get billing days (default to 30 if not provided)
+            $billingDays = (int) ($request->input('billing_days') ?? 30);
+
             // Calculate price with coupon using validation service for new purchase
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new');
+            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays);
 
             // Validate this is not a free order
             $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
@@ -344,10 +354,13 @@ class CheckoutController extends ClientApiController
             $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
             $eggId = $this->validationService->validateAndGetEggId($product, $requestedEggId);
 
+            // Get billing days (default to 30 if not provided)
+            $billingDays = (int) ($request->input('billing_days') ?? 30);
+
             // Determine order type and calculate price with coupon
             $orderType = $this->getOrderType($request);
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType);
+            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType, $billingDays);
 
             // Update the intent amount if it has changed
             if ($intent->amount !== (int)($priceInfo['finalPrice'] * 100)) {
@@ -362,6 +375,7 @@ class CheckoutController extends ClientApiController
                 'server_id' => (string) ($request->input('server_id') ?? 0),
                 'coupon_id' => (string) ($couponId ?? ''),
                 'egg_id' => (string) $eggId,
+                'billing_days' => (string) $billingDays,
                 'name' => $serverName,
             ];
 
@@ -371,7 +385,7 @@ class CheckoutController extends ClientApiController
             $intent->metadata = $metadata;
             $intent->save();
 
-            // Create the order with coupon and egg
+            // Create the order with coupon, egg, and billing days
             $this->orderService->create(
                 $intent->id,
                 $request->user(),
@@ -380,6 +394,7 @@ class CheckoutController extends ClientApiController
                 $this->getOrderType($request),
                 $couponId,
                 $eggId,
+                ['billing_days' => $billingDays]
             );
 
             return $this->returnNoContent();

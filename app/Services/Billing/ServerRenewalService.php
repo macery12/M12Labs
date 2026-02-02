@@ -26,7 +26,7 @@ class ServerRenewalService
      * 
      * @return array{server: Server, order: Order}
      */
-    public function renew(Server $server, Product $product, ?int $couponId = null): array
+    public function renew(Server $server, Product $product, ?int $couponId = null, int $billingDays = 30): array
     {
         // Verify that the server uses this product
         if ($server->billing_product_id !== $product->id) {
@@ -40,7 +40,9 @@ class ServerRenewalService
             $product,
             Order::STATUS_PENDING,
             Order::TYPE_REN,
-            $couponId
+            $couponId,
+            null,
+            ['billing_days' => $billingDays]
         );
 
         // Unsuspend the server if it was suspended due to billing
@@ -48,8 +50,8 @@ class ServerRenewalService
             $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
         }
 
-        // Calculate renewal date based on product type
-        $renewalDays = $product->getRenewalDays();
+        // Use the billing days provided or fall back to product's renewal days
+        $renewalDays = $billingDays > 0 ? $billingDays : $product->getRenewalDays();
         
         if ($product->isFree()) {
             // Free servers: Reset renewal date to configured days from now
