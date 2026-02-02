@@ -30,7 +30,11 @@ class BillingCycleService
      */
     public function getAvailableCycles(Product $product, ?int $couponId = null): array
     {
-        $cycles = $product->enabledBillingCycles()->orderBy('days')->get();
+        // Query enabled billing cycles directly with proper where clause
+        $cycles = BillingCycle::where('product_id', $product->id)
+            ->where('is_enabled', true)
+            ->orderBy('days')
+            ->get();
         
         // If no billing cycles defined, return default 30-day cycle
         if ($cycles->isEmpty()) {
