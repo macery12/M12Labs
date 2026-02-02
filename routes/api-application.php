@@ -76,6 +76,13 @@ Route::middleware([AdminSubject::class])->group(function () {
                 Route::get('/{product:id}', [Application\Billing\ProductController::class, 'view']);
                 Route::patch('/{product:id}', [Application\Billing\ProductController::class, 'update']);
                 Route::delete('/{product:id}', [Application\Billing\ProductController::class, 'delete']);
+
+                // Billing cycle routes
+                Route::group(['prefix' => '/{product:id}/billing-cycles'], function () {
+                    Route::get('/', [Application\Billing\BillingCycleController::class, 'index']);
+                    Route::post('/sync', [Application\Billing\BillingCycleController::class, 'sync']);
+                    Route::delete('/{cycle:id}', [Application\Billing\BillingCycleController::class, 'delete']);
+                });
             });
         });
 
@@ -107,6 +114,9 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::post('/import', [Application\Billing\ConfigController::class, 'import']);
             Route::post('/export', [Application\Billing\ConfigController::class, 'export']);
         });
+
+        // Get suggested multiplier ranges
+        Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
     });
 
     /*

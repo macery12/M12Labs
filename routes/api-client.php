@@ -111,6 +111,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
 
+        // Billing cycle routes for clients
+        Route::get('/products/{id}/billing-cycles', [Client\Billing\BillingCycleController::class, 'index']);
+
         Route::post('/process', [Client\Billing\CheckoutController::class, 'processPaid'])->name('api:client.billing.process');
         Route::post('/process/free', [Client\Billing\CheckoutController::class, 'processFree']);
         Route::post('/renew/free', [Client\Billing\CheckoutController::class, 'renewFree']);
