@@ -166,7 +166,7 @@ export default ({ product }: { product?: Product }) => {
                     // @ts-expect-error this is fine
                     price: product?.price?.toString() ?? '9.99',
                     // @ts-expect-error this is fine
-                    basePrice: product?.basePrice?.toString() ?? undefined,
+                    basePrice: product?.basePrice?.toString() ?? null,
                     multiplierUp: 1.0,
                     multiplierDown: 1.0,
                     description: product?.description ?? 'This is a server plan.',
@@ -182,7 +182,7 @@ export default ({ product }: { product?: Product }) => {
                 validationSchema={object().shape({
                     categoryUuid: string().required('Category UUID is required'),
                     name: string().required().max(191).min(3),
-                    icon: string().nullable().max(191).min(3),
+                    icon: string().nullable().notRequired().max(191).min(3),
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
                     basePrice: number().nullable().typeError('Base price must be a number').min(0, 'Base price cannot be negative'),
                     description: string().nullable().max(191).min(3),
