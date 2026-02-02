@@ -4,6 +4,7 @@ namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -12,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $name
  * @property string $icon
  * @property float $price
+ * @property float|null $base_price
+ * @property float $multiplier_up
+ * @property float $multiplier_down
  * @property string $description
  * @property int $cpu_limit
  * @property int $memory_limit
@@ -40,7 +44,7 @@ class Product extends Model
      */
     protected $fillable = [
         'uuid', 'category_uuid',
-        'name', 'icon', 'price', 'description',
+        'name', 'icon', 'price', 'base_price', 'multiplier_up', 'multiplier_down', 'description',
         'cpu_limit', 'memory_limit', 'disk_limit',
         'backup_limit', 'database_limit', 'allocation_limit',
     ];
@@ -49,6 +53,10 @@ class Product extends Model
      * Cast values to correct type.
      */
     protected $casts = [
+        'price' => 'float',
+        'base_price' => 'float',
+        'multiplier_up' => 'float',
+        'multiplier_down' => 'float',
         'cpu_limit' => 'integer',
         'memory_limit' => 'integer',
         'disk_limit' => 'integer',
@@ -109,5 +117,63 @@ class Product extends Model
         return $this->isFree()
             ? config('modules.billing.renewal.free_suspension_days', 7)
             : config('modules.billing.renewal.paid_suspension_days', 30);
+    }
+
+    /**
+     * Get all billing cycles for this product.
+     */
+    public function billingCycles(): HasMany
+    {
+        return $this->hasMany(BillingCycle::class);
+    }
+
+    /**
+     * Get enabled billing cycles for this product.
+     */
+    public function enabledBillingCycles(): HasMany
+    {
+        return $this->hasMany(BillingCycle::class)->where('is_enabled', true);
+    }
+
+    /**
+     * Get the effective base price (uses base_price if set, otherwise falls back to price).
+     */
+    public function getEffectiveBasePrice(): float
+    {
+        return $this->base_price ?? $this->price;
+    }
+
+    /**
+     * Calculate price for a specific billing cycle.
+     * 
+     * @param int $days Number of billing days
+     * @return array ['price' => float, 'multiplier' => float, 'discount_percent' => float]
+     */
+    public function calculatePrice(int $days): array
+    {
+        $basePrice = $this->getEffectiveBasePrice();
+        $perDayPrice = $basePrice / 30;
+
+        // Determine multiplier based on billing days
+        if ($days < 30) {
+            $multiplier = $this->multiplier_down ?? 1.0;
+        } elseif ($days > 30) {
+            $multiplier = $this->multiplier_up ?? 1.0;
+        } else {
+            $multiplier = 1.0;
+        }
+
+        // Calculate final price: per_day_price * days * multiplier, rounded to 1 decimal
+        $finalPrice = round($perDayPrice * $days * $multiplier, 1);
+
+        // Calculate discount percentage (negative = premium, positive = discount)
+        $standardPrice = $perDayPrice * $days;
+        $discountPercent = $standardPrice > 0 ? (($standardPrice - $finalPrice) / $standardPrice) * 100 : 0;
+
+        return [
+            'price' => $finalPrice,
+            'multiplier' => $multiplier,
+            'discount_percent' => round($discountPercent, 1),
+        ];
     }
 }

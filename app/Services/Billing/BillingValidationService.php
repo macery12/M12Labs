@@ -91,24 +91,35 @@ class BillingValidationService
      * @param Product $product The product being purchased
      * @param int|null $couponId The coupon ID to apply (optional)
      * @param string $orderType The order type (default: 'new')
+     * @param int|null $billingDays The billing cycle days (optional, defaults to 30)
      * @return array{finalPrice: float, discount: float} The final price and discount amount
      */
-    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new'): array
+    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new', ?int $billingDays = null): array
     {
-        $finalPrice = $product->price;
+        // Use billing days if provided, otherwise default to 30
+        $days = $billingDays ?? 30;
+        
+        // Calculate price based on billing cycle
+        $priceInfo = $product->calculatePrice($days);
+        $basePrice = $priceInfo['price'];
+        
+        $finalPrice = $basePrice;
         $discount = 0.0;
         
         if ($couponId) {
             $coupon = Coupon::find($couponId);
             if ($coupon && $coupon->isAllowedForOrderType($orderType)) {
-                $discount = $coupon->calculateDiscount($product->price);
-                $finalPrice = max(0, $product->price - $discount);
+                $discount = $coupon->calculateDiscount($basePrice);
+                $finalPrice = max(0, $basePrice - $discount);
             }
         }
 
         return [
             'finalPrice' => $finalPrice,
             'discount' => $discount,
+            'subtotal' => $basePrice,
+            'billingDays' => $days,
+            'multiplier' => $priceInfo['multiplier'],
         ];
     }
 

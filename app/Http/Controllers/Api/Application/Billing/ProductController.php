@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
 use Spatie\QueryBuilder\QueryBuilder;
+use Everest\Services\Billing\BillingCycleService;
 use Everest\Transformers\Api\Application\ProductTransformer;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
@@ -23,7 +24,7 @@ class ProductController extends ApplicationApiController
     /**
      * ProductController constructor.
      */
-    public function __construct()
+    public function __construct(private BillingCycleService $billingCycleService)
     {
         parent::__construct();
     }
@@ -64,6 +65,9 @@ class ProductController extends ApplicationApiController
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
                 'price' => (float) $request->input('price'),
+                'base_price' => $request->input('base_price') ? (float) $request->input('base_price') : null,
+                'multiplier_up' => $request->input('multiplier_up', 1.0),
+                'multiplier_down' => $request->input('multiplier_down', 1.0),
                 'description' => $request->input('description'),
                 'cpu_limit' => $request['limits']['cpu'],
                 'memory_limit' => $request['limits']['memory'],
@@ -72,6 +76,11 @@ class ProductController extends ApplicationApiController
                 'database_limit' => $request['limits']['database'],
                 'allocation_limit' => $request['limits']['allocation'],
             ]);
+
+            // Create default billing cycles if provided
+            if ($request->has('billing_cycles')) {
+                $this->billingCycleService->syncBillingCycles($product, $request->input('billing_cycles'));
+            }
         } catch (\Exception $ex) {
             throw new \Exception('Failed to create a new product: ' . $ex->getMessage());
         }
@@ -98,6 +107,9 @@ class ProductController extends ApplicationApiController
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
                 'price' => (float) $request->input('price'),
+                'base_price' => $request->input('base_price') ? (float) $request->input('base_price') : null,
+                'multiplier_up' => $request->input('multiplier_up', 1.0),
+                'multiplier_down' => $request->input('multiplier_down', 1.0),
                 'description' => $request->input('description'),
                 'cpu_limit' => $request['limits']['cpu'],
                 'memory_limit' => $request['limits']['memory'],
@@ -106,6 +118,11 @@ class ProductController extends ApplicationApiController
                 'database_limit' => $request['limits']['database'],
                 'allocation_limit' => $request['limits']['allocation'],
             ]);
+
+            // Update billing cycles if provided
+            if ($request->has('billing_cycles')) {
+                $this->billingCycleService->syncBillingCycles($product, $request->input('billing_cycles'));
+            }
         } catch (\Exception $ex) {
             throw new \Exception('Failed to update a product: ' . $ex->getMessage());
         }
