@@ -75,8 +75,16 @@ return [
         'suspension_threshold' => env('BILLING_SUSPENSION_THRESHOLD', 7),
         'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
         'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
-        'multiplier_up' => env('BILLING_MULTIPLIER_UP', 0.85),
-        'multiplier_down' => env('BILLING_MULTIPLIER_DOWN', 1.25),
+        'default_billing_days' => env('BILLING_DEFAULT_BILLING_DAYS', 30),
+        'multiplier_steps' => env('BILLING_MULTIPLIER_STEPS', json_encode([
+            ['maxDays' => 10, 'multiplier' => 1.30],
+            ['maxDays' => 20, 'multiplier' => 1.20],
+            ['maxDays' => 29, 'multiplier' => 1.10],
+            ['maxDays' => 30, 'multiplier' => 1.00],
+            ['maxDays' => 59, 'multiplier' => 0.95],
+            ['maxDays' => 89, 'multiplier' => 0.90],
+            ['maxDays' => 999, 'multiplier' => 0.85],
+        ])),
     ],
 
     /*

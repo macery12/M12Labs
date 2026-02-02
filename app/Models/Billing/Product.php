@@ -151,20 +151,50 @@ class Product extends Model
      */
     public function calculatePrice(int $days): array
     {
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
         $basePrice = $this->getEffectiveBasePrice();
-        $perDayPrice = $basePrice / 30;
+        $perDayPrice = $basePrice / $defaultBillingDays;
 
-        // Use global multipliers from settings, fallback to product-specific if set
-        $globalMultiplierUp = (float) Setting::get('settings::modules:billing:renewal:multiplier_up', 0.85);
-        $globalMultiplierDown = (float) Setting::get('settings::modules:billing:renewal:multiplier_down', 1.25);
+        // Get multiplier steps from settings
+        $stepsJson = Setting::get('settings::modules:billing:renewal:multiplier_steps');
+        $steps = [];
+        
+        if ($stepsJson) {
+            $decoded = json_decode($stepsJson, true);
+            if (is_array($decoded)) {
+                $steps = $decoded;
+                // Sort by maxDays to ensure correct matching
+                usort($steps, function($a, $b) {
+                    return $a['maxDays'] <=> $b['maxDays'];
+                });
+            }
+        }
+        
+        // Default steps if none configured
+        if (empty($steps)) {
+            $steps = [
+                ['maxDays' => 10, 'multiplier' => 1.30],
+                ['maxDays' => 20, 'multiplier' => 1.20],
+                ['maxDays' => 29, 'multiplier' => 1.10],
+                ['maxDays' => 30, 'multiplier' => 1.00],
+                ['maxDays' => 59, 'multiplier' => 0.95],
+                ['maxDays' => 89, 'multiplier' => 0.90],
+                ['maxDays' => 999, 'multiplier' => 0.85],
+            ];
+        }
 
-        // Determine multiplier based on billing days
-        if ($days < 30) {
-            $multiplier = $this->multiplier_down ?? $globalMultiplierDown;
-        } elseif ($days > 30) {
-            $multiplier = $this->multiplier_up ?? $globalMultiplierUp;
-        } else {
-            $multiplier = 1.0;
+        // Find the first matching step
+        $multiplier = 1.0;
+        foreach ($steps as $step) {
+            if ($days <= $step['maxDays']) {
+                $multiplier = $step['multiplier'];
+                break;
+            }
+        }
+        
+        // If no step matched (days > all maxDays), use the last step's multiplier
+        if ($multiplier === 1.0 && !empty($steps)) {
+            $multiplier = end($steps)['multiplier'];
         }
 
         // Calculate final price: per_day_price * days * multiplier, rounded to 2 decimal places (standard for currency)

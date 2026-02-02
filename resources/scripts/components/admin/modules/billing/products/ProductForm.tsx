@@ -29,18 +29,32 @@ export default ({ product }: { product?: Product }) => {
     const params = useParams<'id'>();
     const [uuid, setUuid] = useState<string>();
     const [billingCycles, setBillingCycles] = useState<Array<{ id?: number; days: number; isEnabled: boolean }>>([]);
-    const [multiplierRanges, setMultiplierRanges] = useState<any>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
     const { secondary } = useStoreState(state => state.theme.data!.colors);
-    const globalMultiplierUp = useStoreState(state => state.everest.data!.billing.renewal?.multiplier_up || 0.85);
-    const globalMultiplierDown = useStoreState(state => state.everest.data!.billing.renewal?.multiplier_down || 1.25);
+    const settings = useStoreState(state => state.everest.data!.billing);
+    
+    // Get multiplier steps from settings
+    const getMultiplierSteps = () => {
+        const stepsString = settings.renewal?.multiplier_steps;
+        if (!stepsString) return [];
+        try {
+            if (typeof stepsString === 'string') {
+                return JSON.parse(stepsString);
+            }
+            return stepsString;
+        } catch {
+            return [];
+        }
+    };
+    
+    const multiplierSteps = getMultiplierSteps();
+    const defaultBillingDays = settings.renewal?.default_billing_days || 30;
 
     useEffect(() => {
         getCategory(Number(params.id)).then(category => setUuid(category.uuid));
-        getMultiplierRanges().then(setMultiplierRanges);
         
         if (product) {
             getBillingCycles(Number(params.id), product.id).then(cycles => {
@@ -49,14 +63,23 @@ export default ({ product }: { product?: Product }) => {
         }
     }, [params.id, product?.id]);
 
+    // Don't render form until we have the category UUID
+    if (!uuid) {
+        return (
+            <div css={tw`w-full flex flex-row items-center m-8`}>
+                <p>Loading...</p>
+            </div>
+        );
+    }
+
     const submit = (values: ProductValues, { setSubmitting }: FormikHelpers<ProductValues>) => {
         clearFlashes('admin:billing:product:create');
 
         const submitData = {
             ...values,
             base_price: values.basePrice,
-            multiplier_up: globalMultiplierUp,
-            multiplier_down: globalMultiplierDown,
+            multiplier_up: 1.0, // Not used anymore but keeping for compatibility
+            multiplier_down: 1.0, // Not used anymore but keeping for compatibility
         };
 
         if (!product) {
@@ -134,15 +157,15 @@ export default ({ product }: { product?: Product }) => {
             <Formik
                 onSubmit={submit}
                 initialValues={{
-                    categoryUuid: uuid!,
+                    categoryUuid: uuid,
                     name: product?.name ?? 'Plan Name',
                     icon: product?.icon ?? undefined,
                     // @ts-expect-error this is fine
                     price: product?.price?.toString() ?? '9.99',
                     // @ts-expect-error this is fine
                     basePrice: product?.basePrice?.toString() ?? undefined,
-                    multiplierUp: product?.multiplierUp ?? globalMultiplierUp,
-                    multiplierDown: product?.multiplierDown ?? globalMultiplierDown,
+                    multiplierUp: 1.0,
+                    multiplierDown: 1.0,
                     description: product?.description ?? 'This is a server plan.',
                     limits: {
                         cpu: product?.limits.cpu ?? 100,
@@ -224,15 +247,34 @@ export default ({ product }: { product?: Product }) => {
                                     </FieldRow>
                                     <Alert type={'info'} className={'mt-3'}>
                                         <div className="text-xs">
-                                            <strong>Global Multipliers (Read-Only):</strong>
-                                            <div className="mt-1">
-                                                • Multiplier Up (&gt;30 days): {globalMultiplierUp.toFixed(2)} ({((1 - globalMultiplierUp) * 100).toFixed(0)}% discount)
-                                            </div>
-                                            <div>
-                                                • Multiplier Down (&lt;30 days): {globalMultiplierDown.toFixed(2)} ({((globalMultiplierDown - 1) * 100).toFixed(0)}% premium)
+                                            <strong>Global Multiplier Steps (Read-Only):</strong>
+                                            <div className="mt-2 space-y-1">
+                                                <div>Default Billing Length: {defaultBillingDays} days</div>
+                                                {multiplierSteps.length > 0 ? (
+                                                    <>
+                                                        <div className="mt-2">Multiplier Tiers:</div>
+                                                        <ul className="list-disc list-inside ml-2">
+                                                            {multiplierSteps.map((step: any, idx: number) => {
+                                                                const discount = (1 - step.multiplier) * 100;
+                                                                const label = discount > 0 
+                                                                    ? `${Math.abs(discount).toFixed(0)}% discount`
+                                                                    : discount < 0
+                                                                    ? `${Math.abs(discount).toFixed(0)}% premium`
+                                                                    : 'base price';
+                                                                return (
+                                                                    <li key={idx}>
+                                                                        Days ≤ {step.maxDays}: {step.multiplier.toFixed(2)}x ({label})
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-gray-400">No multiplier steps configured</div>
+                                                )}
                                             </div>
                                             <div className="mt-2 text-gray-400">
-                                                To change these multipliers, go to <strong>Billing → Renewal Dates</strong> in the admin panel.
+                                                To change these settings, go to <strong>Billing → Renewal Dates</strong> in the admin panel.
                                             </div>
                                         </div>
                                     </Alert>

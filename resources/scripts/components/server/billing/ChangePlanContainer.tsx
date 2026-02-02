@@ -28,23 +28,44 @@ export default () => {
     const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     
-    // Use default 30-day billing cycle for plan pricing
-    const currentBillingDays = 30;
+    // Use default billing cycle for plan pricing
+    const currentBillingDays = settings.renewal?.default_billing_days || 30;
     
-    // Get global multipliers for price calculation
-    const globalMultiplierUp = settings.renewal?.multiplier_up || 0.85;
-    const globalMultiplierDown = settings.renewal?.multiplier_down || 1.25;
+    // Get multiplier steps from settings
+    const getMultiplierSteps = () => {
+        const stepsString = settings.renewal?.multiplier_steps;
+        if (!stepsString) return [];
+        try {
+            if (typeof stepsString === 'string') {
+                return JSON.parse(stepsString);
+            }
+            return stepsString;
+        } catch {
+            return [];
+        }
+    };
+    
+    const multiplierSteps = getMultiplierSteps();
 
     // Calculate price for a plan based on current billing cycle
     const calculatePlanPrice = (plan: Product): { price: number; discount: number } => {
         const basePrice = plan.basePrice || plan.price;
-        const perDayPrice = basePrice / 30;
+        const perDayPrice = basePrice / currentBillingDays;
         
+        // Find matching multiplier step
         let multiplier = 1.0;
-        if (currentBillingDays > 30) {
-            multiplier = globalMultiplierUp;
-        } else if (currentBillingDays < 30) {
-            multiplier = globalMultiplierDown;
+        if (multiplierSteps.length > 0) {
+            const sortedSteps = [...multiplierSteps].sort((a: any, b: any) => a.maxDays - b.maxDays);
+            for (const step of sortedSteps) {
+                if (currentBillingDays <= step.maxDays) {
+                    multiplier = step.multiplier;
+                    break;
+                }
+            }
+            // If no match found, use last step's multiplier
+            if (multiplier === 1.0) {
+                multiplier = sortedSteps[sortedSteps.length - 1]?.multiplier || 1.0;
+            }
         }
         
         const finalPrice = perDayPrice * currentBillingDays * multiplier;

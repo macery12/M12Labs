@@ -27,18 +27,52 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
     const [newCycleDays, setNewCycleDays] = useState<string>('');
     const [error, setError] = useState<string>('');
     const { colors } = useStoreState(state => state.theme.data!);
+    const settings = useStoreState(state => state.everest.data!.billing);
+    
+    // Get multiplier steps and default billing days from settings
+    const getMultiplierSteps = () => {
+        const stepsString = settings.renewal?.multiplier_steps;
+        if (!stepsString) return [];
+        try {
+            if (typeof stepsString === 'string') {
+                return JSON.parse(stepsString);
+            }
+            return stepsString;
+        } catch {
+            return [];
+        }
+    };
+    
+    const multiplierSteps = getMultiplierSteps();
+    const defaultBillingDays = settings.renewal?.default_billing_days || 30;
     const calculatePrice = (days: number): number => {
         const validatedBasePrice = basePrice || 0;
-        const ratio = days / 30;
+        const perDayPrice = validatedBasePrice / defaultBillingDays;
         
+        // Find matching multiplier step
         let multiplier = 1.0;
-        if (days > 30) {
-            multiplier = multiplierUp;
-        } else if (days < 30) {
-            multiplier = multiplierDown;
+        if (multiplierSteps.length > 0) {
+            const sortedSteps = [...multiplierSteps].sort((a: any, b: any) => a.maxDays - b.maxDays);
+            for (const step of sortedSteps) {
+                if (days <= step.maxDays) {
+                    multiplier = step.multiplier;
+                    break;
+                }
+            }
+            // If no match found, use last step's multiplier
+            if (multiplier === 1.0) {
+                multiplier = sortedSteps[sortedSteps.length - 1].multiplier;
+            }
+        } else {
+            // Fallback to old binary logic if no steps configured
+            if (days > defaultBillingDays) {
+                multiplier = multiplierUp;
+            } else if (days < defaultBillingDays) {
+                multiplier = multiplierDown;
+            }
         }
         
-        return Math.max(0, validatedBasePrice * ratio * multiplier);
+        return Math.max(0, perDayPrice * days * multiplier);
     };
 
     const handleAddCycle = () => {
@@ -76,11 +110,11 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
     };
 
     const getDiscountPercent = (days: number): number => {
-        if (days === 30) return 0;
+        if (days === defaultBillingDays) return 0;
         
         const baseMonthlyPrice = basePrice;
         const actualPrice = calculatePrice(days);
-        const equivalentMonthlyPrice = (actualPrice / days) * 30;
+        const equivalentMonthlyPrice = (actualPrice / days) * defaultBillingDays;
         
         // Return positive for discount, negative for premium
         return ((baseMonthlyPrice - equivalentMonthlyPrice) / baseMonthlyPrice) * 100;
@@ -137,7 +171,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                                 <div css={tw`flex-1`}>
                                     <div css={tw`text-sm font-medium`}>
                                         {cycle.days} days
-                                        {cycle.days === 30 && (
+                                        {cycle.days === defaultBillingDays && (
                                             <span css={tw`ml-2 text-xs text-neutral-400`}>(Default)</span>
                                         )}
                                     </div>
@@ -170,17 +204,32 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                         Price Calculation Preview
                     </div>
                     <div css={tw`text-xs space-y-1`}>
-                        <div>Base Price (30 days): ${basePrice.toFixed(2)}</div>
-                        <div>
-                            Multiplier Up (&gt;30 days): {multiplierUp.toFixed(2)}{' '}
-                            {multiplierUp < 1.0 ? `(${((1 - multiplierUp) * 100).toFixed(0)}% discount)` : 
-                             multiplierUp > 1.0 ? `(${((multiplierUp - 1) * 100).toFixed(0)}% premium)` : ''}
-                        </div>
-                        <div>
-                            Multiplier Down (&lt;30 days): {multiplierDown.toFixed(2)}{' '}
-                            {multiplierDown > 1.0 ? `(${((multiplierDown - 1) * 100).toFixed(0)}% premium)` : 
-                             multiplierDown < 1.0 ? `(${((1 - multiplierDown) * 100).toFixed(0)}% discount)` : ''}
-                        </div>
+                        <div>Base Price ({defaultBillingDays} days): ${basePrice.toFixed(2)}</div>
+                        {multiplierSteps.length > 0 ? (
+                            <div>
+                                <div className="font-semibold mt-2">Multiplier Steps:</div>
+                                <ul className="list-disc list-inside ml-2 mt-1">
+                                    {multiplierSteps.map((step: any, idx: number) => (
+                                        <li key={idx}>
+                                            Days ≤ {step.maxDays}: {step.multiplier.toFixed(2)}x
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    Multiplier Up (&gt;{defaultBillingDays} days): {multiplierUp.toFixed(2)}{' '}
+                                    {multiplierUp < 1.0 ? `(${((1 - multiplierUp) * 100).toFixed(0)}% discount)` : 
+                                     multiplierUp > 1.0 ? `(${((multiplierUp - 1) * 100).toFixed(0)}% premium)` : ''}
+                                </div>
+                                <div>
+                                    Multiplier Down (&lt;{defaultBillingDays} days): {multiplierDown.toFixed(2)}{' '}
+                                    {multiplierDown > 1.0 ? `(${((multiplierDown - 1) * 100).toFixed(0)}% premium)` : 
+                                     multiplierDown < 1.0 ? `(${((1 - multiplierDown) * 100).toFixed(0)}% discount)` : ''}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
