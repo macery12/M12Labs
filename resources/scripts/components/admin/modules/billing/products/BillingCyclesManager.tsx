@@ -27,7 +27,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
     const [error, setError] = useState<string>('');
 
     const calculatePrice = (days: number): number => {
-        const effectiveBasePrice = basePrice || 0;
+        const validatedBasePrice = basePrice || 0;
         const ratio = days / 30;
         
         let multiplier = 1.0;
@@ -37,7 +37,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
             multiplier = multiplierDown;
         }
         
-        return Math.max(0, effectiveBasePrice * ratio * multiplier);
+        return Math.max(0, validatedBasePrice * ratio * multiplier);
     };
 
     const handleAddCycle = () => {
