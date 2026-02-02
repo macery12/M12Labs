@@ -163,8 +163,8 @@ class Product extends Model
             $multiplier = 1.0;
         }
 
-        // Calculate final price: per_day_price * days * multiplier, rounded to 1 decimal
-        $finalPrice = round($perDayPrice * $days * $multiplier, 1);
+        // Calculate final price: per_day_price * days * multiplier, rounded to 2 decimal places (standard for currency)
+        $finalPrice = round($perDayPrice * $days * $multiplier, 2);
 
         // Calculate discount percentage (negative = premium, positive = discount)
         $standardPrice = $perDayPrice * $days;

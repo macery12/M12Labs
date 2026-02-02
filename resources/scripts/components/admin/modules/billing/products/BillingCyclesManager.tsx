@@ -142,7 +142,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                                         ${price.toFixed(2)}
                                         {discount !== 0 && (
                                             <span css={tw`ml-2`}>
-                                                ({discount > 0 ? '+' : ''}{discount.toFixed(1)}% vs. monthly)
+                                                ({discount.toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
                                             </span>
                                         )}
                                     </div>
@@ -168,8 +168,16 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                     </div>
                     <div css={tw`text-xs space-y-1`}>
                         <div>Base Price (30 days): ${basePrice.toFixed(2)}</div>
-                        <div>Multiplier Up (&gt;30 days): {multiplierUp.toFixed(2)} ({((1 - multiplierUp) * 100).toFixed(0)}% discount)</div>
-                        <div>Multiplier Down (&lt;30 days): {multiplierDown.toFixed(2)} ({((multiplierDown - 1) * 100).toFixed(0)}% premium)</div>
+                        <div>
+                            Multiplier Up (&gt;30 days): {multiplierUp.toFixed(2)}{' '}
+                            {multiplierUp < 1.0 ? `(${((1 - multiplierUp) * 100).toFixed(0)}% discount)` : 
+                             multiplierUp > 1.0 ? `(${((multiplierUp - 1) * 100).toFixed(0)}% premium)` : ''}
+                        </div>
+                        <div>
+                            Multiplier Down (&lt;30 days): {multiplierDown.toFixed(2)}{' '}
+                            {multiplierDown > 1.0 ? `(${((multiplierDown - 1) * 100).toFixed(0)}% premium)` : 
+                             multiplierDown < 1.0 ? `(${((1 - multiplierDown) * 100).toFixed(0)}% discount)` : ''}
+                        </div>
                     </div>
                 </div>
             )}
