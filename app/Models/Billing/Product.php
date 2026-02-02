@@ -15,8 +15,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $icon
  * @property float $price
  * @property float|null $base_price
- * @property float $multiplier_up
- * @property float $multiplier_down
  * @property string $description
  * @property int $cpu_limit
  * @property int $memory_limit
@@ -45,7 +43,7 @@ class Product extends Model
      */
     protected $fillable = [
         'uuid', 'category_uuid',
-        'name', 'icon', 'price', 'base_price', 'multiplier_up', 'multiplier_down', 'description',
+        'name', 'icon', 'price', 'base_price', 'description',
         'cpu_limit', 'memory_limit', 'disk_limit',
         'backup_limit', 'database_limit', 'allocation_limit',
     ];
@@ -56,8 +54,6 @@ class Product extends Model
     protected $casts = [
         'price' => 'float',
         'base_price' => 'float',
-        'multiplier_up' => 'float',
-        'multiplier_down' => 'float',
         'cpu_limit' => 'integer',
         'memory_limit' => 'integer',
         'disk_limit' => 'integer',

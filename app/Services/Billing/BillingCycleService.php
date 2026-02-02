@@ -116,27 +116,4 @@ class BillingCycleService
             );
         }
     }
-
-    /**
-     * Get suggested multiplier ranges.
-     * 
-     * @return array
-     */
-    public function getSuggestedMultiplierRanges(): array
-    {
-        return [
-            'multiplier_up' => [
-                'min' => 0.70,
-                'max' => 0.95,
-                'suggested' => 0.85,
-                'description' => 'Discount for longer billing cycles (e.g., 0.85 = 15% discount)',
-            ],
-            'multiplier_down' => [
-                'min' => 1.05,
-                'max' => 1.50,
-                'suggested' => 1.25,
-                'description' => 'Premium for shorter billing cycles (e.g., 1.25 = 25% premium)',
-            ],
-        ];
-    }
 }

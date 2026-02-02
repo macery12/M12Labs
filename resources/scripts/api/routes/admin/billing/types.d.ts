@@ -10,8 +10,6 @@ export interface ProductValues {
     icon: string | undefined;
     price: number;
     basePrice?: number | null;
-    multiplierUp?: number;
-    multiplierDown?: number;
     description: string;
 
     limits: {

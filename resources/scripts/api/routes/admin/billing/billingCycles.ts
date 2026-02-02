@@ -2,18 +2,7 @@ import http from '@/api/http';
 import { BillingCycleWithPrice } from '@definitions/admin';
 
 export interface MultiplierRanges {
-    multiplier_up: {
-        min: number;
-        max: number;
-        suggested: number;
-        description: string;
-    };
-    multiplier_down: {
-        min: number;
-        max: number;
-        suggested: number;
-        description: string;
-    };
+    // Deprecated - not used anymore
 }
 
 export const getBillingCycles = async (categoryId: number, productId: number): Promise<BillingCycleWithPrice[]> => {

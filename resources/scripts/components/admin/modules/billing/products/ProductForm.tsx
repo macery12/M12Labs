@@ -78,8 +78,6 @@ export default ({ product }: { product?: Product }) => {
         const submitData = {
             ...values,
             base_price: values.basePrice,
-            multiplier_up: 1.0, // Not used anymore but keeping for compatibility
-            multiplier_down: 1.0, // Not used anymore but keeping for compatibility
         };
 
         if (!product) {
@@ -167,8 +165,6 @@ export default ({ product }: { product?: Product }) => {
                     price: product?.price?.toString() ?? '9.99',
                     // @ts-expect-error this is fine
                     basePrice: product?.basePrice?.toString() ?? null,
-                    multiplierUp: 1.0,
-                    multiplierDown: 1.0,
                     description: product?.description ?? 'This is a server plan.',
                     limits: {
                         cpu: product?.limits.cpu ?? 100,

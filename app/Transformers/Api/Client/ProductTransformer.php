@@ -29,8 +29,6 @@ class ProductTransformer extends Transformer
             'icon' => $model->icon,
             'price' => $model->price,
             'base_price' => $model->base_price,
-            'multiplier_up' => $model->multiplier_up,
-            'multiplier_down' => $model->multiplier_down,
             'description' => $model->description,
             'egg_id' => $defaultEggId,
             'allowed_eggs' => $allowedEggs,

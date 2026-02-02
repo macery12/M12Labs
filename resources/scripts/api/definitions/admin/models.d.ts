@@ -130,8 +130,6 @@ interface Product extends Model {
     icon?: string;
     price: number;
     basePrice?: number | null;
-    multiplierUp: number;
-    multiplierDown: number;
     description: string;
 
     limits: {

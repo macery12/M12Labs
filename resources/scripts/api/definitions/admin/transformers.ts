@@ -179,8 +179,6 @@ export default class Transformers {
         icon: attributes.icon,
         price: attributes.price,
         basePrice: attributes.base_price ?? null,
-        multiplierUp: attributes.multiplier_up ?? 1.0,
-        multiplierDown: attributes.multiplier_down ?? 1.0,
         description: attributes.description,
 
         limits: {
