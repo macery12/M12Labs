@@ -183,8 +183,8 @@ export default ({ product }: { product?: Product }) => {
                     categoryUuid: string().required('Category UUID is required'),
                     name: string().required().max(191).min(3),
                     icon: string().nullable().notRequired().max(191).min(3),
-                    price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
-                    basePrice: number().nullable().typeError('Base price must be a number').min(0, 'Base price cannot be negative'),
+                    price: string().required().test(v => v !== undefined && !isNaN(Number(v)) && Number(v) >= 0),
+                    basePrice: string().nullable().test(v => v == null || (v !== '' && !isNaN(Number(v)) && Number(v) >= 0)),
                     description: string().nullable().max(191).min(3),
                     limits: object().shape({
                         cpu: number().required().min(10),
