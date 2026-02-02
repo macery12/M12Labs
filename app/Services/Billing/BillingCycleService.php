@@ -108,7 +108,11 @@ class BillingCycleService
      */
     public function syncBillingCycles(Product $product, array $cycles): void
     {
+        $daysToKeep = [];
+        
         foreach ($cycles as $cycleData) {
+            $daysToKeep[] = $cycleData['days'];
+            
             BillingCycle::updateOrCreate(
                 [
                     'product_id' => $product->id,
@@ -119,5 +123,8 @@ class BillingCycleService
                 ]
             );
         }
+        
+        // Delete cycles that are no longer in the list
+        $product->billingCycles()->whereNotIn('days', $daysToKeep)->delete();
     }
 }
