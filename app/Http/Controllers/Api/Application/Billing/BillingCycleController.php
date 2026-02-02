@@ -20,10 +20,10 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Get all billing cycles for a product with calculated prices.
      */
-    public function index(Request $request, int $productId): JsonResponse
+    public function index(Request $request, int $product): JsonResponse
     {
-        $product = Product::findOrFail($productId);
-        $cycles = $this->billingCycleService->getAvailableCycles($product);
+        $productModel = Product::findOrFail($product);
+        $cycles = $this->billingCycleService->getAvailableCycles($productModel);
 
         return response()->json(['data' => $cycles]);
     }
@@ -31,9 +31,9 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Sync billing cycles for a product.
      */
-    public function sync(Request $request, int $productId): Response
+    public function sync(Request $request, int $product): Response
     {
-        $product = Product::findOrFail($productId);
+        $productModel = Product::findOrFail($product);
         
         $validated = $request->validate([
             'cycles' => 'required|array',
@@ -41,7 +41,7 @@ class BillingCycleController extends ApplicationApiController
             'cycles.*.is_enabled' => 'boolean',
         ]);
 
-        $this->billingCycleService->syncBillingCycles($product, $validated['cycles']);
+        $this->billingCycleService->syncBillingCycles($productModel, $validated['cycles']);
 
         return $this->returnNoContent();
     }
