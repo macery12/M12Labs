@@ -9,6 +9,9 @@ export interface ProductValues {
     name: string;
     icon: string | undefined;
     price: number;
+    basePrice?: number | null;
+    multiplierUp?: number;
+    multiplierDown?: number;
     description: string;
 
     limits: {
