@@ -2,6 +2,7 @@
 
 namespace Everest\Services\Billing;
 
+use Everest\Models\Setting;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\BillingCycle;
 use Everest\Exceptions\DisplayException;
@@ -22,7 +23,42 @@ class BillingCycleService
     }
 
     /**
+     * Get all billing cycles for a product (admin view).
+     * Includes all cycles with their enabled status.
+     * 
+     * @param Product $product
+     * @return array
+     */
+    public function getAllCycles(Product $product): array
+    {
+        // Get default billing days from settings
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
+        
+        // Query ALL billing cycles for the product
+        $cycles = BillingCycle::where('product_id', $product->id)
+            ->orderBy('days')
+            ->get();
+        
+        $result = [];
+        foreach ($cycles as $cycle) {
+            $priceInfo = $this->calculatePrice($product, $cycle->days);
+            $result[] = [
+                'id' => $cycle->id,
+                'days' => $cycle->days,
+                'price' => $priceInfo['price'],
+                'multiplier' => $priceInfo['multiplier'],
+                'discount_percent' => $priceInfo['discount_percent'],
+                'is_default' => $cycle->days === $defaultBillingDays,
+                'is_enabled' => $cycle->is_enabled,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Get all enabled billing cycles for a product with calculated prices.
+     * Used for client checkout.
      * 
      * @param Product $product
      * @param int|null $couponId Optional coupon ID to apply

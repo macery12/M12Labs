@@ -23,7 +23,8 @@ class BillingCycleController extends ApplicationApiController
     public function index(Request $request, int $product): JsonResponse
     {
         $productModel = Product::findOrFail($product);
-        $cycles = $this->billingCycleService->getAvailableCycles($productModel);
+        // Use getAllCycles for admin to include is_enabled status
+        $cycles = $this->billingCycleService->getAllCycles($productModel);
 
         return response()->json(['data' => $cycles]);
     }
@@ -44,15 +45,6 @@ class BillingCycleController extends ApplicationApiController
         $this->billingCycleService->syncBillingCycles($productModel, $validated['cycles']);
 
         return $this->returnNoContent();
-    }
-
-    /**
-     * Get suggested multiplier ranges.
-     */
-    public function multiplierRanges(): JsonResponse
-    {
-        $ranges = $this->billingCycleService->getSuggestedMultiplierRanges();
-        return response()->json(['data' => $ranges]);
     }
 
     /**
