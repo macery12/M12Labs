@@ -156,6 +156,8 @@ export default ({ product }: { product?: Product }) => {
                 )}
             </div>
             <Formik
+                key={uuid} // Force re-render when uuid changes
+                enableReinitialize
                 onSubmit={submit}
                 initialValues={{
                     categoryUuid: uuid,
@@ -178,6 +180,7 @@ export default ({ product }: { product?: Product }) => {
                     },
                 }}
                 validationSchema={object().shape({
+                    categoryUuid: string().required('Category UUID is required'),
                     name: string().required().max(191).min(3),
                     icon: string().nullable().max(191).min(3),
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
