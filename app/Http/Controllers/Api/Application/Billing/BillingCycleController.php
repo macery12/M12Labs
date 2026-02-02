@@ -50,13 +50,13 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Delete a specific billing cycle.
      */
-    public function delete(int $productId, int $cycleId): Response
+    public function delete(int $product, int $cycle): Response
     {
-        $cycle = BillingCycle::where('product_id', $productId)
-            ->where('id', $cycleId)
+        $cycleModel = BillingCycle::where('product_id', $product)
+            ->where('id', $cycle)
             ->firstOrFail();
 
-        $cycle->delete();
+        $cycleModel->delete();
 
         return $this->returnNoContent();
     }
