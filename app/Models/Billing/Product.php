@@ -3,6 +3,7 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\Setting;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 

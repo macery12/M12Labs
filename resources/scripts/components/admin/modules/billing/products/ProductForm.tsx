@@ -115,6 +115,7 @@ export default ({ product }: { product?: Product }) => {
                             billingCycles.map(c => ({ days: c.days, is_enabled: c.isEnabled })),
                         );
                     }
+                    return Promise.resolve();
                 })
                 .then(() => {
                     setSubmitting(false);
