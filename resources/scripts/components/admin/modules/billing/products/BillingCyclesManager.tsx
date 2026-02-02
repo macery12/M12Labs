@@ -81,6 +81,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
         const actualPrice = calculatePrice(days);
         const equivalentMonthlyPrice = (actualPrice / days) * 30;
         
+        // Return positive for discount, negative for premium
         return ((baseMonthlyPrice - equivalentMonthlyPrice) / baseMonthlyPrice) * 100;
     };
 
@@ -142,7 +143,7 @@ const BillingCyclesManager = ({ cycles, basePrice, multiplierUp, multiplierDown,
                                         ${price.toFixed(2)}
                                         {discount !== 0 && (
                                             <span css={tw`ml-2`}>
-                                                ({discount.toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
+                                                ({Math.abs(discount).toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
                                             </span>
                                         )}
                                     </div>
