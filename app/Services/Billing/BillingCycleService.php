@@ -147,23 +147,32 @@ class BillingCycleService
      */
     public function syncBillingCycles(Product $product, array $cycles): void
     {
+        // Ensure we have a valid product ID
+        if (!$product->id) {
+            throw new \InvalidArgumentException('Product must have an ID to sync billing cycles');
+        }
+        
         $daysToKeep = [];
         
         foreach ($cycles as $cycleData) {
             $daysToKeep[] = $cycleData['days'];
             
+            // Explicitly set product_id to ensure it's never null or wrong
             BillingCycle::updateOrCreate(
                 [
                     'product_id' => $product->id,
                     'days' => $cycleData['days'],
                 ],
                 [
+                    'product_id' => $product->id,  // Explicitly set in update data too
                     'is_enabled' => $cycleData['is_enabled'] ?? true,
                 ]
             );
         }
         
-        // Delete cycles that are no longer in the list
-        $product->billingCycles()->whereNotIn('days', $daysToKeep)->delete();
+        // Delete cycles that are no longer in the list for THIS SPECIFIC PRODUCT
+        BillingCycle::where('product_id', $product->id)
+            ->whereNotIn('days', $daysToKeep)
+            ->delete();
     }
 }
