@@ -62,7 +62,7 @@ export const toggleExtension = async (extensionId: string): Promise<ExtensionDat
 };
 
 export const updateModuleSettings = async (enabled: boolean): Promise<void> => {
-    await http.put('/api/application/extensions/settings', { enabled });
+    await http.put('/api/application/extensions/settings', { key: 'enabled', value: enabled });
 };
 
 export const getNestsAndEggs = async (): Promise<NestsAndEggs> => {
