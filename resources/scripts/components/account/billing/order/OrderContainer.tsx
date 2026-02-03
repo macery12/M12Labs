@@ -78,11 +78,14 @@ export default () => {
     // Auto-generate server name
     const generateServerName = () => {
         if (!product || !selectedNode || !selectedEggId) return '';
+        
         const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
         const node = nodes?.find(n => Number(n.id) === selectedNode);
         
-        const eggName = selectedEgg?.name.split(' ')[0] || 'Server';
-        const nodePrefix = node?.name.split('-')[0] || 'Node';
+        if (!selectedEgg || !node) return '';
+        
+        const eggName = selectedEgg.name.split(' ')[0] || 'Server';
+        const nodePrefix = node.name.split('-')[0] || 'Node';
         const timestamp = Date.now().toString().slice(-6);
         
         return `${eggName}-${nodePrefix}-${timestamp}`;
@@ -141,7 +144,8 @@ export default () => {
 
     // Check if checkout is complete
     const isCheckoutComplete = () => {
-        return legalAgreed && serverName.trim() && selectedNode && selectedEggId && selectedBillingDays;
+        const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
+        return legalAgreed && serverName.trim() && selectedNode && isEggSelectionComplete && selectedBillingDays;
     };
 
     // Get the current price based on selected billing cycle
@@ -287,16 +291,7 @@ export default () => {
     // Auto-generate server name when selections change
     useEffect(() => {
         if (!serverNameTouched && product && selectedNode && selectedEggId) {
-            const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
-            const node = nodes?.find(n => Number(n.id) === selectedNode);
-            
-            if (!selectedEgg || !node) return;
-            
-            const eggName = selectedEgg.name.split(' ')[0] || 'Server';
-            const nodePrefix = node.name.split('-')[0] || 'Node';
-            const timestamp = Date.now().toString().slice(-6);
-            
-            const generatedName = `${eggName}-${nodePrefix}-${timestamp}`;
+            const generatedName = generateServerName();
             if (generatedName) {
                 setServerName(generatedName);
             }
@@ -305,11 +300,11 @@ export default () => {
 
     // Clear coupon when billing cycle changes to prevent showing incorrect totals
     useEffect(() => {
-        if (couponData && selectedBillingDays) {
+        if (couponData) {
             // Clear the coupon data to force revalidation with new price
             setCouponData(null);
         }
-    }, [selectedBillingDays, couponData]);
+    }, [selectedBillingDays]);
 
     if (!product) return <Spinner centered />;
 
@@ -663,7 +658,7 @@ export default () => {
                                         icon={showCoupon ? faChevronDown : faChevronRight} 
                                         className={'h-3 w-3'}
                                         style={{ color: colors.primary }}
-                                        aria-hidden="true"
+                                        aria-hidden={true}
                                     />
                                 </button>
                                 {showCoupon && (
