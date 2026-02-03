@@ -8,7 +8,7 @@ import { faPuzzlePiece, faUsers, faGamepad, faCube, faServer, faChevronRight } f
 import { useStoreState } from '@/state/hooks';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
-import ServerContentBlock from '@/components/elements/ServerContentBlock';
+import PageContentBlock from '@/elements/PageContentBlock';
 
 const iconMap: Record<string, typeof faPuzzlePiece> = {
     'puzzle': faPuzzlePiece,
@@ -37,17 +37,17 @@ export default () => {
 
     if (loading) {
         return (
-            <ServerContentBlock title={'Extensions'}>
+            <PageContentBlock title={'Extensions'}>
                 <div className={'flex items-center justify-center py-16'}>
                     <Spinner size={'large'} />
                 </div>
-            </ServerContentBlock>
+            </PageContentBlock>
         );
     }
 
     if (extensions.length === 0) {
         return (
-            <ServerContentBlock title={'Extensions'}>
+            <PageContentBlock title={'Extensions'}>
                 <FlashMessageRender byKey={'server:extensions'} className={'mb-4'} />
                 <div className={'rounded-lg bg-neutral-800 p-8 text-center'}>
                     <FontAwesomeIcon icon={faPuzzlePiece} className={'mb-4 text-4xl text-neutral-600'} />
@@ -56,12 +56,12 @@ export default () => {
                         Extensions are enabled by your hosting provider based on your server type.
                     </p>
                 </div>
-            </ServerContentBlock>
+            </PageContentBlock>
         );
     }
 
     return (
-        <ServerContentBlock title={'Extensions'}>
+        <PageContentBlock title={'Extensions'}>
             <FlashMessageRender byKey={'server:extensions'} className={'mb-4'} />
             <div className={'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
                 {extensions.map(extension => {
@@ -99,6 +99,6 @@ export default () => {
                     );
                 })}
             </div>
-        </ServerContentBlock>
+        </PageContentBlock>
     );
 };

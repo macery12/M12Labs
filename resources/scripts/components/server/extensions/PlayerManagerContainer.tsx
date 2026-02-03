@@ -42,7 +42,7 @@ import {
 import { useStoreState } from '@/state/hooks';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
-import ServerContentBlock from '@/components/elements/ServerContentBlock';
+import PageContentBlock from '@/elements/PageContentBlock';
 import { Button } from '@/elements/button';
 import Modal from '@/elements/Modal';
 import Field from '@/elements/Field';
@@ -417,17 +417,17 @@ export default () => {
 
     if (loading && !status) {
         return (
-            <ServerContentBlock title={'Player Manager'}>
+            <PageContentBlock title={'Player Manager'}>
                 <div className={'flex items-center justify-center py-16'}>
                     <Spinner size={'large'} />
                 </div>
-            </ServerContentBlock>
+            </PageContentBlock>
         );
     }
 
     if (!status) {
         return (
-            <ServerContentBlock title={'Player Manager'}>
+            <PageContentBlock title={'Player Manager'}>
                 <FlashMessageRender byKey={'server:player-manager'} className={'mb-4'} />
                 <div className={'rounded-lg bg-neutral-800 p-8 text-center'}>
                     <p className={'text-neutral-400'}>Failed to load player manager data.</p>
@@ -435,12 +435,12 @@ export default () => {
                         Try Again
                     </Button>
                 </div>
-            </ServerContentBlock>
+            </PageContentBlock>
         );
     }
 
     return (
-        <ServerContentBlock title={'Player Manager'}>
+        <PageContentBlock title={'Player Manager'}>
             <FlashMessageRender byKey={'server:player-manager'} className={'mb-4'} />
 
             {/* Header */}
@@ -661,6 +661,6 @@ export default () => {
                     onAction={fetchStatus}
                 />
             )}
-        </ServerContentBlock>
+        </PageContentBlock>
     );
 };
