@@ -66,13 +66,14 @@ export default () => {
     const [selectedEggId, setSelectedEggId] = useState<number | undefined>();
     const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
 
-    const [termsAgreed, setTermsAgreed] = useState<boolean>(false);
-    const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [showCoupon, setShowCoupon] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
+    
+    // Wizard step state
+    const [currentStep, setCurrentStep] = useState<number>(1);
 
     const { colors } = useStoreState(state => state.theme.data!);
 
@@ -92,61 +93,63 @@ export default () => {
         return `${eggName}-${nodePrefix}-${timestamp}`;
     }, [product, selectedNode, selectedEggId, availableEggs, nodes]);
 
-    // Get CTA button text and state
-    const getCTAState = () => {
-        const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
-        
-        if (!selectedNode) {
-            return {
-                text: 'Continue to Server Type',
-                disabled: true,
-                reason: 'Please select a location to continue'
-            };
-        }
-        
-        if (!isEggSelectionComplete) {
-            return {
-                text: 'Continue to Billing',
-                disabled: true,
-                reason: 'Please select a server type to continue'
-            };
-        }
-        
-        if (!selectedBillingDays) {
-            return {
-                text: 'Review & Pay',
-                disabled: true,
-                reason: 'Please select a billing cycle to continue'
-            };
-        }
-        
-        if (!serverName.trim()) {
-            return {
-                text: 'Review & Pay',
-                disabled: true,
-                reason: 'Please enter a server name to continue'
-            };
-        }
-        
-        if (!legalAgreed) {
-            return {
-                text: 'Review & Pay',
-                disabled: true,
-                reason: 'Please accept the legal agreements to continue'
-            };
-        }
-        
-        return {
-            text: 'Review & Pay',
-            disabled: false,
-            reason: ''
-        };
+    // Get total number of steps dynamically
+    const getTotalSteps = () => {
+        let steps = 3; // Node, Billing, Review (always present)
+        if (availableEggs.length > 1) steps++; // Add egg selection step if multiple eggs
+        if (eggs && eggs.some(v => v.isEditable)) steps++; // Add variables step if editable vars exist
+        return steps;
     };
 
-    // Check if checkout is complete
-    const isCheckoutComplete = () => {
-        const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
-        return legalAgreed && serverName.trim() && selectedNode && isEggSelectionComplete && selectedBillingDays;
+    // Navigate to next step
+    const goToNextStep = () => {
+        const totalSteps = getTotalSteps();
+        if (currentStep < totalSteps + 1) { // +1 for payment step
+            setCurrentStep(currentStep + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    // Navigate to previous step
+    const goToPreviousStep = () => {
+        if (currentStep > 1) {
+            setCurrentStep(currentStep - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    // Check if current step is valid
+    const isStepValid = (step: number) => {
+        switch (step) {
+            case 1: // Node selection
+                return selectedNode !== 0;
+            case 2: // Egg selection (if applicable)
+                if (availableEggs.length <= 1) return true;
+                return selectedEggId !== undefined;
+            case 3: // Billing cycle
+                return selectedBillingDays !== 0;
+            case 4: // Variables (if applicable)
+                return true; // Variables are optional
+            case 5: // Review
+                return serverName.trim() !== '' && legalAgreed;
+            default:
+                return false;
+        }
+    };
+
+    // Get step title
+    const getStepTitle = (step: number) => {
+        const stepMap: { [key: number]: string } = {};
+        let stepNum = 1;
+        
+        stepMap[stepNum++] = 'Select Location';
+        if (availableEggs.length > 1) stepMap[stepNum++] = 'Select Server Type';
+        stepMap[stepNum++] = 'Select Billing Cycle';
+        if (eggs && eggs.some(v => v.isEditable)) stepMap[stepNum++] = 'Configure Server';
+        stepMap[stepNum++] = 'Review & Confirm';
+        stepMap[stepNum++] = 'Payment';
+        
+        return stepMap[step] || '';
     };
 
     // Get the current price based on selected billing cycle
@@ -155,27 +158,62 @@ export default () => {
         return selectedCycle ? selectedCycle.price : product?.price ?? 0;
     };
 
-    // Calculate checkout steps progress - New flow: Node → Egg → Billing Cycle → Review & Payment
-    const getCheckoutSteps = () => {
-        const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
-        const steps = [
-            { id: 1, name: 'Location', status: selectedNode ? 'complete' : 'current' },
-            {
-                id: 2,
+    
+    // Get progress steps for wizard
+    const getWizardSteps = () => {
+        const steps = [];
+        let stepNum = 1;
+        
+        // Step 1: Node selection
+        steps.push({
+            id: stepNum++,
+            name: 'Location',
+            status: currentStep > 1 ? 'complete' : (currentStep === 1 ? 'current' : 'upcoming')
+        });
+        
+        // Step 2: Egg selection (if multiple eggs)
+        if (availableEggs.length > 1) {
+            const eggStep = stepNum++;
+            steps.push({
+                id: eggStep,
                 name: 'Server Type',
-                status: selectedNode ? (isEggSelectionComplete ? 'complete' : 'current') : 'upcoming',
-            },
-            {
-                id: 3,
-                name: 'Billing',
-                status: selectedNode && isEggSelectionComplete ? (selectedBillingDays ? 'complete' : 'current') : 'upcoming',
-            },
-            {
-                id: 4,
-                name: 'Review & Payment',
-                status: selectedNode && isEggSelectionComplete && selectedBillingDays ? 'current' : 'upcoming',
-            },
-        ];
+                status: currentStep > eggStep ? 'complete' : (currentStep === eggStep ? 'current' : 'upcoming')
+            });
+        }
+        
+        // Step 3: Billing cycle
+        const billingStep = stepNum++;
+        steps.push({
+            id: billingStep,
+            name: 'Billing',
+            status: currentStep > billingStep ? 'complete' : (currentStep === billingStep ? 'current' : 'upcoming')
+        });
+        
+        // Step 4: Variables (if editable variables exist)
+        if (eggs && eggs.some(v => v.isEditable)) {
+            const varsStep = stepNum++;
+            steps.push({
+                id: varsStep,
+                name: 'Configure',
+                status: currentStep > varsStep ? 'complete' : (currentStep === varsStep ? 'current' : 'upcoming')
+            });
+        }
+        
+        // Step 5: Review
+        const reviewStep = stepNum++;
+        steps.push({
+            id: reviewStep,
+            name: 'Review',
+            status: currentStep > reviewStep ? 'complete' : (currentStep === reviewStep ? 'current' : 'upcoming')
+        });
+        
+        // Step 6: Payment
+        steps.push({
+            id: stepNum,
+            name: 'Payment',
+            status: currentStep >= stepNum ? 'current' : 'upcoming'
+        });
+        
         return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
     };
 
@@ -312,27 +350,31 @@ export default () => {
 
     if (!product) return <Spinner centered />;
 
-    return (
-        <PageContentBlock title={'Your Order'}>
-            <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            <div className={'mb-8'}>
-                <h1 className={'text-4xl font-bold text-gray-100'}>Complete Your Order</h1>
-                <p className={'mt-2 text-base text-gray-400'}>
-                    Customize your server configuration and complete your purchase.
-                </p>
-            </div>
+    if (!product) return <Spinner centered />;
 
-            <CheckoutStepper steps={getCheckoutSteps()} />
+    // Render different content based on current step
+    const renderStepContent = () => {
+        let actualStep = currentStep;
+        
+        // Adjust step numbers if egg selection is skipped
+        if (availableEggs.length <= 1 && currentStep >= 2) {
+            actualStep++;
+        }
+        
+        // Adjust if variables are skipped
+        const hasEditableVars = eggs && eggs.some(v => v.isEditable);
+        if (!hasEditableVars && currentStep >= (availableEggs.length > 1 ? 4 : 3)) {
+            actualStep++;
+        }
 
-            <div className={'mt-10 grid gap-8 lg:grid-cols-3 lg:gap-10'}>
-                {/* Main Content Area */}
-                <div className={'space-y-8 lg:col-span-2'}>
-                    {/* Location Section - STEP 1 */}
-                    <section>
-                        <div className={'mb-6'}>
-                            <h2 className={'text-2xl font-bold text-gray-200'}>Choose a Location</h2>
-                            <p className={'mt-1 text-sm text-gray-400'}>
-                                Select where you want your server to be deployed.
+        switch (currentStep) {
+            case 1: // Node Selection
+                return (
+                    <div className={'space-y-6'}>
+                        <div>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Choose Your Server Location</h2>
+                            <p className={'mt-2 text-gray-400'}>
+                                Select the datacenter where you want your server to be deployed.
                             </p>
                         </div>
                         {(!nodes || nodes.length < 1) && (
@@ -350,385 +392,418 @@ export default () => {
                                 />
                             ))}
                         </div>
-                    </section>
+                    </div>
+                );
 
-                    {/* Server Type Section - STEP 2 */}
-                    {availableEggs.length > 1 && (
-                        <section>
-                            <div className={'mb-6'}>
-                                <h2 className={'text-2xl font-bold text-gray-200'}>Server Type</h2>
-                                <p className={'mt-1 text-sm text-gray-400'}>
-                                    Select which type of server you want to create.
-                                </p>
-                            </div>
-                            <div className={'grid gap-4 sm:grid-cols-2'}>
-                                {availableEggs.map(egg => (
-                                    <EggBox
-                                        egg={egg}
-                                        key={egg.id}
-                                        selected={selectedEggId}
-                                        setSelected={setSelectedEggId}
-                                        onEggChange={() => setEggs(undefined)}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Billing Cycle Section - STEP 3 */}
-                    {billingCycles.length > 0 && (
-                        <section>
-                            <div className={'mb-6'}>
-                                <h2 className={'text-2xl font-bold text-gray-200'}>Choose Your Billing Cycle</h2>
-                                <p className={'mt-1 text-sm text-gray-400'}>
-                                    Select how often you want to be billed for this server.
-                                </p>
-                            </div>
-                            <div className={'grid gap-4 sm:grid-cols-2'}>
-                                {billingCycles.map(cycle => (
-                                    <BillingCycleBox
-                                        cycle={cycle}
-                                        key={cycle.days}
-                                        selected={selectedBillingDays}
-                                        setSelected={setSelectedBillingDays}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Variables Section */}
-                    {eggs && eggs.length > 1 && (
-                        <section>
-                            <div className={'mb-6'}>
-                                <h2 className={'text-2xl font-bold text-gray-200'}>Server Variables</h2>
-                                <p className={'mt-1 text-sm text-gray-400'}>
-                                    Configure your server settings before deployment.
-                                </p>
-                            </div>
-                            <div className={'grid gap-4 sm:grid-cols-2'}>
-                                {eggs?.map(variable => (
-                                    <div key={variable.envVariable}>
-                                        {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </div>
-
-                {/* Sidebar - Order Summary */}
-                <div className={'lg:col-span-1'}>
-                    <div className={'sticky top-4 space-y-6'}>
-                        {/* Server Name Card with Auto-generate */}
-                        <div
-                            style={{ backgroundColor: colors.secondary }}
-                            className={'rounded-lg border border-gray-700 p-6'}
-                        >
-                            <div className={'mb-4 flex items-center justify-between'}>
-                                <h3 className={'text-lg font-bold text-gray-200'}>Server Name</h3>
-                                <button
-                                    onClick={() => {
-                                        const name = generateServerName();
-                                        if (name) {
-                                            setServerName(name);
-                                            setServerNameTouched(false);
-                                        }
-                                    }}
-                                    className={'flex items-center gap-1 text-xs font-medium hover:brightness-125 transition-all'}
-                                    style={{ color: colors.primary }}
-                                    disabled={!selectedNode || !selectedEggId}
-                                    aria-label={'Auto-generate server name'}
-                                >
-                                    <FontAwesomeIcon icon={faSync} className={'h-3 w-3'} />
-                                    Auto-generate
-                                </button>
-                            </div>
-                            <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
-                            <input
-                                type={'text'}
-                                placeholder={'Enter server name'}
-                                value={serverName}
-                                onChange={e => {
-                                    setServerName(e.target.value);
-                                    setServerNameTouched(true);
-                                }}
-                                onBlur={() => setServerNameTouched(true)}
-                                required
-                                maxLength={191}
-                                aria-invalid={serverNameTouched && !serverName.trim()}
-                                aria-describedby={
-                                    serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
-                                }
-                                className={classNames(
-                                    'w-full rounded-lg border px-4 py-2.5 text-sm transition-all',
-                                    'text-gray-200 placeholder-gray-500',
-                                    'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
-                                )}
-                                style={{
-                                    backgroundColor: colors.secondary,
-                                    borderColor: serverName.trim() ? colors.primary : undefined,
-                                }}
-                            />
-                            {serverNameTouched && !serverName.trim() && (
-                                <p
-                                    id={'server-name-error'}
-                                    className={'mt-2 text-xs text-amber-400'}
-                                    role={'alert'}
-                                    aria-live={'polite'}
-                                >
-                                    ⚠ Server name is required
-                                </p>
-                            )}
+            case 2: // Egg Selection (only if multiple eggs)
+                if (availableEggs.length <= 1) return null;
+                return (
+                    <div className={'space-y-6'}>
+                        <div>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Select Server Type</h2>
+                            <p className={'mt-2 text-gray-400'}>
+                                Choose which type of server software you want to run.
+                            </p>
                         </div>
+                        <div className={'grid gap-4 sm:grid-cols-2'}>
+                            {availableEggs.map(egg => (
+                                <EggBox
+                                    egg={egg}
+                                    key={egg.id}
+                                    selected={selectedEggId}
+                                    setSelected={setSelectedEggId}
+                                    onEggChange={() => setEggs(undefined)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
 
-                        {/* Order Summary Card with Due Today */}
-                        <div
-                            style={{ backgroundColor: colors.secondary }}
-                            className={'rounded-lg border border-gray-700 p-6'}
-                        >
-                            <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
+            case (availableEggs.length > 1 ? 3 : 2): // Billing Cycle
+                return (
+                    <div className={'space-y-6'}>
+                        <div>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Choose Billing Cycle</h2>
+                            <p className={'mt-2 text-gray-400'}>
+                                Select how often you want to be billed for this server.
+                            </p>
+                        </div>
+                        <div className={'space-y-3'}>
+                            {billingCycles.map(cycle => (
+                                <BillingCycleBox
+                                    cycle={cycle}
+                                    key={cycle.days}
+                                    selected={selectedBillingDays}
+                                    setSelected={setSelectedBillingDays}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
 
-                            <div className={'mb-4 flex items-center gap-3'}>
-                                {product.icon && (
-                                    <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
+            case (availableEggs.length > 1 ? 4 : 3): // Variables (if any)
+                if (!eggs || !eggs.some(v => v.isEditable)) return null;
+                return (
+                    <div className={'space-y-6'}>
+                        <div>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Configure Server</h2>
+                            <p className={'mt-2 text-gray-400'}>
+                                Set up your server variables and configuration.
+                            </p>
+                        </div>
+                        <div className={'grid gap-4 sm:grid-cols-2'}>
+                            {eggs?.map(variable => (
+                                <div key={variable.envVariable}>
+                                    {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+
+            default: // Review & Name Server
+                const finalStep = getTotalSteps();
+                if (currentStep === finalStep) {
+                    const getCurrentPrice = () => {
+                        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
+                        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
+                    };
+
+                    return (
+                        <div className={'space-y-6'}>
+                            <div>
+                                <h2 className={'text-3xl font-bold text-gray-100'}>Review Your Order</h2>
+                                <p className={'mt-2 text-gray-400'}>
+                                    Review your selections and name your server before proceeding to payment.
+                                </p>
+                            </div>
+
+                            {/* Server Name Section */}
+                            <div
+                                className={'rounded-lg border p-6'}
+                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                            >
+                                <div className={'mb-4 flex items-center justify-between'}>
+                                    <h3 className={'text-xl font-bold text-gray-200'}>Server Name</h3>
+                                    <button
+                                        onClick={() => {
+                                            const name = generateServerName();
+                                            if (name) {
+                                                setServerName(name);
+                                                setServerNameTouched(false);
+                                            }
+                                        }}
+                                        className={'flex items-center gap-1 text-xs font-medium hover:brightness-125 transition-all'}
+                                        style={{ color: colors.primary }}
+                                        disabled={!selectedNode || !selectedEggId}
+                                        aria-label={'Auto-generate server name'}
+                                    >
+                                        <FontAwesomeIcon icon={faSync} className={'h-3 w-3'} />
+                                        Generate
+                                    </button>
+                                </div>
+                                <input
+                                    type={'text'}
+                                    placeholder={'Enter server name'}
+                                    value={serverName}
+                                    onChange={e => {
+                                        setServerName(e.target.value);
+                                        setServerNameTouched(true);
+                                    }}
+                                    required
+                                    maxLength={191}
+                                    className={classNames(
+                                        'w-full rounded-lg border px-4 py-3 text-sm transition-all',
+                                        'text-gray-200 placeholder-gray-500',
+                                        'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
+                                    )}
+                                    style={{
+                                        backgroundColor: colors.secondary,
+                                        borderColor: serverName.trim() ? colors.primary : undefined,
+                                    }}
+                                />
+                                {serverNameTouched && !serverName.trim() && (
+                                    <p className={'mt-2 text-xs text-amber-400'}>⚠ Server name is required</p>
                                 )}
-                                <div className={'flex-1'}>
-                                    <p className={'font-semibold text-gray-200'}>{product.name}</p>
-                                    <div className={'mt-1'}>
-                                        {couponData ? (
+                            </div>
+
+                            {/* Order Summary */}
+                            <div
+                                className={'rounded-lg border p-6'}
+                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                            >
+                                <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
+                                
+                                <div className={'space-y-4'}>
+                                    <div className={'flex items-start justify-between'}>
+                                        <div className={'flex items-center gap-3'}>
+                                            {product.icon && (
+                                                <img src={product.icon} className={'h-12 w-12 rounded'} alt={product.name} />
+                                            )}
                                             <div>
-                                                <div className={'text-xs text-gray-400 line-through'}>
-                                                    ${couponData.subtotal.toFixed(2)}
-                                                </div>
-                                                <div className={'flex items-baseline gap-1'}>
-                                                    <span
-                                                        className={'text-2xl font-bold'}
-                                                        style={{ color: colors.primary }}
-                                                    >
-                                                        ${couponData.total.toFixed(2)}
-                                                    </span>
-                                                    <span className={'text-xs text-gray-400'}>
-                                                        / {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={'text-xs font-medium'}
-                                                    style={{ color: colors.primary }}
-                                                >
-                                                    Save ${couponData.discount.toFixed(2)}
-                                                </div>
+                                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                                <p className={'text-sm text-gray-400'}>
+                                                    {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
+                                                </p>
                                             </div>
-                                        ) : (
-                                            <div className={'flex items-baseline gap-1'}>
-                                                <span
-                                                    className={'text-2xl font-bold'}
-                                                    style={{ color: colors.primary }}
-                                                >
-                                                    ${getCurrentPrice().toFixed(2)}
-                                                </span>
-                                                <span className={'text-xs text-gray-400'}>
-                                                    / {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
+                                        </div>
+                                        <div className={'text-right'}>
+                                            <p className={'text-2xl font-bold'} style={{ color: colors.primary }}>
+                                                ${getCurrentPrice().toFixed(2)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className={'border-t border-gray-700 pt-4'}>
+                                        <div className={'grid grid-cols-2 gap-4'}>
+                                            <div>
+                                                <p className={'text-xs text-gray-500'}>Location</p>
+                                                <p className={'text-sm font-medium text-gray-200'}>
+                                                    {nodes?.find(n => Number(n.id) === selectedNode)?.name}
+                                                </p>
+                                            </div>
+                                            {availableEggs.length > 1 && (
+                                                <div>
+                                                    <p className={'text-xs text-gray-500'}>Server Type</p>
+                                                    <p className={'text-sm font-medium text-gray-200'}>
+                                                        {availableEggs.find(e => e.id === selectedEggId)?.name}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className={'border-t border-gray-700 pt-4'}>
+                                        <div className={'grid grid-cols-3 gap-4'}>
+                                            <div>
+                                                <p className={'text-xs text-gray-500'}>CPU</p>
+                                                <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
+                                            </div>
+                                            <div>
+                                                <p className={'text-xs text-gray-500'}>RAM</p>
+                                                <p className={'text-sm font-medium text-gray-200'}>
+                                                    {(product.limits.memory / 1024).toFixed(1)} GB
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className={'text-xs text-gray-500'}>Storage</p>
+                                                <p className={'text-sm font-medium text-gray-200'}>
+                                                    {(product.limits.disk / 1024).toFixed(1)} GB
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {product.price !== 0 && (
+                                        <div className={'border-t border-gray-700 pt-4'}>
+                                            <div className={'flex items-center justify-between'}>
+                                                <span className={'text-lg font-bold text-gray-200'}>Due Today</span>
+                                                <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
+                                                    ${couponData ? couponData.total.toFixed(2) : getCurrentPrice().toFixed(2)}
                                                 </span>
                                             </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Legal Agreements */}
+                            <div
+                                className={'rounded-lg border p-6'}
+                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                            >
+                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
+                                <div
+                                    className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
+                                    style={
+                                        legalAgreed
+                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
+                                    }
+                                    onClick={() => setLegalAgreed(!legalAgreed)}
+                                >
+                                    <AdminCheckbox
+                                        name={'legal'}
+                                        checked={legalAgreed}
+                                        onChange={() => setLegalAgreed(!legalAgreed)}
+                                    />
+                                    <div className={'min-w-0 flex-1'}>
+                                        <p className={'text-sm font-medium text-gray-200'}>
+                                            I agree to the{' '}
+                                            <a
+                                                href={billing.links.terms}
+                                                target={'_blank'}
+                                                rel={'noreferrer'}
+                                                className={'hover:brightness-125'}
+                                                style={{ color: colors.primary }}
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                Terms of Service
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                            </a>
+                                            {' and '}
+                                            <a
+                                                href={billing.links.privacy}
+                                                target={'_blank'}
+                                                rel={'noreferrer'}
+                                                className={'hover:brightness-125'}
+                                                style={{ color: colors.primary }}
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                Privacy Policy
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                            </a>
+                                        </p>
+                                        {legalAgreed && (
+                                            <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
+                                                ✓ Accepted
+                                            </p>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className={'my-4 h-px bg-gray-700'} />
-
-                            <div className={'space-y-3'}>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.cpu}% CPU</span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>
-                                        {(product.limits.memory / 1024).toFixed(1)} GiB RAM
-                                    </span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>
-                                        {(product.limits.disk / 1024).toFixed(1)} GiB Storage
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className={'my-4 h-px bg-gray-700'} />
-
-                            <div className={'space-y-3'}>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faArchive} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.backup} Backups</span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faDatabase} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.database} Databases</span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faEthernet} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.allocation} Ports</span>
-                                </div>
-                            </div>
-
-                            {/* Due Today Section */}
+                            {/* Coupon Section */}
                             {product.price !== 0 && (
-                                <>
-                                    <div className={'my-4 h-px bg-gray-700'} />
-                                    <div className={'flex items-center justify-between'}>
-                                        <span className={'text-base font-bold text-gray-200'}>Due Today</span>
-                                        <span className={'text-xl font-bold'} style={{ color: colors.primary }}>
-                                            ${couponData ? couponData.total.toFixed(2) : getCurrentPrice().toFixed(2)}
-                                        </span>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Collapsed Legal Agreements Card */}
-                        <div
-                            style={{ backgroundColor: colors.secondary }}
-                            className={'rounded-lg border border-gray-700 p-6'}
-                        >
-                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
-                            <div
-                                className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
-                                style={
-                                    legalAgreed
-                                        ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                        : { borderColor: '#374151', backgroundColor: colors.secondary }
-                                }
-                                onClick={() => setLegalAgreed(!legalAgreed)}
-                            >
-                                <AdminCheckbox
-                                    name={'legal'}
-                                    checked={legalAgreed}
-                                    onChange={() => setLegalAgreed(!legalAgreed)}
-                                />
-                                <div className={'min-w-0 flex-1'}>
-                                    <p className={'text-sm font-medium text-gray-200'}>
-                                        I agree to the{' '}
-                                        <a
-                                            href={billing.links.terms}
-                                            target={'_blank'}
-                                            rel={'noreferrer'}
-                                            className={'hover:brightness-125'}
+                                <div
+                                    className={'rounded-lg border p-6'}
+                                    style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                                >
+                                    <button
+                                        onClick={() => setShowCoupon(!showCoupon)}
+                                        className={'mb-3 flex w-full items-center justify-between text-left transition-all'}
+                                        aria-label={showCoupon ? 'Hide coupon code input' : 'Show coupon code input'}
+                                        aria-expanded={showCoupon}
+                                    >
+                                        <h3 className={'text-lg font-bold text-gray-200'}>
+                                            {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
+                                        </h3>
+                                        <FontAwesomeIcon 
+                                            icon={showCoupon ? faChevronDown : faChevronRight} 
+                                            className={'h-3 w-3'}
                                             style={{ color: colors.primary }}
-                                            onClick={e => e.stopPropagation()}
-                                        >
-                                            Terms of Service
-                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
-                                        </a>
-                                        {' and '}
-                                        <a
-                                            href={billing.links.privacy}
-                                            target={'_blank'}
-                                            rel={'noreferrer'}
-                                            className={'hover:brightness-125'}
-                                            style={{ color: colors.primary }}
-                                            onClick={e => e.stopPropagation()}
-                                        >
-                                            Privacy Policy
-                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
-                                        </a>
-                                    </p>
-                                    {legalAgreed && (
-                                        <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
-                                            ✓ Accepted
-                                        </p>
+                                            aria-hidden={true}
+                                        />
+                                    </button>
+                                    {showCoupon && (
+                                        <div>
+                                            <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                            <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
+                                        </div>
                                     )}
                                 </div>
-                            </div>
+                            )}
                         </div>
+                    );
+                }
 
-                        {/* Coupon Section with Toggle - Only show for paid products */}
-                        {product.price !== 0 && (
+                // Payment step
+                if (currentStep === finalStep + 1) {
+                    const getCurrentPrice = () => {
+                        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
+                        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
+                    };
+
+                    return (
+                        <div className={'space-y-6'}>
+                            <div>
+                                <h2 className={'text-3xl font-bold text-gray-100'}>Complete Payment</h2>
+                                <p className={'mt-2 text-gray-400'}>
+                                    Choose your payment method to complete your order.
+                                </p>
+                            </div>
+
                             <div
-                                style={{ backgroundColor: colors.secondary }}
-                                className={'rounded-lg border border-gray-700 p-6'}
+                                className={'rounded-lg border p-6'}
+                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <button
-                                    onClick={() => setShowCoupon(!showCoupon)}
-                                    className={'mb-3 flex w-full items-center justify-between text-left transition-all'}
-                                    aria-label={showCoupon ? 'Hide coupon code input' : 'Show coupon code input'}
-                                    aria-expanded={showCoupon}
-                                >
-                                    <h3 className={'text-lg font-bold text-gray-200'}>
-                                        {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
-                                    </h3>
-                                    <FontAwesomeIcon 
-                                        icon={showCoupon ? faChevronDown : faChevronRight} 
-                                        className={'h-3 w-3'}
-                                        style={{ color: colors.primary }}
-                                        aria-hidden={true}
-                                    />
-                                </button>
-                                {showCoupon && (
-                                    <div className={'animate-fadeIn'}>
-                                        <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                                        <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
+                                {product.price === 0 || couponData?.total === 0 ? (
+                                    <div>
+                                        <p className={'mb-4 text-sm text-gray-300'}>
+                                            {couponData?.total === 0
+                                                ? '🎉 Your coupon has made this order free!'
+                                                : '🎉 This product is free!'}
+                                        </p>
+                                        <Button
+                                            onClick={createFree}
+                                            size={Button.Sizes.Large}
+                                            className={'w-full'}
+                                        >
+                                            Create Server
+                                        </Button>
                                     </div>
+                                ) : (
+                                    <PaymentMethodSelector
+                                        selectedNode={selectedNode}
+                                        product={product}
+                                        vars={vars}
+                                        intent={intent}
+                                        stripe={stripe}
+                                        couponId={couponData?.coupon.id}
+                                        selectedEggId={selectedEggId}
+                                        serverName={serverName}
+                                    />
                                 )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    );
+                }
+                return null;
+        }
+    };
+
+    return (
+        <PageContentBlock title={'Your Order'}>
+            <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
+            
+            {/* Header */}
+            <div className={'mb-8'}>
+                <h1 className={'text-4xl font-bold text-gray-100'}>Order Your Server</h1>
+                <p className={'mt-2 text-base text-gray-400'}>
+                    Follow the steps below to configure and purchase your server.
+                </p>
+            </div>
+
+            {/* Progress Stepper */}
+            <CheckoutStepper steps={getWizardSteps()} />
+
+            {/* Main Wizard Content */}
+            <div className={'mt-10'}>
+                <div className={'mx-auto max-w-4xl'}>
+                    {renderStepContent()}
                 </div>
             </div>
 
-            {/* Sticky CTA Footer */}
-            <div className={'mt-8 lg:sticky lg:bottom-4'}>
-                <div
-                    className={'rounded-lg border p-6'}
-                    style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                >
-                    {/* Show CTA message when conditions not met */}
-                    {getCTAState().disabled && getCTAState().reason && (
-                        <div className={'mb-4 rounded-lg border border-amber-500 bg-amber-500 bg-opacity-10 p-4'}>
-                            <p className={'text-sm text-amber-400'}>⚠ {getCTAState().reason}</p>
-                        </div>
+            {/* Navigation Buttons */}
+            <div className={'mt-8 flex items-center justify-between border-t border-gray-700 pt-6'}>
+                <div>
+                    {currentStep > 1 && currentStep <= getTotalSteps() && (
+                        <Button.Text
+                            onClick={goToPreviousStep}
+                            variant={Button.Variants.Secondary}
+                        >
+                            ← Back
+                        </Button.Text>
                     )}
-
-                    {/* Payment Section */}
-                    {isCheckoutComplete() ? (
-                        <div>
-                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
-                            {product.price === 0 || couponData?.total === 0 ? (
-                                <div>
-                                    <p className={'mb-4 text-sm text-gray-300'}>
-                                        {couponData?.total === 0
-                                            ? '🎉 Your coupon has made this order free!'
-                                            : '🎉 This product is free!'}
-                                    </p>
-                                    <Button
-                                        onClick={createFree}
-                                        size={Button.Sizes.Large}
-                                        className={'w-full'}
-                                    >
-                                        Create Server
-                                    </Button>
-                                </div>
-                            ) : (
-                                <PaymentMethodSelector
-                                    selectedNode={selectedNode}
-                                    product={product}
-                                    vars={vars}
-                                    intent={intent}
-                                    stripe={stripe}
-                                    couponId={couponData?.coupon.id}
-                                    selectedEggId={selectedEggId}
-                                    serverName={serverName}
-                                />
-                            )}
-                        </div>
-                    ) : (
-                        <div className={'text-center'}>
-                            <p className={'text-sm text-gray-400'}>
-                                Complete all required steps to proceed with payment
-                            </p>
-                        </div>
+                </div>
+                <div>
+                    {currentStep < getTotalSteps() && (
+                        <Button
+                            onClick={goToNextStep}
+                            size={Button.Sizes.Large}
+                            disabled={!isStepValid(currentStep)}
+                        >
+                            {currentStep === getTotalSteps() - 1 ? 'Continue to Review' : 'Next →'}
+                        </Button>
+                    )}
+                    {currentStep === getTotalSteps() && (
+                        <Button
+                            onClick={goToNextStep}
+                            size={Button.Sizes.Large}
+                            disabled={!serverName.trim() || !legalAgreed}
+                        >
+                            Continue to Payment →
+                        </Button>
                     )}
                 </div>
             </div>

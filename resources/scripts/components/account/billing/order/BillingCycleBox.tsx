@@ -36,38 +36,40 @@ export default ({ cycle, selected, setSelected }: Props) => {
         <div
             onClick={() => setSelected(cycle.days)}
             className={classNames(
-                'relative cursor-pointer rounded-lg border-2 p-6 transition-all hover:scale-[1.02]',
+                'relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:scale-[1.02]',
                 isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
             style={isSelected ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` } : {}}
         >
-            <div className={'flex flex-col items-center justify-center text-center'}>
-                <CalendarIcon className={'h-10 w-10 mb-3'} style={{ color: colors.primary }} />
-                <div className={'w-full'}>
-                    <div className={'flex items-center justify-center gap-2 mb-2'}>
-                        <p className={'font-semibold text-gray-200'}>
-                            {cycle.days} {cycle.days === 1 ? 'Day' : 'Days'}
-                        </p>
-                        {cycle.isDefault && (
-                            <span
-                                className={'rounded px-1.5 py-0.5 text-xs font-medium'}
-                                style={{ backgroundColor: `${colors.primary}25`, color: colors.primary }}
-                            >
-                                Default
-                            </span>
-                        )}
+            <div className={'flex items-center justify-between gap-3'}>
+                <div className={'flex items-center gap-3'}>
+                    <CalendarIcon className={'h-6 w-6 flex-shrink-0'} style={{ color: colors.primary }} />
+                    <div>
+                        <div className={'flex items-center gap-2'}>
+                            <p className={'font-semibold text-gray-200'}>
+                                {cycle.days} {cycle.days === 1 ? 'Day' : 'Days'}
+                            </p>
+                            {cycle.isDefault && (
+                                <span
+                                    className={'rounded px-1.5 py-0.5 text-xs font-medium'}
+                                    style={{ backgroundColor: `${colors.primary}25`, color: colors.primary }}
+                                >
+                                    Default
+                                </span>
+                            )}
+                        </div>
+                        {getDiscountLabel()}
                     </div>
-                    <div className={'flex items-baseline justify-center gap-1 mb-1'}>
-                        <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
-                            ${cycle.price.toFixed(2)}
-                        </span>
-                    </div>
-                    {getDiscountLabel()}
                 </div>
-                <CheckCircleIcon
-                    className={classNames('h-6 w-6 mt-3 transition-colors', isSelected ? '' : 'text-gray-600')}
-                    style={isSelected ? { color: colors.primary } : {}}
-                />
+                <div className={'flex items-center gap-3'}>
+                    <span className={'text-xl font-bold whitespace-nowrap'} style={{ color: colors.primary }}>
+                        ${cycle.price.toFixed(2)}
+                    </span>
+                    <CheckCircleIcon
+                        className={classNames('h-5 w-5 flex-shrink-0 transition-colors', isSelected ? '' : 'text-gray-600')}
+                        style={isSelected ? { color: colors.primary } : {}}
+                    />
+                </div>
             </div>
         </div>
     );
