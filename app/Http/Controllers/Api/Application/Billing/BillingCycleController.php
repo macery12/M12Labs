@@ -34,7 +34,19 @@ class BillingCycleController extends ApplicationApiController
      */
     public function sync(Request $request, int $product): Response
     {
+        \Log::info('BillingCycleController::sync called', [
+            'product_param' => $product,
+            'request_url' => $request->fullUrl(),
+            'request_path' => $request->path(),
+            'route_params' => $request->route()->parameters(),
+        ]);
+        
         $productModel = Product::findOrFail($product);
+        
+        \Log::info('Product loaded', [
+            'product_id' => $productModel->id,
+            'product_name' => $productModel->name,
+        ]);
         
         $validated = $request->validate([
             'cycles' => 'required|array',

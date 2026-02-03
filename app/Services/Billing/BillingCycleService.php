@@ -152,13 +152,21 @@ class BillingCycleService
             throw new \InvalidArgumentException('Product must have an ID to sync billing cycles');
         }
         
+        // Log for debugging
+        \Log::info('Syncing billing cycles', [
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'cycles_count' => count($cycles),
+            'cycles' => $cycles,
+        ]);
+        
         $daysToKeep = [];
         
         foreach ($cycles as $cycleData) {
             $daysToKeep[] = $cycleData['days'];
             
             // Explicitly set product_id to ensure it's never null or wrong
-            BillingCycle::updateOrCreate(
+            $cycle = BillingCycle::updateOrCreate(
                 [
                     'product_id' => $product->id,
                     'days' => $cycleData['days'],
@@ -168,9 +176,26 @@ class BillingCycleService
                     'is_enabled' => $cycleData['is_enabled'] ?? true,
                 ]
             );
+            
+            \Log::info('Created/Updated billing cycle', [
+                'cycle_id' => $cycle->id,
+                'product_id' => $cycle->product_id,
+                'days' => $cycle->days,
+                'is_enabled' => $cycle->is_enabled,
+            ]);
         }
         
         // Delete cycles that are no longer in the list for THIS SPECIFIC PRODUCT
+        $deleted = BillingCycle::where('product_id', $product->id)
+            ->whereNotIn('days', $daysToKeep)
+            ->get();
+            
+        \Log::info('Deleting billing cycles', [
+            'product_id' => $product->id,
+            'cycles_to_delete' => $deleted->pluck('id')->toArray(),
+            'days_to_keep' => $daysToKeep,
+        ]);
+        
         BillingCycle::where('product_id', $product->id)
             ->whereNotIn('days', $daysToKeep)
             ->delete();
