@@ -79,7 +79,7 @@ return [
             'pull' => 'Downloaded a remote file from :url to :directory',
             'rename_one' => 'Renamed :directory:files.0.from to :directory:files.0.to',
             'rename_other' => 'Renamed :count files in :directory',
-            'write' => 'Wrote new content to :file',
+            'write' => 'Modified :file',
             'upload' => 'Began a file upload',
             'uploaded' => 'Uploaded :directory:file',
         ],

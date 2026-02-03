@@ -27,6 +27,7 @@ export default () => {
     const { action, '*': rawFilename } = useParams<{ action: 'edit' | 'new'; '*': string }>();
     const [loading, setLoading] = useState(action === 'edit');
     const [content, setContent] = useState('');
+    const [originalContent, setOriginalContent] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [language, setLanguage] = useState<LanguageDescription>();
 
@@ -58,7 +59,10 @@ export default () => {
         setLoading(true);
         setDirectory(dirname(filename));
         getFileContents(uuid, filename)
-            .then(setContent)
+            .then(fileContent => {
+                setContent(fileContent);
+                setOriginalContent(fileContent);
+            })
             .catch(error => {
                 console.error(error);
                 setError(httpErrorToHuman(error));
@@ -74,7 +78,14 @@ export default () => {
         setLoading(true);
         clearFlashes('files:view');
         fetchFileContent()
-            .then(content => saveFileContents(uuid, name ?? filename, content))
+            .then(newContent => {
+                // Pass original content for diff calculation (use empty string for new files)
+                const original = action === 'new' ? '' : originalContent;
+                return saveFileContents(uuid, name ?? filename, newContent, original).then(() => {
+                    // Update original content after successful save
+                    setOriginalContent(newContent);
+                });
+            })
             .then(() => {
                 if (name) {
                     navigate(`/server/${id}/files/edit/${encodePathSegments(name)}`);
