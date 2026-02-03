@@ -281,9 +281,19 @@ export default () => {
     useEffect(() => {
         if (!serverNameTouched && product && selectedNode && selectedEggId) {
             const generatedName = generateServerName();
-            setServerName(generatedName);
+            if (generatedName) {
+                setServerName(generatedName);
+            }
         }
-    }, [selectedNode, selectedEggId, product, availableEggs, nodes]);
+    }, [selectedNode, selectedEggId, product, serverNameTouched]);
+
+    // Clear coupon when billing cycle changes to prevent showing incorrect totals
+    useEffect(() => {
+        if (couponData && selectedBillingDays) {
+            // Clear the coupon data to force revalidation with new price
+            setCouponData(null);
+        }
+    }, [selectedBillingDays]);
 
     if (!product) return <Spinner centered />;
 
@@ -405,14 +415,17 @@ export default () => {
                                 <button
                                     onClick={() => {
                                         const name = generateServerName();
-                                        setServerName(name);
-                                        setServerNameTouched(false);
+                                        if (name) {
+                                            setServerName(name);
+                                            setServerNameTouched(false);
+                                        }
                                     }}
                                     className={'text-xs font-medium hover:brightness-125 transition-all'}
                                     style={{ color: colors.primary }}
                                     disabled={!selectedNode || !selectedEggId}
+                                    aria-label={'Auto-generate server name'}
                                 >
-                                    🔄 Auto-generate
+                                    ↻ Auto-generate
                                 </button>
                             </div>
                             <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
@@ -624,9 +637,11 @@ export default () => {
                                 <button
                                     onClick={() => setShowCoupon(!showCoupon)}
                                     className={'mb-3 flex w-full items-center justify-between text-left transition-all'}
+                                    aria-label={showCoupon ? 'Hide coupon code input' : 'Show coupon code input'}
+                                    aria-expanded={showCoupon}
                                 >
                                     <h3 className={'text-lg font-bold text-gray-200'}>
-                                        {showCoupon ? '🎟️ Coupon Code' : '🎟️ Have a coupon?'}
+                                        {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
                                     </h3>
                                     <span className={'text-sm'} style={{ color: colors.primary }}>
                                         {showCoupon ? '▼' : '▶'}
@@ -634,7 +649,7 @@ export default () => {
                                 </button>
                                 {showCoupon && (
                                     <div className={'animate-fadeIn'}>
-                                        <CouponInput subtotal={getCurrentPrice()} onCouponApplied={handleCouponApplied} />
+                                        <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
                                         <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
                                     </div>
                                 )}
