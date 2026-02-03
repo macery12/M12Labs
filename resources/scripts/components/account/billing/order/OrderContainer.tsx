@@ -645,43 +645,57 @@ export default () => {
             </div>
 
             {/* Sticky CTA Footer */}
-            <div className={'fixed bottom-0 left-0 right-0 z-50 lg:relative lg:bottom-auto lg:left-auto lg:right-auto'}>
+            <div className={'mt-8 lg:sticky lg:bottom-4'}>
                 <div
-                    className={'border-t p-4 lg:mt-8 lg:rounded-lg lg:border lg:p-6'}
+                    className={'rounded-lg border p-6'}
                     style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                 >
-                    <div className={'mx-auto flex max-w-7xl items-center justify-between gap-4'}>
-                        <div className={'flex-1'}>
-                            {getCTAState().disabled && getCTAState().reason && (
-                                <p className={'text-sm text-amber-400'}>⚠ {getCTAState().reason}</p>
-                            )}
+                    {/* Show CTA message when conditions not met */}
+                    {getCTAState().disabled && getCTAState().reason && (
+                        <div className={'mb-4 rounded-lg border border-amber-500 bg-amber-500 bg-opacity-10 p-4'}>
+                            <p className={'text-sm text-amber-400'}>⚠ {getCTAState().reason}</p>
                         </div>
-                        <div className={'flex items-center gap-3'}>
+                    )}
+
+                    {/* Payment Section */}
+                    {legalAgreed && serverName.trim() && selectedNode && selectedEggId && selectedBillingDays ? (
+                        <div>
+                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
                             {product.price === 0 || couponData?.total === 0 ? (
-                                <Button
-                                    onClick={createFree}
-                                    size={Button.Sizes.Large}
-                                    disabled={getCTAState().disabled}
-                                    className={'min-w-[200px]'}
-                                >
-                                    {getCTAState().text}
-                                </Button>
+                                <div>
+                                    <p className={'mb-4 text-sm text-gray-300'}>
+                                        {couponData?.total === 0
+                                            ? '🎉 Your coupon has made this order free!'
+                                            : '🎉 This product is free!'}
+                                    </p>
+                                    <Button
+                                        onClick={createFree}
+                                        size={Button.Sizes.Large}
+                                        className={'w-full'}
+                                    >
+                                        Create Server
+                                    </Button>
+                                </div>
                             ) : (
-                                legalAgreed && serverName.trim() && (
-                                    <PaymentMethodSelector
-                                        selectedNode={selectedNode}
-                                        product={product}
-                                        vars={vars}
-                                        intent={intent}
-                                        stripe={stripe}
-                                        couponId={couponData?.coupon.id}
-                                        selectedEggId={selectedEggId}
-                                        serverName={serverName}
-                                    />
-                                )
+                                <PaymentMethodSelector
+                                    selectedNode={selectedNode}
+                                    product={product}
+                                    vars={vars}
+                                    intent={intent}
+                                    stripe={stripe}
+                                    couponId={couponData?.coupon.id}
+                                    selectedEggId={selectedEggId}
+                                    serverName={serverName}
+                                />
                             )}
                         </div>
-                    </div>
+                    ) : (
+                        <div className={'text-center'}>
+                            <p className={'text-sm text-gray-400'}>
+                                Complete all required steps to proceed with payment
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </PageContentBlock>
