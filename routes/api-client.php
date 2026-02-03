@@ -168,6 +168,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::put('/rename', [Client\Servers\FileController::class, 'rename']);
             Route::post('/copy', [Client\Servers\FileController::class, 'copy']);
             Route::post('/write', [Client\Servers\FileController::class, 'write']);
+            Route::post('/write-with-diff', [Client\Servers\FileController::class, 'writeWithDiff']);
             Route::post('/compress', [Client\Servers\FileController::class, 'compress']);
             Route::post('/decompress', [Client\Servers\FileController::class, 'decompress']);
             Route::post('/delete', [Client\Servers\FileController::class, 'delete']);

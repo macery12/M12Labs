@@ -79,13 +79,23 @@ const renameFiles = (uuid: string, directory: string, files: { to: string; from:
     });
 };
 
-const saveFileContents = async (uuid: string, file: string, content: string): Promise<void> => {
-    await http.post(`/api/client/servers/${uuid}/files/write`, content, {
-        params: { file },
-        headers: {
-            'Content-Type': 'text/plain',
-        },
-    });
+const saveFileContents = async (uuid: string, file: string, content: string, originalContent?: string): Promise<void> => {
+    // Use the new endpoint with diff tracking when originalContent is provided
+    if (originalContent !== undefined) {
+        await http.post(`/api/client/servers/${uuid}/files/write-with-diff`, {
+            file,
+            content,
+            original_content: originalContent,
+        });
+    } else {
+        // Fallback to the old endpoint for backward compatibility
+        await http.post(`/api/client/servers/${uuid}/files/write`, content, {
+            params: { file },
+            headers: {
+                'Content-Type': 'text/plain',
+            },
+        });
+    }
 };
 
 const deleteFiles = (uuid: string, directory: string, files: string[]): Promise<void> => {
