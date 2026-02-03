@@ -3,7 +3,9 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\Setting;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $name
  * @property string $icon
  * @property float $price
+ * @property float|null $base_price
  * @property string $description
  * @property int $cpu_limit
  * @property int $memory_limit
@@ -40,7 +43,7 @@ class Product extends Model
      */
     protected $fillable = [
         'uuid', 'category_uuid',
-        'name', 'icon', 'price', 'description',
+        'name', 'icon', 'price', 'base_price', 'description',
         'cpu_limit', 'memory_limit', 'disk_limit',
         'backup_limit', 'database_limit', 'allocation_limit',
     ];
@@ -49,6 +52,8 @@ class Product extends Model
      * Cast values to correct type.
      */
     protected $casts = [
+        'price' => 'float',
+        'base_price' => 'float',
         'cpu_limit' => 'integer',
         'memory_limit' => 'integer',
         'disk_limit' => 'integer',
@@ -109,5 +114,97 @@ class Product extends Model
         return $this->isFree()
             ? config('modules.billing.renewal.free_suspension_days', 7)
             : config('modules.billing.renewal.paid_suspension_days', 30);
+    }
+
+    /**
+     * Get all billing cycles for this product.
+     */
+    public function billingCycles(): HasMany
+    {
+        return $this->hasMany(BillingCycle::class);
+    }
+
+    /**
+     * Get enabled billing cycles for this product.
+     */
+    public function enabledBillingCycles(): HasMany
+    {
+        return $this->hasMany(BillingCycle::class)->where('is_enabled', true);
+    }
+
+    /**
+     * Get the effective base price (uses base_price if set, otherwise falls back to price).
+     */
+    public function getEffectiveBasePrice(): float
+    {
+        return $this->base_price ?? $this->price;
+    }
+
+    /**
+     * Calculate price for a specific billing cycle.
+     * 
+     * @param int $days Number of billing days
+     * @return array ['price' => float, 'multiplier' => float, 'discount_percent' => float]
+     */
+    public function calculatePrice(int $days): array
+    {
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
+        $basePrice = $this->getEffectiveBasePrice();
+        $perDayPrice = $basePrice / $defaultBillingDays;
+
+        // Get multiplier steps from settings
+        $stepsJson = Setting::get('settings::modules:billing:renewal:multiplier_steps');
+        $steps = [];
+        
+        if ($stepsJson) {
+            $decoded = json_decode($stepsJson, true);
+            if (is_array($decoded)) {
+                $steps = $decoded;
+                // Sort by maxDays to ensure correct matching
+                usort($steps, function($a, $b) {
+                    return $a['maxDays'] <=> $b['maxDays'];
+                });
+            }
+        }
+        
+        // Default steps if none configured
+        if (empty($steps)) {
+            $steps = [
+                ['maxDays' => 10, 'multiplier' => 1.30],
+                ['maxDays' => 20, 'multiplier' => 1.20],
+                ['maxDays' => 29, 'multiplier' => 1.10],
+                ['maxDays' => 30, 'multiplier' => 1.00],
+                ['maxDays' => 59, 'multiplier' => 0.95],
+                ['maxDays' => 89, 'multiplier' => 0.90],
+                ['maxDays' => 999, 'multiplier' => 0.85],
+            ];
+        }
+
+        // Find the first matching step
+        $multiplier = 1.0;
+        foreach ($steps as $step) {
+            if ($days <= $step['maxDays']) {
+                $multiplier = $step['multiplier'];
+                break;
+            }
+        }
+        
+        // If no step matched (days > all maxDays), use the last step's multiplier
+        if ($multiplier === 1.0 && !empty($steps)) {
+            $multiplier = end($steps)['multiplier'];
+        }
+
+        // Calculate final price: per_day_price * days * multiplier, rounded to 2 decimal places (standard for currency)
+        $finalPrice = round($perDayPrice * $days * $multiplier, 2);
+
+        // Calculate discount percentage (negative = premium, positive = discount)
+        $standardPrice = $perDayPrice * $days;
+        $discountPercent = $standardPrice > 0 ? (($standardPrice - $finalPrice) / $standardPrice) * 100 : 0;
+
+        return [
+            'price' => $finalPrice,
+            'multiplier' => $multiplier,
+            'discount_percent' => round($discountPercent, 1),
+        ];
     }
 }

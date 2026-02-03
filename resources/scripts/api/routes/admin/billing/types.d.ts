@@ -9,6 +9,7 @@ export interface ProductValues {
     name: string;
     icon: string | undefined;
     price: number;
+    basePrice?: number | null;
     description: string;
 
     limits: {

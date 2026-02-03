@@ -44,6 +44,7 @@ class OrderProcessorService
      * @param array $variables Custom environment variables (optional)
      * @param string|null $paymentIntentId The Stripe payment intent ID (for paid orders)
      * @param string|null $serverName The custom server name (optional)
+     * @param int $billingDays The billing cycle days (defaults to 30)
      * @return array{server: Server, order: Order}
      */
     public function createServerOrder(
@@ -55,7 +56,8 @@ class OrderProcessorService
         ?int $couponId = null,
         array $variables = [],
         ?string $paymentIntentId = null,
-        ?string $serverName = null
+        ?string $serverName = null,
+        int $billingDays = 30
     ): array {
         // Create the order record
         $order = $this->orderService->create(
@@ -65,7 +67,8 @@ class OrderProcessorService
             Order::STATUS_PENDING,
             Order::TYPE_NEW,
             $couponId,
-            $eggId
+            $eggId,
+            ['billing_days' => $billingDays]
         );
 
         // Create the server
@@ -100,15 +103,17 @@ class OrderProcessorService
      * @param Server $server The server to renew
      * @param Product $product The product to renew with
      * @param int|null $couponId The coupon ID (optional)
+     * @param int $billingDays The billing cycle days (defaults to 30)
      * @return array{server: Server, order: Order}
      */
     public function processRenewal(
         Server $server,
         Product $product,
-        ?int $couponId = null
+        ?int $couponId = null,
+        int $billingDays = 30
     ): array {
         // Use the unified renewal service
-        $result = $this->renewalService->renew($server, $product, $couponId);
+        $result = $this->renewalService->renew($server, $product, $couponId, $billingDays);
 
         // Record coupon usage if applicable
         if ($couponId) {

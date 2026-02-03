@@ -129,6 +129,7 @@ interface Product extends Model {
     name: string;
     icon?: string;
     price: number;
+    basePrice?: number | null;
     description: string;
 
     limits: {
@@ -146,6 +147,25 @@ interface Product extends Model {
     relationships: {
         category?: Category;
     };
+}
+
+interface BillingCycle extends Model {
+    id: number;
+    productId: number;
+    days: number;
+    isEnabled: boolean;
+    createdAt: Date;
+    updatedAt?: Date | null;
+}
+
+interface BillingCycleWithPrice {
+    id?: number;
+    days: number;
+    price: number;
+    multiplier: number;
+    discountPercent: number;
+    isDefault: boolean;
+    isEnabled?: boolean;
 }
 
 interface Category extends Model {

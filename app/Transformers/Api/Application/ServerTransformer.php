@@ -86,6 +86,7 @@ class ServerTransformer extends Transformer
                 'environment' => $this->environmentService->handle($model),
             ],
             'billing_product_id' => $model->billing_product_id,
+            'billing_days' => $model->billing_days,
             'renewal_date' => $this->formatDate($model->renewal_date),
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String(),

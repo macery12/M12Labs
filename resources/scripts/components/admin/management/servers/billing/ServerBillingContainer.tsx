@@ -30,6 +30,7 @@ export default () => {
     if (!server) return null;
 
     const product = server.relationships.product;
+    const billingDays = server.billingDays || 30; // Default to 30 if not set
 
     return (
         <div>
@@ -52,7 +53,7 @@ export default () => {
                                 ) : (
                                     <>
                                         {product.name} - {billing.currency.symbol}
-                                        {product.price} {billing.currency.code.toUpperCase()} every {renewalDays} days
+                                        {product.price} {billing.currency.code.toUpperCase()} every {billingDays} days
                                     </>
                                 )}
                             </p>

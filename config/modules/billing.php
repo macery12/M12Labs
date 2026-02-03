@@ -68,13 +68,21 @@ return [
 
     /*
      * Configure renewal and suspension settings.
+     * NOTE: The billing cycle system has replaced the old days/grace period settings.
+     * Only suspension_threshold is kept for backward compatibility.
      */
     'renewal' => [
-        'days' => env('BILLING_RENEWAL_DAYS', 30),
-        'free_renewal_days' => env('BILLING_FREE_RENEWAL_DAYS', 30),
         'suspension_threshold' => env('BILLING_SUSPENSION_THRESHOLD', 7),
-        'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
-        'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
+        'default_billing_days' => env('BILLING_DEFAULT_BILLING_DAYS', 30),
+        'multiplier_steps' => env('BILLING_MULTIPLIER_STEPS', json_encode([
+            ['maxDays' => 10, 'multiplier' => 1.30],
+            ['maxDays' => 20, 'multiplier' => 1.20],
+            ['maxDays' => 29, 'multiplier' => 1.10],
+            ['maxDays' => 30, 'multiplier' => 1.00],
+            ['maxDays' => 59, 'multiplier' => 0.95],
+            ['maxDays' => 89, 'multiplier' => 0.90],
+            ['maxDays' => 999, 'multiplier' => 0.85],
+        ])),
     ],
 
     /*

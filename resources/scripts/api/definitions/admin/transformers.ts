@@ -62,6 +62,7 @@ export default class Transformers {
             container: attributes.container,
             renewalDate: attributes.renewal_date ? new Date(attributes.renewal_date) : undefined,
             billingProductId: attributes.billing_product_id,
+            billingDays: attributes.billing_days,
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
             relationships: {
@@ -178,6 +179,7 @@ export default class Transformers {
         name: attributes.name,
         icon: attributes.icon,
         price: attributes.price,
+        basePrice: attributes.base_price ?? null,
         description: attributes.description,
 
         limits: {

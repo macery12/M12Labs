@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
 import EggBox from '@account/billing/order/EggBox';
+import BillingCycleBox from '@account/billing/order/BillingCycleBox';
 import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
@@ -33,7 +34,9 @@ import {
     getProductVariables,
     getViableNodes,
     getEggInfo,
+    getProductBillingCycles,
     type EggInfo,
+    type BillingCycle,
 } from '@/api/routes/account/billing/products';
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 import AdminCheckbox from '@/elements/AdminCheckbox';
@@ -51,6 +54,8 @@ export default () => {
 
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
+    const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([]);
+    const [selectedBillingDays, setSelectedBillingDays] = useState<number>(30);
     const [nodes, setNodes] = useState<Node[] | undefined>();
     const [selectedNode, setSelectedNode] = useState<number>(0);
     const [product, setProduct] = useState<Product | undefined>();
@@ -66,18 +71,25 @@ export default () => {
 
     const { colors } = useStoreState(state => state.theme.data!);
 
+    // Get the current price based on selected billing cycle
+    const getCurrentPrice = () => {
+        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
+        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
+    };
+
     // Calculate checkout steps progress
     const getCheckoutSteps = () => {
         const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
         const steps = [
-            { id: 1, name: 'Location', status: selectedNode ? 'complete' : 'current' },
+            { id: 1, name: 'Billing Cycle', status: selectedBillingDays ? 'complete' : 'current' },
+            { id: 2, name: 'Location', status: selectedBillingDays ? (selectedNode ? 'complete' : 'current') : 'upcoming' },
             {
-                id: 2,
+                id: 3,
                 name: 'Configuration',
                 status: selectedNode ? (isEggSelectionComplete ? 'complete' : 'current') : 'upcoming',
             },
             {
-                id: 3,
+                id: 4,
                 name: 'Legal',
                 status:
                     termsAgreed && privacyAgreed
@@ -86,7 +98,7 @@ export default () => {
                         ? 'current'
                         : 'upcoming',
             },
-            { id: 4, name: 'Payment', status: termsAgreed && privacyAgreed ? 'current' : 'upcoming' },
+            { id: 5, name: 'Payment', status: termsAgreed && privacyAgreed ? 'current' : 'upcoming' },
         ];
         return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
     };
@@ -134,6 +146,16 @@ export default () => {
                 // Fetch product details
                 const productData = await getProduct(Number(params.id));
                 setProduct(productData);
+
+                // Fetch billing cycles
+                const cyclesData = await getProductBillingCycles(Number(params.id));
+                setBillingCycles(cyclesData);
+                
+                // Set default billing cycle (find the default one or use the first one)
+                const defaultCycle = cyclesData.find(c => c.isDefault) || cyclesData[0];
+                if (defaultCycle) {
+                    setSelectedBillingDays(defaultCycle.days);
+                }
 
                 // Initialize selected egg with the default (first allowed egg)
                 const allowedEggs = productData.allowedEggs || [productData.eggId];
@@ -208,6 +230,28 @@ export default () => {
             <div className={'mt-10 grid gap-8 lg:grid-cols-3 lg:gap-10'}>
                 {/* Main Content Area */}
                 <div className={'space-y-8 lg:col-span-2'}>
+                    {/* Billing Cycle Section */}
+                    {billingCycles.length > 0 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Choose Your Billing Cycle</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Select how often you want to be billed for this server.
+                                </p>
+                            </div>
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {billingCycles.map(cycle => (
+                                    <BillingCycleBox
+                                        cycle={cycle}
+                                        key={cycle.days}
+                                        selected={selectedBillingDays}
+                                        setSelected={setSelectedBillingDays}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
                     {/* Location Section */}
                     <section>
                         <div className={'mb-6'}>
@@ -346,7 +390,9 @@ export default () => {
                                                     >
                                                         ${couponData.total.toFixed(2)}
                                                     </span>
-                                                    <span className={'text-xs text-gray-400'}>/ month</span>
+                                                    <span className={'text-xs text-gray-400'}>
+                                                        / {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
+                                                    </span>
                                                 </div>
                                                 <div
                                                     className={'text-xs font-medium'}
@@ -361,9 +407,11 @@ export default () => {
                                                     className={'text-2xl font-bold'}
                                                     style={{ color: colors.primary }}
                                                 >
-                                                    ${product.price.toFixed(2)}
+                                                    ${getCurrentPrice().toFixed(2)}
                                                 </span>
-                                                <span className={'text-xs text-gray-400'}>/ month</span>
+                                                <span className={'text-xs text-gray-400'}>
+                                                    / {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
+                                                </span>
                                             </div>
                                         )}
                                     </div>
