@@ -20,8 +20,13 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Get all billing cycles for a product with calculated prices.
      */
-    public function index(Request $request, int $product): JsonResponse
+    public function index(Request $request, int $category, int $product): JsonResponse
     {
+        \Log::info('BillingCycleController::index called', [
+            'category_param' => $category,
+            'product_param' => $product,
+        ]);
+
         $productModel = Product::findOrFail($product);
         // Use getAllCycles for admin to include is_enabled status
         $cycles = $this->billingCycleService->getAllCycles($productModel);
@@ -32,9 +37,10 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Sync billing cycles for a product.
      */
-    public function sync(Request $request, int $product): Response
+    public function sync(Request $request, int $category, int $product): Response
     {
         \Log::info('BillingCycleController::sync called', [
+            'category_param' => $category,
             'product_param' => $product,
             'request_url' => $request->fullUrl(),
             'request_path' => $request->path(),
@@ -62,8 +68,14 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Delete a specific billing cycle.
      */
-    public function delete(int $product, int $cycle): Response
+    public function delete(int $category, int $product, int $cycle): Response
     {
+        \Log::info('BillingCycleController::delete called', [
+            'category_param' => $category,
+            'product_param' => $product,
+            'cycle_param' => $cycle,
+        ]);
+
         $cycleModel = BillingCycle::where('product_id', $product)
             ->where('id', $cycle)
             ->firstOrFail();
