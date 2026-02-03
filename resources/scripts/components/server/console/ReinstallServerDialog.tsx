@@ -45,15 +45,20 @@ export default () => {
                 onConfirmed={reinstall}
             >
                 <div css={tw`text-sm rounded-lg p-4 bg-yellow-500/25 mb-4`}>
-                    Reinstalling your server will stop it, and then re-run the installation script that initially set it
-                    up.&nbsp;
-                    <strong css={tw`font-medium`}>
-                        Some files may be deleted or modified during this process, please back up your data before
-                        continuing.
-                    </strong>
+                    <p css={tw`font-bold text-yellow-300 mb-2`}>⚠️ BACKUP YOUR FILES FIRST</p>
+                    <p>
+                        Reinstalling your server will stop it, and then re-run the installation script that initially
+                        set it up.
+                    </p>
+                    <p css={tw`mt-2`}>
+                        <strong css={tw`font-medium`}>
+                            Files are normally NOT deleted during reinstallation, but corruption or modification is
+                            always possible. Please backup your data before continuing.
+                        </strong>
+                    </p>
                 </div>
-                Your server will be stopped and some files may be deleted or modified during this process, are you sure
-                you wish to continue?
+                Your server will be stopped and the installation script will be re-run. Are you sure you wish to
+                continue?
             </Dialog.Confirm>
             <Button.Danger type={'button'} variant={Button.Variants.Secondary} onClick={() => setModalVisible(true)}>
                 Reinstall Server

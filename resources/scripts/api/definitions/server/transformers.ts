@@ -13,6 +13,7 @@ export default class Transformers {
         status: data.status,
         invocation: data.invocation,
         dockerImage: data.docker_image,
+        eggId: data.egg_id,
         sftpDetails: {
             ip: data.sftp_details.ip,
             port: data.sftp_details.port,
@@ -20,6 +21,7 @@ export default class Transformers {
         description: data.description ? (data.description.length > 0 ? data.description : null) : null,
         limits: { ...data.limits },
         eggFeatures: data.egg_features || [],
+        modsEnabled: data.mods_enabled || false,
         billingProductId: data.billing_product_id,
         renewalDate: data.renewal_date ? new Date(data.renewal_date) : undefined,
         featureLimits: { ...data.feature_limits },

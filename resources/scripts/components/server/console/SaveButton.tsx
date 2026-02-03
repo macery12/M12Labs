@@ -49,12 +49,12 @@ export default () => {
     return (
         <div
             className={classNames(
-                'hidden md:flex px-4 py-2 inline-flex items-center justify-center',
-                'font-semibold hover:bg-slate-700 rounded duration-300 cursor-pointer',
+                'inline-flex hidden items-center justify-center px-4 py-2 md:flex',
+                'cursor-pointer rounded font-semibold duration-300 hover:bg-slate-700',
             )}
             onClick={submit}
         >
-            <DownloadIcon className={'w-5 mr-1'} /> Save
+            <DownloadIcon className={'mr-1 w-5'} /> Save
         </div>
     );
 };

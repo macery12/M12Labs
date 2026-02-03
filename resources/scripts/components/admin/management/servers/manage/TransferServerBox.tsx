@@ -49,9 +49,7 @@ export default () => {
                 .then(fetchedAllocations => {
                     // Filter for allocations that are not assigned to any server
                     // According to the API, unassigned allocations have assigned=false and server_id=null
-                    const availableAllocations = fetchedAllocations.filter(
-                        allocation => !allocation.isAssigned
-                    );
+                    const availableAllocations = fetchedAllocations.filter(allocation => !allocation.isAssigned);
                     setAllocations(availableAllocations);
                     // Auto-select first allocation if available
                     if (availableAllocations.length > 0) {
@@ -107,7 +105,8 @@ export default () => {
                 addFlash({
                     key: 'server:manage',
                     type: 'error',
-                    message: 'Failed to initiate server transfer. Please ensure the server is not suspended or already being transferred.',
+                    message:
+                        'Failed to initiate server transfer. Please ensure the server is not suspended or already being transferred.',
                 });
             })
             .finally(() => {
@@ -191,10 +190,7 @@ export default () => {
                         >
                             Cancel
                         </Button.Text>
-                        <Button.Danger
-                            onClick={submit}
-                            disabled={!selectedNodeId || !selectedAllocationId || loading}
-                        >
+                        <Button.Danger onClick={submit} disabled={!selectedNodeId || !selectedAllocationId || loading}>
                             {loading ? 'Transferring...' : 'Transfer Server'}
                         </Button.Danger>
                     </div>

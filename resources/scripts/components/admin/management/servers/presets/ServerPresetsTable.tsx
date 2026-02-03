@@ -108,7 +108,7 @@ function ServerPresetsTable({ filters }: Props) {
                                                 <NavLink
                                                     to={`/admin/servers/presets/${preset.id}`}
                                                     style={{ color: colors.primary }}
-                                                    className={'hover:brightness-125 duration-300'}
+                                                    className={'duration-300 hover:brightness-125'}
                                                 >
                                                     {preset.name}
                                                 </NavLink>
@@ -127,9 +127,9 @@ function ServerPresetsTable({ filters }: Props) {
                                             </td>
                                             <td css={tw`px-6 text-sm text-center whitespace-nowrap`}>
                                                 {preset.egg_id ? (
-                                                    <CheckCircleIcon className={'w-4 h-4 text-green-400'} />
+                                                    <CheckCircleIcon className={'h-4 w-4 text-green-400'} />
                                                 ) : (
-                                                    <XCircleIcon className={'w-4 h-4 text-red-400'} />
+                                                    <XCircleIcon className={'h-4 w-4 text-red-400'} />
                                                 )}
                                             </td>
                                         </tr>

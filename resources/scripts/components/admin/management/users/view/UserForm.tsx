@@ -137,7 +137,7 @@ export default function UserForm({ title, initialValues, children, onSubmit, uui
                     </AdminBox>
                     <AdminBox title={'Permission Control'} css={tw`relative mt-6`} icon={faToggleOn}>
                         <SpinnerOverlay visible={isSubmitting} />
-                        <div className={'grid lg:grid-cols-2 gap-4'}>
+                        <div className={'grid gap-4 lg:grid-cols-2'}>
                             <div css={tw`w-full flex flex-row mb-6`}>
                                 <div
                                     css={tw`w-full border border-neutral-900 shadow-inner p-4 rounded`}

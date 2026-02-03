@@ -12,7 +12,7 @@ type ConfirmationProps = Omit<RenderDialogProps, 'description' | 'children'> & {
 export default ({ confirm = 'Okay', children, onConfirmed, buttonType, ...props }: ConfirmationProps) => {
     return (
         <Dialog {...props} description={typeof children === 'string' ? children : undefined}>
-            {typeof children !== 'string' && children}
+            {typeof children !== 'string' && <div className="text-slate-300">{children}</div>}
             <Dialog.Footer>
                 <Button.Text onClick={props.onClose}>Cancel</Button.Text>
                 {(!buttonType || buttonType === 'info') && <Button.Info onClick={onConfirmed}>{confirm}</Button.Info>}

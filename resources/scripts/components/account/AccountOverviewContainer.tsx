@@ -8,6 +8,7 @@ import { breakpoint } from '@/assets/theme';
 import styled from 'styled-components';
 import MessageBox from '@/elements/MessageBox';
 import { useLocation } from 'react-router-dom';
+import ScopedAlert from '@/components/account/ScopedAlert';
 
 const Container = styled.div`
     ${tw`flex flex-wrap`};
@@ -30,6 +31,7 @@ export default () => {
 
     return (
         <PageContentBlock title="Account Overview" header description={'Update your email, password, or setup 2-FA.'}>
+            <ScopedAlert scope="account" position="top-center" />
             {state?.twoFactorRedirect && (
                 <MessageBox title="2-Factor Required" type="error">
                     Your account must have two-factor authentication enabled in order to continue.

@@ -87,7 +87,7 @@ const EggsTable = () => {
                                                 <NavLink
                                                     to={`/admin/nests/${params.nestId}/eggs/${egg.id}`}
                                                     style={{ color: colors.primary }}
-                                                    className={'hover:brightness-125 duration-300'}
+                                                    className={'duration-300 hover:brightness-125'}
                                                 >
                                                     {egg.name}
                                                 </NavLink>

@@ -76,11 +76,27 @@ Route::middleware([AdminSubject::class])->group(function () {
                 Route::get('/{product:id}', [Application\Billing\ProductController::class, 'view']);
                 Route::patch('/{product:id}', [Application\Billing\ProductController::class, 'update']);
                 Route::delete('/{product:id}', [Application\Billing\ProductController::class, 'delete']);
+
+                // Billing cycle routes
+                Route::group(['prefix' => '/{product:id}/billing-cycles'], function () {
+                    Route::get('/', [Application\Billing\BillingCycleController::class, 'index']);
+                    Route::post('/sync', [Application\Billing\BillingCycleController::class, 'sync']);
+                    Route::delete('/{cycle:id}', [Application\Billing\BillingCycleController::class, 'delete']);
+                });
             });
         });
 
         Route::group(['prefix' => '/orders'], function () {
             Route::get('/', [Application\Billing\OrderController::class, 'index']);
+        });
+
+        Route::group(['prefix' => '/coupons'], function () {
+            Route::get('/', [Application\Billing\CouponController::class, 'index']);
+            Route::post('/', [Application\Billing\CouponController::class, 'store']);
+
+            Route::get('/{coupon:id}', [Application\Billing\CouponController::class, 'view']);
+            Route::patch('/{coupon:id}', [Application\Billing\CouponController::class, 'update']);
+            Route::delete('/{coupon:id}', [Application\Billing\CouponController::class, 'delete']);
         });
 
         Route::group(['prefix' => '/exceptions'], function () {
@@ -90,10 +106,17 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::delete('/{uuid}', [Application\Billing\BillingExceptionController::class, 'resolve']);
         });
 
+        Route::group(['prefix' => '/donations'], function () {
+            Route::get('/', [Application\Billing\DonationController::class, 'index']);
+        });
+
         Route::prefix('/config')->group(function () {
             Route::post('/import', [Application\Billing\ConfigController::class, 'import']);
             Route::post('/export', [Application\Billing\ConfigController::class, 'export']);
         });
+
+        // Get suggested multiplier ranges
+        Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
     });
 
     /*
@@ -107,6 +130,20 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/ai'], function () {
         Route::put('/settings', [Application\IntelligenceController::class, 'update']);
         Route::post('/query', [Application\IntelligenceController::class, 'query']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mods Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/mods
+    |
+    */
+    Route::group(['prefix' => '/mods'], function () {
+        Route::put('/settings', [Application\ModsController::class, 'update']);
+        Route::get('/analytics', [Application\ModsController::class, 'analytics']);
+        Route::delete('/key', [Application\ModsController::class, 'resetKey']);
     });
 
     /*
@@ -169,7 +206,17 @@ Route::middleware([AdminSubject::class])->group(function () {
     |
     */
     Route::group(['prefix' => '/alerts'], function () {
+        // Legacy settings endpoint
         Route::patch('/', [Application\Alerts\AlertController::class, 'update']);
+        
+        // New CRUD endpoints for multiple alerts
+        Route::get('/', [Application\Alerts\AlertController::class, 'index']);
+        Route::post('/', [Application\Alerts\AlertController::class, 'store']);
+        Route::patch('/{alert:id}', [Application\Alerts\AlertController::class, 'updateAlert']);
+        Route::delete('/{alert:id}', [Application\Alerts\AlertController::class, 'destroy']);
+        
+        // User search for alert targeting
+        Route::get('/users/search', [Application\Alerts\AlertController::class, 'searchUsers']);
     });
 
     /*
@@ -327,6 +374,7 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{server:id}/unsuspend', [Application\Servers\ServerManagementController::class, 'unsuspend']);
         Route::post('/{server:id}/reinstall', [Application\Servers\ServerManagementController::class, 'reinstall']);
         Route::post('/{server:id}/transfer', [Application\Servers\ServerManagementController::class, 'transfer']);
+        Route::post('/{server:id}/mods/toggle', [Application\Servers\ServerController::class, 'toggleMods']);
 
         Route::post('/{server:id}/delete', [Application\Servers\ServerController::class, 'delete']);
 

@@ -27,9 +27,12 @@ abstract class ApplicationApiController extends Controller
         $input = $this->request->input('include', []);
         $input = is_array($input) ? $input : explode(',', $input);
 
-        $includes = (new Collection($input))->map(function ($value) {
-            return trim($value);
-        })->filter()->toArray();
+        $includes = (new Collection($input))
+            ->map(function ($value) {
+                return trim($value);
+            })
+            ->filter()
+            ->toArray();
 
         $this->fractal->parseIncludes($includes);
         $this->fractal->limitRecursion(2);
@@ -39,10 +42,14 @@ abstract class ApplicationApiController extends Controller
      * Perform dependency injection of certain classes needed for core functionality
      * without littering the constructors of classes that extend this abstract.
      */
-    public function loadDependencies(Fractal $fractal, Request $request)
-    {
+    public function loadDependencies(
+        Fractal $fractal,
+        Request $request,
+        AdminPermissionService $permissionService
+    ) {
         $this->fractal = $fractal;
         $this->request = $request;
+        $this->permissionService = $permissionService;
     }
 
     /**
@@ -62,14 +69,16 @@ abstract class ApplicationApiController extends Controller
     }
 
     /**
-     * Return an HTTP/204 response for the API.
+     * Return admin permissions for the authenticated user.
      */
     protected function adminPermissions(Request $request): array
     {
         return [
             'object' => 'admin_permissions',
             'attributes' => [
-                'permissions' => $this->permissionService->handle($request->user()),
+                'permissions' => $this->permissionService->handle(
+                    $request->user()
+                ),
             ],
         ];
     }

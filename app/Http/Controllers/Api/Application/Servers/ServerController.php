@@ -20,6 +20,7 @@ use Everest\Http\Requests\Api\Application\Servers\StoreServerRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Servers\DeleteServerRequest;
 use Everest\Http\Requests\Api\Application\Servers\UpdateServerRequest;
+use Everest\Http\Requests\Api\Application\Servers\ToggleModsRequest;
 use Everest\Http\Requests\Api\Application\Servers\StoreServerWithPresetRequest;
 
 class ServerController extends ApplicationApiController
@@ -160,5 +161,28 @@ class ServerController extends ApplicationApiController
         return $this->fractal->item($server)
             ->transformWith(ServerTransformer::class)
             ->toArray();
+    }
+
+    /**
+     * Toggle the mods module for a server.
+     *
+     * @throws \Everest\Exceptions\Model\DataValidationException
+     * @throws \Everest\Exceptions\Repository\RecordNotFoundException
+     */
+    public function toggleMods(ToggleModsRequest $request, Server $server): JsonResponse
+    {
+        $modsEnabled = $request->input('mods_enabled', false);
+        
+        $server->update(['mods_enabled' => $modsEnabled]);
+
+        Activity::event('admin:servers:mods.toggle')
+            ->property('server', $server)
+            ->property('mods_enabled', $modsEnabled)
+            ->description('Server mods module was ' . ($modsEnabled ? 'enabled' : 'disabled'))
+            ->log();
+
+        return response()->json([
+            'mods_enabled' => $server->mods_enabled,
+        ]);
     }
 }

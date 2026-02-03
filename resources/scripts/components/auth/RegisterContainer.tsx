@@ -1,7 +1,7 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
@@ -11,9 +11,18 @@ import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
-import register from '@/api/routes/auth/register';
+import register, { checkUsernameAvailability } from '@/api/routes/auth/register';
 import { login } from '@/api/routes/auth/login';
-import { faAt, faIdBadge, faKey, faUnlockKeyhole } from '@fortawesome/free-solid-svg-icons';
+import {
+    faAt,
+    faIdBadge,
+    faKey,
+    faUnlockKeyhole,
+    faCheck,
+    faTimes,
+    faSpinner,
+} from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 interface Values {
     username: string;
@@ -25,6 +34,9 @@ interface Values {
 function RegisterContainer() {
     const ref = useRef<Reaptcha>(null);
     const token = useRef('');
+    const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+    const [usernameMessage, setUsernameMessage] = useState('');
+    const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
@@ -32,6 +44,34 @@ function RegisterContainer() {
     useEffect(() => {
         clearFlashes();
     }, []);
+
+    const checkUsername = (username: string) => {
+        if (!username || username.length < 1) {
+            setUsernameStatus('idle');
+            setUsernameMessage('');
+            return;
+        }
+
+        setUsernameStatus('checking');
+        setUsernameMessage('Checking...');
+
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+
+        debounceTimer.current = setTimeout(() => {
+            checkUsernameAvailability(username)
+                .then(response => {
+                    setUsernameStatus(response.available ? 'available' : 'taken');
+                    setUsernameMessage(response.message);
+                })
+                .catch(error => {
+                    console.error(error);
+                    setUsernameStatus('idle');
+                    setUsernameMessage('');
+                });
+        }, 500);
+    };
 
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes();
@@ -78,16 +118,44 @@ function RegisterContainer() {
                 confirm_password: string().required('Please enter the password confirmation.'),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm }) => (
+            {({ isSubmitting, setSubmitting, submitForm, setFieldValue }) => (
                 <LoginFormContainer title={`Create an Account`}>
-                    <Field
-                        type={'text'}
-                        label={'Username'}
-                        icon={faIdBadge}
-                        name={'username'}
-                        placeholder={'user_account'}
-                        disabled={isSubmitting}
-                    />
+                    <div>
+                        <Field
+                            type={'text'}
+                            label={'Username'}
+                            icon={faIdBadge}
+                            name={'username'}
+                            placeholder={'user_account'}
+                            disabled={isSubmitting}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setFieldValue('username', e.target.value);
+                                checkUsername(e.target.value);
+                            }}
+                        />
+                        {usernameStatus !== 'idle' && (
+                            <div css={tw`mt-2 flex items-center text-sm`}>
+                                {usernameStatus === 'checking' && (
+                                    <>
+                                        <FontAwesomeIcon icon={faSpinner} spin css={tw`text-gray-400 mr-2`} />
+                                        <span css={tw`text-gray-400`}>{usernameMessage}</span>
+                                    </>
+                                )}
+                                {usernameStatus === 'available' && (
+                                    <>
+                                        <FontAwesomeIcon icon={faCheck} css={tw`text-green-400 mr-2`} />
+                                        <span css={tw`text-green-400`}>{usernameMessage}</span>
+                                    </>
+                                )}
+                                {usernameStatus === 'taken' && (
+                                    <>
+                                        <FontAwesomeIcon icon={faTimes} css={tw`text-red-400 mr-2`} />
+                                        <span css={tw`text-red-400`}>{usernameMessage}</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
                     <div css={tw`mt-6`}>
                         <Field
                             type={'text'}

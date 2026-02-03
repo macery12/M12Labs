@@ -25,28 +25,25 @@ import { NavLink } from 'react-router-dom';
 
 export default () => {
     const [node, setNode] = useState<Node | undefined>();
-    const { data: server } = useServerFromRoute();
+    const { data: server, mutate } = useServerFromRoute();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(actions => actions.flashes);
 
     if (!server) return null;
 
-    const submit = (values: Values, { setSubmitting, setFieldValue }: FormikHelpers<Values>) => {
+    const submit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes('server');
 
         updateServer(server.id, values)
             .then(() => {
-                // setServer({ ...server, ...s });
-
-                // TODO: Figure out how to properly clear react-selects for allocations.
-                setFieldValue('addAllocations', []);
-                setFieldValue('removeAllocations', []);
+                // Refresh server data to show updated allocations
+                mutate();
             })
             .catch(error => {
                 console.error(error);
                 clearAndAddHttpError({ key: 'server', error });
             })
-            .then(() => setSubmitting(false));
+            .finally(() => setSubmitting(false));
     };
 
     useEffect(() => {

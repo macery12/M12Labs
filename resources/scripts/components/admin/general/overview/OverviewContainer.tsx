@@ -46,8 +46,8 @@ const SuggestionCard = ({ icon, title, description, link, action }: SuggestionPr
     const { colors } = useStoreState(state => state.theme.data!);
 
     return (
-        <div className={'bg-black/25 p-3 lg:p-6 rounded-lg'}>
-            <h1 className={'text-xl font-semibold mb-2'}>
+        <div className={'rounded-lg bg-black/25 p-3 lg:p-6'}>
+            <h1 className={'mb-2 text-xl font-semibold'}>
                 <FontAwesomeIcon icon={icon} /> {title}
             </h1>
             <p className={'text-gray-300'}>{description}</p>
@@ -112,7 +112,7 @@ export default () => {
                     <Spinner size={'large'} centered />
                 ) : (
                     <>
-                        <div className={'text-gray-200 mb-2'}>
+                        <div className={'mb-2 text-gray-200'}>
                             You are currently running version&nbsp;
                             <CopyOnClick text={versionData?.panel.current}>
                                 <Code>{versionData?.panel.current}</Code>
@@ -134,7 +134,7 @@ export default () => {
                 )}
             </AdminBox>
             <AdminBox title={'Suggested Actions'} className={'mt-6'} icon={faQuestionCircle}>
-                <div className={'grid lg:grid-cols-3 gap-4'}>
+                <div className={'grid gap-4 lg:grid-cols-3'}>
                     {!settings.auto_update && (
                         <SuggestionCard
                             icon={faRecycle}

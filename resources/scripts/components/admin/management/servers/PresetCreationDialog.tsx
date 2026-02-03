@@ -46,7 +46,7 @@ export default () => {
         <>
             <Dialog open={open} onClose={() => setOpen(false)} title="Select preset for server creation">
                 <FlashMessageRender byKey={'admin:servers:create'} className={'mb-2'} />
-                <div className={'grid lg:grid-cols-2 gap-4'}>
+                <div className={'grid gap-4 lg:grid-cols-2'}>
                     <Select onChange={presetSelect} value={selectedPreset?.id ?? ''}>
                         <option value="">Select a server preset...</option>
                         {presets?.items.map(p => (
@@ -67,7 +67,7 @@ export default () => {
                 </div>
 
                 {selectedPreset && (
-                    <div className="bg-black/50 rounded-lg p-4 mt-4 space-y-2">
+                    <div className="mt-4 space-y-2 rounded-lg bg-black/50 p-4">
                         <div className="font-bold">
                             Deploying using {selectedPreset.name} onto {selectedNode?.name ?? '...'}
                         </div>
@@ -79,7 +79,7 @@ export default () => {
                     </div>
                 )}
 
-                <p className={'text-gray-400 text-sm my-3'}>
+                <p className={'my-3 text-sm text-gray-400'}>
                     Variables, allocations and deployment will all be calculated automatically. You can change this at
                     any time by heading to the server in the administrative menu and changing details there.
                 </p>
@@ -89,7 +89,7 @@ export default () => {
                 ) : (
                     <div className="flex justify-end">
                         <Button onClick={submit}>
-                            <SparklesIcon className="w-5 h-5 mr-2" /> Create
+                            <SparklesIcon className="mr-2 h-5 w-5" /> Create
                         </Button>
                     </div>
                 )}
@@ -99,9 +99,9 @@ export default () => {
                 onClick={() => setOpen(true)}
                 type="button"
                 size={Button.Sizes.Large}
-                className="h-10 px-4 py-0 whitespace-nowrap"
+                className="h-10 whitespace-nowrap px-4 py-0"
             >
-                <SparklesIcon className="w-5 h-5 mr-2" /> Create from Preset
+                <SparklesIcon className="mr-2 h-5 w-5" /> Create from Preset
             </Button>
         </>
     );

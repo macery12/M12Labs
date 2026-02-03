@@ -7,6 +7,14 @@ return [
     'enabled' => env('BILLING_ENABLED', false),
 
     /*
+     * Select the payment processor: 'stripe' or 'mollie'.
+     * NOTE: This is deprecated. Payment processors are now managed via
+     * the integrations system in the admin panel at /admin/billing/integrations.
+     * Kept for backward compatibility.
+     */
+    'processor' => env('BILLING_PROCESSOR', 'stripe'),
+
+    /*
      * Configure the publishable & secret API key for Stripe.
      */
     'keys' => [
@@ -15,9 +23,27 @@ return [
     ],
 
     /*
-     * Choose whether to add PayPal integration to the Panel.
+     * Configure the Mollie API key.
+     */
+    'mollie' => [
+        'api_key' => env('MOLLIE_API_KEY', ''),
+    ],
+
+    /*
+     * Choose whether to add PayPal integration to the Panel (via Stripe).
+     * This is for PayPal integration through Stripe's payment methods.
      */
     'paypal' => env('BILLING_PAYPAL', false),
+
+    /*
+     * Configure standalone PayPal integration.
+     * Credentials are stored in database via Settings model.
+     */
+    'paypal_standalone' => [
+        'client_id' => '',
+        'client_secret' => '',
+        'mode' => 'sandbox', // 'sandbox' or 'live'
+    ],
 
     /*
      * Choose whether to add Link integration to the Panel.
@@ -42,12 +68,25 @@ return [
 
     /*
      * Configure renewal and suspension settings.
+     * NOTE: The billing cycle system has replaced the old days/grace period settings.
+     * Only suspension_threshold is kept for backward compatibility.
      */
     'renewal' => [
-        'days' => env('BILLING_RENEWAL_DAYS', 30),
-        'free_renewal_days' => env('BILLING_FREE_RENEWAL_DAYS', 30),
         'suspension_threshold' => env('BILLING_SUSPENSION_THRESHOLD', 7),
-        'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
-        'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
+        'default_billing_days' => env('BILLING_DEFAULT_BILLING_DAYS', 30),
+        'multiplier_steps' => env('BILLING_MULTIPLIER_STEPS', json_encode([
+            ['maxDays' => 10, 'multiplier' => 1.30],
+            ['maxDays' => 20, 'multiplier' => 1.20],
+            ['maxDays' => 29, 'multiplier' => 1.10],
+            ['maxDays' => 30, 'multiplier' => 1.00],
+            ['maxDays' => 59, 'multiplier' => 0.95],
+            ['maxDays' => 89, 'multiplier' => 0.90],
+            ['maxDays' => 999, 'multiplier' => 0.85],
+        ])),
     ],
+
+    /*
+     * Configure cooldown period for plan changes (in hours).
+     */
+    'plan_change_cooldown_hours' => env('BILLING_PLAN_CHANGE_COOLDOWN_HOURS', 72),
 ];

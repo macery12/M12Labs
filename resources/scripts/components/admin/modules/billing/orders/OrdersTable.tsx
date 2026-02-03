@@ -144,7 +144,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                         </CopyOnClick>
                                                     </td>
                                                 )}
-                                                <td className={'px-6 py-4 text-white font-bold'}>${order.total}</td>
+                                                <td className={'px-6 py-4 font-bold text-white'}>${order.total}</td>
                                                 {!minimal && (
                                                     <td className={'px-6 py-4'}>
                                                         {order.name.slice(0, 8)} {order.description}
@@ -158,7 +158,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                         {order.status}
                                                     </Pill>
                                                 </td>
-                                                <td className={'pr-12 py-4 text-right'}>
+                                                <td className={'py-4 pr-12 text-right'}>
                                                     <Pill
                                                         size={'small'}
                                                         type={order.type === 'new' ? 'success' : 'info'}
@@ -167,7 +167,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                     </Pill>
                                                 </td>
                                                 {!minimal && (
-                                                    <td className={'pr-12 py-4 text-right'}>
+                                                    <td className={'py-4 pr-12 text-right'}>
                                                         <Pill
                                                             size={'small'}
                                                             type={
@@ -177,7 +177,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                             }
                                                         >
                                                             {order.threat_index < 0 ? (
-                                                                <span className={'text-xs inline-flex my-1'}>
+                                                                <span className={'my-1 inline-flex text-xs'}>
                                                                     <Spinner size={'small'} />
                                                                     &nbsp;Processing
                                                                 </span>

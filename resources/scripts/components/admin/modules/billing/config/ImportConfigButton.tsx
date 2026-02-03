@@ -78,7 +78,7 @@ export default () => {
                     </Alert>
                 )}
                 <input type="file" accept=".json" onChange={handleFileChange} className={'mt-4'} />
-                <div className="bg-neutral-800 border border-neutral-900 shadow-inner p-4 rounded mt-4">
+                <div className="mt-4 rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner">
                     <Switch
                         onChange={() => setOverride(!override)}
                         name={'override'}
@@ -87,7 +87,7 @@ export default () => {
                     />
                 </div>
                 {!override && (
-                    <div className="bg-neutral-800 border border-neutral-900 shadow-inner p-4 rounded mt-4">
+                    <div className="mt-4 rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner">
                         <Switch
                             onChange={() => setIgnoreDuplicates(!ignoreDuplicates)}
                             name={'ignoreDuplicates'}

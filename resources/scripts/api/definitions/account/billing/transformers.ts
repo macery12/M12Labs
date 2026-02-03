@@ -20,6 +20,8 @@ export default class Transformers {
         name: data.name,
         icon: data.icon,
         description: data.description,
+        allowedEggs: data.allowedEggs || [data.eggId],
+        allowEggChanges: data.allowEggChanges ?? true,
     });
 
     static toProduct = ({ attributes: data }: FractalResponseData): Models.Product => ({
@@ -29,6 +31,8 @@ export default class Transformers {
         price: data.price,
         description: data.description,
         eggId: data.egg_id,
+        allowedEggs: data.allowed_eggs || [data.egg_id],
+        allowEggChanges: data.allow_egg_changes ?? true,
         limits: {
             cpu: data.limits.cpu,
             memory: data.limits.memory,

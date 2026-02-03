@@ -3,13 +3,14 @@ import LoginContainer from '@/components/auth/LoginContainer';
 import ForgotPasswordContainer from '@/components/auth/ForgotPasswordContainer';
 import ResetPasswordContainer from '@/components/auth/ResetPasswordContainer';
 import LoginCheckpointContainer from '@/components/auth/LoginCheckpointContainer';
+import DiscordRegistrationContainer from '@/components/auth/DiscordRegistrationContainer';
 import { NotFound } from '@/elements/ScreenBlock';
 import tw, { styled } from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
 import RegisterContainer from '@/components/auth/RegisterContainer';
 
 const Container = styled.div`
-    ${tw`h-screen bg-login bg-cover`};
+    ${tw`min-h-screen bg-login bg-cover`};
     background-repeat: no-repeat;
     background-blend-mode: darken;
 `;
@@ -25,6 +26,7 @@ export default () => {
                     <Route path="login" element={<LoginContainer />} />
                     <Route path="login/checkpoint/*" element={<LoginCheckpointContainer />} />
                     {registration && <Route path={'register'} element={<RegisterContainer />} />}
+                    <Route path="discord/register" element={<DiscordRegistrationContainer />} />
                     <Route path="password" element={<ForgotPasswordContainer />} />
                     <Route path="password/reset/:token" element={<ResetPasswordContainer />} />
                     <Route path="*" element={<NotFound onBack={() => navigate('/auth/login')} />} />

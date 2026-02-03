@@ -1,21 +1,23 @@
 import { Route, Routes } from 'react-router-dom';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { EyeIcon, ShieldExclamationIcon } from '@heroicons/react/outline';
+import { EyeIcon, ShieldExclamationIcon, ClipboardListIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import AlertSettings from './AlertSettings';
 import AlertAppearance from './AlertAppearance';
+import AlertList from './AlertList';
+import AlertForm from './AlertForm';
 import { NotFound } from '@/elements/ScreenBlock';
 
 export default () => (
     <AdminContentBlock title={'Alerts'}>
         <FlashMessageRender byKey={'admin:alert'} className={'mb-4'} />
-        <div className={'w-full flex flex-row items-center mb-8'}>
-            <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Panel Alerts</h2>
+        <div className={'mb-8 flex w-full flex-row items-center'}>
+            <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Panel Alerts</h2>
                 <p
                     className={
-                        'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                        'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                     }
                 >
                     Send warning and information alerts to your users.
@@ -23,16 +25,22 @@ export default () => (
             </div>
         </div>
         <SubNavigation>
-            <SubNavigationLink to={'/admin/alerts'} name={'General'} base>
+            <SubNavigationLink to={'/admin/alerts'} name={'Manage Alerts'} base>
+                <ClipboardListIcon />
+            </SubNavigationLink>
+            <SubNavigationLink to={'/admin/alerts/legacy'} name={'Legacy'} base>
                 <ShieldExclamationIcon />
             </SubNavigationLink>
-            <SubNavigationLink to={'/admin/alerts/view'} name={'Appearance'}>
+            <SubNavigationLink to={'/admin/alerts/legacy/view'} name={'Legacy Appearance'}>
                 <EyeIcon />
             </SubNavigationLink>
         </SubNavigation>
         <Routes>
-            <Route path={'/'} element={<AlertSettings />} />
-            <Route path={'/view'} element={<AlertAppearance />} />
+            <Route path={'/'} element={<AlertList />} />
+            <Route path={'/create'} element={<AlertForm />} />
+            <Route path={'/edit/:id'} element={<AlertForm />} />
+            <Route path={'/legacy'} element={<AlertSettings />} />
+            <Route path={'/legacy/view'} element={<AlertAppearance />} />
 
             <Route path={'/*'} element={<NotFound />} />
         </Routes>

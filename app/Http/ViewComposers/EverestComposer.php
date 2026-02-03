@@ -3,14 +3,21 @@
 namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
+use Everest\Services\Billing\PaymentProcessorConfigService;
 
 class EverestComposer
 {
+    public function __construct(
+        private PaymentProcessorConfigService $processorConfigService
+    ) {
+    }
+
     /**
      * Provide access to the asset service in the views.
      */
     public function compose(View $view): void
     {
+        $processorConfig = $this->processorConfigService->getProcessorConfig();
         $view->with('everestConfiguration', [
             'auth' => [
                 'registration' => [
@@ -46,11 +53,19 @@ class EverestComposer
             ],
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
+                'processor' => config('modules.billing.processor', 'stripe'),
+                'processors' => $processorConfig,
                 'paypal' => config('modules.billing.paypal'),
                 'link' => config('modules.billing.link'),
                 'keys' => [
                     'publishable' => boolval(config('modules.billing.keys.publishable')),
                     'secret' => boolval(config('modules.billing.keys.secret')),
+                ],
+                'mollie' => [
+                    'api_key' => !empty(config('modules.billing.mollie.api_key')),
+                ],
+                'paypal_standalone' => [
+                    'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
                 ],
                 'currency' => [
                     'symbol' => config('modules.billing.currency.symbol'),
@@ -67,6 +82,18 @@ class EverestComposer
                     'free_suspension_days' => config('modules.billing.renewal.free_suspension_days', 7),
                     'paid_suspension_days' => config('modules.billing.renewal.paid_suspension_days', 30),
                 ],
+                'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
+                'integrations' => [
+                    'stripe' => [
+                        'enabled' => boolval(config('modules.billing.integrations.stripe.enabled', false)),
+                    ],
+                    'mollie' => [
+                        'enabled' => boolval(config('modules.billing.integrations.mollie.enabled', false)),
+                    ],
+                    'paypal' => [
+                        'enabled' => boolval(config('modules.billing.integrations.paypal.enabled', false)),
+                    ],
+                ],
             ],
             'alert' => [
                 'enabled' => boolval(config('modules.alert.enabled', false)),
@@ -79,10 +106,23 @@ class EverestComposer
                 'enabled' => boolval(config('modules.ai.enabled', false)),
                 'key' => !empty(config('modules.ai.key')),
                 'user_access' => boolval(config('modules.ai.user_access', false)),
+                'endpoint' => config('modules.ai.endpoint', 'https://api.openai.com/v1'),
+                'model' => config('modules.ai.model', 'gpt-3.5-turbo'),
+                'mode' => config('modules.ai.mode', 'openai'),
+                'max_tokens' => (int)config('modules.ai.max_tokens', 200),
+                'system_prompt' => config('modules.ai.system_prompt', 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.'),
             ],
             'webhooks' => [
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),
                 'url' => !empty(config('modules.webhooks.url')),
+            ],
+            'mods' => [
+                'enabled' => boolval(config('modules.mods.enabled', false)),
+                'curseforge_api_key' => !empty(config('modules.mods.curseforge_api_key')),
+                'rate_limit' => [
+                    'requests_per_minute' => config('modules.mods.rate_limit.requests_per_minute', 30),
+                    'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
+                ],
             ],
         ]);
     }

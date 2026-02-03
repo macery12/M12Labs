@@ -4,7 +4,6 @@ namespace Everest\Services\Billing;
 
 use Carbon\Carbon;
 use Everest\Models\Egg;
-use Stripe\StripeObject;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Models\Allocation;
@@ -13,6 +12,7 @@ use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Services\Servers\ServerCreationService;
 use Everest\Services\Servers\VariableValidatorService;
 use Everest\Exceptions\Service\Deployment\NoViableAllocationException;
@@ -30,13 +30,24 @@ class CreateServerService
 
     /**
      * Process the creation of a server.
+     * This method handles both free and paid servers.
+     * 
+     * @param Request $request The HTTP request
+     * @param Product $product The product being purchased
+     * @param \Stripe\StripeObject|\stdClass $metadata The metadata (from Stripe or mock object)
+     * @param Order $order The order being processed
+     * @param string|null $serverName The custom server name (optional)
+     * @return Server The created server
      */
-    public function process(Request $request, Product $product, StripeObject $metadata, Order $order): Server
+    public function process(Request $request, Product $product, object $metadata, Order $order, ?string $serverName = null): Server
     {
-        $egg = Egg::findOrFail($product->category->egg_id);
+        // Use egg from order if available, otherwise fall back to category's default egg
+        $eggId = $order->egg_id ?? $product->category->getDefaultEggId();
+
+        $egg = Egg::findOrFail($eggId);
 
         $allocation = $this->getAllocation($metadata->node_id, $order->id);
-
+        
         // Extract custom variables from metadata if available
         $customVariables = [];
         if (isset($metadata->variables) && $metadata->variables !== null && $metadata->variables !== '') {
@@ -53,19 +64,30 @@ class CreateServerService
                 $customVariables = $metadata->variables;
             }
         }
-
+        
         $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
 
-        try {
-            // Use paid renewal days for paid servers
-            $renewalDays = config('modules.billing.renewal.days', 30);
+        // Determine the server name: use passed parameter, metadata name, or default
+        $finalServerName = $serverName;
+        if (!$finalServerName && isset($metadata->name) && !empty(trim((string) $metadata->name))) {
+            $finalServerName = trim((string) $metadata->name);
+        }
+        if (!$finalServerName) {
+            // Defensive fallback - should not be reached due to frontend/controller validation
+            // but ensures server creation never fails due to empty name
+            $finalServerName = $request->user()->username . '\'s server';
+        }
 
+        try {
+            // Use product-based renewal days (automatically handles free vs paid)
+            $renewalDays = $product->getRenewalDays();
+            
             $server = $this->creation->handle([
                 'node_id' => $metadata->node_id,
                 'allocation_id' => $allocation,
                 'egg_id' => $egg->id,
                 'nest_id' => $product->category->nest_id,
-                'name' => $request->user()->username . '\'s server',
+                'name' => $finalServerName,
                 'owner_id' => $request->user()->id,
                 'memory' => $product->memory_limit,
                 'swap' => 0,
@@ -82,15 +104,40 @@ class CreateServerService
                 'allocation_limit' => $product->allocation_limit,
                 'subuser_limit' => 3,
             ]);
+        } catch (BillingExceptionClass $e) {
+            // Re-throw billing exceptions as-is
+            throw $e;
         } catch (DisplayException $ex) {
-            BillingException::create([
-                'order_id' => $order->id,
-                'exception_type' => BillingException::TYPE_DEPLOYMENT,
-                'title' => 'Failed to create billable server',
-                'description' => $ex->getMessage(),
-            ]);
-
-            throw new DisplayException('Unable to create server: ' . $ex->getMessage());
+            throw new BillingExceptionClass(
+                'Failed to create billable server',
+                'Unable to create server: ' . $ex->getMessage(),
+                BillingException::TYPE_DEPLOYMENT,
+                $order->id,
+                null,
+                null,
+                [
+                    'product_id' => $product->id,
+                    'node_id' => $metadata->node_id,
+                    'egg_id' => $egg->id,
+                ],
+                $ex
+            );
+        } catch (\Exception $ex) {
+            throw new BillingExceptionClass(
+                'Unexpected server creation error',
+                'An unexpected error occurred while creating server: ' . $ex->getMessage(),
+                BillingException::TYPE_DEPLOYMENT,
+                $order->id,
+                null,
+                null,
+                [
+                    'product_id' => $product->id,
+                    'node_id' => $metadata->node_id,
+                    'egg_id' => $egg->id,
+                    'error' => $ex->getMessage(),
+                ],
+                $ex
+            );
         }
 
         return $server;
@@ -98,52 +145,27 @@ class CreateServerService
 
     /**
      * Process the creation of a free server.
+     * 
+     * This is a convenience wrapper around the unified process() method.
+     * It converts the simple parameters into the StripeObject format expected by process().
+     * 
+     * @param Request $request The HTTP request
+     * @param Product $product The product being purchased
+     * @param int $nodeId The node ID to deploy to
+     * @param Order $order The order being processed
+     * @param array $customVariables Custom environment variables
+     * @param string|null $serverName The custom server name (optional)
+     * @return Server The created server
      */
-    public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = []): Server
+    public function processFree(Request $request, Product $product, int $nodeId, Order $order, array $customVariables = [], ?string $serverName = null): Server
     {
-        $egg = Egg::findOrFail($product->category->egg_id);
-
-        $allocation = $this->getAllocation($nodeId, $order->id);
-        $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
-
-        try {
-            // Use free renewal days for free servers
-            $renewalDays = config('modules.billing.renewal.free_renewal_days', 30);
-
-            $server = $this->creation->handle([
-                'node_id' => $nodeId,
-                'allocation_id' => $allocation,
-                'egg_id' => $egg->id,
-                'nest_id' => $product->category->nest_id,
-                'name' => $request->user()->username . '\'s server',
-                'owner_id' => $request->user()->id,
-                'memory' => $product->memory_limit,
-                'swap' => 0,
-                'disk' => $product->disk_limit,
-                'io' => 500,
-                'cpu' => $product->cpu_limit,
-                'startup' => $egg->startup,
-                'environment' => $environment,
-                'image' => current($egg->docker_images),
-                'billing_product_id' => $product->id,
-                'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
-                'database_limit' => $product->database_limit,
-                'backup_limit' => $product->backup_limit,
-                'allocation_limit' => $product->allocation_limit,
-                'subuser_limit' => 3,
-            ]);
-        } catch (DisplayException $ex) {
-            BillingException::create([
-                'order_id' => $order->id,
-                'exception_type' => BillingException::TYPE_DEPLOYMENT,
-                'title' => 'Failed to create free server',
-                'description' => $ex->getMessage(),
-            ]);
-
-            throw new DisplayException('Unable to create server: ' . $ex->getMessage());
-        }
-
-        return $server;
+        // Create a mock metadata object that mimics Stripe's StripeObject structure
+        $metadata = new \stdClass();
+        $metadata->node_id = $nodeId;
+        $metadata->variables = !empty($customVariables) ? $customVariables : null;
+        
+        // Call the unified process method
+        return $this->process($request, $product, $metadata, $order, $serverName);
     }
 
     /**
@@ -162,8 +184,8 @@ class CreateServerService
 
         // Override with custom variables
         foreach ($customVariables as $variable) {
-            if (is_array($variable)
-                && array_key_exists('key', $variable)
+            if (is_array($variable) 
+                && array_key_exists('key', $variable) 
                 && array_key_exists('value', $variable)
                 && !empty($variable['key'])) {
                 $variables[$variable['key']] = $variable['value'];
@@ -174,38 +196,24 @@ class CreateServerService
     }
 
     /**
-     * Get the environment variables for the new server from JSON string.
-     *
-     * @deprecated this method is deprecated and will be removed in a future version
-     * @see getEnvironmentWithCustomVariables() Use this method directly with decoded array instead.
-     */
-    private function getServerEnvironment(string $data, int $id): array
-    {
-        $decoded = json_decode($data, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new DisplayException('Failed to decode environment variables: ' . json_last_error_msg());
-        }
-
-        return $this->getEnvironmentWithCustomVariables($id, is_array($decoded) ? $decoded : []);
-    }
-
-    /**
      * Get a suitable allocation to deploy to.
+     *
+     * @throws BillingExceptionClass
      */
     private function getAllocation(int $nodeId, int $orderId): int
     {
         $allocation = Allocation::where('node_id', $nodeId)->where('server_id', null)->first();
 
         if (!$allocation) {
-            BillingException::create([
-                'order_id' => $orderId,
-                'exception_type' => BillingException::TYPE_DEPLOYMENT,
-                'title' => 'Failed to find allocation to assign to server',
-                'description' => 'Create more allocations (ports) for node ' . $nodeId,
-            ]);
-
-            throw new NoViableAllocationException('No allocations are available for deployment.');
+            throw new BillingExceptionClass(
+                'Failed to find allocation to assign to server',
+                'No allocations are available for deployment. Please create more allocations (ports) for node ' . $nodeId,
+                BillingException::TYPE_DEPLOYMENT,
+                $orderId,
+                null,
+                null,
+                ['node_id' => $nodeId]
+            );
         }
 
         return $allocation->id;

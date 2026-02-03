@@ -22,6 +22,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
     Route::get('links', [Client\LinkController::class, 'index']);
+    Route::get('/alerts', [Client\AlertController::class, 'index']);
 
     Route::prefix('/groups')->group(function () {
         Route::get('/', [Client\ServerGroupController::class, 'index']);
@@ -66,6 +67,17 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/{ticket:id}/messages', [Client\TicketController::class, 'message']);
         });
 
+        Route::prefix('/modpacks')->group(function () {
+            Route::get('/search', [Client\AccountModpacksController::class, 'search']);
+            Route::get('/compatible-servers', [Client\AccountModpacksController::class, 'getCompatibleServers']);
+            Route::get('/{modpackId}', [Client\AccountModpacksController::class, 'getModpack']);
+            Route::get('/{modpackId}/files', [Client\AccountModpacksController::class, 'getModpackFiles']);
+            Route::get('/minecraft/versions', [Client\AccountModpacksController::class, 'getMinecraftVersions']);
+            Route::get('/minecraft/loaders', [Client\AccountModpacksController::class, 'getModLoaderTypes']);
+            Route::get('/server/{serverId}/info', [Client\AccountModpacksController::class, 'getServerModpackInfo']);
+            Route::post('/install', [Client\AccountModpacksController::class, 'install']);
+        });
+
         Route::post('/setup', [Client\AccountController::class, 'setup']);
     });
 
@@ -76,18 +88,45 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
         Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
         Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
+        Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
 
-        Route::get('/products/{id}/key', [Client\Billing\PaymentController::class, 'publicKey']);
+        // Unified checkout controller for both free and paid products
+        Route::get('/products/{id}/key', [Client\Billing\CheckoutController::class, 'getStripeKey']);
 
-        Route::post('/products/{id}/intent', [Client\Billing\PaymentController::class, 'intent']);
-        Route::put('/products/{id}/intent', [Client\Billing\PaymentController::class, 'updateIntent']);
+        Route::post('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'createIntent']);
+        Route::put('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'updateIntent']);
 
-        Route::post('/process', [Client\Billing\PaymentController::class, 'process'])->name('api:client.billing.process');
-        Route::post('/process/free', [Client\Billing\FreeProductController::class, 'process']);
-        Route::post('/renew/free', [Client\Billing\FreeProductController::class, 'renew']);
+        // Mollie payment routes (webhook route is defined outside this group)
+        Route::post('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'createPayment']);
+        Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
+        Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
+        Route::get('/mollie/token/{token}', [Client\Billing\MollieCheckoutController::class, 'getPaymentFromToken']);
+
+        // PayPal payment routes
+        Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);
+        Route::put('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'updateOrder']);
+	    Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
+        Route::get('/paypal/status', [Client\Billing\PayPalCheckoutController::class, 'checkOrderStatus']);
+        Route::get('/paypal/token/{token}', [Client\Billing\PayPalCheckoutController::class, 'getOrderFromToken']);
+
+        Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
+
+        // Billing cycle routes for clients
+        Route::get('/products/{id}/billing-cycles', [Client\Billing\BillingCycleController::class, 'index']);
+
+        Route::post('/process', [Client\Billing\CheckoutController::class, 'processPaid'])->name('api:client.billing.process');
+        Route::post('/process/free', [Client\Billing\CheckoutController::class, 'processFree']);
+        Route::post('/renew/free', [Client\Billing\CheckoutController::class, 'renewFree']);
 
         Route::get('/orders', [Client\Billing\OrderController::class, 'index']);
         Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
+    });
+
+    Route::prefix('/donations')->group(function () {
+        Route::get('/', [Client\DonationController::class, 'index']);
+        Route::get('/key', [Client\DonationController::class, 'getStripeKey']);
+        Route::post('/intent', [Client\DonationController::class, 'createIntent']);
+        Route::post('/complete', [Client\DonationController::class, 'complete']);
     });
 
     /*
@@ -139,6 +178,25 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/upload', Client\Servers\FileUploadController::class);
         });
 
+        Route::group(['prefix' => '/mods'], function () {
+            Route::get('/search', [Client\Servers\ModsController::class, 'search'])->middleware(['throttle:30,1']);
+            Route::get('/{modId}', [Client\Servers\ModsController::class, 'getMod'])->middleware(['throttle:30,1']);
+            Route::get('/{modId}/files', [Client\Servers\ModsController::class, 'getModFiles'])->middleware(['throttle:30,1']);
+            Route::post('/{modId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadMod'])->middleware(['throttle:5,1']);
+            Route::get('/minecraft/versions', [Client\Servers\ModsController::class, 'getMinecraftVersions'])->middleware(['throttle:10,1']);
+            Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:10,1']);
+        });
+
+        Route::group(['prefix' => '/modpacks'], function () {
+            Route::get('/search', [Client\Servers\ModsController::class, 'searchModpacks'])->middleware(['throttle:30,1']);
+            Route::get('/{modpackId}', [Client\Servers\ModsController::class, 'getModpack'])->middleware(['throttle:30,1']);
+            Route::get('/{modpackId}/files', [Client\Servers\ModsController::class, 'getModpackFiles'])->middleware(['throttle:30,1']);
+            Route::post('/{modpackId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadModpack'])->middleware(['throttle:5,1']);
+            Route::get('/minecraft/versions', [Client\Servers\ModsController::class, 'getMinecraftVersions'])->middleware(['throttle:10,1']);
+            Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:10,1']);
+        });
+
+
         Route::group(['prefix' => '/schedules'], function () {
             Route::get('/', [Client\Servers\ScheduleController::class, 'index']);
             Route::post('/', [Client\Servers\ScheduleController::class, 'store']);
@@ -187,6 +245,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/rename', [Client\Servers\SettingsController::class, 'rename']);
             Route::post('/reinstall', [Client\Servers\SettingsController::class, 'reinstall']);
             Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
+            Route::post('/change-egg', [Client\Servers\SettingsController::class, 'changeEgg']);
+        });
+
+        Route::group(['prefix' => '/billing'], function () {
+            Route::get('/plans', [Client\Billing\PlanChangeController::class, 'getAvailablePlans']);
+            Route::get('/plans/{product}/validate', [Client\Billing\PlanChangeController::class, 'validatePlanChange']);
+            Route::post('/plans/{product}/change', [Client\Billing\PlanChangeController::class, 'changePlan']);
         });
     });
 });

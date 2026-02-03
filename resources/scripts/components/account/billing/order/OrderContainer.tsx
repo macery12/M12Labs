@@ -3,24 +3,25 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
+import EggBox from '@account/billing/order/EggBox';
+import BillingCycleBox from '@account/billing/order/BillingCycleBox';
 import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
+import CouponInput from '@account/billing/order/CouponInput';
+import CheckoutStepper from '@account/billing/order/CheckoutStepper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import {
     faArchive,
-    faCreditCard,
     faDatabase,
     faEthernet,
     faExternalLinkAlt,
     faHdd,
-    faIdBadge,
     faMemory,
     faMicrochip,
 } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
-import PaymentButton from './PaymentButton';
+import PaymentMethodSelector from './PaymentMethodSelector';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { EggVariable } from '@definitions/server';
@@ -28,19 +29,19 @@ import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Product, StripeIntent, type Node } from '@definitions/account/billing';
 import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
-import { getProduct, getProductVariables, getViableNodes } from '@/api/routes/account/billing/products';
+import {
+    getProduct,
+    getProductVariables,
+    getViableNodes,
+    getEggInfo,
+    getProductBillingCycles,
+    type EggInfo,
+    type BillingCycle,
+} from '@/api/routes/account/billing/products';
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
-import TitledGreyBox from '@/elements/TitledGreyBox';
 import AdminCheckbox from '@/elements/AdminCheckbox';
-
-const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) => {
-    return (
-        <div className={'font-semibold text-gray-400 my-1'}>
-            <FontAwesomeIcon icon={icon} className={'w-4 h-4 inline-flex mr-2 '} />
-            {content}
-        </div>
-    );
-};
+import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+import classNames from 'classnames';
 
 export default () => {
     const params = useParams<'id'>();
@@ -53,20 +54,87 @@ export default () => {
 
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
+    const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([]);
+    const [selectedBillingDays, setSelectedBillingDays] = useState<number>(30);
     const [nodes, setNodes] = useState<Node[] | undefined>();
     const [selectedNode, setSelectedNode] = useState<number>(0);
     const [product, setProduct] = useState<Product | undefined>();
     const [eggs, setEggs] = useState<EggVariable[] | undefined>();
+    const [selectedEggId, setSelectedEggId] = useState<number | undefined>();
+    const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
 
     const [termsAgreed, setTermsAgreed] = useState<boolean>(false);
     const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
+    const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
+    const [serverName, setServerName] = useState<string>('');
+    const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
 
     const { colors } = useStoreState(state => state.theme.data!);
 
+    // Get the current price based on selected billing cycle
+    const getCurrentPrice = () => {
+        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
+        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
+    };
+
+    // Calculate checkout steps progress
+    const getCheckoutSteps = () => {
+        const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
+        const steps = [
+            { id: 1, name: 'Billing Cycle', status: selectedBillingDays ? 'complete' : 'current' },
+            { id: 2, name: 'Location', status: selectedBillingDays ? (selectedNode ? 'complete' : 'current') : 'upcoming' },
+            {
+                id: 3,
+                name: 'Configuration',
+                status: selectedNode ? (isEggSelectionComplete ? 'complete' : 'current') : 'upcoming',
+            },
+            {
+                id: 4,
+                name: 'Legal',
+                status:
+                    termsAgreed && privacyAgreed
+                        ? 'complete'
+                        : selectedNode && isEggSelectionComplete
+                        ? 'current'
+                        : 'upcoming',
+            },
+            { id: 5, name: 'Payment', status: termsAgreed && privacyAgreed ? 'current' : 'upcoming' },
+        ];
+        return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
+    };
+
+    const handleCouponApplied = (data: ValidateCouponResponse | null) => {
+        setCouponData(data);
+
+        // Only regenerate intent if the final total is not zero and using Stripe
+        if (product && product.price !== 0 && billing.processors?.stripe?.available) {
+            const finalTotal = data ? data.total : product.price;
+
+            // If coupon makes it free, don't fetch intent
+            if (finalTotal === 0) {
+                setIntent(null);
+            } else {
+                // Regenerate intent with new amount for paid products
+                getStripeIntent(Number(params.id), data?.coupon.id)
+                    .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
+                    .catch(error => console.error('Error updating payment intent:', error));
+            }
+        }
+    };
+
     const createFree = () => {
-        if (product) {
+        if (product && serverName.trim()) {
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
-            processUnpaidOrder(product.id, selectedNode, undefined, variables)
+            processUnpaidOrder(
+                product.id,
+                selectedNode,
+                undefined,
+                variables,
+                undefined,
+                couponData?.coupon.id,
+                selectedEggId,
+                serverName.trim(),
+            )
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
         }
@@ -79,20 +147,52 @@ export default () => {
                 const productData = await getProduct(Number(params.id));
                 setProduct(productData);
 
+                // Fetch billing cycles
+                const cyclesData = await getProductBillingCycles(Number(params.id));
+                setBillingCycles(cyclesData);
+                
+                // Set default billing cycle (find the default one or use the first one)
+                const defaultCycle = cyclesData.find(c => c.isDefault) || cyclesData[0];
+                if (defaultCycle) {
+                    setSelectedBillingDays(defaultCycle.days);
+                }
+
+                // Initialize selected egg with the default (first allowed egg)
+                const allowedEggs = productData.allowedEggs || [productData.eggId];
+                setSelectedEggId(allowedEggs[0]);
+
+                // Fetch egg information for all allowed eggs
+                const eggInfoPromises = allowedEggs.map(id => getEggInfo(id));
+                const eggInfos = await Promise.all(eggInfoPromises);
+                setAvailableEggs(eggInfos);
+
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
                 setNodes(nodesData);
                 setSelectedNode(Number(nodesData[0]?.id) ?? 0);
 
                 if (productData.price !== 0) {
-                    // Fetch payment intent
-                    const intentData = await getStripeIntent(Number(params.id));
-                    setIntent({ id: intentData.id, secret: intentData.secret });
+                    // Check which processors are available and fetch resources accordingly
+                    const stripeAvailable = billing.processors?.stripe?.available ?? false;
 
-                    // Fetch Stripe public key and initialize Stripe
-                    const stripePublicKey = await getStripeKey(Number(params.id));
-                    const stripeInstance = await loadStripe(stripePublicKey.key);
-                    setStripe(stripeInstance);
+                    // Fetch Stripe resources if Stripe is available
+                    if (stripeAvailable) {
+                        try {
+                            // Fetch payment intent
+                            const intentData = await getStripeIntent(Number(params.id));
+                            setIntent({ id: intentData.id, secret: intentData.secret });
+
+                            // Fetch Stripe public key and initialize Stripe
+                            const stripePublicKey = await getStripeKey(Number(params.id));
+                            const stripeInstance = await loadStripe(stripePublicKey.key);
+                            setStripe(stripeInstance);
+                        } catch (error) {
+                            console.error('Error initializing Stripe:', error);
+                        }
+                    }
+
+                    // Mollie doesn't need pre-initialization like Stripe
+                    // Payment is created when user clicks the button
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -105,199 +205,399 @@ export default () => {
     useEffect(() => {
         clearFlashes();
 
-        if (!product || eggs) return;
+        if (!product || eggs || !selectedEggId) return;
 
-        // Fetch product variables (egg data)
-        getProductVariables(Number(product.eggId))
+        // Fetch product variables (egg data) for the selected egg
+        getProductVariables(selectedEggId)
             .then(data => setEggs(data))
             .catch(error => console.error(error));
-    }, [product]);
+    }, [product, selectedEggId]);
 
     if (!product) return <Spinner centered />;
-    if (product.price !== 0 && (!intent || !stripe)) return <Spinner centered />;
-
-    const options = {
-        clientSecret: intent?.secret,
-        appearance: {
-            theme: 'night',
-            variables: {
-                colorText: '#ffffff',
-            },
-        },
-    };
 
     return (
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            {/* @ts-expect-error this is fine, stripe library is just weird */}
-            <Elements stripe={stripe} options={options}>
-                <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
-                    Your Order
-                    <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                        Customize your selected plan and submit a payment.
-                    </p>
-                </div>
-                <div className={'grid lg:grid-cols-8 gap-4 lg:gap-12'}>
-                    <div className={'lg:border-r-4 border-gray-500 lg:col-span-2'}>
-                        <p className={'text-2xl text-gray-300 my-4 font-bold'}>
-                            Selected Plan
-                            {product.icon && <img src={product.icon} className={'w-8 h-8 ml-2 inline-flex'} />}
-                        </p>
-                        <LimitBox icon={faIdBadge} content={product.name} />
-                        <div className={'font-semibold text-gray-400 text-lg my-1'}>
-                            <FontAwesomeIcon icon={faCreditCard} className={'w-4 h-4 inline-flex mr-2 '} />
-                            <span style={{ color: colors.primary }} className={'mr-1'}>
-                                ${product.price}
-                            </span>
-                            <span className={'text-sm'}>/ mo</span>
-                        </div>
-                        <div className={'h-0.5 my-4 bg-gray-600 mr-8 rounded-full'} />
-                        <LimitBox icon={faMicrochip} content={`${product.limits.cpu}% CPU`} />
-                        <LimitBox icon={faMemory} content={`${(product.limits.memory / 1024).toFixed(1)} GiB Memory`} />
-                        <LimitBox icon={faHdd} content={`${(product.limits.disk / 1024).toFixed(1)} GiB Disk`} />
-                        <div className={'h-0.5 my-4 bg-gray-600 mr-8 rounded-full'} />
-                        <LimitBox icon={faArchive} content={`${product.limits.backup} Backup Slots`} />
-                        <LimitBox icon={faDatabase} content={`${product.limits.database} Database Slots`} />
-                        <LimitBox icon={faEthernet} content={`${product.limits.allocation} Network Ports`} />
-                    </div>
-                    <div className={'lg:col-span-6'}>
-                        <div>
-                            <div className={'my-10'}>
-                                <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
-                                    Choose a location
-                                    <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                                        Select a location from our list to deploy your server to.
-                                    </p>
-                                </div>
-                                <div className={'grid lg:grid-cols-2 gap-4'}>
-                                    {(!nodes || nodes.length < 1) && (
-                                        <Alert type={'danger'} className={'col-span-2'}>
-                                            There are no nodes available for deployment. Please contact an
-                                            administrator.
-                                        </Alert>
-                                    )}
-                                    {nodes?.map(node => (
-                                        <NodeBox
-                                            node={node}
-                                            key={node.id}
-                                            selected={selectedNode}
-                                            setSelected={setSelectedNode}
-                                        />
-                                    ))}
-                                </div>
+            <div className={'mb-8'}>
+                <h1 className={'text-4xl font-bold text-gray-100'}>Complete Your Order</h1>
+                <p className={'mt-2 text-base text-gray-400'}>
+                    Customize your server configuration and complete your purchase.
+                </p>
+            </div>
+
+            <CheckoutStepper steps={getCheckoutSteps()} />
+
+            <div className={'mt-10 grid gap-8 lg:grid-cols-3 lg:gap-10'}>
+                {/* Main Content Area */}
+                <div className={'space-y-8 lg:col-span-2'}>
+                    {/* Billing Cycle Section */}
+                    {billingCycles.length > 0 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Choose Your Billing Cycle</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Select how often you want to be billed for this server.
+                                </p>
                             </div>
-                            <div className={'h-px bg-gray-700 rounded-full'} />
-                            {eggs && eggs.length > 1 && (
-                                <>
-                                    <div className={'my-10'}>
-                                        <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
-                                            Plan Variables
-                                            <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                                                Modify your server variables before your server is even created for ease
-                                                of use.
-                                            </p>
-                                        </div>
-                                        <div className={'grid lg:grid-cols-2 gap-4'}>
-                                            {eggs?.map(variable => (
-                                                <div key={variable.envVariable}>
-                                                    {variable.isEditable && (
-                                                        <VariableBox variable={variable} vars={vars} />
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {billingCycles.map(cycle => (
+                                    <BillingCycleBox
+                                        cycle={cycle}
+                                        key={cycle.days}
+                                        selected={selectedBillingDays}
+                                        setSelected={setSelectedBillingDays}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Location Section */}
+                    <section>
+                        <div className={'mb-6'}>
+                            <h2 className={'text-2xl font-bold text-gray-200'}>Choose a Location</h2>
+                            <p className={'mt-1 text-sm text-gray-400'}>
+                                Select where you want your server to be deployed.
+                            </p>
+                        </div>
+                        {(!nodes || nodes.length < 1) && (
+                            <Alert type={'danger'}>
+                                There are no nodes available for deployment. Please contact an administrator.
+                            </Alert>
+                        )}
+                        <div className={'grid gap-4 sm:grid-cols-2'}>
+                            {nodes?.map(node => (
+                                <NodeBox
+                                    node={node}
+                                    key={node.id}
+                                    selected={selectedNode}
+                                    setSelected={setSelectedNode}
+                                />
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Server Type Section */}
+                    {availableEggs.length > 1 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Server Type</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Select which type of server you want to create.
+                                </p>
+                            </div>
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {availableEggs.map(egg => (
+                                    <EggBox
+                                        egg={egg}
+                                        key={egg.id}
+                                        selected={selectedEggId}
+                                        setSelected={setSelectedEggId}
+                                        onEggChange={() => setEggs(undefined)}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Variables Section */}
+                    {eggs && eggs.length > 1 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Server Variables</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Configure your server settings before deployment.
+                                </p>
+                            </div>
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {eggs?.map(variable => (
+                                    <div key={variable.envVariable}>
+                                        {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
                                     </div>
-                                    <div className={'h-px bg-gray-700 rounded-full'} />
-                                </>
-                            )}
-                            <div className={'my-10'}>
-                                <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
-                                    Legal Documents
-                                    <p className={'text-gray-400 font-normal text-sm mt-1'}>
-                                        Agree and sign the relevant legal documents for your new server.
-                                    </p>
-                                </div>
-                                <div className={'grid lg:grid-cols-2 gap-4'}>
-                                    <TitledGreyBox title={'Terms of Service agreement'} className={'relative'}>
-                                        {!termsAgreed ? (
-                                            <>
-                                                Click the checkbox to agree to our{' '}
-                                                <a href={billing.links.terms} className={'text-blue-400 font-semibold'}>
-                                                    Terms of Service <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                                </a>
-                                            </>
-                                        ) : (
-                                            <Alert type={'success'}>Terms of Service completed</Alert>
-                                        )}
-                                        {!termsAgreed && (
-                                            <div className={'absolute top-0 right-0 p-3'}>
-                                                <AdminCheckbox
-                                                    name={'terms'}
-                                                    checked={false}
-                                                    onChange={() => setTermsAgreed(true)}
-                                                />
-                                            </div>
-                                        )}
-                                    </TitledGreyBox>
-                                    <TitledGreyBox title={'Privacy Policy agreement'} className={'relative'}>
-                                        {!privacyAgreed ? (
-                                            <>
-                                                Click the checkbox to agree to our{' '}
-                                                <a
-                                                    href={billing.links.privacy}
-                                                    className={'text-blue-400 font-semibold'}
-                                                >
-                                                    Privacy Policy <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                                </a>
-                                            </>
-                                        ) : (
-                                            <Alert type={'success'}>Privacy Policy completed</Alert>
-                                        )}
-                                        {!privacyAgreed && (
-                                            <div className={'absolute top-0 right-0 p-3'}>
-                                                <AdminCheckbox
-                                                    name={'privacy'}
-                                                    checked={false}
-                                                    onChange={() => setPrivacyAgreed(true)}
-                                                />
-                                            </div>
-                                        )}
-                                    </TitledGreyBox>
-                                </div>
+                                ))}
                             </div>
-                            <div className={'h-px bg-gray-700 rounded-full'} />
-                            {!termsAgreed || !privacyAgreed ? (
-                                <Alert type={'warning'}>
-                                    Please agree to the above legal documents before proceeding with your order.
-                                </Alert>
-                            ) : (
-                                <>
-                                    {product.price !== 0 && intent ? (
-                                        <div className={'w-full mt-8'}>
-                                            <PaymentButton
-                                                selectedNode={selectedNode}
-                                                product={product}
-                                                vars={vars}
-                                                intent={intent}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className={'flex w-full mt-8'}>
-                                            <p className={'font-semibold text-gray-400'}>
-                                                As this product is free, no purchase needs to be made via our payment
-                                                gateways.
-                                            </p>
-                                            <Button className={'ml-auto'} onClick={createFree}>
-                                                Create Server
-                                            </Button>
-                                        </div>
-                                    )}
-                                </>
+                        </section>
+                    )}
+                </div>
+
+                {/* Sidebar - Order Summary */}
+                <div className={'lg:col-span-1'}>
+                    <div className={'sticky top-4 space-y-6'}>
+                        {/* Server Name Card */}
+                        <div
+                            style={{ backgroundColor: colors.secondary }}
+                            className={'rounded-lg border border-gray-700 p-6'}
+                        >
+                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Server Name</h3>
+                            <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
+                            <input
+                                type={'text'}
+                                placeholder={'Enter server name'}
+                                value={serverName}
+                                onChange={e => setServerName(e.target.value)}
+                                onBlur={() => setServerNameTouched(true)}
+                                required
+                                maxLength={191}
+                                aria-invalid={serverNameTouched && !serverName.trim()}
+                                aria-describedby={
+                                    serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
+                                }
+                                className={classNames(
+                                    'w-full rounded-lg border px-4 py-2.5 text-sm transition-all',
+                                    'text-gray-200 placeholder-gray-500',
+                                    'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
+                                )}
+                                style={{
+                                    backgroundColor: colors.secondary,
+                                    borderColor: serverName.trim() ? colors.primary : undefined,
+                                }}
+                            />
+                            {serverNameTouched && !serverName.trim() && (
+                                <p
+                                    id={'server-name-error'}
+                                    className={'mt-2 text-xs text-amber-400'}
+                                    role={'alert'}
+                                    aria-live={'polite'}
+                                >
+                                    ⚠ Server name is required
+                                </p>
                             )}
                         </div>
+
+                        {/* Order Summary Card */}
+                        <div
+                            style={{ backgroundColor: colors.secondary }}
+                            className={'rounded-lg border border-gray-700 p-6'}
+                        >
+                            <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
+
+                            <div className={'mb-4 flex items-center gap-3'}>
+                                {product.icon && (
+                                    <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
+                                )}
+                                <div className={'flex-1'}>
+                                    <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                    <div className={'mt-1'}>
+                                        {couponData ? (
+                                            <div>
+                                                <div className={'text-xs text-gray-400 line-through'}>
+                                                    ${couponData.subtotal.toFixed(2)}
+                                                </div>
+                                                <div className={'flex items-baseline gap-1'}>
+                                                    <span
+                                                        className={'text-2xl font-bold'}
+                                                        style={{ color: colors.primary }}
+                                                    >
+                                                        ${couponData.total.toFixed(2)}
+                                                    </span>
+                                                    <span className={'text-xs text-gray-400'}>
+                                                        / {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    className={'text-xs font-medium'}
+                                                    style={{ color: colors.primary }}
+                                                >
+                                                    Save ${couponData.discount.toFixed(2)}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className={'flex items-baseline gap-1'}>
+                                                <span
+                                                    className={'text-2xl font-bold'}
+                                                    style={{ color: colors.primary }}
+                                                >
+                                                    ${getCurrentPrice().toFixed(2)}
+                                                </span>
+                                                <span className={'text-xs text-gray-400'}>
+                                                    / {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={'my-4 h-px bg-gray-700'} />
+
+                            <div className={'space-y-3'}>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.cpu}% CPU</span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>
+                                        {(product.limits.memory / 1024).toFixed(1)} GiB RAM
+                                    </span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>
+                                        {(product.limits.disk / 1024).toFixed(1)} GiB Storage
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className={'my-4 h-px bg-gray-700'} />
+
+                            <div className={'space-y-3'}>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faArchive} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.backup} Backups</span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faDatabase} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.database} Databases</span>
+                                </div>
+                                <div className={'flex items-center gap-2 text-sm'}>
+                                    <FontAwesomeIcon icon={faEthernet} className={'h-4 w-4 text-gray-400'} />
+                                    <span className={'text-gray-300'}>{product.limits.allocation} Ports</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Legal Agreements Card */}
+                        <div
+                            style={{ backgroundColor: colors.secondary }}
+                            className={'rounded-lg border border-gray-700 p-6'}
+                        >
+                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
+                            <div className={'space-y-3'}>
+                                <div
+                                    className={
+                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'
+                                    }
+                                    style={
+                                        termsAgreed
+                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
+                                    }
+                                >
+                                    <AdminCheckbox
+                                        name={'terms'}
+                                        checked={termsAgreed}
+                                        onChange={() => setTermsAgreed(!termsAgreed)}
+                                    />
+                                    <div className={'min-w-0 flex-1'} onClick={() => setTermsAgreed(!termsAgreed)}>
+                                        <p className={'text-xs font-medium text-gray-200'}>
+                                            <a
+                                                href={billing.links.terms}
+                                                target={'_blank'}
+                                                rel={'noreferrer'}
+                                                className={'hover:brightness-125'}
+                                                style={{ color: colors.primary }}
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                Terms of Service{' '}
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                            </a>
+                                        </p>
+                                        {termsAgreed && (
+                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
+                                                ✓ Accepted
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div
+                                    className={
+                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'
+                                    }
+                                    style={
+                                        privacyAgreed
+                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
+                                    }
+                                >
+                                    <AdminCheckbox
+                                        name={'privacy'}
+                                        checked={privacyAgreed}
+                                        onChange={() => setPrivacyAgreed(!privacyAgreed)}
+                                    />
+                                    <div className={'min-w-0 flex-1'} onClick={() => setPrivacyAgreed(!privacyAgreed)}>
+                                        <p className={'text-xs font-medium text-gray-200'}>
+                                            <a
+                                                href={billing.links.privacy}
+                                                target={'_blank'}
+                                                rel={'noreferrer'}
+                                                className={'hover:brightness-125'}
+                                                style={{ color: colors.primary }}
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                Privacy Policy{' '}
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                            </a>
+                                        </p>
+                                        {privacyAgreed && (
+                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
+                                                ✓ Accepted
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            {!termsAgreed || !privacyAgreed ? (
+                                <Alert type={'warning'} className={'mt-3'}>
+                                    <p className={'text-xs'}>Please accept both agreements to proceed.</p>
+                                </Alert>
+                            ) : null}
+                        </div>
+
+                        {/* Coupon Section - Only show for paid products */}
+                        {product.price !== 0 && (
+                            <div
+                                style={{ backgroundColor: colors.secondary }}
+                                className={'rounded-lg border border-gray-700 p-6'}
+                            >
+                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Coupon Code</h3>
+                                <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
+                                <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
+                            </div>
+                        )}
+
+                        {/* Checkout Button Card */}
+                        {termsAgreed && privacyAgreed && (
+                            <div
+                                style={{ backgroundColor: colors.secondary }}
+                                className={'rounded-lg border border-gray-700 p-6'}
+                            >
+                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
+                                {product.price === 0 || couponData?.total === 0 ? (
+                                    <div>
+                                        <p className={'mb-4 text-sm text-gray-300'}>
+                                            {couponData?.total === 0
+                                                ? '🎉 Your coupon has made this order free!'
+                                                : '🎉 This product is free!'}
+                                        </p>
+                                        <Button
+                                            onClick={createFree}
+                                            size={Button.Sizes.Large}
+                                            className={'w-full'}
+                                            disabled={!serverName.trim()}
+                                        >
+                                            Create Server
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <PaymentMethodSelector
+                                            selectedNode={selectedNode}
+                                            product={product}
+                                            vars={vars}
+                                            intent={intent}
+                                            stripe={stripe}
+                                            couponId={couponData?.coupon.id}
+                                            selectedEggId={selectedEggId}
+                                            serverName={serverName}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
-            </Elements>
+            </div>
         </PageContentBlock>
     );
 };

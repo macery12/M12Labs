@@ -1,7 +1,6 @@
 import tw from 'twin.macro';
 import { Link, NavLink } from 'react-router-dom';
-import { useContext } from 'react';
-import AdminContentBlock from '@/elements/AdminContentBlock';
+import { useContext, useEffect } from 'react';
 import AdminTable, {
     ContentWrapper,
     Loading,
@@ -51,14 +50,18 @@ function TicketContainer() {
         });
     };
 
+    useEffect(() => {
+        document.title = 'Admin | Tickets';
+    }, []);
+
     return (
-        <AdminContentBlock title={'Tickets'}>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Tickets</h2>
+        <>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Tickets</h2>
                     <p
                         className={
-                            'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                            'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
                         Update settings and manage user tickets.
@@ -114,7 +117,7 @@ function TicketContainer() {
                                                     <NavLink
                                                         to={`/admin/tickets/${ticket.id}`}
                                                         style={{ color: colors.primary }}
-                                                        className={'hover:brightness-125 duration-300'}
+                                                        className={'duration-300 hover:brightness-125'}
                                                     >
                                                         {ticket.title}
                                                     </NavLink>
@@ -123,7 +126,7 @@ function TicketContainer() {
                                                     <span
                                                         className={classNames(
                                                             statusToColor(ticket.status),
-                                                            'capitalize px-2 inline-flex text-xs leading-5 font-medium rounded-full',
+                                                            'inline-flex rounded-full px-2 text-xs font-medium capitalize leading-5',
                                                         )}
                                                     >
                                                         {ticket.status}
@@ -152,7 +155,7 @@ function TicketContainer() {
                     </Pagination>
                 </ContentWrapper>
             </AdminTable>
-        </AdminContentBlock>
+        </>
     );
 }
 

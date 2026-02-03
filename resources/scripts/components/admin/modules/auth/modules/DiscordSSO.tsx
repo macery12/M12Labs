@@ -62,7 +62,7 @@ export default () => {
                 Are you sure you wish to delete this module?
             </Dialog.Confirm>
             <TrashIcon
-                className={'w-5 h-5 absolute top-0 right-0 m-3.5 text-red-500 hover:text-red-300 duration-300'}
+                className={'absolute top-0 right-0 m-3.5 h-5 w-5 text-red-500 duration-300 hover:text-red-300'}
                 onClick={() => setConfirm(true)}
             />
             <div>
@@ -75,12 +75,12 @@ export default () => {
                     onChange={e => update('client_id', e.target.value)}
                     placeholder={settings.clientId ? '••••••••••••••••' : ''}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     Set the Discord Client ID. You can find this in the{' '}
                     <Link
                         to={'https://discord.com/developers/docs/intro'}
                         style={{ color: colors.primary }}
-                        className={'hover:brightness-125 duration-300'}
+                        className={'duration-300 hover:brightness-125'}
                     >
                         Developer Portal
                     </Link>
@@ -97,12 +97,12 @@ export default () => {
                     onChange={e => update('client_secret', e.target.value)}
                     placeholder={settings.clientSecret ? '••••••••••••••••' : ''}
                 />
-                <p className={'text-xs text-gray-400 mt-1'}>
+                <p className={'mt-1 text-xs text-gray-400'}>
                     Set the Discord Client Secret. You can find this in the{' '}
                     <Link
                         to={'https://discord.com/developers/docs/intro'}
                         style={{ color: colors.primary }}
-                        className={'hover:brightness-125 duration-300'}
+                        className={'duration-300 hover:brightness-125'}
                     >
                         Developer Portal
                     </Link>
@@ -112,7 +112,7 @@ export default () => {
             <Alert type={'info'}>
                 <div>
                     Use the following Callback URL:
-                    <p className={'bg-black/50 p-1 rounded-lg font-mono w-fit mt-2'}>
+                    <p className={'mt-2 w-fit rounded-lg bg-black/50 p-1 font-mono'}>
                         /auth/modules/discord/authenticate
                     </p>
                 </div>

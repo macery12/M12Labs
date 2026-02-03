@@ -17,6 +17,7 @@ interface Server {
     };
     invocation: string;
     dockerImage: string;
+    eggId: number;
     description: string | null;
     limits: {
         memory: number;
@@ -27,6 +28,8 @@ interface Server {
         threads: string;
     };
     eggFeatures: string[];
+    modsEnabled: boolean;
+    modpacksSupported: boolean;
     billingProductId?: number;
     renewalDate?: Date | undefined;
     featureLimits: {

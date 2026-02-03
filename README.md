@@ -29,3 +29,9 @@ Jexpanel is a modern, high-performance **game server management panel** built on
 ## Contribution
 
 Contributions are welcome! Please see `CONTRIBUTING.md` and join discussions via Discord or GitHub issues.
+
+## AI & Security Disclosure
+
+This project makes use of **GitHub Copilot–assisted artificial intelligence** during development to improve productivity and code quality. In addition, **CodeQL static analysis** is used to identify potential security vulnerabilities and code quality issues.
+
+All AI-assisted output is **reviewed, validated, and tested by maintainers** prior to being merged or released. No automated system is solely responsible for production code or security decisions.

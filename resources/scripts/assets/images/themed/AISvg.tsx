@@ -4,7 +4,7 @@ export default ({ color }: { color: string }) => (
         width="545.56323"
         height="523.50056"
         viewBox="0 0 545.56323 523.50056"
-        className={'w-128 h-96 m-auto'}
+        className={'w-128 m-auto h-96'}
     >
         <circle cx="779.26626" cy="180.30992" r="38" fill="#f2f2f2" />
         <circle cx="779.26626" cy="180.30992" r="10" fill="#e6e6e6" />

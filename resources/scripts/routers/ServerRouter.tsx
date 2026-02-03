@@ -20,6 +20,7 @@ import { CogIcon, DesktopComputerIcon, PuzzleIcon, ReplyIcon } from '@heroicons/
 import SidebarControls from '@server/console/SidebarControls';
 import classNames from 'classnames';
 import NavigationBar from '@/elements/NavigationBar';
+import ScopedAlert from '@account/ScopedAlert';
 
 function statusToColor(status: ServerStatus): string {
     switch (status) {
@@ -54,6 +55,7 @@ function ServerRouter() {
     const server = ServerContext.useStoreState(state => state.server.data);
     const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.server);
     const billable = server?.billingProductId;
+    const modsEnabled = server?.modsEnabled;
     const status = ServerContext.useStoreState(state => state.status.value);
 
     const categories = ['data', 'configuration'] as const;
@@ -91,12 +93,17 @@ function ServerRouter() {
 
     return (
         <Fragment key={'server-router'}>
-            <div className={'h-screen flex'}>
+            {/* Global server alerts - slide-out and center popups only */}
+            <ScopedAlert scope="server" position="slide-out" />
+            <ScopedAlert scope="server" position="center" />
+            <div className={'flex h-screen'}>
                 <MobileSidebar>
                     <MobileSidebar.Home />
                     {routes.server
                         .filter(
-                            route => route.name && (!route.condition || route.condition({ billable, activityEnabled })),
+                            route =>
+                                route.name &&
+                                (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
                         )
                         .map(route => (
                             <MobileSidebar.Link
@@ -114,12 +121,12 @@ function ServerRouter() {
                 <Sidebar className={'flex-none'} $collapsed={collapsed} theme={theme}>
                     <div
                         className={
-                            'h-16 w-full flex flex-col items-center justify-center mt-1 mb-3 select-none cursor-pointer'
+                            'mt-1 mb-3 flex h-16 w-full cursor-pointer select-none flex-col items-center justify-center'
                         }
                         onClick={() => setCollapsed(!collapsed)}
                     >
                         {!collapsed ? (
-                            <h1 className={'text-2xl text-neutral-50 whitespace-nowrap font-medium'}>{name}</h1>
+                            <h1 className={'whitespace-nowrap text-2xl font-medium text-neutral-50'}>{name}</h1>
                         ) : (
                             <img
                                 src={logo?.toString() || 'https://avatars.githubusercontent.com/u/91636558'}
@@ -139,7 +146,7 @@ function ServerRouter() {
                                 route =>
                                     !route.category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled })),
+                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
                             )
                             .map(route => (
                                 <NavLink to={route.path} key={route.path} end={route.end}>
@@ -149,7 +156,10 @@ function ServerRouter() {
                             ))}
                         {categories.map(category => {
                             const categoryRoutes = routes.server.filter(
-                                route => route.category === category && route.name,
+                                route =>
+                                    route.category === category &&
+                                    route.name &&
+                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
                             );
                             if (categoryRoutes.length === 0) return null;
 

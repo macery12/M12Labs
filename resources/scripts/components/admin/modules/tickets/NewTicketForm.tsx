@@ -5,7 +5,6 @@ import { Form, Formik } from 'formik';
 import { useNavigate } from 'react-router-dom';
 import Field, { FieldRow } from '@/elements/Field';
 import tw from 'twin.macro';
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import type { ApplicationStore } from '@/state';
@@ -18,6 +17,7 @@ import Select from '@/elements/Select';
 import Label from '@/elements/Label';
 import { createTicket } from '@/api/routes/admin/tickets';
 import { Values } from '@/api/routes/admin/tickets/types';
+import { useEffect } from 'react';
 
 const initialValues: Values = {
     title: '',
@@ -46,8 +46,12 @@ export default () => {
             .then(() => setSubmitting(false));
     };
 
+    useEffect(() => {
+        document.title = 'Admin | New Ticket';
+    }, []);
+
     return (
-        <AdminContentBlock title={'New Ticket'}>
+        <>
             <div css={tw`w-full flex flex-row items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>New Ticket</h2>
@@ -86,13 +90,13 @@ export default () => {
                                         />
                                         <div>
                                             <UserSelect />
-                                            <p className={'text-xs pt-2'}>
+                                            <p className={'pt-2 text-xs'}>
                                                 This will be the user that the ticket is made for.
                                             </p>
                                         </div>
                                         <div>
                                             <UserSelect isAdmin />
-                                            <p className={'text-xs pt-2'}>
+                                            <p className={'pt-2 text-xs'}>
                                                 Set an assigned administrator to deal with this ticket.
                                             </p>
                                         </div>
@@ -104,7 +108,7 @@ export default () => {
                                                 <option value={'resolved'}>Resolved</option>
                                                 <option value={'unresolved'}>Unresolved</option>
                                             </Select>
-                                            <p className={'text-xs pt-2'}>
+                                            <p className={'pt-2 text-xs'}>
                                                 Before the ticket is created, you can change the status.
                                             </p>
                                         </div>
@@ -122,6 +126,6 @@ export default () => {
                     </Form>
                 )}
             </Formik>
-        </AdminContentBlock>
+        </>
     );
 };

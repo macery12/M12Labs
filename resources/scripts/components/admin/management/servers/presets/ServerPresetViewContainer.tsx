@@ -27,28 +27,28 @@ export default () => {
 
     return (
         <AdminContentBlock title={'New Server'} showFlashKey={'admin:servers:presets'}>
-            <div className={`w-full flex flex-row items-center mb-8`}>
-                <div className={`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
-                    <h2 className={`text-2xl text-neutral-50 font-header font-medium`}>{preset.name}</h2>
+            <div className={`mb-8 flex w-full flex-row items-center`}>
+                <div className={`flex flex-shrink flex-col`} style={{ minWidth: '0' }}>
+                    <h2 className={`font-header text-2xl font-medium text-neutral-50`}>{preset.name}</h2>
                     <p
-                        className={`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
+                        className={`hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 md:block`}
                     >
                         {preset.description ?? 'This is a server preset.'}
                     </p>
                 </div>
-                <div className={`flex ml-auto pl-4 space-x-3`}>
+                <div className={`ml-auto flex space-x-3 pl-4`}>
                     <Link to={'/admin/servers/presets'}>
                         <Button.Text>
-                            <ChevronLeftIcon className={'w-5 h-5 mr-1'} /> Back
+                            <ChevronLeftIcon className={'mr-1 h-5 w-5'} /> Back
                         </Button.Text>
                     </Link>
                     <ServerPresetDialog preset={preset} />
                     <DeleteServerPresetDialog id={preset.id} />
                 </div>
             </div>
-            <div className={'grid lg:grid-cols-2 gap-8'}>
+            <div className={'grid gap-8 lg:grid-cols-2'}>
                 <AdminBox title={'Basic Information'} icon={faPencilSquare} className={'col-span-2'}>
-                    <div className="grid lg:grid-cols-3 gap-4">
+                    <div className="grid gap-4 lg:grid-cols-3">
                         <div>
                             <Label>Preset Name</Label>
                             <Input disabled value={preset.name}></Input>
@@ -64,7 +64,7 @@ export default () => {
                     </div>
                 </AdminBox>
                 <AdminBox title={'Assignment Details'} icon={faCube}>
-                    <div className="grid lg:grid-cols-2 gap-4">
+                    <div className="grid gap-4 lg:grid-cols-2">
                         <div>
                             <Label>Nest ID</Label>
                             <Input disabled value={preset.nest_id ?? 'Not Assigned'}></Input>
@@ -76,7 +76,7 @@ export default () => {
                     </div>
                 </AdminBox>
                 <AdminBox title={'Resource Limits'} icon={faChartBar}>
-                    <div className="grid lg:grid-cols-3 gap-4">
+                    <div className="grid gap-4 lg:grid-cols-3">
                         <div>
                             <Label>CPU Limit (%)</Label>
                             <Input disabled value={preset.cpu}></Input>

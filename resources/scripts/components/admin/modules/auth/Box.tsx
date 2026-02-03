@@ -35,13 +35,13 @@ export default ({ name, title, disabled, recommended, description, icon }: Props
 
     return (
         <AdminBox title={title} icon={icon ?? faPuzzlePiece}>
-            <Button value={name} onClick={() => submit()} className={'h-8 absolute top-0 right-0 m-2'}>
+            <Button value={name} onClick={() => submit()} className={'absolute top-0 right-0 m-2 h-8'}>
                 Add to Panel
             </Button>
             {description}
             {recommended && (
-                <div className={'mt-2 bg-zinc-700 p-2 rounded-lg text-xs text-gray-400'}>
-                    <FontAwesomeIcon icon={faStar} className={'text-yellow-500 mr-1'} />
+                <div className={'mt-2 rounded-lg bg-zinc-700 p-2 text-xs text-gray-400'}>
+                    <FontAwesomeIcon icon={faStar} className={'mr-1 text-yellow-500'} />
                     {recommended}
                 </div>
             )}

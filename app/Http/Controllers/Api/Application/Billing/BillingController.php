@@ -52,6 +52,7 @@ class BillingController extends ApplicationApiController
             'orders' => Order::all(),
             'categories' => Category::all(),
             'products' => Product::all(),
+            'donations' => \Everest\Models\Donation::where('status', 'completed')->get(),
         ];
     }
 

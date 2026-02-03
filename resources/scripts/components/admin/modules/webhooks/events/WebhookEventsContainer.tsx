@@ -57,14 +57,14 @@ export default () => {
 
     return (
         <>
-            <div className={'flex grid lg:grid-cols-2 mb-6'}>
+            <div className={'mb-6 flex grid lg:grid-cols-2'}>
                 <Input
                     placeholder={'Search for a webhook event...'}
                     value={searchTerm}
                     onChange={e => handleSearch(e.target.value)}
                 />
                 <div className={'flex justify-end'}>
-                    <div className={'p-2 w-fit rounded-lg space-x-3'} style={{ background: colors.secondary }}>
+                    <div className={'w-fit space-x-3 rounded-lg p-2'} style={{ background: colors.secondary }}>
                         <Button.Text onClick={doTest} variant={Button.Variants.Secondary}>
                             Send Test
                         </Button.Text>

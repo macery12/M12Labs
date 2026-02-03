@@ -30,6 +30,7 @@ export default () => {
     if (!server) return null;
 
     const product = server.relationships.product;
+    const billingDays = server.billingDays || 30; // Default to 30 if not set
 
     return (
         <div>
@@ -39,7 +40,7 @@ export default () => {
                     module is enabled again.
                 </Alert>
             )}
-            <div className={'mt-4 grid lg:grid-cols-4 gap-4'}>
+            <div className={'mt-4 grid gap-4 lg:grid-cols-4'}>
                 <AdminBox title={'Billing Details'} icon={faCashRegister} className={'relative'}>
                     <div className={'grid gap-y-4'}>
                         <div>
@@ -52,7 +53,7 @@ export default () => {
                                 ) : (
                                     <>
                                         {product.name} - {billing.currency.symbol}
-                                        {product.price} {billing.currency.code.toUpperCase()} every {renewalDays} days
+                                        {product.price} {billing.currency.code.toUpperCase()} every {billingDays} days
                                     </>
                                 )}
                             </p>

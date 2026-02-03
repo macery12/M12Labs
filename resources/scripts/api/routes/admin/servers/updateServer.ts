@@ -25,6 +25,7 @@ export interface Values {
 
     renewalDate?: Date | null | undefined;
     billingProductId?: number | null;
+    billingDays?: number | null;
 
     allocationId: number;
     addAllocations: number[];
@@ -57,8 +58,10 @@ export default (id: number, server: Partial<Values>, include: string[] = []): Pr
                     subusers: server.featureLimits?.subusers,
                 },
 
-                renewal_date: server.renewalDate instanceof Date ? server.renewalDate.toISOString() : server.renewalDate,
+                renewal_date:
+                    server.renewalDate instanceof Date ? server.renewalDate.toISOString() : server.renewalDate,
                 billing_product_id: server.billingProductId,
+                billing_days: server.billingDays,
 
                 allocation_id: server.allocationId,
                 add_allocations: server.addAllocations,

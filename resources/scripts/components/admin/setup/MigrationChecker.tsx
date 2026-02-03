@@ -20,19 +20,19 @@ export default () => {
 
     return (
         <div>
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Checking for data</h2>
+            <div className={'mb-8 flex w-full flex-row items-center'}>
+                <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Checking for data</h2>
                     <p
                         className={
-                            'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
+                            'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
                         We&apos;re checking the database for any old data to migrate.
                     </p>
                 </div>
             </div>
-            <div className={'grid lg:grid-cols-2 gap-4'}>
+            <div className={'grid gap-4 lg:grid-cols-2'}>
                 <AdminBox title={'Users'} icon={faUser}>
                     {loading ? <Spinner centered /> : data.users}
                     &nbsp;ready for migration

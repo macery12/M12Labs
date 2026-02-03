@@ -48,19 +48,24 @@ class SettingsServiceProvider extends ServiceProvider
 
         // Billing module settings
         'modules:billing:enabled',
+        'modules:billing:processor',
         'modules:billing:paypal',
         'modules:billing:link',
         'modules:billing:keys:publishable',
         'modules:billing:keys:secret',
+        'modules:billing:mollie:api_key',
         'modules:billing:currency:code',
         'modules:billing:currency:symbol',
         'modules:billing:links:terms',
         'modules:billing:links:privacy',
-        'modules:billing:renewal:days',
-        'modules:billing:renewal:free_renewal_days',
         'modules:billing:renewal:suspension_threshold',
-        'modules:billing:renewal:free_suspension_days',
-        'modules:billing:renewal:paid_suspension_days',
+        'modules:billing:plan_change_cooldown_hours',
+        'modules:billing:integrations:stripe:enabled',
+        'modules:billing:integrations:mollie:enabled',
+        'modules:billing:integrations:paypal:enabled',
+        'modules:billing:paypal_standalone:client_id',
+        'modules:billing:paypal_standalone:client_secret',
+        'modules:billing:paypal_standalone:mode',
 
         // Ticket module settings
         'modules:tickets:enabled',
@@ -77,10 +82,19 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:ai:enabled',
         'modules:ai:key',
         'modules:ai:user_access',
+        'modules:ai:endpoint',
+        'modules:ai:model',
+        'modules:ai:mode',
+        'modules:ai:max_tokens',
+        'modules:ai:system_prompt',
 
         // Webhook module settings
         'modules:webhooks:enabled',
         'modules:webhooks:url',
+
+        // Mods module settings
+        'modules:mods:enabled',
+        'modules:mods:curseforge_api_key',
     ];
 
     /**

@@ -2,7 +2,7 @@ import { ModelWithRelationships, Model, UUID } from '@definitions';
 import { Server } from '@/api/routes/admin/server';
 import { OrderType } from '@/api/routes/account/billing/orders/types';
 
-type BillingExceptionType = 'payment' | 'deployment' | 'storefront';
+type BillingExceptionType = 'payment' | 'deployment' | 'storefront' | 'webhook' | 'refund' | 'validation';
 type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
 
 interface User extends ModelWithRelationships {
@@ -92,6 +92,19 @@ interface BillingAnalytics extends Model {
     orders: Order[];
     products: Product[];
     categories: Category[];
+    donations?: Donation[];
+}
+
+interface Donation extends Model {
+    id: number;
+    user_id: number;
+    payment_intent_id: string;
+    amount: number;
+    currency: string;
+    status: 'pending' | 'completed' | 'failed';
+    message?: string;
+    created_at: Date;
+    updated_at?: Date | null;
 }
 
 interface Order extends Model {
@@ -116,6 +129,7 @@ interface Product extends Model {
     name: string;
     icon?: string;
     price: number;
+    basePrice?: number | null;
     description: string;
 
     limits: {
@@ -135,6 +149,25 @@ interface Product extends Model {
     };
 }
 
+interface BillingCycle extends Model {
+    id: number;
+    productId: number;
+    days: number;
+    isEnabled: boolean;
+    createdAt: Date;
+    updatedAt?: Date | null;
+}
+
+interface BillingCycleWithPrice {
+    id?: number;
+    days: number;
+    price: number;
+    multiplier: number;
+    discountPercent: number;
+    isDefault: boolean;
+    isEnabled?: boolean;
+}
+
 interface Category extends Model {
     id: number;
     uuid: string;
@@ -144,6 +177,9 @@ interface Category extends Model {
     visible: boolean;
     nestId: number;
     eggId: number;
+    allowedEggs: number[];
+    allowEggChanges: boolean;
+    allowPlanChanges: boolean;
 
     createdAt: Date;
     updatedAt?: Date | null;
@@ -151,6 +187,22 @@ interface Category extends Model {
     relationships: {
         products?: Product[];
     };
+}
+
+interface Coupon extends Model {
+    id: number;
+    code: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    maxUses: number | null;
+    maxUsesPerUser: number | null;
+    minOrderTotal: number | null;
+    expiresAt: Date | null;
+    isActive: boolean;
+    allowedFor: 'both' | 'purchases' | 'renewals';
+    usageCount: number;
+    createdAt: Date;
+    updatedAt?: Date | null;
 }
 
 interface AdminRolePermission extends Model {

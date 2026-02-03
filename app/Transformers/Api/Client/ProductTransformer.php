@@ -20,13 +20,19 @@ class ProductTransformer extends Transformer
      */
     public function transform(Product $model): array
     {
+        $allowedEggs = $model->category->getAllowedEggs();
+        $defaultEggId = $model->category->getDefaultEggId();
+
         return [
             'id' => $model->id,
             'name' => $model->name,
             'icon' => $model->icon,
             'price' => $model->price,
+            'base_price' => $model->base_price,
             'description' => $model->description,
-            'egg_id' => $model->category->egg_id,
+            'egg_id' => $defaultEggId,
+            'allowed_eggs' => $allowedEggs,
+            'allow_egg_changes' => $model->category->allow_egg_changes ?? true,
             'limits' => [
                 'cpu' => $model->cpu_limit,
                 'memory' => $model->memory_limit,

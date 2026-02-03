@@ -1,11 +1,15 @@
 export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
 
+export type CouponType = 'percentage' | 'fixed';
+export type CouponAllowedFor = 'both' | 'purchases' | 'renewals';
+
 export interface ProductValues {
     categoryUuid: string;
 
     name: string;
     icon: string | undefined;
     price: number;
+    basePrice?: number | null;
     description: string;
 
     limits: {
@@ -24,6 +28,21 @@ export interface CategoryValues {
     description: string;
     visible: boolean;
     eggId: number;
+    allowedEggs?: number[];
+    allowEggChanges?: boolean;
+    allowPlanChanges?: boolean;
+}
+
+export interface CouponValues {
+    code: string;
+    type: CouponType;
+    value: number;
+    maxUses: number | null;
+    maxUsesPerUser: number | null;
+    minOrderTotal: number | null;
+    expiresAt: string | null;
+    isActive: boolean;
+    allowedFor: CouponAllowedFor;
 }
 
 export interface ProductFilters {
@@ -47,4 +66,10 @@ export interface OrderFilters {
 export interface BillingExceptionFilters {
     id?: number;
     title?: string;
+}
+
+export interface CouponFilters {
+    code?: string;
+    type?: CouponType;
+    isActive?: boolean;
 }

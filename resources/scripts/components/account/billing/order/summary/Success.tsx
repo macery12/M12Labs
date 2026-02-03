@@ -9,12 +9,12 @@ export default () => {
         <PageContentBlock>
             <div className={'flex justify-center'}>
                 <div
-                    className={'w-full sm:w-3/4 md:w-1/2 p-12 md:p-20 rounded-lg shadow-lg text-center relative'}
+                    className={'relative w-full rounded-lg p-12 text-center shadow-lg sm:w-3/4 md:w-1/2 md:p-20'}
                     style={{ backgroundColor: colors.secondary }}
                 >
                     <SuccessSvg color={colors.primary} />
-                    <h2 className={'mt-10 text-white font-bold text-4xl'}>Order Processed</h2>
-                    <p className={'text-sm text-neutral-400 mt-2'}>
+                    <h2 className={'mt-10 text-4xl font-bold text-white'}>Order Processed</h2>
+                    <p className={'mt-2 text-sm text-neutral-400'}>
                         Thank you for your payment - your server has now been created. Navigate to the
                         &apos;Dashboard&apos; tab at the top-left of your screen to view your new server.
                     </p>

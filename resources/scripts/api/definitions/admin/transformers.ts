@@ -62,6 +62,7 @@ export default class Transformers {
             container: attributes.container,
             renewalDate: attributes.renewal_date ? new Date(attributes.renewal_date) : undefined,
             billingProductId: attributes.billing_product_id,
+            billingDays: attributes.billing_days,
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
             relationships: {
@@ -178,6 +179,7 @@ export default class Transformers {
         name: attributes.name,
         icon: attributes.icon,
         price: attributes.price,
+        basePrice: attributes.base_price ?? null,
         description: attributes.description,
 
         limits: {
@@ -210,6 +212,9 @@ export default class Transformers {
             visible: attributes.visible,
             nestId: attributes.nest_id,
             eggId: attributes.egg_id,
+            allowedEggs: attributes.allowedEggs || [attributes.egg_id],
+            allowEggChanges: attributes.allowEggChanges ?? true,
+            allowPlanChanges: attributes.allowPlanChanges ?? true,
 
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
@@ -220,6 +225,22 @@ export default class Transformers {
                 ),
             },
         } as Models.Category);
+
+    static toCoupon = ({ attributes }: FractalResponseData): Models.Coupon => ({
+        id: attributes.id,
+        code: attributes.code,
+        type: attributes.type,
+        value: attributes.value,
+        maxUses: attributes.max_uses,
+        maxUsesPerUser: attributes.max_uses_per_user,
+        minOrderTotal: attributes.min_order_total,
+        expiresAt: attributes.expires_at ? new Date(attributes.expires_at) : null,
+        isActive: attributes.is_active,
+        allowedFor: attributes.allowed_for,
+        usageCount: attributes.usage_count,
+        createdAt: new Date(attributes.created_at),
+        updatedAt: new Date(attributes.updated_at),
+    });
 
     static toUser = ({ attributes }: FractalResponseData): Models.User => {
         return {

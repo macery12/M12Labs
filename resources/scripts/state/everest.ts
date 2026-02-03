@@ -1,7 +1,7 @@
 import { action, Action } from 'easy-peasy';
 
 export type AlertType = 'success' | 'warning' | 'danger' | 'info';
-export type AlertPosition = 'top-center' | 'bottom-right' | 'bottom-left' | 'center';
+export type AlertPosition = 'notification' | 'top-center' | 'slide-out' | 'center';
 
 export interface EverestSettings {
     auth: {
@@ -41,9 +41,35 @@ export interface EverestSettings {
         enabled: boolean;
         paypal: boolean;
         link: boolean;
+        processor?: string;
+        processors?: {
+            stripe: {
+                available: boolean;
+                enabled: boolean;
+            };
+            mollie: {
+                available: boolean;
+                enabled: boolean;
+            };
+            paypal: {
+                available: boolean;
+                enabled: boolean;
+            };
+        };
         keys: {
             publishable: boolean;
             secret: boolean;
+        };
+        mollie?: {
+            api_key?: boolean;
+        };
+        paypal_standalone?: {
+            mode?: string;
+        };
+        integrations?: {
+            [key: string]: {
+                enabled: boolean;
+            };
         };
         currency: {
             symbol: string;
@@ -60,6 +86,7 @@ export interface EverestSettings {
             free_suspension_days: number;
             paid_suspension_days: number;
         };
+        plan_change_cooldown_hours?: number;
     };
     alert: {
         enabled: boolean;
@@ -72,6 +99,15 @@ export interface EverestSettings {
         enabled: boolean;
         key: boolean | string;
         user_access: boolean;
+        endpoint?: string;
+        model?: string;
+        mode?: string;
+        max_tokens?: number;
+        system_prompt?: string;
+    };
+    mods: {
+        enabled: boolean;
+        curseforge_api_key: boolean | string;
     };
     webhooks: {
         enabled: boolean;
