@@ -1,5 +1,5 @@
 import Spinner from '@/elements/Spinner';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
@@ -20,6 +20,7 @@ import {
     faMicrochip,
     faChevronDown,
     faChevronRight,
+    faSync,
 } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
@@ -76,7 +77,7 @@ export default () => {
     const { colors } = useStoreState(state => state.theme.data!);
 
     // Auto-generate server name
-    const generateServerName = () => {
+    const generateServerName = useCallback(() => {
         if (!product || !selectedNode || !selectedEggId) return '';
         
         const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
@@ -89,7 +90,7 @@ export default () => {
         const timestamp = Date.now().toString().slice(-6);
         
         return `${eggName}-${nodePrefix}-${timestamp}`;
-    };
+    }, [product, selectedNode, selectedEggId, availableEggs, nodes]);
 
     // Get CTA button text and state
     const getCTAState = () => {
@@ -296,7 +297,7 @@ export default () => {
                 setServerName(generatedName);
             }
         }
-    }, [selectedNode, selectedEggId, product, serverNameTouched, availableEggs, nodes]);
+    }, [selectedNode, selectedEggId, product, serverNameTouched, generateServerName]);
 
     // Clear coupon when billing cycle changes to prevent showing incorrect totals
     useEffect(() => {
@@ -304,6 +305,9 @@ export default () => {
             // Clear the coupon data to force revalidation with new price
             setCouponData(null);
         }
+        // Note: couponData is intentionally NOT in the dependency array to avoid infinite loops
+        // We only want to clear it when selectedBillingDays changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedBillingDays]);
 
     if (!product) return <Spinner centered />;
@@ -431,12 +435,13 @@ export default () => {
                                             setServerNameTouched(false);
                                         }
                                     }}
-                                    className={'text-xs font-medium hover:brightness-125 transition-all'}
+                                    className={'flex items-center gap-1 text-xs font-medium hover:brightness-125 transition-all'}
                                     style={{ color: colors.primary }}
                                     disabled={!selectedNode || !selectedEggId}
                                     aria-label={'Auto-generate server name'}
                                 >
-                                    ↻ Auto-generate
+                                    <FontAwesomeIcon icon={faSync} className={'h-3 w-3'} />
+                                    Auto-generate
                                 </button>
                             </div>
                             <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
