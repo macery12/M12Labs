@@ -137,9 +137,17 @@ class EverestComposer
     private function getAvailableExtensions(): array
     {
         $extensions = config('modules.extensions.available', []);
+        
+        if (!is_array($extensions)) {
+            return [];
+        }
+        
         $availableExtensions = [];
 
         foreach ($extensions as $id => $extension) {
+            if (!is_array($extension)) {
+                continue;
+            }
             $availableExtensions[$id] = [
                 'name' => $extension['name'] ?? $id,
                 'description' => $extension['description'] ?? '',

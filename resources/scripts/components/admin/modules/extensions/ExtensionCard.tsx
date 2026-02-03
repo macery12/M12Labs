@@ -99,24 +99,24 @@ export default ({ extension, onUpdate }: Props) => {
     };
 
     const toggleNest = (nestId: number) => {
-        setSelectedNests(prev => 
+        setSelectedNests((prev: number[]) => 
             prev.includes(nestId) 
-                ? prev.filter(id => id !== nestId) 
+                ? prev.filter((id: number) => id !== nestId) 
                 : [...prev, nestId]
         );
     };
 
     const toggleEgg = (eggId: number) => {
-        setSelectedEggs(prev => 
+        setSelectedEggs((prev: number[]) => 
             prev.includes(eggId) 
-                ? prev.filter(id => id !== eggId) 
+                ? prev.filter((id: number) => id !== eggId) 
                 : [...prev, eggId]
         );
     };
 
     const selectAllNests = () => {
         if (nestsAndEggs) {
-            setSelectedNests(nestsAndEggs.nests.map(n => n.id));
+            setSelectedNests(nestsAndEggs.nests.map((n: NestOption) => n.id));
         }
     };
 
@@ -126,7 +126,7 @@ export default ({ extension, onUpdate }: Props) => {
 
     const selectAllEggs = () => {
         if (nestsAndEggs) {
-            setSelectedEggs(nestsAndEggs.eggs.map(e => e.id));
+            setSelectedEggs(nestsAndEggs.eggs.map((e: EggOption) => e.id));
         }
     };
 
@@ -252,7 +252,7 @@ export default ({ extension, onUpdate }: Props) => {
                                     </div>
                                 </div>
                                 <div className={'grid gap-2 sm:grid-cols-2'}>
-                                    {nestsAndEggs.nests.map(nest => (
+                                    {nestsAndEggs.nests.map((nest: NestOption) => (
                                         <label
                                             key={nest.id}
                                             className={classNames(
@@ -321,7 +321,7 @@ export default ({ extension, onUpdate }: Props) => {
                                     </div>
                                 </div>
                                 <div className={'grid gap-2 sm:grid-cols-2 lg:grid-cols-3'}>
-                                    {nestsAndEggs.eggs.map(egg => (
+                                    {nestsAndEggs.eggs.map((egg: EggOption) => (
                                         <label
                                             key={egg.id}
                                             className={classNames(

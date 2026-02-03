@@ -60,7 +60,7 @@ class ServerTransformer extends Transformer
 
         // Check if any extensions are enabled for this server
         $extensionsEnabled = config('modules.extensions.enabled', false) && 
-            ExtensionConfig::getEnabledForServer($server)->isNotEmpty();
+            !empty(ExtensionConfig::getEnabledForServer($server));
 
         return [
             'server_owner' => $user->id === $server->owner_id,
