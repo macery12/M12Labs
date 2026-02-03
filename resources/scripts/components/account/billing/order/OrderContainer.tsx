@@ -18,6 +18,8 @@ import {
     faHdd,
     faMemory,
     faMicrochip,
+    faChevronDown,
+    faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
@@ -135,6 +137,11 @@ export default () => {
             disabled: false,
             reason: ''
         };
+    };
+
+    // Check if checkout is complete
+    const isCheckoutComplete = () => {
+        return legalAgreed && serverName.trim() && selectedNode && selectedEggId && selectedBillingDays;
     };
 
     // Get the current price based on selected billing cycle
@@ -280,12 +287,21 @@ export default () => {
     // Auto-generate server name when selections change
     useEffect(() => {
         if (!serverNameTouched && product && selectedNode && selectedEggId) {
-            const generatedName = generateServerName();
+            const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
+            const node = nodes?.find(n => Number(n.id) === selectedNode);
+            
+            if (!selectedEgg || !node) return;
+            
+            const eggName = selectedEgg.name.split(' ')[0] || 'Server';
+            const nodePrefix = node.name.split('-')[0] || 'Node';
+            const timestamp = Date.now().toString().slice(-6);
+            
+            const generatedName = `${eggName}-${nodePrefix}-${timestamp}`;
             if (generatedName) {
                 setServerName(generatedName);
             }
         }
-    }, [selectedNode, selectedEggId, product, serverNameTouched]);
+    }, [selectedNode, selectedEggId, product, serverNameTouched, availableEggs, nodes]);
 
     // Clear coupon when billing cycle changes to prevent showing incorrect totals
     useEffect(() => {
@@ -293,7 +309,7 @@ export default () => {
             // Clear the coupon data to force revalidation with new price
             setCouponData(null);
         }
-    }, [selectedBillingDays]);
+    }, [selectedBillingDays, couponData]);
 
     if (!product) return <Spinner centered />;
 
@@ -643,9 +659,12 @@ export default () => {
                                     <h3 className={'text-lg font-bold text-gray-200'}>
                                         {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
                                     </h3>
-                                    <span className={'text-sm'} style={{ color: colors.primary }}>
-                                        {showCoupon ? '▼' : '▶'}
-                                    </span>
+                                    <FontAwesomeIcon 
+                                        icon={showCoupon ? faChevronDown : faChevronRight} 
+                                        className={'h-3 w-3'}
+                                        style={{ color: colors.primary }}
+                                        aria-hidden="true"
+                                    />
                                 </button>
                                 {showCoupon && (
                                     <div className={'animate-fadeIn'}>
@@ -673,7 +692,7 @@ export default () => {
                     )}
 
                     {/* Payment Section */}
-                    {legalAgreed && serverName.trim() && selectedNode && selectedEggId && selectedBillingDays ? (
+                    {isCheckoutComplete() ? (
                         <div>
                             <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
                             {product.price === 0 || couponData?.total === 0 ? (
