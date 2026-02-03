@@ -68,8 +68,74 @@ export default () => {
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
+    const [showCoupon, setShowCoupon] = useState<boolean>(false);
+    const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
     const { colors } = useStoreState(state => state.theme.data!);
+
+    // Auto-generate server name
+    const generateServerName = () => {
+        if (!product || !selectedNode || !selectedEggId) return '';
+        const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
+        const node = nodes?.find(n => Number(n.id) === selectedNode);
+        
+        const eggName = selectedEgg?.name.split(' ')[0] || 'Server';
+        const nodePrefix = node?.name.split('-')[0] || 'Node';
+        const timestamp = Date.now().toString().slice(-6);
+        
+        return `${eggName}-${nodePrefix}-${timestamp}`;
+    };
+
+    // Get CTA button text and state
+    const getCTAState = () => {
+        const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
+        
+        if (!selectedNode) {
+            return {
+                text: 'Continue to Server Type',
+                disabled: true,
+                reason: 'Please select a location to continue'
+            };
+        }
+        
+        if (!isEggSelectionComplete) {
+            return {
+                text: 'Continue to Billing',
+                disabled: true,
+                reason: 'Please select a server type to continue'
+            };
+        }
+        
+        if (!selectedBillingDays) {
+            return {
+                text: 'Review & Pay',
+                disabled: true,
+                reason: 'Please select a billing cycle to continue'
+            };
+        }
+        
+        if (!serverName.trim()) {
+            return {
+                text: 'Review & Pay',
+                disabled: true,
+                reason: 'Please enter a server name to continue'
+            };
+        }
+        
+        if (!legalAgreed) {
+            return {
+                text: 'Review & Pay',
+                disabled: true,
+                reason: 'Please accept the legal agreements to continue'
+            };
+        }
+        
+        return {
+            text: 'Review & Pay',
+            disabled: false,
+            reason: ''
+        };
+    };
 
     // Get the current price based on selected billing cycle
     const getCurrentPrice = () => {
@@ -77,28 +143,26 @@ export default () => {
         return selectedCycle ? selectedCycle.price : product?.price ?? 0;
     };
 
-    // Calculate checkout steps progress
+    // Calculate checkout steps progress - New flow: Node → Egg → Billing Cycle → Review & Payment
     const getCheckoutSteps = () => {
         const isEggSelectionComplete = availableEggs.length <= 1 || selectedEggId;
         const steps = [
-            { id: 1, name: 'Billing Cycle', status: selectedBillingDays ? 'complete' : 'current' },
-            { id: 2, name: 'Location', status: selectedBillingDays ? (selectedNode ? 'complete' : 'current') : 'upcoming' },
+            { id: 1, name: 'Location', status: selectedNode ? 'complete' : 'current' },
             {
-                id: 3,
-                name: 'Configuration',
+                id: 2,
+                name: 'Server Type',
                 status: selectedNode ? (isEggSelectionComplete ? 'complete' : 'current') : 'upcoming',
             },
             {
-                id: 4,
-                name: 'Legal',
-                status:
-                    termsAgreed && privacyAgreed
-                        ? 'complete'
-                        : selectedNode && isEggSelectionComplete
-                        ? 'current'
-                        : 'upcoming',
+                id: 3,
+                name: 'Billing',
+                status: selectedNode && isEggSelectionComplete ? (selectedBillingDays ? 'complete' : 'current') : 'upcoming',
             },
-            { id: 5, name: 'Payment', status: termsAgreed && privacyAgreed ? 'current' : 'upcoming' },
+            {
+                id: 4,
+                name: 'Review & Payment',
+                status: selectedNode && isEggSelectionComplete && selectedBillingDays ? 'current' : 'upcoming',
+            },
         ];
         return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
     };
@@ -213,6 +277,14 @@ export default () => {
             .catch(error => console.error(error));
     }, [product, selectedEggId]);
 
+    // Auto-generate server name when selections change
+    useEffect(() => {
+        if (!serverNameTouched && product && selectedNode && selectedEggId) {
+            const generatedName = generateServerName();
+            setServerName(generatedName);
+        }
+    }, [selectedNode, selectedEggId, product, availableEggs, nodes]);
+
     if (!product) return <Spinner centered />;
 
     return (
@@ -230,29 +302,7 @@ export default () => {
             <div className={'mt-10 grid gap-8 lg:grid-cols-3 lg:gap-10'}>
                 {/* Main Content Area */}
                 <div className={'space-y-8 lg:col-span-2'}>
-                    {/* Billing Cycle Section */}
-                    {billingCycles.length > 0 && (
-                        <section>
-                            <div className={'mb-6'}>
-                                <h2 className={'text-2xl font-bold text-gray-200'}>Choose Your Billing Cycle</h2>
-                                <p className={'mt-1 text-sm text-gray-400'}>
-                                    Select how often you want to be billed for this server.
-                                </p>
-                            </div>
-                            <div className={'grid gap-4 sm:grid-cols-2'}>
-                                {billingCycles.map(cycle => (
-                                    <BillingCycleBox
-                                        cycle={cycle}
-                                        key={cycle.days}
-                                        selected={selectedBillingDays}
-                                        setSelected={setSelectedBillingDays}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Location Section */}
+                    {/* Location Section - STEP 1 */}
                     <section>
                         <div className={'mb-6'}>
                             <h2 className={'text-2xl font-bold text-gray-200'}>Choose a Location</h2>
@@ -277,7 +327,7 @@ export default () => {
                         </div>
                     </section>
 
-                    {/* Server Type Section */}
+                    {/* Server Type Section - STEP 2 */}
                     {availableEggs.length > 1 && (
                         <section>
                             <div className={'mb-6'}>
@@ -294,6 +344,28 @@ export default () => {
                                         selected={selectedEggId}
                                         setSelected={setSelectedEggId}
                                         onEggChange={() => setEggs(undefined)}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Billing Cycle Section - STEP 3 */}
+                    {billingCycles.length > 0 && (
+                        <section>
+                            <div className={'mb-6'}>
+                                <h2 className={'text-2xl font-bold text-gray-200'}>Choose Your Billing Cycle</h2>
+                                <p className={'mt-1 text-sm text-gray-400'}>
+                                    Select how often you want to be billed for this server.
+                                </p>
+                            </div>
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {billingCycles.map(cycle => (
+                                    <BillingCycleBox
+                                        cycle={cycle}
+                                        key={cycle.days}
+                                        selected={selectedBillingDays}
+                                        setSelected={setSelectedBillingDays}
                                     />
                                 ))}
                             </div>
@@ -323,18 +395,35 @@ export default () => {
                 {/* Sidebar - Order Summary */}
                 <div className={'lg:col-span-1'}>
                     <div className={'sticky top-4 space-y-6'}>
-                        {/* Server Name Card */}
+                        {/* Server Name Card with Auto-generate */}
                         <div
                             style={{ backgroundColor: colors.secondary }}
                             className={'rounded-lg border border-gray-700 p-6'}
                         >
-                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Server Name</h3>
+                            <div className={'mb-4 flex items-center justify-between'}>
+                                <h3 className={'text-lg font-bold text-gray-200'}>Server Name</h3>
+                                <button
+                                    onClick={() => {
+                                        const name = generateServerName();
+                                        setServerName(name);
+                                        setServerNameTouched(false);
+                                    }}
+                                    className={'text-xs font-medium hover:brightness-125 transition-all'}
+                                    style={{ color: colors.primary }}
+                                    disabled={!selectedNode || !selectedEggId}
+                                >
+                                    🔄 Auto-generate
+                                </button>
+                            </div>
                             <p className={'mb-3 text-sm text-gray-400'}>Choose a name for your server.</p>
                             <input
                                 type={'text'}
                                 placeholder={'Enter server name'}
                                 value={serverName}
-                                onChange={e => setServerName(e.target.value)}
+                                onChange={e => {
+                                    setServerName(e.target.value);
+                                    setServerNameTouched(true);
+                                }}
                                 onBlur={() => setServerNameTouched(true)}
                                 required
                                 maxLength={191}
@@ -364,7 +453,7 @@ export default () => {
                             )}
                         </div>
 
-                        {/* Order Summary Card */}
+                        {/* Order Summary Card with Due Today */}
                         <div
                             style={{ backgroundColor: colors.secondary }}
                             className={'rounded-lg border border-gray-700 p-6'}
@@ -455,146 +544,143 @@ export default () => {
                                     <span className={'text-gray-300'}>{product.limits.allocation} Ports</span>
                                 </div>
                             </div>
+
+                            {/* Due Today Section */}
+                            {product.price !== 0 && (
+                                <>
+                                    <div className={'my-4 h-px bg-gray-700'} />
+                                    <div className={'flex items-center justify-between'}>
+                                        <span className={'text-base font-bold text-gray-200'}>Due Today</span>
+                                        <span className={'text-xl font-bold'} style={{ color: colors.primary }}>
+                                            ${couponData ? couponData.total.toFixed(2) : getCurrentPrice().toFixed(2)}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
-                        {/* Legal Agreements Card */}
+                        {/* Collapsed Legal Agreements Card */}
                         <div
                             style={{ backgroundColor: colors.secondary }}
                             className={'rounded-lg border border-gray-700 p-6'}
                         >
                             <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
-                            <div className={'space-y-3'}>
-                                <div
-                                    className={
-                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'
-                                    }
-                                    style={
-                                        termsAgreed
-                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
-                                    }
-                                >
-                                    <AdminCheckbox
-                                        name={'terms'}
-                                        checked={termsAgreed}
-                                        onChange={() => setTermsAgreed(!termsAgreed)}
-                                    />
-                                    <div className={'min-w-0 flex-1'} onClick={() => setTermsAgreed(!termsAgreed)}>
-                                        <p className={'text-xs font-medium text-gray-200'}>
-                                            <a
-                                                href={billing.links.terms}
-                                                target={'_blank'}
-                                                rel={'noreferrer'}
-                                                className={'hover:brightness-125'}
-                                                style={{ color: colors.primary }}
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                Terms of Service{' '}
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
-                                            </a>
+                            <div
+                                className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
+                                style={
+                                    legalAgreed
+                                        ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                        : { borderColor: '#374151', backgroundColor: colors.secondary }
+                                }
+                                onClick={() => setLegalAgreed(!legalAgreed)}
+                            >
+                                <AdminCheckbox
+                                    name={'legal'}
+                                    checked={legalAgreed}
+                                    onChange={() => setLegalAgreed(!legalAgreed)}
+                                />
+                                <div className={'min-w-0 flex-1'}>
+                                    <p className={'text-sm font-medium text-gray-200'}>
+                                        I agree to the{' '}
+                                        <a
+                                            href={billing.links.terms}
+                                            target={'_blank'}
+                                            rel={'noreferrer'}
+                                            className={'hover:brightness-125'}
+                                            style={{ color: colors.primary }}
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            Terms of Service
+                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                        </a>
+                                        {' and '}
+                                        <a
+                                            href={billing.links.privacy}
+                                            target={'_blank'}
+                                            rel={'noreferrer'}
+                                            className={'hover:brightness-125'}
+                                            style={{ color: colors.primary }}
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            Privacy Policy
+                                            <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                        </a>
+                                    </p>
+                                    {legalAgreed && (
+                                        <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
+                                            ✓ Accepted
                                         </p>
-                                        {termsAgreed && (
-                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
-                                                ✓ Accepted
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div
-                                    className={
-                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'
-                                    }
-                                    style={
-                                        privacyAgreed
-                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
-                                    }
-                                >
-                                    <AdminCheckbox
-                                        name={'privacy'}
-                                        checked={privacyAgreed}
-                                        onChange={() => setPrivacyAgreed(!privacyAgreed)}
-                                    />
-                                    <div className={'min-w-0 flex-1'} onClick={() => setPrivacyAgreed(!privacyAgreed)}>
-                                        <p className={'text-xs font-medium text-gray-200'}>
-                                            <a
-                                                href={billing.links.privacy}
-                                                target={'_blank'}
-                                                rel={'noreferrer'}
-                                                className={'hover:brightness-125'}
-                                                style={{ color: colors.primary }}
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                Privacy Policy{' '}
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
-                                            </a>
-                                        </p>
-                                        {privacyAgreed && (
-                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
-                                                ✓ Accepted
-                                            </p>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             </div>
-                            {!termsAgreed || !privacyAgreed ? (
-                                <Alert type={'warning'} className={'mt-3'}>
-                                    <p className={'text-xs'}>Please accept both agreements to proceed.</p>
-                                </Alert>
-                            ) : null}
                         </div>
 
-                        {/* Coupon Section - Only show for paid products */}
+                        {/* Coupon Section with Toggle - Only show for paid products */}
                         {product.price !== 0 && (
                             <div
                                 style={{ backgroundColor: colors.secondary }}
                                 className={'rounded-lg border border-gray-700 p-6'}
                             >
-                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Coupon Code</h3>
-                                <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                                <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
-                            </div>
-                        )}
-
-                        {/* Checkout Button Card */}
-                        {termsAgreed && privacyAgreed && (
-                            <div
-                                style={{ backgroundColor: colors.secondary }}
-                                className={'rounded-lg border border-gray-700 p-6'}
-                            >
-                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
-                                {product.price === 0 || couponData?.total === 0 ? (
-                                    <div>
-                                        <p className={'mb-4 text-sm text-gray-300'}>
-                                            {couponData?.total === 0
-                                                ? '🎉 Your coupon has made this order free!'
-                                                : '🎉 This product is free!'}
-                                        </p>
-                                        <Button
-                                            onClick={createFree}
-                                            size={Button.Sizes.Large}
-                                            className={'w-full'}
-                                            disabled={!serverName.trim()}
-                                        >
-                                            Create Server
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <PaymentMethodSelector
-                                            selectedNode={selectedNode}
-                                            product={product}
-                                            vars={vars}
-                                            intent={intent}
-                                            stripe={stripe}
-                                            couponId={couponData?.coupon.id}
-                                            selectedEggId={selectedEggId}
-                                            serverName={serverName}
-                                        />
+                                <button
+                                    onClick={() => setShowCoupon(!showCoupon)}
+                                    className={'mb-3 flex w-full items-center justify-between text-left transition-all'}
+                                >
+                                    <h3 className={'text-lg font-bold text-gray-200'}>
+                                        {showCoupon ? '🎟️ Coupon Code' : '🎟️ Have a coupon?'}
+                                    </h3>
+                                    <span className={'text-sm'} style={{ color: colors.primary }}>
+                                        {showCoupon ? '▼' : '▶'}
+                                    </span>
+                                </button>
+                                {showCoupon && (
+                                    <div className={'animate-fadeIn'}>
+                                        <CouponInput subtotal={getCurrentPrice()} onCouponApplied={handleCouponApplied} />
+                                        <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
                                     </div>
                                 )}
                             </div>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Sticky CTA Footer */}
+            <div className={'fixed bottom-0 left-0 right-0 z-50 lg:relative lg:bottom-auto lg:left-auto lg:right-auto'}>
+                <div
+                    className={'border-t p-4 lg:mt-8 lg:rounded-lg lg:border lg:p-6'}
+                    style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                >
+                    <div className={'mx-auto flex max-w-7xl items-center justify-between gap-4'}>
+                        <div className={'flex-1'}>
+                            {getCTAState().disabled && getCTAState().reason && (
+                                <p className={'text-sm text-amber-400'}>⚠ {getCTAState().reason}</p>
+                            )}
+                        </div>
+                        <div className={'flex items-center gap-3'}>
+                            {product.price === 0 || couponData?.total === 0 ? (
+                                <Button
+                                    onClick={createFree}
+                                    size={Button.Sizes.Large}
+                                    disabled={getCTAState().disabled}
+                                    className={'min-w-[200px]'}
+                                >
+                                    {getCTAState().text}
+                                </Button>
+                            ) : (
+                                legalAgreed && serverName.trim() && (
+                                    <PaymentMethodSelector
+                                        selectedNode={selectedNode}
+                                        product={product}
+                                        vars={vars}
+                                        intent={intent}
+                                        stripe={stripe}
+                                        couponId={couponData?.coupon.id}
+                                        selectedEggId={selectedEggId}
+                                        serverName={serverName}
+                                    />
+                                )
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

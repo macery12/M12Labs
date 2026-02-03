@@ -36,15 +36,15 @@ export default ({ cycle, selected, setSelected }: Props) => {
         <div
             onClick={() => setSelected(cycle.days)}
             className={classNames(
-                'relative cursor-pointer rounded-lg border-2 p-4 transition-all',
+                'relative cursor-pointer rounded-lg border-2 p-6 transition-all hover:scale-[1.02]',
                 isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
             style={isSelected ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` } : {}}
         >
-            <div className={'flex items-start gap-3'}>
-                <CalendarIcon className={'h-8 w-8 flex-shrink-0'} style={{ color: colors.primary }} />
-                <div className={'flex-1 min-w-0'}>
-                    <div className={'flex items-baseline gap-2'}>
+            <div className={'flex flex-col items-center justify-center text-center'}>
+                <CalendarIcon className={'h-10 w-10 mb-3'} style={{ color: colors.primary }} />
+                <div className={'w-full'}>
+                    <div className={'flex items-center justify-center gap-2 mb-2'}>
                         <p className={'font-semibold text-gray-200'}>
                             {cycle.days} {cycle.days === 1 ? 'Day' : 'Days'}
                         </p>
@@ -57,15 +57,15 @@ export default ({ cycle, selected, setSelected }: Props) => {
                             </span>
                         )}
                     </div>
-                    <div className={'mt-1 flex items-baseline gap-1'}>
-                        <span className={'text-lg font-bold'} style={{ color: colors.primary }}>
+                    <div className={'flex items-baseline justify-center gap-1 mb-1'}>
+                        <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
                             ${cycle.price.toFixed(2)}
                         </span>
                     </div>
                     {getDiscountLabel()}
                 </div>
                 <CheckCircleIcon
-                    className={classNames('h-6 w-6 flex-shrink-0 transition-colors', isSelected ? '' : 'text-gray-600')}
+                    className={classNames('h-6 w-6 mt-3 transition-colors', isSelected ? '' : 'text-gray-600')}
                     style={isSelected ? { color: colors.primary } : {}}
                 />
             </div>
