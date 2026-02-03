@@ -30,6 +30,7 @@ interface Server {
     eggFeatures: string[];
     modsEnabled: boolean;
     modpacksSupported: boolean;
+    extensionsEnabled: boolean;
     billingProductId?: number;
     renewalDate?: Date | undefined;
     featureLimits: {

@@ -6,6 +6,7 @@ use Everest\Models\Egg;
 use Everest\Models\Server;
 use Everest\Models\Allocation;
 use Everest\Models\Permission;
+use Everest\Models\ExtensionConfig;
 use League\Fractal\Resource\Item;
 use Illuminate\Container\Container;
 use League\Fractal\Resource\Collection;
@@ -57,6 +58,10 @@ class ServerTransformer extends Transformer
             $modpacksSupported = $hasProjectId && $hasVersionId;
         }
 
+        // Check if any extensions are enabled for this server
+        $extensionsEnabled = config('modules.extensions.enabled', false) && 
+            ExtensionConfig::getEnabledForServer($server)->isNotEmpty();
+
         return [
             'server_owner' => $user->id === $server->owner_id,
             'identifier' => $server->uuidShort,
@@ -86,6 +91,7 @@ class ServerTransformer extends Transformer
             'egg_id' => $server->egg_id,
             'mods_enabled' => $server->mods_enabled,
             'modpacks_supported' => $modpacksSupported,
+            'extensions_enabled' => $extensionsEnabled,
             'billing_product_id' => $server->billing_product_id,
             'feature_limits' => [
                 'databases' => $server->database_limit,

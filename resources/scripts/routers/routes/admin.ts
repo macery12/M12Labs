@@ -17,6 +17,7 @@ const TicketRouter = lazy(() => import('@/components/admin/modules/tickets/Ticke
 const AIRouter = lazy(() => import('@/components/admin/modules/ai/AIRouter'));
 const ModsRouter = lazy(() => import('@/components/admin/modules/mods/ModsRouter'));
 const WebhookRouter = lazy(() => import('@/components/admin/modules/webhooks/WebhookRouter'));
+const ExtensionsRouter = lazy(() => import('@/components/admin/modules/extensions/ExtensionsRouter'));
 const ThemeContainer = lazy(() => import('@/components/admin/modules/theme/ThemeContainer'));
 const AlertRouter = lazy(() => import('@/components/admin/modules/alert/AlertRouter'));
 
@@ -65,6 +66,12 @@ const admin: AdminRouteDefinition[] = [
     route('webhooks/*', WebhookRouter, {
         name: 'Webhooks',
         icon: Icon.CursorClickIcon,
+        category: 'modules',
+        advanced: true,
+    }),
+    route('extensions/*', ExtensionsRouter, {
+        name: 'Extensions',
+        icon: Icon.PuzzleIcon,
         category: 'modules',
         advanced: true,
     }),

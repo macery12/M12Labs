@@ -199,6 +199,24 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Extensions Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/extensions
+    |
+    */
+    Route::group(['prefix' => '/extensions'], function () {
+        Route::get('/', [Application\Extensions\ExtensionsController::class, 'index']);
+        Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
+        Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
+
+        Route::get('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'view']);
+        Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);
+        Route::post('/{extensionId}/toggle', [Application\Extensions\ExtensionsController::class, 'toggle']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | Alerts Controller Routes
     |--------------------------------------------------------------------------
     |

@@ -113,6 +113,17 @@ export interface EverestSettings {
         enabled: boolean;
         url: boolean;
     };
+    extensions: {
+        enabled: boolean;
+        available: {
+            [key: string]: {
+                name: string;
+                description: string;
+                icon: string;
+                version: string;
+            };
+        };
+    };
 }
 
 export interface EverestStore {

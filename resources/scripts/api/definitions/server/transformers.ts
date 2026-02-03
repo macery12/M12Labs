@@ -22,6 +22,7 @@ export default class Transformers {
         limits: { ...data.limits },
         eggFeatures: data.egg_features || [],
         modsEnabled: data.mods_enabled || false,
+        extensionsEnabled: data.extensions_enabled || false,
         billingProductId: data.billing_product_id,
         renewalDate: data.renewal_date ? new Date(data.renewal_date) : undefined,
         featureLimits: { ...data.feature_limits },

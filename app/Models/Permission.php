@@ -69,6 +69,9 @@ class Permission extends Model
     public const ACTION_BILLING_RENEW = 'billing.renew';
     public const ACTION_BILLING_UPDATE = 'billing.update';
 
+    public const ACTION_EXTENSION_READ = 'extension.read';
+    public const ACTION_EXTENSION_MANAGE = 'extension.manage';
+
     /**
      * Should timestamps be used on this model.
      */
@@ -217,6 +220,14 @@ class Permission extends Model
                 'read' => 'Allows a user to view billing details for the server.',
                 'renew' => 'Allows a user to renew the server with their payment details.',
                 'update' => 'Update general billing settings for the server.',
+            ],
+        ],
+
+        'extension' => [
+            'description' => 'Permissions that control a user\'s access to server extensions like player managers.',
+            'keys' => [
+                'read' => 'Allows a user to view and access enabled extensions for the server.',
+                'manage' => 'Allows a user to use extension features like player management (kick, ban, whitelist, etc.).',
             ],
         ],
     ];

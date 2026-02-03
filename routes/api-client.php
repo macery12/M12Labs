@@ -253,5 +253,41 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/plans/{product}/validate', [Client\Billing\PlanChangeController::class, 'validatePlanChange']);
             Route::post('/plans/{product}/change', [Client\Billing\PlanChangeController::class, 'changePlan']);
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Extensions Routes
+        |--------------------------------------------------------------------------
+        */
+        Route::group(['prefix' => '/extensions'], function () {
+            // List enabled extensions for this server
+            Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
+            Route::get('/{extensionId}', [Client\Extensions\ExtensionsController::class, 'check']);
+
+            // Player Manager extension routes
+            Route::group(['prefix' => '/player-manager'], function () {
+                Route::get('/', [Client\Extensions\PlayerManagerController::class, 'index']);
+                
+                // Whitelist management
+                Route::post('/whitelist', [Client\Extensions\PlayerManagerController::class, 'setWhitelist']);
+                Route::put('/whitelist/{player}', [Client\Extensions\PlayerManagerController::class, 'addWhitelist']);
+                Route::delete('/whitelist/{player}', [Client\Extensions\PlayerManagerController::class, 'removeWhitelist']);
+                
+                // Operator management
+                Route::put('/op/{player}', [Client\Extensions\PlayerManagerController::class, 'op']);
+                Route::delete('/op/{player}', [Client\Extensions\PlayerManagerController::class, 'deop']);
+                
+                // Ban management
+                Route::put('/ban/{player}', [Client\Extensions\PlayerManagerController::class, 'ban']);
+                Route::delete('/ban/{player}', [Client\Extensions\PlayerManagerController::class, 'unban']);
+                Route::put('/ban-ip/{ip}', [Client\Extensions\PlayerManagerController::class, 'banIp']);
+                Route::delete('/ban-ip/{ip}', [Client\Extensions\PlayerManagerController::class, 'unbanIp']);
+                
+                // Player actions
+                Route::post('/kick/{player}', [Client\Extensions\PlayerManagerController::class, 'kick']);
+                Route::post('/whisper/{player}', [Client\Extensions\PlayerManagerController::class, 'whisper']);
+                Route::post('/kill/{player}', [Client\Extensions\PlayerManagerController::class, 'kill']);
+            });
+        });
     });
 });
