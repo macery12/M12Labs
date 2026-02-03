@@ -167,6 +167,7 @@ class ExtensionsController extends ApplicationApiController
 
         Activity::event('admin:extensions:settings')
             ->property('key', $request->input('key'))
+            ->property('value', $request->input('value'))
             ->log();
 
         return $this->returnNoContent();
