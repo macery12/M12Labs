@@ -58,6 +58,7 @@ export interface Server extends Model {
     };
     renewalDate?: Date | undefined;
     billingProductId?: number;
+    billingDays?: number;
     createdAt: Date;
     updatedAt: Date;
     relationships: {
