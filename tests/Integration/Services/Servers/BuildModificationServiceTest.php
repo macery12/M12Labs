@@ -247,6 +247,33 @@ class BuildModificationServiceTest extends IntegrationTestCase
         $this->assertDatabaseHas('allocations', ['id' => $allocation->id, 'server_id' => null]);
     }
 
+    /**
+     * Test that multiple allocations can be added to a server at once.
+     */
+    public function testMultipleAllocationsCanBeAddedAtOnce()
+    {
+        $server = $this->createServerModel();
+
+        /** @var \Everest\Models\Allocation[] $allocations */
+        $allocations = Allocation::factory()->times(3)->create(['node_id' => $server->node_id]);
+
+        $this->daemonServerRepository->expects('setServer->sync')->andReturnUndefined();
+
+        $response = $this->getService()->handle($server, [
+            'add_allocations' => [$allocations[0]->id, $allocations[1]->id, $allocations[2]->id],
+        ]);
+
+        $this->assertInstanceOf(Server::class, $response);
+
+        // All three allocations should be assigned to the server, plus the default allocation
+        $this->assertCount(4, $response->allocations);
+        
+        // Verify all allocations are assigned to the server in the database
+        $this->assertDatabaseHas('allocations', ['id' => $allocations[0]->id, 'server_id' => $server->id]);
+        $this->assertDatabaseHas('allocations', ['id' => $allocations[1]->id, 'server_id' => $server->id]);
+        $this->assertDatabaseHas('allocations', ['id' => $allocations[2]->id, 'server_id' => $server->id]);
+    }
+
     private function getService(): BuildModificationService
     {
         return $this->app->make(BuildModificationService::class);
