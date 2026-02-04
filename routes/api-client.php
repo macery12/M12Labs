@@ -267,6 +267,16 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::group(['prefix' => '/player-manager'], function () {
                 Route::get('/', [Client\Extensions\PlayerManagerController::class, 'index']);
                 
+                // Server info
+                Route::get('/version', [Client\Extensions\PlayerManagerController::class, 'getServerVersion']);
+                Route::get('/attributes', [Client\Extensions\PlayerManagerController::class, 'getAttributes']);
+                
+                // Player data (v1.0.1)
+                Route::get('/player/{player}/data', [Client\Extensions\PlayerManagerController::class, 'getPlayerData']);
+                Route::get('/player/{player}/attribute/{attribute}', [Client\Extensions\PlayerManagerController::class, 'getAttribute']);
+                Route::post('/player/{player}/attribute/{attribute}', [Client\Extensions\PlayerManagerController::class, 'setAttribute']);
+                Route::delete('/player/{player}/attribute/{attribute}', [Client\Extensions\PlayerManagerController::class, 'resetAttribute']);
+                
                 // Whitelist management
                 Route::post('/whitelist', [Client\Extensions\PlayerManagerController::class, 'setWhitelist']);
                 Route::put('/whitelist/{player}', [Client\Extensions\PlayerManagerController::class, 'addWhitelist']);

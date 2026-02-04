@@ -92,3 +92,151 @@ export const whisperPlayer = async (uuid: string, player: string, message: strin
 export const killPlayer = async (uuid: string, player: string): Promise<void> => {
     await http.post(`/api/client/servers/${uuid}/extensions/player-manager/kill/${player}`);
 };
+
+// v1.0.1 - Server Version
+export interface ServerVersion {
+    raw: string;
+    major: number;
+    minor: number;
+    patch: number;
+    protocol: number;
+    supportsAttributes: boolean;
+}
+
+export interface ServerVersionResponse {
+    success: boolean;
+    version?: ServerVersion;
+    error?: string;
+}
+
+export const getServerVersion = async (uuid: string): Promise<ServerVersionResponse> => {
+    const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager/version`);
+    return data.data || data;
+};
+
+// v1.0.1 - Player Data Types
+export interface ItemEnchantment {
+    id: string;
+    name: string;
+    level: number;
+    levelRoman: string;
+}
+
+export interface ItemDurability {
+    current: number;
+    max: number;
+    percentage: number;
+}
+
+export interface InventoryItem {
+    id: string;
+    displayId: string;
+    name: string;
+    slot: number;
+    count: number;
+    damage: number;
+    enchantments: ItemEnchantment[];
+    customName: string | null;
+    lore: string[];
+    durability: ItemDurability | null;
+}
+
+export interface PlayerArmor {
+    helmet: InventoryItem | null;
+    chestplate: InventoryItem | null;
+    leggings: InventoryItem | null;
+    boots: InventoryItem | null;
+}
+
+export interface PlayerLocation {
+    x: number;
+    y: number;
+    z: number;
+    yaw: number;
+    pitch: number;
+    dimension: string;
+    world: string;
+}
+
+export interface PlayerStats {
+    health: number;
+    maxHealth: number;
+    food: number;
+    saturation: number;
+    xpLevel: number;
+    xpTotal: number;
+    xpProgress: number;
+    gamemode: string;
+    score: number;
+}
+
+export interface PlayerDataResponse {
+    success: boolean;
+    player?: {
+        uuid: string;
+        name: string;
+    };
+    inventory?: InventoryItem[];
+    armor?: PlayerArmor;
+    offhand?: InventoryItem | null;
+    enderChest?: InventoryItem[];
+    location?: PlayerLocation;
+    stats?: PlayerStats;
+    error?: string;
+}
+
+export const getPlayerData = async (uuid: string, player: string): Promise<PlayerDataResponse> => {
+    const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager/player/${player}/data`);
+    return data.data || data;
+};
+
+// v1.0.1 - Attributes
+export interface AttributeInfo {
+    id: string;
+    name: string;
+    default: number;
+    min: number;
+    max: number;
+    description: string;
+}
+
+export interface AttributeCategory {
+    category: string;
+    attributes: AttributeInfo[];
+}
+
+export interface AttributesResponse {
+    success: boolean;
+    attributes?: AttributeCategory[];
+    error?: string;
+}
+
+export const getAttributes = async (uuid: string): Promise<AttributesResponse> => {
+    const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager/attributes`);
+    return data.data || data;
+};
+
+export interface SetAttributeResponse {
+    success: boolean;
+    attribute?: string;
+    value?: number;
+    error?: string;
+}
+
+export const setAttribute = async (uuid: string, player: string, attribute: string, value: number): Promise<SetAttributeResponse> => {
+    const { data } = await http.post(`/api/client/servers/${uuid}/extensions/player-manager/player/${player}/attribute/${attribute}`, { value });
+    return data.data || data;
+};
+
+export interface ResetAttributeResponse {
+    success: boolean;
+    attribute?: string;
+    defaultValue?: number;
+    error?: string;
+}
+
+export const resetAttribute = async (uuid: string, player: string, attribute: string): Promise<ResetAttributeResponse> => {
+    const { data } = await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/player/${player}/attribute/${attribute}`);
+    return data.data || data;
+};
+

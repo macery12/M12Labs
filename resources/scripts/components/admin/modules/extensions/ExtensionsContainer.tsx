@@ -31,7 +31,7 @@ export default () => {
 
     if (extensions.length === 0) {
         return (
-            <div className={'rounded-lg bg-neutral-800 p-8 text-center'}>
+            <div className={'rounded-lg bg-zinc-800 p-8 text-center'}>
                 <p className={'text-neutral-400'}>No extensions are available.</p>
                 <p className={'mt-2 text-sm text-neutral-500'}>
                     Extensions can be added through the configuration files.

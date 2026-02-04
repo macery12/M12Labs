@@ -22,6 +22,8 @@ use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\IpRequest;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\KickRequest;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\WhisperRequest;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\SetWhitelistRequest;
+use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\AttributeRequest;
+use Everest\Services\Extensions\MinecraftPlayerManager\NbtParser;
 
 class PlayerManagerController extends ClientApiController
 {
@@ -1034,5 +1036,544 @@ class PlayerManagerController extends ClientApiController
                 'error' => 'Server is offline',
             ], 400);
         }
+    }
+
+    /**
+     * Get the Minecraft server version (cached for 5 minutes).
+     */
+    public function getServerVersion(GetStatusRequest $request, Server $server): JsonResponse
+    {
+        $this->checkExtensionEnabled($server);
+
+        $version = Cache::remember("minecraftserver:version:{$server->id}", 300, function () use ($server) {
+            try {
+                $query = new MinecraftPing($server->allocation->alias ?? $server->allocation->ip, $server->allocation->port, 2, false);
+                $query->Connect();
+                $data = $query->Query();
+
+                if (!$data || !isset($data['version']['name'])) {
+                    return null;
+                }
+
+                $versionString = $data['version']['name'];
+                
+                // Parse version number from string (e.g., "1.20.4", "Paper 1.20.4", "Spigot 1.19.2")
+                preg_match('/(\d+)\.(\d+)(?:\.(\d+))?/', $versionString, $matches);
+                
+                if (empty($matches)) {
+                    return null;
+                }
+
+                $major = (int) $matches[1];
+                $minor = (int) $matches[2];
+                $patch = (int) ($matches[3] ?? 0);
+
+                return [
+                    'raw' => $versionString,
+                    'major' => $major,
+                    'minor' => $minor,
+                    'patch' => $patch,
+                    'protocol' => $data['version']['protocol'] ?? 0,
+                    'supportsAttributes' => ($major >= 1 && $minor >= 16),
+                ];
+            } catch (\Throwable $e) {
+                return null;
+            }
+        });
+
+        if (!$version) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Failed to detect server version',
+            ], 400);
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'version' => $version,
+        ]);
+    }
+
+    /**
+     * Get player data from NBT file (inventory, location, stats).
+     */
+    public function getPlayerData(PlayerRequest $request, Server $server, string $player): JsonResponse
+    {
+        $this->checkExtensionEnabled($server);
+
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
+        // Look up player UUID
+        $playerData = $this->lookupUserName($name, $server);
+
+        if (is_null($playerData)) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Failed to lookup player',
+            ], 400);
+        }
+
+        $uuid = $playerData['uuid'];
+
+        // Find the world directory
+        $worldDir = $this->getWorldDirectory($server);
+        if (!$worldDir) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Could not find world directory',
+            ], 400);
+        }
+
+        // Try to get the player data file
+        $playerDataPath = "/{$worldDir}/playerdata/{$uuid}.dat";
+
+        try {
+            $datContent = $this->fileRepository->setServer($server)->getContent($playerDataPath);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Player data file not found. The player may not have joined yet.',
+            ], 404);
+        }
+
+        try {
+            // Write to temp file and parse
+            $tempFile = tempnam(sys_get_temp_dir(), 'nbt_');
+            file_put_contents($tempFile, $datContent);
+
+            $parser = new NbtParser();
+            $nbt = $parser->parseFile($tempFile);
+            
+            unlink($tempFile);
+
+            // Extract data
+            $inventory = NbtParser::extractInventory($nbt);
+            $armor = NbtParser::extractArmor($nbt);
+            $enderChest = NbtParser::extractEnderChest($nbt);
+            $location = NbtParser::extractLocation($nbt);
+            $stats = NbtParser::extractStats($nbt);
+
+            // Sort inventory by slot
+            usort($inventory, fn($a, $b) => $a['slot'] <=> $b['slot']);
+
+            // Filter out armor slots from main inventory (100-103)
+            $mainInventory = array_values(array_filter($inventory, fn($item) => $item['slot'] < 100));
+            
+            // Offhand is slot -106 or 45
+            $offhand = null;
+            foreach ($inventory as $item) {
+                if ($item['slot'] === -106 || $item['slot'] === 45) {
+                    $offhand = $item;
+                    break;
+                }
+            }
+
+            return new JsonResponse([
+                'success' => true,
+                'player' => [
+                    'uuid' => $uuid,
+                    'name' => $playerData['name'],
+                ],
+                'inventory' => $mainInventory,
+                'armor' => $armor,
+                'offhand' => $offhand,
+                'enderChest' => $enderChest,
+                'location' => $location,
+                'stats' => $stats,
+            ]);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Failed to parse player data: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get the world directory name.
+     */
+    private function getWorldDirectory(Server $server): ?string
+    {
+        return Cache::remember("minecraftserver:worlddir:{$server->id}", 60, function () use ($server) {
+            $properties = $this->getServerProperties($server);
+            $levelName = $properties['level-name'] ?? 'world';
+
+            // Check if the directory exists
+            try {
+                $this->fileRepository->setServer($server)->getDirectory("/{$levelName}");
+                return $levelName;
+            } catch (\Throwable $e) {
+                // Try common alternatives
+                $alternatives = ['world', 'server', 'minecraft'];
+                foreach ($alternatives as $alt) {
+                    try {
+                        $this->fileRepository->setServer($server)->getDirectory("/{$alt}");
+                        return $alt;
+                    } catch (\Throwable $e) {
+                        continue;
+                    }
+                }
+            }
+
+            return null;
+        });
+    }
+
+    /**
+     * Get a specific attribute for a player.
+     */
+    public function getAttribute(PlayerRequest $request, Server $server, string $player, string $attribute): JsonResponse
+    {
+        $this->checkExtensionEnabled($server);
+
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
+        // Validate attribute name
+        $attribute = $this->sanitizeAttributeName($attribute);
+        if (!$attribute) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Invalid attribute name',
+            ], 400);
+        }
+
+        try {
+            // First check if attributes are supported
+            $version = Cache::get("minecraftserver:version:{$server->id}");
+            if ($version && !$version['supportsAttributes']) {
+                return new JsonResponse([
+                    'success' => false,
+                    'error' => 'Attributes require Minecraft 1.16 or higher',
+                ], 400);
+            }
+
+            // Use data get to retrieve attribute value via data command
+            $cmd = "data get entity {$name} Attributes";
+            $this->commandRepository->setServer($server)->send($cmd);
+
+            // Since we can't read command output directly, we'll return the available attributes
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Attribute command sent. Check server console for result.',
+                'attribute' => $attribute,
+            ]);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Server is offline',
+            ], 400);
+        }
+    }
+
+    /**
+     * Set an attribute value for a player.
+     */
+    public function setAttribute(AttributeRequest $request, Server $server, string $player, string $attribute): JsonResponse
+    {
+        $this->checkExtensionEnabled($server);
+
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
+        // Validate attribute name
+        $attribute = $this->sanitizeAttributeName($attribute);
+        if (!$attribute) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Invalid attribute name',
+            ], 400);
+        }
+
+        $value = $request->input('value');
+        if (!is_numeric($value)) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Value must be a number',
+            ], 400);
+        }
+
+        // Clamp value to reasonable range
+        $value = max(-1024, min(1024, (float) $value));
+
+        try {
+            // Check if attributes are supported
+            $version = Cache::get("minecraftserver:version:{$server->id}");
+            if ($version && !$version['supportsAttributes']) {
+                return new JsonResponse([
+                    'success' => false,
+                    'error' => 'Attributes require Minecraft 1.16 or higher',
+                ], 400);
+            }
+
+            $cmd = "attribute {$name} minecraft:{$attribute} base set {$value}";
+            $this->commandRepository->setServer($server)->send($cmd);
+
+            Activity::event('server:player.attribute.set')
+                ->property(['name' => $name, 'attribute' => $attribute, 'value' => $value])
+                ->log();
+
+            return new JsonResponse([
+                'success' => true,
+                'attribute' => $attribute,
+                'value' => $value,
+            ]);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Server is offline',
+            ], 400);
+        }
+    }
+
+    /**
+     * Reset an attribute to its default value.
+     */
+    public function resetAttribute(PlayerRequest $request, Server $server, string $player, string $attribute): JsonResponse
+    {
+        $this->checkExtensionEnabled($server);
+
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
+        // Validate attribute name
+        $attribute = $this->sanitizeAttributeName($attribute);
+        if (!$attribute) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Invalid attribute name',
+            ], 400);
+        }
+
+        try {
+            // Check if attributes are supported
+            $version = Cache::get("minecraftserver:version:{$server->id}");
+            if ($version && !$version['supportsAttributes']) {
+                return new JsonResponse([
+                    'success' => false,
+                    'error' => 'Attributes require Minecraft 1.16 or higher',
+                ], 400);
+            }
+
+            // Use the attribute reset command (1.20+) or set to default
+            $defaultValue = $this->getAttributeDefault($attribute);
+            $cmd = "attribute {$name} minecraft:{$attribute} base set {$defaultValue}";
+            $this->commandRepository->setServer($server)->send($cmd);
+
+            Activity::event('server:player.attribute.reset')
+                ->property(['name' => $name, 'attribute' => $attribute])
+                ->log();
+
+            return new JsonResponse([
+                'success' => true,
+                'attribute' => $attribute,
+                'defaultValue' => $defaultValue,
+            ]);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Server is offline',
+            ], 400);
+        }
+    }
+
+    /**
+     * Get all available attributes with their metadata.
+     */
+    public function getAttributes(GetStatusRequest $request, Server $server): JsonResponse
+    {
+        $this->checkExtensionEnabled($server);
+
+        // Check if attributes are supported
+        $version = Cache::get("minecraftserver:version:{$server->id}");
+        if ($version && !$version['supportsAttributes']) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Attributes require Minecraft 1.16 or higher',
+            ], 400);
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'attributes' => $this->getAttributeList($version),
+        ]);
+    }
+
+    /**
+     * Sanitize and validate attribute name.
+     */
+    private function sanitizeAttributeName(string $attribute): ?string
+    {
+        // Remove minecraft: prefix if present
+        $attribute = str_replace('minecraft:', '', $attribute);
+
+        // Only allow alphanumeric and underscores
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $attribute)) {
+            return null;
+        }
+
+        // Validate against known player attributes (without generic. or player. prefixes)
+        // Note: flying_speed, follow_range, tempt_range, spawn_reinforcements are mob-only
+        $validAttributes = [
+            // Base attributes (1.16+)
+            'max_health', 'knockback_resistance',
+            'movement_speed', 'attack_damage',
+            'attack_knockback', 'attack_speed', 'armor',
+            'armor_toughness', 'luck',
+            // Player specific (1.20.5+)
+            'block_interaction_range', 'entity_interaction_range',
+            'block_break_speed', 'mining_efficiency', 'sneaking_speed',
+            'submerged_mining_speed', 'sweeping_damage_ratio',
+            // 1.21+ attributes
+            'scale', 'step_height', 'gravity',
+            'safe_fall_distance', 'fall_damage_multiplier',
+            'jump_strength', 'oxygen_bonus',
+            'burning_time', 'explosion_knockback_resistance',
+            'water_movement_efficiency',
+        ];
+
+        if (!in_array($attribute, $validAttributes)) {
+            return null;
+        }
+
+        return $attribute;
+    }
+
+    /**
+     * Get default value for an attribute.
+     */
+    private function getAttributeDefault(string $attribute): float
+    {
+        $defaults = [
+            'max_health' => 20.0,
+            'knockback_resistance' => 0.0,
+            'movement_speed' => 0.1,
+            'attack_damage' => 1.0,
+            'attack_knockback' => 0.0,
+            'attack_speed' => 4.0,
+            'armor' => 0.0,
+            'armor_toughness' => 0.0,
+            'luck' => 0.0,
+            'scale' => 1.0,
+            'step_height' => 0.6,
+            'gravity' => 0.08,
+            'safe_fall_distance' => 3.0,
+            'fall_damage_multiplier' => 1.0,
+            'jump_strength' => 0.42,
+            'oxygen_bonus' => 0.0,
+            'burning_time' => 1.0,
+            'explosion_knockback_resistance' => 0.0,
+            'water_movement_efficiency' => 0.0,
+            'block_interaction_range' => 4.5,
+            'entity_interaction_range' => 3.0,
+            'block_break_speed' => 1.0,
+            'mining_efficiency' => 0.0,
+            'sneaking_speed' => 0.3,
+            'submerged_mining_speed' => 0.2,
+            'sweeping_damage_ratio' => 0.0,
+        ];
+
+        return $defaults[$attribute] ?? 0.0;
+    }
+
+    /**
+     * Get list of all attributes with metadata.
+     */
+    private function getAttributeList(?array $version): array
+    {
+        $minor = $version['minor'] ?? 20;
+
+        $attributes = [
+            [
+                'category' => 'Health & Defense',
+                'attributes' => [
+                    ['id' => 'max_health', 'name' => 'Max Health', 'default' => 20.0, 'min' => 1, 'max' => 1024, 'description' => 'Maximum health points'],
+                    ['id' => 'armor', 'name' => 'Armor', 'default' => 0.0, 'min' => 0, 'max' => 30, 'description' => 'Armor points'],
+                    ['id' => 'armor_toughness', 'name' => 'Armor Toughness', 'default' => 0.0, 'min' => 0, 'max' => 20, 'description' => 'Reduces armor penetration'],
+                    ['id' => 'knockback_resistance', 'name' => 'Knockback Resistance', 'default' => 0.0, 'min' => 0, 'max' => 1, 'description' => 'Chance to resist knockback (0-1)'],
+                ],
+            ],
+            [
+                'category' => 'Combat',
+                'attributes' => [
+                    ['id' => 'attack_damage', 'name' => 'Attack Damage', 'default' => 1.0, 'min' => 0, 'max' => 2048, 'description' => 'Base melee damage'],
+                    ['id' => 'attack_speed', 'name' => 'Attack Speed', 'default' => 4.0, 'min' => 0, 'max' => 1024, 'description' => 'Attack cooldown recovery speed'],
+                    ['id' => 'attack_knockback', 'name' => 'Attack Knockback', 'default' => 0.0, 'min' => 0, 'max' => 5, 'description' => 'Knockback dealt on attack'],
+                ],
+            ],
+            [
+                'category' => 'Movement',
+                'attributes' => [
+                    ['id' => 'movement_speed', 'name' => 'Movement Speed', 'default' => 0.1, 'min' => 0, 'max' => 1024, 'description' => 'Walking/running speed'],
+                ],
+            ],
+            [
+                'category' => 'Miscellaneous',
+                'attributes' => [
+                    ['id' => 'luck', 'name' => 'Luck', 'default' => 0.0, 'min' => -1024, 'max' => 1024, 'description' => 'Affects loot table quality'],
+                ],
+            ],
+        ];
+
+        // Add 1.20.5+ attributes
+        if ($minor >= 20) {
+            $attributes[] = [
+                'category' => 'Player Reach (1.20.5+)',
+                'attributes' => [
+                    ['id' => 'block_interaction_range', 'name' => 'Block Interaction Range', 'default' => 4.5, 'min' => 0, 'max' => 64, 'description' => 'How far you can interact with blocks'],
+                    ['id' => 'entity_interaction_range', 'name' => 'Entity Interaction Range', 'default' => 3.0, 'min' => 0, 'max' => 64, 'description' => 'How far you can interact with entities'],
+                    ['id' => 'block_break_speed', 'name' => 'Block Break Speed', 'default' => 1.0, 'min' => 0, 'max' => 1024, 'description' => 'Mining speed multiplier'],
+                    ['id' => 'mining_efficiency', 'name' => 'Mining Efficiency', 'default' => 0.0, 'min' => 0, 'max' => 1024, 'description' => 'Additional mining speed'],
+                    ['id' => 'sneaking_speed', 'name' => 'Sneaking Speed', 'default' => 0.3, 'min' => 0, 'max' => 1, 'description' => 'Speed while sneaking (0-1)'],
+                    ['id' => 'submerged_mining_speed', 'name' => 'Underwater Mining Speed', 'default' => 0.2, 'min' => 0, 'max' => 20, 'description' => 'Mining speed multiplier underwater'],
+                ],
+            ];
+        }
+
+        // Add 1.21+ attributes
+        if ($minor >= 21) {
+            $attributes[] = [
+                'category' => 'Physics (1.21+)',
+                'attributes' => [
+                    ['id' => 'scale', 'name' => 'Scale', 'default' => 1.0, 'min' => 0.0625, 'max' => 16, 'description' => 'Entity size multiplier'],
+                    ['id' => 'step_height', 'name' => 'Step Height', 'default' => 0.6, 'min' => 0, 'max' => 10, 'description' => 'Max height that can be stepped up'],
+                    ['id' => 'gravity', 'name' => 'Gravity', 'default' => 0.08, 'min' => -1, 'max' => 1, 'description' => 'Gravity strength'],
+                    ['id' => 'safe_fall_distance', 'name' => 'Safe Fall Distance', 'default' => 3.0, 'min' => -1024, 'max' => 1024, 'description' => 'Distance before fall damage'],
+                    ['id' => 'fall_damage_multiplier', 'name' => 'Fall Damage Multiplier', 'default' => 1.0, 'min' => 0, 'max' => 100, 'description' => 'Fall damage multiplier'],
+                    ['id' => 'jump_strength', 'name' => 'Jump Strength', 'default' => 0.42, 'min' => 0, 'max' => 32, 'description' => 'Jump power'],
+                    ['id' => 'oxygen_bonus', 'name' => 'Oxygen Bonus', 'default' => 0.0, 'min' => 0, 'max' => 1024, 'description' => 'Extra breath time underwater'],
+                    ['id' => 'burning_time', 'name' => 'Burning Time', 'default' => 1.0, 'min' => 0, 'max' => 1024, 'description' => 'Fire damage duration multiplier'],
+                    ['id' => 'explosion_knockback_resistance', 'name' => 'Explosion Knockback Resistance', 'default' => 0.0, 'min' => 0, 'max' => 1, 'description' => 'Resistance to explosion knockback (0-1)'],
+                    ['id' => 'water_movement_efficiency', 'name' => 'Water Movement Efficiency', 'default' => 0.0, 'min' => 0, 'max' => 1, 'description' => 'Movement speed in water (0-1)'],
+                ],
+            ];
+        }
+
+        return $attributes;
     }
 }

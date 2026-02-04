@@ -49,7 +49,7 @@ export default () => {
         return (
             <PageContentBlock title={'Extensions'}>
                 <FlashMessageRender byKey={'server:extensions'} className={'mb-4'} />
-                <div className={'rounded-lg bg-neutral-800 p-8 text-center'}>
+                <div className={'rounded-lg bg-zinc-800 p-8 text-center'}>
                     <FontAwesomeIcon icon={faPuzzlePiece} className={'mb-4 text-4xl text-neutral-600'} />
                     <p className={'text-neutral-400'}>No extensions are available for this server.</p>
                     <p className={'mt-2 text-sm text-neutral-500'}>
@@ -73,7 +73,7 @@ export default () => {
                             key={extension.id}
                             to={extensionPath}
                             className={
-                                'group rounded-lg bg-neutral-800 p-6 transition-all duration-200 hover:bg-neutral-750 hover:shadow-lg'
+                                'group rounded-lg bg-zinc-800 p-6 transition-all duration-200 hover:bg-zinc-700 hover:shadow-lg'
                             }
                         >
                             <div className={'flex items-center justify-between'}>

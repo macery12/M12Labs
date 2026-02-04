@@ -145,8 +145,7 @@ export default ({ extension, onUpdate }: Props) => {
             <div
                 className={classNames(
                     'relative transform transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
-                    'rounded-lg p-6 shadow-lg',
-                    extension.enabled ? 'bg-neutral-700' : 'bg-neutral-800'
+                    'rounded-lg p-6 shadow-lg bg-zinc-800'
                 )}
                 style={{
                     borderTop: `4px solid ${extension.enabled ? primary : '#4a5568'}`,
@@ -190,13 +189,13 @@ export default ({ extension, onUpdate }: Props) => {
 
                 {/* Stats */}
                 <div className={'mb-4 grid grid-cols-2 gap-2 text-xs'}>
-                    <div className={'rounded bg-neutral-800/50 p-2'}>
+                    <div className={'rounded bg-zinc-800/50 p-2'}>
                         <span className={'text-neutral-400'}>Nests: </span>
                         <span className={'font-medium text-white'}>
                             {extension.allowedNests.length === 0 ? 'All' : extension.allowedNests.length}
                         </span>
                     </div>
-                    <div className={'rounded bg-neutral-800/50 p-2'}>
+                    <div className={'rounded bg-zinc-800/50 p-2'}>
                         <span className={'text-neutral-400'}>Eggs: </span>
                         <span className={'font-medium text-white'}>
                             {extension.allowedEggs.length === 0 ? 'All' : extension.allowedEggs.length}
@@ -264,7 +263,7 @@ export default ({ extension, onUpdate }: Props) => {
                                                 'flex cursor-pointer items-center rounded-lg border p-3 transition-colors h-full min-h-[60px]',
                                                 selectedNests.includes(nest.id)
                                                     ? 'border-opacity-50 bg-opacity-10'
-                                                    : 'border-neutral-600 bg-neutral-800'
+                                                    : 'border-neutral-600 bg-zinc-800'
                                             )}
                                             style={{
                                                 borderColor: selectedNests.includes(nest.id) ? primary : undefined,
@@ -347,7 +346,7 @@ export default ({ extension, onUpdate }: Props) => {
                                                 'flex cursor-pointer items-center rounded-lg border p-3 transition-colors',
                                                 selectedEggs.includes(egg.id)
                                                     ? 'border-opacity-50 bg-opacity-10'
-                                                    : 'border-neutral-600 bg-neutral-800'
+                                                    : 'border-neutral-600 bg-zinc-800'
                                             )}
                                             style={{
                                                 borderColor: selectedEggs.includes(egg.id) ? primary : undefined,

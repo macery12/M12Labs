@@ -14,8 +14,8 @@ return [
     'available' => [
         'minecraft_player_manager' => [
             'name' => 'Minecraft Player Manager',
-            'description' => 'Manage Minecraft Java Edition players directly from the panel. Includes whitelist management, banning, kicking, operator controls, and more.',
-            'version' => '1.0.0',
+            'description' => 'Manage Minecraft Java Edition players directly from the panel. Includes whitelist management, banning, kicking, operator controls, inventory viewing, attribute editing, and more.',
+            'version' => '1.0.1',
             'author' => 'Bimbab189',
             'icon' => 'users',
             'enabled' => env('EXTENSION_MINECRAFT_PLAYER_MANAGER_ENABLED', false),
