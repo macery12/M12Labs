@@ -89,15 +89,21 @@ class BuildModificationService
         // Handle the addition of allocations to this server. Only assign allocations that are not currently
         // assigned to a different server, and only allocations on the same node as the server.
         if (!empty($data['add_allocations'])) {
-            $query = $server->node->allocations()
+            // Get all matching allocations first to track the first ID for potential primary allocation reassignment
+            $allocations = $server->node->allocations()
                 ->whereIn('id', $data['add_allocations'])
-                ->whereNull('server_id');
+                ->whereNull('server_id')
+                ->get();
 
-            // Keep track of all the allocations we're just now adding so that we can use the first
-            // one to reset the default allocation to.
-            $freshlyAllocated = $query->first()->id ?? null;
+            // Keep track of the first allocation we're adding so that we can use it
+            // to reset the default allocation if needed.
+            $freshlyAllocated = $allocations->first()->id ?? null;
 
-            $query->update(['server_id' => $server->id, 'notes' => null]);
+            // Update all matched allocations to assign them to this server
+            $server->node->allocations()
+                ->whereIn('id', $data['add_allocations'])
+                ->whereNull('server_id')
+                ->update(['server_id' => $server->id, 'notes' => null]);
         }
 
         if (!empty($data['remove_allocations'])) {
