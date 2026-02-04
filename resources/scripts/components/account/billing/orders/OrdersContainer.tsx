@@ -18,10 +18,11 @@ import CopyOnClick from '@/elements/CopyOnClick';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useGetOrders } from '@/api/routes/account/billing/orders';
 import { Context as OrderContext } from '@/api/routes/account/billing/orders/index';
-import { OrderFilters } from '@/api/routes/account/billing/orders/types';
+import { OrderFilters, PaymentProcessor } from '@/api/routes/account/billing/orders/types';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
 import OrderPaymentDetails from '@/components/elements/OrderPaymentDetails';
+import PaymentProcessorFilter from '@/components/elements/PaymentProcessorFilter';
 import tw from 'twin.macro';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -68,6 +69,7 @@ function OrderTable() {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(OrderContext);
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+    const [paymentProcessor, setPaymentProcessor] = useState<PaymentProcessor | null>(null);
 
     const toggleRow = (orderId: number) => {
         setExpandedRows(prev => {
@@ -84,12 +86,20 @@ function OrderTable() {
     const onSearch = (query: string): Promise<void> => {
         return new Promise(resolve => {
             if (query.length < 2) {
-                setFilters(null);
+                setFilters(paymentProcessor ? { payment_processor: paymentProcessor } : null);
             } else {
-                setFilters({ name: query });
+                setFilters({ 
+                    name: query,
+                    ...(paymentProcessor ? { payment_processor: paymentProcessor } : {})
+                });
             }
             return resolve();
         });
+    };
+
+    const handleProcessorChange = (processor: PaymentProcessor | null) => {
+        setPaymentProcessor(processor);
+        setFilters(processor ? { payment_processor: processor } : null);
     };
 
     useEffect(() => {
@@ -112,6 +122,12 @@ function OrderTable() {
             </div>
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>
+                    <div css={tw`mb-4`}>
+                        <PaymentProcessorFilter 
+                            value={paymentProcessor} 
+                            onChange={handleProcessorChange}
+                        />
+                    </div>
                     <Pagination data={orders} onPageSelect={setPage}>
                         <div className={`overflow-x-auto`}>
                             <table className={`w-full table-auto`}>

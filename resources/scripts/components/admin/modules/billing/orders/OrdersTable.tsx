@@ -17,9 +17,10 @@ import { useContext, useEffect, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { formatDistanceToNowStrict } from 'date-fns';
 import Spinner from '@/elements/Spinner';
-import { OrderFilters } from '@/api/routes/admin/billing/types';
+import { OrderFilters, PaymentProcessor } from '@/api/routes/admin/billing/types';
 import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
 import OrderPaymentDetails from '@/components/elements/OrderPaymentDetails';
+import PaymentProcessorFilter from '@/components/elements/PaymentProcessorFilter';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -71,6 +72,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { setSort, sort, setPage, sortDirection, setFilters } = useContext(OrderContext);
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+    const [paymentProcessor, setPaymentProcessor] = useState<PaymentProcessor | null>(null);
 
     const toggleRow = (orderId: number) => {
         setExpandedRows(prev => {
@@ -87,12 +89,22 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     const onSearch = (query: string): Promise<void> => {
         return new Promise(resolve => {
             if (query.length < 2) {
-                setFilters(null);
+                setFilters(paymentProcessor ? { payment_processor: paymentProcessor } : null);
             } else {
-                if (!minimal) setFilters({ description: query });
+                if (!minimal) {
+                    setFilters({ 
+                        description: query,
+                        ...(paymentProcessor ? { payment_processor: paymentProcessor } : {})
+                    });
+                }
             }
             return resolve();
         });
+    };
+
+    const handleProcessorChange = (processor: PaymentProcessor | null) => {
+        setPaymentProcessor(processor);
+        setFilters(processor ? { payment_processor: processor } : null);
     };
 
     useEffect(() => {
@@ -108,6 +120,14 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
         <>
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>
+                    {!minimal && (
+                        <div css={tw`mb-4`}>
+                            <PaymentProcessorFilter 
+                                value={paymentProcessor} 
+                                onChange={handleProcessorChange}
+                            />
+                        </div>
+                    )}
                     <Pagination data={orders} onPageSelect={setPage}>
                         <div css={tw`overflow-x-auto`}>
                             <table css={tw`w-full table-auto`}>
