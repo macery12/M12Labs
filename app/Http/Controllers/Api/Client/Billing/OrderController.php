@@ -5,6 +5,8 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
 use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Everest\Transformers\Api\Client\OrderTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
@@ -26,39 +28,32 @@ class OrderController extends ClientApiController
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
         }
 
-        $query = Order::query()->where('user_id', $request->user()->id)->with('server');
-        
-        // Handle search across multiple fields
-        if ($request->has('filter.search')) {
-            $search = $request->input('filter.search');
-            $query->where(function($q) use ($search) {
-                $q->where('id', 'LIKE', "%{$search}%")
-                  ->orWhere('name', 'LIKE', "%{$search}%")
-                  ->orWhere('description', 'LIKE', "%{$search}%")
-                  ->orWhereHas('server', function($q) use ($search) {
-                      $q->where('name', 'LIKE', "%{$search}%");
-                  });
-            });
-        }
-        
-        // Handle amount range
-        if ($request->has('filter.min_amount')) {
-            $query->where('total', '>=', $request->input('filter.min_amount'));
-        }
-        if ($request->has('filter.max_amount')) {
-            $query->where('total', '<=', $request->input('filter.max_amount'));
-        }
-        
-        // Handle date range
-        if ($request->has('filter.start_date')) {
-            $query->where('created_at', '>=', $request->input('filter.start_date'));
-        }
-        if ($request->has('filter.end_date')) {
-            $query->where('created_at', '<=', $request->input('filter.end_date'));
-        }
-
-        $orders = QueryBuilder::for($query)
-            ->allowedFilters(['id', 'name', 'payment_processor', 'status', 'type'])
+        $orders = QueryBuilder::for(Order::query()->where('user_id', $request->user()->id)->with('server'))
+            ->allowedFilters([
+                'id', 'name', 'payment_processor', 'status', 'type',
+                AllowedFilter::callback('search', function (Builder $query, $value) {
+                    $query->where(function ($q) use ($value) {
+                        $q->where('id', 'LIKE', "%{$value}%")
+                          ->orWhere('name', 'LIKE', "%{$value}%")
+                          ->orWhere('description', 'LIKE', "%{$value}%")
+                          ->orWhereHas('server', function ($q) use ($value) {
+                              $q->where('name', 'LIKE', "%{$value}%");
+                          });
+                    });
+                }),
+                AllowedFilter::callback('min_amount', function (Builder $query, $value) {
+                    $query->where('total', '>=', $value);
+                }),
+                AllowedFilter::callback('max_amount', function (Builder $query, $value) {
+                    $query->where('total', '<=', $value);
+                }),
+                AllowedFilter::callback('start_date', function (Builder $query, $value) {
+                    $query->where('created_at', '>=', $value);
+                }),
+                AllowedFilter::callback('end_date', function (Builder $query, $value) {
+                    $query->where('created_at', '<=', $value);
+                }),
+            ])
             ->allowedSorts(['id', 'name', 'total', 'is_renewal', 'created_at', 'threat_index'])
             ->paginate($perPage);
 
