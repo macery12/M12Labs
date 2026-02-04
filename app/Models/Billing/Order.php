@@ -115,4 +115,12 @@ class Order extends Model
     {
         return $this->belongsTo(Coupon::class);
     }
+
+    /**
+     * Get the server associated with this order.
+     */
+    public function server()
+    {
+        return $this->belongsTo(\Everest\Models\Server::class);
+    }
 }
