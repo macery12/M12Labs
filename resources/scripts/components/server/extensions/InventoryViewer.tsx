@@ -28,7 +28,61 @@ interface ItemTooltipProps {
     position: { x: number; y: number };
 }
 
+// Enchantments that only have one level (don't show roman numeral)
+const SINGLE_LEVEL_ENCHANTS = ['Mending', 'Aqua Affinity', 'Curse of Binding', 'Curse of Vanishing', 'Multishot', 'Silk Touch', 'Flame', 'Infinity', 'Channeling'];
+
+// Format enchantment display - hide roman numeral for single-level enchants
+const formatEnchant = (name: string, levelRoman: string): string => {
+    if (SINGLE_LEVEL_ENCHANTS.includes(name)) {
+        return name;
+    }
+    return `${name} ${levelRoman}`;
+};
+
 const ItemTooltip = ({ item, position }: ItemTooltipProps) => {
+    const isContainer = item.contents && item.contents.length > 0;
+    const isEnchantedBook = item.id === 'minecraft:enchanted_book' && item.storedEnchantments && item.storedEnchantments.length > 0;
+    
+    // Helper to format an item's display name with enchants for container contents
+    const formatContainerItem = (contentItem: InventoryItem): string => {
+        // For enchanted books, show the stored enchantment instead of "Enchanted Book"
+        if (contentItem.id === 'minecraft:enchanted_book' && contentItem.storedEnchantments && contentItem.storedEnchantments.length > 0) {
+            return contentItem.storedEnchantments.map(e => formatEnchant(e.name, e.levelRoman)).join(', ');
+        }
+        
+        // For other items with enchantments, show item name + enchants
+        if (contentItem.enchantments && contentItem.enchantments.length > 0) {
+            const enchantStr = contentItem.enchantments.map(e => formatEnchant(e.name, e.levelRoman)).join(', ');
+            return `${contentItem.customName || contentItem.name} (${enchantStr})`;
+        }
+        
+        return contentItem.customName || contentItem.name;
+    };
+    
+    // Group container items by their formatted display name
+    const groupContainerItems = (contents: InventoryItem[]): { name: string; count: number; isEnchantedBook: boolean }[] => {
+        const groups: Record<string, { count: number; isEnchantedBook: boolean }> = {};
+        
+        contents.forEach(contentItem => {
+            const displayName = formatContainerItem(contentItem);
+            const isBook = contentItem.id === 'minecraft:enchanted_book';
+            
+            if (groups[displayName]) {
+                groups[displayName].count += contentItem.count;
+            } else {
+                groups[displayName] = { count: contentItem.count, isEnchantedBook: isBook };
+            }
+        });
+        
+        return Object.entries(groups).map(([name, data]) => ({
+            name,
+            count: data.count,
+            isEnchantedBook: data.isEnchantedBook,
+        }));
+    };
+    
+    const groupedContents = isContainer ? groupContainerItems(item.contents) : [];
+    
     return (
         <div
             className="pointer-events-none fixed z-[100] max-w-xs rounded-lg bg-neutral-900 p-3 shadow-xl border border-neutral-700"
@@ -47,11 +101,22 @@ const ItemTooltip = ({ item, position }: ItemTooltipProps) => {
             <div className="text-xs text-neutral-500">{item.id}</div>
 
             {/* Enchantments */}
-            {item.enchantments.length > 0 && (
+            {item.enchantments && item.enchantments.length > 0 && (
                 <div className="mt-2 space-y-0.5">
                     {item.enchantments.map((ench, idx) => (
                         <div key={idx} className="text-sm text-purple-400">
-                            {ench.name} {ench.levelRoman}
+                            {formatEnchant(ench.name, ench.levelRoman)}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Stored Enchantments (for enchanted books) */}
+            {isEnchantedBook && (
+                <div className="mt-2 space-y-0.5">
+                    {item.storedEnchantments.map((ench, idx) => (
+                        <div key={idx} className="text-sm text-purple-400">
+                            {formatEnchant(ench.name, ench.levelRoman)}
                         </div>
                     ))}
                 </div>
@@ -89,6 +154,32 @@ const ItemTooltip = ({ item, position }: ItemTooltipProps) => {
                     ))}
                 </div>
             )}
+
+            {/* Container Contents (Bundles, Shulker Boxes) */}
+            {isContainer && (
+                <div className="mt-2 border-t border-neutral-700 pt-2">
+                    <div className="text-xs text-neutral-400 font-medium mb-1">
+                        Contains {item.contents.length} item{item.contents.length !== 1 ? 's' : ''}:
+                    </div>
+                    <div className="space-y-0.5 max-h-40 overflow-y-auto">
+                        {groupedContents.slice(0, 15).map((groupedItem, idx) => (
+                            <div key={idx} className="flex items-center text-xs">
+                                <span className={groupedItem.isEnchantedBook ? 'text-purple-400' : 'text-neutral-300'}>
+                                    {groupedItem.name}
+                                </span>
+                                {groupedItem.count > 1 && (
+                                    <span className="ml-1 text-neutral-500">x{groupedItem.count}</span>
+                                )}
+                            </div>
+                        ))}
+                        {groupedContents.length > 15 && (
+                            <div className="text-xs text-neutral-500 italic">
+                                ...and {groupedContents.length - 15} more types
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -103,23 +194,28 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
     const [hovered, setHovered] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const [imgError, setImgError] = useState(false);
+    const [fallbackLevel, setFallbackLevel] = useState(0);
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     const handleMouseMove = (e: React.MouseEvent) => {
         setTooltipPos({ x: e.clientX, y: e.clientY });
     };
 
-    const getItemImageUrl = (item: InventoryItem) => {
+    const getItemImageUrl = (item: InventoryItem, level: number = 0) => {
         // Extract just the item name from the id (minecraft:diamond_sword -> diamond_sword)
         const itemId = item.id.replace('minecraft:', '').toLowerCase();
-        // Primary source: GitHub-hosted Minecraft assets (item textures)
-        return `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/item/${itemId}.png`;
-    };
-
-    const getFallbackImageUrl = (item: InventoryItem) => {
-        const itemId = item.id.replace('minecraft:', '').toLowerCase();
-        // Fallback: Try block textures (for blocks like wool, stone, etc.)
-        return `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/block/${itemId}.png`;
+        
+        // Multiple fallback sources for textures
+        const sources = [
+            // Primary: mc.nerothe.com (has most items including spawn eggs)
+            `https://mc.nerothe.com/img/1.21.11/minecraft_${itemId}.png`,
+            // Fallback 1: minecraft-assets item textures
+            `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/item/${itemId}.png`,
+            // Fallback 2: Block textures (for blocks like stone, dirt, etc.)
+            `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/block/${itemId}.png`,
+        ];
+        
+        return sources[Math.min(level, sources.length - 1)];
     };
 
     const slotClasses = {
@@ -144,15 +240,14 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
                     <>
                         {!imgError ? (
                             <img
-                                src={getItemImageUrl(item)}
+                                key={`${item.id}-${fallbackLevel}`}
+                                src={getItemImageUrl(item, fallbackLevel)}
                                 alt={item.name}
                                 className="w-8 h-8 object-contain pixelated"
-                                onError={(e) => {
-                                    // Try fallback URL
-                                    const target = e.target as HTMLImageElement;
-                                    if (!target.dataset.fallback) {
-                                        target.dataset.fallback = 'true';
-                                        target.src = getFallbackImageUrl(item);
+                                onError={() => {
+                                    // Try next fallback source (0, 1, 2 = 3 sources)
+                                    if (fallbackLevel < 2) {
+                                        setFallbackLevel(fallbackLevel + 1);
                                     } else {
                                         setImgError(true);
                                     }

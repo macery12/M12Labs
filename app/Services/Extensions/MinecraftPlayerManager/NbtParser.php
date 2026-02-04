@@ -263,22 +263,95 @@ class NbtParser
             'boots' => null,
         ];
 
-        // In newer versions, armor is in Inventory with slots 100-103
+        // Method 1: Check equipment field (Minecraft 1.20.5+)
+        // Equipment format: {head: {}, chest: {}, legs: {}, feet: {}, mainhand: {}, offhand: {}}
+        // Or as a list: [{slot: "head", item: {}}, ...]
+        if (isset($data['equipment']) && is_array($data['equipment'])) {
+            $equipment = $data['equipment'];
+            
+            // Check for named keys format (1.21+)
+            if (isset($equipment['head']) && is_array($equipment['head']) && !empty($equipment['head'])) {
+                $armor['helmet'] = self::parseItem($equipment['head']);
+            }
+            if (isset($equipment['chest']) && is_array($equipment['chest']) && !empty($equipment['chest'])) {
+                $armor['chestplate'] = self::parseItem($equipment['chest']);
+            }
+            if (isset($equipment['legs']) && is_array($equipment['legs']) && !empty($equipment['legs'])) {
+                $armor['leggings'] = self::parseItem($equipment['legs']);
+            }
+            if (isset($equipment['feet']) && is_array($equipment['feet']) && !empty($equipment['feet'])) {
+                $armor['boots'] = self::parseItem($equipment['feet']);
+            }
+            
+            // Check for list format with slot names
+            if (isset($equipment[0])) {
+                foreach ($equipment as $slot) {
+                    if (!is_array($slot)) continue;
+                    $slotName = $slot['slot'] ?? '';
+                    $item = $slot['item'] ?? $slot;
+                    
+                    if (empty($item) || !isset($item['id'])) continue;
+                    
+                    switch ($slotName) {
+                        case 'head':
+                        case 'minecraft:head':
+                            $armor['helmet'] = self::parseItem($item);
+                            break;
+                        case 'chest':
+                        case 'minecraft:chest':
+                            $armor['chestplate'] = self::parseItem($item);
+                            break;
+                        case 'legs':
+                        case 'minecraft:legs':
+                            $armor['leggings'] = self::parseItem($item);
+                            break;
+                        case 'feet':
+                        case 'minecraft:feet':
+                            $armor['boots'] = self::parseItem($item);
+                            break;
+                    }
+                }
+            }
+        }
+
+        // Method 2: Fallback to Inventory slots 100-103 (pre-1.20.5)
         if (isset($data['Inventory']) && is_array($data['Inventory'])) {
             foreach ($data['Inventory'] as $item) {
                 $slot = $item['Slot'] ?? -1;
+                
+                // Handle if slot is wrapped in an array or value key
+                if (is_array($slot)) {
+                    $slot = $slot['value'] ?? $slot[0] ?? -1;
+                }
+                
+                // Convert to int
+                $slot = (int) $slot;
+                
+                // Handle negative values (signed byte interpretation)
+                if ($slot < 0) {
+                    $slot = $slot + 256;
+                }
+                
                 switch ($slot) {
                     case 100:
-                        $armor['boots'] = self::parseItem($item);
+                        if ($armor['boots'] === null) {
+                            $armor['boots'] = self::parseItem($item);
+                        }
                         break;
                     case 101:
-                        $armor['leggings'] = self::parseItem($item);
+                        if ($armor['leggings'] === null) {
+                            $armor['leggings'] = self::parseItem($item);
+                        }
                         break;
                     case 102:
-                        $armor['chestplate'] = self::parseItem($item);
+                        if ($armor['chestplate'] === null) {
+                            $armor['chestplate'] = self::parseItem($item);
+                        }
                         break;
                     case 103:
-                        $armor['helmet'] = self::parseItem($item);
+                        if ($armor['helmet'] === null) {
+                            $armor['helmet'] = self::parseItem($item);
+                        }
                         break;
                 }
             }
@@ -357,6 +430,14 @@ class NbtParser
     }
 
     /**
+     * Parse a single item from NBT (public wrapper).
+     */
+    public static function parseItemPublic(array $item): array
+    {
+        return self::parseItem($item);
+    }
+
+    /**
      * Parse a single item from NBT.
      */
     private static function parseItem(array $item): array
@@ -379,9 +460,11 @@ class NbtParser
             'count' => $item['Count'] ?? $item['count'] ?? 1,
             'damage' => $item['Damage'] ?? 0,
             'enchantments' => [],
+            'storedEnchantments' => [],
             'customName' => null,
             'lore' => [],
             'durability' => null,
+            'contents' => [],
         ];
 
         // Parse tag data (contains enchantments, custom name, etc.)
@@ -422,29 +505,127 @@ class NbtParser
             }
 
             // Enchantments (multiple formats for different versions)
-            $enchants = $tag['Enchantments'] ?? $tag['ench'] ?? $tag['StoredEnchantments'] ?? 
-                        $tag['minecraft:enchantments']['levels'] ?? [];
+            // Pre-1.20.5: tag.Enchantments or tag.ench (array of {id, lvl})
+            // 1.20.5+: tag.minecraft:enchantments (object {minecraft:enchant_id: level})
+            $enchants = $tag['Enchantments'] ?? $tag['ench'] ?? [];
+            
+            // Handle 1.20.5+ format: minecraft:enchantments is an object directly
+            if (empty($enchants) && isset($tag['minecraft:enchantments'])) {
+                $enchantsData = $tag['minecraft:enchantments'];
+                // It could be {levels: {...}} or directly {...}
+                if (isset($enchantsData['levels']) && is_array($enchantsData['levels'])) {
+                    $enchants = $enchantsData['levels'];
+                } elseif (is_array($enchantsData)) {
+                    $enchants = $enchantsData;
+                }
+            }
             
             if (is_array($enchants)) {
                 foreach ($enchants as $key => $enchant) {
                     if (is_array($enchant)) {
+                        // Old format: {id: "minecraft:mending", lvl: 1}
                         $enchId = $enchant['id'] ?? '';
                         $level = $enchant['lvl'] ?? 1;
                     } else {
                         // 1.20.5+ format: key is enchant id, value is level
                         $enchId = $key;
-                        $level = $enchant;
+                        $level = (int) $enchant;
                     }
                     
                     // Remove minecraft: prefix
                     $enchId = str_replace('minecraft:', '', $enchId);
                     
-                    $parsed['enchantments'][] = [
-                        'id' => $enchId,
-                        'name' => self::getEnchantmentName($enchId),
-                        'level' => $level,
-                        'levelRoman' => self::toRoman($level),
-                    ];
+                    if (!empty($enchId)) {
+                        $parsed['enchantments'][] = [
+                            'id' => $enchId,
+                            'name' => self::getEnchantmentName($enchId),
+                            'level' => $level,
+                            'levelRoman' => self::toRoman($level),
+                        ];
+                    }
+                }
+            }
+
+            // Stored Enchantments (for enchanted books)
+            // Pre-1.20.5: tag.StoredEnchantments (array of {id, lvl})
+            // 1.20.5+: tag.minecraft:stored_enchantments (object {minecraft:enchant_id: level})
+            $storedEnchants = $tag['StoredEnchantments'] ?? [];
+            
+            // Handle 1.20.5+ format
+            if (empty($storedEnchants) && isset($tag['minecraft:stored_enchantments'])) {
+                $storedData = $tag['minecraft:stored_enchantments'];
+                if (isset($storedData['levels']) && is_array($storedData['levels'])) {
+                    $storedEnchants = $storedData['levels'];
+                } elseif (is_array($storedData)) {
+                    $storedEnchants = $storedData;
+                }
+            }
+            
+            if (is_array($storedEnchants)) {
+                foreach ($storedEnchants as $key => $enchant) {
+                    if (is_array($enchant)) {
+                        $enchId = $enchant['id'] ?? '';
+                        $level = $enchant['lvl'] ?? 1;
+                    } else {
+                        // 1.20.5+ format
+                        $enchId = $key;
+                        $level = (int) $enchant;
+                    }
+                    
+                    $enchId = str_replace('minecraft:', '', $enchId);
+                    
+                    if (!empty($enchId)) {
+                        $parsed['storedEnchantments'][] = [
+                            'id' => $enchId,
+                            'name' => self::getEnchantmentName($enchId),
+                            'level' => $level,
+                            'levelRoman' => self::toRoman($level),
+                        ];
+                    }
+                }
+            }
+
+            // Bundle contents (1.17+)
+            $bundleContents = $tag['Items'] ?? $tag['minecraft:bundle_contents'] ?? [];
+            if (is_array($bundleContents) && !empty($bundleContents)) {
+                foreach ($bundleContents as $contentItem) {
+                    // 1.20.5+ format: each item might have 'item' wrapper
+                    if (isset($contentItem['item'])) {
+                        $parsed['contents'][] = self::parseItem($contentItem['item']);
+                    } else {
+                        $parsed['contents'][] = self::parseItem($contentItem);
+                    }
+                }
+            }
+
+            // Shulker box / Block entity contents
+            // Pre-1.20.5: tag.BlockEntityTag.Items
+            // 1.20.5+: components.minecraft:container (array of {slot, item})
+            $blockEntityTag = $tag['BlockEntityTag'] ?? null;
+            $containerComponent = $tag['minecraft:container'] ?? null;
+            
+            // Handle pre-1.20.5 format (BlockEntityTag.Items)
+            if ($blockEntityTag !== null && is_array($blockEntityTag)) {
+                $containerItems = $blockEntityTag['Items'] ?? [];
+                if (is_array($containerItems) && !empty($containerItems)) {
+                    foreach ($containerItems as $contentItem) {
+                        if (isset($contentItem['id'])) {
+                            $parsed['contents'][] = self::parseItem($contentItem);
+                        }
+                    }
+                }
+            }
+            
+            // Handle 1.20.5+ format (minecraft:container array of {slot, item})
+            if ($containerComponent !== null && is_array($containerComponent)) {
+                foreach ($containerComponent as $slotData) {
+                    // Format: [{slot: 0, item: {id: "minecraft:...", ...}}, ...]
+                    if (isset($slotData['item'])) {
+                        $parsed['contents'][] = self::parseItem($slotData['item']);
+                    } elseif (isset($slotData['id'])) {
+                        // Direct item format
+                        $parsed['contents'][] = self::parseItem($slotData);
+                    }
                 }
             }
 

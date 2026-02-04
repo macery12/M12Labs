@@ -1160,18 +1160,32 @@ class PlayerManagerController extends ClientApiController
             $location = NbtParser::extractLocation($nbt);
             $stats = NbtParser::extractStats($nbt);
 
+            // Debug: collect all slot numbers for troubleshooting
+            $allSlots = array_map(fn($item) => ['slot' => $item['slot'], 'id' => $item['id']], $inventory);
+            
+            // Debug: Get raw NBT keys to understand structure
+            $nbtData = $nbt['value'] ?? $nbt;
+            $nbtKeys = is_array($nbtData) ? array_keys($nbtData) : [];
+            
+            // Debug: Get equipment structure
+            $equipmentDebug = isset($nbtData['equipment']) ? $nbtData['equipment'] : null;
+
             // Sort inventory by slot
             usort($inventory, fn($a, $b) => $a['slot'] <=> $b['slot']);
 
-            // Filter out armor slots from main inventory (100-103)
-            $mainInventory = array_values(array_filter($inventory, fn($item) => $item['slot'] < 100));
+            // Filter out armor slots from main inventory (100-103) and offhand (-106, 45)
+            $mainInventory = array_values(array_filter($inventory, fn($item) => $item['slot'] >= 0 && $item['slot'] < 100));
             
-            // Offhand is slot -106 or 45
+            // Offhand: check equipment field first (1.20.5+), then inventory slot
             $offhand = null;
-            foreach ($inventory as $item) {
-                if ($item['slot'] === -106 || $item['slot'] === 45) {
-                    $offhand = $item;
-                    break;
+            if (isset($nbtData['equipment']['offhand']) && is_array($nbtData['equipment']['offhand']) && !empty($nbtData['equipment']['offhand'])) {
+                $offhand = NbtParser::parseItemPublic($nbtData['equipment']['offhand']);
+            } else {
+                foreach ($inventory as $item) {
+                    if ($item['slot'] === -106 || $item['slot'] === 45) {
+                        $offhand = $item;
+                        break;
+                    }
                 }
             }
 
@@ -1187,6 +1201,11 @@ class PlayerManagerController extends ClientApiController
                 'enderChest' => $enderChest,
                 'location' => $location,
                 'stats' => $stats,
+                'debug' => [
+                    'allSlots' => $allSlots,
+                    'nbtKeys' => $nbtKeys,
+                    'equipment' => $equipmentDebug,
+                ],
             ]);
         } catch (\Throwable $e) {
             return new JsonResponse([

@@ -65,9 +65,10 @@ interface PlayerActionsModalProps {
     supportsAttributes: boolean;
     onViewInventory: () => void;
     onEditAttributes: () => void;
+    isOperator: boolean;
 }
 
-const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction, supportsAttributes, onViewInventory, onEditAttributes }: PlayerActionsModalProps) => {
+const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction, supportsAttributes, onViewInventory, onEditAttributes, isOperator }: PlayerActionsModalProps) => {
     const [loading, setLoading] = useState(false);
     const [activeAction, setActiveAction] = useState<string | null>(null);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
@@ -148,12 +149,15 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                     Kill Player
                 </Button>
                 <Button
-                    onClick={() => handleAction(() => opPlayer(serverUuid, player), 'Op')}
+                    onClick={() => handleAction(
+                        isOperator ? () => deopPlayer(serverUuid, player) : () => opPlayer(serverUuid, player),
+                        isOperator ? 'Deop' : 'Op'
+                    )}
                     className={'w-full justify-center'}
                     disabled={loading}
                 >
                     <FontAwesomeIcon icon={faCrown} className={'mr-2'} />
-                    Make Operator
+                    {isOperator ? 'Remove Operator' : 'Make Operator'}
                 </Button>
                 <Button
                     onClick={() => handleAction(() => banPlayer(serverUuid, player), 'Ban')}
@@ -637,7 +641,7 @@ export default () => {
                         onRemove={name => handleRemoveFromList('op', name)}
                         onPlayerClick={name => setSelectedPlayer(name)}
                         loading={actionLoading}
-                        badge={player => (player.level ? `Level ${player.level}` : null)}
+                        badge={() => 'op'}
                     />
                 </div>
 
@@ -723,6 +727,7 @@ export default () => {
                     supportsAttributes={serverVersion?.supportsAttributes || false}
                     onViewInventory={() => setInventoryPlayer(selectedPlayer)}
                     onEditAttributes={() => setAttributePlayer(selectedPlayer)}
+                    isOperator={status?.operators.some(op => op.name.toLowerCase() === selectedPlayer.toLowerCase()) || false}
                 />
             )}
 

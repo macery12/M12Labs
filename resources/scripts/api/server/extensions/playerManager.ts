@@ -136,9 +136,11 @@ export interface InventoryItem {
     count: number;
     damage: number;
     enchantments: ItemEnchantment[];
+    storedEnchantments: ItemEnchantment[];
     customName: string | null;
     lore: string[];
     durability: ItemDurability | null;
+    contents: InventoryItem[];
 }
 
 export interface PlayerArmor {
@@ -183,6 +185,10 @@ export interface PlayerDataResponse {
     location?: PlayerLocation;
     stats?: PlayerStats;
     error?: string;
+    debug?: {
+        allSlots: { slot: number; id: string }[];
+        nbtKeys?: string[];
+    };
 }
 
 export const getPlayerData = async (uuid: string, player: string): Promise<PlayerDataResponse> => {
