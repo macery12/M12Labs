@@ -69,7 +69,9 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
                         <div css={tw`flex items-start justify-between`}>
                             <div css={tw`flex-1`}>
                                 <div css={tw`flex items-center gap-3 mb-2`}>
-                                    <h2 css={tw`text-2xl font-bold text-white`}>Order #{order.id}</h2>
+                                    <h2 css={tw`text-2xl font-bold text-white`}>
+                                        {order.server_name || order.name} | #{order.id}
+                                    </h2>
                                     {'threat_index' in order && order.threat_index >= 0 && (
                                         <Pill size="small" type={getThreatIndexColor()}>
                                             <FontAwesomeIcon icon={faExclamationTriangle} className="mr-1" />

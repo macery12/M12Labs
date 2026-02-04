@@ -63,6 +63,13 @@ export interface OrderFilters {
     description?: string;
     total?: number;
     payment_processor?: PaymentProcessor;
+    status?: OrderStatus;
+    type?: string;
+    min_amount?: number;
+    max_amount?: number;
+    start_date?: string;
+    end_date?: string;
+    search?: string;
 }
 
 export interface BillingExceptionFilters {

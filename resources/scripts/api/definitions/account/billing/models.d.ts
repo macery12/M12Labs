@@ -22,6 +22,9 @@ interface Order extends Model {
     paypal_amount?: number;
     paypal_currency?: string;
     paypal_captured_at?: Date;
+    server_id?: number;
+    server_uuid?: string;
+    server_name?: string;
     created_at: Date;
     updated_at: Date;
 }

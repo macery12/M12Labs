@@ -182,7 +182,9 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                 )}
                                                 <td className={'px-6 py-4'}>
                                                     <div css={tw`flex items-center gap-2`}>
-                                                        <span css={tw`text-white font-medium`}>{order.name}</span>
+                                                        <span css={tw`text-white font-medium`}>
+                                                            {order.server_name || order.name}
+                                                        </span>
                                                         {order.type === 'ren' && (
                                                             <Pill size="small" type="info">REN</Pill>
                                                         )}

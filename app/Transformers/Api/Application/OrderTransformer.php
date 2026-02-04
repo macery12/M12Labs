@@ -20,6 +20,8 @@ class OrderTransformer extends Transformer
      */
     public function transform(Order $model): array
     {
+        $server = $model->server;
+        
         return [
             'id' => $model->id,
             'name' => $model->name,
@@ -41,6 +43,9 @@ class OrderTransformer extends Transformer
             'paypal_currency' => $model->paypal_currency,
             'paypal_captured_at' => $model->paypal_captured_at ? $model->paypal_captured_at->toIso8601String() : null,
             'threat_index' => $model->threat_index,
+            'server_id' => $model->server_id,
+            'server_uuid' => $server ? $server->uuid : null,
+            'server_name' => $server ? $server->name : null,
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,
         ];

@@ -6,6 +6,13 @@ export interface OrderFilters {
     id?: number;
     name?: string;
     payment_processor?: PaymentProcessor;
+    status?: OrderStatus;
+    type?: OrderType;
+    min_amount?: number;
+    max_amount?: number;
+    start_date?: string;
+    end_date?: string;
+    search?: string;
 }
 
 export interface UpdateStripeIntent {

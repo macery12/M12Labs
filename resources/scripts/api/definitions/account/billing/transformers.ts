@@ -23,6 +23,9 @@ export default class Transformers {
         paypal_amount: data.paypal_amount,
         paypal_currency: data.paypal_currency,
         paypal_captured_at: data.paypal_captured_at ? new Date(data.paypal_captured_at) : undefined,
+        server_id: data.server_id,
+        server_uuid: data.server_uuid,
+        server_name: data.server_name,
         created_at: new Date(data.created_at),
         updated_at: new Date(data.updated_at),
     });

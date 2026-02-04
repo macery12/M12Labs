@@ -26,9 +26,39 @@ class OrderController extends ClientApiController
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
         }
 
-        $orders = QueryBuilder::for(Order::query())
-            ->where('user_id', $request->user()->id)
-            ->allowedFilters(['id', 'name', 'payment_processor'])
+        $query = Order::query()->where('user_id', $request->user()->id)->with('server');
+        
+        // Handle search across multiple fields
+        if ($request->has('filter.search')) {
+            $search = $request->input('filter.search');
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'LIKE', "%{$search}%")
+                  ->orWhere('name', 'LIKE', "%{$search}%")
+                  ->orWhere('description', 'LIKE', "%{$search}%")
+                  ->orWhereHas('server', function($q) use ($search) {
+                      $q->where('name', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        
+        // Handle amount range
+        if ($request->has('filter.min_amount')) {
+            $query->where('total', '>=', $request->input('filter.min_amount'));
+        }
+        if ($request->has('filter.max_amount')) {
+            $query->where('total', '<=', $request->input('filter.max_amount'));
+        }
+        
+        // Handle date range
+        if ($request->has('filter.start_date')) {
+            $query->where('created_at', '>=', $request->input('filter.start_date'));
+        }
+        if ($request->has('filter.end_date')) {
+            $query->where('created_at', '<=', $request->input('filter.end_date'));
+        }
+
+        $orders = QueryBuilder::for($query)
+            ->allowedFilters(['id', 'name', 'payment_processor', 'status', 'type'])
             ->allowedSorts(['id', 'name', 'total', 'is_renewal', 'created_at', 'threat_index'])
             ->paginate($perPage);
 

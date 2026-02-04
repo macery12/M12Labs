@@ -17,13 +17,19 @@ import CopyOnClick from '@/elements/CopyOnClick';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useGetOrders } from '@/api/routes/account/billing/orders';
 import { Context as OrderContext } from '@/api/routes/account/billing/orders/index';
-import { OrderFilters, PaymentProcessor } from '@/api/routes/account/billing/orders/types';
+import { OrderFilters, PaymentProcessor, OrderStatus, OrderType } from '@/api/routes/account/billing/orders/types';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
 import PaymentProcessorFilter from '@/components/elements/PaymentProcessorFilter';
+import StatusFilter from '@/components/elements/StatusFilter';
+import OrderTypeFilter from '@/components/elements/OrderTypeFilter';
+import AmountRangeFilter from '@/components/elements/AmountRangeFilter';
+import DateRangeFilter from '@/components/elements/DateRangeFilter';
 import OrderInspectorModal from '@/components/elements/OrderInspectorModal';
 import { Order } from '@definitions/account/billing/models';
 import tw from 'twin.macro';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 export function format(date: number): string {
     let prefix = 'th';
@@ -79,7 +85,17 @@ function OrderTable() {
     const { data: orders, error } = useGetOrders();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(OrderContext);
+    
+    // Filter states
     const [paymentProcessor, setPaymentProcessor] = useState<PaymentProcessor | null>(null);
+    const [status, setStatus] = useState<OrderStatus | null>(null);
+    const [orderType, setOrderType] = useState<OrderType | null>(null);
+    const [minAmount, setMinAmount] = useState<number | null>(null);
+    const [maxAmount, setMaxAmount] = useState<number | null>(null);
+    const [startDate, setStartDate] = useState<string | null>(null);
+    const [endDate, setEndDate] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
@@ -93,24 +109,71 @@ function OrderTable() {
         setTimeout(() => setSelectedOrder(null), 300);
     };
 
+    // Build filters object
+    const buildFilters = (): OrderFilters | null => {
+        const filters: OrderFilters = {};
+        let hasFilters = false;
+
+        if (paymentProcessor) {
+            filters.payment_processor = paymentProcessor;
+            hasFilters = true;
+        }
+        if (status) {
+            filters.status = status;
+            hasFilters = true;
+        }
+        if (orderType) {
+            filters.type = orderType;
+            hasFilters = true;
+        }
+        if (minAmount !== null) {
+            filters.min_amount = minAmount;
+            hasFilters = true;
+        }
+        if (maxAmount !== null) {
+            filters.max_amount = maxAmount;
+            hasFilters = true;
+        }
+        if (startDate) {
+            filters.start_date = startDate;
+            hasFilters = true;
+        }
+        if (endDate) {
+            filters.end_date = endDate;
+            hasFilters = true;
+        }
+        if (searchQuery && searchQuery.length >= 2) {
+            filters.search = searchQuery;
+            hasFilters = true;
+        }
+
+        return hasFilters ? filters : null;
+    };
+
+    // Apply filters when any filter changes
+    useEffect(() => {
+        setFilters(buildFilters());
+    }, [paymentProcessor, status, orderType, minAmount, maxAmount, startDate, endDate, searchQuery]);
+
     const onSearch = (query: string): Promise<void> => {
         return new Promise(resolve => {
-            if (query.length < 2) {
-                setFilters(paymentProcessor ? { payment_processor: paymentProcessor } : null);
-            } else {
-                setFilters({ 
-                    name: query,
-                    ...(paymentProcessor ? { payment_processor: paymentProcessor } : {})
-                });
-            }
+            setSearchQuery(query);
             return resolve();
         });
     };
 
-    const handleProcessorChange = (processor: PaymentProcessor | null) => {
-        setPaymentProcessor(processor);
-        setFilters(processor ? { payment_processor: processor } : null);
+    const clearFilters = () => {
+        setPaymentProcessor(null);
+        setStatus(null);
+        setOrderType(null);
+        setMinAmount(null);
+        setMaxAmount(null);
+        setStartDate(null);
+        setEndDate(null);
+        setSearchQuery('');
     };
+
+    const hasActiveFilters = paymentProcessor || status || orderType || minAmount || maxAmount || startDate || endDate || searchQuery;
 
     useEffect(() => {
         clearFlashes();
@@ -132,12 +195,48 @@ function OrderTable() {
             </div>
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>
-                    <div css={tw`mb-4`}>
-                        <PaymentProcessorFilter 
-                            value={paymentProcessor} 
-                            onChange={handleProcessorChange}
-                        />
+                    {/* Advanced Filters Panel */}
+                    <div css={tw`mb-6 bg-neutral-900/50 rounded-lg p-4 space-y-4`}>
+                        <div css={tw`flex items-center justify-between mb-2`}>
+                            <h3 css={tw`text-sm font-semibold text-white`}>Filters</h3>
+                            {hasActiveFilters && (
+                                <button
+                                    onClick={clearFilters}
+                                    css={tw`text-sm text-red-400 hover:text-red-300 transition-colors flex items-center gap-1`}
+                                >
+                                    <FontAwesomeIcon icon={faTimes} />
+                                    Clear All Filters
+                                </button>
+                            )}
+                        </div>
+                        <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`}>
+                            <PaymentProcessorFilter 
+                                value={paymentProcessor} 
+                                onChange={setPaymentProcessor}
+                            />
+                            <StatusFilter
+                                value={status}
+                                onChange={setStatus}
+                            />
+                            <OrderTypeFilter
+                                value={orderType}
+                                onChange={setOrderType}
+                            />
+                            <AmountRangeFilter
+                                minValue={minAmount}
+                                maxValue={maxAmount}
+                                onMinChange={setMinAmount}
+                                onMaxChange={setMaxAmount}
+                            />
+                            <DateRangeFilter
+                                startDate={startDate}
+                                endDate={endDate}
+                                onStartDateChange={setStartDate}
+                                onEndDateChange={setEndDate}
+                            />
+                        </div>
                     </div>
+                    
                     <Pagination data={orders} onPageSelect={setPage}>
                         <div className={`overflow-x-auto`}>
                             <table className={`w-full table-auto`}>
@@ -179,7 +278,9 @@ function OrderTable() {
                                                 </td>
                                                 <td className={'px-6 py-4'}>
                                                     <div css={tw`flex items-center gap-2`}>
-                                                        <span css={tw`text-white font-medium`}>{order.name}</span>
+                                                        <span css={tw`text-white font-medium`}>
+                                                            {order.server_name || order.name}
+                                                        </span>
                                                         {order.type === 'ren' && (
                                                             <Pill size="small" type="info">REN</Pill>
                                                         )}
