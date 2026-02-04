@@ -33,6 +33,46 @@ class PlayerManagerController extends ClientApiController
     }
 
     /**
+     * Sanitize player name to prevent command injection.
+     * Minecraft usernames can only be 3-16 characters, alphanumeric and underscore.
+     */
+    private function sanitizePlayerName(string $name): string
+    {
+        // Remove any characters that aren't alphanumeric or underscore
+        $sanitized = preg_replace('/[^a-zA-Z0-9_]/', '', $name);
+        
+        // Ensure length is between 3 and 16 characters
+        if (strlen($sanitized) < 3 || strlen($sanitized) > 16) {
+            throw new \InvalidArgumentException('Invalid player name format');
+        }
+        
+        return $sanitized;
+    }
+
+    /**
+     * Validate and sanitize IP address.
+     */
+    private function sanitizeIpAddress(string $ip): string
+    {
+        // Validate as IPv4 or IPv6
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            throw new \InvalidArgumentException('Invalid IP address format');
+        }
+        
+        return $ip;
+    }
+
+    /**
+     * Sanitize reason/message to prevent command injection.
+     */
+    private function sanitizeMessage(string $message): string
+    {
+        // Remove newlines and limit length
+        $sanitized = str_replace(["\r", "\n", "\t"], ' ', $message);
+        return substr(trim($sanitized), 0, 255);
+    }
+
+    /**
      * Check if the extension is enabled for this server.
      */
     private function checkExtensionEnabled(Server $server): void
@@ -278,7 +318,7 @@ class PlayerManagerController extends ClientApiController
     /**
      * Get player manager status for server.
      */
-    public function index(GetStatusRequest $request, Server $server): array
+    public function index(GetStatusRequest $request, Server $server): JsonResponse
     {
         $this->checkExtensionEnabled($server);
         
@@ -386,46 +426,56 @@ class PlayerManagerController extends ClientApiController
                 ];
             }
 
-            return [
-                'success' => true,
-                'online' => true,
-                'online_mode' => $onlineMode,
-                'opped' => $this->sortList($opped),
-                'banned' => [
-                    'players' => $this->sortList($banned),
-                    'ips' => $this->sortList($bannedIps),
+            return new JsonResponse([
+                'server' => [
+                    'online' => true,
+                    'players' => [
+                        'online' => $data['players']['online'],
+                        'max' => $data['players']['max'],
+                        'list' => $this->sortList($players),
+                    ],
+                    'version' => '',
+                    'motd' => '',
                 ],
-                'whitelist' => [
-                    'enabled' => $whitelistEnabled,
-                    'list' => $this->sortList($whitelisted),
-                ],
-                'players' => [
-                    'online' => $data['players']['online'],
-                    'max' => $data['players']['max'],
-                    'list' => $this->sortList($players),
-                ],
-            ];
+                'operators' => $this->sortList($opped),
+                'whitelist' => $this->sortList($whitelisted),
+                'bannedPlayers' => $this->sortList($banned),
+                'bannedIps' => $this->sortList($bannedIps),
+                'whitelistEnabled' => $whitelistEnabled,
+            ]);
         } catch (\Throwable $e) {
-            return [
-                'success' => true,
-                'online' => false,
-                'online_mode' => $onlineMode,
-                'opped' => $this->sortList($opped),
-                'banned' => [
-                    'players' => $this->sortList($banned),
-                    'ips' => $this->sortList($bannedIps),
+            return new JsonResponse([
+                'server' => [
+                    'online' => false,
+                    'players' => [
+                        'online' => 0,
+                        'max' => 0,
+                        'list' => [],
+                    ],
+                    'version' => '',
+                    'motd' => '',
                 ],
-                'whitelist' => [
-                    'enabled' => $whitelistEnabled,
-                    'list' => $this->sortList($whitelisted),
-                ],
-            ];
+                'operators' => $this->sortList($opped),
+                'whitelist' => $this->sortList($whitelisted),
+                'bannedPlayers' => $this->sortList($banned),
+                'bannedIps' => $this->sortList($bannedIps),
+                'whitelistEnabled' => $whitelistEnabled,
+            ]);
         }
     }
 
-    public function op(PlayerNamedRequest $request, Server $server): JsonResponse
+    public function op(PlayerNamedRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
+        
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
         
         try {
             $ops = $this->fileRepository->setServer($server)->getContent('/ops.json');
@@ -433,8 +483,6 @@ class PlayerManagerController extends ClientApiController
         } catch (\Throwable $e) {
             $data = [];
         }
-
-        $name = $request->input('name');
 
         foreach ($data as $op) {
             if ($op['name'] === $name) {
@@ -445,9 +493,9 @@ class PlayerManagerController extends ClientApiController
             }
         }
 
-        $player = $this->lookupUserName($name, $server);
+        $playerData = $this->lookupUserName($name, $server);
 
-        if (is_null($player)) {
+        if (is_null($playerData)) {
             return new JsonResponse([
                 'success' => false,
                 'error' => 'Failed to lookup player',
@@ -455,8 +503,8 @@ class PlayerManagerController extends ClientApiController
         }
 
         $data[] = [
-            'uuid' => $player['uuid'],
-            'name' => $player['name'],
+            'uuid' => $playerData['uuid'],
+            'name' => $playerData['name'],
             'level' => 4,
             'bypassesPlayerLimit' => true,
         ];
@@ -465,22 +513,31 @@ class PlayerManagerController extends ClientApiController
         usleep(500000);
 
         try {
-            $cmd = $this->isBukkitBased($server) ? "minecraft:op {$player['name']}" : "op {$player['name']}";
+            $cmd = $this->isBukkitBased($server) ? "minecraft:op {$playerData['name']}" : "op {$playerData['name']}";
             $this->commandRepository->setServer($server)->send($cmd);
         } catch (\Throwable $e) {
             // ignore
         }
 
         Activity::event('server:player.op')
-            ->property(['uuid' => $player['uuid'], 'name' => $player['name']])
+            ->property(['uuid' => $playerData['uuid'], 'name' => $playerData['name']])
             ->log();
 
         return new JsonResponse(['success' => true]);
     }
 
-    public function deop(PlayerRequest $request, Server $server): JsonResponse
+    public function deop(PlayerRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
+        
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
         
         try {
             $ops = $this->fileRepository->setServer($server)->getContent('/ops.json');
@@ -489,33 +546,32 @@ class PlayerManagerController extends ClientApiController
             $data = [];
         }
 
-        $uuid = $request->input('uuid');
+        // Look up player by name from route parameter
+        $playerData = $this->lookupUserName($name, $server);
 
-        $player = $this->lookupUser($uuid, $server);
-
-        if (is_null($player)) {
+        if (is_null($playerData)) {
             return new JsonResponse([
                 'success' => false,
                 'error' => 'Failed to lookup player',
             ], 400);
         }
 
-        $data = array_filter($data, function ($op) use ($player) {
-            return $op['uuid'] !== $player['uuid'];
+        $data = array_filter($data, function ($op) use ($playerData) {
+            return $op['uuid'] !== $playerData['uuid'];
         });
 
         $this->fileRepository->setServer($server)->putContent('/ops.json', json_encode(array_values($data), JSON_PRETTY_PRINT));
         usleep(500000);
 
         try {
-            $cmd = $this->isBukkitBased($server) ? "minecraft:deop {$player['name']}" : "deop {$player['name']}";
+            $cmd = $this->isBukkitBased($server) ? "minecraft:deop {$playerData['name']}" : "deop {$playerData['name']}";
             $this->commandRepository->setServer($server)->send($cmd);
         } catch (\Throwable $e) {
             // ignore
         }
 
         Activity::event('server:player.deop')
-            ->property(['uuid' => $player['uuid'], 'name' => $player['name']])
+            ->property(['uuid' => $playerData['uuid'], 'name' => $playerData['name']])
             ->log();
 
         return new JsonResponse(['success' => true]);
@@ -563,9 +619,18 @@ class PlayerManagerController extends ClientApiController
         return ['success' => true];
     }
 
-    public function addWhitelist(PlayerNamedRequest $request, Server $server): JsonResponse
+    public function addWhitelist(PlayerNamedRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
+        
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
         
         try {
             $whitelist = $this->fileRepository->setServer($server)->getContent('/whitelist.json');
@@ -573,8 +638,6 @@ class PlayerManagerController extends ClientApiController
         } catch (\Throwable $e) {
             $data = [];
         }
-
-        $name = $request->input('name');
 
         foreach ($data as $w) {
             if ($w['name'] === $name) {
@@ -585,9 +648,9 @@ class PlayerManagerController extends ClientApiController
             }
         }
 
-        $player = $this->lookupUserName($name, $server);
+        $playerData = $this->lookupUserName($name, $server);
 
-        if (is_null($player)) {
+        if (is_null($playerData)) {
             return new JsonResponse([
                 'success' => false,
                 'error' => 'Failed to lookup player',
@@ -595,30 +658,39 @@ class PlayerManagerController extends ClientApiController
         }
 
         $data[] = [
-            'uuid' => $player['uuid'],
-            'name' => $player['name'],
+            'uuid' => $playerData['uuid'],
+            'name' => $playerData['name'],
         ];
 
         $this->fileRepository->setServer($server)->putContent('/whitelist.json', json_encode($data, JSON_PRETTY_PRINT));
         usleep(500000);
 
         try {
-            $cmd = $this->isBukkitBased($server) ? "minecraft:whitelist add {$player['name']}" : "whitelist add {$player['name']}";
+            $cmd = $this->isBukkitBased($server) ? "minecraft:whitelist add {$playerData['name']}" : "whitelist add {$playerData['name']}";
             $this->commandRepository->setServer($server)->send($cmd);
         } catch (\Throwable $e) {
             // ignore
         }
 
         Activity::event('server:whitelist.add')
-            ->property(['uuid' => $player['uuid'], 'name' => $player['name']])
+            ->property(['uuid' => $playerData['uuid'], 'name' => $playerData['name']])
             ->log();
 
         return new JsonResponse(['success' => true]);
     }
 
-    public function removeWhitelist(PlayerRequest $request, Server $server): JsonResponse
+    public function removeWhitelist(PlayerRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
+        
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
         
         try {
             $whitelist = $this->fileRepository->setServer($server)->getContent('/whitelist.json');
@@ -627,41 +699,50 @@ class PlayerManagerController extends ClientApiController
             $data = [];
         }
 
-        $uuid = $request->input('uuid');
+        $playerData = $this->lookupUserName($name, $server);
 
-        $player = $this->lookupUser($uuid, $server);
-
-        if (is_null($player)) {
+        if (is_null($playerData)) {
             return new JsonResponse([
                 'success' => false,
                 'error' => 'Failed to lookup player',
             ], 400);
         }
 
-        $data = array_filter($data, function ($w) use ($player) {
-            return $w['uuid'] !== $player['uuid'];
+        $data = array_filter($data, function ($w) use ($playerData) {
+            return $w['uuid'] !== $playerData['uuid'];
         });
 
         $this->fileRepository->setServer($server)->putContent('/whitelist.json', json_encode(array_values($data), JSON_PRETTY_PRINT));
         usleep(500000);
 
         try {
-            $cmd = $this->isBukkitBased($server) ? "minecraft:whitelist remove {$player['name']}" : "whitelist remove {$player['name']}";
+            $cmd = $this->isBukkitBased($server) ? "minecraft:whitelist remove {$playerData['name']}" : "whitelist remove {$playerData['name']}";
             $this->commandRepository->setServer($server)->send($cmd);
         } catch (\Throwable $e) {
             // ignore
         }
 
         Activity::event('server:whitelist.remove')
-            ->property(['uuid' => $player['uuid'], 'name' => $player['name']])
+            ->property(['uuid' => $playerData['uuid'], 'name' => $playerData['name']])
             ->log();
 
         return new JsonResponse(['success' => true]);
     }
 
-    public function ban(BanRequest $request, Server $server): JsonResponse
+    public function ban(BanRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
+        
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+        
+        $reason = $this->sanitizeMessage($request->input('reason', 'Banned by panel'));
         
         try {
             $bans = $this->fileRepository->setServer($server)->getContent('/banned-players.json');
@@ -669,9 +750,6 @@ class PlayerManagerController extends ClientApiController
         } catch (\Throwable $e) {
             $data = [];
         }
-
-        $name = $request->input('name');
-        $reason = $request->input('reason');
 
         foreach ($data as $ban) {
             if ($ban['name'] === $name) {
@@ -682,9 +760,9 @@ class PlayerManagerController extends ClientApiController
             }
         }
 
-        $player = $this->lookupUserName($name, $server);
+        $playerData = $this->lookupUserName($name, $server);
 
-        if (is_null($player)) {
+        if (is_null($playerData)) {
             return new JsonResponse([
                 'success' => false,
                 'error' => 'Failed to lookup player',
@@ -692,8 +770,8 @@ class PlayerManagerController extends ClientApiController
         }
 
         $data[] = [
-            'uuid' => $player['uuid'],
-            'name' => $player['name'],
+            'uuid' => $playerData['uuid'],
+            'name' => $playerData['name'],
             'source' => 'Panel',
             'created' => date('Y-m-d H:i:s O'),
             'expires' => 'forever',
@@ -704,22 +782,31 @@ class PlayerManagerController extends ClientApiController
         usleep(500000);
 
         try {
-            $cmd = $this->isBukkitBased($server) ? "minecraft:ban {$player['name']} $reason" : "ban {$player['name']} $reason";
+            $cmd = $this->isBukkitBased($server) ? "minecraft:ban {$playerData['name']} $reason" : "ban {$playerData['name']} $reason";
             $this->commandRepository->setServer($server)->send($cmd);
         } catch (\Throwable $e) {
             // ignore
         }
 
         Activity::event('server:player.ban')
-            ->property(['uuid' => $player['uuid'], 'name' => $player['name'], 'reason' => $reason])
+            ->property(['uuid' => $playerData['uuid'], 'name' => $playerData['name'], 'reason' => $reason])
             ->log();
 
         return new JsonResponse(['success' => true]);
     }
 
-    public function unban(PlayerRequest $request, Server $server): JsonResponse
+    public function unban(PlayerRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
+        
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
         
         try {
             $bans = $this->fileRepository->setServer($server)->getContent('/banned-players.json');
@@ -728,44 +815,50 @@ class PlayerManagerController extends ClientApiController
             $data = [];
         }
 
-        $uuid = $request->input('uuid');
+        $playerData = $this->lookupUserName($name, $server);
 
-        $player = $this->lookupUser($uuid, $server);
-
-        if (is_null($player)) {
+        if (is_null($playerData)) {
             return new JsonResponse([
                 'success' => false,
                 'error' => 'Failed to lookup player',
             ], 400);
         }
 
-        $data = array_filter($data, function ($ban) use ($player) {
-            return $ban['uuid'] !== $player['uuid'];
+        $data = array_filter($data, function ($ban) use ($playerData) {
+            return $ban['uuid'] !== $playerData['uuid'];
         });
 
         $this->fileRepository->setServer($server)->putContent('/banned-players.json', json_encode(array_values($data), JSON_PRETTY_PRINT));
         usleep(500000);
 
         try {
-            $cmd = $this->isBukkitBased($server) ? "minecraft:pardon {$player['name']}" : "pardon {$player['name']}";
+            $cmd = $this->isBukkitBased($server) ? "minecraft:pardon {$playerData['name']}" : "pardon {$playerData['name']}";
             $this->commandRepository->setServer($server)->send($cmd);
         } catch (\Throwable $e) {
             // ignore
         }
 
         Activity::event('server:player.unban')
-            ->property(['uuid' => $player['uuid'], 'name' => $player['name']])
+            ->property(['uuid' => $playerData['uuid'], 'name' => $playerData['name']])
             ->log();
 
         return new JsonResponse(['success' => true]);
     }
 
-    public function banIp(BanIpRequest $request, Server $server): JsonResponse
+    public function banIp(BanIpRequest $request, Server $server, string $ip): JsonResponse
     {
         $this->checkExtensionEnabled($server);
         
-        $ip = $request->input('ip');
-        $reason = $request->input('reason');
+        try {
+            $ip = $this->sanitizeIpAddress($ip);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+        
+        $reason = $this->sanitizeMessage($request->input('reason', 'Banned by panel'));
 
         try {
             $bans = $this->fileRepository->setServer($server)->getContent('/banned-ips.json');
@@ -808,11 +901,18 @@ class PlayerManagerController extends ClientApiController
         return new JsonResponse(['success' => true]);
     }
 
-    public function unbanIp(IpRequest $request, Server $server): JsonResponse
+    public function unbanIp(IpRequest $request, Server $server, string $ip): JsonResponse
     {
         $this->checkExtensionEnabled($server);
-        
-        $ip = $request->input('ip');
+
+        try {
+            $ip = $this->sanitizeIpAddress($ip);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
 
         try {
             $bans = $this->fileRepository->setServer($server)->getContent('/banned-ips.json');
@@ -842,36 +942,27 @@ class PlayerManagerController extends ClientApiController
         return new JsonResponse(['success' => true]);
     }
 
-    public function kick(KickRequest $request, Server $server): JsonResponse
+    public function kick(KickRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
         
-        $uuid = $this->formatUuid($request->input('uuid'));
-        $reason = $request->input('reason');
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+        
+        $reason = $this->sanitizeMessage($request->input('reason', 'Kicked by panel'));
 
         try {
-            $query = $this->queryApi($server);
-
-            $name = null;
-            foreach ($query['players']['list'] ?? [] as $player) {
-                if ($player['id'] === $uuid) {
-                    $name = $player['name'];
-                    break;
-                }
-            }
-
-            if (!$name) {
-                return new JsonResponse([
-                    'success' => false,
-                    'error' => 'Player is not online',
-                ], 400);
-            }
-
             $cmd = $this->isBukkitBased($server) ? "minecraft:kick $name $reason" : "kick $name $reason";
             $this->commandRepository->setServer($server)->send($cmd);
 
             Activity::event('server:player.kick')
-                ->property(['uuid' => $uuid, 'name' => $name, 'reason' => $reason])
+                ->property(['name' => $name, 'reason' => $reason])
                 ->log();
 
             return new JsonResponse(['success' => true]);
@@ -883,36 +974,27 @@ class PlayerManagerController extends ClientApiController
         }
     }
 
-    public function whisper(WhisperRequest $request, Server $server): JsonResponse
+    public function whisper(WhisperRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
         
-        $uuid = $this->formatUuid($request->input('uuid'));
-        $message = $request->input('message');
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+        
+        $message = $this->sanitizeMessage($request->input('message'));
 
         try {
-            $query = $this->queryApi($server);
-
-            $name = null;
-            foreach ($query['players']['list'] ?? [] as $player) {
-                if ($player['id'] === $uuid) {
-                    $name = $player['name'];
-                    break;
-                }
-            }
-
-            if (!$name) {
-                return new JsonResponse([
-                    'success' => false,
-                    'error' => 'Player is not online',
-                ], 400);
-            }
-
             $cmd = $this->isBukkitBased($server) ? "minecraft:tell $name $message" : "tell $name $message";
             $this->commandRepository->setServer($server)->send($cmd);
 
             Activity::event('server:player.whisper')
-                ->property(['uuid' => $uuid, 'name' => $name, 'message' => $message])
+                ->property(['name' => $name, 'message' => $message])
                 ->log();
 
             return new JsonResponse(['success' => true]);
@@ -924,35 +1006,25 @@ class PlayerManagerController extends ClientApiController
         }
     }
 
-    public function kill(PlayerRequest $request, Server $server): JsonResponse
+    public function kill(PlayerRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
         
-        $uuid = $this->formatUuid($request->input('uuid'));
+        try {
+            $name = $this->sanitizePlayerName($player);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
 
         try {
-            $query = $this->queryApi($server);
-
-            $name = null;
-            foreach ($query['players']['list'] ?? [] as $player) {
-                if ($player['id'] === $uuid) {
-                    $name = $player['name'];
-                    break;
-                }
-            }
-
-            if (!$name) {
-                return new JsonResponse([
-                    'success' => false,
-                    'error' => 'Player is not online',
-                ], 400);
-            }
-
             $cmd = $this->isBukkitBased($server) ? "minecraft:kill $name" : "kill $name";
             $this->commandRepository->setServer($server)->send($cmd);
 
             Activity::event('server:player.kill')
-                ->property(['uuid' => $uuid, 'name' => $name])
+                ->property(['name' => $name])
                 ->log();
 
             return new JsonResponse(['success' => true]);

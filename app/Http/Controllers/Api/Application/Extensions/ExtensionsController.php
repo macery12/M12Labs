@@ -43,9 +43,9 @@ class ExtensionsController extends ApplicationApiController
                 'author' => $extensionConfig['author'],
                 'icon' => $extensionConfig['icon'],
                 'enabled' => $dbConfig ? $dbConfig->enabled : false,
-                'allowed_nests' => $dbConfig ? $dbConfig->allowed_nests : [],
-                'allowed_eggs' => $dbConfig ? $dbConfig->allowed_eggs : [],
-                'settings' => $dbConfig ? $dbConfig->settings : [],
+                'allowedNests' => $dbConfig && $dbConfig->allowed_nests ? $dbConfig->allowed_nests : [],
+                'allowedEggs' => $dbConfig && $dbConfig->allowed_eggs ? $dbConfig->allowed_eggs : [],
+                'settings' => $dbConfig && $dbConfig->settings ? $dbConfig->settings : [],
             ];
         }
 
@@ -79,9 +79,9 @@ class ExtensionsController extends ApplicationApiController
                 'author' => $extensionConfig['author'],
                 'icon' => $extensionConfig['icon'],
                 'enabled' => $dbConfig ? $dbConfig->enabled : false,
-                'allowed_nests' => $dbConfig ? $dbConfig->allowed_nests : [],
-                'allowed_eggs' => $dbConfig ? $dbConfig->allowed_eggs : [],
-                'settings' => $dbConfig ? $dbConfig->settings : [],
+                'allowedNests' => $dbConfig && $dbConfig->allowed_nests ? $dbConfig->allowed_nests : [],
+                'allowedEggs' => $dbConfig && $dbConfig->allowed_eggs ? $dbConfig->allowed_eggs : [],
+                'settings' => $dbConfig && $dbConfig->settings ? $dbConfig->settings : [],
             ],
         ]);
     }
@@ -119,9 +119,9 @@ class ExtensionsController extends ApplicationApiController
                 'author' => $availableExtensions[$extensionId]['author'],
                 'icon' => $availableExtensions[$extensionId]['icon'],
                 'enabled' => $config->enabled,
-                'allowed_nests' => $config->allowed_nests,
-                'allowed_eggs' => $config->allowed_eggs,
-                'settings' => $config->settings,
+                'allowedNests' => $config->allowed_nests ?? [],
+                'allowedEggs' => $config->allowed_eggs ?? [],
+                'settings' => $config->settings ?? [],
             ],
         ]);
     }
@@ -180,24 +180,32 @@ class ExtensionsController extends ApplicationApiController
     {
         $nests = Nest::with('eggs')->get();
 
-        $data = $nests->map(function ($nest) {
+        $nestsData = $nests->map(function ($nest) {
             return [
                 'id' => $nest->id,
+                'uuid' => $nest->uuid,
                 'name' => $nest->name,
                 'description' => $nest->description,
-                'eggs' => $nest->eggs->map(function ($egg) {
-                    return [
-                        'id' => $egg->id,
-                        'name' => $egg->name,
-                        'description' => $egg->description,
-                    ];
-                }),
             ];
         });
 
+        $eggsData = [];
+        foreach ($nests as $nest) {
+            foreach ($nest->eggs as $egg) {
+                $eggsData[] = [
+                    'id' => $egg->id,
+                    'uuid' => $egg->uuid,
+                    'name' => $egg->name,
+                    'description' => $egg->description,
+                    'nestId' => $nest->id,
+                    'nestName' => $nest->name,
+                ];
+            }
+        }
+
         return new JsonResponse([
-            'object' => 'list',
-            'data' => $data,
+            'nests' => $nestsData,
+            'eggs' => $eggsData,
         ]);
     }
 }

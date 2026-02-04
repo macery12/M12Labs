@@ -38,6 +38,10 @@ export interface PlayerManagerStatus {
 
 export const getPlayerManagerStatus = async (uuid: string): Promise<PlayerManagerStatus> => {
     const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager`);
+    // Handle case where API returns nested data structure
+    if (data && data.data) {
+        return data.data;
+    }
     return data;
 };
 
@@ -53,15 +57,15 @@ export const removeFromWhitelist = async (uuid: string, player: string): Promise
     await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/whitelist/${player}`);
 };
 
-export const opPlayer = async (uuid: string, player: string, level?: number): Promise<void> => {
-    await http.put(`/api/client/servers/${uuid}/extensions/player-manager/op/${player}`, { level });
+export const opPlayer = async (uuid: string, player: string): Promise<void> => {
+    await http.put(`/api/client/servers/${uuid}/extensions/player-manager/op/${player}`);
 };
 
 export const deopPlayer = async (uuid: string, player: string): Promise<void> => {
     await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/op/${player}`);
 };
 
-export const banPlayer = async (uuid: string, player: string, reason?: string): Promise<void> => {
+export const banPlayer = async (uuid: string, player: string, reason: string): Promise<void> => {
     await http.put(`/api/client/servers/${uuid}/extensions/player-manager/ban/${player}`, { reason });
 };
 
@@ -69,7 +73,7 @@ export const unbanPlayer = async (uuid: string, player: string): Promise<void> =
     await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/ban/${player}`);
 };
 
-export const banIp = async (uuid: string, ip: string, reason?: string): Promise<void> => {
+export const banIp = async (uuid: string, ip: string, reason: string): Promise<void> => {
     await http.put(`/api/client/servers/${uuid}/extensions/player-manager/ban-ip/${ip}`, { reason });
 };
 

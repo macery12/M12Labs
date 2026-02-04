@@ -262,9 +262,8 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::group(['prefix' => '/extensions'], function () {
             // List enabled extensions for this server
             Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
-            Route::get('/{extensionId}', [Client\Extensions\ExtensionsController::class, 'check']);
 
-            // Player Manager extension routes
+            // Player Manager extension routes (must come before the wildcard route)
             Route::group(['prefix' => '/player-manager'], function () {
                 Route::get('/', [Client\Extensions\PlayerManagerController::class, 'index']);
                 
@@ -288,6 +287,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
                 Route::post('/whisper/{player}', [Client\Extensions\PlayerManagerController::class, 'whisper']);
                 Route::post('/kill/{player}', [Client\Extensions\PlayerManagerController::class, 'kill']);
             });
+
+            // Extension check route (must come AFTER specific extension routes)
+            Route::get('/{extensionId}', [Client\Extensions\ExtensionsController::class, 'check']);
         });
     });
 });

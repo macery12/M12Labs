@@ -56,6 +56,7 @@ function ServerRouter() {
     const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.server);
     const billable = server?.billingProductId;
     const modsEnabled = server?.modsEnabled;
+    const extensionsEnabled = server?.extensionsEnabled;
     const status = ServerContext.useStoreState(state => state.status.value);
 
     const categories = ['data', 'configuration'] as const;
@@ -103,7 +104,7 @@ function ServerRouter() {
                         .filter(
                             route =>
                                 route.name &&
-                                (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                                (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
                         )
                         .map(route => (
                             <MobileSidebar.Link
@@ -146,7 +147,7 @@ function ServerRouter() {
                                 route =>
                                     !route.category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
                             )
                             .map(route => (
                                 <NavLink to={route.path} key={route.path} end={route.end}>
@@ -159,7 +160,7 @@ function ServerRouter() {
                                 route =>
                                     route.category === category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
                             );
                             if (categoryRoutes.length === 0) return null;
 

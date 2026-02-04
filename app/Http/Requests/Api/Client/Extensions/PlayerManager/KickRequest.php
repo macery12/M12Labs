@@ -15,8 +15,7 @@ class KickRequest extends ClientApiRequest
     public function rules(): array
     {
         return [
-            'uuid' => 'required|string|max:40',
-            'reason' => 'required|string|min:3|max:255',
+            'reason' => 'sometimes|string|max:255',
         ];
     }
 }

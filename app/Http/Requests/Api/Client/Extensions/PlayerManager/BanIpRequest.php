@@ -15,7 +15,6 @@ class BanIpRequest extends ClientApiRequest
     public function rules(): array
     {
         return [
-            'ip' => 'required|ip',
             'reason' => 'required|string|min:3|max:255',
         ];
     }

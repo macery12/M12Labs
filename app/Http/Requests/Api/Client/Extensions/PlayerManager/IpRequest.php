@@ -14,8 +14,6 @@ class IpRequest extends ClientApiRequest
 
     public function rules(): array
     {
-        return [
-            'ip' => 'required|ip',
-        ];
+        return [];
     }
 }

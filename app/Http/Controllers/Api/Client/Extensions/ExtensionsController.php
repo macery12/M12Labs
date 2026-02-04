@@ -27,6 +27,7 @@ class ExtensionsController extends ClientApiController
                     'name' => $extensionDef['name'],
                     'description' => $extensionDef['description'],
                     'icon' => $extensionDef['icon'],
+                    'version' => $extensionDef['version'] ?? '1.0.0',
                     'settings' => $config->settings ?? [],
                 ];
             }

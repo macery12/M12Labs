@@ -124,9 +124,14 @@ export default ({ extension, onUpdate }: Props) => {
         setSelectedNests([]);
     };
 
+    // Get filtered eggs based on selected nests
+    const filteredEggs = nestsAndEggs?.eggs.filter((egg: EggOption) => 
+        selectedNests.length === 0 || selectedNests.includes(egg.nestId)
+    ) ?? [];
+
     const selectAllEggs = () => {
-        if (nestsAndEggs) {
-            setSelectedEggs(nestsAndEggs.eggs.map((e: EggOption) => e.id));
+        if (filteredEggs.length > 0) {
+            setSelectedEggs(filteredEggs.map((e: EggOption) => e.id));
         }
     };
 
@@ -256,7 +261,7 @@ export default ({ extension, onUpdate }: Props) => {
                                         <label
                                             key={nest.id}
                                             className={classNames(
-                                                'flex cursor-pointer items-center rounded-lg border p-3 transition-colors',
+                                                'flex cursor-pointer items-center rounded-lg border p-3 transition-colors h-full min-h-[60px]',
                                                 selectedNests.includes(nest.id)
                                                     ? 'border-opacity-50 bg-opacity-10'
                                                     : 'border-neutral-600 bg-neutral-800'
@@ -274,7 +279,7 @@ export default ({ extension, onUpdate }: Props) => {
                                             />
                                             <div
                                                 className={classNames(
-                                                    'mr-3 flex h-5 w-5 items-center justify-center rounded border-2',
+                                                    'mr-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2',
                                                     selectedNests.includes(nest.id)
                                                         ? 'border-transparent'
                                                         : 'border-neutral-500'
@@ -287,7 +292,7 @@ export default ({ extension, onUpdate }: Props) => {
                                                     <FontAwesomeIcon icon={faCheck} className={'text-xs text-white'} />
                                                 )}
                                             </div>
-                                            <div>
+                                            <div className={'min-w-0 flex-1'}>
                                                 <p className={'text-sm font-medium text-white'}>{nest.name}</p>
                                                 {nest.description && (
                                                     <p className={'text-xs text-neutral-400 line-clamp-1'}>
@@ -303,7 +308,14 @@ export default ({ extension, onUpdate }: Props) => {
                             {/* Eggs Selection */}
                             <div className={'mb-6'}>
                                 <div className={'mb-2 flex items-center justify-between'}>
-                                    <h3 className={'font-medium text-white'}>Allowed Eggs</h3>
+                                    <h3 className={'font-medium text-white'}>
+                                        Allowed Eggs
+                                        {selectedNests.length > 0 && (
+                                            <span className={'ml-2 text-xs font-normal text-neutral-400'}>
+                                                (showing {filteredEggs.length} eggs from selected nests)
+                                            </span>
+                                        )}
+                                    </h3>
                                     <div className={'space-x-2'}>
                                         <button
                                             onClick={selectAllEggs}
@@ -320,8 +332,15 @@ export default ({ extension, onUpdate }: Props) => {
                                         </button>
                                     </div>
                                 </div>
+                                {filteredEggs.length === 0 ? (
+                                    <p className={'text-sm text-neutral-500 py-4 text-center'}>
+                                        {selectedNests.length === 0 
+                                            ? 'No eggs available.' 
+                                            : 'No eggs found in the selected nests.'}
+                                    </p>
+                                ) : (
                                 <div className={'grid gap-2 sm:grid-cols-2 lg:grid-cols-3'}>
-                                    {nestsAndEggs.eggs.map((egg: EggOption) => (
+                                    {filteredEggs.map((egg: EggOption) => (
                                         <label
                                             key={egg.id}
                                             className={classNames(
@@ -363,6 +382,7 @@ export default ({ extension, onUpdate }: Props) => {
                                         </label>
                                     ))}
                                 </div>
+                                )}
                             </div>
                         </>
                     )}

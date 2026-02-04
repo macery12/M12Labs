@@ -15,7 +15,7 @@ class PlayerNamedRequest extends ClientApiRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|min:3|max:16',
+            'level' => 'sometimes|integer|min:1|max:4',
         ];
     }
 }

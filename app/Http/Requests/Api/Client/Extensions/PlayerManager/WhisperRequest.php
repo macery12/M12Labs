@@ -15,7 +15,6 @@ class WhisperRequest extends ClientApiRequest
     public function rules(): array
     {
         return [
-            'uuid' => 'required|string|max:40',
             'message' => 'required|string|min:1|max:255',
         ];
     }
