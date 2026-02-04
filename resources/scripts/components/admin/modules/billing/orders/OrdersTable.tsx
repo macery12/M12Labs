@@ -13,11 +13,15 @@ import AdminTable, {
 } from '@/elements/AdminTable';
 import CopyOnClick from '@/elements/CopyOnClick';
 import tw from 'twin.macro';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { formatDistanceToNowStrict } from 'date-fns';
 import Spinner from '@/elements/Spinner';
 import { OrderFilters } from '@/api/routes/admin/billing/types';
+import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
+import OrderPaymentDetails from '@/components/elements/OrderPaymentDetails';
+import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export function format(date: number): string {
     let prefix = 'th';
@@ -66,6 +70,19 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     const { data: orders, error } = useGetOrders();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { setSort, sort, setPage, sortDirection, setFilters } = useContext(OrderContext);
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+    const toggleRow = (orderId: number) => {
+        setExpandedRows(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(orderId)) {
+                newSet.delete(orderId);
+            } else {
+                newSet.add(orderId);
+            }
+            return newSet;
+        });
+    };
 
     const onSearch = (query: string): Promise<void> => {
         return new Promise(resolve => {
@@ -126,68 +143,96 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                             onClick={() => setSort('threat_index')}
                                         />
                                     )}
-                                    <TableHeader />
+                                    <TableHeader name={'Payment Provider'} />
+                                    {!minimal && <TableHeader />}
                                 </TableHead>
                                 <TableBody>
                                     {orders !== undefined &&
                                         orders.items.length > 0 &&
                                         orders.items.map(order => (
-                                            <TableRow key={order.id}>
-                                                {!minimal && (
-                                                    <td
-                                                        css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}
-                                                    >
-                                                        <CopyOnClick text={order.id}>
-                                                            <code css={tw`font-mono bg-neutral-900 rounded py-1 px-2`}>
-                                                                {order.id}
-                                                            </code>
-                                                        </CopyOnClick>
-                                                    </td>
-                                                )}
-                                                <td className={'px-6 py-4 font-bold text-white'}>${order.total}</td>
-                                                {!minimal && (
-                                                    <td className={'px-6 py-4'}>
-                                                        {order.name.slice(0, 8)} {order.description}
-                                                    </td>
-                                                )}
-                                                <td className={'px-6 py-4'}>
-                                                    {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
-                                                </td>
-                                                <td className={'px-6 py-4 text-left'}>
-                                                    <Pill size={'small'} type={type(order.status)}>
-                                                        {order.status}
-                                                    </Pill>
-                                                </td>
-                                                <td className={'py-4 pr-12 text-right'}>
-                                                    <Pill
-                                                        size={'small'}
-                                                        type={order.type === 'new' ? 'success' : 'info'}
-                                                    >
-                                                        {order.type.toUpperCase()}
-                                                    </Pill>
-                                                </td>
-                                                {!minimal && (
-                                                    <td className={'py-4 pr-12 text-right'}>
-                                                        <Pill
-                                                            size={'small'}
-                                                            type={
-                                                                order.threat_index > 0
-                                                                    ? getColor(order.threat_index)
-                                                                    : 'unknown'
-                                                            }
+                                            <>
+                                                <TableRow key={order.id}>
+                                                    {!minimal && (
+                                                        <td
+                                                            css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}
                                                         >
-                                                            {order.threat_index < 0 ? (
-                                                                <span className={'my-1 inline-flex text-xs'}>
-                                                                    <Spinner size={'small'} />
-                                                                    &nbsp;Processing
-                                                                </span>
-                                                            ) : (
-                                                                `${order.threat_index}/100`
-                                                            )}
+                                                            <CopyOnClick text={order.id.toString()}>
+                                                                <code css={tw`font-mono bg-neutral-900 rounded py-1 px-2`}>
+                                                                    {order.id}
+                                                                </code>
+                                                            </CopyOnClick>
+                                                        </td>
+                                                    )}
+                                                    <td className={'px-6 py-4 font-bold text-white'}>${order.total.toFixed(2)}</td>
+                                                    {!minimal && (
+                                                        <td className={'px-6 py-4'}>
+                                                            {order.name.slice(0, 8)} {order.description}
+                                                        </td>
+                                                    )}
+                                                    <td className={'px-6 py-4'}>
+                                                        {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
+                                                    </td>
+                                                    <td className={'px-6 py-4 text-left'}>
+                                                        <Pill size={'small'} type={type(order.status)}>
+                                                            {order.status}
                                                         </Pill>
                                                     </td>
+                                                    <td className={'py-4 pr-6 text-right'}>
+                                                        <Pill
+                                                            size={'small'}
+                                                            type={order.type === 'new' ? 'success' : 'info'}
+                                                        >
+                                                            {order.type.toUpperCase()}
+                                                        </Pill>
+                                                    </td>
+                                                    {!minimal && (
+                                                        <td className={'py-4 pr-6 text-right'}>
+                                                            <Pill
+                                                                size={'small'}
+                                                                type={
+                                                                    order.threat_index > 0
+                                                                        ? getColor(order.threat_index)
+                                                                        : 'unknown'
+                                                                }
+                                                            >
+                                                                {order.threat_index < 0 ? (
+                                                                    <span className={'my-1 inline-flex text-xs'}>
+                                                                        <Spinner size={'small'} />
+                                                                        &nbsp;Processing
+                                                                    </span>
+                                                                ) : (
+                                                                    `${order.threat_index}/100`
+                                                                )}
+                                                            </Pill>
+                                                        </td>
+                                                    )}
+                                                    <td className={'px-6 py-4'}>
+                                                        <PaymentProcessorBadge 
+                                                            processor={order.payment_processor} 
+                                                            size="small"
+                                                        />
+                                                    </td>
+                                                    {!minimal && (
+                                                        <td className={'px-6 py-4 text-center'}>
+                                                            <button
+                                                                onClick={() => toggleRow(order.id)}
+                                                                css={tw`text-gray-400 hover:text-white transition-colors`}
+                                                            >
+                                                                <FontAwesomeIcon 
+                                                                    icon={expandedRows.has(order.id) ? faChevronUp : faChevronDown} 
+                                                                />
+                                                            </button>
+                                                        </td>
+                                                    )}
+                                                </TableRow>
+                                                {!minimal && expandedRows.has(order.id) && (
+                                                    <tr>
+                                                        <td colSpan={9} css={tw`px-6 py-4 bg-neutral-800`}>
+                                                            <OrderPaymentDetails order={order} />
+                                                        </td>
+                                                    </tr>
                                                 )}
-                                            </TableRow>
+                                            </>
                                         ))}
                                 </TableBody>
                             </table>

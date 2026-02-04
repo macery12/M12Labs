@@ -11,7 +11,19 @@ interface Order extends Model {
     egg_id?: number;
     status: OrderStatus;
     type: OrderType;
+    payment_processor: 'stripe' | 'mollie' | 'paypal';
+    payment_intent_id: string;
+    mollie_payment_id?: string;
+    paypal_order_id?: string;
+    paypal_capture_id?: string;
+    paypal_payer_id?: string;
+    paypal_payer_email?: string;
+    paypal_status?: string;
+    paypal_amount?: number;
+    paypal_currency?: string;
+    paypal_captured_at?: Date;
     created_at: Date;
+    updated_at: Date;
 }
 
 interface Category extends Model {
