@@ -14,24 +14,28 @@ const PaymentProcessorBadge: React.FC<Props> = ({ processor, size = 'medium' }) 
             case 'stripe':
                 return {
                     name: 'Stripe',
-                    color: 'bg-purple-500',
+                    emoji: '💳',
+                    color: 'bg-purple-600',
                     textColor: 'text-white',
                 };
             case 'mollie':
                 return {
                     name: 'Mollie',
+                    emoji: '💶',
                     color: 'bg-blue-500',
                     textColor: 'text-white',
                 };
             case 'paypal':
                 return {
                     name: 'PayPal',
-                    color: 'bg-blue-600',
+                    emoji: '🅿️',
+                    color: 'bg-cyan-500',
                     textColor: 'text-white',
                 };
             default:
                 return {
                     name: 'Unknown',
+                    emoji: '❓',
                     color: 'bg-gray-500',
                     textColor: 'text-white',
                 };
@@ -54,10 +58,10 @@ const PaymentProcessorBadge: React.FC<Props> = ({ processor, size = 'medium' }) 
 
     return (
         <span
-            css={tw`inline-flex items-center gap-1.5 rounded-full font-medium`}
+            css={tw`inline-flex items-center gap-1.5 rounded-full font-medium shadow-sm`}
             className={`${info.color} ${info.textColor} ${getSizeClasses()}`}
         >
-            <FontAwesomeIcon icon={faCreditCard} />
+            <span>{info.emoji}</span>
             {info.name}
         </span>
     );
