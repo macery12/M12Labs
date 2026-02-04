@@ -58,7 +58,7 @@ class OrderController extends ClientApiController
         }
 
         $orders = QueryBuilder::for($query)
-            ->allowedFilters(['id', 'name', 'payment_processor', 'status', 'type', 'start_date', 'end_date', 'min_amount', 'max_amount', 'search'])
+            ->allowedFilters(['id', 'name', 'payment_processor', 'status', 'type'])
             ->allowedSorts(['id', 'name', 'total', 'is_renewal', 'created_at', 'threat_index'])
             ->paginate($perPage);
 
