@@ -5,7 +5,6 @@ import tw from 'twin.macro';
 import { format } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faCircle,
     faShoppingCart,
     faCreditCard,
     faCheckCircle,

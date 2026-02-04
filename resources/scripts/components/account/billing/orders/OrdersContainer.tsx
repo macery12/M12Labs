@@ -11,7 +11,6 @@ import AdminTable, {
     TableBody,
     TableHead,
     TableHeader,
-    TableRow,
     useTableHooks,
 } from '@/elements/AdminTable';
 import CopyOnClick from '@/elements/CopyOnClick';
@@ -166,9 +165,9 @@ function OrderTable() {
                                     {orders !== undefined &&
                                         orders.items.length > 0 &&
                                         orders.items.map(order => (
-                                            <TableRow 
+                                            <tr 
                                                 key={order.id}
-                                                className={`cursor-pointer transition-colors ${getStatusRowClass(order.status)}`}
+                                                className={`h-12 cursor-pointer transition-colors ${getStatusRowClass(order.status)}`}
                                                 onClick={() => openInspector(order)}
                                             >
                                                 <td className={`whitespace-nowrap px-6 py-4 text-left text-sm`}>
@@ -210,7 +209,7 @@ function OrderTable() {
                                                 <td className={'px-6 py-4 text-gray-400'}>
                                                     {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
                                                 </td>
-                                            </TableRow>
+                                            </tr>
                                         ))}
                                 </TableBody>
                             </table>

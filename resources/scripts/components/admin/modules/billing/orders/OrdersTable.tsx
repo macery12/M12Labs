@@ -6,7 +6,6 @@ import AdminTable, {
     TableHead,
     TableHeader,
     TableBody,
-    TableRow,
     Loading,
     NoItems,
     useTableHooks,
@@ -16,7 +15,6 @@ import tw from 'twin.macro';
 import { useContext, useEffect, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { formatDistanceToNowStrict } from 'date-fns';
-import Spinner from '@/elements/Spinner';
 import { OrderFilters, PaymentProcessor } from '@/api/routes/admin/billing/types';
 import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
 import PaymentProcessorFilter from '@/components/elements/PaymentProcessorFilter';
@@ -58,12 +56,6 @@ export function type(state: string): PillStatus {
         default:
             return 'unknown';
     }
-}
-
-function getColor(index: number) {
-    if (index >= 50) return 'danger';
-    if (index >= 25) return 'warn';
-    else return 'success';
 }
 
 function getStatusRowClass(status: string): string {
@@ -169,9 +161,9 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                     {orders !== undefined &&
                                         orders.items.length > 0 &&
                                         orders.items.map(order => (
-                                            <TableRow 
+                                            <tr 
                                                 key={order.id}
-                                                className={`cursor-pointer transition-colors ${!minimal ? getStatusRowClass(order.status) : 'hover:bg-neutral-700'}`}
+                                                className={`h-12 cursor-pointer transition-colors ${!minimal ? getStatusRowClass(order.status) : 'hover:bg-neutral-700'}`}
                                                 onClick={() => !minimal && openInspector(order)}
                                             >
                                                 {!minimal && (
@@ -220,7 +212,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                 <td className={'px-6 py-4 text-gray-400'}>
                                                     {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
                                                 </td>
-                                            </TableRow>
+                                            </tr>
                                         ))}
                                 </TableBody>
                             </table>

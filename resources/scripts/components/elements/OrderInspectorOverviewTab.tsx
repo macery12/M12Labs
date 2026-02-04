@@ -101,7 +101,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                         <span css={tw`text-sm text-gray-400`}>Product ID</span>
                         <code css={tw`text-sm font-mono text-gray-300`}>{order.product_id}</code>
                     </div>
-                    {order.egg_id && (
+                    {'egg_id' in order && order.egg_id && (
                         <div css={tw`flex justify-between items-start`}>
                             <span css={tw`text-sm text-gray-400`}>Egg ID</span>
                             <code css={tw`text-sm font-mono text-gray-300`}>{order.egg_id}</code>
