@@ -22,7 +22,6 @@ import { OrderFilters } from '@/api/routes/account/billing/orders/types';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
 import OrderPaymentDetails from '@/components/elements/OrderPaymentDetails';
-import { Order } from '@definitions/account/billing/models';
 import tw from 'twin.macro';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';

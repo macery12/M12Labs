@@ -1,11 +1,12 @@
 import React from 'react';
-import { Order } from '@definitions/account/billing/models';
+import { Order as AccountOrder } from '@definitions/account/billing/models';
+import { Order as AdminOrder } from '@definitions/admin/models';
 import CopyOnClick from '@/elements/CopyOnClick';
 import tw from 'twin.macro';
 import { formatDistanceToNowStrict } from 'date-fns';
 
 interface Props {
-    order: Order;
+    order: AccountOrder | AdminOrder;
 }
 
 const OrderPaymentDetails: React.FC<Props> = ({ order }) => {
