@@ -159,7 +159,7 @@ export default () => {
         if (isPrimarySelected && remainingCount === 0) {
             clearAndAddHttpError({
                 key: 'server:networking',
-                error: { message: 'Cannot remove the primary allocation. Add another allocation first or select non-primary allocations.' },
+                error: { message: 'Cannot remove the primary allocation without other allocations. Add another allocation first.' },
             });
             return;
         }
@@ -326,7 +326,7 @@ export default () => {
                                         css={tw`text-xs px-2 py-1 bg-red-600 hover:bg-red-700`}
                                     >
                                         <FontAwesomeIcon icon={faTrash} css={tw`mr-1`} />
-                                        Remove {selectedCurrentIds.length > 1 ? `(${selectedCurrentIds.length})` : ''}
+                                        Remove{selectedCurrentIds.length > 0 ? ` (${selectedCurrentIds.length})` : ''}
                                     </Button>
                                 </div>
                             </div>
@@ -398,7 +398,7 @@ export default () => {
                                     css={tw`text-xs px-2 py-1`}
                                 >
                                     <FontAwesomeIcon icon={faPlus} css={tw`mr-1`} />
-                                    Add {selectedAvailableIds.length > 1 ? `(${selectedAvailableIds.length})` : 'Selected'}
+                                    Add{selectedAvailableIds.length > 0 ? ` (${selectedAvailableIds.length})` : ''}
                                 </Button>
                             </div>
 
