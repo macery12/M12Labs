@@ -103,12 +103,15 @@ export default () => {
                                 style={{ backgroundColor: secondary }}
                                 css={tw`rounded shadow-md px-4 xl:px-5 py-4 mt-6`}
                             >
-                                <div css={tw`flex flex-row`}>
-                                    <ServerDeleteButton />
-
-                                    <Button type="submit" className="ml-auto" disabled={isSubmitting || !isValid}>
+                                <div css={tw`flex flex-col space-y-4`}>
+                                    <Button type="submit" className="w-full" disabled={isSubmitting || !isValid}>
                                         Save Changes
                                     </Button>
+
+                                    <div css={tw`border-t border-neutral-700 pt-4`}>
+                                        <p css={tw`text-xs text-neutral-400 mb-2`}>Danger Zone</p>
+                                        <ServerDeleteButton />
+                                    </div>
                                 </div>
                             </div>
                         </div>

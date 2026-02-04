@@ -20,11 +20,13 @@ import {
     InformationCircleIcon,
     ServerIcon,
     ShieldExclamationIcon,
+    ClipboardCopyIcon,
 } from '@heroicons/react/outline';
 import { useStoreState } from '@/state/hooks';
 import ServerDatabases from './ServerDatabases';
 import ServerBillingContainer from './billing/ServerBillingContainer';
 import Pill from '@/elements/Pill';
+import CopyOnClick from '@/elements/CopyOnClick';
 
 export default () => {
     const params = useParams<'id'>();
@@ -53,27 +55,43 @@ export default () => {
     return (
         <AdminContentBlock title={'Server - ' + server.name}>
             <FlashMessageRender byKey={'backups'} css={tw`mb-4`} />
-            <div css={tw`w-full flex flex-row items-center mb-4`}>
-                <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
-                    <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>{server.name}</h2>
-                    <p
-                        css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
-                    >
-                        {server.uuid}
-                    </p>
-                </div>
-                <div className={'my-auto ml-2 flex space-x-2'}>
-                    <Pill type={'warn'}>
-                        <ServerIcon className={'mr-1 w-3'} /> {server.relationships.allocations[0]?.getDisplayText()}
-                    </Pill>
-                    {billing.enabled && server.billingProductId && (
-                        <Pill type={'info'}>
-                            <CurrencyDollarIcon className={'mr-1 w-3'} /> Billable
+            <div css={tw`w-full flex flex-col mb-6`}>
+                {/* Primary line - Server Name + Status */}
+                <div css={tw`flex flex-row items-center mb-2`}>
+                    <h2 css={tw`text-3xl text-neutral-50 font-header font-bold flex-shrink`} style={{ minWidth: '0' }}>
+                        {server.name}
+                    </h2>
+                    <div className={'ml-auto flex items-center space-x-2'}>
+                        {billing.enabled && server.billingProductId && (
+                            <Pill type={'info'}>
+                                <CurrencyDollarIcon className={'mr-1 w-3'} /> Billable
+                            </Pill>
+                        )}
+                        <Pill type={'success'}>
+                            <InformationCircleIcon className={'mr-1 w-3'} /> {server.status ?? 'Active'}
                         </Pill>
-                    )}
-                    <Pill type={'success'}>
-                        <InformationCircleIcon className={'mr-1 w-3'} /> {server.status ?? 'Active'}
-                    </Pill>
+                    </div>
+                </div>
+
+                {/* Secondary line - UUID + Primary Allocation */}
+                <div
+                    css={tw`flex flex-col md:flex-row md:items-center md:space-x-6 text-sm text-neutral-400 space-y-1 md:space-y-0`}
+                >
+                    <CopyOnClick text={server.uuid} showInNotification={true}>
+                        <div css={tw`flex items-center cursor-pointer hover:text-neutral-300 transition-colors`}>
+                            <span css={tw`font-mono mr-1.5`}>{server.uuid}</span>
+                            <ClipboardCopyIcon css={tw`w-4 h-4`} />
+                        </div>
+                    </CopyOnClick>
+                    <CopyOnClick text={server.relationships.allocations[0]?.getDisplayText()} showInNotification={true}>
+                        <div css={tw`flex items-center cursor-pointer hover:text-neutral-300 transition-colors`}>
+                            <ServerIcon className={'mr-1.5 h-4 w-4'} />
+                            <span css={tw`font-mono mr-1.5`}>
+                                {server.relationships.allocations[0]?.getDisplayText()}
+                            </span>
+                            <ClipboardCopyIcon css={tw`w-4 h-4`} />
+                        </div>
+                    </CopyOnClick>
                 </div>
             </div>
 

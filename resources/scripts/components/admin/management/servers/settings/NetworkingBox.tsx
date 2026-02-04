@@ -155,11 +155,14 @@ export default () => {
         // Can't remove the primary allocation if there are no other allocations
         const isPrimarySelected = selectedCurrentIds.includes(server.allocationId);
         const remainingCount = currentAllocations.length - selectedCurrentIds.length;
-        
+
         if (isPrimarySelected && remainingCount === 0) {
             clearAndAddHttpError({
                 key: 'server:networking',
-                error: { message: 'Cannot remove the primary allocation without other allocations. Add another allocation first.' },
+                error: {
+                    message:
+                        'Cannot remove the primary allocation without other allocations. Add another allocation first.',
+                },
             });
             return;
         }
@@ -262,25 +265,56 @@ export default () => {
                             {currentAllocations.length === 0 ? (
                                 <p css={tw`text-sm text-gray-400`}>No allocations assigned.</p>
                             ) : (
-                                currentAllocations.map(allocation => (
-                                    <div key={allocation.id} css={tw`flex items-center justify-between text-sm`}>
-                                        <span css={tw`font-mono`}>{allocation.getDisplayText()}</span>
-                                        {allocation.id === server.allocationId && (
-                                            <span
-                                                css={tw`text-xs bg-blue-500 px-2 py-0.5 rounded flex items-center gap-1`}
-                                            >
-                                                <FontAwesomeIcon icon={faStar} css={tw`text-xs`} />
-                                                Primary
-                                            </span>
-                                        )}
-                                    </div>
-                                ))
+                                currentAllocations.map(allocation => {
+                                    const isPrimary = allocation.id === server.allocationId;
+                                    return (
+                                        <div
+                                            key={allocation.id}
+                                            css={[
+                                                tw`flex items-center justify-between text-sm p-2 rounded transition-colors`,
+                                                isPrimary && tw`bg-blue-900/30 border border-blue-500/50`,
+                                            ]}
+                                        >
+                                            <span css={tw`font-mono`}>{allocation.getDisplayText()}</span>
+                                            {isPrimary && (
+                                                <span
+                                                    css={tw`text-xs bg-blue-500 px-2 py-0.5 rounded flex items-center gap-1`}
+                                                >
+                                                    <FontAwesomeIcon icon={faStar} css={tw`text-xs`} />
+                                                    Primary
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
                         {allocationLimit > 0 && (
-                            <p css={tw`text-xs text-gray-400 mt-2`}>
-                                {currentAllocations.length} / {allocationLimit} allocations used
-                            </p>
+                            <div css={tw`mt-3`}>
+                                <div css={tw`flex items-center justify-between text-xs text-gray-400 mb-1`}>
+                                    <span>Allocation Usage</span>
+                                    <span>
+                                        {currentAllocations.length} / {allocationLimit}
+                                    </span>
+                                </div>
+                                <div css={tw`w-full bg-gray-700 rounded-full h-2 overflow-hidden`}>
+                                    <div
+                                        css={tw`h-full transition-all duration-300`}
+                                        style={{
+                                            width: `${Math.min(
+                                                (currentAllocations.length / allocationLimit) * 100,
+                                                100,
+                                            )}%`,
+                                            backgroundColor:
+                                                currentAllocations.length >= allocationLimit
+                                                    ? '#ef4444'
+                                                    : currentAllocations.length / allocationLimit > 0.8
+                                                    ? '#f59e0b'
+                                                    : '#3b82f6',
+                                        }}
+                                    />
+                                </div>
+                            </div>
                         )}
                     </div>
 
@@ -306,13 +340,18 @@ export default () => {
                         {/* Current Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-                                <Label>Current Allocations {selectedCurrentIds.length > 0 && `(${selectedCurrentIds.length} selected)`}</Label>
+                                <Label>
+                                    Current Allocations{' '}
+                                    {selectedCurrentIds.length > 0 && `(${selectedCurrentIds.length} selected)`}
+                                </Label>
                                 <div css={tw`flex gap-2`}>
                                     <Button
                                         type="button"
                                         onClick={handleSetPrimary}
                                         disabled={
-                                            selectedCurrentIds.length !== 1 || selectedCurrentIds[0] === server.allocationId || loading
+                                            selectedCurrentIds.length !== 1 ||
+                                            selectedCurrentIds[0] === server.allocationId ||
+                                            loading
                                         }
                                         css={tw`text-xs px-2 py-1`}
                                     >
@@ -350,8 +389,9 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-                                                    backgroundColor:
-                                                        selectedCurrentIds.includes(allocation.id) ? '#374151' : undefined,
+                                                    backgroundColor: selectedCurrentIds.includes(allocation.id)
+                                                        ? '#374151'
+                                                        : undefined,
                                                 }}
                                             >
                                                 <div css={tw`flex items-center gap-3`}>
@@ -390,7 +430,10 @@ export default () => {
                         {/* Available Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-                                <Label>Available Allocations {selectedAvailableIds.length > 0 && `(${selectedAvailableIds.length} selected)`}</Label>
+                                <Label>
+                                    Available Allocations{' '}
+                                    {selectedAvailableIds.length > 0 && `(${selectedAvailableIds.length} selected)`}
+                                </Label>
                                 <Button
                                     type="button"
                                     onClick={handleAddAllocation}
@@ -427,8 +470,9 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-                                                    backgroundColor:
-                                                        selectedAvailableIds.includes(allocation.id) ? '#374151' : undefined,
+                                                    backgroundColor: selectedAvailableIds.includes(allocation.id)
+                                                        ? '#374151'
+                                                        : undefined,
                                                 }}
                                             >
                                                 <input
@@ -462,10 +506,11 @@ export default () => {
                     {/* Info Message */}
                     <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded mt-4`}>
                         <p>
-                            💡 <strong>How to use:</strong> Select multiple allocations using checkboxes from either list.
-                            Click &quot;Add&quot; to add selected available allocations immediately, or &quot;Remove&quot; to remove selected current allocations.
-                            Select a single allocation and click &quot;Set Primary&quot; to make it the primary allocation.
-                            Changes are saved automatically.
+                            💡 <strong>How to use:</strong> Select multiple allocations using checkboxes from either
+                            list. Click &quot;Add&quot; to add selected available allocations immediately, or
+                            &quot;Remove&quot; to remove selected current allocations. Select a single allocation and
+                            click &quot;Set Primary&quot; to make it the primary allocation. Changes are saved
+                            automatically.
                         </p>
                     </div>
                 </div>
