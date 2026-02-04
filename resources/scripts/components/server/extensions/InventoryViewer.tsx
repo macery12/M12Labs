@@ -202,19 +202,36 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
     };
 
     const getItemImageUrl = (item: InventoryItem, level: number = 0) => {
-        // Extract just the item name from the id (minecraft:diamond_sword -> diamond_sword)
-        const itemId = item.id.replace('minecraft:', '').toLowerCase();
-        
-        // Multiple fallback sources for textures
+        const [rawNamespace, rawName] = item.id.split(':');
+        const namespace = (rawName ? rawNamespace : 'minecraft').toLowerCase();
+        const itemName = (rawName ? rawName : rawNamespace).toLowerCase();
+
+        const moddedBaseUrls: Record<string, string> = {
+            create: 'https://mc.nerothe.com/img/1.20-mods-create',
+            regions_unexplored: 'https://mc.nerothe.com/img/1.21-mods-regions-unexplored',
+            biomesoplenty: 'https://mc.nerothe.com/img/1.21-mods-biomes-o-plenty',
+            quark: 'https://mc.nerothe.com/img/1.20-mods-quark',
+        };
+
+        // Modded items: only try the modded nerothe source, then fail silently
+        if (namespace !== 'minecraft') {
+            const baseUrl = moddedBaseUrls[namespace];
+            const url = baseUrl ? `${baseUrl}/${namespace}_${itemName}.png` : '';
+            return url;
+        }
+
+        // Vanilla items: multiple fallback sources for textures
         const sources = [
             // Primary: mc.nerothe.com (has most items including spawn eggs)
-            `https://mc.nerothe.com/img/1.21.11/minecraft_${itemId}.png`,
-            // Fallback 1: minecraft-assets item textures
-            `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/item/${itemId}.png`,
-            // Fallback 2: Block textures (for blocks like stone, dirt, etc.)
-            `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/block/${itemId}.png`,
+            `https://mc.nerothe.com/img/1.21.11/minecraft_${itemName}.png`,
+            // Fallback 1: mc.nerothe.com older patch version
+            `https://mc.nerothe.com/img/1.21.8/minecraft_${itemName}.png`,
+            // Fallback 2: minecraft-assets item textures
+            `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/item/${itemName}.png`,
+            // Fallback 3: Block textures (for blocks like stone, dirt, etc.)
+            `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/block/${itemName}.png`,
         ];
-        
+
         return sources[Math.min(level, sources.length - 1)];
     };
 
@@ -245,8 +262,16 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
                                 alt={item.name}
                                 className="w-8 h-8 object-contain pixelated"
                                 onError={() => {
-                                    // Try next fallback source (0, 1, 2 = 3 sources)
-                                    if (fallbackLevel < 2) {
+                                    const isModded = !item.id.toLowerCase().startsWith('minecraft:');
+
+                                    // Modded items: only one source, fail silently
+                                    if (isModded) {
+                                        setImgError(true);
+                                        return;
+                                    }
+
+                                    // Try next fallback source (0-3 = 4 sources)
+                                    if (fallbackLevel < 3) {
                                         setFallbackLevel(fallbackLevel + 1);
                                     } else {
                                         setImgError(true);

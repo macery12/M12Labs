@@ -1139,7 +1139,7 @@ class PlayerManagerController extends ClientApiController
         } catch (\Throwable $e) {
             return new JsonResponse([
                 'success' => false,
-                'error' => 'Player data file not found. The player may not have joined yet.',
+                'error' => 'Player data file has not been created yet. Please rejoin the server and try again.',
             ], 404);
         }
 
