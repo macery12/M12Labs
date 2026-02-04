@@ -12,7 +12,7 @@ export default () => {
 
     return (
         <AdminBox icon={faConciergeBell} title={'Feature Limits'} isLoading={isSubmitting}>
-            <div css={tw`grid grid-cols-2 gap-4`}>
+            <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-4`}>
                 <div>
                     <div css={tw`flex items-center mb-2`}>
                         <label htmlFor="featureLimits.allocations" css={tw`text-sm font-medium text-neutral-200`}>

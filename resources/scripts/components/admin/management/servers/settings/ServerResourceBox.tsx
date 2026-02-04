@@ -81,7 +81,7 @@ export default () => {
                             label={'CPU Pinning'}
                             type={'text'}
                             description={
-                                'Advanced: Enter the specific CPU cores that this server can run on, or leave blank to allow all cores. This can be a single number, and or a comma seperated list, and or a dashed range. Example: 0, 0-1,3, or 0,1,3,4.  It is recommended to leave this value blank and let the CPU handle balancing the load.'
+                                'Advanced: Enter the specific CPU cores that this server can run on, or leave blank to allow all cores. This can be a single number, and or a comma separated list, and or a dashed range. Example: 0, 0-1,3, or 0,1,3,4.  It is recommended to leave this value blank and let the CPU handle balancing the load.'
                             }
                         />
                         <Field id={'limits.swap'} name={'limits.swap'} label={'Swap Limit'} type={'number'} />
