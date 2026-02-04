@@ -118,7 +118,7 @@ interface Order extends Model {
     type: OrderType;
     threat_index: number;
     payment_processor: 'stripe' | 'mollie' | 'paypal';
-    payment_intent_id: string;
+    payment_intent_id?: string;
     mollie_payment_id?: string;
     paypal_order_id?: string;
     paypal_capture_id?: string;

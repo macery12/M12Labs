@@ -172,7 +172,7 @@ function OrderTable() {
                                                             </code>
                                                         </CopyOnClick>
                                                     </td>
-                                                    <td className={'px-6 py-4 font-bold text-white'}>${order.total.toFixed(2)}</td>
+                                                    <td className={'px-6 py-4 font-bold text-white'}>${order.total.toFixed(2)}/mo</td>
                                                     <td className={'px-6 py-4'}>
                                                         {order.name.slice(0, 8)} {order.description}
                                                     </td>

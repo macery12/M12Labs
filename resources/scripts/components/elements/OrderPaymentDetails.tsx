@@ -12,16 +12,18 @@ interface Props {
 const OrderPaymentDetails: React.FC<Props> = ({ order }) => {
     const renderStripeDetails = () => (
         <div css={tw`space-y-2`}>
-            <div>
-                <span css={tw`text-sm text-gray-400`}>Payment Intent ID:</span>
-                <div css={tw`mt-1`}>
-                    <CopyOnClick text={order.payment_intent_id}>
-                        <code css={tw`text-sm font-mono bg-neutral-800 rounded px-2 py-1`}>
-                            {order.payment_intent_id}
-                        </code>
-                    </CopyOnClick>
+            {order.payment_intent_id && (
+                <div>
+                    <span css={tw`text-sm text-gray-400`}>Payment Intent ID:</span>
+                    <div css={tw`mt-1`}>
+                        <CopyOnClick text={order.payment_intent_id}>
+                            <code css={tw`text-sm font-mono bg-neutral-800 rounded px-2 py-1`}>
+                                {order.payment_intent_id}
+                            </code>
+                        </CopyOnClick>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 
