@@ -430,7 +430,7 @@ function InternalForm() {
                                                 <p className="mb-3 text-xs text-neutral-400">
                                                     The primary allocation will be used as the default connection endpoint for your server.
                                                 </p>
-                                                <div className="rounded border border-blue-600/50 bg-blue-950/20 overflow-hidden">
+                                                <div className="rounded border border-blue-600/50 bg-blue-950/20 overflow-hidden max-h-[240px] overflow-y-auto">
                                                     <div className="divide-y divide-neutral-700">
                                                         {availableAllocations.map(allocation => {
                                                             const isPrimary = primaryAllocationId === allocation.id;
@@ -478,6 +478,11 @@ function InternalForm() {
                                                         })}
                                                     </div>
                                                 </div>
+                                                {availableAllocations.length > 4 && (
+                                                    <p className="mt-2 text-xs text-neutral-400">
+                                                        Scroll to view all {availableAllocations.length} allocations
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Additional Allocations Section */}
@@ -491,7 +496,7 @@ function InternalForm() {
                                                 <p className="mb-3 text-xs text-neutral-400">
                                                     Select additional allocations for your server. The primary allocation cannot be deselected.
                                                 </p>
-                                                <div className="rounded border border-neutral-600 overflow-hidden max-h-[300px] overflow-y-auto">
+                                                <div className="rounded border border-neutral-600 overflow-hidden max-h-[240px] overflow-y-auto">
                                                     <div className="divide-y divide-neutral-600">
                                                         {availableAllocations
                                                             .filter(allocation => allocation.id !== primaryAllocationId)
@@ -539,6 +544,11 @@ function InternalForm() {
                                                         )}
                                                     </div>
                                                 </div>
+                                                {availableAllocations.filter(a => a.id !== primaryAllocationId).length > 4 && (
+                                                    <p className="mt-2 text-xs text-neutral-400">
+                                                        Scroll to view all {availableAllocations.filter(a => a.id !== primaryAllocationId).length} additional allocations
+                                                    </p>
+                                                )}
                                                 {selectedAllocations.filter(id => id !== primaryAllocationId).length > 0 && (
                                                     <div className="mt-3 p-3 bg-neutral-800 rounded text-xs text-neutral-300">
                                                         <strong>{selectedAllocations.filter(id => id !== primaryAllocationId).length}</strong> additional allocation(s) selected
