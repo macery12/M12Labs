@@ -13,15 +13,19 @@ import { Alert } from '@/elements/alert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import tw from 'twin.macro';
 
+const EPSILON = 0.001;
+
 interface MultiplierStep {
     id: string;
     maxDays: number;
     multiplier: number;
 }
 
+type StoredMultiplierStep = Omit<MultiplierStep, 'id'>;
+
 const formatPriceAdjustment = (multiplier: number): string => {
     // Use epsilon comparison for floating point
-    if (Math.abs(multiplier - 1.0) < 0.001) return 'Standard price';
+    if (Math.abs(multiplier - 1.0) < EPSILON) return 'Standard price';
     const percentage = Math.round((multiplier - 1) * 100);
     if (percentage > 0) return `+${percentage}%`;
     return `${percentage}%`;
@@ -54,11 +58,11 @@ export default () => {
             ];
         }
         try {
-            const parsed = JSON.parse(stepsString);
+            const parsed = JSON.parse(stepsString) as StoredMultiplierStep[];
             // Add IDs to existing steps if they don't have them
-            return parsed.map((step: any) => ({
+            return parsed.map((step) => ({
                 ...step,
-                id: step.id || nanoid(),
+                id: nanoid(),
             }));
         } catch {
             return [];
@@ -217,7 +221,7 @@ export default () => {
                                                     css={[
                                                         tw`min-w-[120px] font-medium`,
                                                         step.multiplier > 1.0 && tw`text-red-400`,
-                                                        Math.abs(step.multiplier - 1.0) < 0.001 && tw`text-blue-400`,
+                                                        Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
                                                         step.multiplier < 1.0 && tw`text-green-400`,
                                                     ]}
                                                 >
