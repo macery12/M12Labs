@@ -37,13 +37,6 @@ const formatBillingLength = (maxDays: number, isLast: boolean, defaultBillingDay
     return `Up to ${maxDays} days`;
 };
 
-const getMultiplierColorClass = (multiplier: number): string => {
-    if (Math.abs(multiplier - 1.0) < EPSILON) return 'text-blue-400';
-    if (multiplier >= (1.0 + EPSILON)) return 'text-red-400';
-    if (multiplier <= (1.0 - EPSILON)) return 'text-green-400';
-    return 'text-neutral-300';
-};
-
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const updateEverest = useStoreActions(s => s.everest.updateEverest);
@@ -229,7 +222,14 @@ export default () => {
                                             </td>
                                             <td css={tw`py-3 px-4`}>
                                                 <div css={tw`flex items-center gap-2`}>
-                                                    <span className={`min-w-[120px] font-medium ${getMultiplierColorClass(step.multiplier)}`}>
+                                                    <span 
+                                                        css={[
+                                                            tw`min-w-[120px] font-medium`,
+                                                            Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
+                                                            step.multiplier >= (1.0 + EPSILON) && tw`text-red-400`,
+                                                            step.multiplier < (1.0 - EPSILON) && tw`text-green-400`,
+                                                        ]}
+                                                    >
                                                         {formatPriceAdjustment(step.multiplier)}
                                                     </span>
                                                     <Input
