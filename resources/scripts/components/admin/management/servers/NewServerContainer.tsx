@@ -700,13 +700,8 @@ function InternalForm() {
     };
 
     return (
-        <Form onSubmit={(e) => {
-            // Only allow submission on step 5 and when explicitly submitted
-            if (currentStep < 5) {
-                e.preventDefault();
-            }
-        }} onKeyDown={(e) => {
-            // Prevent form submission on Enter key press unless on step 5
+        <Form onKeyDown={(e) => {
+            // Prevent form submission on Enter key press
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
