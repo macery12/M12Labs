@@ -67,7 +67,7 @@ function InternalForm() {
     } = useFormikContext<CreateServerRequest>();
 
     const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>(undefined);
-    const [node, setNode] = useState<Node | undefined>(undefined);
+    const [node, setNode] = useState<Node | null>(null);
     const [currentStep, setCurrentStep] = useState<number>(1);
     const { colors } = useStoreState(state => state.theme.data!);
 
@@ -82,7 +82,7 @@ function InternalForm() {
     }, [egg]);
 
     useEffect(() => {
-        if (node !== undefined) {
+        if (node !== null) {
             setFieldValue('nodeId', node.id);
         }
     }, [node]);
@@ -183,7 +183,7 @@ function InternalForm() {
                                 </div>
                                 <div className="xl:col-span-2">
                                     <Label>Node</Label>
-                                    <NodeSelect node={node!} setNode={setNode} />
+                                    <NodeSelect node={node} setNode={setNode} />
                                 </div>
                                 <div className="rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner xl:col-span-2">
                                     <FormikSwitch
