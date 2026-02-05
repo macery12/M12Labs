@@ -408,7 +408,6 @@ function InternalForm() {
                         <AdminBox icon={faNetworkWired} title="Networking" isLoading={isSubmitting}>
                             <div className="grid grid-cols-1 gap-4 lg:gap-6">
                                 <div>
-                                    <Label>Server Allocations</Label>
                                     {!node ? (
                                         <Alert type={'info'}>Select a node to view allocations.</Alert>
                                     ) : loadingAllocations ? (
@@ -419,95 +418,133 @@ function InternalForm() {
                                         <Alert type={'warning'}>No available allocations on this node. Please create allocations first.</Alert>
                                     ) : (
                                         <>
-                                            <p className="mb-3 text-sm text-neutral-400">
-                                                Select one or more allocations. The first selected or starred allocation will be the primary allocation.
-                                            </p>
-                                            <div className="rounded border border-neutral-600 overflow-hidden max-h-[400px] overflow-y-auto">
-                                                <div className="divide-y divide-neutral-600">
-                                                    {availableAllocations.map(allocation => {
-                                                        const isSelected = selectedAllocations.includes(allocation.id);
-                                                        const isPrimary = primaryAllocationId === allocation.id;
-                                                        
-                                                        return (
-                                                            <div
-                                                                key={allocation.id}
-                                                                className={classNames(
-                                                                    'flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-neutral-700',
-                                                                    isSelected && 'bg-neutral-700'
-                                                                )}
-                                                                onClick={() => {
-                                                                    if (isSelected) {
-                                                                        // Unselect
-                                                                        setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
-                                                                        if (isPrimary) {
-                                                                            // If removing primary, set next as primary or null
-                                                                            const remaining = selectedAllocations.filter(id => id !== allocation.id);
-                                                                            setPrimaryAllocationId(remaining.length > 0 ? remaining[0] : null);
+                                            {/* Primary Allocation Section */}
+                                            <div className="mb-6">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Label>Primary Allocation</Label>
+                                                    <span className="text-xs bg-blue-500 px-2 py-0.5 rounded flex items-center gap-1">
+                                                        <FontAwesomeIcon icon={faStar} className="text-xs" />
+                                                        Required
+                                                    </span>
+                                                </div>
+                                                <p className="mb-3 text-xs text-neutral-400">
+                                                    The primary allocation will be used as the default connection endpoint for your server.
+                                                </p>
+                                                <div className="rounded border border-blue-600/50 bg-blue-950/20 overflow-hidden">
+                                                    <div className="divide-y divide-neutral-700">
+                                                        {availableAllocations.map(allocation => {
+                                                            const isPrimary = primaryAllocationId === allocation.id;
+                                                            
+                                                            return (
+                                                                <div
+                                                                    key={allocation.id}
+                                                                    className={classNames(
+                                                                        'flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-neutral-700/50',
+                                                                        isPrimary && 'bg-blue-950/40'
+                                                                    )}
+                                                                    onClick={() => {
+                                                                        setPrimaryAllocationId(allocation.id);
+                                                                        // Ensure primary is in selected allocations
+                                                                        if (!selectedAllocations.includes(allocation.id)) {
+                                                                            setSelectedAllocations(prev => [...prev, allocation.id]);
                                                                         }
-                                                                    } else {
-                                                                        // Select
-                                                                        setSelectedAllocations(prev => [...prev, allocation.id]);
-                                                                        // If no primary set, make this primary
-                                                                        if (primaryAllocationId === null) {
-                                                                            setPrimaryAllocationId(allocation.id);
-                                                                        }
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={isSelected}
-                                                                        onChange={() => {}}
-                                                                        className="cursor-pointer"
-                                                                        onClick={e => e.stopPropagation()}
-                                                                    />
-                                                                    <span className="font-mono text-sm">
-                                                                        {allocation.getDisplayText()}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
+                                                                    }}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <input
+                                                                            type="radio"
+                                                                            checked={isPrimary}
+                                                                            onChange={() => {
+                                                                                setPrimaryAllocationId(allocation.id);
+                                                                                if (!selectedAllocations.includes(allocation.id)) {
+                                                                                    setSelectedAllocations(prev => [...prev, allocation.id]);
+                                                                                }
+                                                                            }}
+                                                                            className="cursor-pointer"
+                                                                            onClick={e => e.stopPropagation()}
+                                                                        />
+                                                                        <span className="font-mono text-sm">
+                                                                            {allocation.getDisplayText()}
+                                                                        </span>
+                                                                    </div>
                                                                     {isPrimary && (
                                                                         <span className="text-xs bg-blue-500 px-2 py-0.5 rounded flex items-center gap-1">
                                                                             <FontAwesomeIcon icon={faStar} className="text-xs" />
                                                                             Primary
                                                                         </span>
                                                                     )}
-                                                                    {isSelected && !isPrimary && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setPrimaryAllocationId(allocation.id);
-                                                                            }}
-                                                                            className="text-xs px-2 py-0.5 rounded border border-neutral-500 hover:border-blue-500 hover:text-blue-400 transition-colors"
-                                                                        >
-                                                                            Set Primary
-                                                                        </button>
-                                                                    )}
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })}
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            {selectedAllocations.length > 0 && (
-                                                <div className="mt-3 p-3 bg-neutral-800 rounded text-sm">
-                                                    <p className="text-neutral-300">
-                                                        <strong>{selectedAllocations.length}</strong> allocation(s) selected
-                                                        {primaryAllocationId && (
-                                                            <>
-                                                                {' • '}
-                                                                <strong>Primary:</strong>{' '}
-                                                                {availableAllocations.find(a => a.id === primaryAllocationId)?.getDisplayText()}
-                                                            </>
-                                                        )}
-                                                    </p>
+
+                                            {/* Additional Allocations Section */}
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Label>Additional Allocations</Label>
+                                                    <span className="text-xs bg-neutral-600 px-2 py-0.5 rounded">
+                                                        Optional
+                                                    </span>
                                                 </div>
-                                            )}
-                                            <p className="text-xs text-neutral-400 mt-2">
-                                                💡 Click to select/unselect allocations. Click "Set Primary" to designate the primary allocation. The primary allocation will be used as the default connection endpoint.
-                                            </p>
+                                                <p className="mb-3 text-xs text-neutral-400">
+                                                    Select additional allocations for your server. The primary allocation cannot be deselected.
+                                                </p>
+                                                <div className="rounded border border-neutral-600 overflow-hidden max-h-[300px] overflow-y-auto">
+                                                    <div className="divide-y divide-neutral-600">
+                                                        {availableAllocations
+                                                            .filter(allocation => allocation.id !== primaryAllocationId)
+                                                            .map(allocation => {
+                                                                const isSelected = selectedAllocations.includes(allocation.id);
+                                                                
+                                                                return (
+                                                                    <div
+                                                                        key={allocation.id}
+                                                                        className={classNames(
+                                                                            'flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-neutral-700',
+                                                                            isSelected && 'bg-neutral-700'
+                                                                        )}
+                                                                        onClick={() => {
+                                                                            if (isSelected) {
+                                                                                setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
+                                                                            } else {
+                                                                                setSelectedAllocations(prev => [...prev, allocation.id]);
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isSelected}
+                                                                            onChange={() => {
+                                                                                if (isSelected) {
+                                                                                    setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
+                                                                                } else {
+                                                                                    setSelectedAllocations(prev => [...prev, allocation.id]);
+                                                                                }
+                                                                            }}
+                                                                            className="cursor-pointer"
+                                                                            onClick={e => e.stopPropagation()}
+                                                                        />
+                                                                        <span className="font-mono text-sm">
+                                                                            {allocation.getDisplayText()}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        {availableAllocations.filter(a => a.id !== primaryAllocationId).length === 0 && (
+                                                            <div className="p-4 text-center text-sm text-neutral-400">
+                                                                No additional allocations available.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {selectedAllocations.filter(id => id !== primaryAllocationId).length > 0 && (
+                                                    <div className="mt-3 p-3 bg-neutral-800 rounded text-xs text-neutral-300">
+                                                        <strong>{selectedAllocations.filter(id => id !== primaryAllocationId).length}</strong> additional allocation(s) selected
+                                                    </div>
+                                                )}
+                                            </div>
                                         </>
                                     )}
                                 </div>
