@@ -488,9 +488,9 @@ function InternalForm() {
                                                 {values.featureLimits.allocations > 0 && (
                                                     <div className="mb-3 p-2 bg-neutral-800 rounded text-xs">
                                                         <span className="text-neutral-300">
-                                                            <strong>{selectedAllocations.length}</strong> / <strong>{values.featureLimits.allocations}</strong> allocations used
+                                                            <strong>{(primaryAllocationId ? 1 : 0) + selectedAllocations.length}</strong> / <strong>{values.featureLimits.allocations}</strong> allocations used
                                                         </span>
-                                                        {selectedAllocations.length >= values.featureLimits.allocations && (
+                                                        {((primaryAllocationId ? 1 : 0) + selectedAllocations.length) >= values.featureLimits.allocations && (
                                                             <span className="ml-2 text-yellow-400">
                                                                 (Limit reached)
                                                             </span>
@@ -504,7 +504,9 @@ function InternalForm() {
                                                             .map(allocation => {
                                                                 const isSelected = selectedAllocations.includes(allocation.id);
                                                                 const allocationLimit = values.featureLimits.allocations;
-                                                                const isAtLimit = allocationLimit > 0 && selectedAllocations.length >= allocationLimit;
+                                                                // Include primary allocation in the count
+                                                                const totalAllocations = (primaryAllocationId ? 1 : 0) + selectedAllocations.length;
+                                                                const isAtLimit = allocationLimit > 0 && totalAllocations >= allocationLimit;
                                                                 const isDisabled = !isSelected && isAtLimit;
                                                                 
                                                                 return (
@@ -690,9 +692,14 @@ function InternalForm() {
     };
 
     return (
-        <Form onKeyDown={(e) => {
-            // Prevent form submission on Enter key press
-            if (e.key === 'Enter' && currentStep < 5) {
+        <Form onSubmit={(e) => {
+            // Only allow submission on step 5 and when explicitly submitted
+            if (currentStep < 5) {
+                e.preventDefault();
+            }
+        }} onKeyDown={(e) => {
+            // Prevent form submission on Enter key press unless on step 5
+            if (e.key === 'Enter') {
                 e.preventDefault();
             }
         }}>
