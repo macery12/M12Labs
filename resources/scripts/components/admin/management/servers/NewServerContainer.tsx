@@ -112,9 +112,6 @@ function InternalForm() {
             setFieldValue('allocation.default', primaryAllocationId);
             const additional = selectedAllocations.filter(id => id !== primaryAllocationId);
             setFieldValue('allocation.additional', additional);
-        } else if (selectedAllocations.length > 0) {
-            // Auto-set first as primary if none selected
-            setPrimaryAllocationId(selectedAllocations[0]);
         }
     }, [selectedAllocations, primaryAllocationId]);
 
@@ -185,7 +182,7 @@ function InternalForm() {
             case 3:
                 return !!(values.limits.memory > 0 && values.limits.disk > 0);
             case 4:
-                return !!(primaryAllocationId !== null && selectedAllocations.length > 0);
+                return !!(primaryAllocationId !== null);
             case 5:
                 return true;
             default:
@@ -226,7 +223,6 @@ function InternalForm() {
                                     <OwnerSelect />
                                 </div>
                                 <div className="xl:col-span-2">
-                                    <Label>Node</Label>
                                     <NodeSelect node={node} setNode={setNode} />
                                 </div>
                                 <div className="rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner xl:col-span-2">
@@ -444,10 +440,6 @@ function InternalForm() {
                                                                     )}
                                                                     onClick={() => {
                                                                         setPrimaryAllocationId(allocation.id);
-                                                                        // Ensure primary is in selected allocations
-                                                                        if (!selectedAllocations.includes(allocation.id)) {
-                                                                            setSelectedAllocations(prev => [...prev, allocation.id]);
-                                                                        }
                                                                     }}
                                                                 >
                                                                     <div className="flex items-center gap-3">
@@ -456,9 +448,6 @@ function InternalForm() {
                                                                             checked={isPrimary}
                                                                             onChange={() => {
                                                                                 setPrimaryAllocationId(allocation.id);
-                                                                                if (!selectedAllocations.includes(allocation.id)) {
-                                                                                    setSelectedAllocations(prev => [...prev, allocation.id]);
-                                                                                }
                                                                             }}
                                                                             className="cursor-pointer"
                                                                             onClick={e => e.stopPropagation()}
