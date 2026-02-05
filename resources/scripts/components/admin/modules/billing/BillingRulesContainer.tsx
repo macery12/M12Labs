@@ -190,7 +190,7 @@ export default () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedStepsForDisplay.map((step) => (
+                                {sortedStepsForDisplay.map((step, idx) => (
                                     <tr 
                                         key={step.id} 
                                         css={tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`}
@@ -198,7 +198,7 @@ export default () => {
                                         <td css={tw`py-3 px-4`}>
                                             <div css={tw`flex items-center gap-2`}>
                                                 <span css={tw`text-neutral-300 min-w-[150px]`}>
-                                                    {formatBillingLength(step.maxDays, sortedStepsForDisplay.indexOf(step) === sortedStepsForDisplay.length - 1)}
+                                                    {formatBillingLength(step.maxDays, idx === sortedStepsForDisplay.length - 1)}
                                                 </span>
                                                 <Input
                                                     type={'number'}
