@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ContentBox from '@/elements/ContentBox';
 import CreateApiKeyForm from '@account/forms/CreateApiKeyForm';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
@@ -44,11 +43,11 @@ export default () => {
             .then(keys => setApiKeys(keys))
             .then(() => setLoadingApi(false))
             .catch(error => clearAndAddHttpError(error));
-    }, []);
+    }, [clearAndAddHttpError]);
 
     useEffect(() => {
         clearAndAddHttpError(sshError);
-    }, [sshError]);
+    }, [sshError, clearAndAddHttpError]);
 
     const doDeletion = (identifier: string) => {
         setLoadingApi(true);
