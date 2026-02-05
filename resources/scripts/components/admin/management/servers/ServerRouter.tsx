@@ -61,15 +61,15 @@ export default () => {
                     <h2 css={tw`text-3xl text-neutral-50 font-header font-bold flex-shrink`} style={{ minWidth: '0' }}>
                         {server.name}
                     </h2>
+                    <Pill type={'success'} css={tw`ml-3`}>
+                        <InformationCircleIcon className={'mr-1 w-3'} /> {server.status ?? 'Active'}
+                    </Pill>
                     <div className={'ml-auto flex items-center space-x-2'}>
                         {billing.enabled && server.billingProductId && (
                             <Pill type={'info'}>
                                 <CurrencyDollarIcon className={'mr-1 w-3'} /> Billable
                             </Pill>
                         )}
-                        <Pill type={'success'}>
-                            <InformationCircleIcon className={'mr-1 w-3'} /> {server.status ?? 'Active'}
-                        </Pill>
                     </div>
                 </div>
 

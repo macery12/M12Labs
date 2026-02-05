@@ -67,13 +67,8 @@ export default () => {
                 )}
             </Dialog.Confirm>
 
-            <Button.Danger
-                type="button"
-                onClick={() => setVisible(true)}
-                className="flex w-full items-center justify-center text-sm"
-            >
-                <TrashIcon className="mr-2 h-4 w-4" />
-                Delete Server
+            <Button.Danger type="button" onClick={() => setVisible(true)} className="flex items-center justify-center">
+                <TrashIcon className="h-4 w-4" />
             </Button.Danger>
         </>
     );

@@ -80,16 +80,22 @@ export default () => {
         >
             {({ isSubmitting, isValid }) => (
                 <Form>
-                    <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-16`}>
+                    <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-16 items-start`}>
                         <div css={tw`grid grid-cols-1 gap-y-6`}>
                             <BaseSettingsBox />
                             <FeatureLimitsBox />
                             <NetworkingBox />
                         </div>
 
-                        <div css={tw`flex flex-col`}>
-                            <ServerResourceBox />
-                            <TitledGreyBox title={'Node Information'} icon={faLayerGroup} className={'mt-6'}>
+                        <div css={tw`flex flex-col h-full`}>
+                            <div css={tw`flex-shrink-0`}>
+                                <ServerResourceBox />
+                            </div>
+                            <TitledGreyBox
+                                title={'Node Information'}
+                                icon={faLayerGroup}
+                                className={'mt-6 flex-shrink-0'}
+                            >
                                 {!node ? (
                                     <Spinner size={'large'} centered />
                                 ) : (
@@ -101,17 +107,13 @@ export default () => {
 
                             <div
                                 style={{ backgroundColor: secondary }}
-                                css={tw`rounded shadow-md px-4 xl:px-5 py-4 mt-6`}
+                                css={tw`rounded shadow-md px-4 xl:px-5 py-4 mt-6 flex-shrink-0`}
                             >
-                                <div css={tw`flex flex-col space-y-4`}>
-                                    <Button type="submit" className="w-full" disabled={isSubmitting || !isValid}>
+                                <div css={tw`flex flex-row items-center justify-between gap-3`}>
+                                    <Button type="submit" css={tw`flex-1`} disabled={isSubmitting || !isValid}>
                                         Save Changes
                                     </Button>
-
-                                    <div css={tw`border-t border-neutral-700 pt-4`}>
-                                        <p css={tw`text-xs text-neutral-400 mb-2`}>Danger Zone</p>
-                                        <ServerDeleteButton />
-                                    </div>
+                                    <ServerDeleteButton />
                                 </div>
                             </div>
                         </div>
