@@ -103,7 +103,10 @@ export default () => {
             const sortedSteps = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
             
             // Remove IDs before saving (backend doesn't need them)
-            const stepsToSave = sortedSteps.map(({ id, ...step }) => step);
+            const stepsToSave = sortedSteps.map(step => ({ 
+                maxDays: step.maxDays, 
+                multiplier: step.multiplier 
+            }));
 
             // Save both settings
             await updateSettings('renewal:default_billing_days', defaultBillingDays);
@@ -221,8 +224,8 @@ export default () => {
                                                     css={[
                                                         tw`min-w-[120px] font-medium`,
                                                         Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
-                                                        step.multiplier > 1.0 && tw`text-red-400`,
-                                                        step.multiplier < 1.0 && tw`text-green-400`,
+                                                        step.multiplier >= (1.0 + EPSILON) && tw`text-red-400`,
+                                                        step.multiplier <= (1.0 - EPSILON) && tw`text-green-400`,
                                                     ]}
                                                 >
                                                     {formatPriceAdjustment(step.multiplier)}
