@@ -1,4 +1,5 @@
-import { faNetworkWired, faBalanceScale, faCogs, faConciergeBell } from '@fortawesome/free-solid-svg-icons';
+import { faNetworkWired, faBalanceScale, faCogs, faConciergeBell, faStar } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { FormikHelpers } from 'formik';
 import { Form, Formik, useFormikContext } from 'formik';
 import { useEffect, useState } from 'react';
@@ -27,13 +28,13 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import { WithRelationships } from '@/api/routes/admin';
-import { AsyncSelectField } from '@/elements/SelectField';
-import type { Option } from '@/elements/SelectField';
+import type { Allocation } from '@/api/routes/admin/nodes/getAllocations';
 import getAllocations from '@/api/routes/admin/nodes/getAllocations';
 import { Alert } from '@/elements/alert';
 import CheckoutStepper from '@/components/account/billing/order/CheckoutStepper';
 import { useStoreState } from '@/state/hooks';
 import classNames from 'classnames';
+import Spinner from '@/elements/Spinner';
 
 // Resource preset options
 const MEMORY_PRESETS = [
@@ -49,6 +50,14 @@ const DISK_PRESETS = [
     { label: '25 GB', value: 25600 },
     { label: '50 GB', value: 51200 },
     { label: '100 GB', value: 102400 },
+];
+
+const CPU_PRESETS = [
+    { label: '100%', value: 100 },
+    { label: '200%', value: 200 },
+    { label: '300%', value: 300 },
+    { label: '400%', value: 400 },
+    { label: '500%', value: 500 },
 ];
 
 interface Step {
@@ -69,6 +78,10 @@ function InternalForm() {
     const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>(undefined);
     const [node, setNode] = useState<Node | null>(null);
     const [currentStep, setCurrentStep] = useState<number>(1);
+    const [availableAllocations, setAvailableAllocations] = useState<Allocation[]>([]);
+    const [selectedAllocations, setSelectedAllocations] = useState<number[]>([]);
+    const [primaryAllocationId, setPrimaryAllocationId] = useState<number | null>(null);
+    const [loadingAllocations, setLoadingAllocations] = useState(false);
     const { colors } = useStoreState(state => state.theme.data!);
 
     useEffect(() => {
@@ -84,8 +97,39 @@ function InternalForm() {
     useEffect(() => {
         if (node !== null) {
             setFieldValue('nodeId', node.id);
+            // Load allocations for the selected node
+            loadAllocationsForNode(node.id);
+        } else {
+            setAvailableAllocations([]);
+            setSelectedAllocations([]);
+            setPrimaryAllocationId(null);
         }
     }, [node]);
+
+    // Sync allocation selections with form values
+    useEffect(() => {
+        if (primaryAllocationId !== null) {
+            setFieldValue('allocation.default', primaryAllocationId);
+            const additional = selectedAllocations.filter(id => id !== primaryAllocationId);
+            setFieldValue('allocation.additional', additional);
+        } else if (selectedAllocations.length > 0) {
+            // Auto-set first as primary if none selected
+            setPrimaryAllocationId(selectedAllocations[0]);
+        }
+    }, [selectedAllocations, primaryAllocationId]);
+
+    const loadAllocationsForNode = async (nodeId: number) => {
+        setLoadingAllocations(true);
+        try {
+            const allocs = await getAllocations(nodeId, { server_id: '0' });
+            setAvailableAllocations(allocs);
+        } catch (error) {
+            console.error('Failed to load allocations:', error);
+            setAvailableAllocations([]);
+        } finally {
+            setLoadingAllocations(false);
+        }
+    };
 
     const loadOptions = async (inputValue: string, callback: (options: Option[]) => void) => {
         if (!node) {
@@ -141,7 +185,7 @@ function InternalForm() {
             case 3:
                 return !!(values.limits.memory > 0 && values.limits.disk > 0);
             case 4:
-                return !!values.allocation.default;
+                return !!(primaryAllocationId !== null && selectedAllocations.length > 0);
             case 5:
                 return true;
             default:
@@ -290,21 +334,49 @@ function InternalForm() {
                                 </div>
 
                                 {/* CPU Section */}
-                                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                                    <Field
-                                        id={'limits.cpu'}
-                                        name={'limits.cpu'}
-                                        label={'CPU Limit (%)'}
-                                        type={'number'}
-                                        description={'Each thread on the system is considered to be 100%. Setting this to 0 will allow the server to use CPU time without restriction.'}
-                                    />
-                                    <Field
-                                        id={'limits.threads'}
-                                        name={'limits.threads'}
-                                        label={'CPU Pinning'}
-                                        type={'text'}
-                                        description={'Advanced: Enter the specific CPU cores that this server can run on, or leave blank to allow all cores.'}
-                                    />
+                                <div>
+                                    <Label>CPU Limit (%)</Label>
+                                    <p className="mb-3 text-sm text-neutral-400">
+                                        Select a preset or enter a custom value
+                                    </p>
+                                    <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-5">
+                                        {CPU_PRESETS.map(preset => (
+                                            <button
+                                                key={preset.value}
+                                                type="button"
+                                                onClick={() => setFieldValue('limits.cpu', preset.value)}
+                                                className={classNames(
+                                                    'rounded border-2 px-4 py-2 text-center font-medium transition-all',
+                                                    values.limits.cpu === preset.value
+                                                        ? 'border-primary-500 bg-primary-500/20 text-primary-400'
+                                                        : 'border-neutral-600 bg-neutral-700 text-neutral-300 hover:border-neutral-500',
+                                                )}
+                                                style={
+                                                    values.limits.cpu === preset.value
+                                                        ? { borderColor: colors.primary, color: colors.primary }
+                                                        : {}
+                                                }
+                                            >
+                                                {preset.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                                        <Field
+                                            id={'limits.cpu'}
+                                            name={'limits.cpu'}
+                                            label={'Custom CPU Limit (%)'}
+                                            type={'number'}
+                                            description={'Each thread on the system is considered to be 100%. Setting this to 0 will allow the server to use CPU time without restriction.'}
+                                        />
+                                        <Field
+                                            id={'limits.threads'}
+                                            name={'limits.threads'}
+                                            label={'CPU Pinning'}
+                                            type={'text'}
+                                            description={'Advanced: Enter the specific CPU cores that this server can run on, or leave blank to allow all cores.'}
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Other Resource Limits */}
@@ -336,15 +408,107 @@ function InternalForm() {
                         <AdminBox icon={faNetworkWired} title="Networking" isLoading={isSubmitting}>
                             <div className="grid grid-cols-1 gap-4 lg:gap-6">
                                 <div>
-                                    <Label htmlFor={'allocation.default'}>Primary Allocation</Label>
+                                    <Label>Server Allocations</Label>
                                     {!node ? (
                                         <Alert type={'info'}>Select a node to view allocations.</Alert>
+                                    ) : loadingAllocations ? (
+                                        <div className="flex items-center justify-center p-8">
+                                            <Spinner size="small" />
+                                        </div>
+                                    ) : availableAllocations.length === 0 ? (
+                                        <Alert type={'warning'}>No available allocations on this node. Please create allocations first.</Alert>
                                     ) : (
-                                        <AsyncSelectField
-                                            id={'allocation.default'}
-                                            name={'allocation.default'}
-                                            loadOptions={loadOptions}
-                                        />
+                                        <>
+                                            <p className="mb-3 text-sm text-neutral-400">
+                                                Select one or more allocations. The first selected or starred allocation will be the primary allocation.
+                                            </p>
+                                            <div className="rounded border border-neutral-600 overflow-hidden max-h-[400px] overflow-y-auto">
+                                                <div className="divide-y divide-neutral-600">
+                                                    {availableAllocations.map(allocation => {
+                                                        const isSelected = selectedAllocations.includes(allocation.id);
+                                                        const isPrimary = primaryAllocationId === allocation.id;
+                                                        
+                                                        return (
+                                                            <div
+                                                                key={allocation.id}
+                                                                className={classNames(
+                                                                    'flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-neutral-700',
+                                                                    isSelected && 'bg-neutral-700'
+                                                                )}
+                                                                onClick={() => {
+                                                                    if (isSelected) {
+                                                                        // Unselect
+                                                                        setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
+                                                                        if (isPrimary) {
+                                                                            // If removing primary, set next as primary or null
+                                                                            const remaining = selectedAllocations.filter(id => id !== allocation.id);
+                                                                            setPrimaryAllocationId(remaining.length > 0 ? remaining[0] : null);
+                                                                        }
+                                                                    } else {
+                                                                        // Select
+                                                                        setSelectedAllocations(prev => [...prev, allocation.id]);
+                                                                        // If no primary set, make this primary
+                                                                        if (primaryAllocationId === null) {
+                                                                            setPrimaryAllocationId(allocation.id);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isSelected}
+                                                                        onChange={() => {}}
+                                                                        className="cursor-pointer"
+                                                                        onClick={e => e.stopPropagation()}
+                                                                    />
+                                                                    <span className="font-mono text-sm">
+                                                                        {allocation.getDisplayText()}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    {isPrimary && (
+                                                                        <span className="text-xs bg-blue-500 px-2 py-0.5 rounded flex items-center gap-1">
+                                                                            <FontAwesomeIcon icon={faStar} className="text-xs" />
+                                                                            Primary
+                                                                        </span>
+                                                                    )}
+                                                                    {isSelected && !isPrimary && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setPrimaryAllocationId(allocation.id);
+                                                                            }}
+                                                                            className="text-xs px-2 py-0.5 rounded border border-neutral-500 hover:border-blue-500 hover:text-blue-400 transition-colors"
+                                                                        >
+                                                                            Set Primary
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                            {selectedAllocations.length > 0 && (
+                                                <div className="mt-3 p-3 bg-neutral-800 rounded text-sm">
+                                                    <p className="text-neutral-300">
+                                                        <strong>{selectedAllocations.length}</strong> allocation(s) selected
+                                                        {primaryAllocationId && (
+                                                            <>
+                                                                {' • '}
+                                                                <strong>Primary:</strong>{' '}
+                                                                {availableAllocations.find(a => a.id === primaryAllocationId)?.getDisplayText()}
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-neutral-400 mt-2">
+                                                💡 Click to select/unselect allocations. Click "Set Primary" to designate the primary allocation. The primary allocation will be used as the default connection endpoint.
+                                            </p>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -437,6 +601,27 @@ function InternalForm() {
                                 <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
                                     <span className="text-neutral-400">CPU:</span>
                                     <span className="font-medium text-neutral-200">{values.limits.cpu}%</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                    <span className="text-neutral-400">Allocations:</span>
+                                    <div className="font-medium text-neutral-200">
+                                        {selectedAllocations.length > 0 ? (
+                                            <div className="space-y-1">
+                                                {availableAllocations
+                                                    .filter(a => selectedAllocations.includes(a.id))
+                                                    .map(a => (
+                                                        <div key={a.id} className="flex items-center gap-2">
+                                                            <span className="font-mono text-xs">{a.getDisplayText()}</span>
+                                                            {a.id === primaryAllocationId && (
+                                                                <span className="text-xs bg-blue-500 px-1.5 py-0.5 rounded">Primary</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        ) : (
+                                            'Not set'
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </AdminBox>
