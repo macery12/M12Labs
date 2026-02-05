@@ -231,8 +231,6 @@ export default () => {
                                                 <div css={tw`flex items-center gap-2`}>
                                                     <span className={`min-w-[120px] font-medium ${getMultiplierColorClass(step.multiplier)}`}>
                                                         {formatPriceAdjustment(step.multiplier)}
-                                                    <span className={`min-w-[120px] font-medium ${getMultiplierColorClass(step.multiplier)}`}>
-                                                        {formatPriceAdjustment(step.multiplier)}
                                                     </span>
                                                     <Input
                                                         type={'number'}
