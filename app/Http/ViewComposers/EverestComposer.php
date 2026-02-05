@@ -3,6 +3,7 @@
 namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
+use Everest\Models\Setting;
 use Everest\Services\Billing\PaymentProcessorConfigService;
 
 class EverestComposer
@@ -81,6 +82,8 @@ class EverestComposer
                     'suspension_threshold' => config('modules.billing.renewal.suspension_threshold', 7),
                     'free_suspension_days' => config('modules.billing.renewal.free_suspension_days', 7),
                     'paid_suspension_days' => config('modules.billing.renewal.paid_suspension_days', 30),
+                    'default_billing_days' => (int) Setting::get('settings::modules:billing:renewal:default_billing_days', config('modules.billing.renewal.default_billing_days', 30)),
+                    'multiplier_steps' => Setting::get('settings::modules:billing:renewal:multiplier_steps', config('modules.billing.renewal.multiplier_steps')),
                 ],
                 'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
                 'integrations' => [
