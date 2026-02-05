@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { nanoid } from 'nanoid';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { useStoreActions, useStoreState } from '@/state/hooks';
@@ -13,12 +14,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import tw from 'twin.macro';
 
 interface MultiplierStep {
+    id: string;
     maxDays: number;
     multiplier: number;
 }
 
 const formatPriceAdjustment = (multiplier: number): string => {
-    if (multiplier === 1.0) return 'Standard price';
+    // Use epsilon comparison for floating point
+    if (Math.abs(multiplier - 1.0) < 0.001) return 'Standard price';
     const percentage = Math.round((multiplier - 1) * 100);
     if (percentage > 0) return `+${percentage}%`;
     return `${percentage}%`;
@@ -41,17 +44,22 @@ export default () => {
     const parseSteps = (stepsString: string | undefined): MultiplierStep[] => {
         if (!stepsString) {
             return [
-                { maxDays: 10, multiplier: 1.30 },
-                { maxDays: 20, multiplier: 1.20 },
-                { maxDays: 29, multiplier: 1.10 },
-                { maxDays: 30, multiplier: 1.00 },
-                { maxDays: 59, multiplier: 0.95 },
-                { maxDays: 89, multiplier: 0.90 },
-                { maxDays: 999, multiplier: 0.85 },
+                { id: nanoid(), maxDays: 10, multiplier: 1.30 },
+                { id: nanoid(), maxDays: 20, multiplier: 1.20 },
+                { id: nanoid(), maxDays: 29, multiplier: 1.10 },
+                { id: nanoid(), maxDays: 30, multiplier: 1.00 },
+                { id: nanoid(), maxDays: 59, multiplier: 0.95 },
+                { id: nanoid(), maxDays: 89, multiplier: 0.90 },
+                { id: nanoid(), maxDays: 999, multiplier: 0.85 },
             ];
         }
         try {
-            return JSON.parse(stepsString);
+            const parsed = JSON.parse(stepsString);
+            // Add IDs to existing steps if they don't have them
+            return parsed.map((step: any) => ({
+                ...step,
+                id: step.id || nanoid(),
+            }));
         } catch {
             return [];
         }
@@ -63,16 +71,17 @@ export default () => {
     const [loading, setLoading] = useState(false);
 
     const addStep = () => {
-        setMultiplierSteps([...multiplierSteps, { maxDays: 30, multiplier: 1.0 }]);
+        setMultiplierSteps([...multiplierSteps, { id: nanoid(), maxDays: 30, multiplier: 1.0 }]);
     };
 
-    const removeStep = (index: number) => {
-        setMultiplierSteps(multiplierSteps.filter((_, i) => i !== index));
+    const removeStep = (id: string) => {
+        setMultiplierSteps(multiplierSteps.filter(step => step.id !== id));
     };
 
-    const updateStep = (index: number, field: 'maxDays' | 'multiplier', value: number) => {
-        const updated = [...multiplierSteps];
-        updated[index] = { ...updated[index], [field]: value };
+    const updateStep = (id: string, field: 'maxDays' | 'multiplier', value: number) => {
+        const updated = multiplierSteps.map(step =>
+            step.id === id ? { ...step, [field]: value } : step
+        );
         setMultiplierSteps(updated);
     };
 
@@ -88,10 +97,13 @@ export default () => {
 
             // Sort steps by maxDays for consistency
             const sortedSteps = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
+            
+            // Remove IDs before saving (backend doesn't need them)
+            const stepsToSave = sortedSteps.map(({ id, ...step }) => step);
 
             // Save both settings
             await updateSettings('renewal:default_billing_days', defaultBillingDays);
-            await updateSettings('renewal:multiplier_steps', JSON.stringify(sortedSteps));
+            await updateSettings('renewal:multiplier_steps', JSON.stringify(stepsToSave));
 
             // Update state with all new values
             updateEverest({
@@ -100,7 +112,7 @@ export default () => {
                     renewal: {
                         ...settings.renewal,
                         default_billing_days: defaultBillingDays,
-                        multiplier_steps: JSON.stringify(sortedSteps),
+                        multiplier_steps: JSON.stringify(stepsToSave),
                     },
                 },
             });
@@ -178,27 +190,22 @@ export default () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedStepsForDisplay.map((step, index) => (
+                                {sortedStepsForDisplay.map((step) => (
                                     <tr 
-                                        key={index} 
+                                        key={step.id} 
                                         css={tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`}
                                     >
                                         <td css={tw`py-3 px-4`}>
                                             <div css={tw`flex items-center gap-2`}>
                                                 <span css={tw`text-neutral-300 min-w-[150px]`}>
-                                                    {formatBillingLength(step.maxDays, index === sortedStepsForDisplay.length - 1)}
+                                                    {formatBillingLength(step.maxDays, sortedStepsForDisplay.indexOf(step) === sortedStepsForDisplay.length - 1)}
                                                 </span>
                                                 <Input
                                                     type={'number'}
                                                     min={1}
                                                     max={999}
                                                     value={step.maxDays}
-                                                    onChange={e => {
-                                                        const originalIndex = multiplierSteps.findIndex(
-                                                            s => s.maxDays === step.maxDays && s.multiplier === step.multiplier
-                                                        );
-                                                        updateStep(originalIndex, 'maxDays', parseInt(e.target.value) || 30);
-                                                    }}
+                                                    onChange={e => updateStep(step.id, 'maxDays', parseInt(e.target.value) || 30)}
                                                     disabled={loading}
                                                     css={tw`w-24`}
                                                 />
@@ -210,7 +217,7 @@ export default () => {
                                                     css={[
                                                         tw`min-w-[120px] font-medium`,
                                                         step.multiplier > 1.0 && tw`text-red-400`,
-                                                        step.multiplier === 1.0 && tw`text-blue-400`,
+                                                        Math.abs(step.multiplier - 1.0) < 0.001 && tw`text-blue-400`,
                                                         step.multiplier < 1.0 && tw`text-green-400`,
                                                     ]}
                                                 >
@@ -222,12 +229,7 @@ export default () => {
                                                     min={0.5}
                                                     max={2.0}
                                                     value={step.multiplier}
-                                                    onChange={e => {
-                                                        const originalIndex = multiplierSteps.findIndex(
-                                                            s => s.maxDays === step.maxDays && s.multiplier === step.multiplier
-                                                        );
-                                                        updateStep(originalIndex, 'multiplier', parseFloat(e.target.value) || 1.0);
-                                                    }}
+                                                    onChange={e => updateStep(step.id, 'multiplier', parseFloat(e.target.value) || 1.0)}
                                                     disabled={loading}
                                                     css={tw`w-24`}
                                                 />
@@ -236,12 +238,7 @@ export default () => {
                                         <td css={tw`py-3 px-4 text-right`}>
                                             <Button
                                                 type="button"
-                                                onClick={() => {
-                                                    const originalIndex = multiplierSteps.findIndex(
-                                                        s => s.maxDays === step.maxDays && s.multiplier === step.multiplier
-                                                    );
-                                                    removeStep(originalIndex);
-                                                }}
+                                                onClick={() => removeStep(step.id)}
                                                 className="!bg-red-500 hover:!bg-red-600"
                                                 disabled={loading || multiplierSteps.length === 1}
                                             >
