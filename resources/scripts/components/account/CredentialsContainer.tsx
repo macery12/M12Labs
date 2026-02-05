@@ -43,11 +43,13 @@ export default () => {
             .then(keys => setApiKeys(keys))
             .then(() => setLoadingApi(false))
             .catch(error => clearAndAddHttpError(error));
-    }, [clearAndAddHttpError]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         clearAndAddHttpError(sshError);
-    }, [sshError, clearAndAddHttpError]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sshError]);
 
     const doDeletion = (identifier: string) => {
         setLoadingApi(true);
