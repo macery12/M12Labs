@@ -496,21 +496,39 @@ function InternalForm() {
                                                 <p className="mb-3 text-xs text-neutral-400">
                                                     Select additional allocations for your server. The primary allocation cannot be deselected.
                                                 </p>
+                                                {values.featureLimits.allocations > 0 && (
+                                                    <div className="mb-3 p-2 bg-neutral-800 rounded text-xs">
+                                                        <span className="text-neutral-300">
+                                                            <strong>{selectedAllocations.length}</strong> / <strong>{values.featureLimits.allocations}</strong> allocations used
+                                                        </span>
+                                                        {selectedAllocations.length >= values.featureLimits.allocations && (
+                                                            <span className="ml-2 text-yellow-400">
+                                                                (Limit reached)
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <div className="rounded border border-neutral-600 overflow-hidden max-h-[240px] overflow-y-auto">
                                                     <div className="divide-y divide-neutral-600">
                                                         {availableAllocations
                                                             .filter(allocation => allocation.id !== primaryAllocationId)
                                                             .map(allocation => {
                                                                 const isSelected = selectedAllocations.includes(allocation.id);
+                                                                const allocationLimit = values.featureLimits.allocations;
+                                                                const isAtLimit = allocationLimit > 0 && selectedAllocations.length >= allocationLimit;
+                                                                const isDisabled = !isSelected && isAtLimit;
                                                                 
                                                                 return (
                                                                     <div
                                                                         key={allocation.id}
                                                                         className={classNames(
-                                                                            'flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-neutral-700',
+                                                                            'flex items-center gap-3 p-3 transition-colors',
+                                                                            isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-neutral-700',
                                                                             isSelected && 'bg-neutral-700'
                                                                         )}
                                                                         onClick={() => {
+                                                                            if (isDisabled) return;
+                                                                            
                                                                             if (isSelected) {
                                                                                 setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
                                                                             } else {
@@ -521,14 +539,17 @@ function InternalForm() {
                                                                         <input
                                                                             type="checkbox"
                                                                             checked={isSelected}
+                                                                            disabled={isDisabled}
                                                                             onChange={() => {
+                                                                                if (isDisabled) return;
+                                                                                
                                                                                 if (isSelected) {
                                                                                     setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
                                                                                 } else {
                                                                                     setSelectedAllocations(prev => [...prev, allocation.id]);
                                                                                 }
                                                                             }}
-                                                                            className="cursor-pointer"
+                                                                            className={isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}
                                                                             onClick={e => e.stopPropagation()}
                                                                         />
                                                                         <span className="font-mono text-sm">
@@ -680,7 +701,12 @@ function InternalForm() {
     };
 
     return (
-        <Form>
+        <Form onKeyDown={(e) => {
+            // Prevent form submission on Enter key press
+            if (e.key === 'Enter' && currentStep < 5) {
+                e.preventDefault();
+            }
+        }}>
             <CheckoutStepper steps={getWizardSteps()} />
             
             <div className="mb-8">
