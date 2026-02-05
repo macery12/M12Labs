@@ -37,6 +37,13 @@ const formatBillingLength = (maxDays: number, isLast: boolean, defaultBillingDay
     return `Up to ${maxDays} days`;
 };
 
+const getMultiplierColorClass = (multiplier: number): string => {
+    if (Math.abs(multiplier - 1.0) < EPSILON) return 'text-blue-400';
+    if (multiplier >= (1.0 + EPSILON)) return 'text-red-400';
+    if (multiplier <= (1.0 - EPSILON)) return 'text-green-400';
+    return 'text-neutral-300';
+};
+
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const updateEverest = useStoreActions(s => s.everest.updateEverest);
@@ -197,63 +204,61 @@ export default () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedStepsForDisplay.map((step, idx) => (
-                                    <tr 
-                                        key={step.id} 
-                                        css={tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`}
-                                    >
-                                        <td css={tw`py-3 px-4`}>
-                                            <div css={tw`flex items-center gap-2`}>
-                                                <span css={tw`text-neutral-300 min-w-[150px]`}>
-                                                    {formatBillingLength(step.maxDays, idx === sortedStepsForDisplay.length - 1, defaultBillingDays)}
-                                                </span>
-                                                <Input
-                                                    type={'number'}
-                                                    min={1}
-                                                    max={999}
-                                                    value={step.maxDays}
-                                                    onChange={e => updateStep(step.id, 'maxDays', parseInt(e.target.value) || 30)}
-                                                    disabled={loading}
-                                                    css={tw`w-24`}
-                                                />
-                                            </div>
-                                        </td>
-                                        <td css={tw`py-3 px-4`}>
-                                            <div css={tw`flex items-center gap-2`}>
-                                                <span 
-                                                    css={[
-                                                        tw`min-w-[120px] font-medium`,
-                                                        Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
-                                                        step.multiplier >= (1.0 + EPSILON) && tw`text-red-400`,
-                                                        step.multiplier <= (1.0 - EPSILON) && tw`text-green-400`,
-                                                    ]}
+                                {sortedStepsForDisplay.map((step, idx) => {
+                                    const isLast = idx === sortedStepsForDisplay.length - 1;
+                                    return (
+                                        <tr 
+                                            key={step.id} 
+                                            css={tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`}
+                                        >
+                                            <td css={tw`py-3 px-4`}>
+                                                <div css={tw`flex items-center gap-2`}>
+                                                    <span css={tw`text-neutral-300 min-w-[150px]`}>
+                                                        {formatBillingLength(step.maxDays, isLast, defaultBillingDays)}
+                                                    </span>
+                                                    <Input
+                                                        type={'number'}
+                                                        min={1}
+                                                        max={999}
+                                                        value={step.maxDays}
+                                                        onChange={e => updateStep(step.id, 'maxDays', parseInt(e.target.value) || 30)}
+                                                        disabled={loading}
+                                                        css={tw`w-24`}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td css={tw`py-3 px-4`}>
+                                                <div css={tw`flex items-center gap-2`}>
+                                                    <span className={`min-w-[120px] font-medium ${getMultiplierColorClass(step.multiplier)}`}>
+                                                        {formatPriceAdjustment(step.multiplier)}
+                                                    <span className={`min-w-[120px] font-medium ${getMultiplierColorClass(step.multiplier)}`}>
+                                                        {formatPriceAdjustment(step.multiplier)}
+                                                    </span>
+                                                    <Input
+                                                        type={'number'}
+                                                        step={0.01}
+                                                        min={0.5}
+                                                        max={2.0}
+                                                        value={step.multiplier}
+                                                        onChange={e => updateStep(step.id, 'multiplier', parseFloat(e.target.value) || 1.0)}
+                                                        disabled={loading}
+                                                        css={tw`w-24`}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td css={tw`py-3 px-4 text-right`}>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => removeStep(step.id)}
+                                                    className="!bg-red-500 hover:!bg-red-600"
+                                                    disabled={loading || multiplierSteps.length === 1}
                                                 >
-                                                    {formatPriceAdjustment(step.multiplier)}
-                                                </span>
-                                                <Input
-                                                    type={'number'}
-                                                    step={0.01}
-                                                    min={0.5}
-                                                    max={2.0}
-                                                    value={step.multiplier}
-                                                    onChange={e => updateStep(step.id, 'multiplier', parseFloat(e.target.value) || 1.0)}
-                                                    disabled={loading}
-                                                    css={tw`w-24`}
-                                                />
-                                            </div>
-                                        </td>
-                                        <td css={tw`py-3 px-4 text-right`}>
-                                            <Button
-                                                type="button"
-                                                onClick={() => removeStep(step.id)}
-                                                className="!bg-red-500 hover:!bg-red-600"
-                                                disabled={loading || multiplierSteps.length === 1}
-                                            >
-                                                <FontAwesomeIcon icon={faTrash} />
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    <FontAwesomeIcon icon={faTrash} />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
