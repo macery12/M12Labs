@@ -190,14 +190,22 @@ function InternalForm() {
         }
     };
 
-    const goToNextStep = () => {
+    const goToNextStep = (e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         if (currentStep < 5 && isStepValid(currentStep)) {
             setCurrentStep(currentStep + 1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
-    const goToPreviousStep = () => {
+    const goToPreviousStep = (e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -488,9 +496,9 @@ function InternalForm() {
                                                 {values.featureLimits.allocations > 0 && (
                                                     <div className="mb-3 p-2 bg-neutral-800 rounded text-xs">
                                                         <span className="text-neutral-300">
-                                                            <strong>{(primaryAllocationId ? 1 : 0) + selectedAllocations.length}</strong> / <strong>{values.featureLimits.allocations}</strong> allocations used
+                                                            <strong>{(primaryAllocationId !== null ? 1 : 0) + selectedAllocations.length}</strong> / <strong>{values.featureLimits.allocations}</strong> allocations used
                                                         </span>
-                                                        {((primaryAllocationId ? 1 : 0) + selectedAllocations.length) >= values.featureLimits.allocations && (
+                                                        {((primaryAllocationId !== null ? 1 : 0) + selectedAllocations.length) >= values.featureLimits.allocations && (
                                                             <span className="ml-2 text-yellow-400">
                                                                 (Limit reached)
                                                             </span>
@@ -505,7 +513,7 @@ function InternalForm() {
                                                                 const isSelected = selectedAllocations.includes(allocation.id);
                                                                 const allocationLimit = values.featureLimits.allocations;
                                                                 // Include primary allocation in the count
-                                                                const totalAllocations = (primaryAllocationId ? 1 : 0) + selectedAllocations.length;
+                                                                const totalAllocations = (primaryAllocationId !== null ? 1 : 0) + selectedAllocations.length;
                                                                 const isAtLimit = allocationLimit > 0 && totalAllocations >= allocationLimit;
                                                                 const isDisabled = !isSelected && isAtLimit;
                                                                 
@@ -712,7 +720,7 @@ function InternalForm() {
             <div className="flex justify-between rounded bg-neutral-700 px-4 py-3 shadow-md">
                 <Button
                     type="button"
-                    onClick={goToPreviousStep}
+                    onClick={(e) => goToPreviousStep(e)}
                     disabled={currentStep === 1}
                     className={currentStep === 1 ? 'invisible' : ''}
                 >
@@ -722,7 +730,7 @@ function InternalForm() {
                 {currentStep < 5 ? (
                     <Button
                         type="button"
-                        onClick={goToNextStep}
+                        onClick={(e) => goToNextStep(e)}
                         disabled={!isStepValid(currentStep)}
                     >
                         Next
