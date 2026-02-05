@@ -1,4 +1,5 @@
 export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
+export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal';
 
 export type CouponType = 'percentage' | 'fixed';
 export type CouponAllowedFor = 'both' | 'purchases' | 'renewals';
@@ -61,6 +62,14 @@ export interface OrderFilters {
     name?: string;
     description?: string;
     total?: number;
+    payment_processor?: PaymentProcessor;
+    status?: OrderStatus;
+    type?: string;
+    min_amount?: number;
+    max_amount?: number;
+    start_date?: string;
+    end_date?: string;
+    search?: string;
 }
 
 export interface BillingExceptionFilters {

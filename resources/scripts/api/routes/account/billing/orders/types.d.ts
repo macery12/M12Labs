@@ -1,9 +1,18 @@
 export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
 export type OrderType = 'new' | 'upg' | 'ren';
+export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal';
 
 export interface OrderFilters {
     id?: number;
     name?: string;
+    payment_processor?: PaymentProcessor;
+    status?: OrderStatus;
+    type?: OrderType;
+    min_amount?: number;
+    max_amount?: number;
+    start_date?: string;
+    end_date?: string;
+    search?: string;
 }
 
 export interface UpdateStripeIntent {

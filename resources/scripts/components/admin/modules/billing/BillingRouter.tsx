@@ -28,7 +28,7 @@ import {
 import Unfinished from '@/elements/Unfinished';
 import SettingsContainer from '@admin/modules/billing/SettingsContainer';
 import BillingExceptionsContainer from './exceptions/BillingExceptionsContainer';
-import RenewalDatesContainer from '@admin/modules/billing/RenewalDatesContainer';
+import BillingRulesContainer from '@admin/modules/billing/BillingRulesContainer';
 import IntegrationsContainer from './integrations/IntegrationsContainer';
 import { createIntegrationRegistry, getEnabledIntegrations } from './integrations/registry';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -78,8 +78,8 @@ export default () => {
             icon: TicketIcon,
         },
         {
-            to: '/admin/billing/renewal-dates',
-            name: 'Renewal Dates',
+            to: '/admin/billing/billing-rules',
+            name: 'Billing Rules',
             icon: CalendarIcon,
         },
     ];
@@ -147,7 +147,9 @@ export default () => {
 
                 <Route path={'/exceptions'} element={<BillingExceptionsContainer />} />
 
-                <Route path={'/renewal-dates'} element={<RenewalDatesContainer />} />
+                <Route path={'/billing-rules'} element={<BillingRulesContainer />} />
+                {/* Keep old route for backward compatibility */}
+                <Route path={'/renewal-dates'} element={<BillingRulesContainer />} />
 
                 <Route path={'/integrations'} element={<IntegrationsContainer />} />
 
