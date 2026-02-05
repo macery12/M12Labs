@@ -31,8 +31,8 @@ const formatPriceAdjustment = (multiplier: number): string => {
     return `${percentage}%`;
 };
 
-const formatBillingLength = (maxDays: number, isLast: boolean): string => {
-    if (maxDays === 30) return '30 days (base)';
+const formatBillingLength = (maxDays: number, isLast: boolean, defaultBillingDays: number): string => {
+    if (maxDays === defaultBillingDays) return `${maxDays} days (base)`;
     if (isLast) return `${maxDays}+ days`;
     return `Up to ${maxDays} days`;
 };
@@ -202,7 +202,7 @@ export default () => {
                                         <td css={tw`py-3 px-4`}>
                                             <div css={tw`flex items-center gap-2`}>
                                                 <span css={tw`text-neutral-300 min-w-[150px]`}>
-                                                    {formatBillingLength(step.maxDays, idx === sortedStepsForDisplay.length - 1)}
+                                                    {formatBillingLength(step.maxDays, idx === sortedStepsForDisplay.length - 1, defaultBillingDays)}
                                                 </span>
                                                 <Input
                                                     type={'number'}
@@ -220,8 +220,8 @@ export default () => {
                                                 <span 
                                                     css={[
                                                         tw`min-w-[120px] font-medium`,
-                                                        step.multiplier > 1.0 && tw`text-red-400`,
                                                         Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
+                                                        step.multiplier > 1.0 && tw`text-red-400`,
                                                         step.multiplier < 1.0 && tw`text-green-400`,
                                                     ]}
                                                 >
