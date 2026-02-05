@@ -87,7 +87,7 @@ export default () => {
                             <NetworkingBox />
                         </div>
 
-                        <div css={tw`flex flex-col h-full`}>
+                        <div css={tw`flex flex-col`}>
                             <div css={tw`flex-shrink-0`}>
                                 <ServerResourceBox />
                             </div>
