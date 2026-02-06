@@ -12,6 +12,7 @@ use Everest\Contracts\Repository\UserRepositoryInterface;
 use Everest\Exceptions\Repository\RecordNotFoundException;
 use Everest\Exceptions\Service\Subuser\UserIsServerOwnerException;
 use Everest\Exceptions\Service\Subuser\ServerSubuserExistsException;
+use Everest\Exceptions\DisplayException;
 
 class SubuserCreationService
 {
@@ -51,15 +52,7 @@ class SubuserCreationService
                     throw new ServerSubuserExistsException(trans('exceptions.subusers.subuser_exists'));
                 }
             } catch (RecordNotFoundException) {
-                // Just cap the username generated at 64 characters at most and then append a random string
-                // to the end to make it "unique"...
-                $username = substr(preg_replace('/([^\w\.-]+)/', '', strtok($email, '@')), 0, 64) . Str::random(3);
-
-                $user = $this->userCreationService->handle([
-                    'email' => $email,
-                    'username' => $username,
-                    'root_admin' => false,
-                ]);
+                throw new DisplayException('This user does not exist');
             }
 
             return $this->subuserRepository->create([

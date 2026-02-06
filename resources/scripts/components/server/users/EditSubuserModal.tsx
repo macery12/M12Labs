@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { type Subuser } from '@definitions/server';
 import { Form, Formik } from 'formik';
 import { array, object, string } from 'yup';
@@ -17,6 +17,7 @@ import PermissionTitleBox from '@server/users/PermissionTitleBox';
 import asModal from '@/hoc/asModal';
 import PermissionRow from '@server/users/PermissionRow';
 import ModalContext from '@/elements/ModalContext';
+import AccessControlGrid from '@server/users/AccessControlGrid';
 
 type Props = {
     subuser?: Subuser;
@@ -29,6 +30,7 @@ interface Values {
 
 const EditSubuserModal = ({ subuser }: Props) => {
     const ref = useRef<HTMLHeadingElement>(null);
+    const [viewToggle, flipView] = useState(0);
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const appendSubuser = ServerContext.useStoreActions(actions => actions.subusers.appendSubuser);
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
@@ -116,6 +118,22 @@ const EditSubuserModal = ({ subuser }: Props) => {
                     </div>
                 </div>
                 <FlashMessageRender byKey={'user:edit'} css={tw`mt-4`} />
+                <div css={tw`mt-4 flex gap-2`}>
+                    <button 
+                        type="button" 
+                        onClick={() => flipView(0)}
+                        css={[tw`text-sm px-4 py-2 rounded transition-colors`, viewToggle === 0 ? tw`bg-cyan-600 text-white` : tw`bg-neutral-700 text-neutral-200`]}
+                    >
+                        List View
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={() => flipView(1)}
+                        css={[tw`text-sm px-4 py-2 rounded transition-colors`, viewToggle === 1 ? tw`bg-cyan-600 text-white` : tw`bg-neutral-700 text-neutral-200`]}
+                    >
+                        Matrix View
+                    </button>
+                </div>
                 {!isRootAdmin && loggedInPermissions[0] !== '*' && (
                     <div css={tw`mt-4 pl-4 py-2 border-l-4 border-cyan-400`}>
                         <p css={tw`text-sm text-neutral-300`}>
@@ -136,9 +154,15 @@ const EditSubuserModal = ({ subuser }: Props) => {
                     </div>
                 )}
                 <div css={tw`my-6`}>
-                    {Object.keys(permissions)
-                        .filter(key => key !== 'websocket')
-                        .map((key, index) => (
+                    {viewToggle === 1 ? (
+                        <AccessControlGrid 
+                            editablePermissions={editablePermissions}
+                            isEditable={canEditUser}
+                        />
+                    ) : (
+                        Object.keys(permissions)
+                            .filter(key => key !== 'websocket')
+                            .map((key, index) => (
                             <PermissionTitleBox
                                 key={`permission_${key}`}
                                 title={key}
@@ -155,7 +179,8 @@ const EditSubuserModal = ({ subuser }: Props) => {
                                     />
                                 ))}
                             </PermissionTitleBox>
-                        ))}
+                        ))
+                    )}
                 </div>
                 <Can action={subuser ? 'user.update' : 'user.create'}>
                     <div css={tw`pb-6 flex justify-end`}>

@@ -47,12 +47,19 @@ function asModal<P extends {}>(
              * @this {React.PureComponent<P & AsModalProps, State>}
              */
             override componentDidUpdate(prevProps: Readonly<P & AsModalProps>, prevState: Readonly<State>) {
-                if (prevProps.visible && !this.props.visible) {
+                const wasVisible = prevProps.visible;
+                const isVisible = this.props.visible;
+                const becameHidden = wasVisible && !isVisible;
+                const becameVisible = !wasVisible && isVisible;
+                
+                if (becameHidden) {
                     this.setState({ visible: false, propOverrides: {} });
-                } else if (!prevProps.visible && this.props.visible) {
+                } else if (becameVisible) {
                     this.setState({ render: true, visible: true });
                 }
-                if (!this.state.render && !isEqual(prevState.propOverrides, this.state.propOverrides)) {
+                
+                const shouldResetOverrides = !this.state.render && !isEqual(prevState.propOverrides, this.state.propOverrides);
+                if (shouldResetOverrides) {
                     this.setState({ propOverrides: {} });
                 }
             }
@@ -73,13 +80,14 @@ function asModal<P extends {}>(
                 return (
                     <PortaledModal
                         appear
-                        onDismissed={() =>
-                            this.setState({ render: false }, () => {
+                        onDismissed={() => {
+                            const resetState = { render: false };
+                            this.setState(resetState, () => {
                                 if (typeof this.props.onModalDismissed === 'function') {
                                     this.props.onModalDismissed();
                                 }
-                            })
-                        }
+                            });
+                        }}
                         {...this.computedModalProps}
                     >
                         <ModalContext.Provider
