@@ -55,6 +55,7 @@ import { object, string, number } from 'yup';
 import classNames from 'classnames';
 import InventoryViewer from './InventoryViewer';
 import AttributeEditor from './AttributeEditor';
+import { usePermissions } from '@/plugins/usePermissions';
 
 interface PlayerActionsModalProps {
     visible: boolean;
@@ -67,9 +68,10 @@ interface PlayerActionsModalProps {
     onEditAttributes: () => void;
     isOperator: boolean;
     isOnline: boolean;
+    canManage: boolean;
 }
 
-const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction, supportsAttributes, onViewInventory, onEditAttributes, isOperator, isOnline }: PlayerActionsModalProps) => {
+const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction, supportsAttributes, onViewInventory, onEditAttributes, isOperator, isOnline, canManage }: PlayerActionsModalProps) => {
     const [loading, setLoading] = useState(false);
     const [activeAction, setActiveAction] = useState<string | null>(null);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
@@ -105,6 +107,11 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                     This player is offline. Kick, Kill, and Attribute editing are unavailable.
                 </div>
             )}
+            {!canManage && (
+                <div className={'mb-4 rounded-lg border border-neutral-600/40 bg-neutral-500/10 p-3 text-sm text-neutral-300'}>
+                    You have read-only access. Management actions are disabled.
+                </div>
+            )}
 
             {/* v1.0.1 - View Data Buttons */}
             <div className={'mb-4 grid gap-3 sm:grid-cols-2'}>
@@ -127,8 +134,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                         }}
                         className={'w-full justify-center'}
                         style={{ backgroundColor: `${primary}20`, borderColor: primary }}
-                        disabled={!isOnline}
-                        title={!isOnline ? 'Player is offline' : undefined}
+                        disabled={!isOnline || !canManage}
+                        title={!isOnline ? 'Player is offline' : !canManage ? 'Read-only access' : undefined}
                     >
                         <FontAwesomeIcon icon={faSlidersH} className={'mr-2'} />
                         Edit Attributes
@@ -144,8 +151,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                 <Button
                     onClick={() => handleAction(() => kickPlayer(serverUuid, player), 'Kick')}
                     className={'w-full justify-center'}
-                    disabled={loading || !isOnline}
-                    title={!isOnline ? 'Player is offline' : undefined}
+                    disabled={loading || !isOnline || !canManage}
+                    title={!isOnline ? 'Player is offline' : !canManage ? 'Read-only access' : undefined}
                 >
                     <FontAwesomeIcon icon={faDoorOpen} className={'mr-2'} />
                     Kick Player
@@ -153,8 +160,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                 <Button
                     onClick={() => handleAction(() => killPlayer(serverUuid, player), 'Kill')}
                     className={'w-full justify-center'}
-                    disabled={loading || !isOnline}
-                    title={!isOnline ? 'Player is offline' : undefined}
+                    disabled={loading || !isOnline || !canManage}
+                    title={!isOnline ? 'Player is offline' : !canManage ? 'Read-only access' : undefined}
                 >
                     <FontAwesomeIcon icon={faSkull} className={'mr-2'} />
                     Kill Player
@@ -165,7 +172,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                         isOperator ? 'Deop' : 'Op'
                     )}
                     className={'w-full justify-center'}
-                    disabled={loading}
+                    disabled={loading || !canManage}
+                    title={!canManage ? 'Read-only access' : undefined}
                 >
                     <FontAwesomeIcon icon={faCrown} className={'mr-2'} />
                     {isOperator ? 'Remove Operator' : 'Make Operator'}
@@ -173,7 +181,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                 <Button
                     onClick={() => handleAction(() => banPlayer(serverUuid, player), 'Ban')}
                     className={'w-full justify-center'}
-                    disabled={loading}
+                    disabled={loading || !canManage}
+                    title={!canManage ? 'Read-only access' : undefined}
                 >
                     <FontAwesomeIcon icon={faBan} className={'mr-2'} />
                     Ban Player
@@ -196,9 +205,9 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                 >
                     <Form className={'flex gap-2'}>
                         <div className={'flex-1'}>
-                            <Field name={'message'} placeholder={'Enter message...'} />
+                            <Field name={'message'} placeholder={'Enter message...'} disabled={!canManage} />
                         </div>
-                        <Button type={'submit'} disabled={loading}>
+                        <Button type={'submit'} disabled={loading || !canManage}>
                             <FontAwesomeIcon icon={faCommentDots} />
                         </Button>
                     </Form>
@@ -415,6 +424,7 @@ export default () => {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const primary = useStoreState(state => state.theme.data!.colors.primary);
     const uuid = ServerContext.useStoreState(state => state.server.data?.uuid);
+    const [canManage] = usePermissions(['extension.manage']);
 
     const fetchStatus = useCallback(() => {
         if (!uuid) return;
@@ -449,6 +459,7 @@ export default () => {
     }, [fetchStatus]);
 
     const handleToggleWhitelist = async () => {
+        if (!canManage) return;
         if (!uuid || !status) return;
         
         setActionLoading(true);
@@ -470,6 +481,7 @@ export default () => {
     };
 
     const handleRemoveFromList = async (type: 'whitelist' | 'op' | 'ban' | 'ban-ip', target: string) => {
+        if (!canManage) return;
         if (!uuid) return;
         
         setActionLoading(true);
@@ -616,8 +628,9 @@ export default () => {
                     <div className={'mb-3 flex items-center justify-between'}>
                         <button
                             onClick={handleToggleWhitelist}
-                            disabled={actionLoading}
+                            disabled={actionLoading || !canManage}
                             className={'flex items-center gap-2 text-sm text-neutral-400 hover:text-white'}
+                            title={!canManage ? 'Read-only access' : undefined}
                         >
                             <FontAwesomeIcon
                                 icon={status.whitelistEnabled ? faToggleOn : faToggleOff}
@@ -626,7 +639,11 @@ export default () => {
                             />
                             Whitelist {status.whitelistEnabled ? 'Enabled' : 'Disabled'}
                         </button>
-                        <Button.Text onClick={() => setAddModalType('whitelist')}>
+                        <Button.Text
+                            onClick={() => setAddModalType('whitelist')}
+                            disabled={!canManage}
+                            title={!canManage ? 'Read-only access' : undefined}
+                        >
                             <FontAwesomeIcon icon={faPlus} className={'mr-1'} />
                             Add
                         </Button.Text>
@@ -636,7 +653,7 @@ export default () => {
                         icon={faListCheck}
                         players={status.whitelist.map(p => ({ name: p.name, uuid: p.uuid }))}
                         emptyMessage={'No players whitelisted'}
-                        onRemove={name => handleRemoveFromList('whitelist', name)}
+                        onRemove={canManage ? name => handleRemoveFromList('whitelist', name) : undefined}
                         onPlayerClick={name => setSelectedPlayer(name)}
                         loading={actionLoading}
                     />
@@ -645,7 +662,11 @@ export default () => {
                 {/* Operators */}
                 <div>
                     <div className={'mb-3 flex items-center justify-end'}>
-                        <Button.Text onClick={() => setAddModalType('op')}>
+                        <Button.Text
+                            onClick={() => setAddModalType('op')}
+                            disabled={!canManage}
+                            title={!canManage ? 'Read-only access' : undefined}
+                        >
                             <FontAwesomeIcon icon={faPlus} className={'mr-1'} />
                             Add
                         </Button.Text>
@@ -655,7 +676,7 @@ export default () => {
                         icon={faUserShield}
                         players={status.operators.map(p => ({ name: p.name, uuid: p.uuid, level: p.level }))}
                         emptyMessage={'No operators configured'}
-                        onRemove={name => handleRemoveFromList('op', name)}
+                        onRemove={canManage ? name => handleRemoveFromList('op', name) : undefined}
                         onPlayerClick={name => setSelectedPlayer(name)}
                         loading={actionLoading}
                         badge={() => 'op'}
@@ -665,7 +686,11 @@ export default () => {
                 {/* Banned Players */}
                 <div>
                     <div className={'mb-3 flex items-center justify-end'}>
-                        <Button.Text onClick={() => setAddModalType('ban')}>
+                        <Button.Text
+                            onClick={() => setAddModalType('ban')}
+                            disabled={!canManage}
+                            title={!canManage ? 'Read-only access' : undefined}
+                        >
                             <FontAwesomeIcon icon={faPlus} className={'mr-1'} />
                             Add
                         </Button.Text>
@@ -680,7 +705,7 @@ export default () => {
                             source: p.source,
                         }))}
                         emptyMessage={'No players banned'}
-                        onRemove={name => handleRemoveFromList('ban', name)}
+                        onRemove={canManage ? name => handleRemoveFromList('ban', name) : undefined}
                         loading={actionLoading}
                     />
                 </div>
@@ -688,7 +713,11 @@ export default () => {
                 {/* Banned IPs */}
                 <div>
                     <div className={'mb-3 flex items-center justify-end'}>
-                        <Button.Text onClick={() => setAddModalType('ban-ip')}>
+                        <Button.Text
+                            onClick={() => setAddModalType('ban-ip')}
+                            disabled={!canManage}
+                            title={!canManage ? 'Read-only access' : undefined}
+                        >
                             <FontAwesomeIcon icon={faPlus} className={'mr-1'} />
                             Add
                         </Button.Text>
@@ -720,8 +749,12 @@ export default () => {
                                         </div>
                                         <button
                                             onClick={() => handleRemoveFromList('ban-ip', ip.ip)}
-                                            disabled={actionLoading}
-                                            className={'p-1 text-neutral-400 transition-colors hover:text-red-400'}
+                                            disabled={actionLoading || !canManage}
+                                            title={!canManage ? 'Read-only access' : undefined}
+                                            className={classNames(
+                                                'p-1 text-neutral-400 transition-colors hover:text-red-400',
+                                                !canManage && 'cursor-not-allowed opacity-50 hover:text-neutral-400'
+                                            )}
                                         >
                                             <FontAwesomeIcon icon={faTrash} />
                                         </button>
@@ -746,6 +779,7 @@ export default () => {
                     onEditAttributes={() => setAttributePlayer(selectedPlayer)}
                     isOperator={status?.operators.some(op => op.name.toLowerCase() === selectedPlayer.toLowerCase()) || false}
                     isOnline={isPlayerOnline(selectedPlayer)}
+                    canManage={canManage}
                 />
             )}
 
@@ -769,11 +803,12 @@ export default () => {
                     serverUuid={uuid}
                     playerName={attributePlayer}
                     isOnline={isPlayerOnline(attributePlayer)}
+                    canManage={canManage}
                 />
             )}
 
             {/* Add Player Modal */}
-            {addModalType && uuid && (
+            {addModalType && uuid && canManage && (
                 <AddPlayerModal
                     visible={!!addModalType}
                     onDismissed={() => setAddModalType(null)}

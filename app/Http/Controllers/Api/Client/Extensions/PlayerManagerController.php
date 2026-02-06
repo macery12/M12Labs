@@ -15,6 +15,7 @@ use Everest\Services\Extensions\MinecraftPlayerManager\MinecraftPing;
 use Everest\Services\Extensions\MinecraftPlayerManager\MinecraftQuery;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\GetStatusRequest;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\PlayerRequest;
+use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\PlayerReadRequest;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\PlayerNamedRequest;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\BanRequest;
 use Everest\Http\Requests\Api\Client\Extensions\PlayerManager\BanIpRequest;
@@ -1097,7 +1098,7 @@ class PlayerManagerController extends ClientApiController
     /**
      * Get player data from NBT file (inventory, location, stats).
      */
-    public function getPlayerData(PlayerRequest $request, Server $server, string $player): JsonResponse
+    public function getPlayerData(PlayerReadRequest $request, Server $server, string $player): JsonResponse
     {
         $this->checkExtensionEnabled($server);
 
@@ -1248,7 +1249,7 @@ class PlayerManagerController extends ClientApiController
     /**
      * Get a specific attribute for a player.
      */
-    public function getAttribute(PlayerRequest $request, Server $server, string $player, string $attribute): JsonResponse
+    public function getAttribute(PlayerReadRequest $request, Server $server, string $player, string $attribute): JsonResponse
     {
         $this->checkExtensionEnabled($server);
 

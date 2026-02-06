@@ -3,6 +3,7 @@
 namespace Everest\Transformers\Api\Application;
 
 use Everest\Models\Subuser;
+use Everest\Models\Permission;
 use League\Fractal\Resource\Item;
 use Everest\Services\Acl\Api\AdminAcl;
 use Everest\Transformers\Api\Transformer;
@@ -32,7 +33,7 @@ class SubuserTransformer extends Transformer
             'id' => $model->id,
             'user_id' => $model->user_id,
             'server_id' => $model->server_id,
-            'permissions' => $model->permissions,
+            'permissions' => Permission::expandPermissions($model->permissions ?? []),
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String(),
         ];

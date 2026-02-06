@@ -286,9 +286,10 @@ interface AttributeEditorProps {
     serverUuid: string;
     playerName: string;
     isOnline: boolean;
+    canManage: boolean;
 }
 
-const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName, isOnline }: AttributeEditorProps) => {
+const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName, isOnline, canManage }: AttributeEditorProps) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [version, setVersion] = useState<ServerVersion | null>(null);
@@ -403,6 +404,11 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName,
                         This player is offline. Attribute changes are unavailable until they are online.
                     </div>
                 )}
+                {!canManage && (
+                    <div className="mb-4 rounded-lg border border-neutral-600/40 bg-neutral-500/10 p-3 text-sm text-neutral-300">
+                        You have read-only access. Attribute changes are disabled.
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
@@ -479,7 +485,7 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName,
                                         serverUuid={serverUuid}
                                         playerName={playerName}
                                         onSuccess={handleSuccess}
-                                        disabled={!isOnline}
+                                        disabled={!isOnline || !canManage}
                                     />
                                 ))
                             )}

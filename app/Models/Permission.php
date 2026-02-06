@@ -227,7 +227,7 @@ class Permission extends Model
             'description' => 'Permissions that control a user\'s access to server extensions like player managers.',
             'keys' => [
                 'read' => 'Allows a user to view and access enabled extensions for the server.',
-                'manage' => 'Allows a user to use extension features like player management (kick, ban, whitelist, etc.).',
+                'manage' => 'Allows a user to use extension features like player management (kick, ban, whitelist, etc.). Includes read access.',
             ],
         ],
     ];
@@ -239,5 +239,19 @@ class Permission extends Model
     public static function permissions(): Collection
     {
         return Collection::make(self::$permissions);
+    }
+
+    /**
+     * Expands a permissions list with implied permissions.
+     */
+    public static function expandPermissions(array $permissions): array
+    {
+        $expanded = $permissions;
+
+        if (in_array(self::ACTION_EXTENSION_MANAGE, $expanded, true)) {
+            $expanded[] = self::ACTION_EXTENSION_READ;
+        }
+
+        return array_values(array_unique($expanded));
     }
 }
