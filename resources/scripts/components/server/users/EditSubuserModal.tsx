@@ -30,7 +30,7 @@ interface Values {
 
 const EditSubuserModal = ({ subuser }: Props) => {
     const ref = useRef<HTMLHeadingElement>(null);
-    const [viewToggle, flipView] = useState(0);
+    const [activeView, setActiveView] = useState(0);
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const appendSubuser = ServerContext.useStoreActions(actions => actions.subusers.appendSubuser);
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
@@ -121,15 +121,15 @@ const EditSubuserModal = ({ subuser }: Props) => {
                 <div css={tw`mt-4 flex gap-2`}>
                     <button 
                         type="button" 
-                        onClick={() => flipView(0)}
-                        css={[tw`text-sm px-4 py-2 rounded transition-colors`, viewToggle === 0 ? tw`bg-cyan-600 text-white` : tw`bg-neutral-700 text-neutral-200`]}
+                        onClick={() => setActiveView(0)}
+                        css={[tw`text-sm px-4 py-2 rounded transition-colors`, activeView === 0 ? tw`bg-cyan-600 text-white` : tw`bg-neutral-700 text-neutral-200`]}
                     >
                         List View
                     </button>
                     <button 
                         type="button" 
-                        onClick={() => flipView(1)}
-                        css={[tw`text-sm px-4 py-2 rounded transition-colors`, viewToggle === 1 ? tw`bg-cyan-600 text-white` : tw`bg-neutral-700 text-neutral-200`]}
+                        onClick={() => setActiveView(1)}
+                        css={[tw`text-sm px-4 py-2 rounded transition-colors`, activeView === 1 ? tw`bg-cyan-600 text-white` : tw`bg-neutral-700 text-neutral-200`]}
                     >
                         Matrix View
                     </button>
@@ -154,7 +154,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
                     </div>
                 )}
                 <div css={tw`my-6`}>
-                    {viewToggle === 1 ? (
+                    {activeView === 1 ? (
                         <AccessControlGrid 
                             editablePermissions={editablePermissions}
                             isEditable={canEditUser}

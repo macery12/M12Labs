@@ -3,7 +3,7 @@ import { memo } from 'react';
 import tw, { styled } from 'twin.macro';
 import Checkbox from '@/elements/Checkbox';
 
-const authScopes = {
+const authScopes: Record<string, string[]> = {
     control: ['console', 'start', 'stop', 'restart'],
     user: ['create', 'read', 'update', 'delete'],
     file: ['create', 'read', 'update', 'delete', 'read-content', 'archive', 'sftp'],
@@ -102,7 +102,7 @@ const AccessControlGrid = ({ editablePermissions, isEditable }: Props) => {
                         {opsList.map(op => (
                             <ColHeader key={op} stick>
                                 <div css={tw`flex flex-col items-center gap-1`}>
-                                    <span css={tw`capitalize`}>{op.replace('-', ' ').replace('_', ' ')}</span>
+                                    <span css={tw`capitalize`}>{op.replace(/[-_]/g, ' ')}</span>
                                     {isEditable && (
                                         <Btn type="button" onClick={() => bulkToggleOp(op)} aria-label={`Select all ${op}`}>
                                             All
