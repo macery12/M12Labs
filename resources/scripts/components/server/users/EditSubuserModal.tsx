@@ -96,28 +96,20 @@ const EditSubuserModal = ({ subuser }: Props) => {
             }
             validationSchema={object().shape({
                 email: string()
-                    .max(191, 'Email addresses must not exceed 191 characters.')
-                    .email('A valid email address must be provided.')
-                    .required('A valid email address must be provided.'),
+                    .max(191, 'Username or email must not exceed 191 characters.')
+                    .required('A valid username or email address must be provided.'),
                 permissions: array().of(string()),
             })}
         >
             <Form>
-                <div css={tw`flex justify-between`}>
-                    <h2 css={tw`text-2xl`} ref={ref}>
-                        {subuser
-                            ? `${canEditUser ? 'Modify' : 'View'} permissions for ${subuser.email}`
-                            : 'Create new subuser'}
-                    </h2>
-                    <div>
-                        <Button type={'submit'} css={tw`w-full sm:w-auto`}>
-                            {subuser ? 'Save' : 'Invite User'}
-                        </Button>
-                    </div>
-                </div>
-                <FlashMessageRender byKey={'user:edit'} css={tw`mt-4`} />
+                <h2 css={tw`text-2xl mb-6`} ref={ref}>
+                    {subuser
+                        ? `${canEditUser ? 'Modify' : 'View'} permissions for ${subuser.email}`
+                        : 'Create new subuser'}
+                </h2>
+                <FlashMessageRender byKey={'user:edit'} css={tw`mb-4`} />
                 {!isRootAdmin && loggedInPermissions[0] !== '*' && (
-                    <div css={tw`mt-4 pl-4 py-2 border-l-4 border-cyan-400`}>
+                    <div css={tw`mb-4 pl-4 py-2 border-l-4 border-cyan-400`}>
                         <p css={tw`text-sm text-neutral-300`}>
                             Only permissions which your account is currently assigned may be selected when creating or
                             modifying other users.
@@ -125,17 +117,17 @@ const EditSubuserModal = ({ subuser }: Props) => {
                     </div>
                 )}
                 {!subuser && (
-                    <div css={tw`mt-6`}>
+                    <div css={tw`mb-6`}>
                         <Field
                             name={'email'}
-                            label={'User Email'}
+                            label={'Username or Email'}
                             description={
-                                'Enter the email address of the user you wish to invite as a subuser for this server.'
+                                'Enter the username or email address of an existing user you wish to invite as a subuser for this server.'
                             }
                         />
                     </div>
                 )}
-                <div css={tw`my-6`}>
+                <div css={tw`mb-6`}>
                     {Object.keys(permissions)
                         .filter(key => key !== 'websocket')
                         .map((key, index) => (
@@ -146,7 +138,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
                                 permissions={Object.keys(permissions[key]?.keys ?? {}).map(pkey => `${key}.${pkey}`)}
                                 css={index > 0 ? tw`mt-4` : undefined}
                             >
-                                <p css={tw`text-neutral-400 mb-4`}>{permissions[key]?.description}</p>
+                                <p css={tw`text-neutral-400 text-xs mb-4`}>{permissions[key]?.description}</p>
                                 {Object.keys(permissions[key]?.keys ?? {}).map(pkey => (
                                     <PermissionRow
                                         key={`permission_${key}.${pkey}`}
@@ -158,7 +150,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
                         ))}
                 </div>
                 <Can action={subuser ? 'user.update' : 'user.create'}>
-                    <div css={tw`pb-6 flex justify-end`}>
+                    <div css={tw`flex justify-end`}>
                         <Button type={'submit'} css={tw`w-full sm:w-auto`}>
                             {subuser ? 'Save' : 'Invite User'}
                         </Button>
