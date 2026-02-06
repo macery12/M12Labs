@@ -263,40 +263,10 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             // List enabled extensions for this server
             Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
 
-            // Player Manager extension routes (must come before the wildcard route)
-            Route::group(['prefix' => '/player-manager'], function () {
-                Route::get('/', [Client\Extensions\PlayerManagerController::class, 'index']);
-                
-                // Server info
-                Route::get('/version', [Client\Extensions\PlayerManagerController::class, 'getServerVersion']);
-                Route::get('/attributes', [Client\Extensions\PlayerManagerController::class, 'getAttributes']);
-                
-                // Player data (v1.0.1)
-                Route::get('/player/{player}/data', [Client\Extensions\PlayerManagerController::class, 'getPlayerData']);
-                Route::get('/player/{player}/attribute/{attribute}', [Client\Extensions\PlayerManagerController::class, 'getAttribute']);
-                Route::post('/player/{player}/attribute/{attribute}', [Client\Extensions\PlayerManagerController::class, 'setAttribute']);
-                Route::delete('/player/{player}/attribute/{attribute}', [Client\Extensions\PlayerManagerController::class, 'resetAttribute']);
-                
-                // Whitelist management
-                Route::post('/whitelist', [Client\Extensions\PlayerManagerController::class, 'setWhitelist']);
-                Route::put('/whitelist/{player}', [Client\Extensions\PlayerManagerController::class, 'addWhitelist']);
-                Route::delete('/whitelist/{player}', [Client\Extensions\PlayerManagerController::class, 'removeWhitelist']);
-                
-                // Operator management
-                Route::put('/op/{player}', [Client\Extensions\PlayerManagerController::class, 'op']);
-                Route::delete('/op/{player}', [Client\Extensions\PlayerManagerController::class, 'deop']);
-                
-                // Ban management
-                Route::put('/ban/{player}', [Client\Extensions\PlayerManagerController::class, 'ban']);
-                Route::delete('/ban/{player}', [Client\Extensions\PlayerManagerController::class, 'unban']);
-                Route::put('/ban-ip/{ip}', [Client\Extensions\PlayerManagerController::class, 'banIp']);
-                Route::delete('/ban-ip/{ip}', [Client\Extensions\PlayerManagerController::class, 'unbanIp']);
-                
-                // Player actions
-                Route::post('/kick/{player}', [Client\Extensions\PlayerManagerController::class, 'kick']);
-                Route::post('/whisper/{player}', [Client\Extensions\PlayerManagerController::class, 'whisper']);
-                Route::post('/kill/{player}', [Client\Extensions\PlayerManagerController::class, 'kill']);
-            });
+            // Extension-specific routes (must come before the wildcard route)
+            foreach (glob(__DIR__ . '/extensions/client/*.php') as $extensionRoutes) {
+                require $extensionRoutes;
+            }
 
             // Extension check route (must come AFTER specific extension routes)
             Route::get('/{extensionId}', [Client\Extensions\ExtensionsController::class, 'check']);

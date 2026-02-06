@@ -28,6 +28,7 @@ class ExtensionsController extends ClientApiController
                     'description' => $extensionDef['description'],
                     'icon' => $extensionDef['icon'],
                     'version' => $extensionDef['version'] ?? '1.0.0',
+                    'route' => $extensionDef['route'] ?? $config->extension_id,
                     'settings' => $config->settings ?? [],
                 ];
             }
@@ -52,8 +53,12 @@ class ExtensionsController extends ClientApiController
             ]);
         }
 
+        $availableExtensions = config('modules.extensions.available', []);
+        $extensionDef = $availableExtensions[$extensionId] ?? null;
+
         return new JsonResponse([
             'enabled' => true,
+            'route' => $extensionDef['route'] ?? $extensionId,
         ]);
     }
 }

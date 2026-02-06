@@ -66,7 +66,7 @@ export default () => {
             <div className={'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
                 {extensions.map(extension => {
                     const icon = iconMap[extension.icon] || faPuzzlePiece;
-                    const extensionPath = `/server/${id}/extensions/${extension.id}`;
+                    const extensionPath = `/server/${id}/extensions/${extension.route || extension.id}`;
 
                     return (
                         <Link

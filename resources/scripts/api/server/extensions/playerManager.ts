@@ -1,5 +1,9 @@
 import http from '@/api/http';
 
+const extensionId = 'minecraft_player_manager';
+
+const getBasePath = (uuid: string): string => `/api/client/servers/${uuid}/extensions/${extensionId}`;
+
 export interface OnlinePlayer {
     name: string;
     uuid?: string;
@@ -37,7 +41,7 @@ export interface PlayerManagerStatus {
 }
 
 export const getPlayerManagerStatus = async (uuid: string): Promise<PlayerManagerStatus> => {
-    const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager`);
+    const { data } = await http.get(getBasePath(uuid));
     // Handle case where API returns nested data structure
     if (data && data.data) {
         return data.data;
@@ -46,51 +50,51 @@ export const getPlayerManagerStatus = async (uuid: string): Promise<PlayerManage
 };
 
 export const setWhitelistEnabled = async (uuid: string, enabled: boolean): Promise<void> => {
-    await http.post(`/api/client/servers/${uuid}/extensions/player-manager/whitelist`, { enabled });
+    await http.post(`${getBasePath(uuid)}/whitelist`, { enabled });
 };
 
 export const addToWhitelist = async (uuid: string, player: string): Promise<void> => {
-    await http.put(`/api/client/servers/${uuid}/extensions/player-manager/whitelist/${player}`);
+    await http.put(`${getBasePath(uuid)}/whitelist/${player}`);
 };
 
 export const removeFromWhitelist = async (uuid: string, player: string): Promise<void> => {
-    await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/whitelist/${player}`);
+    await http.delete(`${getBasePath(uuid)}/whitelist/${player}`);
 };
 
 export const opPlayer = async (uuid: string, player: string): Promise<void> => {
-    await http.put(`/api/client/servers/${uuid}/extensions/player-manager/op/${player}`);
+    await http.put(`${getBasePath(uuid)}/op/${player}`);
 };
 
 export const deopPlayer = async (uuid: string, player: string): Promise<void> => {
-    await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/op/${player}`);
+    await http.delete(`${getBasePath(uuid)}/op/${player}`);
 };
 
 export const banPlayer = async (uuid: string, player: string, reason: string): Promise<void> => {
-    await http.put(`/api/client/servers/${uuid}/extensions/player-manager/ban/${player}`, { reason });
+    await http.put(`${getBasePath(uuid)}/ban/${player}`, { reason });
 };
 
 export const unbanPlayer = async (uuid: string, player: string): Promise<void> => {
-    await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/ban/${player}`);
+    await http.delete(`${getBasePath(uuid)}/ban/${player}`);
 };
 
 export const banIp = async (uuid: string, ip: string, reason: string): Promise<void> => {
-    await http.put(`/api/client/servers/${uuid}/extensions/player-manager/ban-ip/${ip}`, { reason });
+    await http.put(`${getBasePath(uuid)}/ban-ip/${ip}`, { reason });
 };
 
 export const unbanIp = async (uuid: string, ip: string): Promise<void> => {
-    await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/ban-ip/${ip}`);
+    await http.delete(`${getBasePath(uuid)}/ban-ip/${ip}`);
 };
 
 export const kickPlayer = async (uuid: string, player: string, reason?: string): Promise<void> => {
-    await http.post(`/api/client/servers/${uuid}/extensions/player-manager/kick/${player}`, { reason });
+    await http.post(`${getBasePath(uuid)}/kick/${player}`, { reason });
 };
 
 export const whisperPlayer = async (uuid: string, player: string, message: string): Promise<void> => {
-    await http.post(`/api/client/servers/${uuid}/extensions/player-manager/whisper/${player}`, { message });
+    await http.post(`${getBasePath(uuid)}/whisper/${player}`, { message });
 };
 
 export const killPlayer = async (uuid: string, player: string): Promise<void> => {
-    await http.post(`/api/client/servers/${uuid}/extensions/player-manager/kill/${player}`);
+    await http.post(`${getBasePath(uuid)}/kill/${player}`);
 };
 
 // v1.0.1 - Server Version
@@ -110,7 +114,7 @@ export interface ServerVersionResponse {
 }
 
 export const getServerVersion = async (uuid: string): Promise<ServerVersionResponse> => {
-    const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager/version`);
+    const { data } = await http.get(`${getBasePath(uuid)}/version`);
     return data.data || data;
 };
 
@@ -192,7 +196,7 @@ export interface PlayerDataResponse {
 }
 
 export const getPlayerData = async (uuid: string, player: string): Promise<PlayerDataResponse> => {
-    const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager/player/${player}/data`);
+    const { data } = await http.get(`${getBasePath(uuid)}/player/${player}/data`);
     return data.data || data;
 };
 
@@ -218,7 +222,7 @@ export interface AttributesResponse {
 }
 
 export const getAttributes = async (uuid: string): Promise<AttributesResponse> => {
-    const { data } = await http.get(`/api/client/servers/${uuid}/extensions/player-manager/attributes`);
+    const { data } = await http.get(`${getBasePath(uuid)}/attributes`);
     return data.data || data;
 };
 
@@ -230,7 +234,7 @@ export interface SetAttributeResponse {
 }
 
 export const setAttribute = async (uuid: string, player: string, attribute: string, value: number): Promise<SetAttributeResponse> => {
-    const { data } = await http.post(`/api/client/servers/${uuid}/extensions/player-manager/player/${player}/attribute/${attribute}`, { value });
+    const { data } = await http.post(`${getBasePath(uuid)}/player/${player}/attribute/${attribute}`, { value });
     return data.data || data;
 };
 
@@ -242,7 +246,7 @@ export interface ResetAttributeResponse {
 }
 
 export const resetAttribute = async (uuid: string, player: string, attribute: string): Promise<ResetAttributeResponse> => {
-    const { data } = await http.delete(`/api/client/servers/${uuid}/extensions/player-manager/player/${player}/attribute/${attribute}`);
+    const { data } = await http.delete(`${getBasePath(uuid)}/player/${player}/attribute/${attribute}`);
     return data.data || data;
 };
 

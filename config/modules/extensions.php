@@ -18,6 +18,7 @@ return [
             'version' => '1.0.1',
             'author' => 'Bimbab189',
             'icon' => 'users',
+            'route' => 'minecraft_player_manager',
             'enabled' => env('EXTENSION_MINECRAFT_PLAYER_MANAGER_ENABLED', false),
             /*
              * Default nests and eggs this extension works with.

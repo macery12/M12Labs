@@ -6,6 +6,7 @@ export interface ServerExtension {
     description: string;
     icon: string;
     version: string;
+    route: string;
 }
 
 export const getServerExtensions = async (uuid: string): Promise<ServerExtension[]> => {
