@@ -126,15 +126,19 @@ const PermissionCategory = ({
                 </div>
                 <div css={tw`flex items-center gap-3`}>
                     {isEditable && (
-                        <label
-                            css={tw`flex items-center gap-2 text-xs text-neutral-300 hover:text-neutral-100 transition-colors`}
-                            onClick={e => e.stopPropagation()}
+                        <button
+                            type="button"
+                            css={tw`flex items-center gap-2 px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100 bg-neutral-700 hover:bg-neutral-600 rounded transition-colors cursor-pointer`}
+                            onClick={e => {
+                                e.stopPropagation();
+                                toggleAll();
+                            }}
                         >
                             <input
                                 type="checkbox"
                                 checked={allSelected}
                                 onChange={toggleAll}
-                                css={tw`w-4 h-4 rounded`}
+                                css={tw`w-5 h-5 rounded pointer-events-none`}
                                 ref={input => {
                                     if (input) {
                                         input.indeterminate = someSelected;
@@ -142,7 +146,7 @@ const PermissionCategory = ({
                                 }}
                             />
                             <span>Select All</span>
-                        </label>
+                        </button>
                     )}
                     <svg
                         css={[tw`w-5 h-5 text-neutral-400 transition-transform`, isExpanded && tw`rotate-180`]}
@@ -179,7 +183,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
     const { dismiss, setPropOverrides } = useContext(ModalContext);
-    const { secondary } = useThemeState(state => state.theme.data!.colors);
+    const { secondary, primary } = useThemeState(state => state.theme.data!.colors);
 
     const isRootAdmin = useStoreState(state => state.user.data!.rootAdmin);
     const permissions = useStoreState(state => state.permissions.data);
@@ -264,9 +268,10 @@ const EditSubuserModal = ({ subuser }: Props) => {
                 {/* Warning for non-admin users */}
                 {!isRootAdmin && loggedInPermissions[0] !== '*' && (
                     <div
-                        css={tw`mb-4 p-3 rounded-lg bg-cyan-900 bg-opacity-20 border border-cyan-500 border-opacity-50`}
+                        css={tw`mb-4 p-3 rounded-lg bg-opacity-10 border border-opacity-30`}
+                        style={{ backgroundColor: `${primary}1A`, borderColor: `${primary}4D` }}
                     >
-                        <p css={tw`text-xs text-cyan-300`}>
+                        <p css={tw`text-xs`} style={{ color: primary }}>
                             <strong>Note:</strong> You can only assign permissions that you currently have.
                         </p>
                     </div>
