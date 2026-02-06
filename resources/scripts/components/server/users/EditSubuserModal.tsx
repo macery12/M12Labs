@@ -17,6 +17,7 @@ import asModal from '@/hoc/asModal';
 import ModalContext from '@/elements/ModalContext';
 import { useField } from 'formik';
 import Checkbox from '@/elements/Checkbox';
+import { useStoreState as useThemeState } from '@/state/hooks';
 
 type Props = {
     subuser?: Subuser;
@@ -37,14 +38,16 @@ const PermissionToggle = ({ permission, disabled }: PermissionToggleProps) => {
     const [key = '', pkey = ''] = permission.split('.', 2);
     const permissions = useStoreState(state => state.permissions.data);
     const description = permissions[key]?.keys?.[pkey] || '';
+    const { secondary } = useThemeState(state => state.theme.data!.colors);
 
     return (
         <label
             htmlFor={`permission_${permission}`}
             css={[
-                tw`flex items-center gap-3 p-3 rounded-lg border border-neutral-700 transition-all cursor-pointer hover:border-neutral-500 hover:bg-neutral-800`,
-                disabled && tw`opacity-50 cursor-not-allowed hover:border-neutral-700 hover:bg-transparent`,
+                tw`flex items-center gap-3 p-3 rounded-lg border border-neutral-700 transition-all cursor-pointer hover:border-neutral-500`,
+                disabled && tw`opacity-50 cursor-not-allowed hover:border-neutral-700`,
             ]}
+            style={{ backgroundColor: disabled ? 'transparent' : secondary }}
         >
             <Checkbox
                 id={`permission_${permission}`}
@@ -77,8 +80,9 @@ const PermissionCategory = ({
     isEditable,
     editablePermissions,
 }: PermissionCategoryProps) => {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false); // Changed from true to false
     const [{ value }, , { setValue }] = useField<string[]>('permissions');
+    const { secondary } = useThemeState(state => state.theme.data!.colors);
 
     const categoryPermissions = permissions.map(p => {
         const [, pkey] = p.split('.', 2);
@@ -97,6 +101,9 @@ const PermissionCategory = ({
         }
     };
 
+    // Get list of permission names for preview
+    const permissionNames = categoryPermissions.map(p => p.name.replace(/_/g, ' ')).join(', ');
+
     return (
         <div css={tw`border border-neutral-700 rounded-lg overflow-hidden`}>
             {/* Category Header */}
@@ -104,7 +111,7 @@ const PermissionCategory = ({
                 css={tw`flex items-center gap-3 p-4 bg-neutral-800 cursor-pointer select-none hover:bg-neutral-700 transition-colors`}
                 onClick={() => setIsExpanded(!isExpanded)}
             >
-                <div css={tw`flex-1`}>
+                <div css={tw`flex-1 min-w-0`}>
                     <div css={tw`flex items-center gap-2`}>
                         <h3 css={tw`text-base font-semibold text-neutral-100 capitalize`}>{title}</h3>
                         <span css={tw`text-xs text-neutral-400`}>
@@ -112,6 +119,10 @@ const PermissionCategory = ({
                         </span>
                     </div>
                     {description && <p css={tw`text-xs text-neutral-400 mt-1`}>{description}</p>}
+                    {/* Show permission names when collapsed */}
+                    {!isExpanded && (
+                        <p css={tw`text-xs text-neutral-500 mt-2 line-clamp-1 capitalize`}>{permissionNames}</p>
+                    )}
                 </div>
                 <div css={tw`flex items-center gap-3`}>
                     {isEditable && (
@@ -146,7 +157,7 @@ const PermissionCategory = ({
 
             {/* Category Content */}
             {isExpanded && (
-                <div css={tw`p-4 bg-neutral-900 grid grid-cols-1 md:grid-cols-2 gap-3`}>
+                <div css={tw`p-4 grid grid-cols-1 md:grid-cols-2 gap-3`} style={{ backgroundColor: secondary }}>
                     {categoryPermissions.map(({ key: permission }) => (
                         <PermissionToggle
                             key={permission}
@@ -168,6 +179,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
     const { dismiss, setPropOverrides } = useContext(ModalContext);
+    const { secondary } = useThemeState(state => state.theme.data!.colors);
 
     const isRootAdmin = useStoreState(state => state.user.data!.rootAdmin);
     const permissions = useStoreState(state => state.permissions.data);
@@ -262,7 +274,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
 
                 {/* User Input Field */}
                 {!subuser && (
-                    <div css={tw`mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-700`}>
+                    <div css={tw`mb-6 p-4 rounded-lg border border-neutral-700`} style={{ backgroundColor: secondary }}>
                         <Field
                             name={'email'}
                             label={'Username or Email'}
