@@ -66,9 +66,10 @@ interface PlayerActionsModalProps {
     onViewInventory: () => void;
     onEditAttributes: () => void;
     isOperator: boolean;
+    isOnline: boolean;
 }
 
-const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction, supportsAttributes, onViewInventory, onEditAttributes, isOperator }: PlayerActionsModalProps) => {
+const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction, supportsAttributes, onViewInventory, onEditAttributes, isOperator, isOnline }: PlayerActionsModalProps) => {
     const [loading, setLoading] = useState(false);
     const [activeAction, setActiveAction] = useState<string | null>(null);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
@@ -99,6 +100,12 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                 Actions for {player}
             </h2>
             
+            {!isOnline && (
+                <div className={'mb-4 rounded-lg border border-amber-600/40 bg-amber-500/10 p-3 text-sm text-amber-300'}>
+                    This player is offline. Kick, Kill, and Attribute editing are unavailable.
+                </div>
+            )}
+
             {/* v1.0.1 - View Data Buttons */}
             <div className={'mb-4 grid gap-3 sm:grid-cols-2'}>
                 <Button
@@ -120,6 +127,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                         }}
                         className={'w-full justify-center'}
                         style={{ backgroundColor: `${primary}20`, borderColor: primary }}
+                        disabled={!isOnline}
+                        title={!isOnline ? 'Player is offline' : undefined}
                     >
                         <FontAwesomeIcon icon={faSlidersH} className={'mr-2'} />
                         Edit Attributes
@@ -135,7 +144,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                 <Button
                     onClick={() => handleAction(() => kickPlayer(serverUuid, player), 'Kick')}
                     className={'w-full justify-center'}
-                    disabled={loading}
+                    disabled={loading || !isOnline}
+                    title={!isOnline ? 'Player is offline' : undefined}
                 >
                     <FontAwesomeIcon icon={faDoorOpen} className={'mr-2'} />
                     Kick Player
@@ -143,7 +153,8 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                 <Button
                     onClick={() => handleAction(() => killPlayer(serverUuid, player), 'Kill')}
                     className={'w-full justify-center'}
-                    disabled={loading}
+                    disabled={loading || !isOnline}
+                    title={!isOnline ? 'Player is offline' : undefined}
                 >
                     <FontAwesomeIcon icon={faSkull} className={'mr-2'} />
                     Kill Player
@@ -424,6 +435,12 @@ export default () => {
             .catch(error => clearAndAddHttpError({ key: 'server:player-manager', error }))
             .finally(() => setLoading(false));
     }, [uuid]);
+
+    const isPlayerOnline = useCallback(
+        (playerName: string): boolean =>
+            status?.server.players.list?.some(p => p.name.toLowerCase() === playerName.toLowerCase()) ?? false,
+        [status]
+    );
 
     useEffect(() => {
         fetchStatus();
@@ -728,6 +745,7 @@ export default () => {
                     onViewInventory={() => setInventoryPlayer(selectedPlayer)}
                     onEditAttributes={() => setAttributePlayer(selectedPlayer)}
                     isOperator={status?.operators.some(op => op.name.toLowerCase() === selectedPlayer.toLowerCase()) || false}
+                    isOnline={isPlayerOnline(selectedPlayer)}
                 />
             )}
 
@@ -750,6 +768,7 @@ export default () => {
                     onBack={() => setSelectedPlayer(attributePlayer)}
                     serverUuid={uuid}
                     playerName={attributePlayer}
+                    isOnline={isPlayerOnline(attributePlayer)}
                 />
             )}
 

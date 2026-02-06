@@ -65,15 +65,17 @@ interface AttributeRowProps {
     serverUuid: string;
     playerName: string;
     onSuccess: () => void;
+    disabled: boolean;
 }
 
-const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess }: AttributeRowProps) => {
+const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess, disabled }: AttributeRowProps) => {
     const [value, setValue] = useState(attribute.default);
     const [loading, setLoading] = useState(false);
     const { addFlash, clearAndAddHttpError } = useFlash();
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     const handleSetValue = async (newValue: number) => {
+        if (disabled) return;
         // Clamp to min/max
         const clampedValue = Math.max(attribute.min, Math.min(attribute.max, newValue));
         setValue(clampedValue);
@@ -99,6 +101,7 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess }: Attribut
     };
 
     const handleReset = async () => {
+        if (disabled) return;
         setLoading(true);
         try {
             const response = await resetAttribute(serverUuid, playerName, attribute.id);
@@ -143,7 +146,7 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess }: Attribut
                 {/* Decrement button */}
                 <button
                     onClick={() => handleSetValue(value - increment)}
-                    disabled={loading || value <= attribute.min}
+                    disabled={disabled || loading || value <= attribute.min}
                     className="w-8 h-8 rounded bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-neutral-300 transition-colors"
                     title={`-${increment}`}
                 >
@@ -157,7 +160,7 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess }: Attribut
                     onChange={(e) => setValue(parseFloat(e.target.value) || 0)}
                     onBlur={() => handleSetValue(value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSetValue(value)}
-                    disabled={loading}
+                    disabled={disabled || loading}
                     min={attribute.min}
                     max={attribute.max}
                     step={increment}
@@ -167,7 +170,7 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess }: Attribut
                 {/* Increment button */}
                 <button
                     onClick={() => handleSetValue(value + increment)}
-                    disabled={loading || value >= attribute.max}
+                    disabled={disabled || loading || value >= attribute.max}
                     className="w-8 h-8 rounded bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-neutral-300 transition-colors"
                     title={`+${increment}`}
                 >
@@ -177,7 +180,7 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess }: Attribut
                 {/* Reset button */}
                 <button
                     onClick={handleReset}
-                    disabled={loading}
+                    disabled={disabled || loading}
                     className="w-8 h-8 rounded bg-neutral-700 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-neutral-300 transition-colors"
                     title={`Reset to ${attribute.default}`}
                 >
@@ -205,6 +208,7 @@ interface CategorySectionProps {
     serverUuid: string;
     playerName: string;
     onSuccess: () => void;
+    disabled: boolean;
 }
 
 const CategorySection = ({
@@ -215,6 +219,7 @@ const CategorySection = ({
     serverUuid,
     playerName,
     onSuccess,
+    disabled,
 }: CategorySectionProps) => {
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 
@@ -265,6 +270,7 @@ const CategorySection = ({
                             serverUuid={serverUuid}
                             playerName={playerName}
                             onSuccess={onSuccess}
+                            disabled={disabled}
                         />
                     ))}
                 </div>
@@ -279,9 +285,10 @@ interface AttributeEditorProps {
     onBack?: () => void;
     serverUuid: string;
     playerName: string;
+    isOnline: boolean;
 }
 
-const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName }: AttributeEditorProps) => {
+const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName, isOnline }: AttributeEditorProps) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [version, setVersion] = useState<ServerVersion | null>(null);
@@ -391,6 +398,12 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName 
 
                 <FlashMessageRender byKey="server:player-manager:attributes" className="mb-4 flex-shrink-0" />
 
+                {!isOnline && (
+                    <div className="mb-4 rounded-lg border border-amber-600/40 bg-amber-500/10 p-3 text-sm text-amber-300">
+                        This player is offline. Attribute changes are unavailable until they are online.
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
                         <FontAwesomeIcon icon={faSpinner} spin className="text-3xl text-neutral-500" />
@@ -466,6 +479,7 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName 
                                         serverUuid={serverUuid}
                                         playerName={playerName}
                                         onSuccess={handleSuccess}
+                                        disabled={!isOnline}
                                     />
                                 ))
                             )}
