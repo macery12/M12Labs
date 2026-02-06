@@ -13,6 +13,10 @@ return [
      * Kept for backward compatibility.
      */
     'processor' => env('BILLING_PROCESSOR', 'stripe'),
+    /*
+     * Enable or disable donations feature.
+     */
+    'donations_enabled' => env('BILLING_DONATIONS_ENABLED', true),
 
     /*
      * Configure the publishable & secret API key for Stripe.

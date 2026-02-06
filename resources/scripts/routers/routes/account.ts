@@ -2,8 +2,7 @@ import { lazy } from 'react';
 import * as Icon from '@heroicons/react/outline';
 import { route, type RouteDefinition } from '@/routers/routes/utils';
 
-const AccountApiContainer = lazy(() => import('@account/AccountApiContainer'));
-const AccountSSHContainer = lazy(() => import('@account/ssh/AccountSSHContainer'));
+const CredentialsContainer = lazy(() => import('@account/CredentialsContainer'));
 const AccountOverviewContainer = lazy(() => import('@account/AccountOverviewContainer'));
 
 const TicketContainer = lazy(() => import('@account/tickets/TicketContainer'));
@@ -24,8 +23,7 @@ const account: RouteDefinition[] = [
      * Account - General Routes
      */
     route('', AccountOverviewContainer, { name: 'Account', end: true, icon: Icon.UserIcon }),
-    route('api', AccountApiContainer, { name: 'API Credentials', icon: Icon.CodeIcon }),
-    route('ssh', AccountSSHContainer, { name: 'SSH Keys', icon: Icon.TerminalIcon }),
+    route('credentials', CredentialsContainer, { name: 'Credentials', icon: Icon.KeyIcon }),
 
     /**
      * Account - Ticket Routes
@@ -61,9 +59,11 @@ const account: RouteDefinition[] = [
     route('donations', DonationContainer, {
         name: 'Donate',
         icon: Icon.HeartIcon,
-        condition: flags => flags.billing.enabled,
+        condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
     }),
-    route('donations/history', DonationHistoryContainer),
+    route('donations/history', DonationHistoryContainer, {
+        condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
+    }),
 ];
 
 export default account;

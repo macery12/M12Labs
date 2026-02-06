@@ -9,7 +9,7 @@ publicly disclose whatever issue you have found. We understand how frustrating i
 no one will respond to you. This holds us to a standard of providing prompt attention to any issues that arise and
 keeping this community safe.
 
-If you've found what you believe is a security issue please email `cam@jexactyl.com`. Please check
+If you've found what you believe is a security issue please email `contact@macery12.xyz`. Please check
 [SECURITY.md](/SECURITY.md) for additional details.
 
 ### Contact Us
@@ -17,4 +17,4 @@ If you've found what you believe is a security issue please email `cam@jexactyl.
 You can find us in a couple places online. First and foremost, we're active right here on GitHub. If you encounter a
 bug or other problems, open an issue on here for us to take a look at it. We also accept feature requests here as well.
 
-You can also find us on [Discord](https://discord.gg/qttGR4Z5Pk).
+You can also find us on [Discord](https://discord.gg/fVJZtqKYrc).

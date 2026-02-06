@@ -39,6 +39,7 @@ export interface EverestSettings {
     };
     billing: {
         enabled: boolean;
+        donations_enabled: boolean;
         paypal: boolean;
         link: boolean;
         processor?: string;
@@ -85,6 +86,8 @@ export interface EverestSettings {
             suspension_threshold: number;
             free_suspension_days: number;
             paid_suspension_days: number;
+            default_billing_days: number;
+            multiplier_steps: string;
         };
         plan_change_cooldown_hours?: number;
     };
