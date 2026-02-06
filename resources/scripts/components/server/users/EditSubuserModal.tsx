@@ -128,7 +128,7 @@ const PermissionCategory = ({
                     {isEditable && (
                         <button
                             type="button"
-                            css={tw`flex items-center gap-2 px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100 bg-neutral-700 hover:bg-neutral-600 rounded transition-colors cursor-pointer`}
+                            css={tw`flex items-center gap-2 px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100 bg-neutral-700 hover:bg-neutral-600 rounded transition-colors`}
                             onClick={e => {
                                 e.stopPropagation();
                                 toggleAll();
@@ -137,7 +137,7 @@ const PermissionCategory = ({
                             <input
                                 type="checkbox"
                                 checked={allSelected}
-                                onChange={toggleAll}
+                                readOnly
                                 css={tw`w-5 h-5 rounded pointer-events-none`}
                                 ref={input => {
                                     if (input) {
