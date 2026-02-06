@@ -37,9 +37,7 @@ class SubuserCreationService
     {
         return $this->connection->transaction(function () use ($server, $identifier, $permissions) {
             // Try to find user by email or username
-            $user = null;
-            
-            // Check if the identifier is an email or username
+            // If user is not found, RecordNotFoundException will be thrown
             if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
                 // Search by email
                 $user = $this->userRepository->findFirstWhere([['email', '=', $identifier]]);
