@@ -25,7 +25,7 @@ import Label from '@/elements/Label';
 import type { ApplicationStore } from '@/state';
 import { WithRelationships } from '@/api/routes/admin';
 import { useStoreState } from '@/state/hooks';
-import { faLayerGroup, faCog, faNetworkWired, faCogs } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup, faCogs } from '@fortawesome/free-solid-svg-icons';
 import NetworkingBox from '@admin/management/servers/settings/NetworkingBox';
 import OwnerSelect from '@admin/management/servers/OwnerSelect';
 
@@ -200,14 +200,18 @@ function ServerConfigurationForm({
                     <h3 css={tw`text-lg font-medium text-neutral-50 mb-4 flex items-center`}>
                         <span css={tw`mr-2`}>⚙️</span> Startup Configuration
                     </h3>
-                    
+
                     <div className="mb-6 flex flex-row">
                         <ServerStartupLineContainer egg={egg} server={server} />
                     </div>
 
                     <div className="mb-6 grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
                         <div className="flex">
-                            <ServerServiceContainer selectedEggId={selectedEggId} setEgg={setEgg} nestId={server.nestId} />
+                            <ServerServiceContainer
+                                selectedEggId={selectedEggId}
+                                setEgg={setEgg}
+                                nestId={server.nestId}
+                            />
                         </div>
 
                         <div className="flex">
@@ -225,7 +229,9 @@ function ServerConfigurationForm({
                                     variable={v}
                                     value={
                                         server.relationships.variables?.find(
-                                            v2 => v.eggId === v2.eggId && v.environmentVariable === v2.environmentVariable,
+                                            v2 =>
+                                                v.eggId === v2.eggId &&
+                                                v.environmentVariable === v2.environmentVariable,
                                         )?.serverValue
                                     }
                                 />
@@ -272,7 +278,10 @@ export default () => {
 
     if (!server) return null;
 
-    const submit = async (values: Values & { name: string; externalId: string; ownerId: number }, { setSubmitting }: FormikHelpers<Values & { name: string; externalId: string; ownerId: number }>) => {
+    const submit = async (
+        values: Values & { name: string; externalId: string; ownerId: number },
+        { setSubmitting }: FormikHelpers<Values & { name: string; externalId: string; ownerId: number }>,
+    ) => {
         clearFlashes('server');
 
         try {

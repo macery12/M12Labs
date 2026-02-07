@@ -17,7 +17,6 @@ import {
     ExternalLinkIcon,
     InformationCircleIcon,
     ServerIcon,
-    ViewGridIcon,
 } from '@heroicons/react/outline';
 import { useStoreState } from '@/state/hooks';
 import ServerDatabases from './ServerDatabases';
@@ -82,9 +81,22 @@ export default () => {
             <FlashMessageRender byKey={'server'} css={tw`mb-4`} />
 
             <SubNavigation>
-                <SubNavigationLink to={`/admin/servers/${params.id}`} name={'Overview'} icon={InformationCircleIcon} base />
-                <SubNavigationLink to={`/admin/servers/${params.id}/configuration`} name={'Configuration'} icon={CogIcon} />
-                <SubNavigationLink to={`/admin/servers/${params.id}/resources`} name={'Resources'} icon={ChartBarIcon} />
+                <SubNavigationLink
+                    to={`/admin/servers/${params.id}`}
+                    name={'Overview'}
+                    icon={InformationCircleIcon}
+                    base
+                />
+                <SubNavigationLink
+                    to={`/admin/servers/${params.id}/configuration`}
+                    name={'Configuration'}
+                    icon={CogIcon}
+                />
+                <SubNavigationLink
+                    to={`/admin/servers/${params.id}/resources`}
+                    name={'Resources'}
+                    icon={ChartBarIcon}
+                />
                 <SubNavigationLink
                     to={`/admin/servers/${params.id}/databases`}
                     name={'Databases'}

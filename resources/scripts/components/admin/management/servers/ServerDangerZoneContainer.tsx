@@ -9,12 +9,10 @@ import SuspendServerBox from './manage/SuspendServerBox';
 import UnsuspendServerBox from './manage/UnsuspendServerBox';
 import TransferServerBox from './manage/TransferServerBox';
 import ServerDeleteButton from './ServerDeleteButton';
-import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const { data: server } = useServerFromRoute();
     const { clearFlashes } = useFlash();
-    const { secondary } = useStoreState(state => state.theme.data!.colors);
 
     if (!server) return null;
 
@@ -28,12 +26,7 @@ export default () => {
             <div css={tw`mb-6 rounded-lg border-2 border-red-500 bg-red-500 bg-opacity-10 p-4`}>
                 <div css={tw`flex items-start`}>
                     <div css={tw`flex-shrink-0`}>
-                        <svg
-                            css={tw`h-6 w-6 text-red-400`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
+                        <svg css={tw`h-6 w-6 text-red-400`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -46,8 +39,8 @@ export default () => {
                         <h3 css={tw`text-sm font-medium text-red-300`}>Danger Zone</h3>
                         <div css={tw`mt-2 text-sm text-red-200`}>
                             <p>
-                                The actions below can have serious consequences. Please proceed with caution and
-                                ensure you understand what each action does before executing it.
+                                The actions below can have serious consequences. Please proceed with caution and ensure
+                                you understand what each action does before executing it.
                             </p>
                         </div>
                     </div>
@@ -64,9 +57,7 @@ export default () => {
             </div>
 
             {/* Delete Server Section */}
-            <div
-                css={tw`mt-8 rounded-lg border-2 border-red-600 bg-red-600 bg-opacity-10 p-6`}
-            >
+            <div css={tw`mt-8 rounded-lg border-2 border-red-600 bg-red-600 bg-opacity-10 p-6`}>
                 <h3 css={tw`text-lg font-medium text-red-300 mb-2`}>Delete Server</h3>
                 <p css={tw`text-sm text-red-200 mb-4`}>
                     Permanently delete this server and all of its data. This action cannot be undone.

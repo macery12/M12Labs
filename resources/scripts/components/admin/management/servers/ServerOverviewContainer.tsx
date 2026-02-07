@@ -3,12 +3,7 @@ import tw from 'twin.macro';
 import { useServerFromRoute } from '@/api/routes/admin/server';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import {
-    faServer,
-    faLayerGroup,
-    faBalanceScale,
-    faCashRegister,
-} from '@fortawesome/free-solid-svg-icons';
+import { faServer, faLayerGroup, faBalanceScale, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import Label from '@/elements/Label';
 import Spinner from '@/elements/Spinner';
 import getNode from '@/api/routes/admin/nodes/getNode';
@@ -47,9 +42,7 @@ export default () => {
                     </div>
                     <div>
                         <Label>Owner</Label>
-                        <p css={tw`text-gray-300`}>
-                            {server.relationships.user?.username || 'Unknown'}
-                        </p>
+                        <p css={tw`text-gray-300`}>{server.relationships.user?.username || 'Unknown'}</p>
                     </div>
                 </div>
             </AdminBox>
@@ -69,9 +62,7 @@ export default () => {
                     </div>
                     <div>
                         <Label>Primary Allocation</Label>
-                        <p css={tw`text-gray-300 font-mono`}>
-                            {primaryAllocation?.getDisplayText() || 'None'}
-                        </p>
+                        <p css={tw`text-gray-300 font-mono`}>{primaryAllocation?.getDisplayText() || 'None'}</p>
                     </div>
                     <div>
                         <Label>Total Allocations</Label>
@@ -88,9 +79,7 @@ export default () => {
                 <div css={tw`space-y-4`}>
                     <div>
                         <Label>CPU Limit</Label>
-                        <p css={tw`text-gray-300`}>
-                            {server.limits.cpu === 0 ? 'Unlimited' : `${server.limits.cpu}%`}
-                        </p>
+                        <p css={tw`text-gray-300`}>{server.limits.cpu === 0 ? 'Unlimited' : `${server.limits.cpu}%`}</p>
                     </div>
                     <div>
                         <Label>Memory Limit</Label>
@@ -113,9 +102,7 @@ export default () => {
                     <div css={tw`space-y-4`}>
                         <div>
                             <Label>Billing Status</Label>
-                            <p css={tw`text-gray-300`}>
-                                {server.billingProductId ? 'Enabled' : 'Disabled'}
-                            </p>
+                            <p css={tw`text-gray-300`}>{server.billingProductId ? 'Enabled' : 'Disabled'}</p>
                         </div>
                         {server.billingProductId && product && (
                             <>

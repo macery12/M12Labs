@@ -68,10 +68,7 @@ export default () => {
                         <FeatureLimitsBox />
                     </div>
 
-                    <div
-                        style={{ backgroundColor: secondary }}
-                        css={tw`rounded shadow-md px-4 xl:px-5 py-4`}
-                    >
+                    <div style={{ backgroundColor: secondary }} css={tw`rounded shadow-md px-4 xl:px-5 py-4`}>
                         <div css={tw`flex flex-row justify-end`}>
                             <Button type="submit" disabled={isSubmitting || !isValid}>
                                 Save Changes
