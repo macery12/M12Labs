@@ -217,7 +217,7 @@ function ServerConfigurationForm({
                         </div>
                     </div>
 
-                    {egg?.relationships.variables && egg.relationships.variables.length > 0 && (
+                    {egg?.relationships.variables && (
                         <div className="grid grid-cols-1 gap-y-3 gap-x-6 md:grid-cols-2">
                             {/* This ensures that no variables are rendered unless the environment has a value for the variable. */}
                             {egg.relationships.variables

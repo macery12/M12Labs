@@ -30,9 +30,14 @@ export default () => {
     const primaryAllocation = server.relationships.allocations[0];
 
     const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            addFlash({ type: 'success', message: 'UUID copied to clipboard!' });
-        });
+        navigator.clipboard
+            .writeText(text)
+            .then(() => {
+                addFlash({ type: 'success', message: 'UUID copied to clipboard!' });
+            })
+            .catch(() => {
+                addFlash({ type: 'error', message: 'Failed to copy UUID to clipboard' });
+            });
     };
 
     return (
