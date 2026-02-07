@@ -142,9 +142,11 @@ export default () => {
                                         {server.limits.io === 0 ? '∞' : server.limits.io}
                                     </span>
                                 </div>
-                                <div css={tw`flex justify-between`}>
-                                    <span css={tw`text-gray-500`}>OOM</span>
-                                    <span css={tw`text-gray-400`}>{server.limits.oomKiller ? 'On' : 'Off'}</span>
+                                <div css={tw`flex justify-between`} title="Out of Memory Killer">
+                                    <span css={tw`text-gray-500`}>OOM Killer</span>
+                                    <span css={tw`text-gray-400`}>
+                                        {server.limits.oomKiller ? 'Enabled' : 'Disabled'}
+                                    </span>
                                 </div>
                                 {server.limits.threads && (
                                     <div css={tw`flex justify-between`}>
