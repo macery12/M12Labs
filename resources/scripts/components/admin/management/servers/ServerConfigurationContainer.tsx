@@ -177,9 +177,7 @@ function ServerConfigurationForm({
             <div className="mb-16 flex flex-col">
                 {/* Basic Settings Section */}
                 <div css={tw`mb-8`}>
-                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4 flex items-center`}>
-                        <span css={tw`mr-2`}>📋</span> Basic Settings
-                    </h3>
+                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4`}>Basic Settings</h3>
                     <AdminBox icon={faCogs} title={'Server Information'} isLoading={isSubmitting}>
                         <div css={tw`grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6`}>
                             <Field
@@ -197,9 +195,7 @@ function ServerConfigurationForm({
 
                 {/* Startup Configuration Section */}
                 <div css={tw`mb-8`}>
-                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4 flex items-center`}>
-                        <span css={tw`mr-2`}>⚙️</span> Startup Configuration
-                    </h3>
+                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4`}>Startup Configuration</h3>
 
                     <div className="mb-6 flex flex-row">
                         <ServerStartupLineContainer egg={egg} server={server} />
@@ -241,9 +237,7 @@ function ServerConfigurationForm({
 
                 {/* Network Configuration Section */}
                 <div css={tw`mb-8`}>
-                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4 flex items-center`}>
-                        <span css={tw`mr-2`}>🌐</span> Network & Allocations
-                    </h3>
+                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4`}>Network & Allocations</h3>
                     <NetworkingBox />
                 </div>
 
