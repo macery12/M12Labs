@@ -176,8 +176,7 @@ function ServerConfigurationForm({
         <Form>
             <div className="mb-16 flex flex-col">
                 {/* Basic Settings Section */}
-                <div css={tw`mb-8`}>
-                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4`}>Basic Settings</h3>
+                <div css={tw`mb-6`}>
                     <AdminBox icon={faCogs} title={'Server Information'} isLoading={isSubmitting}>
                         <div css={tw`grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6`}>
                             <Field
@@ -193,15 +192,18 @@ function ServerConfigurationForm({
                     </AdminBox>
                 </div>
 
-                {/* Startup Configuration Section */}
-                <div css={tw`mb-8`}>
-                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4`}>Startup Configuration</h3>
+                {/* Network Configuration Section - Moved to top */}
+                <div css={tw`mb-6`}>
+                    <NetworkingBox />
+                </div>
 
-                    <div className="mb-6 flex flex-row">
+                {/* Startup Configuration Section */}
+                <div css={tw`mb-6`}>
+                    <div className="mb-4 flex flex-row">
                         <ServerStartupLineContainer egg={egg} server={server} />
                     </div>
 
-                    <div className="mb-6 grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+                    <div className="mb-4 grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
                         <div className="flex">
                             <ServerServiceContainer
                                 selectedEggId={selectedEggId}
@@ -215,30 +217,28 @@ function ServerConfigurationForm({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-y-6 gap-x-8 md:grid-cols-2">
-                        {/* This ensures that no variables are rendered unless the environment has a value for the variable. */}
-                        {egg?.relationships.variables
-                            ?.filter(v => Object.keys(environment).find(e => e === v.environmentVariable) !== undefined)
-                            .map((v, i) => (
-                                <ServerVariableContainer
-                                    key={i}
-                                    variable={v}
-                                    value={
-                                        server.relationships.variables?.find(
-                                            v2 =>
-                                                v.eggId === v2.eggId &&
-                                                v.environmentVariable === v2.environmentVariable,
-                                        )?.serverValue
-                                    }
-                                />
-                            ))}
-                    </div>
-                </div>
-
-                {/* Network Configuration Section */}
-                <div css={tw`mb-8`}>
-                    <h3 css={tw`text-lg font-medium text-neutral-50 mb-4`}>Network & Allocations</h3>
-                    <NetworkingBox />
+                    {egg?.relationships.variables && egg.relationships.variables.length > 0 && (
+                        <div className="grid grid-cols-1 gap-y-4 gap-x-8 md:grid-cols-2">
+                            {/* This ensures that no variables are rendered unless the environment has a value for the variable. */}
+                            {egg.relationships.variables
+                                ?.filter(
+                                    v => Object.keys(environment).find(e => e === v.environmentVariable) !== undefined,
+                                )
+                                .map((v, i) => (
+                                    <ServerVariableContainer
+                                        key={i}
+                                        variable={v}
+                                        value={
+                                            server.relationships.variables?.find(
+                                                v2 =>
+                                                    v.eggId === v2.eggId &&
+                                                    v.environmentVariable === v2.environmentVariable,
+                                            )?.serverValue
+                                        }
+                                    />
+                                ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-6 rounded py-2 pr-6 shadow-md" style={{ backgroundColor: secondary }}>

@@ -10,11 +10,13 @@ import getNode from '@/api/routes/admin/nodes/getNode';
 import { Node } from '@/api/routes/admin/nodes/getNodes';
 import NodeStatus from '@admin/management/nodes/NodeStatus';
 import { NavLink } from 'react-router-dom';
+import { useFlashKey } from '@/plugins/useFlash';
 
 export default () => {
     const [node, setNode] = useState<Node | undefined>();
     const { data: server } = useServerFromRoute();
     const { billing } = useStoreState(state => state.everest.data!);
+    const { addFlash } = useFlashKey('server');
 
     useEffect(() => {
         if (server) {
@@ -27,6 +29,12 @@ export default () => {
     const product = server.relationships.product;
     const primaryAllocation = server.relationships.allocations[0];
 
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            addFlash({ type: 'success', message: 'UUID copied to clipboard!' });
+        });
+    };
+
     return (
         <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8`}>
             {/* Server Status */}
@@ -38,7 +46,26 @@ export default () => {
                     </div>
                     <div>
                         <Label>Server ID</Label>
-                        <p css={tw`text-gray-400 font-mono text-sm`}>{server.uuid}</p>
+                        <div
+                            css={tw`flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors`}
+                            onClick={() => copyToClipboard(server.uuid)}
+                            title="Click to copy"
+                        >
+                            <p css={tw`text-gray-400 font-mono text-sm`}>{server.uuid}</p>
+                            <svg
+                                css={tw`w-4 h-4 text-gray-500 hover:text-blue-400`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                />
+                            </svg>
+                        </div>
                     </div>
                     <div>
                         <Label>Owner</Label>
@@ -111,6 +138,12 @@ export default () => {
                                     <p css={tw`text-gray-300`}>
                                         {product.name} - {billing.currency.symbol}
                                         {product.price} {billing.currency.code.toUpperCase()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <Label>Billing Cycle</Label>
+                                    <p css={tw`text-gray-300`}>
+                                        {server.billingDays ? `${server.billingDays} days` : '30 days'}
                                     </p>
                                 </div>
                                 {server.renewalDate && (
