@@ -323,7 +323,7 @@ export default () => {
                 externalId: server.externalId || '',
                 ownerId: server.ownerId,
                 startup: server.container.startup || '',
-                environment: [] as Record<string, any>,
+                environment: {} as Record<string, any>,
                 image: server.container.image,
                 eggId: server.eggId,
                 skipScripts: false,
