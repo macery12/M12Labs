@@ -9,6 +9,7 @@ import type { Values } from '@/api/routes/admin/servers/updateServer';
 import updateServer from '@/api/routes/admin/servers/updateServer';
 import FeatureLimitsBox from '@admin/management/servers/settings/FeatureLimitsBox';
 import ServerResourceBox from '@admin/management/servers/settings/ServerResourceBox';
+import NetworkingBox from '@admin/management/servers/settings/NetworkingBox';
 import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
 
@@ -63,7 +64,13 @@ export default () => {
         >
             {({ isSubmitting, isValid }) => (
                 <Form>
-                    <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 mb-8`}>
+                    {/* Network & Allocations */}
+                    <div css={tw`mb-4`}>
+                        <NetworkingBox />
+                    </div>
+
+                    {/* Resource Limits */}
+                    <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 mb-4`}>
                         <ServerResourceBox />
                         <FeatureLimitsBox />
                     </div>
