@@ -12,6 +12,17 @@ import NodeStatus from '@admin/management/nodes/NodeStatus';
 import { NavLink } from 'react-router-dom';
 import { useFlashKey } from '@/plugins/useFlash';
 
+// Status badge colors
+const STATUS_COLORS = {
+    active: { bg: '#10b98133', text: '#10b981' },
+    running: { bg: '#10b98133', text: '#10b981' },
+    default: { bg: '#ef444433', text: '#ef4444' },
+};
+
+const getStatusColors = (status: string | null) => {
+    return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.default;
+};
+
 export default () => {
     const [node, setNode] = useState<Node | undefined>();
     const { data: server } = useServerFromRoute();
@@ -52,16 +63,7 @@ export default () => {
                             <div css={tw`flex items-center gap-2`}>
                                 <span
                                     css={tw`px-3 py-1 rounded-full text-sm font-semibold capitalize`}
-                                    style={{
-                                        backgroundColor:
-                                            server.status === 'active' || server.status === 'running'
-                                                ? '#10b98133'
-                                                : '#ef444433',
-                                        color:
-                                            server.status === 'active' || server.status === 'running'
-                                                ? '#10b981'
-                                                : '#ef4444',
-                                    }}
+                                    style={getStatusColors(server.status)}
                                 >
                                     {server.status ?? 'Active'}
                                 </span>
@@ -82,10 +84,13 @@ export default () => {
                                         onClick={() => copyToClipboard(server.uuid)}
                                         title="Click to copy"
                                     >
-                                        <span css={tw`text-xs text-gray-400 font-mono truncate max-w-[120px]`}>
+                                        <span
+                                            css={tw`text-xs text-gray-400 font-mono truncate`}
+                                            style={{ maxWidth: '140px' }}
+                                        >
                                             {server.uuid}
                                         </span>
-                                        <FontAwesomeIcon icon={faCopy} css={tw`text-xs text-gray-500`} />
+                                        <FontAwesomeIcon icon={faCopy} css={tw`text-xs text-gray-500 flex-shrink-0`} />
                                     </div>
                                 </div>
                             </div>
@@ -160,62 +165,49 @@ export default () => {
                 </div>
 
                 {/* Billing Summary Card */}
-                {billing.enabled && (
-                    <div css={tw`md:col-span-1`}>
-                        <AdminBox icon={faCashRegister} title={'Billing Summary'}>
-                            <div css={tw`space-y-4`}>
-                                {server.billingProductId && product ? (
-                                    <>
-                                        {/* Primary: Plan and Cost */}
-                                        <div>
-                                            <div css={tw`text-lg font-semibold text-gray-200`}>{product.name}</div>
-                                            <div css={tw`text-2xl font-bold text-green-400 mt-1`}>
-                                                {billing.currency.symbol}
-                                                {product.price}
-                                                <span css={tw`text-sm text-gray-400 ml-1`}>
-                                                    {billing.currency.code.toUpperCase()}
-                                                </span>
-                                            </div>
+                <div css={tw`md:col-span-1`}>
+                    <AdminBox icon={faCashRegister} title={'Billing Summary'}>
+                        <div css={tw`space-y-4`}>
+                            {billing.enabled && server.billingProductId && product ? (
+                                <>
+                                    {/* Primary: Plan and Cost */}
+                                    <div>
+                                        <div css={tw`text-lg font-semibold text-gray-200`}>{product.name}</div>
+                                        <div css={tw`text-2xl font-bold text-green-400 mt-1`}>
+                                            {billing.currency.symbol}
+                                            {product.price}
+                                            <span css={tw`text-sm text-gray-400 ml-1`}>
+                                                {billing.currency.code.toUpperCase()}
+                                            </span>
                                         </div>
-
-                                        {/* Secondary: Billing details */}
-                                        <div css={tw`space-y-2 pt-2 border-t border-gray-700`}>
-                                            <div css={tw`flex justify-between items-center`}>
-                                                <span css={tw`text-xs text-gray-500`}>Billing Cycle</span>
-                                                <span css={tw`text-sm text-gray-300`}>
-                                                    {server.billingDays ? `${server.billingDays} days` : '30 days'}
-                                                </span>
-                                            </div>
-                                            {server.renewalDate && (
-                                                <div css={tw`flex justify-between items-center`}>
-                                                    <span css={tw`text-xs text-gray-500`}>Next Renewal</span>
-                                                    <span css={tw`text-sm font-medium text-blue-400`}>
-                                                        {new Date(server.renewalDate).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div css={tw`flex items-center justify-center h-full`}>
-                                        <span css={tw`text-gray-400`}>Billing Disabled</span>
                                     </div>
-                                )}
-                            </div>
-                        </AdminBox>
-                    </div>
-                )}
 
-                {/* Placeholder if billing is disabled to maintain grid */}
-                {!billing.enabled && (
-                    <div css={tw`md:col-span-1`}>
-                        <AdminBox icon={faCashRegister} title={'Billing Summary'}>
-                            <div css={tw`flex items-center justify-center py-8`}>
-                                <span css={tw`text-gray-400`}>Billing Disabled</span>
-                            </div>
-                        </AdminBox>
-                    </div>
-                )}
+                                    {/* Secondary: Billing details */}
+                                    <div css={tw`space-y-2 pt-2 border-t border-gray-700`}>
+                                        <div css={tw`flex justify-between items-center`}>
+                                            <span css={tw`text-xs text-gray-500`}>Billing Cycle</span>
+                                            <span css={tw`text-sm text-gray-300`}>
+                                                {server.billingDays ? `${server.billingDays} days` : '30 days'}
+                                            </span>
+                                        </div>
+                                        {server.renewalDate && (
+                                            <div css={tw`flex justify-between items-center`}>
+                                                <span css={tw`text-xs text-gray-500`}>Next Renewal</span>
+                                                <span css={tw`text-sm font-medium text-blue-400`}>
+                                                    {new Date(server.renewalDate).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <div css={tw`flex items-center justify-center py-8`}>
+                                    <span css={tw`text-gray-400`}>Billing Disabled</span>
+                                </div>
+                            )}
+                        </div>
+                    </AdminBox>
+                </div>
             </div>
 
             {/* Row 2: Node & Network - Full width card */}
