@@ -14,9 +14,9 @@ import { useFlashKey } from '@/plugins/useFlash';
 
 // Status badge colors
 const STATUS_COLORS = {
-    active: { bg: '#10b98133', text: '#10b981' },
-    running: { bg: '#10b98133', text: '#10b981' },
-    default: { bg: '#ef444433', text: '#ef4444' },
+    active: { backgroundColor: '#10b98133', color: '#10b981' },
+    running: { backgroundColor: '#10b98133', color: '#10b981' },
+    default: { backgroundColor: '#ef444433', color: '#ef4444' },
 };
 
 const getStatusColors = (status: string | null) => {
@@ -84,10 +84,7 @@ export default () => {
                                         onClick={() => copyToClipboard(server.uuid)}
                                         title="Click to copy"
                                     >
-                                        <span
-                                            css={tw`text-xs text-gray-400 font-mono truncate`}
-                                            style={{ maxWidth: '140px' }}
-                                        >
+                                        <span css={tw`text-xs text-gray-400 font-mono truncate max-w-[140px]`}>
                                             {server.uuid}
                                         </span>
                                         <FontAwesomeIcon icon={faCopy} css={tw`text-xs text-gray-500 flex-shrink-0`} />
