@@ -20,6 +20,10 @@ const STATUS_COLORS = {
 };
 
 const getStatusColors = (status: string | null) => {
+    // Null or undefined status means active server
+    if (!status) {
+        return STATUS_COLORS.active;
+    }
     return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.default;
 };
 
