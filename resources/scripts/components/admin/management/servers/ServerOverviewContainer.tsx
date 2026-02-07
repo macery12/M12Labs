@@ -11,31 +11,26 @@ import NodeStatus from '@admin/management/nodes/NodeStatus';
 import { NavLink } from 'react-router-dom';
 import { useFlashKey } from '@/plugins/useFlash';
 
-const ResourceLimitBar = ({ label, value, max, unit }: { label: string; value: number; max: number; unit: string }) => {
-    const percentage = max === 0 ? 0 : Math.min((value / max) * 100, 100);
-    const isUnlimited = max === 0;
+const ResourceLimitDisplay = ({
+    label,
+    value,
+    unit,
+    color,
+}: {
+    label: string;
+    value: number;
+    unit: string;
+    color: string;
+}) => {
+    const isUnlimited = value === 0;
 
     return (
-        <div>
-            <div css={tw`flex justify-between items-center mb-1`}>
-                <span css={tw`text-xs font-medium text-gray-400`}>{label}</span>
-                <span css={tw`text-xs text-gray-300`}>{isUnlimited ? 'Unlimited' : `${value} / ${max} ${unit}`}</span>
+        <div css={tw`text-center p-3 rounded-lg bg-gray-800 bg-opacity-50`}>
+            <div css={tw`text-2xl font-bold`} style={{ color }}>
+                {isUnlimited ? '∞' : value}
             </div>
-            <div css={tw`w-full bg-gray-700 rounded-full h-2 overflow-hidden`}>
-                <div
-                    css={tw`h-full rounded-full transition-all duration-300`}
-                    style={{
-                        width: isUnlimited ? '100%' : `${percentage}%`,
-                        backgroundColor: isUnlimited
-                            ? '#6b7280'
-                            : percentage > 80
-                            ? '#ef4444'
-                            : percentage > 60
-                            ? '#f59e0b'
-                            : '#10b981',
-                    }}
-                />
-            </div>
+            <div css={tw`text-xs text-gray-400 mt-1`}>{label}</div>
+            <div css={tw`text-xs text-gray-500`}>{isUnlimited ? 'Unlimited' : unit}</div>
         </div>
     );
 };
@@ -146,45 +141,39 @@ export default () => {
             {/* Middle Column - Resource Limits (Visual) */}
             <div css={tw`lg:col-span-1`}>
                 <AdminBox icon={faBalanceScale} title={'Resource Limits'}>
-                    <div css={tw`space-y-4`}>
-                        <ResourceLimitBar
-                            label="CPU Usage"
-                            value={server.limits.cpu}
-                            max={server.limits.cpu}
-                            unit="%"
-                        />
-                        <ResourceLimitBar
-                            label="Memory"
-                            value={server.limits.memory}
-                            max={server.limits.memory}
-                            unit="MiB"
-                        />
-                        <ResourceLimitBar
+                    <div css={tw`grid grid-cols-3 gap-3`}>
+                        <ResourceLimitDisplay label="CPU Limit" value={server.limits.cpu} unit="%" color="#60a5fa" />
+                        <ResourceLimitDisplay label="Memory" value={server.limits.memory} unit="MiB" color="#34d399" />
+                        <ResourceLimitDisplay
                             label="Disk Space"
                             value={server.limits.disk}
-                            max={server.limits.disk}
                             unit="MiB"
+                            color="#a78bfa"
                         />
-                        <div css={tw`pt-3 border-t border-gray-700`}>
-                            <div css={tw`grid grid-cols-3 gap-2 text-center`}>
-                                <div>
-                                    <div css={tw`text-2xl font-bold text-blue-400`}>
-                                        {server.limits.cpu === 0 ? '∞' : `${server.limits.cpu}%`}
-                                    </div>
-                                    <div css={tw`text-xs text-gray-400 mt-1`}>CPU</div>
+                    </div>
+                    <div css={tw`mt-4 pt-4 border-t border-gray-700`}>
+                        <div css={tw`grid grid-cols-2 gap-3 text-sm`}>
+                            <div css={tw`flex justify-between`}>
+                                <span css={tw`text-gray-400`}>Swap:</span>
+                                <span css={tw`text-gray-300`}>
+                                    {server.limits.swap === 0 ? 'Unlimited' : `${server.limits.swap} MiB`}
+                                </span>
+                            </div>
+                            <div css={tw`flex justify-between`}>
+                                <span css={tw`text-gray-400`}>I/O:</span>
+                                <span css={tw`text-gray-300`}>
+                                    {server.limits.io === 0 ? 'Unlimited' : server.limits.io}
+                                </span>
+                            </div>
+                            {server.limits.threads && (
+                                <div css={tw`flex justify-between`}>
+                                    <span css={tw`text-gray-400`}>Threads:</span>
+                                    <span css={tw`text-gray-300`}>{server.limits.threads}</span>
                                 </div>
-                                <div>
-                                    <div css={tw`text-2xl font-bold text-green-400`}>
-                                        {server.limits.memory === 0 ? '∞' : `${server.limits.memory}`}
-                                    </div>
-                                    <div css={tw`text-xs text-gray-400 mt-1`}>RAM (MiB)</div>
-                                </div>
-                                <div>
-                                    <div css={tw`text-2xl font-bold text-purple-400`}>
-                                        {server.limits.disk === 0 ? '∞' : `${server.limits.disk}`}
-                                    </div>
-                                    <div css={tw`text-xs text-gray-400 mt-1`}>Disk (MiB)</div>
-                                </div>
+                            )}
+                            <div css={tw`flex justify-between`}>
+                                <span css={tw`text-gray-400`}>OOM Killer:</span>
+                                <span css={tw`text-gray-300`}>{server.limits.oomKiller ? 'Enabled' : 'Disabled'}</span>
                             </div>
                         </div>
                     </div>
