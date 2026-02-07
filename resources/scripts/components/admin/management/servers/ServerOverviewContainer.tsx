@@ -126,32 +126,26 @@ export default () => {
 
                             {/* Tertiary: Darker muted footer for secondary info */}
                             <div
-                                css={tw`-mx-4 -mb-4 px-4 py-3 bg-gray-800 bg-opacity-50 rounded-b grid grid-cols-2 gap-2 text-xs border-t border-gray-700`}
+                                css={tw`-mx-4 -mb-4 px-4 py-3 bg-gray-800 bg-opacity-50 rounded-b flex justify-center gap-6 text-xs border-t border-gray-700`}
                             >
-                                <div css={tw`flex justify-between`}>
-                                    <span css={tw`text-gray-500`}>Swap</span>
+                                <div css={tw`flex items-center gap-2`}>
+                                    <span css={tw`text-gray-500`}>Swap:</span>
                                     <span css={tw`text-gray-400`}>
                                         {server.limits.swap === 0 ? '∞' : `${server.limits.swap}`}
                                     </span>
                                 </div>
-                                <div css={tw`flex justify-between`}>
-                                    <span css={tw`text-gray-500`}>I/O</span>
+                                <div css={tw`flex items-center gap-2`}>
+                                    <span css={tw`text-gray-500`}>I/O:</span>
                                     <span css={tw`text-gray-400`}>
                                         {server.limits.io === 0 ? '∞' : server.limits.io}
                                     </span>
                                 </div>
-                                <div css={tw`flex justify-between`} title="Out of Memory Killer">
-                                    <span css={tw`text-gray-500`}>OOM Killer</span>
+                                <div css={tw`flex items-center gap-2`} title="Out of Memory Killer">
+                                    <span css={tw`text-gray-500`}>OOM Killer:</span>
                                     <span css={tw`text-gray-400`}>
                                         {server.limits.oomKiller ? 'Enabled' : 'Disabled'}
                                     </span>
                                 </div>
-                                {server.limits.threads && (
-                                    <div css={tw`flex justify-between`}>
-                                        <span css={tw`text-gray-500`}>Threads</span>
-                                        <span css={tw`text-gray-400`}>{server.limits.threads}</span>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </AdminBox>
