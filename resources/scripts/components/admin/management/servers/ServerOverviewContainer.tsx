@@ -52,13 +52,13 @@ export default () => {
     };
 
     return (
-        <div css={tw`space-y-4`}>
-            {/* Row 1: Three equal-width cards */}
-            <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-4`}>
-                {/* Server Status Card */}
-                <div css={tw`md:col-span-1`}>
+        <div css={tw`space-y-6`}>
+            {/* Row 1: Three asymmetric cards (4/5/3 column distribution) */}
+            <div css={tw`grid grid-cols-1 md:grid-cols-12 gap-4`}>
+                {/* Server Status Card - 4 columns */}
+                <div css={tw`md:col-span-4`}>
                     <AdminBox icon={faServer} title={'Server Status'}>
-                        <div css={tw`space-y-4`}>
+                        <div css={tw`space-y-5 min-h-[160px]`}>
                             {/* Primary: Server Status - Visually prominent */}
                             <div css={tw`flex items-center gap-2`}>
                                 <span
@@ -69,38 +69,32 @@ export default () => {
                                 </span>
                             </div>
 
-                            {/* Secondary: Owner and Server ID */}
-                            <div css={tw`space-y-2 pt-2 border-t border-gray-700`}>
-                                <div css={tw`flex justify-between items-center`}>
-                                    <span css={tw`text-xs text-gray-500`}>Owner</span>
-                                    <span css={tw`text-sm text-gray-300`}>
-                                        {server.relationships.user?.username || 'Unknown'}
-                                    </span>
-                                </div>
-                                <div css={tw`flex justify-between items-center gap-2`}>
-                                    <span css={tw`text-xs text-gray-500`}>Server ID</span>
-                                    <div
-                                        css={tw`flex items-center gap-1 cursor-pointer hover:text-blue-400 transition-colors`}
-                                        onClick={() => copyToClipboard(server.uuid)}
-                                        title="Click to copy"
-                                    >
-                                        <span css={tw`text-xs text-gray-400 font-mono truncate max-w-[140px]`}>
-                                            {server.uuid}
-                                        </span>
-                                        <FontAwesomeIcon icon={faCopy} css={tw`text-xs text-gray-500 flex-shrink-0`} />
-                                    </div>
+                            {/* Secondary: Owner and Server ID - Compact two-column grid */}
+                            <div css={tw`pt-2 border-t border-gray-700 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs`}>
+                                <span css={tw`text-gray-500`}>Owner</span>
+                                <span css={tw`text-gray-300 text-right truncate`}>
+                                    {server.relationships.user?.username || 'Unknown'}
+                                </span>
+                                <span css={tw`text-gray-500`}>Server ID</span>
+                                <div
+                                    css={tw`flex items-center gap-1 justify-end cursor-pointer hover:text-blue-400 transition-colors`}
+                                    onClick={() => copyToClipboard(server.uuid)}
+                                    title="Click to copy"
+                                >
+                                    <span css={tw`text-gray-400 font-mono truncate max-w-[120px]`}>{server.uuid}</span>
+                                    <FontAwesomeIcon icon={faCopy} css={tw`text-gray-500 flex-shrink-0`} />
                                 </div>
                             </div>
                         </div>
                     </AdminBox>
                 </div>
 
-                {/* Resource Limits Card */}
-                <div css={tw`md:col-span-1`}>
+                {/* Resource Limits Card - 5 columns */}
+                <div css={tw`md:col-span-5`}>
                     <AdminBox icon={faBalanceScale} title={'Resource Limits'}>
-                        <div css={tw`space-y-4`}>
-                            {/* Primary: Large numbers for main resources */}
-                            <div css={tw`grid grid-cols-3 gap-2`}>
+                        <div css={tw`space-y-4 min-h-[160px]`}>
+                            {/* Primary: Large numbers for main resources with more spacing */}
+                            <div css={tw`grid grid-cols-3 gap-4`}>
                                 <div css={tw`text-center`}>
                                     <div css={tw`text-2xl font-bold text-blue-400`}>
                                         {server.limits.cpu === 0 ? '∞' : server.limits.cpu}
@@ -130,8 +124,10 @@ export default () => {
                                 </div>
                             </div>
 
-                            {/* Tertiary: Subtle footer for secondary info */}
-                            <div css={tw`pt-2 border-t border-gray-700 grid grid-cols-2 gap-2 text-xs`}>
+                            {/* Tertiary: Darker muted footer for secondary info */}
+                            <div
+                                css={tw`-mx-4 -mb-4 px-4 py-3 bg-gray-800 bg-opacity-50 rounded-b grid grid-cols-2 gap-2 text-xs border-t border-gray-700`}
+                            >
                                 <div css={tw`flex justify-between`}>
                                     <span css={tw`text-gray-500`}>Swap</span>
                                     <span css={tw`text-gray-400`}>
@@ -161,35 +157,37 @@ export default () => {
                     </AdminBox>
                 </div>
 
-                {/* Billing Summary Card */}
-                <div css={tw`md:col-span-1`}>
+                {/* Billing Summary Card - 3 columns */}
+                <div css={tw`md:col-span-3`}>
                     <AdminBox icon={faCashRegister} title={'Billing Summary'}>
-                        <div css={tw`space-y-4`}>
+                        <div css={tw`space-y-4 min-h-[160px]`}>
                             {billing.enabled && server.billingProductId && product ? (
                                 <>
                                     {/* Primary: Plan and Cost */}
                                     <div>
-                                        <div css={tw`text-lg font-semibold text-gray-200`}>{product.name}</div>
-                                        <div css={tw`text-2xl font-bold text-green-400 mt-1`}>
+                                        <div css={tw`text-base font-semibold text-gray-200 truncate`}>
+                                            {product.name}
+                                        </div>
+                                        <div css={tw`text-xl font-bold text-green-400 mt-1`}>
                                             {billing.currency.symbol}
                                             {product.price}
-                                            <span css={tw`text-sm text-gray-400 ml-1`}>
+                                            <span css={tw`text-xs text-gray-400 ml-1`}>
                                                 {billing.currency.code.toUpperCase()}
                                             </span>
                                         </div>
                                     </div>
 
                                     {/* Secondary: Billing details */}
-                                    <div css={tw`space-y-2 pt-2 border-t border-gray-700`}>
+                                    <div css={tw`space-y-1.5 pt-2 border-t border-gray-700 text-xs`}>
                                         <div css={tw`flex justify-between items-center`}>
-                                            <span css={tw`text-xs text-gray-500`}>Billing Cycle</span>
-                                            <span css={tw`text-sm text-gray-300`}>
-                                                {server.billingDays ? `${server.billingDays} days` : '30 days'}
+                                            <span css={tw`text-gray-500`}>Cycle</span>
+                                            <span css={tw`text-gray-300`}>
+                                                {server.billingDays ? `${server.billingDays}d` : '30d'}
                                             </span>
                                         </div>
                                         {server.renewalDate && (
                                             <div css={tw`flex justify-between items-center`}>
-                                                <span css={tw`text-xs text-gray-500`}>Next Renewal</span>
+                                                <span css={tw`text-gray-500`}>Renewal</span>
                                                 <span css={tw`text-sm font-medium text-blue-400`}>
                                                     {new Date(server.renewalDate).toLocaleDateString()}
                                                 </span>
@@ -198,8 +196,8 @@ export default () => {
                                     </div>
                                 </>
                             ) : (
-                                <div css={tw`flex items-center justify-center py-8`}>
-                                    <span css={tw`text-gray-400`}>Billing Disabled</span>
+                                <div css={tw`flex items-center justify-center h-full`}>
+                                    <span css={tw`text-gray-400 text-sm`}>Billing Disabled</span>
                                 </div>
                             )}
                         </div>
@@ -207,10 +205,10 @@ export default () => {
                 </div>
             </div>
 
-            {/* Row 2: Node & Network - Full width card */}
+            {/* Row 2: Node & Network - Full width card with increased padding */}
             <div css={tw`grid grid-cols-1`}>
                 <AdminBox icon={faLayerGroup} title={'Node & Network'}>
-                    <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-4`}>
+                    <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-4 py-2`}>
                         {/* Primary: Node name with health indicator */}
                         <div css={tw`md:col-span-2`}>
                             <div css={tw`text-sm text-gray-500 mb-2`}>Node</div>
