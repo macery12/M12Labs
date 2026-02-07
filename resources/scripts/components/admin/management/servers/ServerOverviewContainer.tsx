@@ -188,7 +188,7 @@ export default () => {
                                         {server.renewalDate && (
                                             <div css={tw`flex justify-between items-center`}>
                                                 <span css={tw`text-gray-500`}>Renewal</span>
-                                                <span css={tw`text-sm font-medium text-blue-400`}>
+                                                <span css={tw`text-gray-300 font-medium text-blue-400`}>
                                                     {new Date(server.renewalDate).toLocaleDateString()}
                                                 </span>
                                             </div>
