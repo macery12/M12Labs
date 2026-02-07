@@ -36,10 +36,10 @@ export default () => {
     };
 
     return (
-        <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8`}>
+        <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6`}>
             {/* Server Status */}
             <AdminBox icon={faServer} title={'Server Status'}>
-                <div css={tw`space-y-4`}>
+                <div css={tw`space-y-3`}>
                     <div>
                         <Label>Status</Label>
                         <p css={tw`text-gray-300 capitalize`}>{server.status ?? 'Active'}</p>
@@ -76,7 +76,7 @@ export default () => {
 
             {/* Node & Allocation Summary */}
             <AdminBox icon={faLayerGroup} title={'Node & Allocation'}>
-                <div css={tw`space-y-4`}>
+                <div css={tw`space-y-3`}>
                     <div>
                         <Label>Node</Label>
                         {!node ? (
@@ -103,7 +103,7 @@ export default () => {
 
             {/* Resource Limits Summary */}
             <AdminBox icon={faBalanceScale} title={'Resource Limits'}>
-                <div css={tw`space-y-4`}>
+                <div css={tw`space-y-3`}>
                     <div>
                         <Label>CPU Limit</Label>
                         <p css={tw`text-gray-300`}>{server.limits.cpu === 0 ? 'Unlimited' : `${server.limits.cpu}%`}</p>
@@ -126,7 +126,7 @@ export default () => {
             {/* Billing Summary */}
             {billing.enabled && (
                 <AdminBox icon={faCashRegister} title={'Billing Summary'}>
-                    <div css={tw`space-y-4`}>
+                    <div css={tw`space-y-3`}>
                         <div>
                             <Label>Billing Status</Label>
                             <p css={tw`text-gray-300`}>{server.billingProductId ? 'Enabled' : 'Disabled'}</p>

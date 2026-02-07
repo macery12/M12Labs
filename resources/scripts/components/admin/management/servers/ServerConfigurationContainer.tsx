@@ -52,7 +52,7 @@ function ServerStartupLineContainer({ egg, server }: { egg?: Egg; server: Server
         <AdminBox title={'Startup Command'} className="relative w-full">
             <SpinnerOverlay visible={isSubmitting} />
 
-            <div className="mb-6">
+            <div className="mb-3">
                 <Field
                     id={'startup'}
                     name={'startup'}
@@ -90,14 +90,14 @@ export function ServerServiceContainer({
 
     return (
         <AdminBox title={'Service Configuration'} isLoading={isSubmitting} className="w-full" icon={faLayerGroup}>
-            <div className="mb-6">
+            <div className="mb-3">
                 <NestSelector selectedNestId={nestId} onNestSelect={setNestId} />
             </div>
-            <div className="mb-6">
+            <div className="mb-3">
                 <EggSelect nestId={nestId} selectedEggId={selectedEggId} onEggSelect={setEgg} />
             </div>
             {!noToggle && (
-                <div className="rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner">
+                <div className="rounded border border-neutral-900 bg-neutral-800 p-3 shadow-inner">
                     <FormikSwitch name={'skipScripts'} label={'Skip Egg Install Script'} description={'Soon™'} />
                 </div>
             )}
@@ -174,9 +174,9 @@ function ServerConfigurationForm({
 
     return (
         <Form>
-            <div className="mb-16 flex flex-col">
+            <div className="mb-8 flex flex-col">
                 {/* Basic Settings Section */}
-                <div css={tw`mb-6`}>
+                <div css={tw`mb-4`}>
                     <AdminBox icon={faCogs} title={'Server Information'} isLoading={isSubmitting}>
                         <div css={tw`grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6`}>
                             <Field
@@ -193,17 +193,17 @@ function ServerConfigurationForm({
                 </div>
 
                 {/* Network Configuration Section - Moved to top */}
-                <div css={tw`mb-6`}>
+                <div css={tw`mb-4`}>
                     <NetworkingBox />
                 </div>
 
                 {/* Startup Configuration Section */}
-                <div css={tw`mb-6`}>
-                    <div className="mb-4 flex flex-row">
+                <div css={tw`mb-4`}>
+                    <div className="mb-3 flex flex-row">
                         <ServerStartupLineContainer egg={egg} server={server} />
                     </div>
 
-                    <div className="mb-4 grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+                    <div className="mb-3 grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
                         <div className="flex">
                             <ServerServiceContainer
                                 selectedEggId={selectedEggId}
@@ -218,7 +218,7 @@ function ServerConfigurationForm({
                     </div>
 
                     {egg?.relationships.variables && egg.relationships.variables.length > 0 && (
-                        <div className="grid grid-cols-1 gap-y-4 gap-x-8 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-y-3 gap-x-6 md:grid-cols-2">
                             {/* This ensures that no variables are rendered unless the environment has a value for the variable. */}
                             {egg.relationships.variables
                                 ?.filter(
@@ -241,7 +241,7 @@ function ServerConfigurationForm({
                     )}
                 </div>
 
-                <div className="mt-6 rounded py-2 pr-6 shadow-md" style={{ backgroundColor: secondary }}>
+                <div className="mt-4 rounded py-2 pr-6 shadow-md" style={{ backgroundColor: secondary }}>
                     <div className="flex flex-row">
                         <Button type="submit" className="ml-auto" disabled={isSubmitting || !isValid}>
                             Save Changes

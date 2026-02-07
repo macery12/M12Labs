@@ -63,12 +63,12 @@ export default () => {
         >
             {({ isSubmitting, isValid }) => (
                 <Form>
-                    <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-16`}>
+                    <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 mb-8`}>
                         <ServerResourceBox />
                         <FeatureLimitsBox />
                     </div>
 
-                    <div style={{ backgroundColor: secondary }} css={tw`rounded shadow-md px-4 xl:px-5 py-4`}>
+                    <div style={{ backgroundColor: secondary }} css={tw`rounded shadow-md px-4 xl:px-5 py-3`}>
                         <div css={tw`flex flex-row justify-end`}>
                             <Button type="submit" disabled={isSubmitting || !isValid}>
                                 Save Changes
