@@ -3,37 +3,14 @@ import tw from 'twin.macro';
 import { useServerFromRoute } from '@/api/routes/admin/server';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import { faServer, faLayerGroup, faBalanceScale, faCashRegister } from '@fortawesome/free-solid-svg-icons';
+import { faServer, faLayerGroup, faBalanceScale, faCashRegister, faCopy } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Spinner from '@/elements/Spinner';
 import getNode from '@/api/routes/admin/nodes/getNode';
 import { Node } from '@/api/routes/admin/nodes/getNodes';
 import NodeStatus from '@admin/management/nodes/NodeStatus';
 import { NavLink } from 'react-router-dom';
 import { useFlashKey } from '@/plugins/useFlash';
-
-const ResourceLimitDisplay = ({
-    label,
-    value,
-    unit,
-    color,
-}: {
-    label: string;
-    value: number;
-    unit: string;
-    color: string;
-}) => {
-    const isUnlimited = value === 0;
-
-    return (
-        <div css={tw`text-center p-3 rounded-lg bg-gray-800 bg-opacity-50`}>
-            <div css={tw`text-2xl font-bold`} style={{ color }}>
-                {isUnlimited ? '∞' : value}
-            </div>
-            <div css={tw`text-xs text-gray-400 mt-1`}>{label}</div>
-            <div css={tw`text-xs text-gray-500`}>{isUnlimited ? 'Unlimited' : unit}</div>
-        </div>
-    );
-};
 
 export default () => {
     const [node, setNode] = useState<Node | undefined>();
@@ -64,166 +41,233 @@ export default () => {
     };
 
     return (
-        <div css={tw`grid grid-cols-1 lg:grid-cols-3 gap-4`}>
-            {/* Left Column - Server Status and Node & Network */}
-            <div css={tw`lg:col-span-1 space-y-4`}>
-                {/* Server Status */}
-                <AdminBox icon={faServer} title={'Server Status'}>
-                    <dl css={tw`space-y-3`}>
-                        <div>
-                            <dt css={tw`text-sm font-medium text-gray-400`}>Status</dt>
-                            <dd css={tw`mt-1 text-sm text-gray-300 capitalize`}>{server.status ?? 'Active'}</dd>
-                        </div>
-                        <div>
-                            <dt css={tw`text-sm font-medium text-gray-400`}>Owner</dt>
-                            <dd css={tw`mt-1 text-sm text-gray-300`}>
-                                {server.relationships.user?.username || 'Unknown'}
-                            </dd>
-                        </div>
-                        <div>
-                            <dt css={tw`text-sm font-medium text-gray-400`}>Server ID</dt>
-                            <dd
-                                css={tw`mt-1 flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors`}
-                                onClick={() => copyToClipboard(server.uuid)}
-                                title="Click to copy"
-                            >
-                                <span css={tw`text-sm text-gray-400 font-mono`}>{server.uuid}</span>
-                                <svg
-                                    css={tw`w-4 h-4 text-gray-500 hover:text-blue-400 flex-shrink-0`}
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+        <div css={tw`space-y-4`}>
+            {/* Row 1: Three equal-width cards */}
+            <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-4`}>
+                {/* Server Status Card */}
+                <div css={tw`md:col-span-1`}>
+                    <AdminBox icon={faServer} title={'Server Status'}>
+                        <div css={tw`space-y-4`}>
+                            {/* Primary: Server Status - Visually prominent */}
+                            <div css={tw`flex items-center gap-2`}>
+                                <span
+                                    css={tw`px-3 py-1 rounded-full text-sm font-semibold capitalize`}
+                                    style={{
+                                        backgroundColor:
+                                            server.status === 'active' || server.status === 'running'
+                                                ? '#10b98133'
+                                                : '#ef444433',
+                                        color:
+                                            server.status === 'active' || server.status === 'running'
+                                                ? '#10b981'
+                                                : '#ef4444',
+                                    }}
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                    />
-                                </svg>
-                            </dd>
-                        </div>
-                    </dl>
-                </AdminBox>
-
-                {/* Node & Network */}
-                <AdminBox icon={faLayerGroup} title={'Node & Network'}>
-                    <dl css={tw`space-y-3`}>
-                        <div>
-                            <dt css={tw`text-sm font-medium text-gray-400`}>Node</dt>
-                            <dd css={tw`mt-1 text-sm`}>
-                                {!node ? (
-                                    <Spinner size={'small'} />
-                                ) : (
-                                    <NavLink to={`/admin/nodes/${node.id}`} css={tw`text-blue-400 hover:text-blue-300`}>
-                                        {node.name} &bull; {node.scheme}://{node.fqdn} <NodeStatus node={node.id} />
-                                    </NavLink>
-                                )}
-                            </dd>
-                        </div>
-                        <div>
-                            <dt css={tw`text-sm font-medium text-gray-400`}>Primary Allocation</dt>
-                            <dd css={tw`mt-1 text-sm text-gray-300 font-mono`}>
-                                {primaryAllocation?.getDisplayText() || 'None'}
-                            </dd>
-                        </div>
-                        <div>
-                            <dt css={tw`text-sm font-medium text-gray-400`}>Total Allocations</dt>
-                            <dd css={tw`mt-1 text-sm text-gray-300`}>
-                                {server.relationships.allocations?.length || 0}
-                                {server.featureLimits.allocations > 0 && ` / ${server.featureLimits.allocations}`}
-                            </dd>
-                        </div>
-                    </dl>
-                </AdminBox>
-            </div>
-
-            {/* Middle Column - Resource Limits (Visual) */}
-            <div css={tw`lg:col-span-1`}>
-                <AdminBox icon={faBalanceScale} title={'Resource Limits'}>
-                    <div css={tw`grid grid-cols-3 gap-3`}>
-                        <ResourceLimitDisplay label="CPU Limit" value={server.limits.cpu} unit="%" color="#60a5fa" />
-                        <ResourceLimitDisplay label="Memory" value={server.limits.memory} unit="MiB" color="#34d399" />
-                        <ResourceLimitDisplay
-                            label="Disk Space"
-                            value={server.limits.disk}
-                            unit="MiB"
-                            color="#a78bfa"
-                        />
-                    </div>
-                    <div css={tw`mt-4 pt-4 border-t border-gray-700`}>
-                        <div css={tw`grid grid-cols-2 gap-3 text-sm`}>
-                            <div css={tw`flex justify-between`}>
-                                <span css={tw`text-gray-400`}>Swap:</span>
-                                <span css={tw`text-gray-300`}>
-                                    {server.limits.swap === 0 ? 'Unlimited' : `${server.limits.swap} MiB`}
+                                    {server.status ?? 'Active'}
                                 </span>
                             </div>
-                            <div css={tw`flex justify-between`}>
-                                <span css={tw`text-gray-400`}>I/O:</span>
-                                <span css={tw`text-gray-300`}>
-                                    {server.limits.io === 0 ? 'Unlimited' : server.limits.io}
-                                </span>
-                            </div>
-                            {server.limits.threads && (
-                                <div css={tw`flex justify-between`}>
-                                    <span css={tw`text-gray-400`}>Threads:</span>
-                                    <span css={tw`text-gray-300`}>{server.limits.threads}</span>
+
+                            {/* Secondary: Owner and Server ID */}
+                            <div css={tw`space-y-2 pt-2 border-t border-gray-700`}>
+                                <div css={tw`flex justify-between items-center`}>
+                                    <span css={tw`text-xs text-gray-500`}>Owner</span>
+                                    <span css={tw`text-sm text-gray-300`}>
+                                        {server.relationships.user?.username || 'Unknown'}
+                                    </span>
                                 </div>
-                            )}
-                            <div css={tw`flex justify-between`}>
-                                <span css={tw`text-gray-400`}>OOM Killer:</span>
-                                <span css={tw`text-gray-300`}>{server.limits.oomKiller ? 'Enabled' : 'Disabled'}</span>
+                                <div css={tw`flex justify-between items-center gap-2`}>
+                                    <span css={tw`text-xs text-gray-500`}>Server ID</span>
+                                    <div
+                                        css={tw`flex items-center gap-1 cursor-pointer hover:text-blue-400 transition-colors`}
+                                        onClick={() => copyToClipboard(server.uuid)}
+                                        title="Click to copy"
+                                    >
+                                        <span css={tw`text-xs text-gray-400 font-mono truncate max-w-[120px]`}>
+                                            {server.uuid}
+                                        </span>
+                                        <FontAwesomeIcon icon={faCopy} css={tw`text-xs text-gray-500`} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </AdminBox>
-            </div>
-
-            {/* Right Column - Billing Summary */}
-            {billing.enabled && (
-                <div css={tw`lg:col-span-1`}>
-                    <AdminBox icon={faCashRegister} title={'Billing Summary'}>
-                        <dl css={tw`space-y-3`}>
-                            <div>
-                                <dt css={tw`text-sm font-medium text-gray-400`}>Billing Status</dt>
-                                <dd css={tw`mt-1 text-sm text-gray-300`}>
-                                    {server.billingProductId ? (
-                                        <span css={tw`text-green-400 font-medium`}>✓ Enabled</span>
-                                    ) : (
-                                        <span css={tw`text-gray-400`}>Disabled</span>
-                                    )}
-                                </dd>
-                            </div>
-                            {server.billingProductId && product && (
-                                <>
-                                    <div>
-                                        <dt css={tw`text-sm font-medium text-gray-400`}>Billing Cycle</dt>
-                                        <dd css={tw`mt-1 text-sm text-gray-300`}>
-                                            {server.billingDays ? `${server.billingDays} days` : '30 days'}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt css={tw`text-sm font-medium text-gray-400`}>Plan</dt>
-                                        <dd css={tw`mt-1 text-sm text-gray-300`}>
-                                            {product.name} - {billing.currency.symbol}
-                                            {product.price} {billing.currency.code.toUpperCase()}
-                                        </dd>
-                                    </div>
-                                    {server.renewalDate && (
-                                        <div>
-                                            <dt css={tw`text-sm font-medium text-gray-400`}>Next Renewal</dt>
-                                            <dd css={tw`mt-1 text-sm text-gray-300`}>
-                                                {new Date(server.renewalDate).toLocaleDateString()}
-                                            </dd>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </dl>
                     </AdminBox>
                 </div>
-            )}
+
+                {/* Resource Limits Card */}
+                <div css={tw`md:col-span-1`}>
+                    <AdminBox icon={faBalanceScale} title={'Resource Limits'}>
+                        <div css={tw`space-y-4`}>
+                            {/* Primary: Large numbers for main resources */}
+                            <div css={tw`grid grid-cols-3 gap-2`}>
+                                <div css={tw`text-center`}>
+                                    <div css={tw`text-2xl font-bold text-blue-400`}>
+                                        {server.limits.cpu === 0 ? '∞' : server.limits.cpu}
+                                    </div>
+                                    <div css={tw`text-xs text-gray-400 mt-1`}>CPU</div>
+                                    <div css={tw`text-xs text-gray-500`}>
+                                        {server.limits.cpu === 0 ? 'Unlimited' : '%'}
+                                    </div>
+                                </div>
+                                <div css={tw`text-center`}>
+                                    <div css={tw`text-2xl font-bold text-green-400`}>
+                                        {server.limits.memory === 0 ? '∞' : server.limits.memory}
+                                    </div>
+                                    <div css={tw`text-xs text-gray-400 mt-1`}>Memory</div>
+                                    <div css={tw`text-xs text-gray-500`}>
+                                        {server.limits.memory === 0 ? 'Unlimited' : 'MiB'}
+                                    </div>
+                                </div>
+                                <div css={tw`text-center`}>
+                                    <div css={tw`text-2xl font-bold text-purple-400`}>
+                                        {server.limits.disk === 0 ? '∞' : server.limits.disk}
+                                    </div>
+                                    <div css={tw`text-xs text-gray-400 mt-1`}>Disk</div>
+                                    <div css={tw`text-xs text-gray-500`}>
+                                        {server.limits.disk === 0 ? 'Unlimited' : 'MiB'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Tertiary: Subtle footer for secondary info */}
+                            <div css={tw`pt-2 border-t border-gray-700 grid grid-cols-2 gap-2 text-xs`}>
+                                <div css={tw`flex justify-between`}>
+                                    <span css={tw`text-gray-500`}>Swap</span>
+                                    <span css={tw`text-gray-400`}>
+                                        {server.limits.swap === 0 ? '∞' : `${server.limits.swap}`}
+                                    </span>
+                                </div>
+                                <div css={tw`flex justify-between`}>
+                                    <span css={tw`text-gray-500`}>I/O</span>
+                                    <span css={tw`text-gray-400`}>
+                                        {server.limits.io === 0 ? '∞' : server.limits.io}
+                                    </span>
+                                </div>
+                                <div css={tw`flex justify-between`}>
+                                    <span css={tw`text-gray-500`}>OOM</span>
+                                    <span css={tw`text-gray-400`}>{server.limits.oomKiller ? 'On' : 'Off'}</span>
+                                </div>
+                                {server.limits.threads && (
+                                    <div css={tw`flex justify-between`}>
+                                        <span css={tw`text-gray-500`}>Threads</span>
+                                        <span css={tw`text-gray-400`}>{server.limits.threads}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </AdminBox>
+                </div>
+
+                {/* Billing Summary Card */}
+                {billing.enabled && (
+                    <div css={tw`md:col-span-1`}>
+                        <AdminBox icon={faCashRegister} title={'Billing Summary'}>
+                            <div css={tw`space-y-4`}>
+                                {server.billingProductId && product ? (
+                                    <>
+                                        {/* Primary: Plan and Cost */}
+                                        <div>
+                                            <div css={tw`text-lg font-semibold text-gray-200`}>{product.name}</div>
+                                            <div css={tw`text-2xl font-bold text-green-400 mt-1`}>
+                                                {billing.currency.symbol}
+                                                {product.price}
+                                                <span css={tw`text-sm text-gray-400 ml-1`}>
+                                                    {billing.currency.code.toUpperCase()}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Secondary: Billing details */}
+                                        <div css={tw`space-y-2 pt-2 border-t border-gray-700`}>
+                                            <div css={tw`flex justify-between items-center`}>
+                                                <span css={tw`text-xs text-gray-500`}>Billing Cycle</span>
+                                                <span css={tw`text-sm text-gray-300`}>
+                                                    {server.billingDays ? `${server.billingDays} days` : '30 days'}
+                                                </span>
+                                            </div>
+                                            {server.renewalDate && (
+                                                <div css={tw`flex justify-between items-center`}>
+                                                    <span css={tw`text-xs text-gray-500`}>Next Renewal</span>
+                                                    <span css={tw`text-sm font-medium text-blue-400`}>
+                                                        {new Date(server.renewalDate).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div css={tw`flex items-center justify-center h-full`}>
+                                        <span css={tw`text-gray-400`}>Billing Disabled</span>
+                                    </div>
+                                )}
+                            </div>
+                        </AdminBox>
+                    </div>
+                )}
+
+                {/* Placeholder if billing is disabled to maintain grid */}
+                {!billing.enabled && (
+                    <div css={tw`md:col-span-1`}>
+                        <AdminBox icon={faCashRegister} title={'Billing Summary'}>
+                            <div css={tw`flex items-center justify-center py-8`}>
+                                <span css={tw`text-gray-400`}>Billing Disabled</span>
+                            </div>
+                        </AdminBox>
+                    </div>
+                )}
+            </div>
+
+            {/* Row 2: Node & Network - Full width card */}
+            <div css={tw`grid grid-cols-1`}>
+                <AdminBox icon={faLayerGroup} title={'Node & Network'}>
+                    <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-4`}>
+                        {/* Primary: Node name with health indicator */}
+                        <div css={tw`md:col-span-2`}>
+                            <div css={tw`text-sm text-gray-500 mb-2`}>Node</div>
+                            {!node ? (
+                                <Spinner size={'small'} />
+                            ) : (
+                                <NavLink
+                                    to={`/admin/nodes/${node.id}`}
+                                    css={tw`flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors`}
+                                >
+                                    <span css={tw`font-medium text-base`}>{node.name}</span>
+                                    <span css={tw`text-gray-500`}>&bull;</span>
+                                    <span css={tw`text-sm text-gray-400`}>
+                                        {node.scheme}://{node.fqdn}
+                                    </span>
+                                    <NodeStatus node={node.id} />
+                                </NavLink>
+                            )}
+                        </div>
+
+                        {/* Secondary: Allocation count */}
+                        <div css={tw`md:col-span-1`}>
+                            <div css={tw`text-sm text-gray-500 mb-2`}>Total Allocations</div>
+                            <div css={tw`text-base text-gray-300`}>
+                                {server.relationships.allocations?.length || 0}
+                                {server.featureLimits.allocations > 0 && (
+                                    <span css={tw`text-gray-500`}> / {server.featureLimits.allocations}</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Primary allocation with copy action */}
+                        <div css={tw`md:col-span-3 pt-3 border-t border-gray-700`}>
+                            <div css={tw`text-sm text-gray-500 mb-2`}>Primary Allocation</div>
+                            <div
+                                css={tw`inline-flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors`}
+                                onClick={() => primaryAllocation && copyToClipboard(primaryAllocation.getDisplayText())}
+                                title="Click to copy"
+                            >
+                                <span css={tw`font-mono text-base text-gray-300`}>
+                                    {primaryAllocation?.getDisplayText() || 'None'}
+                                </span>
+                                {primaryAllocation && <FontAwesomeIcon icon={faCopy} css={tw`text-sm text-gray-500`} />}
+                            </div>
+                        </div>
+                    </div>
+                </AdminBox>
+            </div>
         </div>
     );
 };
