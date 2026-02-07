@@ -2,28 +2,30 @@ import { useEffect } from 'react';
 import { Route, Routes, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
-import ServerManageContainer from '@admin/management/servers/manage/ServerManageContainer';
-import ServerStartupContainer from '@admin/management/servers/ServerStartupContainer';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import Spinner from '@/elements/Spinner';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
-import ServerSettingsContainer from '@admin/management/servers/ServerSettingsContainer';
 import useFlash from '@/plugins/useFlash';
 import { useServerFromRoute } from '@/api/routes/admin/server';
 import {
-    AdjustmentsIcon,
+    ChartBarIcon,
     CogIcon,
     CurrencyDollarIcon,
     DatabaseIcon,
+    ExclamationIcon,
     ExternalLinkIcon,
     InformationCircleIcon,
     ServerIcon,
-    ShieldExclamationIcon,
+    ViewGridIcon,
 } from '@heroicons/react/outline';
 import { useStoreState } from '@/state/hooks';
 import ServerDatabases from './ServerDatabases';
 import ServerBillingContainer from './billing/ServerBillingContainer';
+import ServerOverviewContainer from './ServerOverviewContainer';
+import ServerConfigurationContainer from './ServerConfigurationContainer';
+import ServerResourcesContainer from './ServerResourcesContainer';
+import ServerDangerZoneContainer from './ServerDangerZoneContainer';
 import Pill from '@/elements/Pill';
 
 export default () => {
@@ -80,8 +82,9 @@ export default () => {
             <FlashMessageRender byKey={'server'} css={tw`mb-4`} />
 
             <SubNavigation>
-                <SubNavigationLink to={`/admin/servers/${params.id}`} name={'Settings'} icon={CogIcon} base />
-                <SubNavigationLink to={`/admin/servers/${params.id}/startup`} name={'Startup'} icon={AdjustmentsIcon} />
+                <SubNavigationLink to={`/admin/servers/${params.id}`} name={'Overview'} icon={InformationCircleIcon} base />
+                <SubNavigationLink to={`/admin/servers/${params.id}/configuration`} name={'Configuration'} icon={CogIcon} />
+                <SubNavigationLink to={`/admin/servers/${params.id}/resources`} name={'Resources'} icon={ChartBarIcon} />
                 <SubNavigationLink
                     to={`/admin/servers/${params.id}/databases`}
                     name={'Databases'}
@@ -94,9 +97,9 @@ export default () => {
                     disabled={!billing.enabled || !server.billingProductId}
                 />
                 <SubNavigationLink
-                    to={`/admin/servers/${params.id}/manage`}
-                    name={'Manage'}
-                    icon={ShieldExclamationIcon}
+                    to={`/admin/servers/${params.id}/danger`}
+                    name={'Danger Zone'}
+                    icon={ExclamationIcon}
                 />
                 <SubNavigationLink
                     to={`/server/${server.uuid.split('-')[0]}`}
@@ -106,11 +109,12 @@ export default () => {
             </SubNavigation>
 
             <Routes>
-                <Route path={''} element={<ServerSettingsContainer />} />
-                <Route path={'startup'} element={<ServerStartupContainer />} />
+                <Route path={''} element={<ServerOverviewContainer />} />
+                <Route path={'configuration'} element={<ServerConfigurationContainer />} />
+                <Route path={'resources'} element={<ServerResourcesContainer />} />
                 <Route path={'databases'} element={<ServerDatabases />} />
                 <Route path={'billing'} element={<ServerBillingContainer />} />
-                <Route path={'manage'} element={<ServerManageContainer />} />
+                <Route path={'danger'} element={<ServerDangerZoneContainer />} />
             </Routes>
         </AdminContentBlock>
     );
