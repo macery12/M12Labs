@@ -1,6 +1,6 @@
 import { useStoreState } from '@/state/hooks';
 import ContentBox from '@/elements/ContentBox';
-import { BillingAnalytics } from '@definitions/admin';
+import { BillingAnalytics, BillingEvent } from '@definitions/admin';
 import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle, faUndo, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
@@ -67,7 +67,7 @@ export default ({ data }: RecentBillingEventsProps) => {
         }
     };
 
-    const handleRowClick = (event: any) => {
+    const handleRowClick = (event: BillingEvent) => {
         // Deep link to order or server detail page
         if (event.server_uuid) {
             navigate(`/admin/servers/${event.server_uuid}`);

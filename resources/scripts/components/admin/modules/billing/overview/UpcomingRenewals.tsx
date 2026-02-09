@@ -67,7 +67,7 @@ export default ({ data }: UpcomingRenewalsProps) => {
                     <div className="flex items-center justify-between rounded bg-gray-800/50 p-3">
                         <div className="flex items-center gap-2">
                             <FontAwesomeIcon icon={faCoins} className="text-yellow-400" />
-                            <span className="text-sm text-gray-400">Total Expected</span>
+                            <span className="text-sm text-gray-400">Total (14 days)</span>
                         </div>
                         <span className="text-lg font-bold text-green-400">
                             {currencySymbol}

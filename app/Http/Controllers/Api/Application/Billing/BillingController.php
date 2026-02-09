@@ -86,7 +86,7 @@ class BillingController extends ApplicationApiController
         
         $avgDailyRevenue = $activeServers->count() > 0 
             ? $activeServers->sum(function ($server) {
-                if ($server->product && $server->billing_days) {
+                if ($server->product && $server->billing_days && $server->billing_days > 0) {
                     return $server->product->price / $server->billing_days;
                 }
                 return 0;
