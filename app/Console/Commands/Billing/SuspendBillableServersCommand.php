@@ -50,7 +50,10 @@ class SuspendBillableServersCommand extends Command
                 // Only suspend if overdue by more than the threshold
                 if ($daysOverdue > $suspensionThreshold && !$server->isSuspended()) {
                     $this->info("suspending server {$server->id}, overdue by {$daysOverdue} day(s)");
-                    $this->suspend->toggle($server, 'suspend');
+                    
+                    // Use the exact same suspension logic as the manual suspend button
+                    // This ensures servers can be manually unsuspended via admin panel
+                    $this->suspend->toggle($server, SuspensionService::ACTION_SUSPEND);
                 }
             }
         }
