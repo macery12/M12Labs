@@ -391,7 +391,7 @@ class CheckoutController extends ClientApiController
             $intent->metadata = $metadata;
             $intent->save();
 
-            // Create the order with coupon, egg, and billing days
+            // Create the order with coupon, egg, billing days, and server_id
             $this->orderService->create(
                 $intent->id,
                 $request->user(),
@@ -400,7 +400,10 @@ class CheckoutController extends ClientApiController
                 $this->getOrderType($request),
                 $couponId,
                 $eggId,
-                ['billing_days' => $billingDays]
+                [
+                    'billing_days' => $billingDays,
+                    'server_id' => $request->input('server_id'),
+                ]
             );
 
             return $this->returnNoContent();
