@@ -104,6 +104,8 @@ export default () => {
     // Calculate the actual grace period based on billing cycle
     const actualGracePeriod = product && billingDays
         ? calculateGracePeriodDays(billingDays, product.price === 0)
+        : product && product.price === 0
+        ? freeGraceDays
         : suspensionThreshold;
 
     useEffect(() => {
