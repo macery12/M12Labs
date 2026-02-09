@@ -93,6 +93,50 @@ interface BillingAnalytics extends Model {
     products: Product[];
     categories: Category[];
     donations?: Donation[];
+    upcomingRenewals?: {
+        overdue: {
+            count: number;
+            expectedRevenue: number;
+        };
+        in7Days: {
+            count: number;
+            expectedRevenue: number;
+        };
+        in8to14Days: {
+            count: number;
+            expectedRevenue: number;
+        };
+        total14Days: {
+            count: number;
+            expectedRevenue: number;
+        };
+    };
+    forecast?: {
+        next7Days: number;
+        next30Days: number;
+    };
+    suspendedServers?: SuspendedServer[];
+    recentEvents?: BillingEvent[];
+}
+
+interface SuspendedServer {
+    id: number;
+    uuid: string;
+    name: string;
+    owner: string;
+    owner_email?: string;
+}
+
+interface BillingEvent {
+    id: number;
+    date: Date;
+    type: string;
+    status: string;
+    payment_processor: string;
+    total: number;
+    server_id?: number;
+    server_uuid?: string;
+    server_name?: string;
 }
 
 interface Donation extends Model {
