@@ -148,10 +148,12 @@ export default () => {
     const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
     const daysOverdue = daysRemaining < 0 ? Math.abs(daysRemaining) : 0;
 
-    // Determine if server is past grace period and suspended
-    const isPastGracePeriod = daysOverdue > actualGracePeriod;
+    // Determine if server is past the maximum suspension threshold and suspended
+    // Use max_suspension_threshold_days (7 days) as the fixed cutoff for disabling self-service payment
+    const maxSuspensionDays = settings.renewal?.max_suspension_threshold_days || 7;
+    const isPastMaxSuspensionThreshold = daysOverdue > maxSuspensionDays;
     const isSuspended = serverStatus === 'suspended';
-    const isPastGracePeriodAndSuspended = isPastGracePeriod && isSuspended;
+    const isPastGracePeriodAndSuspended = isPastMaxSuspensionThreshold && isSuspended;
 
     const statusBadge = renewalDate
         ? getRenewalStatusBadge(daysRemaining, actualGracePeriod, daysOverdue, freeGraceDays)
@@ -283,7 +285,7 @@ export default () => {
                                     </p>
                                     {isPastGracePeriodAndSuspended ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - You failed to renew before the grace period expired. Please contact support for assistance.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
                                         </Alert>
                                     ) : daysRemaining > actualGracePeriod ? (
                                         <Alert type={'info'}>
@@ -310,7 +312,7 @@ export default () => {
                                 <div>
                                     {isPastGracePeriodAndSuspended ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - You failed to renew before the grace period expired. Please contact support for assistance.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
                                         </Alert>
                                     ) : (
                                         <>
