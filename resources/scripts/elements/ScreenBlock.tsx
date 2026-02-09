@@ -168,7 +168,7 @@ const Suspended = ({
                             <FontAwesomeIcon icon={faArrowLeft} />
                         </ActionButton>
                     </div>
-                    <h2 css={tw`text-white font-bold text-4xl`}>{isFree ? 'Suspended' : 'Suspended - No Payment'}</h2>
+                    <h2 css={tw`text-white font-bold text-4xl`}>{isFree ? 'Suspended' : 'Suspended'}</h2>
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>
@@ -195,27 +195,17 @@ const Suspended = ({
                             <>
                                 {isLongOverdue ? (
                                     <>
-                                        Your server has been suspended for more than {suspensionThreshold} days due to
-                                        non-payment.{' '}
+                                        This server has been suspended for more than {suspensionThreshold} days due to
+                                        an unpaid balance.{' '}
                                         <span className={'font-bold text-red-400'}>
-                                            Please create a support ticket to restore access.
+                                            To restore access, please open a support ticket so our team can assist you.
                                         </span>{' '}
-                                        Self-service payment is no longer available after {suspensionThreshold} days.
+                                        Self-service payments are no longer available after this period.
                                     </>
                                 ) : (
                                     <>
-                                        Your server has been suspended due to a lack of payment. Please pay to restore
-                                        access.
-                                        <div className={'mt-2 font-semibold text-gray-300'}>
-                                            Your outstanding balance is:
-                                            <span className={'ml-2 font-bold text-white'}>
-                                                {currency}
-                                                {product.price}
-                                            </span>
-                                        </div>
-                                        <div className={'mt-2 font-semibold text-yellow-400'}>
-                                            Days overdue: {daysOverdue}
-                                        </div>
+                                        Your server has been suspended due to an unpaid balance. Please complete payment
+                                        to restore access.
                                     </>
                                 )}
                             </>
