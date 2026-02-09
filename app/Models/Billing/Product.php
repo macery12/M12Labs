@@ -108,12 +108,38 @@ class Product extends Model
 
     /**
      * Get the suspension threshold in days for this product.
+     * This is deprecated - use getSuspensionThresholdForBillingCycle() instead.
      */
     public function getSuspensionThresholdDays(): int
     {
         return $this->isFree()
             ? config('modules.billing.renewal.free_suspension_days', 7)
             : config('modules.billing.renewal.paid_suspension_days', 30);
+    }
+
+    /**
+     * Calculate suspension threshold based on billing cycle length.
+     * Uses a percentage-based approach: longer billing cycles get longer grace periods.
+     * 
+     * @param int $billingDays The billing cycle length in days
+     * @return int The suspension threshold in days
+     */
+    public function getSuspensionThresholdForBillingCycle(int $billingDays): int
+    {
+        // Free products always use short threshold
+        if ($this->isFree()) {
+            return config('modules.billing.renewal.free_suspension_days', 7);
+        }
+
+        // Calculate threshold as percentage of billing cycle
+        $percentage = config('modules.billing.renewal.suspension_threshold_percentage', 0.20);
+        $calculatedThreshold = (int) ceil($billingDays * $percentage);
+
+        // Apply min/max bounds
+        $minThreshold = config('modules.billing.renewal.min_suspension_threshold_days', 3);
+        $maxThreshold = config('modules.billing.renewal.max_suspension_threshold_days', 30);
+
+        return max($minThreshold, min($maxThreshold, $calculatedThreshold));
     }
 
     /**
