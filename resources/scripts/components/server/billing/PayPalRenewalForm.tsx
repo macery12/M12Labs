@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
-import { createMolliePayment, updateMolliePayment } from '@/api/routes/account/billing/orders/mollie';
+import { createPayPalOrder } from '@/api/routes/account/billing/orders/paypal';
 
 export default ({
     id,
@@ -25,15 +25,15 @@ export default ({
 
         if (!id) return;
 
-        const returnUrl = window.location.origin + `/account/billing/processing?renewal=true&server_uuid=${serverUuid}`;
+        const returnUrl = window.location.origin + `/account/billing/processing?renewal=true&server_uuid=${serverUuid}&processor=paypal`;
 
         try {
-            // Create Mollie payment for renewal with all details in one request
-            const payment = await createMolliePayment(id, couponId, returnUrl, serverId, true);
+            // Create PayPal order for renewal with all details in one request
+            const order = await createPayPalOrder(id, couponId, returnUrl, serverId, true);
 
-            // Redirect to Mollie checkout
-            // After payment, Mollie will redirect back to return_url with token parameter
-            window.location.href = payment.checkout_url;
+            // Redirect to PayPal checkout
+            // After payment, PayPal will redirect back to return_url with token parameter
+            window.location.href = order.approval_url;
         } catch (error) {
             clearAndAddHttpError({ key: 'suspended:billing', error });
             setLoading(false);
@@ -45,7 +45,7 @@ export default ({
             <SpinnerOverlay visible={loading} />
             <div className={'text-right'}>
                 <Button className={'mt-4'} size={Button.Sizes.Large}>
-                    Pay with Mollie
+                    Pay with PayPal
                 </Button>
             </div>
         </form>
