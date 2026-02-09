@@ -3,9 +3,16 @@ import ContentBox from '@/elements/ContentBox';
 import { differenceInDays, parseISO } from 'date-fns';
 import { BillingAnalytics } from '@definitions/admin';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faExclamationTriangle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import {
+    faCheckCircle,
+    faExclamationTriangle,
+    faTimesCircle,
+    faCopy,
+    faCheck,
+} from '@fortawesome/free-solid-svg-icons';
 import { faCcStripe, faCcPaypal } from '@fortawesome/free-brands-svg-icons';
 import { faCircle } from '@fortawesome/free-solid-svg-icons';
+import { useState } from 'react';
 
 interface BillingHealthSummaryProps {
     data: BillingAnalytics;
@@ -15,9 +22,16 @@ interface BillingHealthSummaryProps {
 export default ({ data, history }: BillingHealthSummaryProps) => {
     const now = new Date();
     const settings = useStoreState(s => s.everest.data!.billing);
+    const [copiedUUID, setCopiedUUID] = useState<string | null>(null);
 
-    // Get suspended servers count
-    const suspendedServers = data.suspendedServers || 0;
+    // Get suspended servers details
+    const suspendedServers = data.suspendedServers || [];
+
+    const copyToClipboard = (uuid: string) => {
+        navigator.clipboard.writeText(uuid);
+        setCopiedUUID(uuid);
+        setTimeout(() => setCopiedUUID(null), 2000);
+    };
 
     // Payment provider status
     const providers = [
@@ -109,11 +123,48 @@ export default ({ data, history }: BillingHealthSummaryProps) => {
 
                 {/* Suspended Servers */}
                 <div className="rounded border border-yellow-500/20 bg-yellow-500/10 p-3">
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">Suspended Servers</span>
-                        <span className="text-xl font-bold text-yellow-400">{suspendedServers}</span>
+                    <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-300">Suspended Servers</span>
+                        <span className="text-xl font-bold text-yellow-400">{suspendedServers.length}</span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Currently suspended (payment or manual)</p>
+                    {suspendedServers.length > 0 ? (
+                        <div className="mt-2 max-h-60 space-y-2 overflow-y-auto">
+                            {suspendedServers.map(server => (
+                                <div
+                                    key={server.id}
+                                    className="rounded border border-gray-700/50 bg-gray-800/50 p-2 text-xs"
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate font-medium text-gray-200" title={server.name}>
+                                                {server.name}
+                                            </div>
+                                            <div className="mt-0.5 text-gray-400">
+                                                Owner: <span className="text-gray-300">{server.owner}</span>
+                                            </div>
+                                            <div className="mt-1 flex items-center gap-1">
+                                                <code className="block truncate font-mono text-[10px] text-gray-400">
+                                                    {server.uuid}
+                                                </code>
+                                                <button
+                                                    onClick={() => copyToClipboard(server.uuid)}
+                                                    className="flex-shrink-0 text-gray-400 transition-colors hover:text-gray-200"
+                                                    title="Copy UUID"
+                                                >
+                                                    <FontAwesomeIcon
+                                                        icon={copiedUUID === server.uuid ? faCheck : faCopy}
+                                                        className={copiedUUID === server.uuid ? 'text-green-400' : ''}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="mt-1 text-xs text-gray-500">No suspended servers</p>
+                    )}
                 </div>
             </div>
         </ContentBox>

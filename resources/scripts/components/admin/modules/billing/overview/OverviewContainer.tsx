@@ -54,23 +54,10 @@ export default () => {
 
     return (
         <div className={'space-y-6'}>
-            {/* Date Range Selector */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className={'text-2xl font-medium text-neutral-50'}>Billing Dashboard</h2>
-                    <p className={'text-sm text-neutral-400'}>Monitor billing health, revenue, and upcoming renewals</p>
-                </div>
-                <Select onChange={e => setHistory(Number(e.currentTarget.value))} className="w-48">
-                    <option value={7}>Last 7 days</option>
-                    <option selected value={14}>
-                        Last 14 days
-                    </option>
-                    <option value={30}>Last month</option>
-                    <option value={60}>Last 2 months</option>
-                    <option value={90}>Last 3 months</option>
-                    <option value={180}>Last 6 months</option>
-                    <option value={360}>Last year</option>
-                </Select>
+            {/* Header without date filter */}
+            <div>
+                <h2 className={'text-2xl font-medium text-neutral-50'}>Billing Dashboard</h2>
+                <p className={'text-sm text-neutral-400'}>Monitor billing health, revenue, and upcoming renewals</p>
             </div>
 
             {/* Top row - Summary KPIs */}
@@ -136,7 +123,22 @@ export default () => {
             {/* Main row - Revenue Chart + Billing Health */}
             <div className={'grid gap-6 lg:grid-cols-12'}>
                 <div className={'lg:col-span-8'}>
-                    <ContentBox title="Revenue Over Time">
+                    <ContentBox>
+                        {/* Date Range Selector positioned above chart */}
+                        <div className="mb-4 flex items-center justify-between border-b border-gray-700 pb-3">
+                            <h3 className="text-lg font-medium text-neutral-200">Revenue Over Time</h3>
+                            <Select onChange={e => setHistory(Number(e.currentTarget.value))} className="w-40">
+                                <option value={7}>Last 7 days</option>
+                                <option selected value={14}>
+                                    Last 14 days
+                                </option>
+                                <option value={30}>Last month</option>
+                                <option value={60}>Last 2 months</option>
+                                <option value={90}>Last 3 months</option>
+                                <option value={180}>Last 6 months</option>
+                                <option value={360}>Last year</option>
+                            </Select>
+                        </div>
                         <RevenueChart data={analytics} history={history} />
                     </ContentBox>
                 </div>

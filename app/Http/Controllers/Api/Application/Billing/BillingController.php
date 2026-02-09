@@ -111,8 +111,19 @@ class BillingController extends ApplicationApiController
         $forecast7Days = $totalDailyRevenue * 7;
         $forecast30Days = $totalDailyRevenue * 30;
         
-        // Count suspended servers
-        $suspendedServers = Server::where('status', Server::STATUS_SUSPENDED)->count();
+        // Get suspended servers with details
+        $suspendedServers = Server::where('status', Server::STATUS_SUSPENDED)
+            ->with('user')
+            ->get()
+            ->map(function ($server) {
+                return [
+                    'id' => $server->id,
+                    'uuid' => $server->uuid,
+                    'name' => $server->name,
+                    'owner' => $server->user ? $server->user->username : 'Unknown',
+                    'owner_email' => $server->user ? $server->user->email : null,
+                ];
+            });
         
         // Get recent billing events (last 5 orders)
         $recentEvents = Order::with('server')

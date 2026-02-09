@@ -115,8 +115,16 @@ interface BillingAnalytics extends Model {
         next7Days: number;
         next30Days: number;
     };
-    suspendedServers?: number;
+    suspendedServers?: SuspendedServer[];
     recentEvents?: BillingEvent[];
+}
+
+interface SuspendedServer {
+    id: number;
+    uuid: string;
+    name: string;
+    owner: string;
+    owner_email?: string;
 }
 
 interface BillingEvent {
