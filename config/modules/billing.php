@@ -72,20 +72,24 @@ return [
 
     /*
      * Configure renewal and suspension settings.
-     * NOTE: The billing cycle system has replaced the old days/grace period settings.
-     * The suspension threshold is now calculated as a percentage of the billing cycle.
+     * NOTE: The billing cycle system uses a capped percentage-based model.
+     * Grace period is 20% of billing cycle, with minimum 3 days and maximum 7 days.
+     * 
+     * Examples:
+     * - 7-day cycle: 7 × 20% = 1.4 → 3 days (minimum applied)
+     * - 30-day cycle: 30 × 20% = 6 days
+     * - 90-day cycle: 90 × 20% = 18 → 7 days (maximum applied)
+     * - 180-day cycle: 180 × 20% = 36 → 7 days (maximum applied)
      */
     'renewal' => [
-        // Suspension threshold as percentage of billing cycle (e.g., 0.2 = 20% of cycle)
-        // For 30-day cycle: 30 * 0.2 = 6 days grace period
-        // For 90-day cycle: 90 * 0.2 = 18 days grace period
+        // Suspension threshold as percentage of billing cycle (0.20 = 20%)
         'suspension_threshold_percentage' => env('BILLING_SUSPENSION_THRESHOLD_PCT', 0.20),
         
-        // Minimum suspension threshold in days (safety floor)
+        // Minimum suspension threshold in days (floor)
         'min_suspension_threshold_days' => env('BILLING_MIN_SUSPENSION_DAYS', 3),
         
-        // Maximum suspension threshold in days (safety ceiling)
-        'max_suspension_threshold_days' => env('BILLING_MAX_SUSPENSION_DAYS', 30),
+        // Maximum suspension threshold in days (cap at 7 days for all cycles)
+        'max_suspension_threshold_days' => env('BILLING_MAX_SUSPENSION_DAYS', 7),
         
         // Legacy suspension threshold for backward compatibility
         'suspension_threshold' => env('BILLING_SUSPENSION_THRESHOLD', 7),

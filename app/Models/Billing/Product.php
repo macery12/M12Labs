@@ -119,7 +119,13 @@ class Product extends Model
 
     /**
      * Calculate suspension threshold based on billing cycle length.
-     * Uses a percentage-based approach: longer billing cycles get longer grace periods.
+     * Uses a capped percentage-based model with maximum 7-day grace period.
+     * 
+     * Formula: min(max(billingDays * 20%, 3), 7)
+     * - 7-day cycle → 3 days (minimum)
+     * - 30-day cycle → 6 days
+     * - 90-day cycle → 7 days (capped)
+     * - 180+ day cycle → 7 days (capped)
      * 
      * @param int $billingDays The billing cycle length in days
      * @return int The suspension threshold in days
@@ -135,9 +141,9 @@ class Product extends Model
         $percentage = config('modules.billing.renewal.suspension_threshold_percentage', 0.20);
         $calculatedThreshold = (int) ceil($billingDays * $percentage);
 
-        // Apply min/max bounds
+        // Apply min/max bounds (3 days minimum, 7 days maximum)
         $minThreshold = config('modules.billing.renewal.min_suspension_threshold_days', 3);
-        $maxThreshold = config('modules.billing.renewal.max_suspension_threshold_days', 30);
+        $maxThreshold = config('modules.billing.renewal.max_suspension_threshold_days', 7);
 
         return max($minThreshold, min($maxThreshold, $calculatedThreshold));
     }
