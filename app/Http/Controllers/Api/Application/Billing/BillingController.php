@@ -8,6 +8,8 @@ use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
+use Everest\Models\Server;
+use Carbon\Carbon;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Billing\DeleteStripeKeysRequest;
 use Everest\Http\Requests\Api\Application\Billing\GetBillingAnalyticsRequest;
@@ -48,11 +50,91 @@ class BillingController extends ApplicationApiController
      */
     public function analytics(GetBillingAnalyticsRequest $request): array
     {
+        $orders = Order::with('server')->get();
+        
+        // Calculate upcoming renewals
+        $now = Carbon::now();
+        $servers = Server::whereNotNull('renewal_date')
+            ->whereNotNull('billing_product_id')
+            ->with('billingProduct')
+            ->get();
+        
+        $renewalsIn7Days = $servers->filter(function ($server) use ($now) {
+            return $server->renewal_date && 
+                   $server->renewal_date->greaterThan($now) &&
+                   $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(7));
+        });
+        
+        $renewalsIn14Days = $servers->filter(function ($server) use ($now) {
+            return $server->renewal_date && 
+                   $server->renewal_date->greaterThan($now) &&
+                   $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(14));
+        });
+        
+        $expectedRevenue7Days = $renewalsIn7Days->sum(function ($server) {
+            return $server->billingProduct ? $server->billingProduct->price : 0;
+        });
+        
+        $expectedRevenue14Days = $renewalsIn14Days->sum(function ($server) {
+            return $server->billingProduct ? $server->billingProduct->price : 0;
+        });
+        
+        // Calculate forecast based on active subscriptions
+        $activeServers = $servers->filter(function ($server) use ($now) {
+            return $server->renewal_date && $server->renewal_date->greaterThan($now);
+        });
+        
+        $avgDailyRevenue = $activeServers->count() > 0 
+            ? $activeServers->sum(function ($server) {
+                if ($server->billingProduct && $server->billing_days) {
+                    return $server->billingProduct->price / $server->billing_days;
+                }
+                return 0;
+            })
+            : 0;
+        
+        $forecast7Days = $avgDailyRevenue * 7;
+        $forecast30Days = $avgDailyRevenue * 30;
+        
+        // Get recent billing events (last 5 orders)
+        $recentEvents = Order::with('server')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'date' => $order->created_at,
+                    'type' => $order->type,
+                    'status' => $order->status,
+                    'payment_processor' => $order->payment_processor,
+                    'total' => $order->total,
+                    'server_id' => $order->server_id,
+                    'server_uuid' => $order->server?->uuid,
+                    'server_name' => $order->server?->name,
+                ];
+            });
+        
         return [
-            'orders' => Order::all(),
+            'orders' => $orders,
             'categories' => Category::all(),
             'products' => Product::all(),
             'donations' => \Everest\Models\Donation::where('status', 'completed')->get(),
+            'upcomingRenewals' => [
+                'in7Days' => [
+                    'count' => $renewalsIn7Days->count(),
+                    'expectedRevenue' => $expectedRevenue7Days,
+                ],
+                'in14Days' => [
+                    'count' => $renewalsIn14Days->count(),
+                    'expectedRevenue' => $expectedRevenue14Days,
+                ],
+            ],
+            'forecast' => [
+                'next7Days' => round($forecast7Days, 2),
+                'next30Days' => round($forecast30Days, 2),
+            ],
+            'recentEvents' => $recentEvents,
         ];
     }
 

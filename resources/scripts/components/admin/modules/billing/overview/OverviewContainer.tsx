@@ -1,15 +1,19 @@
-import Stepper from '@/elements/Stepper';
-import { faArrowRight, faCheck, faEllipsis } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from 'react';
 import Spinner from '@/elements/Spinner';
 import { useStoreState } from '@/state/hooks';
 import ContentBox from '@/elements/ContentBox';
 import { differenceInDays, parseISO } from 'date-fns';
-import SuccessChart from './SuccessChart';
 import RevenueChart from './RevenueChart';
 import Select from '@/elements/Select';
 import { getBillingAnalytics } from '@/api/routes/admin/billing';
 import { BillingAnalytics, Order } from '@definitions/admin';
+import BillingHealthSummary from './BillingHealthSummary';
+import UpcomingRenewals from './UpcomingRenewals';
+import RevenueForecast from './RevenueForecast';
+import RecentBillingEvents from './RecentBillingEvents';
+import Tooltip from '@/elements/tooltip/Tooltip';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
 export default () => {
     const now = new Date();
@@ -25,16 +29,18 @@ export default () => {
 
     if (!analytics || !analytics.orders) return <Spinner size={'large'} centered />;
 
-    const hasProducts = analytics.products?.length ?? 0 >= 1;
-    const hasOrders = analytics.orders?.length ?? 0 >= 1;
-
     const successfulOrders: Order[] = analytics.orders.filter(
         x => x.status === 'processed' && differenceInDays(now, parseISO(x.created_at.toString())) <= history,
     );
     const allOrders: Order[] = analytics.orders.filter(
         x => differenceInDays(now, parseISO(x.created_at.toString())) <= history,
     );
-    const successRate: string = ((successfulOrders.length / allOrders.length) * 100).toFixed(1);
+    const successRate: string =
+        allOrders.length > 0 ? ((successfulOrders.length / allOrders.length) * 100).toFixed(1) : '0.0';
+
+    const failedOrders = analytics.orders.filter(
+        x => x.status === 'failed' && differenceInDays(now, parseISO(x.created_at.toString())) <= history,
+    );
 
     const revenueFromOrders = successfulOrders.reduce((total, order) => total + order.total, 0);
     const revenueFromDonations = (analytics.donations || [])
@@ -47,9 +53,16 @@ export default () => {
     const revenue: string = (revenueFromOrders + revenueFromDonations).toFixed(2);
 
     return (
-        <div className={'grid gap-4 lg:grid-cols-5'}>
-            <ol className="w-full space-y-4">
-                <Select onChange={e => setHistory(Number(e.currentTarget.value))}>
+        <div className={'space-y-6'}>
+            {/* Date Range Selector */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className={'text-2xl font-medium text-neutral-50'}>Billing Dashboard</h2>
+                    <p className={'text-sm text-neutral-400'}>
+                        Monitor billing health, revenue, and upcoming renewals
+                    </p>
+                </div>
+                <Select onChange={e => setHistory(Number(e.currentTarget.value))} className="w-48">
                     <option value={7}>Last 7 days</option>
                     <option selected value={14}>
                         Last 14 days
@@ -60,45 +73,39 @@ export default () => {
                     <option value={180}>Last 6 months</option>
                     <option value={360}>Last year</option>
                 </Select>
-                <h2 className={'mb-4 px-4 text-2xl text-neutral-300'}>Suggested Actions</h2>
-                <Stepper className={'text-green-500'} icon={faCheck} content={'Enable billing module'} />
-                <Stepper
-                    className={hasProducts ? 'text-green-500' : 'text-blue-500'}
-                    icon={hasProducts ? faCheck : faArrowRight}
-                    content={'Add your first product'}
-                    link={'/admin/billing/categories'}
-                />
-                <Stepper
-                    className={hasOrders ? 'text-green-500' : hasProducts ? 'text-blue-500' : 'text-gray-500'}
-                    icon={hasOrders ? faCheck : faEllipsis}
-                    content={'Secure your first sale'}
-                    link={'/admin/billing/orders'}
-                />
-                <Stepper
-                    className={settings.link || settings.paypal ? 'text-green-500' : 'text-blue-500'}
-                    icon={settings.link || settings.paypal ? faCheck : faArrowRight}
-                    content={'Add PayPal support'}
-                    link={'/admin/billing/settings'}
-                />
-            </ol>
-            <div className={'col-span-4 flex flex-col items-center rounded-lg shadow md:flex-row'}>
-                <div className={'mb-auto grid w-full grid-cols-3 gap-6'}>
-                    <ContentBox>
-                        <h1 className={'text-2xl font-bold'}>
-                            <span className={'text-4xl'}>{successRate}</span>% conversion rate
-                        </h1>
-                        <p className={'mt-2 text-sm text-gray-400'}>
+            </div>
+
+            {/* Top row - Summary KPIs */}
+            <div className={'grid gap-6 md:grid-cols-3'}>
+                {/* Conversion Rate */}
+                <ContentBox className={'min-h-[160px]'}>
+                    <div className="flex items-start justify-between">
+                        <h1 className={'text-xl font-bold text-neutral-300'}>Conversion Rate</h1>
+                        <Tooltip content="Percentage of orders that were successfully processed">
+                            <FontAwesomeIcon icon={faInfoCircle} className="text-gray-500" />
+                        </Tooltip>
+                    </div>
+                    <div className="mt-2">
+                        <div className="flex items-baseline gap-2">
+                            <span className={'text-5xl font-bold text-green-400'}>{successRate}</span>
+                            <span className={'text-2xl text-neutral-400'}>%</span>
+                        </div>
+                        <p className={'mt-3 text-sm text-gray-400'}>
                             Out of {allOrders.length} orders, {successfulOrders.length} were processed.
                         </p>
-                        <SuccessChart data={analytics} history={history} />
-                    </ContentBox>
-                    <ContentBox className={'col-span-2'}>
-                        <h1 className={'text-2xl font-bold'}>
-                            {settings.currency.symbol}
-                            <span className={'text-4xl'}>{revenue}</span> total revenue
-                        </h1>
-                        <p className={'mt-2 text-sm text-gray-400'}>
-                            Your {successfulOrders.length} successful orders and{' '}
+                    </div>
+                </ContentBox>
+
+                {/* Total Revenue */}
+                <ContentBox className={'min-h-[160px]'}>
+                    <h1 className={'text-xl font-bold text-neutral-300'}>Total Revenue</h1>
+                    <div className="mt-2">
+                        <div className="flex items-baseline gap-1">
+                            <span className={'text-2xl text-neutral-400'}>{settings.currency.symbol}</span>
+                            <span className={'text-5xl font-bold text-blue-400'}>{revenue}</span>
+                        </div>
+                        <p className={'mt-3 text-sm text-gray-400'}>
+                            From {successfulOrders.length} orders and{' '}
                             {
                                 (analytics.donations || []).filter(
                                     d =>
@@ -106,13 +113,48 @@ export default () => {
                                         differenceInDays(now, parseISO(d.created_at.toString())) <= history,
                                 ).length
                             }{' '}
-                            donations have generated {settings.currency.symbol}
-                            {revenue} {settings.currency.code} over the last {history} days.
+                            donations over the last {history} days.
                         </p>
+                    </div>
+                </ContentBox>
+
+                {/* Failed Payments */}
+                <ContentBox className={'min-h-[160px] border-red-500/20 bg-red-500/5'}>
+                    <div className="flex items-start justify-between">
+                        <h1 className={'text-xl font-bold text-neutral-300'}>Failed Payments</h1>
+                        <Tooltip content="Number of orders that failed to process">
+                            <FontAwesomeIcon icon={faInfoCircle} className="text-gray-500" />
+                        </Tooltip>
+                    </div>
+                    <div className="mt-2">
+                        <span className={'text-5xl font-bold text-red-400'}>{failedOrders.length}</span>
+                        <p className={'mt-3 text-sm text-gray-400'}>
+                            Failed payments in the last {history} days require attention.
+                        </p>
+                    </div>
+                </ContentBox>
+            </div>
+
+            {/* Main row - Revenue Chart + Billing Health */}
+            <div className={'grid gap-6 lg:grid-cols-12'}>
+                <div className={'lg:col-span-8'}>
+                    <ContentBox title="Revenue Over Time">
                         <RevenueChart data={analytics} history={history} />
                     </ContentBox>
                 </div>
+                <div className={'lg:col-span-4'}>
+                    <BillingHealthSummary data={analytics} history={history} />
+                </div>
             </div>
+
+            {/* Additional Metrics Row - Renewals and Forecast */}
+            <div className={'grid gap-6 md:grid-cols-2'}>
+                <UpcomingRenewals data={analytics} />
+                <RevenueForecast data={analytics} />
+            </div>
+
+            {/* Bottom row - Recent Billing Events */}
+            <RecentBillingEvents data={analytics} />
         </div>
     );
 };
