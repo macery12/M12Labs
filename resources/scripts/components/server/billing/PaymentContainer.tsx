@@ -42,8 +42,8 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
         availableProcessors.push('paypal');
     }
 
-    // Default to first available processor
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(availableProcessors[0] || 'stripe');
+    // Default to first available processor, or undefined if none available
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | undefined>(availableProcessors[0]);
 
     // If only one processor is available, don't show selection UI
     const showSelection = availableProcessors.length > 1;

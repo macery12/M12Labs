@@ -358,10 +358,7 @@ class CheckoutController extends ClientApiController
 
             // For renewals, egg_id is not required
             $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
-            $eggId = null;
-            if (!$isRenewal) {
-                $eggId = $this->validationService->validateAndGetEggId($product, $requestedEggId);
-            }
+            $eggId = !$isRenewal ? $this->validationService->validateAndGetEggId($product, $requestedEggId) : null;
 
             // Get billing days (default to 30 if not provided)
             $billingDays = (int) ($request->input('billing_days') ?? 30);
@@ -380,10 +377,10 @@ class CheckoutController extends ClientApiController
                 'customer_email' => $request->user()->email,
                 'customer_name' => $request->user()->username,
                 'product_id' => (string) $id,
-                'node_id' => $isRenewal ? '0' : (string) $nodeId,
+                'node_id' => $isRenewal ? '' : (string) $nodeId,
                 'server_id' => (string) ($request->input('server_id') ?? 0),
                 'coupon_id' => (string) ($couponId ?? ''),
-                'egg_id' => $isRenewal ? '0' : (string) $eggId,
+                'egg_id' => $isRenewal ? '' : (string) $eggId,
                 'billing_days' => (string) $billingDays,
                 'name' => $isRenewal ? 'Server Renewal' : $serverName,
             ];
