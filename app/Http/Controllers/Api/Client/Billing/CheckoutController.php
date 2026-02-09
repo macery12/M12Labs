@@ -402,7 +402,7 @@ class CheckoutController extends ClientApiController
                 $eggId,
                 [
                     'billing_days' => $billingDays,
-                    'server_id' => $request->input('server_id'),
+                    'server_id' => $request->input('server_id') ? (int) $request->input('server_id') : null,
                 ]
             );
 
