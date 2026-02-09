@@ -94,6 +94,10 @@ interface BillingAnalytics extends Model {
     categories: Category[];
     donations?: Donation[];
     upcomingRenewals?: {
+        overdue: {
+            count: number;
+            expectedRevenue: number;
+        };
         in7Days: {
             count: number;
             expectedRevenue: number;
@@ -111,6 +115,7 @@ interface BillingAnalytics extends Model {
         next7Days: number;
         next30Days: number;
     };
+    suspendedServers?: number;
     recentEvents?: BillingEvent[];
 }
 

@@ -12,6 +12,7 @@ export default ({ data }: UpcomingRenewalsProps) => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const currencySymbol = settings.currency.symbol;
 
+    const overdueRenewals = data.upcomingRenewals?.overdue || { count: 0, expectedRevenue: 0 };
     const renewals7Days = data.upcomingRenewals?.in7Days || { count: 0, expectedRevenue: 0 };
     const renewals8to14Days = data.upcomingRenewals?.in8to14Days || { count: 0, expectedRevenue: 0 };
     const renewalsTotal14Days = data.upcomingRenewals?.total14Days || { count: 0, expectedRevenue: 0 };
@@ -22,6 +23,29 @@ export default ({ data }: UpcomingRenewalsProps) => {
         <ContentBox title="Upcoming Renewals" className="min-h-[200px]">
             {hasRenewals ? (
                 <div className="space-y-4">
+                    {/* Overdue Renewals - Show only if there are any */}
+                    {overdueRenewals.count > 0 && (
+                        <div className="rounded border border-red-500/20 bg-red-500/10 p-4">
+                            <div className="mb-2 flex items-center gap-2">
+                                <FontAwesomeIcon icon={faCalendarAlt} className="text-red-400" />
+                                <h3 className="text-sm font-medium text-gray-300">Overdue (Past Due)</h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-gray-500">Servers</p>
+                                    <p className="text-2xl font-bold text-red-400">{overdueRenewals.count}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500">Expected Revenue</p>
+                                    <p className="text-2xl font-bold text-green-400">
+                                        {currencySymbol}
+                                        {overdueRenewals.expectedRevenue.toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Next 7 Days */}
                     <div className="rounded border border-blue-500/20 bg-blue-500/10 p-4">
                         <div className="mb-2 flex items-center gap-2">
@@ -68,7 +92,7 @@ export default ({ data }: UpcomingRenewalsProps) => {
                     <div className="flex items-center justify-between rounded bg-gray-800/50 p-3">
                         <div className="flex items-center gap-2">
                             <FontAwesomeIcon icon={faCoins} className="text-yellow-400" />
-                            <span className="text-sm text-gray-400">Total (14 days)</span>
+                            <span className="text-sm text-gray-400">Total (all periods)</span>
                         </div>
                         <span className="text-lg font-bold text-green-400">
                             {currencySymbol}

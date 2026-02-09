@@ -16,10 +16,8 @@ export default ({ data, history }: BillingHealthSummaryProps) => {
     const now = new Date();
     const settings = useStoreState(s => s.everest.data!.billing);
 
-    // Calculate failed payments count
-    const failedPayments = data.orders.filter(
-        x => x.status === 'failed' && differenceInDays(now, parseISO(x.created_at.toString())) <= history,
-    ).length;
+    // Get suspended servers count
+    const suspendedServers = data.suspendedServers || 0;
 
     // Payment provider status
     const providers = [
@@ -109,13 +107,13 @@ export default ({ data, history }: BillingHealthSummaryProps) => {
                     </div>
                 </div>
 
-                {/* Failed Payments */}
-                <div className="rounded border border-red-500/20 bg-red-500/10 p-3">
+                {/* Suspended Servers */}
+                <div className="rounded border border-yellow-500/20 bg-yellow-500/10 p-3">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">Failed Payments</span>
-                        <span className="text-xl font-bold text-red-400">{failedPayments}</span>
+                        <span className="text-sm text-gray-400">Suspended Servers</span>
+                        <span className="text-xl font-bold text-yellow-400">{suspendedServers}</span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">In the last {history} days</p>
+                    <p className="mt-1 text-xs text-gray-500">Currently suspended (payment or manual)</p>
                 </div>
             </div>
         </ContentBox>

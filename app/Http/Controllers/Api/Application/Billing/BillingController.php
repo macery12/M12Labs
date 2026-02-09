@@ -59,10 +59,16 @@ class BillingController extends ApplicationApiController
             ->with('product')
             ->get();
         
+        // Overdue renewals (past due - need attention)
+        $overdueRenewals = $servers->filter(function ($server) use ($now) {
+            return $server->renewal_date && 
+                   $server->renewal_date->lessThan($now);
+        });
+        
         // Renewals in next 7 days (0-7 days)
         $renewalsIn7Days = $servers->filter(function ($server) use ($now) {
             return $server->renewal_date && 
-                   $server->renewal_date->greaterThan($now) &&
+                   $server->renewal_date->greaterThanOrEqualTo($now) &&
                    $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(7));
         });
         
@@ -73,6 +79,10 @@ class BillingController extends ApplicationApiController
                    $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(14));
         });
         
+        $expectedRevenueOverdue = $overdueRenewals->sum(function ($server) {
+            return $server->product ? $server->product->price : 0;
+        });
+        
         $expectedRevenue7Days = $renewalsIn7Days->sum(function ($server) {
             return $server->product ? $server->product->price : 0;
         });
@@ -81,15 +91,14 @@ class BillingController extends ApplicationApiController
             return $server->product ? $server->product->price : 0;
         });
         
-        // Total for all renewals in next 14 days
-        $totalRenewalsIn14Days = $renewalsIn7Days->count() + $renewalsIn8to14Days->count();
-        $totalExpectedRevenue14Days = $expectedRevenue7Days + $expectedRevenue8to14Days;
+        // Total for all renewals in next 14 days (including overdue)
+        $totalRenewalsIn14Days = $overdueRenewals->count() + $renewalsIn7Days->count() + $renewalsIn8to14Days->count();
+        $totalExpectedRevenue14Days = $expectedRevenueOverdue + $expectedRevenue7Days + $expectedRevenue8to14Days;
         
-        // Calculate forecast based on all active servers with future renewal dates
+        // Calculate forecast based on ALL active billing servers (including past-due)
+        // A server with a billing subscription is still generating revenue even if past due
         $activeServers = $servers->filter(function ($server) use ($now) {
-            return $server->renewal_date && 
-                   $server->renewal_date->greaterThan($now) &&
-                   $server->product && 
+            return $server->product && 
                    $server->billing_days && 
                    $server->billing_days > 0;
         });
@@ -101,6 +110,9 @@ class BillingController extends ApplicationApiController
         
         $forecast7Days = $totalDailyRevenue * 7;
         $forecast30Days = $totalDailyRevenue * 30;
+        
+        // Count suspended servers
+        $suspendedServers = Server::where('status', Server::STATUS_SUSPENDED)->count();
         
         // Get recent billing events (last 5 orders)
         $recentEvents = Order::with('server')
@@ -127,6 +139,10 @@ class BillingController extends ApplicationApiController
             'products' => Product::all(),
             'donations' => \Everest\Models\Donation::where('status', 'completed')->get(),
             'upcomingRenewals' => [
+                'overdue' => [
+                    'count' => $overdueRenewals->count(),
+                    'expectedRevenue' => $expectedRevenueOverdue,
+                ],
                 'in7Days' => [
                     'count' => $renewalsIn7Days->count(),
                     'expectedRevenue' => $expectedRevenue7Days,
@@ -144,6 +160,7 @@ class BillingController extends ApplicationApiController
                 'next7Days' => round($forecast7Days, 2),
                 'next30Days' => round($forecast30Days, 2),
             ],
+            'suspendedServers' => $suspendedServers,
             'recentEvents' => $recentEvents,
         ];
     }
