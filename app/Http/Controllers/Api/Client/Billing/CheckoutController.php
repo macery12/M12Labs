@@ -328,15 +328,21 @@ class CheckoutController extends ClientApiController
             // Validate billing is enabled
             $this->validationService->validateBillingEnabled();
 
-            // Get and validate server name
+            // Check if this is a renewal
+            $isRenewal = $request->has('renewal') && $request->boolean('renewal');
+
+            // For renewals, name and node_id are optional (server already exists)
+            // For new purchases, they are required
             $serverName = trim((string) $request->input('name', ''));
-            if (empty($serverName)) {
+            if (!$isRenewal && empty($serverName)) {
                 throw new DisplayException('Server name is required.');
             }
 
-            // Validate node deployment for paid products
             $nodeId = (int) $request->input('node_id');
-            $this->validationService->validateNodeDeployment($nodeId, false);
+            // Only validate node deployment for new purchases, not renewals
+            if (!$isRenewal) {
+                $this->validationService->validateNodeDeployment($nodeId, false);
+            }
 
             if (!$intent) {
                 throw new BillingExceptionClass(
@@ -350,9 +356,9 @@ class CheckoutController extends ClientApiController
                 );
             }
 
-            // Validate and get egg ID
+            // For renewals, egg_id is not required
             $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
-            $eggId = $this->validationService->validateAndGetEggId($product, $requestedEggId);
+            $eggId = !$isRenewal ? $this->validationService->validateAndGetEggId($product, $requestedEggId) : null;
 
             // Get billing days (default to 30 if not provided)
             $billingDays = (int) ($request->input('billing_days') ?? 30);
@@ -371,12 +377,12 @@ class CheckoutController extends ClientApiController
                 'customer_email' => $request->user()->email,
                 'customer_name' => $request->user()->username,
                 'product_id' => (string) $id,
-                'node_id' => (string) $nodeId,
+                'node_id' => $isRenewal ? '' : (string) $nodeId,
                 'server_id' => (string) ($request->input('server_id') ?? 0),
                 'coupon_id' => (string) ($couponId ?? ''),
-                'egg_id' => (string) $eggId,
+                'egg_id' => $isRenewal ? '' : (string) $eggId,
                 'billing_days' => (string) $billingDays,
-                'name' => $serverName,
+                'name' => $isRenewal ? 'Server Renewal' : $serverName,
             ];
 
             $variables = $request->input('variables') ?? [];
@@ -385,7 +391,7 @@ class CheckoutController extends ClientApiController
             $intent->metadata = $metadata;
             $intent->save();
 
-            // Create the order with coupon, egg, and billing days
+            // Create the order with coupon, egg, billing days, and server_id
             $this->orderService->create(
                 $intent->id,
                 $request->user(),
@@ -394,7 +400,10 @@ class CheckoutController extends ClientApiController
                 $this->getOrderType($request),
                 $couponId,
                 $eggId,
-                ['billing_days' => $billingDays]
+                [
+                    'billing_days' => $billingDays,
+                    'server_id' => $request->input('server_id') ? (int) $request->input('server_id') : null,
+                ]
             );
 
             return $this->returnNoContent();

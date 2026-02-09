@@ -226,7 +226,6 @@ const Suspended = ({
                             </>
                         )}
                     </p>
-                    <FlashMessageRender byKey={'suspended:billing'} className={'mt-4'} />
                     <div className={'mt-6'}>
                         {isLongOverdue ? (
                             <div css={tw`text-center p-4 bg-red-900/30 rounded border border-red-500`}>
