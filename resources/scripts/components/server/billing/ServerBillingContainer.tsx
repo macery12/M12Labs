@@ -71,12 +71,40 @@ export default () => {
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
+    const billingDays = ServerContext.useStoreState(s => s.server.data!.billingDays);
+    const serverStatus = ServerContext.useStoreState(s => s.server.data!.status);
 
     // Get configurable renewal settings
     const renewalDays = settings.renewal?.days || 30;
     const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
+
+    /**
+     * Calculate grace period threshold based on billing cycle length.
+     * Uses same logic as backend: min(max(billingDays * 20%, 3), 7)
+     * - 7-day cycle → 3 days (minimum)
+     * - 30-day cycle → 6 days
+     * - 90-day cycle → 7 days (capped)
+     * - 180+ day cycle → 7 days (capped)
+     */
+    const calculateGracePeriod = (days: number, isFree: boolean): number => {
+        if (isFree) {
+            return freeGraceDays;
+        }
+        
+        const percentage = settings.renewal?.suspension_threshold_percentage || 0.20;
+        const calculatedThreshold = Math.ceil(days * percentage);
+        const minThreshold = settings.renewal?.min_suspension_threshold_days || 3;
+        const maxThreshold = settings.renewal?.max_suspension_threshold_days || 7;
+        
+        return Math.max(minThreshold, Math.min(maxThreshold, calculatedThreshold));
+    };
+
+    // Calculate the actual grace period based on billing cycle
+    const actualGracePeriod = product && billingDays
+        ? calculateGracePeriod(billingDays, product.price === 0)
+        : suspensionThreshold;
 
     useEffect(() => {
         clearFlashes();
@@ -118,8 +146,13 @@ export default () => {
     const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
     const daysOverdue = daysRemaining < 0 ? Math.abs(daysRemaining) : 0;
 
+    // Determine if server is past grace period and suspended
+    const isPastGracePeriod = daysOverdue > actualGracePeriod;
+    const isSuspended = serverStatus === 'suspended';
+    const isPastGracePeriodAndSuspended = isPastGracePeriod && isSuspended;
+
     const statusBadge = renewalDate
-        ? getRenewalStatusBadge(daysRemaining, suspensionThreshold, daysOverdue, freeGraceDays)
+        ? getRenewalStatusBadge(daysRemaining, actualGracePeriod, daysOverdue, freeGraceDays)
         : null;
 
     return (
@@ -244,15 +277,19 @@ export default () => {
                                 <div>
                                     <p css={tw`text-gray-300 text-xs mb-3`}>
                                         <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
-                                        Free server - renewable {suspensionThreshold} days before expiration
+                                        Free server - renewable {actualGracePeriod} days before expiration
                                     </p>
-                                    {daysOverdue > freeGraceDays ? (
+                                    {isPastGracePeriodAndSuspended ? (
+                                        <Alert type={'danger'}>
+                                            <strong>Server Suspended</strong> - You failed to renew before the grace period expired. Please contact support for assistance.
+                                        </Alert>
+                                    ) : daysOverdue > freeGraceDays ? (
                                         <Alert type={'danger'}>
                                             <strong>Expired</strong> - Contact support for assistance.
                                         </Alert>
-                                    ) : daysRemaining > suspensionThreshold ? (
+                                    ) : daysRemaining > actualGracePeriod ? (
                                         <Alert type={'info'}>
-                                            Renewal available in {daysRemaining - suspensionThreshold} days.
+                                            Renewal available in {daysRemaining - actualGracePeriod} days.
                                         </Alert>
                                     ) : (
                                         <div>
@@ -261,7 +298,7 @@ export default () => {
                                                     <>Renew for {freeRenewalDays} more days.</>
                                                 ) : (
                                                     <>
-                                                        Grace period: {daysOverdue}/{freeGraceDays} days
+                                                        Grace period: {daysOverdue}/{actualGracePeriod} days
                                                     </>
                                                 )}
                                             </p>
@@ -273,65 +310,73 @@ export default () => {
                                 </div>
                             ) : (
                                 <div>
-                                    {/* Show coupon input for paid servers */}
-                                    <div css={tw`mb-4`}>
-                                        <Label>Renewal Cost</Label>
-                                        {couponData ? (
-                                            <div>
-                                                <div css={tw`text-sm text-gray-400 line-through`}>
-                                                    {settings.currency.symbol}
-                                                    {couponData.subtotal.toFixed(2)}
-                                                </div>
-                                                <div css={tw`flex items-baseline gap-1 mb-1`}>
-                                                    <span css={tw`text-2xl font-bold text-gray-200`}>
+                                    {isPastGracePeriodAndSuspended ? (
+                                        <Alert type={'danger'}>
+                                            <strong>Server Suspended</strong> - You failed to renew before the grace period expired. Please contact support for assistance.
+                                        </Alert>
+                                    ) : (
+                                        <>
+                                            {/* Show coupon input for paid servers */}
+                                            <div css={tw`mb-4`}>
+                                                <Label>Renewal Cost</Label>
+                                                {couponData ? (
+                                                    <div>
+                                                        <div css={tw`text-sm text-gray-400 line-through`}>
+                                                            {settings.currency.symbol}
+                                                            {couponData.subtotal.toFixed(2)}
+                                                        </div>
+                                                        <div css={tw`flex items-baseline gap-1 mb-1`}>
+                                                            <span css={tw`text-2xl font-bold text-gray-200`}>
+                                                                {settings.currency.symbol}
+                                                                {couponData.total.toFixed(2)}
+                                                            </span>
+                                                            <span css={tw`text-xs text-gray-400`}>
+                                                                {settings.currency.code.toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                        <div css={tw`text-xs font-medium text-green-400`}>
+                                                            Save {settings.currency.symbol}
+                                                            {couponData.discount.toFixed(2)}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p css={tw`text-gray-300 text-sm`}>
                                                         {settings.currency.symbol}
-                                                        {couponData.total.toFixed(2)}
-                                                    </span>
-                                                    <span css={tw`text-xs text-gray-400`}>
-                                                        {settings.currency.code.toUpperCase()}
-                                                    </span>
-                                                </div>
-                                                <div css={tw`text-xs font-medium text-green-400`}>
-                                                    Save {settings.currency.symbol}
-                                                    {couponData.discount.toFixed(2)}
-                                                </div>
+                                                        {product.price.toFixed(2)} {settings.currency.code.toUpperCase()}
+                                                    </p>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <p css={tw`text-gray-300 text-sm`}>
-                                                {settings.currency.symbol}
-                                                {product.price.toFixed(2)} {settings.currency.code.toUpperCase()}
-                                            </p>
-                                        )}
-                                    </div>
 
-                                    <CouponInput
-                                        subtotal={product.price}
-                                        onCouponApplied={handleCouponApplied}
-                                        orderType="ren"
-                                    />
-                                    <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
-
-                                    <div css={tw`mt-4`}>
-                                        {couponData?.total === 0 ? (
-                                            <div>
-                                                <p css={tw`text-green-400 text-sm mb-3`}>
-                                                    🎉 Your coupon has made this renewal free!
-                                                </p>
-                                                <Button
-                                                    onClick={handleFreeRenewal}
-                                                    disabled={renewing}
-                                                    css={tw`w-full`}
-                                                >
-                                                    {renewing ? 'Renewing...' : 'Renew Server'}
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <PaymentContainer
-                                                id={Number(product.id)}
-                                                couponId={couponData?.coupon.id}
+                                            <CouponInput
+                                                subtotal={product.price}
+                                                onCouponApplied={handleCouponApplied}
+                                                orderType="ren"
                                             />
-                                        )}
-                                    </div>
+                                            <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
+
+                                            <div css={tw`mt-4`}>
+                                                {couponData?.total === 0 ? (
+                                                    <div>
+                                                        <p css={tw`text-green-400 text-sm mb-3`}>
+                                                            🎉 Your coupon has made this renewal free!
+                                                        </p>
+                                                        <Button
+                                                            onClick={handleFreeRenewal}
+                                                            disabled={renewing}
+                                                            css={tw`w-full`}
+                                                        >
+                                                            {renewing ? 'Renewing...' : 'Renew Server'}
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <PaymentContainer
+                                                        id={Number(product.id)}
+                                                        couponId={couponData?.coupon.id}
+                                                    />
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </>
