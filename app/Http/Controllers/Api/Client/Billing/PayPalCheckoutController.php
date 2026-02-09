@@ -144,7 +144,7 @@ class PayPalCheckoutController extends ClientApiController
 
         // For renewals, egg_id is not required
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
-        $eggId = !$isRenewal ? $this->validationService->validateAndGetEggId($product, $requestedEggId) : null;
+        $eggId = $isRenewal ? null : $this->validationService->validateAndGetEggId($product, $requestedEggId);
 
         // Determine order type
         $orderType = $this->getOrderType($request);
