@@ -81,14 +81,14 @@ export default () => {
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
 
     /**
-     * Calculate grace period threshold based on billing cycle length.
+     * Calculate grace period threshold in days based on billing cycle length.
      * Uses same logic as backend: min(max(billingDays * 20%, 3), 7)
      * - 7-day cycle → 3 days (minimum)
      * - 30-day cycle → 6 days
      * - 90-day cycle → 7 days (capped)
      * - 180+ day cycle → 7 days (capped)
      */
-    const calculateGracePeriod = (days: number, isFree: boolean): number => {
+    const calculateGracePeriodDays = (days: number, isFree: boolean): number => {
         if (isFree) {
             return freeGraceDays;
         }
@@ -103,7 +103,7 @@ export default () => {
 
     // Calculate the actual grace period based on billing cycle
     const actualGracePeriod = product && billingDays
-        ? calculateGracePeriod(billingDays, product.price === 0)
+        ? calculateGracePeriodDays(billingDays, product.price === 0)
         : suspensionThreshold;
 
     useEffect(() => {
@@ -282,10 +282,6 @@ export default () => {
                                     {isPastGracePeriodAndSuspended ? (
                                         <Alert type={'danger'}>
                                             <strong>Server Suspended</strong> - You failed to renew before the grace period expired. Please contact support for assistance.
-                                        </Alert>
-                                    ) : daysOverdue > freeGraceDays ? (
-                                        <Alert type={'danger'}>
-                                            <strong>Expired</strong> - Contact support for assistance.
                                         </Alert>
                                     ) : daysRemaining > actualGracePeriod ? (
                                         <Alert type={'info'}>
