@@ -56,7 +56,7 @@ class BillingController extends ApplicationApiController
         $now = Carbon::now();
         $servers = Server::whereNotNull('renewal_date')
             ->whereNotNull('billing_product_id')
-            ->with('billingProduct')
+            ->with('product')
             ->get();
         
         $renewalsIn7Days = $servers->filter(function ($server) use ($now) {
@@ -72,11 +72,11 @@ class BillingController extends ApplicationApiController
         });
         
         $expectedRevenue7Days = $renewalsIn7Days->sum(function ($server) {
-            return $server->billingProduct ? $server->billingProduct->price : 0;
+            return $server->product ? $server->product->price : 0;
         });
         
         $expectedRevenue14Days = $renewalsIn14Days->sum(function ($server) {
-            return $server->billingProduct ? $server->billingProduct->price : 0;
+            return $server->product ? $server->product->price : 0;
         });
         
         // Calculate forecast based on active subscriptions
@@ -86,8 +86,8 @@ class BillingController extends ApplicationApiController
         
         $avgDailyRevenue = $activeServers->count() > 0 
             ? $activeServers->sum(function ($server) {
-                if ($server->billingProduct && $server->billing_days) {
-                    return $server->billingProduct->price / $server->billing_days;
+                if ($server->product && $server->billing_days) {
+                    return $server->product->price / $server->billing_days;
                 }
                 return 0;
             })

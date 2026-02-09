@@ -8,8 +8,6 @@ import {
     faTimesCircle,
     faUndo,
     faShoppingCart,
-    faSync,
-    faArrowUp,
 } from '@fortawesome/free-solid-svg-icons';
 import { faCcStripe, faCcPaypal } from '@fortawesome/free-brands-svg-icons';
 import { faCircle } from '@fortawesome/free-solid-svg-icons';
@@ -26,7 +24,7 @@ export default ({ data }: RecentBillingEventsProps) => {
 
     const events = data.recentEvents || [];
 
-    const getEventIcon = (type: string, status: string) => {
+    const getEventIcon = (status: string) => {
         if (status === 'processed') return { icon: faCheckCircle, color: 'text-green-500' };
         if (status === 'failed') return { icon: faTimesCircle, color: 'text-red-500' };
         if (status === 'refunded') return { icon: faUndo, color: 'text-yellow-500' };
@@ -109,7 +107,7 @@ export default ({ data }: RecentBillingEventsProps) => {
                         </thead>
                         <tbody>
                             {events.map(event => {
-                                const eventIcon = getEventIcon(event.type, event.status);
+                                const eventIcon = getEventIcon(event.status);
                                 return (
                                     <tr
                                         key={event.id}
