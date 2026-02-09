@@ -146,9 +146,10 @@ const Suspended = ({
     const isFree = product.price === 0;
 
     // Get configurable renewal settings based on server type
+    // Use max_suspension_threshold_days (7 days) as the fixed cutoff for disabling self-service payment
     const suspensionThreshold = isFree
         ? settings.renewal?.free_suspension_days || 7
-        : settings.renewal?.paid_suspension_days || 30;
+        : settings.renewal?.max_suspension_threshold_days || 7;
 
     // Calculate days past the renewal date
     const now = new Date();
