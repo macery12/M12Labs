@@ -150,10 +150,9 @@ export default () => {
 
     // Determine if server is past the maximum suspension threshold and suspended
     // Use max_suspension_threshold_days (7 days) as the fixed cutoff for disabling self-service payment
-    const maxSuspensionDays = settings.renewal?.max_suspension_threshold_days || 7;
-    const isPastMaxSuspensionThreshold = daysOverdue > maxSuspensionDays;
+    const maxSuspensionThresholdDays = settings.renewal?.max_suspension_threshold_days || 7;
     const isSuspended = serverStatus === 'suspended';
-    const isPastGracePeriodAndSuspended = isPastMaxSuspensionThreshold && isSuspended;
+    const isPaymentDisabled = daysOverdue > maxSuspensionThresholdDays && isSuspended;
 
     const statusBadge = renewalDate
         ? getRenewalStatusBadge(daysRemaining, actualGracePeriod, daysOverdue, freeGraceDays)
@@ -283,9 +282,9 @@ export default () => {
                                         <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
                                         Free server - renewable {actualGracePeriod} days before expiration
                                     </p>
-                                    {isPastGracePeriodAndSuspended ? (
+                                    {isPaymentDisabled ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionThresholdDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
                                         </Alert>
                                     ) : daysRemaining > actualGracePeriod ? (
                                         <Alert type={'info'}>
@@ -310,9 +309,9 @@ export default () => {
                                 </div>
                             ) : (
                                 <div>
-                                    {isPastGracePeriodAndSuspended ? (
+                                    {isPaymentDisabled ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionThresholdDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
                                         </Alert>
                                     ) : (
                                         <>
