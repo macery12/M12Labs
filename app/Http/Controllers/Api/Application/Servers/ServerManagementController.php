@@ -32,7 +32,8 @@ class ServerManagementController extends ApplicationApiController
      */
     public function suspend(ServerWriteRequest $request, Server $server): Response
     {
-        $this->suspensionService->toggle($server);
+        // Use explicit ACTION_SUSPEND to match automated billing suspension
+        $this->suspensionService->toggle($server, SuspensionService::ACTION_SUSPEND);
 
         return $this->returnNoContent();
     }

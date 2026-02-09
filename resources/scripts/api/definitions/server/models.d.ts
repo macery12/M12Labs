@@ -32,6 +32,7 @@ interface Server {
     modpacksSupported: boolean;
     extensionsEnabled: boolean;
     billingProductId?: number;
+    billingDays?: number;
     renewalDate?: Date | undefined;
     featureLimits: {
         databases: number;
