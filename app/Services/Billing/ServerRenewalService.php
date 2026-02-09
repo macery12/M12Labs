@@ -24,6 +24,9 @@ class ServerRenewalService
      * For free servers: Resets renewal date to configured days from now
      * For paid servers: Adds configured days to existing renewal date (extends the time)
      * 
+     * If server is past due but still within grace period, the renewal days are
+     * reduced by the number of past due days to prevent users from getting free time.
+     * 
      * @return array{server: Server, order: Order}
      */
     public function renew(Server $server, Product $product, ?int $couponId = null, int $billingDays = 30): array
@@ -52,6 +55,23 @@ class ServerRenewalService
 
         // Use the billing days provided or fall back to product's renewal days
         $renewalDays = $billingDays > 0 ? $billingDays : $product->getRenewalDays();
+        
+        // Calculate past due days if server is overdue
+        $pastDueDays = 0;
+        if ($server->renewal_date && $server->renewal_date->isPast()) {
+            $pastDueDays = Carbon::now()->diffInDays($server->renewal_date);
+            
+            // Get the suspension threshold (grace period) for this billing cycle
+            $serverBillingDays = $server->billing_days > 0 ? $server->billing_days : $billingDays;
+            $suspensionThreshold = $product->getSuspensionThresholdForBillingCycle($serverBillingDays);
+            
+            // Only adjust renewal days if server is still within grace period (able to be renewed)
+            // If past the grace period, they shouldn't be able to renew anyway
+            if ($pastDueDays <= $suspensionThreshold) {
+                // Subtract past due days from renewal days, but ensure we give at least 1 day
+                $renewalDays = max(1, $renewalDays - $pastDueDays);
+            }
+        }
         
         if ($product->isFree()) {
             // Free servers: Reset renewal date to configured days from now
