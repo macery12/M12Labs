@@ -82,6 +82,12 @@ return [
      * - 180-day cycle: 180 × 20% = 36 → 7 days (maximum applied)
      */
     'renewal' => [
+        // Default renewal period for paid servers (in days)
+        'days' => env('BILLING_RENEWAL_DAYS', 30),
+        
+        // Default renewal period for free servers (in days)
+        'free_renewal_days' => env('BILLING_FREE_RENEWAL_DAYS', 30),
+        
         // Suspension threshold as percentage of billing cycle (0.20 = 20%)
         'suspension_threshold_percentage' => env('BILLING_SUSPENSION_THRESHOLD_PCT', 0.20),
         

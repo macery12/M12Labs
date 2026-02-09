@@ -31,6 +31,7 @@ interface Server {
     modsEnabled: boolean;
     modpacksSupported: boolean;
     billingProductId?: number;
+    billingDays?: number;
     renewalDate?: Date | undefined;
     featureLimits: {
         databases: number;

@@ -87,6 +87,7 @@ class ServerTransformer extends Transformer
             'mods_enabled' => $server->mods_enabled,
             'modpacks_supported' => $modpacksSupported,
             'billing_product_id' => $server->billing_product_id,
+            'billing_days' => $server->billing_days,
             'feature_limits' => [
                 'databases' => $server->database_limit,
                 'allocations' => $server->allocation_limit,
