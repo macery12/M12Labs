@@ -13,9 +13,10 @@ export default ({ data }: UpcomingRenewalsProps) => {
     const currencySymbol = settings.currency.symbol;
 
     const renewals7Days = data.upcomingRenewals?.in7Days || { count: 0, expectedRevenue: 0 };
-    const renewals14Days = data.upcomingRenewals?.in14Days || { count: 0, expectedRevenue: 0 };
+    const renewals8to14Days = data.upcomingRenewals?.in8to14Days || { count: 0, expectedRevenue: 0 };
+    const renewalsTotal14Days = data.upcomingRenewals?.total14Days || { count: 0, expectedRevenue: 0 };
 
-    const hasRenewals = renewals14Days.count > 0;
+    const hasRenewals = renewalsTotal14Days.count > 0;
 
     return (
         <ContentBox title="Upcoming Renewals" className="min-h-[200px]">
@@ -42,22 +43,22 @@ export default ({ data }: UpcomingRenewalsProps) => {
                         </div>
                     </div>
 
-                    {/* Next 14 Days */}
+                    {/* Days 8-14 */}
                     <div className="rounded border border-purple-500/20 bg-purple-500/10 p-4">
                         <div className="mb-2 flex items-center gap-2">
                             <FontAwesomeIcon icon={faCalendarAlt} className="text-purple-400" />
-                            <h3 className="text-sm font-medium text-gray-300">Next 14 Days</h3>
+                            <h3 className="text-sm font-medium text-gray-300">Days 8-14</h3>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <p className="text-xs text-gray-500">Servers</p>
-                                <p className="text-2xl font-bold text-purple-400">{renewals14Days.count}</p>
+                                <p className="text-2xl font-bold text-purple-400">{renewals8to14Days.count}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500">Expected Revenue</p>
                                 <p className="text-2xl font-bold text-green-400">
                                     {currencySymbol}
-                                    {renewals14Days.expectedRevenue.toFixed(2)}
+                                    {renewals8to14Days.expectedRevenue.toFixed(2)}
                                 </p>
                             </div>
                         </div>
@@ -71,7 +72,7 @@ export default ({ data }: UpcomingRenewalsProps) => {
                         </div>
                         <span className="text-lg font-bold text-green-400">
                             {currencySymbol}
-                            {renewals14Days.expectedRevenue.toFixed(2)}
+                            {renewalsTotal14Days.expectedRevenue.toFixed(2)}
                         </span>
                     </div>
                 </div>

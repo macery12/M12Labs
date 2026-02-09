@@ -98,7 +98,11 @@ interface BillingAnalytics extends Model {
             count: number;
             expectedRevenue: number;
         };
-        in14Days: {
+        in8to14Days: {
+            count: number;
+            expectedRevenue: number;
+        };
+        total14Days: {
             count: number;
             expectedRevenue: number;
         };

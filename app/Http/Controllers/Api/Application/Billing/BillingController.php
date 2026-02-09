@@ -59,15 +59,17 @@ class BillingController extends ApplicationApiController
             ->with('product')
             ->get();
         
+        // Renewals in next 7 days (0-7 days)
         $renewalsIn7Days = $servers->filter(function ($server) use ($now) {
             return $server->renewal_date && 
                    $server->renewal_date->greaterThan($now) &&
                    $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(7));
         });
         
-        $renewalsIn14Days = $servers->filter(function ($server) use ($now) {
+        // Renewals in days 8-14 (not cumulative - excludes first 7 days)
+        $renewalsIn8to14Days = $servers->filter(function ($server) use ($now) {
             return $server->renewal_date && 
-                   $server->renewal_date->greaterThan($now) &&
+                   $server->renewal_date->greaterThan($now->copy()->addDays(7)) &&
                    $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(14));
         });
         
@@ -75,26 +77,30 @@ class BillingController extends ApplicationApiController
             return $server->product ? $server->product->price : 0;
         });
         
-        $expectedRevenue14Days = $renewalsIn14Days->sum(function ($server) {
+        $expectedRevenue8to14Days = $renewalsIn8to14Days->sum(function ($server) {
             return $server->product ? $server->product->price : 0;
         });
         
-        // Calculate forecast based on active subscriptions
+        // Total for all renewals in next 14 days
+        $totalRenewalsIn14Days = $renewalsIn7Days->count() + $renewalsIn8to14Days->count();
+        $totalExpectedRevenue14Days = $expectedRevenue7Days + $expectedRevenue8to14Days;
+        
+        // Calculate forecast based on all active servers with future renewal dates
         $activeServers = $servers->filter(function ($server) use ($now) {
-            return $server->renewal_date && $server->renewal_date->greaterThan($now);
+            return $server->renewal_date && 
+                   $server->renewal_date->greaterThan($now) &&
+                   $server->product && 
+                   $server->billing_days && 
+                   $server->billing_days > 0;
         });
         
-        $avgDailyRevenue = $activeServers->count() > 0 
-            ? $activeServers->sum(function ($server) {
-                if ($server->product && $server->billing_days && $server->billing_days > 0) {
-                    return $server->product->price / $server->billing_days;
-                }
-                return 0;
-            })
-            : 0;
+        // Calculate total daily revenue from all active subscriptions
+        $totalDailyRevenue = $activeServers->sum(function ($server) {
+            return $server->product->price / $server->billing_days;
+        });
         
-        $forecast7Days = $avgDailyRevenue * 7;
-        $forecast30Days = $avgDailyRevenue * 30;
+        $forecast7Days = $totalDailyRevenue * 7;
+        $forecast30Days = $totalDailyRevenue * 30;
         
         // Get recent billing events (last 5 orders)
         $recentEvents = Order::with('server')
@@ -125,9 +131,13 @@ class BillingController extends ApplicationApiController
                     'count' => $renewalsIn7Days->count(),
                     'expectedRevenue' => $expectedRevenue7Days,
                 ],
-                'in14Days' => [
-                    'count' => $renewalsIn14Days->count(),
-                    'expectedRevenue' => $expectedRevenue14Days,
+                'in8to14Days' => [
+                    'count' => $renewalsIn8to14Days->count(),
+                    'expectedRevenue' => $expectedRevenue8to14Days,
+                ],
+                'total14Days' => [
+                    'count' => $totalRenewalsIn14Days,
+                    'expectedRevenue' => $totalExpectedRevenue14Days,
                 ],
             ],
             'forecast' => [

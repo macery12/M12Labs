@@ -39,11 +39,30 @@ export default ({ data, history }: BillingHealthSummaryProps) => {
             name: 'PayPal',
             icon: faCcPaypal,
             enabled: settings.processors?.paypal?.enabled || false,
-            configured: settings.paypal,
+            configured: settings.processors?.paypal?.available || false,
+            mode: settings.paypal_standalone?.mode,
         },
     ];
 
     const getProviderStatus = (provider: (typeof providers)[0]) => {
+        // Special handling for PayPal - ignore webhook status, only check API key and mode
+        if (provider.name === 'PayPal') {
+            if (!provider.enabled) {
+                return { icon: faTimesCircle, color: 'text-gray-500', label: 'Disabled' };
+            }
+            if (provider.configured && provider.mode === 'live') {
+                return { icon: faCheckCircle, color: 'text-green-500', label: 'Active' };
+            }
+            if (provider.configured && provider.mode === 'sandbox') {
+                return { icon: faExclamationTriangle, color: 'text-yellow-500', label: 'Sandbox Mode' };
+            }
+            if (provider.configured && !provider.mode) {
+                return { icon: faExclamationTriangle, color: 'text-yellow-500', label: 'Partially Configured' };
+            }
+            return { icon: faTimesCircle, color: 'text-gray-500', label: 'Not Configured' };
+        }
+
+        // Default logic for other providers
         if (provider.enabled && provider.configured) {
             return { icon: faCheckCircle, color: 'text-green-500', label: 'Active' };
         } else if (provider.enabled && !provider.configured) {
