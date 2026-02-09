@@ -43,7 +43,7 @@ export default ({ data, history }: BillingHealthSummaryProps) => {
         },
     ];
 
-    const getProviderStatus = (provider: typeof providers[0]) => {
+    const getProviderStatus = (provider: (typeof providers)[0]) => {
         if (provider.enabled && provider.configured) {
             return { icon: faCheckCircle, color: 'text-green-500', label: 'Active' };
         } else if (provider.enabled && !provider.configured) {
@@ -64,9 +64,7 @@ export default ({ data, history }: BillingHealthSummaryProps) => {
                             icon={settings.enabled ? faCheckCircle : faTimesCircle}
                             className={settings.enabled ? 'text-green-500' : 'text-gray-500'}
                         />
-                        <span className="text-sm font-medium">
-                            {settings.enabled ? 'Enabled' : 'Disabled'}
-                        </span>
+                        <span className="text-sm font-medium">{settings.enabled ? 'Enabled' : 'Disabled'}</span>
                     </div>
                 </div>
 

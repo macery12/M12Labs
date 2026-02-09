@@ -58,9 +58,7 @@ export default () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className={'text-2xl font-medium text-neutral-50'}>Billing Dashboard</h2>
-                    <p className={'text-sm text-neutral-400'}>
-                        Monitor billing health, revenue, and upcoming renewals
-                    </p>
+                    <p className={'text-sm text-neutral-400'}>Monitor billing health, revenue, and upcoming renewals</p>
                 </div>
                 <Select onChange={e => setHistory(Number(e.currentTarget.value))} className="w-48">
                     <option value={7}>Last 7 days</option>

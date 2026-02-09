@@ -3,12 +3,7 @@ import ContentBox from '@/elements/ContentBox';
 import { BillingAnalytics } from '@definitions/admin';
 import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faCheckCircle,
-    faTimesCircle,
-    faUndo,
-    faShoppingCart,
-} from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faTimesCircle, faUndo, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { faCcStripe, faCcPaypal } from '@fortawesome/free-brands-svg-icons';
 import { faCircle } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
@@ -122,10 +117,7 @@ export default ({ data }: RecentBillingEventsProps) => {
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                <FontAwesomeIcon
-                                                    icon={eventIcon.icon}
-                                                    className={eventIcon.color}
-                                                />
+                                                <FontAwesomeIcon icon={eventIcon.icon} className={eventIcon.color} />
                                                 <div>
                                                     <div className="text-sm text-gray-300">
                                                         {getEventTypeLabel(event.type)}

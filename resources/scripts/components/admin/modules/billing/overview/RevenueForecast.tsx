@@ -20,9 +20,7 @@ export default ({ data }: RevenueForecastProps) => {
         <ContentBox title="Revenue Forecast" className="min-h-[200px]">
             <div className="mb-3 flex items-center gap-2">
                 <FontAwesomeIcon icon={faInfoCircle} className="text-blue-400" />
-                <p className="text-xs text-gray-500">
-                    Estimates based on active subscriptions and billing cycles
-                </p>
+                <p className="text-xs text-gray-500">Estimates based on active subscriptions and billing cycles</p>
             </div>
 
             <div className="space-y-4">
