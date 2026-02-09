@@ -126,19 +126,25 @@ class PayPalCheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
-        // Get and validate server name
+        // Check if this is a renewal
+        $isRenewal = $request->has('renewal') && $request->boolean('renewal');
+
+        // For renewals, name and node_id are optional (server already exists)
+        // For new purchases, they are required
         $serverName = trim((string) $request->input('name', ''));
-        if (empty($serverName)) {
+        if (!$isRenewal && empty($serverName)) {
             throw new DisplayException('Server name is required.');
         }
 
-        // Validate node deployment for paid products
         $nodeId = (int) $request->input('node_id');
-        $this->validationService->validateNodeDeployment($nodeId, false);
+        // Only validate node deployment for new purchases, not renewals
+        if (!$isRenewal) {
+            $this->validationService->validateNodeDeployment($nodeId, false);
+        }
 
-        // Validate and get egg ID
+        // For renewals, egg_id is not required
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
-        $eggId = $this->validationService->validateAndGetEggId($product, $requestedEggId);
+        $eggId = !$isRenewal ? $this->validationService->validateAndGetEggId($product, $requestedEggId) : null;
 
         // Determine order type
         $orderType = $this->getOrderType($request);
@@ -153,10 +159,10 @@ class PayPalCheckoutController extends ClientApiController
             ->firstOrFail();
 
         $order->update([
-            'name' => $serverName,
-            'node_id' => $nodeId,
+            'name' => $isRenewal ? 'Server Renewal' : $serverName,
+            'node_id' => $isRenewal ? null : $nodeId,
             'server_id' => $serverId,
-            'egg_id' => $eggId,
+            'egg_id' => $isRenewal ? null : $eggId,
             'type' => $orderType,
             'coupon_id' => $couponId,
             'variables' => $variables,
