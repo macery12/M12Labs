@@ -59,7 +59,7 @@ class ServerRenewalService
         // Calculate past due days if server is overdue
         $pastDueDays = 0;
         if ($server->renewal_date && $server->renewal_date->isPast()) {
-            $pastDueDays = $server->renewal_date->diffInDays(Carbon::now());
+            $pastDueDays = Carbon::now()->diffInDays($server->renewal_date);
             
             // Get the suspension threshold (grace period) for this billing cycle
             $serverBillingDays = $server->billing_days > 0 ? $server->billing_days : $billingDays;
