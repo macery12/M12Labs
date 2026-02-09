@@ -206,6 +206,21 @@ const Suspended = ({
                                     <>
                                         Your server has been suspended due to an unpaid balance. Please complete payment
                                         to restore access.
+                                        <div className={'mt-4 space-y-2'}>
+                                            <div className={'flex items-center justify-between p-3 bg-gray-900/50 rounded border border-gray-700'}>
+                                                <span className={'text-gray-300 font-medium'}>Outstanding Balance:</span>
+                                                <span className={'text-white font-bold text-lg'}>
+                                                    {currency}
+                                                    {product.price.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div className={'flex items-center justify-between p-3 bg-yellow-900/20 rounded border border-yellow-700/50'}>
+                                                <span className={'text-yellow-300 font-medium'}>Days Overdue:</span>
+                                                <span className={'text-yellow-400 font-bold text-lg'}>
+                                                    {daysOverdue} {daysOverdue === 1 ? 'day' : 'days'}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </>
                                 )}
                             </>
@@ -227,7 +242,33 @@ const Suspended = ({
                                         {renewing ? 'Renewing...' : 'Renew Free Server'}
                                     </Button>
                                 ) : (
-                                    <PaymentContainer id={Number(product.id)} />
+                                    <div className={'space-y-4'}>
+                                        <div className={'bg-gray-900/30 rounded-lg border border-gray-700 p-4'}>
+                                            <h3 className={'text-white font-bold text-lg mb-3'}>Complete Your Payment</h3>
+                                            <div className={'space-y-2 text-sm'}>
+                                                <div className={'flex justify-between items-center'}>
+                                                    <span className={'text-gray-400'}>Product:</span>
+                                                    <span className={'text-white font-medium'}>{product.name}</span>
+                                                </div>
+                                                <div className={'flex justify-between items-center'}>
+                                                    <span className={'text-gray-400'}>Renewal Period:</span>
+                                                    <span className={'text-white font-medium'}>
+                                                        {settings.renewal?.days || 30} days
+                                                    </span>
+                                                </div>
+                                                <div className={'border-t border-gray-700 pt-2 mt-2'}>
+                                                    <div className={'flex justify-between items-center'}>
+                                                        <span className={'text-gray-300 font-semibold'}>Total Amount:</span>
+                                                        <span className={'text-white font-bold text-xl'}>
+                                                            {currency}
+                                                            {product.price.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <PaymentContainer id={Number(product.id)} />
+                                    </div>
                                 )}
                             </>
                         )}
