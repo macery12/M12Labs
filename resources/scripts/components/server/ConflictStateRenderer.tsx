@@ -28,7 +28,7 @@ export default () => {
 
     const renderAdminBypassButton = () => {
         if (!rootAdmin) return null;
-        
+
         return (
             <div css={tw`mt-4`}>
                 <Button onClick={handleAdminBypass} size={Button.Sizes.Large} variant={Button.Variants.Secondary}>

@@ -85,7 +85,7 @@ function ServerRouter() {
         // Check if admin has bypassed the suspension screen
         const bypassKey = `admin_bypass_${server.uuid}`;
         const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
-        
+
         if (!isBypassed) {
             return (
                 <Suspended
@@ -211,8 +211,10 @@ function ServerRouter() {
                                 // Check if admin has bypassed the conflict screen
                                 const bypassKey = `admin_bypass_conflict_${server.uuid}`;
                                 const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
-                                
-                                return !isBypassed ? <ConflictStateRenderer /> : (
+
+                                return !isBypassed ? (
+                                    <ConflictStateRenderer />
+                                ) : (
                                     <ErrorBoundary>
                                         <Routes location={location}>
                                             {routes.server.map(({ route, permission, component: Component }) => (
