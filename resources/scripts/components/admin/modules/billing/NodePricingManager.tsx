@@ -15,6 +15,10 @@ import {
     NodePricing,
 } from '@/api/routes/admin/billing/nodePricing';
 
+const MAX_MULTIPLIER = 25;
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
 const formatMultiplierDisplay = (multiplier: number): string => {
     if (multiplier === 1.0) return 'Standard (1.00x)';
     if (multiplier > 1.0) {
@@ -24,6 +28,7 @@ const formatMultiplierDisplay = (multiplier: number): string => {
     const percentage = Math.round((1 - multiplier) * 100);
     return `-${percentage}% (${multiplier.toFixed(2)}x)`;
 };
+
 const isValidMultiplierText = (value: string): boolean => {
     // Allow empty while typing, or numbers with optional single decimal point.
     // Examples allowed: "", "1", "1.", "1.2", "0.75", ".5"
@@ -37,6 +42,8 @@ const parseMultiplierOrNull = (value: string): number | null => {
     return Number.isFinite(parsed) ? parsed : null;
 };
 
+const formatMultiplier = (n: number) => n.toFixed(2);
+
 export default () => {
     const { clearFlashes, addFlash } = useFlash();
     const [nodes, setNodes] = useState<NodePricing[]>([]);
@@ -48,6 +55,7 @@ export default () => {
 
     useEffect(() => {
         void loadNodePricing();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadNodePricing = async () => {
@@ -58,8 +66,7 @@ export default () => {
 
             const multipliers: Record<number, string> = {};
             data.forEach(node => {
-                // Keep consistent display, but still editable
-                multipliers[node.id] = Number(node.price_multiplier).toFixed(2);
+                multipliers[node.id] = formatMultiplier(Number(node.price_multiplier));
             });
             setLocalMultipliers(multipliers);
         } catch (error) {
@@ -75,44 +82,64 @@ export default () => {
     };
 
     const handleMultiplierChange = (nodeId: number, value: string) => {
-        // Only allow valid numeric typing patterns, otherwise ignore the keystroke
+        // Block non-numeric patterns (letters, multiple decimals, etc.)
         if (!isValidMultiplierText(value)) return;
 
-        setLocalMultipliers(prev => ({
-            ...prev,
-            [nodeId]: value,
-        }));
+        // Allow in-progress states like "", ".", "1." with no range enforcement yet.
+        const parsed = parseMultiplierOrNull(value);
+        if (parsed !== null) {
+            // Range enforcement while typing:
+            // If you prefer allowing out-of-range typing and only clamping on blur/save,
+            // remove this block.
+            if (parsed < 0 || parsed > MAX_MULTIPLIER) return;
+        }
+
+        setLocalMultipliers(prev => ({ ...prev, [nodeId]: value }));
     };
+
+    const handleMultiplierBlur = (nodeId: number, fallback: number) => {
+        const raw = localMultipliers[nodeId] ?? '';
+        const parsed = parseMultiplierOrNull(raw);
+
+        // If empty/invalid on blur, revert to previous value (from node) rather than forcing 1.00
+        if (parsed === null) {
+            setLocalMultipliers(prev => ({ ...prev, [nodeId]: formatMultiplier(fallback) }));
+            return;
+        }
+
+        const clamped = clamp(parsed, 0, MAX_MULTIPLIER);
+        setLocalMultipliers(prev => ({ ...prev, [nodeId]: formatMultiplier(clamped) }));
+    };
+
     const validateBeforeSave = (): { ok: boolean; message?: string } => {
-        const invalidNodes: string[] = [];
-        const negativeNodes: string[] = [];
+        const invalid: string[] = [];
+        const outOfRange: string[] = [];
 
         for (const node of nodes) {
             const raw = localMultipliers[node.id] ?? '';
             const parsed = parseMultiplierOrNull(raw);
 
-            // Disallow empty on save (force an actual value)
             if (parsed === null) {
-                invalidNodes.push(node.name);
+                invalid.push(node.name);
                 continue;
             }
 
-            if (parsed < 0) {
-                negativeNodes.push(node.name);
+            if (parsed < 0 || parsed > MAX_MULTIPLIER) {
+                outOfRange.push(node.name);
             }
         }
 
-        if (negativeNodes.length) {
+        if (invalid.length) {
             return {
                 ok: false,
-                message: `Invalid multiplier (must be ≥ 0) for: ${negativeNodes.join(', ')}`,
+                message: `Multiplier cannot be empty/invalid for: ${invalid.join(', ')}`,
             };
         }
 
-        if (invalidNodes.length) {
+        if (outOfRange.length) {
             return {
                 ok: false,
-                message: `Multiplier cannot be empty for: ${invalidNodes.join(', ')}`,
+                message: `Multiplier must be between 0 and ${MAX_MULTIPLIER} for: ${outOfRange.join(', ')}`,
             };
         }
 
@@ -137,12 +164,15 @@ export default () => {
         try {
             const updates = nodes
                 .map(node => {
-                    const raw = localMultipliers[node.id] ?? node.price_multiplier.toFixed(2);
+                    const raw = localMultipliers[node.id] ?? formatMultiplier(node.price_multiplier);
                     const parsed = parseMultiplierOrNull(raw);
+
+                    // parsed should never be null here due to validateBeforeSave, but safe anyway
+                    const clamped = parsed === null ? node.price_multiplier : clamp(parsed, 0, MAX_MULTIPLIER);
 
                     return {
                         id: node.id,
-                        price_multiplier: parsed ?? node.price_multiplier,
+                        price_multiplier: clamped,
                         original: node.price_multiplier,
                     };
                 })
@@ -238,8 +268,7 @@ export default () => {
         if (raw === undefined) return false;
 
         const parsed = parseMultiplierOrNull(raw);
-        // If empty/invalid, count as change so user sees “unsaved changes”
-        if (parsed === null) return true;
+        if (parsed === null) return true; // counts as unsaved/invalid change
 
         return parsed !== node.price_multiplier;
     });
@@ -265,7 +294,8 @@ export default () => {
     return (
         <AdminBox title={'Node Pricing Multipliers'} icon={faMapMarkerAlt}>
             <p className={'mb-4 text-gray-400'}>
-                Configure location-based pricing for each node. The final checkout price will be multiplied by the selected node's multiplier.
+                Configure location-based pricing for each node. The final checkout price will be multiplied by the selected node&apos;s multiplier.
+                Allowed range: <strong>0.00</strong> to <strong>{MAX_MULTIPLIER.toFixed(2)}</strong>.
             </p>
 
             <div css={tw`overflow-x-auto mb-4`}>
@@ -280,14 +310,15 @@ export default () => {
                     </thead>
                     <tbody>
                         {nodes.map(node => {
-                            const raw = localMultipliers[node.id] ?? node.price_multiplier.toFixed(2);
+                            const raw = localMultipliers[node.id] ?? formatMultiplier(node.price_multiplier);
                             const parsed = parseMultiplierOrNull(raw);
-                            const multiplierForDisplay = parsed ?? 1.0;
 
-                            const hasChanged =
-                                parsed === null ? true : parsed !== node.price_multiplier;
+                            const isEmpty = raw.trim() === '';
+                            const isInvalid = !isEmpty && parsed === null;
+                            const isOutOfRange = parsed !== null && (parsed < 0 || parsed > MAX_MULTIPLIER);
 
-                            const isInvalid = raw.trim() !== '' && parsed === null;
+                            const multiplierForDisplay = parsed === null ? node.price_multiplier : parsed;
+                            const hasChanged = parsed === null ? true : parsed !== node.price_multiplier;
 
                             return (
                                 <tr
@@ -315,18 +346,21 @@ export default () => {
                                                 inputMode="decimal"
                                                 value={raw}
                                                 onChange={e => handleMultiplierChange(node.id, e.target.value)}
+                                                onBlur={() => handleMultiplierBlur(node.id, node.price_multiplier)}
                                                 disabled={saving}
                                                 css={[
                                                     tw`w-24`,
-                                                    isInvalid && tw`border-red-500`,
+                                                    (isInvalid || isOutOfRange) && tw`border-red-500`,
                                                 ]}
                                                 placeholder="1.00"
                                             />
                                             <span css={tw`text-xs text-neutral-400`}>x</span>
                                         </div>
-                                        {isInvalid && (
+
+                                        {(isInvalid || isOutOfRange) && (
                                             <div css={tw`text-xs text-red-400 mt-1`}>
-                                                Invalid number
+                                                {isInvalid && 'Invalid number'}
+                                                {isOutOfRange && `Must be 0.00–${MAX_MULTIPLIER.toFixed(2)}`}
                                             </div>
                                         )}
                                     </td>
@@ -365,8 +399,10 @@ export default () => {
 
             <Alert type={'info'} className={'mt-4'}>
                 <strong>How it works:</strong> When a customer selects a node during checkout, the final price is calculated as:
-                <code css={tw`mx-1 px-1 bg-neutral-700 rounded`}>base_price × billing_cycle_multiplier × node_multiplier</code>.
-                For example, a $10/month product with 1.15x node multiplier would cost $11.50/month at that location.
+                <code css={tw`mx-1 px-1 bg-neutral-700 rounded`}>
+                    base_price × billing_cycle_multiplier × node_multiplier
+                </code>
+                . For example, a $10/month product with a 1.15x node multiplier would cost $11.50/month at that location.
             </Alert>
 
             <div className={'mt-6 flex justify-between'}>
