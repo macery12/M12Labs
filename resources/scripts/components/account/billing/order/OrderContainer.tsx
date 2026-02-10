@@ -461,6 +461,7 @@ export default () => {
                             >
                                 <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
                                 <input
+                                    id={'server-name-input'}
                                     type={'text'}
                                     placeholder={'Enter a name for your server'}
                                     value={serverName}
@@ -470,20 +471,24 @@ export default () => {
                                     }}
                                     required
                                     maxLength={191}
+                                    aria-invalid={serverNameTouched && !serverName.trim()}
+                                    aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
                                     className={classNames(
                                         'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                         'text-gray-200 placeholder-gray-500',
                                         'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                                        serverName.trim() 
-                                            ? 'border-green-500 focus:border-green-500' 
-                                            : 'border-red-500 focus:border-red-500',
+                                        !serverNameTouched 
+                                            ? 'border-gray-600' 
+                                            : serverName.trim() 
+                                                ? 'border-green-500 focus:border-green-500' 
+                                                : 'border-red-500 focus:border-red-500',
                                     )}
                                     style={{
                                         backgroundColor: colors.secondary,
                                     }}
                                 />
-                                {!serverName.trim() && (
-                                    <p className={'mt-2 text-xs text-red-400'}>
+                                {serverNameTouched && !serverName.trim() && (
+                                    <p id={'server-name-error'} className={'mt-2 text-xs text-red-400'} role={'alert'}>
                                         Server name is required to continue
                                     </p>
                                 )}
