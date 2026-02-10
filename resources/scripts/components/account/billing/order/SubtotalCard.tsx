@@ -73,12 +73,12 @@ export default ({
                             <span className={'text-gray-200 font-medium'}>{selectedNodeData.name}</span>
                             {hasNodePremium && (
                                 <span className={'text-xs text-red-400'}>
-                                    +{((selectedNodeData.priceMultiplier - 1) * 100).toFixed(0)}%
+                                    +{(((selectedNodeData.priceMultiplier ?? 1.0) - 1) * 100).toFixed(0)}%
                                 </span>
                             )}
                             {hasNodeDiscount && (
                                 <span className={'text-xs text-green-400'}>
-                                    {((selectedNodeData.priceMultiplier - 1) * 100).toFixed(0)}%
+                                    {(((selectedNodeData.priceMultiplier ?? 1.0) - 1) * 100).toFixed(0)}%
                                 </span>
                             )}
                         </div>

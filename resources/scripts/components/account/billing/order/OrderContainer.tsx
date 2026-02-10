@@ -9,13 +9,9 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
-import PriceBreakdown from '@account/billing/order/PriceBreakdown';
 import SubtotalCard from '@account/billing/order/SubtotalCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faArchive,
-    faDatabase,
-    faEthernet,
     faExternalLinkAlt,
     faHdd,
     faMemory,
@@ -27,7 +23,6 @@ import {
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
 import PaymentMethodSelector from './PaymentMethodSelector';
-import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
@@ -356,19 +351,6 @@ export default () => {
 
     // Render different content based on current step
     const renderStepContent = () => {
-        let actualStep = currentStep;
-        
-        // Adjust step numbers if egg selection is skipped
-        if (availableEggs.length <= 1 && currentStep >= 2) {
-            actualStep++;
-        }
-        
-        // Adjust if variables are skipped
-        const hasEditableVars = eggs && eggs.some(v => v.isEditable);
-        if (!hasEditableVars && currentStep >= (availableEggs.length > 1 ? 4 : 3)) {
-            actualStep++;
-        }
-
         switch (currentStep) {
             case 1: // Node Selection
                 return (
@@ -468,11 +450,6 @@ export default () => {
             default: // Review & Name Server
                 const finalStep = getTotalSteps();
                 if (currentStep === finalStep) {
-                    const getCurrentPrice = () => {
-                        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
-                    };
-
                     return (
                         <div className={'space-y-6'}>
                             <div>
@@ -668,11 +645,6 @@ export default () => {
 
                 // Payment step
                 if (currentStep === finalStep + 1) {
-                    const getCurrentPrice = () => {
-                        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
-                    };
-
                     return (
                         <div className={'space-y-6'}>
                             <div>
