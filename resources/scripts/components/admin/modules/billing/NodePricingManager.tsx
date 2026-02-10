@@ -2,19 +2,17 @@ import { useState, useEffect } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { faMapMarkerAlt, faUndo, faRedo, faSave } from '@fortawesome/free-solid-svg-icons';
-import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import useFlash from '@/plugins/useFlash';
 import { Alert } from '@/elements/alert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import tw from 'twin.macro';
-import { 
-    getNodePricing, 
-    updateNodePricing, 
-    batchUpdateNodePricing, 
-    resetNodePricing, 
+import {
+    getNodePricing,
+    batchUpdateNodePricing,
+    resetNodePricing,
     resetAllNodePricing,
-    NodePricing 
+    NodePricing,
 } from '@/api/routes/admin/billing/nodePricing';
 
 const formatMultiplierDisplay = (multiplier: number): string => {
@@ -26,16 +24,30 @@ const formatMultiplierDisplay = (multiplier: number): string => {
     const percentage = Math.round((1 - multiplier) * 100);
     return `-${percentage}% (${multiplier.toFixed(2)}x)`;
 };
+const isValidMultiplierText = (value: string): boolean => {
+    // Allow empty while typing, or numbers with optional single decimal point.
+    // Examples allowed: "", "1", "1.", "1.2", "0.75", ".5"
+    if (value === '') return true;
+    return /^(\d+(\.\d*)?|\.\d*)$/.test(value);
+};
+
+const parseMultiplierOrNull = (value: string): number | null => {
+    if (value.trim() === '') return null;
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
 
 export default () => {
     const { clearFlashes, addFlash } = useFlash();
     const [nodes, setNodes] = useState<NodePricing[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [localMultipliers, setLocalMultipliers] = useState<Record<number, number>>({});
+
+    // Store as STRING so users can type decimals like "1." without it collapsing to "1"
+    const [localMultipliers, setLocalMultipliers] = useState<Record<number, string>>({});
 
     useEffect(() => {
-        loadNodePricing();
+        void loadNodePricing();
     }, []);
 
     const loadNodePricing = async () => {
@@ -43,11 +55,11 @@ export default () => {
             setLoading(true);
             const data = await getNodePricing();
             setNodes(data);
-            
-            // Initialize local multipliers
-            const multipliers: Record<number, number> = {};
+
+            const multipliers: Record<number, string> = {};
             data.forEach(node => {
-                multipliers[node.id] = node.price_multiplier;
+                // Keep consistent display, but still editable
+                multipliers[node.id] = Number(node.price_multiplier).toFixed(2);
             });
             setLocalMultipliers(multipliers);
         } catch (error) {
@@ -63,25 +75,79 @@ export default () => {
     };
 
     const handleMultiplierChange = (nodeId: number, value: string) => {
-        // Just store whatever value the user types - backend will validate
+        // Only allow valid numeric typing patterns, otherwise ignore the keystroke
+        if (!isValidMultiplierText(value)) return;
+
         setLocalMultipliers(prev => ({
             ...prev,
-            [nodeId]: value === '' ? 0 : parseFloat(value) || 0,
+            [nodeId]: value,
         }));
+    };
+    const validateBeforeSave = (): { ok: boolean; message?: string } => {
+        const invalidNodes: string[] = [];
+        const negativeNodes: string[] = [];
+
+        for (const node of nodes) {
+            const raw = localMultipliers[node.id] ?? '';
+            const parsed = parseMultiplierOrNull(raw);
+
+            // Disallow empty on save (force an actual value)
+            if (parsed === null) {
+                invalidNodes.push(node.name);
+                continue;
+            }
+
+            if (parsed < 0) {
+                negativeNodes.push(node.name);
+            }
+        }
+
+        if (negativeNodes.length) {
+            return {
+                ok: false,
+                message: `Invalid multiplier (must be ≥ 0) for: ${negativeNodes.join(', ')}`,
+            };
+        }
+
+        if (invalidNodes.length) {
+            return {
+                ok: false,
+                message: `Multiplier cannot be empty for: ${invalidNodes.join(', ')}`,
+            };
+        }
+
+        return { ok: true };
     };
 
     const handleSaveAll = async () => {
         clearFlashes('admin:billing:node-pricing');
+
+        const validation = validateBeforeSave();
+        if (!validation.ok) {
+            addFlash({
+                key: 'admin:billing:node-pricing',
+                type: 'error',
+                message: validation.message || 'Please fix invalid multipliers before saving.',
+            });
+            return;
+        }
+
         setSaving(true);
 
         try {
-            // Build array of updates
             const updates = nodes
-                .filter(node => localMultipliers[node.id] !== node.price_multiplier)
-                .map(node => ({
-                    id: node.id,
-                    price_multiplier: localMultipliers[node.id],
-                }));
+                .map(node => {
+                    const raw = localMultipliers[node.id] ?? node.price_multiplier.toFixed(2);
+                    const parsed = parseMultiplierOrNull(raw);
+
+                    return {
+                        id: node.id,
+                        price_multiplier: parsed ?? node.price_multiplier,
+                        original: node.price_multiplier,
+                    };
+                })
+                .filter(u => u.price_multiplier !== u.original)
+                .map(({ id, price_multiplier }) => ({ id, price_multiplier }));
 
             if (updates.length === 0) {
                 addFlash({
@@ -89,13 +155,10 @@ export default () => {
                     type: 'info',
                     message: 'No changes to save.',
                 });
-                setSaving(false);
                 return;
             }
 
             await batchUpdateNodePricing(updates);
-            
-            // Reload data to get updated values
             await loadNodePricing();
 
             addFlash({
@@ -142,7 +205,7 @@ export default () => {
 
     const handleResetAll = async () => {
         clearFlashes('admin:billing:node-pricing');
-        
+
         if (!confirm('Are you sure you want to reset all node pricing multipliers to 1.00x?')) {
             return;
         }
@@ -170,7 +233,16 @@ export default () => {
         }
     };
 
-    const hasChanges = nodes.some(node => localMultipliers[node.id] !== node.price_multiplier);
+    const hasChanges = nodes.some(node => {
+        const raw = localMultipliers[node.id];
+        if (raw === undefined) return false;
+
+        const parsed = parseMultiplierOrNull(raw);
+        // If empty/invalid, count as change so user sees “unsaved changes”
+        if (parsed === null) return true;
+
+        return parsed !== node.price_multiplier;
+    });
 
     if (loading) {
         return (
@@ -200,28 +272,26 @@ export default () => {
                 <table css={tw`w-full border-collapse`}>
                     <thead>
                         <tr css={tw`border-b-2 border-neutral-600`}>
-                            <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
-                                Node
-                            </th>
-                            <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
-                                Pricing Multiplier
-                            </th>
-                            <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
-                                Effect on Price
-                            </th>
-                            <th css={tw`text-right py-3 px-4 text-neutral-300 font-semibold`}>
-                                Actions
-                            </th>
+                            <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>Node</th>
+                            <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>Pricing Multiplier</th>
+                            <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>Effect on Price</th>
+                            <th css={tw`text-right py-3 px-4 text-neutral-300 font-semibold`}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {nodes.map((node) => {
-                            const currentMultiplier = localMultipliers[node.id] ?? 1.0;
-                            const hasChanged = currentMultiplier !== node.price_multiplier;
-                            
+                        {nodes.map(node => {
+                            const raw = localMultipliers[node.id] ?? node.price_multiplier.toFixed(2);
+                            const parsed = parseMultiplierOrNull(raw);
+                            const multiplierForDisplay = parsed ?? 1.0;
+
+                            const hasChanged =
+                                parsed === null ? true : parsed !== node.price_multiplier;
+
+                            const isInvalid = raw.trim() !== '' && parsed === null;
+
                             return (
-                                <tr 
-                                    key={node.id} 
+                                <tr
+                                    key={node.id}
                                     css={[
                                         tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`,
                                         hasChanged && tw`bg-neutral-800`,
@@ -237,37 +307,49 @@ export default () => {
                                             </span>
                                         </div>
                                     </td>
+
                                     <td css={tw`py-3 px-4`}>
                                         <div css={tw`flex items-center gap-2`}>
                                             <Input
                                                 type={'text'}
-                                                value={currentMultiplier}
+                                                inputMode="decimal"
+                                                value={raw}
                                                 onChange={e => handleMultiplierChange(node.id, e.target.value)}
                                                 disabled={saving}
-                                                css={tw`w-24`}
+                                                css={[
+                                                    tw`w-24`,
+                                                    isInvalid && tw`border-red-500`,
+                                                ]}
                                                 placeholder="1.00"
                                             />
                                             <span css={tw`text-xs text-neutral-400`}>x</span>
                                         </div>
+                                        {isInvalid && (
+                                            <div css={tw`text-xs text-red-400 mt-1`}>
+                                                Invalid number
+                                            </div>
+                                        )}
                                     </td>
+
                                     <td css={tw`py-3 px-4`}>
-                                        <span 
+                                        <span
                                             css={[
                                                 tw`font-medium`,
-                                                currentMultiplier === 1.0 && tw`text-blue-400`,
-                                                currentMultiplier > 1.0 && tw`text-red-400`,
-                                                currentMultiplier < 1.0 && tw`text-green-400`,
+                                                multiplierForDisplay === 1.0 && tw`text-blue-400`,
+                                                multiplierForDisplay > 1.0 && tw`text-red-400`,
+                                                multiplierForDisplay < 1.0 && tw`text-green-400`,
                                             ]}
                                         >
-                                            {formatMultiplierDisplay(currentMultiplier)}
+                                            {formatMultiplierDisplay(multiplierForDisplay)}
                                         </span>
                                     </td>
+
                                     <td css={tw`py-3 px-4 text-right`}>
                                         <Button
                                             type="button"
                                             onClick={() => handleReset(node.id)}
                                             className="!bg-neutral-600 hover:!bg-neutral-500"
-                                            disabled={saving || currentMultiplier === 1.0}
+                                            disabled={saving || Number(node.price_multiplier) === 1.0}
                                             size="small"
                                         >
                                             <FontAwesomeIcon icon={faUndo} className="mr-2" />
@@ -282,8 +364,8 @@ export default () => {
             </div>
 
             <Alert type={'info'} className={'mt-4'}>
-                <strong>How it works:</strong> When a customer selects a node during checkout, the final price is calculated as: 
-                <code css={tw`mx-1 px-1 bg-neutral-700 rounded`}>base_price × billing_cycle_multiplier × node_multiplier</code>. 
+                <strong>How it works:</strong> When a customer selects a node during checkout, the final price is calculated as:
+                <code css={tw`mx-1 px-1 bg-neutral-700 rounded`}>base_price × billing_cycle_multiplier × node_multiplier</code>.
                 For example, a $10/month product with 1.15x node multiplier would cost $11.50/month at that location.
             </Alert>
 
