@@ -10,6 +10,7 @@ import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
 import PriceBreakdown from '@account/billing/order/PriceBreakdown';
+import SubtotalCard from '@account/billing/order/SubtotalCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArchive,
@@ -475,9 +476,9 @@ export default () => {
                     return (
                         <div className={'space-y-6'}>
                             <div>
-                                <h2 className={'text-3xl font-bold text-gray-100'}>Review Your Order</h2>
+                                <h2 className={'text-3xl font-bold text-gray-100'}>Review & Confirm</h2>
                                 <p className={'mt-2 text-gray-400'}>
-                                    Review your selections and name your server before proceeding to payment.
+                                    Almost done! Name your server and review your order.
                                 </p>
                             </div>
 
@@ -487,7 +488,7 @@ export default () => {
                                 style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
                                 <div className={'mb-4 flex items-center justify-between'}>
-                                    <h3 className={'text-xl font-bold text-gray-200'}>Server Name</h3>
+                                    <h3 className={'text-lg font-semibold text-gray-200'}>Server Name</h3>
                                     <button
                                         onClick={() => {
                                             const name = generateServerName();
@@ -530,95 +531,57 @@ export default () => {
                                 )}
                             </div>
 
-                            {/* Order Summary */}
+                            {/* Server Configuration Overview */}
                             <div
                                 className={'rounded-lg border p-6'}
                                 style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
-                                
-                                <div className={'space-y-4'}>
-                                    <div className={'flex items-start justify-between'}>
-                                        <div className={'flex items-center gap-3'}>
-                                            {product.icon && (
-                                                <img src={product.icon} className={'h-12 w-12 rounded'} alt={product.name} />
-                                            )}
-                                            <div>
-                                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
-                                                <p className={'text-sm text-gray-400'}>
-                                                    {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
-                                                </p>
-                                            </div>
+                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Configuration</h3>
+                                <div className={'space-y-3'}>
+                                    {/* Product with Icon */}
+                                    <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
+                                        {product.icon && (
+                                            <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
+                                        )}
+                                        <div>
+                                            <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                            <p className={'text-sm text-gray-400'}>
+                                                {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className={'border-t border-gray-700 pt-4'}>
-                                        <div className={'grid grid-cols-2 gap-4'}>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>Location</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>
-                                                    {nodes?.find(n => Number(n.id) === selectedNode)?.name}
-                                                </p>
-                                            </div>
-                                            {availableEggs.length > 1 && (
-                                                <div>
-                                                    <p className={'text-xs text-gray-500'}>Server Type</p>
-                                                    <p className={'text-sm font-medium text-gray-200'}>
-                                                        {availableEggs.find(e => e.id === selectedEggId)?.name}
-                                                    </p>
-                                                </div>
-                                            )}
+                                    {/* Resources Grid */}
+                                    <div className={'grid grid-cols-3 gap-4 pt-2'}>
+                                        <div className={'text-center'}>
+                                            <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                            <p className={'text-xs text-gray-500'}>CPU</p>
+                                            <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
                                         </div>
-                                    </div>
-
-                                    <div className={'border-t border-gray-700 pt-4'}>
-                                        <div className={'grid grid-cols-3 gap-4'}>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>CPU</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
-                                            </div>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>RAM</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>
-                                                    {(product.limits.memory / 1024).toFixed(1)} GB
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>Storage</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>
-                                                    {(product.limits.disk / 1024).toFixed(1)} GB
-                                                </p>
-                                            </div>
+                                        <div className={'text-center'}>
+                                            <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                            <p className={'text-xs text-gray-500'}>RAM</p>
+                                            <p className={'text-sm font-medium text-gray-200'}>
+                                                {(product.limits.memory / 1024).toFixed(1)} GB
+                                            </p>
+                                        </div>
+                                        <div className={'text-center'}>
+                                            <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                            <p className={'text-xs text-gray-500'}>Storage</p>
+                                            <p className={'text-sm font-medium text-gray-200'}>
+                                                {(product.limits.disk / 1024).toFixed(1)} GB
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Price Breakdown */}
-                            {product.price !== 0 && (() => {
-                                const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                                const selectedNodeData = nodes?.find(n => Number(n.id) === selectedNode);
-                                
-                                return (
-                                    <PriceBreakdown
-                                        basePrice={product.price}
-                                        billingDays={selectedBillingDays}
-                                        billingMultiplier={selectedCycle?.multiplier || 1.0}
-                                        billingDiscountPercent={selectedCycle?.discountPercent || 0}
-                                        nodeMultiplier={selectedNodeData?.priceMultiplier || 1.0}
-                                        nodeName={selectedNodeData?.name}
-                                        couponDiscount={couponData?.discount || 0}
-                                        couponCode={couponData?.coupon.code}
-                                    />
-                                );
-                            })()}
 
                             {/* Legal Agreements */}
                             <div
                                 className={'rounded-lg border p-6'}
                                 style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
+                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Terms & Conditions</h3>
                                 <div
                                     className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
                                     style={
@@ -681,7 +644,7 @@ export default () => {
                                         aria-label={showCoupon ? 'Hide coupon code input' : 'Show coupon code input'}
                                         aria-expanded={showCoupon}
                                     >
-                                        <h3 className={'text-lg font-bold text-gray-200'}>
+                                        <h3 className={'text-lg font-semibold text-gray-200'}>
                                             {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
                                         </h3>
                                         <FontAwesomeIcon 
@@ -773,10 +736,34 @@ export default () => {
             {/* Progress Stepper */}
             <CheckoutStepper steps={getWizardSteps()} />
 
-            {/* Main Wizard Content */}
+            {/* Main Wizard Content with Two-Column Layout */}
             <div className={'mt-10'}>
-                <div className={'mx-auto max-w-4xl'}>
-                    {renderStepContent()}
+                <div className={'mx-auto max-w-7xl'}>
+                    <div className={'grid grid-cols-1 lg:grid-cols-3 gap-8'}>
+                        {/* Left Column - Main Content */}
+                        <div className={'lg:col-span-2'}>
+                            {renderStepContent()}
+                        </div>
+                        
+                        {/* Right Column - Sticky Subtotal Card */}
+                        <div className={'lg:col-span-1'}>
+                            <div className={'sticky top-4'}>
+                                <SubtotalCard
+                                    basePrice={product.price}
+                                    selectedNode={selectedNode}
+                                    nodes={nodes}
+                                    selectedEggId={selectedEggId}
+                                    availableEggs={availableEggs}
+                                    selectedBillingDays={selectedBillingDays}
+                                    billingCycles={billingCycles}
+                                    couponDiscount={couponData?.discount || 0}
+                                    couponCode={couponData?.coupon.code}
+                                    productName={product.name}
+                                    showDetailedBreakdown={currentStep === getTotalSteps()}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
