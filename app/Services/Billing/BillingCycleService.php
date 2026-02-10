@@ -14,12 +14,13 @@ class BillingCycleService
      * 
      * @param Product $product
      * @param int $billingDays
+     * @param int|null $nodeId Optional node ID to apply node pricing multiplier
      * @return array
      */
-    public function calculatePrice(Product $product, int $billingDays): array
+    public function calculatePrice(Product $product, int $billingDays, ?int $nodeId = null): array
     {
-        // Use the product's calculatePrice method
-        return $product->calculatePrice($billingDays);
+        // Use the product's calculatePrice method with optional node ID
+        return $product->calculatePrice($billingDays, $nodeId);
     }
 
     /**
