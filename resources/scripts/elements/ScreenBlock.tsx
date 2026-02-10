@@ -22,6 +22,7 @@ interface BaseProps {
     message: string;
     onRetry?: () => void;
     onBack?: () => void;
+    children?: React.ReactNode;
 }
 
 interface PropsWithRetry extends BaseProps {
@@ -48,7 +49,7 @@ const ActionButton = styled(Button)`
     }
 `;
 
-const ScreenBlock = ({ title, image, message, onBack, onRetry }: ScreenBlockProps) => {
+const ScreenBlock = ({ title, image, message, onBack, onRetry, children }: ScreenBlockProps) => {
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
     return (
@@ -71,6 +72,7 @@ const ScreenBlock = ({ title, image, message, onBack, onRetry }: ScreenBlockProp
                     <img src={image} css={tw`w-2/3 h-auto select-none mx-auto`} />
                     <h2 css={tw`mt-10 text-white font-bold text-4xl`}>{title}</h2>
                     <p css={tw`text-sm text-neutral-400 mt-2`}>{message}</p>
+                    {children}
                 </div>
             </div>
         </PageContentBlock>
@@ -113,6 +115,7 @@ const Suspended = ({
     const currency = useStoreState(state => state.everest.data!.billing.currency.symbol);
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const settings = useStoreState(state => state.everest.data!.billing);
+    const rootAdmin = useStoreState(state => state.user.data!.rootAdmin);
 
     useEffect(() => {
         if (id) {
@@ -156,6 +159,14 @@ const Suspended = ({
     const daysOverdue = Math.max(0, Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)));
     const isLongOverdue = daysOverdue > suspensionThreshold;
 
+    const handleAdminBypass = () => {
+        if (!serverUuid) return;
+        // Store bypass state in session storage so it persists during the session
+        sessionStorage.setItem(`admin_bypass_${serverUuid}`, 'true');
+        // Navigate to the server to trigger reload
+        navigate(`/server/${serverUuid}`);
+    };
+
     return (
         <PageContentBlock>
             <div css={tw`flex justify-center`}>
@@ -169,6 +180,16 @@ const Suspended = ({
                         </ActionButton>
                     </div>
                     <h2 css={tw`text-white font-bold text-4xl`}>{isFree ? 'Suspended' : 'Suspended'}</h2>
+                    {rootAdmin && (
+                        <div css={tw`mt-4`}>
+                            <Button onClick={handleAdminBypass} size={Button.Sizes.Large} variant={Button.Variants.Secondary}>
+                                Admin Bypass
+                            </Button>
+                            <p css={tw`text-xs text-neutral-500 mt-2`}>
+                                This will bypass the suspension screen without unsuspending the server.
+                            </p>
+                        </div>
+                    )}
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>

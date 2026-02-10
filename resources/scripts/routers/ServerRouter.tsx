@@ -81,15 +81,22 @@ function ServerRouter() {
         };
     }, [params.id]);
 
-    if (billable && server.renewalDate && server.renewalDate.getTime() < new Date().getTime())
-        return (
-            <Suspended
-                id={server.billingProductId}
-                date={server.renewalDate}
-                serverId={server.internalId}
-                serverUuid={server.uuid}
-            />
-        );
+    if (billable && server.renewalDate && server.renewalDate.getTime() < new Date().getTime()) {
+        // Check if admin has bypassed the suspension screen
+        const bypassKey = `admin_bypass_${server.uuid}`;
+        const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
+        
+        if (!isBypassed) {
+            return (
+                <Suspended
+                    id={server.billingProductId}
+                    date={server.renewalDate}
+                    serverId={server.internalId}
+                    serverUuid={server.uuid}
+                />
+            );
+        }
+    }
 
     return (
         <Fragment key={'server-router'}>
@@ -200,7 +207,33 @@ function ServerRouter() {
                         <NavigationBar />
                         {inConflictState &&
                         (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${server?.id}`))) ? (
-                            <ConflictStateRenderer />
+                            (() => {
+                                // Check if admin has bypassed the conflict screen
+                                const bypassKey = `admin_bypass_conflict_${server.uuid}`;
+                                const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
+                                
+                                return !isBypassed ? <ConflictStateRenderer /> : (
+                                    <ErrorBoundary>
+                                        <Routes location={location}>
+                                            {routes.server.map(({ route, permission, component: Component }) => (
+                                                <Route
+                                                    key={route}
+                                                    path={route}
+                                                    element={
+                                                        <PermissionRoute permission={permission}>
+                                                            <Spinner.Suspense>
+                                                                <Component />
+                                                            </Spinner.Suspense>
+                                                        </PermissionRoute>
+                                                    }
+                                                />
+                                            ))}
+
+                                            <Route path="*" element={<NotFound />} />
+                                        </Routes>
+                                    </ErrorBoundary>
+                                );
+                            })()
                         ) : (
                             <ErrorBoundary>
                                 <Routes location={location}>
