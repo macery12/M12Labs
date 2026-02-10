@@ -3,7 +3,15 @@ import { nanoid } from 'nanoid';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import { faCalendar, faDollarSign, faPlus, faTrash, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
+import {
+    faCalendar,
+    faDollarSign,
+    faPlus,
+    faTrash,
+    faMapMarkerAlt,
+    faInfoCircle,
+    faCalculator,
+} from '@fortawesome/free-solid-svg-icons';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import { updateSettings } from '@/api/routes/admin/billing';
@@ -208,26 +216,47 @@ export default () => {
                             </div>
                         </AdminBox>
 
-                        <div css={tw`bg-neutral-800 border border-neutral-700 rounded-lg p-6`}>
-                            <h3 css={tw`text-lg font-semibold text-neutral-100 mb-3 flex items-center gap-2`}>
-                                <FontAwesomeIcon icon={faDollarSign} css={tw`text-neutral-400`} />
-                                Quick Reference
-                            </h3>
-                            <div css={tw`space-y-2 text-sm`}>
-                                <div css={tw`flex justify-between items-center py-2 border-b border-neutral-700`}>
-                                    <span css={tw`text-neutral-400`}>Shorter billing cycles:</span>
-                                    <span css={tw`text-red-400 font-medium`}>Higher multiplier (premium)</span>
+                        <AdminBox title={'Pricing Rules Summary'} icon={faInfoCircle}>
+                            <div className={'space-y-4 text-sm'}>
+                                <div>
+                                    <h4 className={'mb-2 flex items-center gap-2 font-medium text-gray-300'}>
+                                        <FontAwesomeIcon icon={faCalculator} className={'text-blue-400'} />
+                                        How Multipliers Work
+                                    </h4>
+                                    <p className={'text-xs text-gray-400'}>
+                                        Billing cycle multipliers adjust pricing based on subscription length. The
+                                        system finds the first step where the billing days are ≤ maxDays and applies
+                                        that multiplier to the base price.
+                                    </p>
                                 </div>
-                                <div css={tw`flex justify-between items-center py-2 border-b border-neutral-700`}>
-                                    <span css={tw`text-neutral-400`}>Standard billing cycle:</span>
-                                    <span css={tw`text-blue-400 font-medium`}>1.00x multiplier</span>
+
+                                <div className={'space-y-2'}>
+                                    <div className={'flex items-center justify-between rounded border-l-4 border-red-500/50 bg-red-500/10 px-3 py-2'}>
+                                        <span className={'text-gray-300'}>Short cycles (≤14 days)</span>
+                                        <span className={'font-semibold text-red-400'}>Premium +20-30%</span>
+                                    </div>
+                                    <div className={'flex items-center justify-between rounded border-l-4 border-blue-500/50 bg-blue-500/10 px-3 py-2'}>
+                                        <span className={'text-gray-300'}>Standard (30 days)</span>
+                                        <span className={'font-semibold text-blue-400'}>Base Price 1.00x</span>
+                                    </div>
+                                    <div className={'flex items-center justify-between rounded border-l-4 border-green-500/50 bg-green-500/10 px-3 py-2'}>
+                                        <span className={'text-gray-300'}>Long cycles (90+ days)</span>
+                                        <span className={'font-semibold text-green-400'}>Discount -10-15%</span>
+                                    </div>
                                 </div>
-                                <div css={tw`flex justify-between items-center py-2`}>
-                                    <span css={tw`text-neutral-400`}>Longer billing cycles:</span>
-                                    <span css={tw`text-green-400 font-medium`}>Lower multiplier (discount)</span>
+
+                                <div className={'rounded border border-blue-500/20 bg-blue-500/5 p-3'}>
+                                    <h5 className={'mb-1 text-xs font-medium text-blue-300'}>Example Calculation</h5>
+                                    <p className={'text-xs text-gray-400'}>
+                                        A $10/month product with a 60-day billing cycle (0.95x multiplier):
+                                        <br />
+                                        <span className={'mt-1 block font-mono text-gray-300'}>
+                                            $10.00 × 2 months × 0.95 = ${(10 * 2 * 0.95).toFixed(2)}
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
-                        </div>
+                        </AdminBox>
                     </div>
 
                     <AdminBox title={'Price Adjustment Steps'} icon={faDollarSign}>
