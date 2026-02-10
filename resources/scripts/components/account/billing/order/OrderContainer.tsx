@@ -7,7 +7,6 @@ import EggBox from '@account/billing/order/EggBox';
 import BillingCycleBox from '@account/billing/order/BillingCycleBox';
 import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
-import CouponInput from '@account/billing/order/CouponInput';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
 import SubtotalCard from '@account/billing/order/SubtotalCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,9 +15,6 @@ import {
     faHdd,
     faMemory,
     faMicrochip,
-    faChevronDown,
-    faChevronRight,
-    faSync,
 } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
@@ -66,7 +62,6 @@ export default () => {
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
-    const [showCoupon, setShowCoupon] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
     
     // Wizard step state
@@ -464,28 +459,10 @@ export default () => {
                                 className={'rounded-lg border p-6'}
                                 style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <div className={'mb-4 flex items-center justify-between'}>
-                                    <h3 className={'text-lg font-semibold text-gray-200'}>Server Name</h3>
-                                    <button
-                                        onClick={() => {
-                                            const name = generateServerName();
-                                            if (name) {
-                                                setServerName(name);
-                                                setServerNameTouched(false);
-                                            }
-                                        }}
-                                        className={'flex items-center gap-1 text-xs font-medium hover:brightness-125 transition-all'}
-                                        style={{ color: colors.primary }}
-                                        disabled={!selectedNode || !selectedEggId}
-                                        aria-label={'Auto-generate server name'}
-                                    >
-                                        <FontAwesomeIcon icon={faSync} className={'h-3 w-3'} />
-                                        Generate
-                                    </button>
-                                </div>
+                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
                                 <input
                                     type={'text'}
-                                    placeholder={'Enter server name'}
+                                    placeholder={'Enter a name for your server'}
                                     value={serverName}
                                     onChange={e => {
                                         setServerName(e.target.value);
@@ -494,17 +471,21 @@ export default () => {
                                     required
                                     maxLength={191}
                                     className={classNames(
-                                        'w-full rounded-lg border px-4 py-3 text-sm transition-all',
+                                        'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                         'text-gray-200 placeholder-gray-500',
-                                        'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
+                                        'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                        serverName.trim() 
+                                            ? 'border-green-500 focus:border-green-500' 
+                                            : 'border-red-500 focus:border-red-500',
                                     )}
                                     style={{
                                         backgroundColor: colors.secondary,
-                                        borderColor: serverName.trim() ? colors.primary : undefined,
                                     }}
                                 />
-                                {serverNameTouched && !serverName.trim() && (
-                                    <p className={'mt-2 text-xs text-amber-400'}>⚠ Server name is required</p>
+                                {!serverName.trim() && (
+                                    <p className={'mt-2 text-xs text-red-400'}>
+                                        Server name is required to continue
+                                    </p>
                                 )}
                             </div>
 
@@ -608,37 +589,6 @@ export default () => {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Coupon Section */}
-                            {product.price !== 0 && (
-                                <div
-                                    className={'rounded-lg border p-6'}
-                                    style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                                >
-                                    <button
-                                        onClick={() => setShowCoupon(!showCoupon)}
-                                        className={'mb-3 flex w-full items-center justify-between text-left transition-all'}
-                                        aria-label={showCoupon ? 'Hide coupon code input' : 'Show coupon code input'}
-                                        aria-expanded={showCoupon}
-                                    >
-                                        <h3 className={'text-lg font-semibold text-gray-200'}>
-                                            {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
-                                        </h3>
-                                        <FontAwesomeIcon 
-                                            icon={showCoupon ? faChevronDown : faChevronRight} 
-                                            className={'h-3 w-3'}
-                                            style={{ color: colors.primary }}
-                                            aria-hidden={true}
-                                        />
-                                    </button>
-                                    {showCoupon && (
-                                        <div>
-                                            <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                                            <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     );
                 }
@@ -732,6 +682,8 @@ export default () => {
                                     couponCode={couponData?.coupon.code}
                                     productName={product.name}
                                     showDetailedBreakdown={currentStep === getTotalSteps()}
+                                    showCouponInput={currentStep === getTotalSteps()}
+                                    onCouponApplied={handleCouponApplied}
                                 />
                             </div>
                         </div>

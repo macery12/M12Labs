@@ -1,6 +1,12 @@
 import { useStoreState } from '@/state/hooks';
 import { type Node } from '@definitions/account/billing';
 import { type BillingCycle, type EggInfo } from '@/api/routes/account/billing/products';
+import CouponInput from '@account/billing/order/CouponInput';
+import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+import FlashMessageRender from '@/elements/FlashMessageRender';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronDown, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { useState } from 'react';
 
 interface SubtotalCardProps {
     basePrice: number;
@@ -14,6 +20,8 @@ interface SubtotalCardProps {
     couponCode?: string;
     productName?: string;
     showDetailedBreakdown?: boolean;
+    showCouponInput?: boolean;
+    onCouponApplied?: (data: ValidateCouponResponse | null) => void;
 }
 
 const formatPrice = (price: number) => `$${price.toFixed(2)}`;
@@ -31,8 +39,11 @@ export default ({
     couponCode,
     productName,
     showDetailedBreakdown = false,
+    showCouponInput = false,
+    onCouponApplied,
 }: SubtotalCardProps) => {
     const { colors } = useStoreState(state => state.theme.data!);
+    const [showCoupon, setShowCoupon] = useState<boolean>(false);
 
     // Get selected cycle data
     const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
@@ -218,6 +229,34 @@ export default ({
                     </div>
                 )}
             </div>
+
+            {/* Coupon Section - only show on review page when price is not zero */}
+            {showCouponInput && basePrice !== 0 && (
+                <div className={'mt-4 pt-4 border-t border-gray-700'}>
+                    <button
+                        onClick={() => setShowCoupon(!showCoupon)}
+                        className={'mb-3 flex w-full items-center justify-between text-left transition-all'}
+                        aria-label={showCoupon ? 'Hide coupon code input' : 'Show coupon code input'}
+                        aria-expanded={showCoupon}
+                    >
+                        <h3 className={'text-sm font-semibold text-gray-200'}>
+                            {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
+                        </h3>
+                        <FontAwesomeIcon 
+                            icon={showCoupon ? faChevronDown : faChevronRight} 
+                            className={'h-3 w-3'}
+                            style={{ color: colors.primary }}
+                            aria-hidden={true}
+                        />
+                    </button>
+                    {showCoupon && onCouponApplied && (
+                        <div>
+                            <CouponInput subtotal={basePrice} onCouponApplied={onCouponApplied} />
+                            <FlashMessageRender byKey={'coupon'} className={'mt-2'} />
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
