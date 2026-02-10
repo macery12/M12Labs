@@ -12,6 +12,7 @@ import useFlash from '@/plugins/useFlash';
 import { Alert } from '@/elements/alert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import tw from 'twin.macro';
+import NodePricingManager from './NodePricingManager';
 
 const EPSILON = 0.001;
 
@@ -272,6 +273,12 @@ export default () => {
                         <strong>How it works:</strong> The system finds the first step where days ≤ maxDays and applies that multiplier. For example, a 15-day billing cycle would match the first step with maxDays ≥ 15.
                     </Alert>
                 </AdminBox>
+            </div>
+
+            {/* Node Pricing Multipliers Section */}
+            <div className={'mt-4'}>
+                <FlashMessageRender byKey={'admin:billing:node-pricing'} className={'mb-4'} />
+                <NodePricingManager />
             </div>
 
             <div className={'mt-6 flex justify-end'}>

@@ -19,10 +19,14 @@ class CreateOrderService
         // Get billing days from additional data or default to 30
         $billingDays = $additionalData['billing_days'] ?? 30;
         
-        // Calculate price based on billing cycle
-        $priceInfo = $product->calculatePrice($billingDays);
+        // Get node ID for location-based pricing
+        $nodeId = $additionalData['node_id'] ?? null;
+        
+        // Calculate price based on billing cycle and node
+        $priceInfo = $product->calculatePrice($billingDays, $nodeId);
         $subtotal = $priceInfo['price'];
         $multiplierUsed = $priceInfo['multiplier'];
+        $nodeMultiplierUsed = $priceInfo['node_multiplier'];
         
         $discount = 0;
         $total = $subtotal;
@@ -46,11 +50,12 @@ class CreateOrderService
         $order->billing_days = $billingDays;
         $order->final_price = $total;
         $order->multiplier_used = $multiplierUsed;
+        $order->node_multiplier_used = $nodeMultiplierUsed;
         $order->status = $status ?? Order::STATUS_EXPIRED;
         $order->product_id = $product->id;
         $order->coupon_id = $couponId;
         $order->egg_id = $eggId;
-        $order->node_id = $additionalData['node_id'] ?? null;
+        $order->node_id = $nodeId;
         $order->server_id = $additionalData['server_id'] ?? null;
         $order->variables = $additionalData['variables'] ?? null;
         $order->type = $type;

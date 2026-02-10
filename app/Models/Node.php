@@ -92,6 +92,7 @@ class Node extends Model
         'maintenance_mode' => 'boolean',
         'deployable' => 'boolean',
         'deployable_free' => 'boolean',
+        'price_multiplier' => 'float',
     ];
 
     /**
@@ -103,7 +104,7 @@ class Node extends Model
         'fqdn', 'scheme', 'behind_proxy',
         'memory', 'memory_overallocate', 'disk',
         'disk_overallocate', 'upload_size', 'daemon_base',
-        'description', 'maintenance_mode', 'deployable', 'deployable_free',
+        'description', 'maintenance_mode', 'deployable', 'deployable_free', 'price_multiplier',
     ];
 
     public static array $validationRules = [

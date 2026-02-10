@@ -9,6 +9,7 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
+import PriceBreakdown from '@account/billing/order/PriceBreakdown';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArchive,
@@ -389,6 +390,8 @@ export default () => {
                                     key={node.id}
                                     selected={selectedNode}
                                     setSelected={setSelectedNode}
+                                    basePrice={getCurrentPrice()}
+                                    billingDays={selectedBillingDays}
                                 />
                             ))}
                         </div>
@@ -547,11 +550,6 @@ export default () => {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className={'text-right'}>
-                                            <p className={'text-2xl font-bold'} style={{ color: colors.primary }}>
-                                                ${getCurrentPrice().toFixed(2)}
-                                            </p>
-                                        </div>
                                     </div>
 
                                     <div className={'border-t border-gray-700 pt-4'}>
@@ -593,19 +591,27 @@ export default () => {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {product.price !== 0 && (
-                                        <div className={'border-t border-gray-700 pt-4'}>
-                                            <div className={'flex items-center justify-between'}>
-                                                <span className={'text-lg font-bold text-gray-200'}>Due Today</span>
-                                                <span className={'text-2xl font-bold'} style={{ color: colors.primary }}>
-                                                    ${couponData ? couponData.total.toFixed(2) : getCurrentPrice().toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
+
+                            {/* Price Breakdown */}
+                            {product.price !== 0 && (() => {
+                                const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
+                                const selectedNodeData = nodes?.find(n => Number(n.id) === selectedNode);
+                                
+                                return (
+                                    <PriceBreakdown
+                                        basePrice={product.price}
+                                        billingDays={selectedBillingDays}
+                                        billingMultiplier={selectedCycle?.multiplier || 1.0}
+                                        billingDiscountPercent={selectedCycle?.discountPercent || 0}
+                                        nodeMultiplier={selectedNodeData?.priceMultiplier || 1.0}
+                                        nodeName={selectedNodeData?.name}
+                                        couponDiscount={couponData?.discount || 0}
+                                        couponCode={couponData?.coupon.code}
+                                    />
+                                );
+                            })()}
 
                             {/* Legal Agreements */}
                             <div

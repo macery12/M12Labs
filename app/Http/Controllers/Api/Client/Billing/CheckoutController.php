@@ -75,19 +75,19 @@ class CheckoutController extends ClientApiController
         // Get billing days (default to 30 if not provided)
         $billingDays = (int) ($request->input('billing_days') ?? 30);
 
-        // Calculate price with coupon for new purchase
+        // Validate node deployment
+        $nodeId = (int) $request->input('node');
+        $this->validationService->validateNodeDeployment($nodeId, true);
+
+        // Calculate price with coupon for new purchase (including node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays, $nodeId);
 
         // Validate this is a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
 
         // Validate user doesn't already own this free product
         $this->validationService->validateFreeProductOwnership($user->id, $product);
-
-        // Validate node deployment
-        $nodeId = (int) $request->input('node');
-        $this->validationService->validateNodeDeployment($nodeId, true);
 
         // Validate and get egg ID
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
@@ -131,15 +131,15 @@ class CheckoutController extends ClientApiController
         // Get billing days (default to 30 if not provided)
         $billingDays = (int) ($request->input('billing_days') ?? 30);
 
-        // Calculate price with coupon for renewal
+        // Lookup server scoped to the authenticated user
+        $server = $user->servers()->findOrFail($serverId);
+
+        // Calculate price with coupon for renewal (including server's node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren', $billingDays);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren', $billingDays, $server->node_id);
 
         // Validate this is a free renewal
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
-
-        // Lookup server scoped to the authenticated user
-        $server = $user->servers()->findOrFail($serverId);
 
         // Process the renewal
         $result = $this->processorService->processRenewal($server, $product, $couponId, $billingDays);
@@ -342,6 +342,15 @@ class CheckoutController extends ClientApiController
             // Only validate node deployment for new purchases, not renewals
             if (!$isRenewal) {
                 $this->validationService->validateNodeDeployment($nodeId, false);
+            } else {
+                // For renewals, get the server's node_id
+                $serverId = (int) $request->input('server_id');
+                if ($serverId) {
+                    $server = $request->user()->servers()->find($serverId);
+                    if ($server) {
+                        $nodeId = $server->node_id;
+                    }
+                }
             }
 
             if (!$intent) {
@@ -363,10 +372,10 @@ class CheckoutController extends ClientApiController
             // Get billing days (default to 30 if not provided)
             $billingDays = (int) ($request->input('billing_days') ?? 30);
 
-            // Determine order type and calculate price with coupon
+            // Determine order type and calculate price with coupon (including node multiplier)
             $orderType = $this->getOrderType($request);
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType, $billingDays);
+            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType, $billingDays, $nodeId);
 
             // Update the intent amount if it has changed
             if ($intent->amount !== (int)($priceInfo['finalPrice'] * 100)) {

@@ -62,5 +62,6 @@ export default class Transformers {
         id: data.id,
         name: data.name,
         fqdn: data.fqdn,
+        priceMultiplier: data.price_multiplier || 1.0,
     });
 }
