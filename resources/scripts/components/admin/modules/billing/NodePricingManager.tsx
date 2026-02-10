@@ -63,37 +63,11 @@ export default () => {
     };
 
     const handleMultiplierChange = (nodeId: number, value: string) => {
-        // Allow empty string for typing
-        if (value === '') {
-            setLocalMultipliers(prev => ({
-                ...prev,
-                [nodeId]: 0,
-            }));
-            return;
-        }
-        
-        // Allow partial decimal values like "1." or "0." while typing
-        if (value.endsWith('.') || value === '.') {
-            // Store the string value temporarily - will be validated on blur
-            setLocalMultipliers(prev => ({
-                ...prev,
-                [nodeId]: parseFloat(value) || 0,
-            }));
-            return;
-        }
-        
-        // Parse and validate the value
-        const numValue = parseFloat(value);
-        
-        // Only update if it's a valid number
-        if (!isNaN(numValue)) {
-            // Clamp between 0 and 5
-            const clampedValue = Math.max(0, Math.min(5, numValue));
-            setLocalMultipliers(prev => ({
-                ...prev,
-                [nodeId]: clampedValue,
-            }));
-        }
+        // Just store whatever value the user types - backend will validate
+        setLocalMultipliers(prev => ({
+            ...prev,
+            [nodeId]: value === '' ? 0 : parseFloat(value) || 0,
+        }));
     };
 
     const handleSaveAll = async () => {
@@ -269,13 +243,6 @@ export default () => {
                                                 type={'text'}
                                                 value={currentMultiplier}
                                                 onChange={e => handleMultiplierChange(node.id, e.target.value)}
-                                                onBlur={e => {
-                                                    // On blur, ensure we have a valid number
-                                                    const val = parseFloat(e.target.value);
-                                                    if (isNaN(val) || val < 0) {
-                                                        handleMultiplierChange(node.id, '1.0');
-                                                    }
-                                                }}
                                                 disabled={saving}
                                                 css={tw`w-24`}
                                                 placeholder="1.00"

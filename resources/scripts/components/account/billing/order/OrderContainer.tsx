@@ -390,6 +390,8 @@ export default () => {
                                     key={node.id}
                                     selected={selectedNode}
                                     setSelected={setSelectedNode}
+                                    basePrice={getCurrentPrice()}
+                                    billingDays={selectedBillingDays}
                                 />
                             ))}
                         </div>
