@@ -63,11 +63,27 @@ export default () => {
     };
 
     const handleMultiplierChange = (nodeId: number, value: string) => {
-        const numValue = parseFloat(value) || 1.0;
-        setLocalMultipliers(prev => ({
-            ...prev,
-            [nodeId]: numValue,
-        }));
+        // Allow empty string for typing
+        if (value === '') {
+            setLocalMultipliers(prev => ({
+                ...prev,
+                [nodeId]: 0,
+            }));
+            return;
+        }
+        
+        // Parse and validate the value
+        const numValue = parseFloat(value);
+        
+        // Only update if it's a valid number
+        if (!isNaN(numValue)) {
+            // Clamp between 0 and 5
+            const clampedValue = Math.max(0, Math.min(5, numValue));
+            setLocalMultipliers(prev => ({
+                ...prev,
+                [nodeId]: clampedValue,
+            }));
+        }
     };
 
     const handleSaveAll = async () => {
@@ -240,14 +256,19 @@ export default () => {
                                     <td css={tw`py-3 px-4`}>
                                         <div css={tw`flex items-center gap-2`}>
                                             <Input
-                                                type={'number'}
-                                                step={0.01}
-                                                min={0.0}
-                                                max={5.0}
+                                                type={'text'}
                                                 value={currentMultiplier}
                                                 onChange={e => handleMultiplierChange(node.id, e.target.value)}
+                                                onBlur={e => {
+                                                    // On blur, ensure we have a valid number
+                                                    const val = parseFloat(e.target.value);
+                                                    if (isNaN(val) || val < 0) {
+                                                        handleMultiplierChange(node.id, '1.0');
+                                                    }
+                                                }}
                                                 disabled={saving}
                                                 css={tw`w-24`}
+                                                placeholder="1.00"
                                             />
                                             <span css={tw`text-xs text-neutral-400`}>x</span>
                                         </div>
