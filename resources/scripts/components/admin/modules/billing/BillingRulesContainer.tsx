@@ -51,6 +51,7 @@ const formatBillingLength = (maxDays: number, isLast: boolean, defaultBillingDay
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const updateEverest = useStoreActions(s => s.everest.updateEverest);
+    const theme = useStoreState(s => s.theme.data!);
     const { clearFlashes, addFlash } = useFlash();
 
     const [activeTab, setActiveTab] = useState<TabType>('billing-cycles');
@@ -165,7 +166,10 @@ export default () => {
             </Alert>
 
             {/* Tabs Navigation */}
-            <div css={tw`border-b border-neutral-700 bg-neutral-900/50 rounded-t-lg mb-4`}>
+            <div
+                css={tw`border-b border-neutral-700 rounded-t-lg mb-4`}
+                style={{ backgroundColor: theme.colors.secondary }}
+            >
                 <div css={tw`flex gap-1 px-4`}>
                     <button
                         onClick={() => setActiveTab('billing-cycles')}
@@ -257,6 +261,13 @@ export default () => {
                                 </div>
                             </div>
                         </AdminBox>
+                    </div>
+
+                    {/* Save Button - Moved to top for better visibility */}
+                    <div className={'mb-4 flex justify-end'}>
+                        <Button onClick={handleSaveAll} disabled={loading}>
+                            {loading ? 'Saving...' : 'Save Billing Cycle Settings'}
+                        </Button>
                     </div>
 
                     <AdminBox title={'Price Adjustment Steps'} icon={faDollarSign}>
@@ -361,14 +372,10 @@ export default () => {
                             </table>
                         </div>
 
-                        <div css={tw`flex justify-between items-center mt-4`}>
+                        <div css={tw`mt-4`}>
                             <Button type="button" onClick={addStep} disabled={loading}>
                                 <FontAwesomeIcon icon={faPlus} className="mr-2" />
                                 Add Step
-                            </Button>
-
-                            <Button onClick={handleSaveAll} disabled={loading}>
-                                {loading ? 'Saving...' : 'Save Billing Cycle Settings'}
                             </Button>
                         </div>
 
