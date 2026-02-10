@@ -16,7 +16,7 @@ export default () => {
     const rootAdmin = useStoreState(state => state.user.data!.rootAdmin);
 
     const renderAdminBypassButton = () => {
-        if (!rootAdmin) return null;
+        if (!rootAdmin || !serverUuid) return null;
 
         return <AdminBypassButton serverUuid={serverUuid} bypassType="conflict" />;
     };

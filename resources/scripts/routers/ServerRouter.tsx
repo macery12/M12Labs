@@ -83,6 +83,10 @@ function ServerRouter() {
 
     const categories = ['data', 'configuration'] as const;
 
+    // Check if admin has bypassed the conflict screen
+    const conflictBypassKey = server?.uuid ? `admin_bypass_conflict_${server.uuid}` : '';
+    const isConflictBypassed = rootAdmin && conflictBypassKey && sessionStorage.getItem(conflictBypassKey) === 'true';
+
     useEffect(() => {
         clearServerState();
     }, []);
@@ -229,14 +233,9 @@ function ServerRouter() {
                         <WebsocketHandler />
                         <NavigationBar />
                         {inConflictState &&
-                        (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${server?.id}`))) ? (
-                            (() => {
-                                // Check if admin has bypassed the conflict screen
-                                const bypassKey = `admin_bypass_conflict_${server.uuid}`;
-                                const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
-
-                                return !isBypassed ? <ConflictStateRenderer /> : <ServerRoutes location={location} />;
-                            })()
+                        (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${server?.id}`))) &&
+                        !isConflictBypassed ? (
+                            <ConflictStateRenderer />
                         ) : (
                             <ServerRoutes location={location} />
                         )}

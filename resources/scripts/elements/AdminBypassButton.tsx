@@ -3,7 +3,7 @@ import tw from 'twin.macro';
 import { useNavigate } from 'react-router-dom';
 
 interface AdminBypassButtonProps {
-    serverUuid?: string;
+    serverUuid: string;
     bypassType: 'suspended' | 'conflict';
 }
 
@@ -11,7 +11,6 @@ const AdminBypassButton = ({ serverUuid, bypassType }: AdminBypassButtonProps) =
     const navigate = useNavigate();
 
     const handleAdminBypass = () => {
-        if (!serverUuid) return;
         // Store bypass state in session storage
         sessionStorage.setItem(`admin_bypass_${bypassType}_${serverUuid}`, 'true');
         // Navigate to the server to trigger reload
