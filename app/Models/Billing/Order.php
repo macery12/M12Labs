@@ -66,7 +66,7 @@ class Order extends Model
     protected $fillable = [
         'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id', 
         'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
-        'payment_token', 'total', 'status', 'product_id', 'billing_days', 'final_price', 'multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
+        'payment_token', 'total', 'status', 'product_id', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'coupon_id', 'subtotal', 'discount',
     ];
 
@@ -80,6 +80,7 @@ class Order extends Model
         'billing_days' => 'int',
         'final_price' => 'float',
         'multiplier_used' => 'float',
+        'node_multiplier_used' => 'float',
         'egg_id' => 'int',
         'node_id' => 'int',
         'server_id' => 'int',
