@@ -224,7 +224,7 @@ export default () => {
                                     key={node.id} 
                                     css={[
                                         tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`,
-                                        hasChanged && tw`bg-neutral-750`,
+                                        hasChanged && tw`bg-neutral-800`,
                                     ]}
                                 >
                                     <td css={tw`py-3 px-4`}>
