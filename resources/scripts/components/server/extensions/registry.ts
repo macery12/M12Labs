@@ -12,4 +12,10 @@ export const extensionRoutes: ExtensionRouteDefinition[] = [
         route: 'minecraft_player_manager',
         component: React.lazy(() => import('./PlayerManagerContainer')),
     },
+    {
+        id: 'discordsrv_helper',
+        route: 'discordsrv_helper',
+        component: React.lazy(() => import('./discordsrv_helper/DiscordSrvHelperContainer')),
+    },
 ];
+

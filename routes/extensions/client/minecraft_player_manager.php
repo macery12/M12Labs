@@ -9,7 +9,7 @@ use Everest\Http\Controllers\Api\Client\Extensions as ClientExtensions;
 |--------------------------------------------------------------------------
 */
 
-Route::group(['prefix' => '/minecraft_player_manager'], function () {
+Route::group(['prefix' => '/minecraft_player_manager', 'middleware' => ['extensions.access:minecraft_player_manager']], function () {
     Route::get('/', [ClientExtensions\PlayerManagerController::class, 'index']);
 
     // Server info

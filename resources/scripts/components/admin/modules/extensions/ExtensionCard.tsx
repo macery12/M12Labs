@@ -12,11 +12,30 @@ import {
     faToggleOff,
     faCog,
     faCheck,
+    faLink,
+    faWrench,
+    faShieldHalved,
+    faTerminal,
+    faGlobe,
+    faDatabase,
+    faChartLine,
+    faBell,
+    faRobot,
+    faCloud,
+    faFolder,
+    faFile,
+    faKey,
+    faBolt,
+    faCogs,
+    faLock,
+    faScroll,
 } from '@fortawesome/free-solid-svg-icons';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { Button } from '@/elements/button';
 import Modal from '@/elements/Modal';
 import { 
     ExtensionData, 
+    ExtensionSettingField,
     NestOption, 
     EggOption, 
     getNestsAndEggs, 
@@ -25,6 +44,8 @@ import {
 } from '@/api/routes/admin/extensions';
 import useFlash from '@/plugins/useFlash';
 import Spinner from '@/elements/Spinner';
+import Input, { Textarea } from '@/elements/Input';
+import Select from '@/elements/Select';
 
 interface Props {
     extension: ExtensionData;
@@ -37,6 +58,26 @@ const iconMap: Record<string, typeof faPuzzlePiece> = {
     'gamepad': faGamepad,
     'cube': faCube,
     'server': faServer,
+
+    // Extra icons for extension authors.
+    'discord': faDiscord,
+    'link': faLink,
+    'wrench': faWrench,
+    'shield': faShieldHalved,
+    'terminal': faTerminal,
+    'globe': faGlobe,
+    'database': faDatabase,
+    'chart': faChartLine,
+    'bell': faBell,
+    'robot': faRobot,
+    'cloud': faCloud,
+    'folder': faFolder,
+    'file': faFile,
+    'key': faKey,
+    'bolt': faBolt,
+    'cogs': faCogs,
+    'lock': faLock,
+    'scroll': faScroll,
 };
 
 export default ({ extension, onUpdate }: Props) => {
@@ -48,6 +89,7 @@ export default ({ extension, onUpdate }: Props) => {
     const [nestsAndEggs, setNestsAndEggs] = useState<{ nests: NestOption[]; eggs: EggOption[] } | null>(null);
     const [selectedNests, setSelectedNests] = useState<number[]>(extension.allowedNests);
     const [selectedEggs, setSelectedEggs] = useState<number[]>(extension.allowedEggs);
+    const [settings, setSettings] = useState<Record<string, unknown>>(extension.settings ?? {});
 
     const icon = iconMap[extension.icon] || faPuzzlePiece;
 
@@ -58,6 +100,14 @@ export default ({ extension, onUpdate }: Props) => {
                 .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }));
         }
     }, [configOpen]);
+
+    useEffect(() => {
+        if (configOpen) {
+            setSelectedNests(extension.allowedNests);
+            setSelectedEggs(extension.allowedEggs);
+            setSettings(extension.settings ?? {});
+        }
+    }, [configOpen, extension.allowedNests, extension.allowedEggs, extension.settings]);
 
     const handleToggle = () => {
         setLoading(true);
@@ -82,7 +132,7 @@ export default ({ extension, onUpdate }: Props) => {
         setLoading(true);
         clearFlashes('admin:extensions');
 
-        updateExtension(extension.id, selectedNests, selectedEggs)
+        updateExtension(extension.id, selectedNests, selectedEggs, settings)
             .then(() => {
                 addFlash({
                     key: 'admin:extensions',
@@ -139,17 +189,92 @@ export default ({ extension, onUpdate }: Props) => {
         setSelectedEggs([]);
     };
 
+    const updateSetting = (key: string, value: unknown) => {
+        setSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+    const renderSettingField = (field: ExtensionSettingField) => {
+        const value = settings[field.key];
+
+        if (field.type === 'boolean') {
+            return (
+                <label key={field.key} className={'flex items-start space-x-3 rounded bg-zinc-800/50 p-3'}>
+                    <Input
+                        type={'checkbox'}
+                        checked={Boolean(value)}
+                        onChange={e => updateSetting(field.key, e.currentTarget.checked)}
+                    />
+                    <div className={'flex-1'}>
+                        <p className={'text-sm font-medium text-white'}>{field.label}</p>
+                        {field.help && <p className={'mt-1 text-xs text-neutral-400'}>{field.help}</p>}
+                    </div>
+                </label>
+            );
+        }
+
+        const commonProps = {
+            name: field.key,
+            placeholder: field.placeholder,
+        };
+
+        return (
+            <div key={field.key} className={'rounded bg-zinc-800/50 p-3'}>
+                <label className={'block text-sm font-medium text-white'}>{field.label}</label>
+                {field.help && <p className={'mt-1 text-xs text-neutral-400'}>{field.help}</p>}
+                <div className={'mt-2'}>
+                    {field.type === 'textarea' ? (
+                        <Textarea
+                            {...commonProps}
+                            rows={4}
+                            value={typeof value === 'string' ? value : value === undefined ? '' : String(value)}
+                            onChange={e => updateSetting(field.key, e.currentTarget.value)}
+                        />
+                    ) : field.type === 'select' ? (
+                        <Select
+                            value={value === undefined || value === null ? '' : String(value)}
+                            onChange={e => updateSetting(field.key, e.currentTarget.value)}
+                        >
+                            <option value={''}>Select...</option>
+                            {(field.options ?? []).map(option => (
+                                <option key={String(option.value)} value={String(option.value)}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </Select>
+                    ) : (
+                        <Input
+                            {...commonProps}
+                            type={field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : 'text'}
+                            value={typeof value === 'string' ? value : value === undefined ? '' : String(value)}
+                            onChange={e => {
+                                if (field.type === 'number') {
+                                    const raw = e.currentTarget.value;
+                                    updateSetting(field.key, raw === '' ? '' : Number(raw));
+                                    return;
+                                }
+
+                                updateSetting(field.key, e.currentTarget.value);
+                            }}
+                        />
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <>
             {/* Sticky Note Style Card */}
             <div
                 className={classNames(
                     'relative transform transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
-                    'rounded-lg p-6 shadow-lg bg-zinc-800'
+                    'flex h-full flex-col rounded-lg p-6 shadow-lg bg-zinc-800'
                 )}
                 style={{
                     borderTop: `4px solid ${extension.enabled ? primary : '#4a5568'}`,
+                    minHeight: 'var(--extension-card-min-height, auto)',
                 }}
+                data-extension-card
             >
                 {/* Pin decoration */}
                 <div
@@ -184,8 +309,10 @@ export default ({ extension, onUpdate }: Props) => {
                     </button>
                 </div>
 
-                {/* Description */}
-                <p className={'mb-4 text-sm text-neutral-300'}>{extension.description}</p>
+                <div className={'flex-1'}>
+                    {/* Description */}
+                    <p className={'mb-4 text-sm text-neutral-300'}>{extension.description}</p>
+                </div>
 
                 {/* Stats */}
                 <div className={'mb-4 grid grid-cols-2 gap-2 text-xs'}>
@@ -207,7 +334,6 @@ export default ({ extension, onUpdate }: Props) => {
                 <Button
                     onClick={() => setConfigOpen(true)}
                     className={'w-full'}
-                    disabled={!extension.enabled}
                 >
                     <FontAwesomeIcon icon={faCog} className={'mr-2'} />
                     Configure
@@ -235,6 +361,15 @@ export default ({ extension, onUpdate }: Props) => {
                         </div>
                     ) : (
                         <>
+                            {!!extension.settingsSchema?.length && (
+                                <div className={'mb-6'}>
+                                    <h3 className={'mb-2 font-medium text-white'}>Settings</h3>
+                                    <div className={'space-y-3'}>
+                                        {extension.settingsSchema.map(renderSettingField)}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Nests Selection */}
                             <div className={'mb-6'}>
                                 <div className={'mb-2 flex items-center justify-between'}>

@@ -1,5 +1,21 @@
 import http from '@/api/http';
 
+export interface ExtensionSettingOption {
+    label: string;
+    value: string | number | boolean;
+}
+
+export type ExtensionSettingFieldType = 'text' | 'password' | 'textarea' | 'select' | 'boolean' | 'number';
+
+export interface ExtensionSettingField {
+    key: string;
+    label: string;
+    type: ExtensionSettingFieldType;
+    help?: string;
+    placeholder?: string;
+    options?: ExtensionSettingOption[];
+}
+
 export interface ExtensionData {
     id: string;
     name: string;
@@ -11,6 +27,7 @@ export interface ExtensionData {
     allowedNests: number[];
     allowedEggs: number[];
     settings: Record<string, unknown>;
+    settingsSchema?: ExtensionSettingField[];
 }
 
 export interface NestOption {
@@ -47,11 +64,13 @@ export const getExtension = async (extensionId: string): Promise<ExtensionData> 
 export const updateExtension = async (
     extensionId: string,
     allowedNests: number[],
-    allowedEggs: number[]
+    allowedEggs: number[],
+    settings: Record<string, unknown> = {}
 ): Promise<ExtensionData> => {
     const { data } = await http.put(`/api/application/extensions/${extensionId}`, {
         allowed_nests: allowedNests,
         allowed_eggs: allowedEggs,
+        settings,
     });
     return data;
 };

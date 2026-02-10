@@ -4,7 +4,32 @@ import { ServerContext } from '@/state/server';
 import { getServerExtensions, ServerExtension } from '@/api/server/extensions';
 import Spinner from '@/elements/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPuzzlePiece, faUsers, faGamepad, faCube, faServer, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {
+    faPuzzlePiece,
+    faUsers,
+    faGamepad,
+    faCube,
+    faServer,
+    faChevronRight,
+    faLink,
+    faWrench,
+    faShieldHalved,
+    faTerminal,
+    faGlobe,
+    faDatabase,
+    faChartLine,
+    faBell,
+    faRobot,
+    faCloud,
+    faFolder,
+    faFile,
+    faKey,
+    faBolt,
+    faCogs,
+    faLock,
+    faScroll,
+} from '@fortawesome/free-solid-svg-icons';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
@@ -16,6 +41,26 @@ const iconMap: Record<string, typeof faPuzzlePiece> = {
     'gamepad': faGamepad,
     'cube': faCube,
     'server': faServer,
+
+    // Extra icons for extension authors.
+    'discord': faDiscord,
+    'link': faLink,
+    'wrench': faWrench,
+    'shield': faShieldHalved,
+    'terminal': faTerminal,
+    'globe': faGlobe,
+    'database': faDatabase,
+    'chart': faChartLine,
+    'bell': faBell,
+    'robot': faRobot,
+    'cloud': faCloud,
+    'folder': faFolder,
+    'file': faFile,
+    'key': faKey,
+    'bolt': faBolt,
+    'cogs': faCogs,
+    'lock': faLock,
+    'scroll': faScroll,
 };
 
 export default () => {

@@ -46,6 +46,7 @@ class ExtensionsController extends ApplicationApiController
                 'allowedNests' => $dbConfig && $dbConfig->allowed_nests ? $dbConfig->allowed_nests : [],
                 'allowedEggs' => $dbConfig && $dbConfig->allowed_eggs ? $dbConfig->allowed_eggs : [],
                 'settings' => $dbConfig && $dbConfig->settings ? $dbConfig->settings : [],
+                'settingsSchema' => $extensionConfig['settings_schema'] ?? [],
             ];
         }
 
@@ -82,6 +83,7 @@ class ExtensionsController extends ApplicationApiController
                 'allowedNests' => $dbConfig && $dbConfig->allowed_nests ? $dbConfig->allowed_nests : [],
                 'allowedEggs' => $dbConfig && $dbConfig->allowed_eggs ? $dbConfig->allowed_eggs : [],
                 'settings' => $dbConfig && $dbConfig->settings ? $dbConfig->settings : [],
+                'settingsSchema' => $extensionConfig['settings_schema'] ?? [],
             ],
         ]);
     }
@@ -97,12 +99,21 @@ class ExtensionsController extends ApplicationApiController
             return new JsonResponse(['error' => 'Extension not found'], 404);
         }
 
-        $config = ExtensionConfig::updateOrCreateConfig($extensionId, [
-            'enabled' => $request->input('enabled', false),
+        $existing = ExtensionConfig::getByExtensionId($extensionId);
+
+        $payload = [
             'allowed_nests' => $request->input('allowed_nests', []),
             'allowed_eggs' => $request->input('allowed_eggs', []),
             'settings' => $request->input('settings', []),
-        ]);
+        ];
+
+        if ($request->has('enabled')) {
+            $payload['enabled'] = (bool) $request->input('enabled');
+        } elseif ($existing) {
+            $payload['enabled'] = (bool) $existing->enabled;
+        }
+
+        $config = ExtensionConfig::updateOrCreateConfig($extensionId, $payload);
 
         Activity::event('admin:extensions:update')
             ->property('extension_id', $extensionId)

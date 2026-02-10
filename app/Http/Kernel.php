@@ -97,5 +97,6 @@ class Kernel extends HttpKernel
         'bindings' => SubstituteBindings::class,
         'recaptcha' => VerifyReCaptcha::class,
         'node.maintenance' => MaintenanceMiddleware::class,
+        'extensions.access' => \Everest\Http\Middleware\Api\Client\Extensions\EnsureExtensionAccess::class,
     ];
 }
