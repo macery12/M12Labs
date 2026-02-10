@@ -477,11 +477,11 @@ export default () => {
                                         'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                         'text-gray-200 placeholder-gray-500',
                                         'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                                        !serverNameTouched 
-                                            ? 'border-gray-600' 
-                                            : serverName.trim() 
-                                                ? 'border-green-500 focus:border-green-500' 
-                                                : 'border-red-500 focus:border-red-500',
+                                        {
+                                            'border-gray-600': !serverNameTouched,
+                                            'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
+                                            'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
+                                        }
                                     )}
                                     style={{
                                         backgroundColor: colors.secondary,
