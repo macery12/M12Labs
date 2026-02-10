@@ -14,7 +14,7 @@ import Spinner from './Spinner';
 import { getProduct, Product } from '@/api/routes/account/billing/products';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import useFlash from '@/plugins/useFlash';
-import FlashMessageRender from './FlashMessageRender';
+import AdminBypassButton from '@/elements/AdminBypassButton';
 
 interface BaseProps {
     title: string;
@@ -22,6 +22,7 @@ interface BaseProps {
     message: string;
     onRetry?: () => void;
     onBack?: () => void;
+    children?: React.ReactNode;
 }
 
 interface PropsWithRetry extends BaseProps {
@@ -48,7 +49,7 @@ const ActionButton = styled(Button)`
     }
 `;
 
-const ScreenBlock = ({ title, image, message, onBack, onRetry }: ScreenBlockProps) => {
+const ScreenBlock = ({ title, image, message, onBack, onRetry, children }: ScreenBlockProps) => {
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
     return (
@@ -71,6 +72,7 @@ const ScreenBlock = ({ title, image, message, onBack, onRetry }: ScreenBlockProp
                     <img src={image} css={tw`w-2/3 h-auto select-none mx-auto`} />
                     <h2 css={tw`mt-10 text-white font-bold text-4xl`}>{title}</h2>
                     <p css={tw`text-sm text-neutral-400 mt-2`}>{message}</p>
+                    {children}
                 </div>
             </div>
         </PageContentBlock>
@@ -99,11 +101,13 @@ const Suspended = ({
     id,
     serverId,
     serverUuid,
+    serverStatus,
 }: {
     date: Date;
     id?: number;
     serverId?: number;
     serverUuid?: string;
+    serverStatus?: string | null;
 }) => {
     const [product, setProduct] = useState<Product>();
     const [renewing, setRenewing] = useState<boolean>(false);
@@ -113,6 +117,7 @@ const Suspended = ({
     const currency = useStoreState(state => state.everest.data!.billing.currency.symbol);
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const settings = useStoreState(state => state.everest.data!.billing);
+    const rootAdmin = useStoreState(state => state.user.data!.rootAdmin);
 
     useEffect(() => {
         if (id) {
@@ -168,7 +173,15 @@ const Suspended = ({
                             <FontAwesomeIcon icon={faArrowLeft} />
                         </ActionButton>
                     </div>
-                    <h2 css={tw`text-white font-bold text-4xl`}>{isFree ? 'Suspended' : 'Suspended'}</h2>
+                    {rootAdmin && serverUuid && (
+                        <AdminBypassButton
+                            serverUuid={serverUuid}
+                            bypassType="suspended"
+                            serverStatus={serverStatus}
+                            position="absolute"
+                        />
+                    )}
+                    <h2 css={tw`text-white font-bold text-4xl`}>Suspended</h2>
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>
@@ -207,14 +220,24 @@ const Suspended = ({
                                         Your server has been suspended due to an unpaid balance. Please complete payment
                                         to restore access.
                                         <div className={'mt-4 space-y-2'}>
-                                            <div className={'flex items-center justify-between p-3 bg-gray-900/50 rounded border border-gray-700'}>
-                                                <span className={'text-gray-300 font-medium'}>Outstanding Balance:</span>
+                                            <div
+                                                className={
+                                                    'flex items-center justify-between p-3 bg-gray-900/50 rounded border border-gray-700'
+                                                }
+                                            >
+                                                <span className={'text-gray-300 font-medium'}>
+                                                    Outstanding Balance:
+                                                </span>
                                                 <span className={'text-white font-bold text-lg'}>
                                                     {currency}
                                                     {product.price.toFixed(2)}
                                                 </span>
                                             </div>
-                                            <div className={'flex items-center justify-between p-3 bg-yellow-900/20 rounded border border-yellow-700/50'}>
+                                            <div
+                                                className={
+                                                    'flex items-center justify-between p-3 bg-yellow-900/20 rounded border border-yellow-700/50'
+                                                }
+                                            >
                                                 <span className={'text-yellow-300 font-medium'}>Days Overdue:</span>
                                                 <span className={'text-yellow-400 font-bold text-lg'}>
                                                     {daysOverdue} {daysOverdue === 1 ? 'day' : 'days'}
@@ -243,7 +266,9 @@ const Suspended = ({
                                 ) : (
                                     <div className={'space-y-4'}>
                                         <div className={'bg-gray-900/30 rounded-lg border border-gray-700 p-4'}>
-                                            <h3 className={'text-white font-bold text-lg mb-3'}>Complete Your Payment</h3>
+                                            <h3 className={'text-white font-bold text-lg mb-3'}>
+                                                Complete Your Payment
+                                            </h3>
                                             <div className={'space-y-2 text-sm'}>
                                                 <div className={'flex justify-between items-center'}>
                                                     <span className={'text-gray-400'}>Product:</span>
@@ -257,7 +282,9 @@ const Suspended = ({
                                                 </div>
                                                 <div className={'border-t border-gray-700 pt-2 mt-2'}>
                                                     <div className={'flex justify-between items-center'}>
-                                                        <span className={'text-gray-300 font-semibold'}>Total Amount:</span>
+                                                        <span className={'text-gray-300 font-semibold'}>
+                                                            Total Amount:
+                                                        </span>
                                                         <span className={'text-white font-bold text-xl'}>
                                                             {currency}
                                                             {product.price.toFixed(2)}

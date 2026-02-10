@@ -21,6 +21,7 @@ import SidebarControls from '@server/console/SidebarControls';
 import classNames from 'classnames';
 import NavigationBar from '@/elements/NavigationBar';
 import ScopedAlert from '@account/ScopedAlert';
+import BypassModeHeader from '@/elements/BypassModeHeader';
 
 function statusToColor(status: ServerStatus): string {
     switch (status) {
@@ -36,6 +37,29 @@ function statusToColor(status: ServerStatus): string {
             return 'border-gray-500';
     }
 }
+
+// Helper component to render server routes
+const ServerRoutes = ({ location }: { location: ReturnType<typeof useLocation> }) => (
+    <ErrorBoundary>
+        <Routes location={location}>
+            {routes.server.map(({ route, permission, component: Component }) => (
+                <Route
+                    key={route}
+                    path={route}
+                    element={
+                        <PermissionRoute permission={permission}>
+                            <Spinner.Suspense>
+                                <Component />
+                            </Spinner.Suspense>
+                        </PermissionRoute>
+                    }
+                />
+            ))}
+
+            <Route path="*" element={<NotFound />} />
+        </Routes>
+    </ErrorBoundary>
+);
 
 function ServerRouter() {
     const params = useParams<'id'>();
@@ -61,6 +85,10 @@ function ServerRouter() {
 
     const categories = ['data', 'configuration'] as const;
 
+    // Check if admin has bypassed the conflict screen
+    const isConflictBypassed =
+        rootAdmin && server?.uuid && sessionStorage.getItem(`admin_bypass_conflict_${server.uuid}`) === 'true';
+
     useEffect(() => {
         clearServerState();
     }, []);
@@ -82,15 +110,27 @@ function ServerRouter() {
         };
     }, [params.id]);
 
-    if (billable && server.renewalDate && server.renewalDate.getTime() < new Date().getTime())
-        return (
-            <Suspended
-                id={server.billingProductId}
-                date={server.renewalDate}
-                serverId={server.internalId}
-                serverUuid={server.uuid}
-            />
-        );
+    if (billable && server.renewalDate && server.renewalDate.getTime() < new Date().getTime()) {
+        // Check if admin has bypassed the suspension screen
+        const bypassKey = `admin_bypass_suspended_${server.uuid}`;
+        const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
+
+        if (!isBypassed) {
+            return (
+                <Suspended
+                    id={server.billingProductId}
+                    date={server.renewalDate}
+                    serverId={server.internalId}
+                    serverUuid={server.uuid}
+                    serverStatus={server.status}
+                />
+            );
+        }
+    }
+
+    // Check if we're in suspended bypass mode
+    const isSuspendedBypassed =
+        rootAdmin && server?.uuid && sessionStorage.getItem(`admin_bypass_suspended_${server.uuid}`) === 'true';
 
     return (
         <Fragment key={'server-router'}>
@@ -198,30 +238,19 @@ function ServerRouter() {
                         <InstallListener />
                         <TransferListener />
                         <WebsocketHandler />
+                        {(isSuspendedBypassed || isConflictBypassed) && server?.uuid && (
+                            <BypassModeHeader
+                                serverUuid={server.uuid}
+                                bypassType={isSuspendedBypassed ? 'suspended' : 'conflict'}
+                            />
+                        )}
                         <NavigationBar />
                         {inConflictState &&
-                        (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${server?.id}`))) ? (
+                        (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${server?.id}`))) &&
+                        !isConflictBypassed ? (
                             <ConflictStateRenderer />
                         ) : (
-                            <ErrorBoundary>
-                                <Routes location={location}>
-                                    {routes.server.map(({ route, permission, component: Component }) => (
-                                        <Route
-                                            key={route}
-                                            path={route}
-                                            element={
-                                                <PermissionRoute permission={permission}>
-                                                    <Spinner.Suspense>
-                                                        <Component />
-                                                    </Spinner.Suspense>
-                                                </PermissionRoute>
-                                            }
-                                        />
-                                    ))}
-
-                                    <Route path="*" element={<NotFound />} />
-                                </Routes>
-                            </ErrorBoundary>
+                            <ServerRoutes location={location} />
                         )}
                     </div>
                 )}

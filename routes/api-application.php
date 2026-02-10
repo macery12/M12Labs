@@ -115,6 +115,15 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::post('/export', [Application\Billing\ConfigController::class, 'export']);
         });
 
+        // Node pricing multiplier routes
+        Route::prefix('/node-pricing')->group(function () {
+            Route::get('/', [Application\Billing\NodePricingController::class, 'index']);
+            Route::patch('/batch', [Application\Billing\NodePricingController::class, 'batchUpdate']);
+            Route::post('/reset-all', [Application\Billing\NodePricingController::class, 'resetAll']);
+            Route::patch('/{id}', [Application\Billing\NodePricingController::class, 'update']);
+            Route::post('/{id}/reset', [Application\Billing\NodePricingController::class, 'reset']);
+        });
+
         // Get suggested multiplier ranges
         Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
     });

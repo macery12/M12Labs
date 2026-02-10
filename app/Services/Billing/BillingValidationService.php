@@ -92,15 +92,16 @@ class BillingValidationService
      * @param int|null $couponId The coupon ID to apply (optional)
      * @param string $orderType The order type (default: 'new')
      * @param int|null $billingDays The billing cycle days (optional, defaults to 30)
+     * @param int|null $nodeId The node ID for location-based pricing (optional)
      * @return array{finalPrice: float, discount: float} The final price and discount amount
      */
-    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new', ?int $billingDays = null): array
+    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new', ?int $billingDays = null, ?int $nodeId = null): array
     {
         // Use billing days if provided, otherwise default to 30
         $days = $billingDays ?? 30;
         
-        // Calculate price based on billing cycle
-        $priceInfo = $product->calculatePrice($days);
+        // Calculate price based on billing cycle and node
+        $priceInfo = $product->calculatePrice($days, $nodeId);
         $basePrice = $priceInfo['price'];
         
         $finalPrice = $basePrice;
@@ -120,6 +121,7 @@ class BillingValidationService
             'subtotal' => $basePrice,
             'billingDays' => $days,
             'multiplier' => $priceInfo['multiplier'],
+            'nodeMultiplier' => $priceInfo['node_multiplier'],
         ];
     }
 

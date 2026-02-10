@@ -9,6 +9,7 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
 import CouponInput from '@account/billing/order/CouponInput';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
+import PriceBreakdown from '@account/billing/order/PriceBreakdown';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArchive,
@@ -272,6 +273,8 @@ export default () => {
                                     key={node.id}
                                     selected={selectedNode}
                                     setSelected={setSelectedNode}
+                                    basePrice={getCurrentPrice()}
+                                    billingDays={selectedBillingDays}
                                 />
                             ))}
                         </div>
@@ -300,19 +303,26 @@ export default () => {
                         </section>
                     )}
 
-                    {/* Variables Section */}
-                    {eggs && eggs.length > 1 && (
-                        <section>
-                            <div className={'mb-6'}>
-                                <h2 className={'text-2xl font-bold text-gray-200'}>Server Variables</h2>
-                                <p className={'mt-1 text-sm text-gray-400'}>
-                                    Configure your server settings before deployment.
-                                </p>
-                            </div>
-                            <div className={'grid gap-4 sm:grid-cols-2'}>
-                                {eggs?.map(variable => (
-                                    <div key={variable.envVariable}>
-                                        {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
+                            {/* Order Summary */}
+                            <div
+                                className={'rounded-lg border p-6'}
+                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                            >
+                                <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
+                                
+                                <div className={'space-y-4'}>
+                                    <div className={'flex items-start justify-between'}>
+                                        <div className={'flex items-center gap-3'}>
+                                            {product.icon && (
+                                                <img src={product.icon} className={'h-12 w-12 rounded'} alt={product.name} />
+                                            )}
+                                            <div>
+                                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                                <p className={'text-sm text-gray-400'}>
+                                                    {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -418,52 +428,31 @@ export default () => {
                                 </div>
                             </div>
 
-                            <div className={'my-4 h-px bg-gray-700'} />
+                            {/* Price Breakdown */}
+                            {product.price !== 0 && (() => {
+                                const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
+                                const selectedNodeData = nodes?.find(n => Number(n.id) === selectedNode);
+                                
+                                return (
+                                    <PriceBreakdown
+                                        basePrice={product.price}
+                                        billingDays={selectedBillingDays}
+                                        billingMultiplier={selectedCycle?.multiplier || 1.0}
+                                        billingDiscountPercent={selectedCycle?.discountPercent || 0}
+                                        nodeMultiplier={selectedNodeData?.priceMultiplier || 1.0}
+                                        nodeName={selectedNodeData?.name}
+                                        couponDiscount={couponData?.discount || 0}
+                                        couponCode={couponData?.coupon.code}
+                                    />
+                                );
+                            })()}
 
-                            <div className={'space-y-3'}>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.cpu}% CPU</span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>
-                                        {(product.limits.memory / 1024).toFixed(1)} GiB RAM
-                                    </span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>
-                                        {(product.limits.disk / 1024).toFixed(1)} GiB Storage
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className={'my-4 h-px bg-gray-700'} />
-
-                            <div className={'space-y-3'}>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faArchive} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.backup} Backups</span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faDatabase} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.database} Databases</span>
-                                </div>
-                                <div className={'flex items-center gap-2 text-sm'}>
-                                    <FontAwesomeIcon icon={faEthernet} className={'h-4 w-4 text-gray-400'} />
-                                    <span className={'text-gray-300'}>{product.limits.allocation} Ports</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Legal Agreements Card */}
-                        <div
-                            style={{ backgroundColor: colors.secondary }}
-                            className={'rounded-lg border border-gray-700 p-6'}
-                        >
-                            <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
-                            <div className={'space-y-3'}>
+                            {/* Legal Agreements */}
+                            <div
+                                className={'rounded-lg border p-6'}
+                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                            >
+                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
                                 <div
                                     className={
                                         'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'

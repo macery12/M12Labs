@@ -176,9 +176,10 @@ class Product extends Model
      * Calculate price for a specific billing cycle.
      * 
      * @param int $days Number of billing days
-     * @return array ['price' => float, 'multiplier' => float, 'discount_percent' => float]
+     * @param int|null $nodeId Optional node ID to apply node pricing multiplier
+     * @return array ['price' => float, 'multiplier' => float, 'discount_percent' => float, 'node_multiplier' => float]
      */
-    public function calculatePrice(int $days): array
+    public function calculatePrice(int $days, ?int $nodeId = null): array
     {
         $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
         $basePrice = $this->getEffectiveBasePrice();
@@ -212,22 +213,32 @@ class Product extends Model
             ];
         }
 
-        // Find the first matching step
-        $multiplier = 1.0;
+        // Find the first matching step (billing cycle multiplier)
+        $billingMultiplier = 1.0;
         foreach ($steps as $step) {
             if ($days <= $step['maxDays']) {
-                $multiplier = $step['multiplier'];
+                $billingMultiplier = $step['multiplier'];
                 break;
             }
         }
         
         // If no step matched (days > all maxDays), use the last step's multiplier
-        if ($multiplier === 1.0 && !empty($steps)) {
-            $multiplier = end($steps)['multiplier'];
+        if ($billingMultiplier === 1.0 && !empty($steps)) {
+            $billingMultiplier = end($steps)['multiplier'];
         }
 
-        // Calculate final price: per_day_price * days * multiplier, rounded to 2 decimal places (standard for currency)
-        $finalPrice = round($perDayPrice * $days * $multiplier, 2);
+        // Get node pricing multiplier (default to 1.0 if node not found or no node specified)
+        $nodeMultiplier = 1.0;
+        if ($nodeId) {
+            $node = \Everest\Models\Node::find($nodeId);
+            if ($node && isset($node->price_multiplier)) {
+                $nodeMultiplier = (float) $node->price_multiplier;
+            }
+        }
+
+        // Calculate final price: per_day_price * days * billing_multiplier * node_multiplier
+        // Rounded to 2 decimal places (standard for currency)
+        $finalPrice = round($perDayPrice * $days * $billingMultiplier * $nodeMultiplier, 2);
 
         // Calculate discount percentage (negative = premium, positive = discount)
         $standardPrice = $perDayPrice * $days;
@@ -235,7 +246,8 @@ class Product extends Model
 
         return [
             'price' => $finalPrice,
-            'multiplier' => $multiplier,
+            'multiplier' => $billingMultiplier,
+            'node_multiplier' => $nodeMultiplier,
             'discount_percent' => round($discountPercent, 1),
         ];
     }
