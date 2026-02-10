@@ -210,10 +210,10 @@ export default ({
                     </span>
                 </div>
                 
-                {/* Savings indicator */}
-                {(basePrice - total > 0.01) && (
+                {/* Savings indicator - only show when coupon is applied */}
+                {couponDiscount > 0.01 && (
                     <div className={'mt-2 text-center text-xs text-green-400'}>
-                        You're saving {formatPrice(basePrice - total)}!
+                        You're saving {formatPrice(couponDiscount)}!
                     </div>
                 )}
             </div>
