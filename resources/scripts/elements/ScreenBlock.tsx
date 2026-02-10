@@ -14,7 +14,7 @@ import Spinner from './Spinner';
 import { getProduct, Product } from '@/api/routes/account/billing/products';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import useFlash from '@/plugins/useFlash';
-import FlashMessageRender from './FlashMessageRender';
+import AdminBypassButton from '@/elements/AdminBypassButton';
 
 interface BaseProps {
     title: string;
@@ -159,14 +159,6 @@ const Suspended = ({
     const daysOverdue = Math.max(0, Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)));
     const isLongOverdue = daysOverdue > suspensionThreshold;
 
-    const handleAdminBypass = () => {
-        if (!serverUuid) return;
-        // Store bypass state in session storage so it persists during the session
-        sessionStorage.setItem(`admin_bypass_${serverUuid}`, 'true');
-        // Navigate to the server to trigger reload
-        navigate(`/server/${serverUuid}`);
-    };
-
     return (
         <PageContentBlock>
             <div css={tw`flex justify-center`}>
@@ -180,20 +172,7 @@ const Suspended = ({
                         </ActionButton>
                     </div>
                     <h2 css={tw`text-white font-bold text-4xl`}>{isFree ? 'Suspended' : 'Suspended'}</h2>
-                    {rootAdmin && (
-                        <div css={tw`mt-4`}>
-                            <Button
-                                onClick={handleAdminBypass}
-                                size={Button.Sizes.Large}
-                                variant={Button.Variants.Secondary}
-                            >
-                                Admin Bypass
-                            </Button>
-                            <p css={tw`text-xs text-neutral-500 mt-2`}>
-                                This will bypass the suspension screen without unsuspending the server.
-                            </p>
-                        </div>
-                    )}
+                    {rootAdmin && <AdminBypassButton serverUuid={serverUuid} bypassType="suspended" />}
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>

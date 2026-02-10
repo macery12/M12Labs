@@ -37,6 +37,29 @@ function statusToColor(status: ServerStatus): string {
     }
 }
 
+// Helper component to render server routes
+const ServerRoutes = ({ location }: { location: ReturnType<typeof useLocation> }) => (
+    <ErrorBoundary>
+        <Routes location={location}>
+            {routes.server.map(({ route, permission, component: Component }) => (
+                <Route
+                    key={route}
+                    path={route}
+                    element={
+                        <PermissionRoute permission={permission}>
+                            <Spinner.Suspense>
+                                <Component />
+                            </Spinner.Suspense>
+                        </PermissionRoute>
+                    }
+                />
+            ))}
+
+            <Route path="*" element={<NotFound />} />
+        </Routes>
+    </ErrorBoundary>
+);
+
 function ServerRouter() {
     const params = useParams<'id'>();
     const location = useLocation();
@@ -83,7 +106,7 @@ function ServerRouter() {
 
     if (billable && server.renewalDate && server.renewalDate.getTime() < new Date().getTime()) {
         // Check if admin has bypassed the suspension screen
-        const bypassKey = `admin_bypass_${server.uuid}`;
+        const bypassKey = `admin_bypass_suspended_${server.uuid}`;
         const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
 
         if (!isBypassed) {
@@ -212,50 +235,10 @@ function ServerRouter() {
                                 const bypassKey = `admin_bypass_conflict_${server.uuid}`;
                                 const isBypassed = rootAdmin && sessionStorage.getItem(bypassKey) === 'true';
 
-                                return !isBypassed ? (
-                                    <ConflictStateRenderer />
-                                ) : (
-                                    <ErrorBoundary>
-                                        <Routes location={location}>
-                                            {routes.server.map(({ route, permission, component: Component }) => (
-                                                <Route
-                                                    key={route}
-                                                    path={route}
-                                                    element={
-                                                        <PermissionRoute permission={permission}>
-                                                            <Spinner.Suspense>
-                                                                <Component />
-                                                            </Spinner.Suspense>
-                                                        </PermissionRoute>
-                                                    }
-                                                />
-                                            ))}
-
-                                            <Route path="*" element={<NotFound />} />
-                                        </Routes>
-                                    </ErrorBoundary>
-                                );
+                                return !isBypassed ? <ConflictStateRenderer /> : <ServerRoutes location={location} />;
                             })()
                         ) : (
-                            <ErrorBoundary>
-                                <Routes location={location}>
-                                    {routes.server.map(({ route, permission, component: Component }) => (
-                                        <Route
-                                            key={route}
-                                            path={route}
-                                            element={
-                                                <PermissionRoute permission={permission}>
-                                                    <Spinner.Suspense>
-                                                        <Component />
-                                                    </Spinner.Suspense>
-                                                </PermissionRoute>
-                                            }
-                                        />
-                                    ))}
-
-                                    <Route path="*" element={<NotFound />} />
-                                </Routes>
-                            </ErrorBoundary>
+                            <ServerRoutes location={location} />
                         )}
                     </div>
                 )}

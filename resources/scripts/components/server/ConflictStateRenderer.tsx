@@ -4,9 +4,7 @@ import ServerRestoreSvg from '@/assets/images/server_restore.svg';
 import ScreenBlock from '@/elements/ScreenBlock';
 import { ServerContext } from '@/state/server';
 import { useStoreState } from '@/state/hooks';
-import { Button } from '@/elements/button';
-import tw from 'twin.macro';
-import { useNavigate } from 'react-router-dom';
+import AdminBypassButton from '@/elements/AdminBypassButton';
 
 export default () => {
     const status = ServerContext.useStoreState(state => state.server.data?.status || null);
@@ -16,29 +14,11 @@ export default () => {
     );
     const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
     const rootAdmin = useStoreState(state => state.user.data!.rootAdmin);
-    const navigate = useNavigate();
-
-    const handleAdminBypass = () => {
-        if (!serverUuid) return;
-        // Store bypass state in session storage
-        sessionStorage.setItem(`admin_bypass_conflict_${serverUuid}`, 'true');
-        // Navigate to force reload
-        navigate(`/server/${serverUuid}`);
-    };
 
     const renderAdminBypassButton = () => {
         if (!rootAdmin) return null;
 
-        return (
-            <div css={tw`mt-4`}>
-                <Button onClick={handleAdminBypass} size={Button.Sizes.Large} variant={Button.Variants.Secondary}>
-                    Admin Bypass
-                </Button>
-                <p css={tw`text-xs text-neutral-500 mt-2`}>
-                    This will bypass the conflict screen without changing the server state.
-                </p>
-            </div>
-        );
+        return <AdminBypassButton serverUuid={serverUuid} bypassType="conflict" />;
     };
 
     return status === 'installing' || status === 'install_failed' || status === 'reinstall_failed' ? (
