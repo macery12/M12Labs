@@ -151,13 +151,6 @@ export default () => {
     const handleRemoveAllocation = async () => {
         if (!selectedCurrentId) return;
 
-<<<<<<< HEAD
-        // Can't remove the primary allocation without setting a new one
-        if (selectedCurrentId === server.allocationId && currentAllocations.length <= 1) {
-            clearAndAddHttpError({
-                key: 'server:networking',
-                error: { message: 'Cannot remove the only allocation. Add another allocation first.' },
-=======
         // Can't remove the primary allocation if there are no other allocations
         const isPrimarySelected = selectedCurrentIds.includes(server.allocationId);
         const remainingCount = currentAllocations.length - selectedCurrentIds.length;
@@ -169,7 +162,6 @@ export default () => {
                     message:
                         'Cannot remove the primary allocation without other allocations. Add another allocation first.',
                 },
->>>>>>> upstream/develop
             });
             return;
         }
@@ -316,26 +308,18 @@ export default () => {
                         {/* Current Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-<<<<<<< HEAD
-                                <Label>Current Allocations</Label>
-=======
                                 <Label>
                                     Current Allocations{' '}
                                     {selectedCurrentIds.length > 0 && `(${selectedCurrentIds.length} selected)`}
                                 </Label>
->>>>>>> upstream/develop
                                 <div css={tw`flex gap-2`}>
                                     <Button
                                         type="button"
                                         onClick={handleSetPrimary}
                                         disabled={
-<<<<<<< HEAD
-                                            !selectedCurrentId || selectedCurrentId === server.allocationId || loading
-=======
                                             selectedCurrentIds.length !== 1 ||
                                             selectedCurrentIds[0] === server.allocationId ||
                                             loading
->>>>>>> upstream/develop
                                         }
                                         css={tw`text-xs px-2 py-1`}
                                     >
@@ -371,14 +355,9 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-<<<<<<< HEAD
-                                                    backgroundColor:
-                                                        selectedCurrentId === allocation.id ? '#374151' : undefined,
-=======
                                                     backgroundColor: selectedCurrentIds.includes(allocation.id)
                                                         ? '#374151'
                                                         : undefined,
->>>>>>> upstream/develop
                                                 }}
                                             >
                                                 <div css={tw`flex items-center gap-3`}>
@@ -411,14 +390,10 @@ export default () => {
                         {/* Available Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-<<<<<<< HEAD
-                                <Label>Available Allocations</Label>
-=======
                                 <Label>
                                     Available Allocations{' '}
                                     {selectedAvailableIds.length > 0 && `(${selectedAvailableIds.length} selected)`}
                                 </Label>
->>>>>>> upstream/develop
                                 <Button
                                     type="button"
                                     onClick={handleAddAllocation}
@@ -453,14 +428,9 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-<<<<<<< HEAD
-                                                    backgroundColor:
-                                                        selectedAvailableId === allocation.id ? '#374151' : undefined,
-=======
                                                     backgroundColor: selectedAvailableIds.includes(allocation.id)
                                                         ? '#374151'
                                                         : undefined,
->>>>>>> upstream/develop
                                                 }}
                                             >
                                                 <input
@@ -488,18 +458,11 @@ export default () => {
                     {/* Info Message */}
                     <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded mt-4`}>
                         <p>
-<<<<<<< HEAD
-                            💡 <strong>How to use:</strong> Click an allocation from the &quot;Available
-                            Allocations&quot; list on the right and click &quot;Add Selected&quot; to add it
-                            immediately. Click allocations in the &quot;Current Allocations&quot; list to select them,
-                            then use &quot;Set Primary&quot; or &quot;Remove&quot;. Changes are saved automatically.
-=======
                             💡 <strong>How to use:</strong> Select multiple allocations using checkboxes from either
                             list. Click &quot;Add&quot; to add selected available allocations immediately, or
                             &quot;Remove&quot; to remove selected current allocations. Select a single allocation and
                             click &quot;Set Primary&quot; to make it the primary allocation. Changes are saved
                             automatically.
->>>>>>> upstream/develop
                         </p>
                     </div>
                 </div>
