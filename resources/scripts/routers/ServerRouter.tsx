@@ -84,8 +84,8 @@ function ServerRouter() {
     const categories = ['data', 'configuration'] as const;
 
     // Check if admin has bypassed the conflict screen
-    const conflictBypassKey = server?.uuid ? `admin_bypass_conflict_${server.uuid}` : '';
-    const isConflictBypassed = rootAdmin && conflictBypassKey && sessionStorage.getItem(conflictBypassKey) === 'true';
+    const isConflictBypassed =
+        rootAdmin && server?.uuid && sessionStorage.getItem(`admin_bypass_conflict_${server.uuid}`) === 'true';
 
     useEffect(() => {
         clearServerState();

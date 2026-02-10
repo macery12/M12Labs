@@ -171,7 +171,7 @@ const Suspended = ({
                             <FontAwesomeIcon icon={faArrowLeft} />
                         </ActionButton>
                     </div>
-                    <h2 css={tw`text-white font-bold text-4xl`}>{isFree ? 'Suspended' : 'Suspended'}</h2>
+                    <h2 css={tw`text-white font-bold text-4xl`}>Suspended</h2>
                     {rootAdmin && <AdminBypassButton serverUuid={serverUuid} bypassType="suspended" />}
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
