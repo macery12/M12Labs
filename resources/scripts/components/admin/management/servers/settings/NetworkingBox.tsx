@@ -315,7 +315,15 @@ export default () => {
                                     <Button
                                         type="button"
                                         onClick={handleSetPrimary}
+<<<<<<< HEAD
                                         disabled={!selectedCurrentId || selectedCurrentId === server.allocationId || loading}
+=======
+                                        disabled={
+                                            selectedCurrentIds.length !== 1 ||
+                                            selectedCurrentIds[0] === server.allocationId ||
+                                            loading
+                                        }
+>>>>>>> origin/develop
                                         css={tw`text-xs px-2 py-1`}
                                     >
                                         <FontAwesomeIcon icon={faStar} css={tw`mr-1`} />
@@ -350,7 +358,11 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
+<<<<<<< HEAD
                                                     backgroundColor: selectedCurrentId === allocation.id
+=======
+                                                    backgroundColor: selectedCurrentIds.includes(allocation.id)
+>>>>>>> origin/develop
                                                         ? '#374151'
                                                         : undefined,
                                                 }}
@@ -422,7 +434,11 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
+<<<<<<< HEAD
                                                     backgroundColor: selectedAvailableId === allocation.id
+=======
+                                                    backgroundColor: selectedAvailableIds.includes(allocation.id)
+>>>>>>> origin/develop
                                                         ? '#374151'
                                                         : undefined,
                                                 }}
@@ -452,10 +468,18 @@ export default () => {
                     {/* Info Message */}
                     <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded mt-4`}>
                         <p>
+<<<<<<< HEAD
                             💡 <strong>How to use:</strong> Select an allocation from either list. Click
                             &quot;Add&quot; to add the selected available allocation, or &quot;Remove&quot; to
                             remove the selected current allocation. Select a current allocation and click
                             &quot;Set Primary&quot; to make it the primary allocation. Changes are saved automatically.
+=======
+                            💡 <strong>How to use:</strong> Select multiple allocations using checkboxes from either
+                            list. Click &quot;Add&quot; to add selected available allocations immediately, or
+                            &quot;Remove&quot; to remove selected current allocations. Select a single allocation and
+                            click &quot;Set Primary&quot; to make it the primary allocation. Changes are saved
+                            automatically.
+>>>>>>> origin/develop
                         </p>
                     </div>
                 </div>
