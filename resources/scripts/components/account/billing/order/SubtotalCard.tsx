@@ -17,6 +17,7 @@ interface SubtotalCardProps {
 }
 
 const formatPrice = (price: number) => `$${price.toFixed(2)}`;
+const MINIMUM_DISCOUNT_DISPLAY = 0.01;
 
 export default ({
     basePrice,
@@ -211,7 +212,7 @@ export default ({
                 </div>
                 
                 {/* Savings indicator - only show when coupon is applied */}
-                {couponDiscount > 0.01 && (
+                {couponDiscount > MINIMUM_DISCOUNT_DISPLAY && (
                     <div className={'mt-2 text-center text-xs text-green-400'}>
                         You're saving {formatPrice(couponDiscount)}!
                     </div>

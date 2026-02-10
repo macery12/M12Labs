@@ -453,7 +453,7 @@ export default () => {
                     return (
                         <div className={'space-y-6'}>
                             <div>
-                                <h2 className={'text-3xl font-bold text-gray-100'}>Review & Confirm</h2>
+                                <h2 className={'text-3xl font-bold text-gray-100'}>Review and Confirm</h2>
                                 <p className={'mt-2 text-gray-400'}>
                                     Almost done! Name your server and review your order.
                                 </p>
