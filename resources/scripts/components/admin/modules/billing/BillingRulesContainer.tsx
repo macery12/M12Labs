@@ -47,24 +47,24 @@ export default () => {
 
     const [activeTab, setActiveTab] = useState<TabType>('billing-cycles');
     const [defaultBillingDays, setDefaultBillingDays] = useState<number>(settings.renewal?.default_billing_days || 30);
-    
+
     // Parse multiplier steps from settings or use defaults
     const parseSteps = (stepsString: string | undefined): MultiplierStep[] => {
         if (!stepsString) {
             return [
-                { id: nanoid(), maxDays: 10, multiplier: 1.30 },
-                { id: nanoid(), maxDays: 20, multiplier: 1.20 },
-                { id: nanoid(), maxDays: 29, multiplier: 1.10 },
-                { id: nanoid(), maxDays: 30, multiplier: 1.00 },
+                { id: nanoid(), maxDays: 10, multiplier: 1.3 },
+                { id: nanoid(), maxDays: 20, multiplier: 1.2 },
+                { id: nanoid(), maxDays: 29, multiplier: 1.1 },
+                { id: nanoid(), maxDays: 30, multiplier: 1.0 },
                 { id: nanoid(), maxDays: 59, multiplier: 0.95 },
-                { id: nanoid(), maxDays: 89, multiplier: 0.90 },
+                { id: nanoid(), maxDays: 89, multiplier: 0.9 },
                 { id: nanoid(), maxDays: 999, multiplier: 0.85 },
             ];
         }
         try {
             const parsed = JSON.parse(stepsString) as StoredMultiplierStep[];
             // Add IDs to existing steps if they don't have them
-            return parsed.map((step) => ({
+            return parsed.map(step => ({
                 ...step,
                 id: nanoid(),
             }));
@@ -74,7 +74,7 @@ export default () => {
     };
 
     const [multiplierSteps, setMultiplierSteps] = useState<MultiplierStep[]>(
-        parseSteps(settings.renewal?.multiplier_steps as string | undefined)
+        parseSteps(settings.renewal?.multiplier_steps as string | undefined),
     );
     const [loading, setLoading] = useState(false);
 
@@ -87,9 +87,7 @@ export default () => {
     };
 
     const updateStep = (id: string, field: 'maxDays' | 'multiplier', value: number) => {
-        const updated = multiplierSteps.map(step =>
-            step.id === id ? { ...step, [field]: value } : step
-        );
+        const updated = multiplierSteps.map(step => (step.id === id ? { ...step, [field]: value } : step));
         setMultiplierSteps(updated);
     };
 
@@ -105,11 +103,11 @@ export default () => {
 
             // Sort steps by maxDays for consistency
             const sortedSteps = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
-            
+
             // Remove IDs before saving (backend doesn't need them)
-            const stepsToSave = sortedSteps.map(step => ({ 
-                maxDays: step.maxDays, 
-                multiplier: step.multiplier 
+            const stepsToSave = sortedSteps.map(step => ({
+                maxDays: step.maxDays,
+                multiplier: step.multiplier,
             }));
 
             // Save both settings
@@ -154,7 +152,8 @@ export default () => {
             <FlashMessageRender byKey={'admin:billing:node-pricing'} className={'mb-4'} />
 
             <Alert type={'info'} className={'mb-4'}>
-                <strong>Global Billing Settings:</strong> Configure pricing adjustments for billing cycle lengths and node locations. These settings apply to all products.
+                <strong>Global Billing Settings:</strong> Configure pricing adjustments for billing cycle lengths and
+                node locations. These settings apply to all products.
             </Alert>
 
             {/* Tabs Navigation */}
@@ -162,7 +161,7 @@ export default () => {
                 <div css={tw`flex gap-1 px-4`}>
                     <button
                         onClick={() => setActiveTab('billing-cycles')}
-                        className={`px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
+                        className={`border-b-2 px-6 py-4 text-sm font-medium transition-colors ${
                             activeTab === 'billing-cycles'
                                 ? 'border-blue-500 text-white'
                                 : 'border-transparent text-gray-400 hover:text-gray-200'
@@ -173,7 +172,7 @@ export default () => {
                     </button>
                     <button
                         onClick={() => setActiveTab('node-pricing')}
-                        className={`px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
+                        className={`border-b-2 px-6 py-4 text-sm font-medium transition-colors ${
                             activeTab === 'node-pricing'
                                 ? 'border-blue-500 text-white'
                                 : 'border-transparent text-gray-400 hover:text-gray-200'
@@ -188,7 +187,7 @@ export default () => {
             {/* Tab Content */}
             {activeTab === 'billing-cycles' && (
                 <div>
-                    <div className={'grid gap-4 lg:grid-cols-2 mb-4'}>
+                    <div className={'mb-4 grid gap-4 lg:grid-cols-2'}>
                         <AdminBox title={'Default Billing Length'} icon={faCalendar}>
                             <p className={'mb-4 text-gray-400'}>
                                 The base billing cycle length used for pricing calculations.
@@ -233,9 +232,10 @@ export default () => {
 
                     <AdminBox title={'Price Adjustment Steps'} icon={faDollarSign}>
                         <p className={'mb-4 text-gray-400'}>
-                            Define tiered pricing adjustments based on billing cycle length. Longer billing cycles typically receive discounts.
+                            Define tiered pricing adjustments based on billing cycle length. Longer billing cycles
+                            typically receive discounts.
                         </p>
-                        
+
                         {/* Price Adjustment Table */}
                         <div css={tw`overflow-x-auto mb-4`}>
                             <table css={tw`w-full border-collapse`}>
@@ -247,30 +247,38 @@ export default () => {
                                         <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
                                             Price Adjustment
                                         </th>
-                                        <th css={tw`text-right py-3 px-4 text-neutral-300 font-semibold`}>
-                                            Actions
-                                        </th>
+                                        <th css={tw`text-right py-3 px-4 text-neutral-300 font-semibold`}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {sortedStepsForDisplay.map((step, idx) => {
                                         const isLast = idx === sortedStepsForDisplay.length - 1;
                                         return (
-                                            <tr 
-                                                key={step.id} 
+                                            <tr
+                                                key={step.id}
                                                 css={tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`}
                                             >
                                                 <td css={tw`py-3 px-4`}>
                                                     <div css={tw`flex items-center gap-2`}>
                                                         <span css={tw`text-neutral-300 min-w-[150px]`}>
-                                                            {formatBillingLength(step.maxDays, isLast, defaultBillingDays)}
+                                                            {formatBillingLength(
+                                                                step.maxDays,
+                                                                isLast,
+                                                                defaultBillingDays,
+                                                            )}
                                                         </span>
                                                         <Input
                                                             type={'number'}
                                                             min={1}
                                                             max={999}
                                                             value={step.maxDays}
-                                                            onChange={e => updateStep(step.id, 'maxDays', parseInt(e.target.value) || 30)}
+                                                            onChange={e =>
+                                                                updateStep(
+                                                                    step.id,
+                                                                    'maxDays',
+                                                                    parseInt(e.target.value) || 30,
+                                                                )
+                                                            }
                                                             disabled={loading}
                                                             css={tw`w-24`}
                                                         />
@@ -278,12 +286,13 @@ export default () => {
                                                 </td>
                                                 <td css={tw`py-3 px-4`}>
                                                     <div css={tw`flex items-center gap-2`}>
-                                                        <span 
+                                                        <span
                                                             css={[
                                                                 tw`min-w-[120px] font-medium`,
-                                                                Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
-                                                                step.multiplier >= (1.0 + EPSILON) && tw`text-red-400`,
-                                                                step.multiplier < (1.0 - EPSILON) && tw`text-green-400`,
+                                                                Math.abs(step.multiplier - 1.0) < EPSILON &&
+                                                                    tw`text-blue-400`,
+                                                                step.multiplier >= 1.0 + EPSILON && tw`text-red-400`,
+                                                                step.multiplier < 1.0 - EPSILON && tw`text-green-400`,
                                                             ]}
                                                         >
                                                             {formatPriceAdjustment(step.multiplier)}
@@ -294,7 +303,13 @@ export default () => {
                                                             min={0.5}
                                                             max={2.0}
                                                             value={step.multiplier}
-                                                            onChange={e => updateStep(step.id, 'multiplier', parseFloat(e.target.value) || 1.0)}
+                                                            onChange={e =>
+                                                                updateStep(
+                                                                    step.id,
+                                                                    'multiplier',
+                                                                    parseFloat(e.target.value) || 1.0,
+                                                                )
+                                                            }
                                                             disabled={loading}
                                                             css={tw`w-24`}
                                                         />
@@ -329,7 +344,9 @@ export default () => {
                         </div>
 
                         <Alert type={'info'} className={'mt-4'}>
-                            <strong>How it works:</strong> The system finds the first step where days ≤ maxDays and applies that multiplier. For example, a 15-day billing cycle would match the first step with maxDays ≥ 15.
+                            <strong>How it works:</strong> The system finds the first step where days ≤ maxDays and
+                            applies that multiplier. For example, a 15-day billing cycle would match the first step with
+                            maxDays ≥ 15.
                         </Alert>
                     </AdminBox>
                 </div>
