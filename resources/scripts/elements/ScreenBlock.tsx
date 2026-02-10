@@ -101,11 +101,13 @@ const Suspended = ({
     id,
     serverId,
     serverUuid,
+    serverStatus,
 }: {
     date: Date;
     id?: number;
     serverId?: number;
     serverUuid?: string;
+    serverStatus?: string | null;
 }) => {
     const [product, setProduct] = useState<Product>();
     const [renewing, setRenewing] = useState<boolean>(false);
@@ -171,8 +173,15 @@ const Suspended = ({
                             <FontAwesomeIcon icon={faArrowLeft} />
                         </ActionButton>
                     </div>
+                    {rootAdmin && serverUuid && (
+                        <AdminBypassButton
+                            serverUuid={serverUuid}
+                            bypassType="suspended"
+                            serverStatus={serverStatus}
+                            position="absolute"
+                        />
+                    )}
                     <h2 css={tw`text-white font-bold text-4xl`}>Suspended</h2>
-                    {rootAdmin && <AdminBypassButton serverUuid={serverUuid} bypassType="suspended" />}
                     <p css={tw`text-sm text-neutral-400 mt-2`}>
                         {isFree ? (
                             <>

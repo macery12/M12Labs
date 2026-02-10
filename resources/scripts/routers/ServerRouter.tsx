@@ -21,6 +21,7 @@ import SidebarControls from '@server/console/SidebarControls';
 import classNames from 'classnames';
 import NavigationBar from '@/elements/NavigationBar';
 import ScopedAlert from '@account/ScopedAlert';
+import BypassModeHeader from '@/elements/BypassModeHeader';
 
 function statusToColor(status: ServerStatus): string {
     switch (status) {
@@ -120,10 +121,15 @@ function ServerRouter() {
                     date={server.renewalDate}
                     serverId={server.internalId}
                     serverUuid={server.uuid}
+                    serverStatus={server.status}
                 />
             );
         }
     }
+
+    // Check if we're in suspended bypass mode
+    const isSuspendedBypassed =
+        rootAdmin && server?.uuid && sessionStorage.getItem(`admin_bypass_suspended_${server.uuid}`) === 'true';
 
     return (
         <Fragment key={'server-router'}>
@@ -231,6 +237,12 @@ function ServerRouter() {
                         <InstallListener />
                         <TransferListener />
                         <WebsocketHandler />
+                        {(isSuspendedBypassed || isConflictBypassed) && server?.uuid && (
+                            <BypassModeHeader
+                                serverUuid={server.uuid}
+                                bypassType={isSuspendedBypassed ? 'suspended' : 'conflict'}
+                            />
+                        )}
                         <NavigationBar />
                         {inConflictState &&
                         (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${server?.id}`))) &&

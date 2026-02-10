@@ -18,7 +18,14 @@ export default () => {
     const renderAdminBypassButton = () => {
         if (!rootAdmin || !serverUuid) return null;
 
-        return <AdminBypassButton serverUuid={serverUuid} bypassType="conflict" />;
+        return (
+            <AdminBypassButton
+                serverUuid={serverUuid}
+                bypassType="conflict"
+                serverStatus={status}
+                position="absolute"
+            />
+        );
     };
 
     return status === 'installing' || status === 'install_failed' || status === 'reinstall_failed' ? (
