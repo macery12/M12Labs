@@ -199,6 +199,13 @@ export default () => {
             {/* Tab Content */}
             {activeTab === 'billing-cycles' && (
                 <div>
+                    {/* Save Button - Positioned under tab header */}
+                    <div className={'mb-4 flex justify-end'}>
+                        <Button onClick={handleSaveAll} disabled={loading}>
+                            {loading ? 'Saving...' : 'Save Billing Cycle Settings'}
+                        </Button>
+                    </div>
+
                     <div className={'mb-4 grid gap-4 lg:grid-cols-2'}>
                         <AdminBox title={'Default Billing Length'} icon={faCalendar}>
                             <p className={'mb-4 text-gray-400'}>
@@ -261,13 +268,6 @@ export default () => {
                                 </div>
                             </div>
                         </AdminBox>
-                    </div>
-
-                    {/* Save Button - Moved to top for better visibility */}
-                    <div className={'mb-4 flex justify-end'}>
-                        <Button onClick={handleSaveAll} disabled={loading}>
-                            {loading ? 'Saving...' : 'Save Billing Cycle Settings'}
-                        </Button>
                     </div>
 
                     <AdminBox title={'Price Adjustment Steps'} icon={faDollarSign}>
