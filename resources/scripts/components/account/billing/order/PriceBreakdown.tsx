@@ -45,26 +45,24 @@ export default ({
         >
             <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Price Breakdown</h3>
 
-            {/* Base Price */}
-            <div className={'flex items-center justify-between text-sm'}>
-                <span className={'text-gray-400'}>Base Product Price</span>
-                <span className={'font-medium text-gray-200'}>{formatPrice(basePrice)}</span>
-            </div>
-
-            {/* Billing Cycle Adjustment */}
+            {/* Plan Price (includes base price + billing cycle) */}
             <div className={'flex items-center justify-between text-sm'}>
                 <div className={'flex flex-col'}>
-                    <span className={'text-gray-400'}>Billing Cycle ({billingDays} days)</span>
-                    <span 
-                        className={'text-xs'}
-                        css={[
-                            billingDiscountPercent === 0 && tw`text-blue-400`,
-                            billingDiscountPercent > 0 && tw`text-green-400`,
-                            billingDiscountPercent < 0 && tw`text-red-400`,
-                        ]}
-                    >
-                        {formatPercent(billingDiscountPercent)}
+                    <span className={'text-gray-400'}>
+                        Plan Price ({billingDays}-day cycle)
                     </span>
+                    {billingMultiplier !== 1.0 && (
+                        <span 
+                            className={'text-xs'}
+                            css={[
+                                billingDiscountPercent === 0 && tw`text-blue-400`,
+                                billingDiscountPercent > 0 && tw`text-green-400`,
+                                billingDiscountPercent < 0 && tw`text-red-400`,
+                            ]}
+                        >
+                            {formatPercent(billingDiscountPercent)}
+                        </span>
+                    )}
                 </div>
                 <div className={'flex flex-col items-end'}>
                     <span className={'font-medium text-gray-200'}>{formatPrice(afterBillingCycle)}</span>

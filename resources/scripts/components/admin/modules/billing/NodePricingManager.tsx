@@ -72,6 +72,16 @@ export default () => {
             return;
         }
         
+        // Allow partial decimal values like "1." or "0." while typing
+        if (value.endsWith('.') || value === '.') {
+            // Store the string value temporarily - will be validated on blur
+            setLocalMultipliers(prev => ({
+                ...prev,
+                [nodeId]: parseFloat(value) || 0,
+            }));
+            return;
+        }
+        
         // Parse and validate the value
         const numValue = parseFloat(value);
         
