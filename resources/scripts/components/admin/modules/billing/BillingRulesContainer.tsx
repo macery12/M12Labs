@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import { faCalendar, faDollarSign, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faCalendar, faDollarSign, faPlus, faTrash, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import { updateSettings } from '@/api/routes/admin/billing';
@@ -13,6 +13,8 @@ import { Alert } from '@/elements/alert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import tw from 'twin.macro';
 import NodePricingManager from './NodePricingManager';
+
+type TabType = 'billing-cycles' | 'node-pricing';
 
 const EPSILON = 0.001;
 
@@ -43,6 +45,7 @@ export default () => {
     const updateEverest = useStoreActions(s => s.everest.updateEverest);
     const { clearFlashes, addFlash } = useFlash();
 
+    const [activeTab, setActiveTab] = useState<TabType>('billing-cycles');
     const [defaultBillingDays, setDefaultBillingDays] = useState<number>(settings.renewal?.default_billing_days || 30);
     
     // Parse multiplier steps from settings or use defaults
@@ -148,144 +151,195 @@ export default () => {
     return (
         <div>
             <FlashMessageRender byKey={'admin:billing'} className={'mb-4'} />
+            <FlashMessageRender byKey={'admin:billing:node-pricing'} className={'mb-4'} />
 
             <Alert type={'info'} className={'mb-4'}>
-                <strong>Global Billing Settings:</strong> These settings apply to all products. The price adjustment steps control pricing for different billing cycle lengths across all products.
+                <strong>Global Billing Settings:</strong> Configure pricing adjustments for billing cycle lengths and node locations. These settings apply to all products.
             </Alert>
 
-            <div className={'grid gap-4 lg:grid-cols-1'}>
-                <AdminBox title={'Default Billing Length'} icon={faCalendar}>
-                    <p className={'mb-4 text-gray-400'}>
-                        The default billing cycle length used for pricing calculations.
-                    </p>
-                    <div>
-                        <Label>Default Billing Days</Label>
-                        <Input
-                            type={'number'}
-                            min={1}
-                            max={365}
-                            value={defaultBillingDays}
-                            onChange={e => setDefaultBillingDays(parseInt(e.target.value) || 30)}
-                            disabled={loading}
-                        />
-                        <p className={'mt-2 text-xs text-gray-500'}>
-                            Base reference for billing cycle calculations (typically 30 days).
+            {/* Tabs Navigation */}
+            <div css={tw`border-b border-neutral-700 bg-neutral-900/50 rounded-t-lg mb-4`}>
+                <div css={tw`flex gap-1 px-4`}>
+                    <button
+                        onClick={() => setActiveTab('billing-cycles')}
+                        className={`px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === 'billing-cycles'
+                                ? 'border-blue-500 text-white'
+                                : 'border-transparent text-gray-400 hover:text-gray-200'
+                        }`}
+                    >
+                        <FontAwesomeIcon icon={faCalendar} className="mr-2" />
+                        Billing Cycles
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('node-pricing')}
+                        className={`px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === 'node-pricing'
+                                ? 'border-blue-500 text-white'
+                                : 'border-transparent text-gray-400 hover:text-gray-200'
+                        }`}
+                    >
+                        <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-2" />
+                        Node Pricing
+                    </button>
+                </div>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'billing-cycles' && (
+                <div>
+                    <div className={'grid gap-4 lg:grid-cols-2 mb-4'}>
+                        <AdminBox title={'Default Billing Length'} icon={faCalendar}>
+                            <p className={'mb-4 text-gray-400'}>
+                                The base billing cycle length used for pricing calculations.
+                            </p>
+                            <div>
+                                <Label>Default Billing Days</Label>
+                                <Input
+                                    type={'number'}
+                                    min={1}
+                                    max={365}
+                                    value={defaultBillingDays}
+                                    onChange={e => setDefaultBillingDays(parseInt(e.target.value) || 30)}
+                                    disabled={loading}
+                                />
+                                <p className={'mt-2 text-xs text-gray-500'}>
+                                    Base reference for billing cycle calculations (typically 30 days).
+                                </p>
+                            </div>
+                        </AdminBox>
+
+                        <div css={tw`bg-neutral-800 border border-neutral-700 rounded-lg p-6`}>
+                            <h3 css={tw`text-lg font-semibold text-neutral-100 mb-3 flex items-center gap-2`}>
+                                <FontAwesomeIcon icon={faDollarSign} css={tw`text-neutral-400`} />
+                                Quick Reference
+                            </h3>
+                            <div css={tw`space-y-2 text-sm`}>
+                                <div css={tw`flex justify-between items-center py-2 border-b border-neutral-700`}>
+                                    <span css={tw`text-neutral-400`}>Shorter billing cycles:</span>
+                                    <span css={tw`text-red-400 font-medium`}>Higher multiplier (premium)</span>
+                                </div>
+                                <div css={tw`flex justify-between items-center py-2 border-b border-neutral-700`}>
+                                    <span css={tw`text-neutral-400`}>Standard billing cycle:</span>
+                                    <span css={tw`text-blue-400 font-medium`}>1.00x multiplier</span>
+                                </div>
+                                <div css={tw`flex justify-between items-center py-2`}>
+                                    <span css={tw`text-neutral-400`}>Longer billing cycles:</span>
+                                    <span css={tw`text-green-400 font-medium`}>Lower multiplier (discount)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <AdminBox title={'Price Adjustment Steps'} icon={faDollarSign}>
+                        <p className={'mb-4 text-gray-400'}>
+                            Define tiered pricing adjustments based on billing cycle length. Longer billing cycles typically receive discounts.
                         </p>
-                    </div>
-                </AdminBox>
-            </div>
-
-            <div className={'mt-4'}>
-                <AdminBox title={'Price Adjustment Steps'} icon={faDollarSign}>
-                    <p className={'mb-4 text-gray-400'}>
-                        Define tiered pricing adjustments based on billing cycle length. Longer billing cycles typically receive discounts.
-                    </p>
-                    
-                    {/* Price Adjustment Table */}
-                    <div css={tw`overflow-x-auto mb-4`}>
-                        <table css={tw`w-full border-collapse`}>
-                            <thead>
-                                <tr css={tw`border-b-2 border-neutral-600`}>
-                                    <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
-                                        Billing Length
-                                    </th>
-                                    <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
-                                        Price Adjustment
-                                    </th>
-                                    <th css={tw`text-right py-3 px-4 text-neutral-300 font-semibold`}>
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sortedStepsForDisplay.map((step, idx) => {
-                                    const isLast = idx === sortedStepsForDisplay.length - 1;
-                                    return (
-                                        <tr 
-                                            key={step.id} 
-                                            css={tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`}
-                                        >
-                                            <td css={tw`py-3 px-4`}>
-                                                <div css={tw`flex items-center gap-2`}>
-                                                    <span css={tw`text-neutral-300 min-w-[150px]`}>
-                                                        {formatBillingLength(step.maxDays, isLast, defaultBillingDays)}
-                                                    </span>
-                                                    <Input
-                                                        type={'number'}
-                                                        min={1}
-                                                        max={999}
-                                                        value={step.maxDays}
-                                                        onChange={e => updateStep(step.id, 'maxDays', parseInt(e.target.value) || 30)}
-                                                        disabled={loading}
-                                                        css={tw`w-24`}
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td css={tw`py-3 px-4`}>
-                                                <div css={tw`flex items-center gap-2`}>
-                                                    <span 
-                                                        css={[
-                                                            tw`min-w-[120px] font-medium`,
-                                                            Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
-                                                            step.multiplier >= (1.0 + EPSILON) && tw`text-red-400`,
-                                                            step.multiplier < (1.0 - EPSILON) && tw`text-green-400`,
-                                                        ]}
+                        
+                        {/* Price Adjustment Table */}
+                        <div css={tw`overflow-x-auto mb-4`}>
+                            <table css={tw`w-full border-collapse`}>
+                                <thead>
+                                    <tr css={tw`border-b-2 border-neutral-600`}>
+                                        <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
+                                            Billing Length
+                                        </th>
+                                        <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>
+                                            Price Adjustment
+                                        </th>
+                                        <th css={tw`text-right py-3 px-4 text-neutral-300 font-semibold`}>
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {sortedStepsForDisplay.map((step, idx) => {
+                                        const isLast = idx === sortedStepsForDisplay.length - 1;
+                                        return (
+                                            <tr 
+                                                key={step.id} 
+                                                css={tw`border-b border-neutral-700 hover:bg-neutral-700 transition-colors`}
+                                            >
+                                                <td css={tw`py-3 px-4`}>
+                                                    <div css={tw`flex items-center gap-2`}>
+                                                        <span css={tw`text-neutral-300 min-w-[150px]`}>
+                                                            {formatBillingLength(step.maxDays, isLast, defaultBillingDays)}
+                                                        </span>
+                                                        <Input
+                                                            type={'number'}
+                                                            min={1}
+                                                            max={999}
+                                                            value={step.maxDays}
+                                                            onChange={e => updateStep(step.id, 'maxDays', parseInt(e.target.value) || 30)}
+                                                            disabled={loading}
+                                                            css={tw`w-24`}
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td css={tw`py-3 px-4`}>
+                                                    <div css={tw`flex items-center gap-2`}>
+                                                        <span 
+                                                            css={[
+                                                                tw`min-w-[120px] font-medium`,
+                                                                Math.abs(step.multiplier - 1.0) < EPSILON && tw`text-blue-400`,
+                                                                step.multiplier >= (1.0 + EPSILON) && tw`text-red-400`,
+                                                                step.multiplier < (1.0 - EPSILON) && tw`text-green-400`,
+                                                            ]}
+                                                        >
+                                                            {formatPriceAdjustment(step.multiplier)}
+                                                        </span>
+                                                        <Input
+                                                            type={'number'}
+                                                            step={0.01}
+                                                            min={0.5}
+                                                            max={2.0}
+                                                            value={step.multiplier}
+                                                            onChange={e => updateStep(step.id, 'multiplier', parseFloat(e.target.value) || 1.0)}
+                                                            disabled={loading}
+                                                            css={tw`w-24`}
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td css={tw`py-3 px-4 text-right`}>
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() => removeStep(step.id)}
+                                                        className="!bg-red-500 hover:!bg-red-600"
+                                                        disabled={loading || multiplierSteps.length === 1}
                                                     >
-                                                        {formatPriceAdjustment(step.multiplier)}
-                                                    </span>
-                                                    <Input
-                                                        type={'number'}
-                                                        step={0.01}
-                                                        min={0.5}
-                                                        max={2.0}
-                                                        value={step.multiplier}
-                                                        onChange={e => updateStep(step.id, 'multiplier', parseFloat(e.target.value) || 1.0)}
-                                                        disabled={loading}
-                                                        css={tw`w-24`}
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td css={tw`py-3 px-4 text-right`}>
-                                                <Button
-                                                    type="button"
-                                                    onClick={() => removeStep(step.id)}
-                                                    className="!bg-red-500 hover:!bg-red-600"
-                                                    disabled={loading || multiplierSteps.length === 1}
-                                                >
-                                                    <FontAwesomeIcon icon={faTrash} />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                        <FontAwesomeIcon icon={faTrash} />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <div css={tw`mt-4`}>
-                        <Button type="button" onClick={addStep} disabled={loading}>
-                            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-                            Add Step
-                        </Button>
-                    </div>
+                        <div css={tw`flex justify-between items-center mt-4`}>
+                            <Button type="button" onClick={addStep} disabled={loading}>
+                                <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                                Add Step
+                            </Button>
 
-                    <Alert type={'info'} className={'mt-4'}>
-                        <strong>How it works:</strong> The system finds the first step where days ≤ maxDays and applies that multiplier. For example, a 15-day billing cycle would match the first step with maxDays ≥ 15.
-                    </Alert>
-                </AdminBox>
-            </div>
+                            <Button onClick={handleSaveAll} disabled={loading}>
+                                {loading ? 'Saving...' : 'Save Billing Cycle Settings'}
+                            </Button>
+                        </div>
 
-            {/* Node Pricing Multipliers Section */}
-            <div className={'mt-4'}>
-                <FlashMessageRender byKey={'admin:billing:node-pricing'} className={'mb-4'} />
-                <NodePricingManager />
-            </div>
+                        <Alert type={'info'} className={'mt-4'}>
+                            <strong>How it works:</strong> The system finds the first step where days ≤ maxDays and applies that multiplier. For example, a 15-day billing cycle would match the first step with maxDays ≥ 15.
+                        </Alert>
+                    </AdminBox>
+                </div>
+            )}
 
-            <div className={'mt-6 flex justify-end'}>
-                <Button onClick={handleSaveAll} disabled={loading}>
-                    {loading ? 'Saving...' : 'Save All Settings'}
-                </Button>
-            </div>
+            {activeTab === 'node-pricing' && (
+                <div>
+                    <NodePricingManager />
+                </div>
+            )}
         </div>
     );
 };
