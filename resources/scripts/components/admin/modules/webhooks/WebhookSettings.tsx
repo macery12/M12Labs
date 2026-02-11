@@ -101,9 +101,7 @@ export default () => {
                                     <div className={'mt-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3'}>
                                         <div className={'flex items-center space-x-2'}>
                                             <FontAwesomeIcon icon={faCheck} className={'text-green-400'} />
-                                            <span className={'text-sm text-green-400'}>
-                                                Webhook URL is configured
-                                            </span>
+                                            <span className={'text-sm text-green-400'}>Webhook URL is configured</span>
                                         </div>
                                         <p className={'ml-6 mt-1 text-xs text-neutral-400'}>
                                             Current URL: {settings.url === true ? 'Configured (hidden)' : settings.url}
@@ -136,8 +134,8 @@ export default () => {
                                 <span className={'text-sm font-medium text-blue-400'}>Integration Guide</span>
                             </div>
                             <p className={'text-xs text-neutral-400'}>
-                                Webhooks send POST requests with JSON payloads. Ensure your endpoint can handle
-                                incoming requests and returns a 200 status code.
+                                Webhooks send POST requests with JSON payloads. Ensure your endpoint can handle incoming
+                                requests and returns a 200 status code.
                             </p>
                         </div>
                     </div>
@@ -167,9 +165,7 @@ export default () => {
 
                 {/* Save Button */}
                 <div className={'flex items-center justify-between'}>
-                    <div className={'text-sm text-neutral-500'}>
-                        Changes will apply immediately upon saving.
-                    </div>
+                    <div className={'text-sm text-neutral-500'}>Changes will apply immediately upon saving.</div>
                     <Button type="submit">Save Webhook URL</Button>
                 </div>
             </Form>

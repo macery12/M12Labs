@@ -112,9 +112,7 @@ export default () => {
             <div>
                 {sortedCategories.length === 0 ? (
                     <div className={'rounded-lg border border-neutral-700 bg-neutral-800 p-8 text-center'}>
-                        <p className={'text-neutral-400'}>
-                            No webhook events found matching &quot;{searchTerm}&quot;
-                        </p>
+                        <p className={'text-neutral-400'}>No webhook events found matching &quot;{searchTerm}&quot;</p>
                     </div>
                 ) : (
                     sortedCategories.map(category => (

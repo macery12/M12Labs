@@ -35,17 +35,13 @@ export default ({ event, onUpdate }: Props) => {
                 'group relative rounded-lg border p-4 transition-all duration-200',
                 enabled
                     ? 'border-green-500/30 bg-green-500/5 hover:border-green-500/50'
-                    : 'border-neutral-700 bg-neutral-750 hover:border-neutral-600',
+                    : 'bg-neutral-750 border-neutral-700 hover:border-neutral-600',
             )}
         >
             <div className={'flex items-start justify-between'}>
                 <div className={'flex-1 pr-4'}>
                     <h4 className={'mb-2 font-medium capitalize text-neutral-100'}>
-                        {event.key
-                            .split(':')
-                            .slice(1)
-                            .join(' - ')
-                            .replace(/-/g, ' ')}
+                        {event.key.split(':').slice(1).join(' - ').replace(/-/g, ' ')}
                     </h4>
                     <p className={'text-sm text-neutral-400'}>{event.description}</p>
                 </div>
@@ -75,10 +71,7 @@ export default ({ event, onUpdate }: Props) => {
                     )}
 
                     <span
-                        className={classNames(
-                            'text-xs font-medium',
-                            enabled ? 'text-green-400' : 'text-neutral-500',
-                        )}
+                        className={classNames('text-xs font-medium', enabled ? 'text-green-400' : 'text-neutral-500')}
                     >
                         {enabled ? 'Enabled' : 'Disabled'}
                     </span>
