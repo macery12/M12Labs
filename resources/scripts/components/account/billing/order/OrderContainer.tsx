@@ -10,12 +10,7 @@ import VariableBox from '@account/billing/order/VariableBox';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
 import SubtotalCard from '@account/billing/order/SubtotalCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faExternalLinkAlt,
-    faHdd,
-    faMemory,
-    faMicrochip,
-} from '@fortawesome/free-solid-svg-icons';
+import { faExternalLinkAlt, faHdd, faMemory, faMicrochip } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
 import PaymentMethodSelector from './PaymentMethodSelector';
@@ -63,7 +58,7 @@ export default () => {
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
-    
+
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -72,16 +67,16 @@ export default () => {
     // Auto-generate server name
     const generateServerName = useCallback(() => {
         if (!product || !selectedNode || !selectedEggId) return '';
-        
+
         const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
         const node = nodes?.find(n => Number(n.id) === selectedNode);
-        
+
         if (!selectedEgg || !node) return '';
-        
+
         const eggName = selectedEgg.name.split(' ')[0] || 'Server';
         const nodePrefix = node.name.split('-')[0] || 'Node';
         const timestamp = Date.now().toString().slice(-6);
-        
+
         return `${eggName}-${nodePrefix}-${timestamp}`;
     }, [product, selectedNode, selectedEggId, availableEggs, nodes]);
 
@@ -96,7 +91,8 @@ export default () => {
     // Navigate to next step
     const goToNextStep = () => {
         const totalSteps = getTotalSteps();
-        if (currentStep < totalSteps + 1) { // +1 for payment step
+        if (currentStep < totalSteps + 1) {
+            // +1 for payment step
             setCurrentStep(currentStep + 1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -133,14 +129,14 @@ export default () => {
     const getStepTitle = (step: number) => {
         const stepMap: { [key: number]: string } = {};
         let stepNum = 1;
-        
+
         stepMap[stepNum++] = 'Select Location';
         if (availableEggs.length > 1) stepMap[stepNum++] = 'Select Server Type';
         stepMap[stepNum++] = 'Select Billing Cycle';
         if (eggs && eggs.some(v => v.isEditable)) stepMap[stepNum++] = 'Configure Server';
         stepMap[stepNum++] = 'Review & Confirm';
         stepMap[stepNum++] = 'Payment';
-        
+
         return stepMap[step] || '';
     };
 
@@ -150,62 +146,61 @@ export default () => {
         return selectedCycle ? selectedCycle.price : product?.price ?? 0;
     };
 
-    
     // Get progress steps for wizard
     const getWizardSteps = () => {
         const steps = [];
         let stepNum = 1;
-        
+
         // Step 1: Node selection
         steps.push({
             id: stepNum++,
             name: 'Location',
-            status: currentStep > 1 ? 'complete' : (currentStep === 1 ? 'current' : 'upcoming')
+            status: currentStep > 1 ? 'complete' : currentStep === 1 ? 'current' : 'upcoming',
         });
-        
+
         // Step 2: Egg selection (if multiple eggs)
         if (availableEggs.length > 1) {
             const eggStep = stepNum++;
             steps.push({
                 id: eggStep,
                 name: 'Server Type',
-                status: currentStep > eggStep ? 'complete' : (currentStep === eggStep ? 'current' : 'upcoming')
+                status: currentStep > eggStep ? 'complete' : currentStep === eggStep ? 'current' : 'upcoming',
             });
         }
-        
+
         // Step 3: Billing cycle
         const billingStep = stepNum++;
         steps.push({
             id: billingStep,
             name: 'Billing',
-            status: currentStep > billingStep ? 'complete' : (currentStep === billingStep ? 'current' : 'upcoming')
+            status: currentStep > billingStep ? 'complete' : currentStep === billingStep ? 'current' : 'upcoming',
         });
-        
+
         // Step 4: Variables (if editable variables exist)
         if (eggs && eggs.some(v => v.isEditable)) {
             const varsStep = stepNum++;
             steps.push({
                 id: varsStep,
                 name: 'Configure',
-                status: currentStep > varsStep ? 'complete' : (currentStep === varsStep ? 'current' : 'upcoming')
+                status: currentStep > varsStep ? 'complete' : currentStep === varsStep ? 'current' : 'upcoming',
             });
         }
-        
+
         // Step 5: Review
         const reviewStep = stepNum++;
         steps.push({
             id: reviewStep,
             name: 'Review',
-            status: currentStep > reviewStep ? 'complete' : (currentStep === reviewStep ? 'current' : 'upcoming')
+            status: currentStep > reviewStep ? 'complete' : currentStep === reviewStep ? 'current' : 'upcoming',
         });
-        
+
         // Step 6: Payment
         steps.push({
             id: stepNum,
             name: 'Payment',
-            status: currentStep >= stepNum ? 'current' : 'upcoming'
+            status: currentStep >= stepNum ? 'current' : 'upcoming',
         });
-        
+
         return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
     };
 
@@ -256,7 +251,7 @@ export default () => {
                 // Fetch billing cycles
                 const cyclesData = await getProductBillingCycles(Number(params.id));
                 setBillingCycles(cyclesData);
-                
+
                 // Set default billing cycle (find the default one or use the first one)
                 const defaultCycle = cyclesData.find(c => c.isDefault) || cyclesData[0];
                 if (defaultCycle) {
@@ -400,7 +395,7 @@ export default () => {
                     </div>
                 );
 
-            case (availableEggs.length > 1 ? 3 : 2): // Billing Cycle
+            case availableEggs.length > 1 ? 3 : 2: // Billing Cycle
                 return (
                     <div className={'space-y-6'}>
                         <div>
@@ -422,15 +417,13 @@ export default () => {
                     </div>
                 );
 
-            case (availableEggs.length > 1 ? 4 : 3): // Variables (if any)
+            case availableEggs.length > 1 ? 4 : 3: // Variables (if any)
                 if (!eggs || !eggs.some(v => v.isEditable)) return null;
                 return (
                     <div className={'space-y-6'}>
                         <div>
                             <h2 className={'text-3xl font-bold text-gray-100'}>Configure Server</h2>
-                            <p className={'mt-2 text-gray-400'}>
-                                Set up your server variables and configuration.
-                            </p>
+                            <p className={'mt-2 text-gray-400'}>Set up your server variables and configuration.</p>
                         </div>
                         <div className={'grid gap-4 sm:grid-cols-2'}>
                             {eggs?.map(variable => (
@@ -472,16 +465,20 @@ export default () => {
                                     required
                                     maxLength={191}
                                     aria-invalid={serverNameTouched && !serverName.trim()}
-                                    aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
+                                    aria-describedby={
+                                        serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
+                                    }
                                     className={classNames(
                                         'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                         'text-gray-200 placeholder-gray-500',
                                         'focus:outline-none focus:ring-2 focus:ring-primary/20',
                                         {
                                             'border-gray-600': !serverNameTouched,
-                                            'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
-                                            'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
-                                        }
+                                            'border-green-500 focus:border-green-500':
+                                                serverNameTouched && serverName.trim(),
+                                            'border-red-500 focus:border-red-500':
+                                                serverNameTouched && !serverName.trim(),
+                                        },
                                     )}
                                     style={{
                                         backgroundColor: colors.secondary,
@@ -504,12 +501,17 @@ export default () => {
                                     {/* Product with Icon */}
                                     <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
                                         {product.icon && (
-                                            <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
+                                            <img
+                                                src={product.icon}
+                                                className={'h-10 w-10 rounded'}
+                                                alt={product.name}
+                                            />
                                         )}
                                         <div>
                                             <p className={'font-semibold text-gray-200'}>{product.name}</p>
                                             <p className={'text-sm text-gray-400'}>
-                                                {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                                {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}{' '}
+                                                billing cycle
                                             </p>
                                         </div>
                                     </div>
@@ -517,7 +519,10 @@ export default () => {
                                     {/* Resources Grid */}
                                     <div className={'grid grid-cols-3 gap-4 pt-2'}>
                                         <div className={'text-center'}>
-                                            <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                            <FontAwesomeIcon
+                                                icon={faMicrochip}
+                                                className={'h-4 w-4 mb-1 text-gray-500'}
+                                            />
                                             <p className={'text-xs text-gray-500'}>CPU</p>
                                             <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
                                         </div>
@@ -546,7 +551,9 @@ export default () => {
                             >
                                 <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Terms & Conditions</h3>
                                 <div
-                                    className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
+                                    className={
+                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'
+                                    }
                                     style={
                                         legalAgreed
                                             ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
@@ -620,11 +627,7 @@ export default () => {
                                                 ? '🎉 Your coupon has made this order free!'
                                                 : '🎉 This product is free!'}
                                         </p>
-                                        <Button
-                                            onClick={createFree}
-                                            size={Button.Sizes.Large}
-                                            className={'w-full'}
-                                        >
+                                        <Button onClick={createFree} size={Button.Sizes.Large} className={'w-full'}>
                                             Create Server
                                         </Button>
                                     </div>
@@ -651,7 +654,7 @@ export default () => {
     return (
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            
+
             {/* Header */}
             <div className={'mb-8'}>
                 <h1 className={'text-4xl font-bold text-gray-100'}>Order Your Server</h1>
@@ -668,10 +671,8 @@ export default () => {
                 <div className={'mx-auto max-w-7xl'}>
                     <div className={'grid grid-cols-1 lg:grid-cols-3 gap-8'}>
                         {/* Left Column - Main Content */}
-                        <div className={'lg:col-span-2'}>
-                            {renderStepContent()}
-                        </div>
-                        
+                        <div className={'lg:col-span-2'}>{renderStepContent()}</div>
+
                         {/* Right Column - Sticky Subtotal Card */}
                         <div className={'lg:col-span-1'}>
                             <div className={'sticky top-24'}>
@@ -700,21 +701,14 @@ export default () => {
             <div className={'mt-8 flex items-center justify-between border-t border-gray-700 pt-6'}>
                 <div>
                     {currentStep > 1 && currentStep <= getTotalSteps() && (
-                        <Button.Text
-                            onClick={goToPreviousStep}
-                            variant={Button.Variants.Secondary}
-                        >
+                        <Button.Text onClick={goToPreviousStep} variant={Button.Variants.Secondary}>
                             ← Back
                         </Button.Text>
                     )}
                 </div>
                 <div>
                     {currentStep < getTotalSteps() && (
-                        <Button
-                            onClick={goToNextStep}
-                            size={Button.Sizes.Large}
-                            disabled={!isStepValid(currentStep)}
-                        >
+                        <Button onClick={goToNextStep} size={Button.Sizes.Large} disabled={!isStepValid(currentStep)}>
                             {currentStep === getTotalSteps() - 1 ? 'Continue to Review' : 'Next →'}
                         </Button>
                     )}

@@ -3,7 +3,16 @@ import Label from '@/elements/Label';
 import { Form, Formik } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import { faKey, faUser, faLink, faCog, faServer, faHashtag, faComment, faTrash } from '@fortawesome/free-solid-svg-icons';
+import {
+    faKey,
+    faUser,
+    faLink,
+    faCog,
+    faServer,
+    faHashtag,
+    faComment,
+    faTrash,
+} from '@fortawesome/free-solid-svg-icons';
 import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
@@ -49,7 +58,11 @@ export default () => {
     };
 
     const deleteApiKey = () => {
-        if (!confirm('Are you sure you want to delete the API key? This will disable AI functionality until a new key is configured.')) {
+        if (
+            !confirm(
+                'Are you sure you want to delete the API key? This will disable AI functionality until a new key is configured.',
+            )
+        ) {
             return;
         }
 
@@ -81,8 +94,7 @@ export default () => {
             initialValues={{
                 user_access: ai.user_access,
                 endpoint:
-                    ai.endpoint ||
-                    (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
+                    ai.endpoint || (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
                 model: ai.model || (ai.mode === 'ollama' ? 'phi3:mini' : 'gpt-3.5-turbo'),
                 mode: ai.mode || 'openai',
                 max_tokens: ai.max_tokens || 200,
@@ -112,7 +124,12 @@ export default () => {
                             <div>
                                 <div className={'inline-flex'}>
                                     <Label className={'mt-1 mr-2'}>Allow standard users to use AI?</Label>
-                                    <Field id={'user_access'} name={'user_access'} type={'checkbox'} defaultChecked={ai.user_access} />
+                                    <Field
+                                        id={'user_access'}
+                                        name={'user_access'}
+                                        type={'checkbox'}
+                                        defaultChecked={ai.user_access}
+                                    />
                                 </div>
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     If enabled, standard Jexactyl users will be able to interact with Jexactyl AI as
@@ -124,7 +141,12 @@ export default () => {
                         {values.mode === 'openai' && (
                             <AdminBox title={'Modify API Key'} icon={faKey}>
                                 <div>
-                                    <Field id={'key'} name={'key'} type={'input'} placeholder="Enter new API key to update" />
+                                    <Field
+                                        id={'key'}
+                                        name={'key'}
+                                        type={'input'}
+                                        placeholder="Enter new API key to update"
+                                    />
                                     <p className={'mt-1.5 text-xs text-gray-400'}>
                                         Enter your OpenAI API key or a compatible API key from another provider.
                                     </p>
@@ -162,7 +184,7 @@ export default () => {
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     {values.mode === 'ollama'
                                         ? `Ollama model name (smaller models recommended for Minecraft log reading / debugging). Examples: ${ollamaSmallModelExamples.join(
-                                              ', '
+                                              ', ',
                                           )}`
                                         : 'The AI model to use (e.g., gpt-3.5-turbo, gpt-4, or any compatible model).'}
                                 </p>
@@ -189,15 +211,17 @@ export default () => {
                                     placeholder="You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses."
                                 />
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Customize the AI's behavior and response style. This message is sent with every query
-                                    to define the AI's role and tone. (10-1000 characters)
+                                    Customize the AI's behavior and response style. This message is sent with every
+                                    query to define the AI's role and tone. (10-1000 characters)
                                 </p>
                             </div>
                         </AdminBox>
                     </div>
 
                     <div className={'mt-6 flex w-full flex-row items-center'}>
-                        <div className={'flex text-xs text-gray-500'}>These changes may not apply until this page is reloaded.</div>
+                        <div className={'flex text-xs text-gray-500'}>
+                            These changes may not apply until this page is reloaded.
+                        </div>
                         <div className={'ml-auto flex'}>
                             <Button type="submit">Save Changes</Button>
                         </div>

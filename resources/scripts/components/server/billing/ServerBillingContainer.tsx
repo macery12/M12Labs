@@ -92,21 +92,22 @@ export default () => {
         if (isFree) {
             return freeGraceDays;
         }
-        
-        const percentage = settings.renewal?.suspension_threshold_percentage || 0.20;
+
+        const percentage = settings.renewal?.suspension_threshold_percentage || 0.2;
         const calculatedThreshold = Math.ceil(days * percentage);
         const minThreshold = settings.renewal?.min_suspension_threshold_days || 3;
         const maxThreshold = settings.renewal?.max_suspension_threshold_days || 7;
-        
+
         return Math.max(minThreshold, Math.min(maxThreshold, calculatedThreshold));
     };
 
     // Calculate the actual grace period based on billing cycle
-    const actualGracePeriod = product && billingDays
-        ? calculateGracePeriodDays(billingDays, product.price === 0)
-        : product && product.price === 0
-        ? freeGraceDays
-        : suspensionThreshold;
+    const actualGracePeriod =
+        product && billingDays
+            ? calculateGracePeriodDays(billingDays, product.price === 0)
+            : product && product.price === 0
+            ? freeGraceDays
+            : suspensionThreshold;
 
     useEffect(() => {
         clearFlashes();
@@ -284,7 +285,10 @@ export default () => {
                                     </p>
                                     {isPaymentDisabled ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionThresholdDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more
+                                            than {maxSuspensionThresholdDays} days due to non-payment. Please create a
+                                            support ticket to restore access. Self-service payment is no longer
+                                            available.
                                         </Alert>
                                     ) : daysRemaining > actualGracePeriod ? (
                                         <Alert type={'info'}>
@@ -311,7 +315,10 @@ export default () => {
                                 <div>
                                     {isPaymentDisabled ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionThresholdDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more
+                                            than {maxSuspensionThresholdDays} days due to non-payment. Please create a
+                                            support ticket to restore access. Self-service payment is no longer
+                                            available.
                                         </Alert>
                                     ) : (
                                         <>
@@ -341,7 +348,8 @@ export default () => {
                                                 ) : (
                                                     <p css={tw`text-gray-300 text-sm`}>
                                                         {settings.currency.symbol}
-                                                        {product.price.toFixed(2)} {settings.currency.code.toUpperCase()}
+                                                        {product.price.toFixed(2)}{' '}
+                                                        {settings.currency.code.toUpperCase()}
                                                     </p>
                                                 )}
                                             </div>

@@ -63,7 +63,7 @@ export default ({
 
     const billingMultiplier = selectedCycle?.multiplier || 1.0;
     const nodeMultiplier = selectedNodeData?.priceMultiplier || 1.0;
-    
+
     // Calculate actual dollar difference for node location pricing
     const nodePriceDifference = afterNodeMultiplier - afterBillingCycle;
 
@@ -87,14 +87,10 @@ export default ({
                         <div className={'flex flex-col items-end'}>
                             <span className={'text-gray-200 font-medium'}>{selectedNodeData.name}</span>
                             {hasNodePremium && (
-                                <span className={'text-xs text-red-400'}>
-                                    +{formatPrice(nodePriceDifference)}
-                                </span>
+                                <span className={'text-xs text-red-400'}>+{formatPrice(nodePriceDifference)}</span>
                             )}
                             {hasNodeDiscount && (
-                                <span className={'text-xs text-green-400'}>
-                                    {formatPrice(nodePriceDifference)}
-                                </span>
+                                <span className={'text-xs text-green-400'}>{formatPrice(nodePriceDifference)}</span>
                             )}
                         </div>
                     </div>
@@ -106,8 +102,8 @@ export default ({
                 )}
 
                 {/* Server Type (if multiple eggs available) */}
-                {availableEggs.length > 1 && (
-                    selectedEgg ? (
+                {availableEggs.length > 1 &&
+                    (selectedEgg ? (
                         <div className={'flex items-center justify-between text-sm'}>
                             <span className={'text-gray-400'}>Server Type</span>
                             <span className={'text-gray-200 font-medium'}>{selectedEgg.name}</span>
@@ -117,8 +113,7 @@ export default ({
                             <span className={'text-gray-500'}>Server Type</span>
                             <span className={'text-gray-600'}>Not selected</span>
                         </div>
-                    )
-                )}
+                    ))}
 
                 {/* Billing Cycle */}
                 {selectedCycle ? (
@@ -164,7 +159,11 @@ export default ({
                                 <span className={'text-gray-400'}>Billing Adjustment</span>
                                 <span className={'text-xs text-gray-500'}>×{billingMultiplier.toFixed(2)}</span>
                             </div>
-                            <span className={hasDiscount ? 'text-green-400' : hasPremium ? 'text-red-400' : 'text-gray-300'}>
+                            <span
+                                className={
+                                    hasDiscount ? 'text-green-400' : hasPremium ? 'text-red-400' : 'text-gray-300'
+                                }
+                            >
                                 {formatPrice(afterBillingCycle)}
                             </span>
                         </div>
@@ -176,10 +175,19 @@ export default ({
                             <div className={'flex flex-col'}>
                                 <span className={'text-gray-400'}>Location Adjustment</span>
                                 <span className={'text-xs text-gray-500'}>
-                                    {nodePriceDifference >= 0 ? '+' : ''}{formatPrice(nodePriceDifference)}
+                                    {nodePriceDifference >= 0 ? '+' : ''}
+                                    {formatPrice(nodePriceDifference)}
                                 </span>
                             </div>
-                            <span className={hasNodeDiscount ? 'text-green-400' : hasNodePremium ? 'text-red-400' : 'text-gray-300'}>
+                            <span
+                                className={
+                                    hasNodeDiscount
+                                        ? 'text-green-400'
+                                        : hasNodePremium
+                                        ? 'text-red-400'
+                                        : 'text-gray-300'
+                                }
+                            >
                                 {formatPrice(afterNodeMultiplier)}
                             </span>
                         </div>
@@ -226,7 +234,7 @@ export default ({
                         {formatPrice(total)}
                     </span>
                 </div>
-                
+
                 {/* Savings indicator - only show when coupon is applied */}
                 {couponDiscount > MINIMUM_DISCOUNT_DISPLAY && (
                     <div className={'mt-2 text-center text-xs text-green-400'}>
@@ -247,8 +255,8 @@ export default ({
                         <h3 className={'text-sm font-semibold text-gray-200'}>
                             {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
                         </h3>
-                        <FontAwesomeIcon 
-                            icon={showCoupon ? faChevronDown : faChevronRight} 
+                        <FontAwesomeIcon
+                            icon={showCoupon ? faChevronDown : faChevronRight}
                             className={'h-3 w-3'}
                             style={{ color: colors.primary }}
                             aria-hidden={true}

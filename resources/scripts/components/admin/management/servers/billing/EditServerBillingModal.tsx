@@ -4,7 +4,14 @@ import { Button } from '@/elements/button';
 import { Dialog } from '@/elements/dialog';
 import Input from '@/elements/Input';
 import Label from '@/elements/Label';
-import { CashIcon, CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, PencilAltIcon } from '@heroicons/react/outline';
+import {
+    CashIcon,
+    CheckCircleIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ClockIcon,
+    PencilAltIcon,
+} from '@heroicons/react/outline';
 import { useState, useEffect } from 'react';
 import { getCategories } from '@/api/routes/admin/billing/categories';
 import { Category, Product, BillingCycleWithPrice } from '@definitions/admin';
@@ -52,8 +59,8 @@ const BillingStatusStep = ({ form, update }: StepProps) => (
                 <CashIcon className="inline-flex w-4" /> Billing Status
             </Label>
             <p className="mb-4 text-sm text-gray-400">
-                Enable billing to automatically charge for this server. When disabled, the server will not be billed
-                and renewal dates will be ignored.
+                Enable billing to automatically charge for this server. When disabled, the server will not be billed and
+                renewal dates will be ignored.
             </p>
             <div className="flex gap-2">
                 <button
@@ -171,7 +178,8 @@ const PlanSelectionStep = ({
                                 <option value="">Select a billing plan...</option>
                                 {products.map(product => (
                                     <option key={product.id} value={product.id}>
-                                        {product.name} ({product.limits.cpu}% CPU, {(product.limits.memory / MB_TO_GB).toFixed(1)}GB RAM,{' '}
+                                        {product.name} ({product.limits.cpu}% CPU,{' '}
+                                        {(product.limits.memory / MB_TO_GB).toFixed(1)}GB RAM,{' '}
                                         {(product.limits.disk / MB_TO_GB).toFixed(1)}GB Disk)
                                     </option>
                                 ))}
@@ -280,7 +288,9 @@ const PlanSelectionStep = ({
                             )}
 
                             {!form.billingDays && (
-                                <p className="mt-2 text-sm text-yellow-400">Please select a billing cycle to continue</p>
+                                <p className="mt-2 text-sm text-yellow-400">
+                                    Please select a billing cycle to continue
+                                </p>
                             )}
                         </>
                     )}
@@ -304,7 +314,8 @@ const RenewalDateStep = ({ form, update }: StepProps) => (
                 className="w-full"
             />
             <p className="mt-2 text-sm text-gray-400">
-                Server will next renew on: <span className="font-semibold text-white">{form.renewalDate.split('T')[0]}</span>
+                Server will next renew on:{' '}
+                <span className="font-semibold text-white">{form.renewalDate.split('T')[0]}</span>
             </p>
         </div>
 
@@ -418,7 +429,9 @@ export default ({ server }: { server: Server }) => {
                 .then(cycles => {
                     setBillingCycles(cycles);
                     if (cycles.length === 0) {
-                        setError('No billing cycles configured for this product. Please configure billing cycles first.');
+                        setError(
+                            'No billing cycles configured for this product. Please configure billing cycles first.',
+                        );
                     } else {
                         // If server already has billing_days, keep it selected if it exists in the cycles
                         if (server.billingDays) {

@@ -41,14 +41,16 @@ function wrapProperties(value: unknown): any {
 }
 
 function hasFileDiff(activity: ActivityLog): boolean {
-    return activity.event === 'server:file.write' && 
+    return (
+        activity.event === 'server:file.write' &&
         activity.properties?.diff !== undefined &&
-        typeof activity.properties.diff === 'object';
+        typeof activity.properties.diff === 'object'
+    );
 }
 
 function getFileDiff(activity: ActivityLog): FileDiff | null {
     if (!hasFileDiff(activity)) return null;
-    
+
     const diff = activity.properties.diff as Record<string, unknown>;
     return {
         file: activity.properties.file as string | undefined,

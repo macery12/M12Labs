@@ -101,7 +101,7 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
     return (
         <div>
             <FlashMessageRender byKey={'suspended:billing'} className={'mb-4'} />
-            
+
             {showSelection && (
                 <div className={'mb-6'}>
                     <h4 className={'mb-3 text-sm font-semibold text-gray-200'}>Select Payment Method</h4>
@@ -272,7 +272,12 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
                 </>
             ) : selectedMethod === 'mollie' ? (
                 <div>
-                    <MolliePaymentForm id={id} serverId={Number(serverId)} serverUuid={serverUuid} couponId={couponId} />
+                    <MolliePaymentForm
+                        id={id}
+                        serverId={Number(serverId)}
+                        serverUuid={serverUuid}
+                        couponId={couponId}
+                    />
                 </div>
             ) : selectedMethod === 'paypal' ? (
                 <div>
