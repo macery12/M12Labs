@@ -363,7 +363,6 @@ export default ({ server }: { server: Server }) => {
                     setCategories(cats);
                     if (cats.length === 0) {
                         setError('No billing categories found. Please create a category first.');
-                        setLoadingCategories(false);
                         return;
                     }
                     
@@ -379,13 +378,12 @@ export default ({ server }: { server: Server }) => {
                         // Fallback: if there's only one category, use it
                         setForm(prev => ({ ...prev, categoryId: cats[0].id }));
                     }
-                    setLoadingCategories(false);
                 })
                 .catch(err => {
                     console.error('Failed to fetch categories:', err);
                     setError('Failed to load billing categories. Please try again.');
-                    setLoadingCategories(false);
-                });
+                })
+                .finally(() => setLoadingCategories(false));
         }
     }, [open]);
 

@@ -106,7 +106,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
-                'billing_days' => $billingDays,
+                'billing_days' => $renewalDays, // Use renewalDays to be consistent with renewal_date
                 'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
