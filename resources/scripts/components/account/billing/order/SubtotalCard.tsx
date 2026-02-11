@@ -63,6 +63,9 @@ export default ({
 
     const billingMultiplier = selectedCycle?.multiplier || 1.0;
     const nodeMultiplier = selectedNodeData?.priceMultiplier || 1.0;
+    
+    // Calculate actual dollar difference for node location pricing
+    const nodePriceDifference = afterNodeMultiplier - afterBillingCycle;
 
     return (
         <div
@@ -85,12 +88,12 @@ export default ({
                             <span className={'text-gray-200 font-medium'}>{selectedNodeData.name}</span>
                             {hasNodePremium && (
                                 <span className={'text-xs text-red-400'}>
-                                    +{(((selectedNodeData.priceMultiplier ?? 1.0) - 1) * 100).toFixed(0)}%
+                                    +{formatPrice(nodePriceDifference)}
                                 </span>
                             )}
                             {hasNodeDiscount && (
                                 <span className={'text-xs text-green-400'}>
-                                    {(((selectedNodeData.priceMultiplier ?? 1.0) - 1) * 100).toFixed(0)}%
+                                    {formatPrice(nodePriceDifference)}
                                 </span>
                             )}
                         </div>
@@ -172,7 +175,9 @@ export default ({
                         <div className={'flex items-center justify-between text-sm'}>
                             <div className={'flex flex-col'}>
                                 <span className={'text-gray-400'}>Location Adjustment</span>
-                                <span className={'text-xs text-gray-500'}>×{nodeMultiplier.toFixed(2)}</span>
+                                <span className={'text-xs text-gray-500'}>
+                                    {nodePriceDifference >= 0 ? '+' : ''}{formatPrice(nodePriceDifference)}
+                                </span>
                             </div>
                             <span className={hasNodeDiscount ? 'text-green-400' : hasNodePremium ? 'text-red-400' : 'text-gray-300'}>
                                 {formatPrice(afterNodeMultiplier)}

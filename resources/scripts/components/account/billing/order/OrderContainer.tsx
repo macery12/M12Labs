@@ -674,7 +674,7 @@ export default () => {
                         
                         {/* Right Column - Sticky Subtotal Card */}
                         <div className={'lg:col-span-1'}>
-                            <div className={'sticky top-4'}>
+                            <div className={'sticky top-24'}>
                                 <SubtotalCard
                                     basePrice={product.price}
                                     selectedNode={selectedNode}
