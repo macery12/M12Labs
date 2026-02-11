@@ -131,8 +131,8 @@ export default () => {
                     }
                 } catch (error) {
                     console.error('Failed to fetch billing cycles:', error);
-                    // Continue anyway - use current billing days as fallback
-                    setSelectedBillingDays(currentBillingDays);
+                    // Continue anyway - use default billing days as fallback
+                    setSelectedBillingDays(defaultBillingDays);
                 } finally {
                     setLoadingCycles(false);
                 }
@@ -253,8 +253,9 @@ export default () => {
                 {selectedPlan &&
                     (() => {
                         const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                        const price = selectedCycle?.price ?? calculatePlanPrice(selectedPlan, selectedBillingDays).price;
-                        const discount = selectedCycle?.discount_percent ?? calculatePlanPrice(selectedPlan, selectedBillingDays).discount;
+                        const fallbackPricing = !selectedCycle ? calculatePlanPrice(selectedPlan, selectedBillingDays) : null;
+                        const price = selectedCycle?.price ?? fallbackPricing!.price;
+                        const discount = selectedCycle?.discount_percent ?? fallbackPricing!.discount;
 
                         return (
                             <>
