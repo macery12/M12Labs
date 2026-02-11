@@ -345,7 +345,7 @@ export default ({ server }: { server: Server }) => {
     const [form, setForm] = useState<BillingFormData>({
         billable: Boolean(server.billingProductId),
         categoryId: null,
-        productId: server.billingProductId || null,
+        productId: null, // Let category auto-selection handle setting productId to ensure proper cascade
         billingDays: server.billingDays || null,
         renewalDate: server.renewalDate
             ? new Date(server.renewalDate).toISOString().slice(0, 16)
@@ -427,7 +427,7 @@ export default ({ server }: { server: Server }) => {
             setForm({
                 billable: Boolean(server.billingProductId),
                 categoryId: null,
-                productId: server.billingProductId || null,
+                productId: null, // Let category auto-selection handle setting productId to ensure proper cascade
                 billingDays: server.billingDays || null,
                 renewalDate: server.renewalDate
                     ? new Date(server.renewalDate).toISOString().slice(0, 16)
