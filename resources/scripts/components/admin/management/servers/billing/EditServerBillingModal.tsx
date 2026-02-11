@@ -436,7 +436,8 @@ export default ({ server }: { server: Server }) => {
             // Clear loaded data
             setProducts([]);
             setBillingCycles([]);
-            // Don't clear cache - keep it for performance
+            // Don't clear cache - keep it for performance across modal reopens.
+            // Cache persists during component lifecycle and is automatically cleared when component unmounts.
         }
     }, [open]);
 
