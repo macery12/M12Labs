@@ -5,6 +5,7 @@ import { Button } from '@/elements/button';
 import WebhookEventCard from './WebhookEventCard';
 import { toggleEventStatus } from '@/api/routes/admin/webhooks';
 import useFlash from '@/plugins/useFlash';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     category: string;
@@ -35,6 +36,7 @@ export default ({ category, events, onUpdate }: Props) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const { clearFlashes, addFlash, clearAndAddHttpError } = useFlash();
+    const { colors } = useStoreState(s => s.theme.data!);
 
     const enabledCount = events.filter(e => e.enabled).length;
     const totalCount = events.length;
@@ -88,12 +90,11 @@ export default ({ category, events, onUpdate }: Props) => {
     };
 
     return (
-        <div className={'mb-6 rounded-lg border border-neutral-700 bg-neutral-800'}>
+        <div className={'mb-6 rounded-lg border border-neutral-700'} style={{ backgroundColor: colors.background }}>
             {/* Category Header */}
             <div
-                className={
-                    'flex cursor-pointer items-center justify-between rounded-t-lg bg-neutral-800 px-6 py-4 transition-colors hover:bg-neutral-700'
-                }
+                className={'flex cursor-pointer items-center justify-between rounded-t-lg px-6 py-4 transition-colors'}
+                style={{ backgroundColor: colors.headers }}
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className={'flex items-center space-x-3'}>

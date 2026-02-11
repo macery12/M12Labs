@@ -19,6 +19,7 @@ export interface WebhookSettings {
 export default () => {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(state => state.everest.data!.webhooks);
+    const { colors } = useStoreState(state => state.theme.data!);
     const [isTesting, setIsTesting] = useState(false);
 
     const submit = (values: WebhookSettings) => {
@@ -98,10 +99,18 @@ export default () => {
                                     }
                                 />
                                 {settings.url && (
-                                    <div className={'mt-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3'}>
+                                    <div
+                                        className={'mt-3 rounded-lg border p-3'}
+                                        style={{
+                                            backgroundColor: `${colors.primary}10`,
+                                            borderColor: colors.primary,
+                                        }}
+                                    >
                                         <div className={'flex items-center space-x-2'}>
-                                            <FontAwesomeIcon icon={faCheck} className={'text-green-400'} />
-                                            <span className={'text-sm text-green-400'}>Webhook URL is configured</span>
+                                            <FontAwesomeIcon icon={faCheck} style={{ color: colors.primary }} />
+                                            <span className={'text-sm'} style={{ color: colors.primary }}>
+                                                Webhook URL is configured
+                                            </span>
                                         </div>
                                         <p className={'ml-6 mt-1 text-xs text-neutral-400'}>
                                             Current URL: {settings.url === true ? 'Configured (hidden)' : settings.url}
@@ -128,10 +137,18 @@ export default () => {
                             </div>
                         </AdminBox>
 
-                        <div className={'rounded-lg border border-blue-500/30 bg-blue-500/10 p-4'}>
+                        <div
+                            className={'rounded-lg border p-4'}
+                            style={{
+                                backgroundColor: `${colors.secondary}20`,
+                                borderColor: colors.secondary,
+                            }}
+                        >
                             <div className={'mb-2 flex items-center space-x-2'}>
-                                <FontAwesomeIcon icon={faExclamationTriangle} className={'text-blue-400'} />
-                                <span className={'text-sm font-medium text-blue-400'}>Integration Guide</span>
+                                <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: colors.secondary }} />
+                                <span className={'text-sm font-medium'} style={{ color: colors.secondary }}>
+                                    Integration Guide
+                                </span>
                             </div>
                             <p className={'text-xs text-neutral-400'}>
                                 Webhooks send POST requests with JSON payloads. Ensure your endpoint can handle incoming

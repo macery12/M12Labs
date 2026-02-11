@@ -22,62 +22,64 @@ export default ({ events }: Props) => {
     return (
         <div className={'mb-6 grid gap-4 md:grid-cols-4'}>
             {/* Total Events */}
-            <div className={'rounded-lg border border-neutral-700 bg-neutral-800 p-4'}>
+            <div className={'rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: colors.headers }}>
                 <div className={'flex items-center justify-between'}>
                     <div>
                         <p className={'text-sm text-neutral-400'}>Total Events</p>
                         <p className={'mt-1 text-2xl font-semibold text-neutral-100'}>{totalEvents}</p>
                     </div>
-                    <div
-                        className={'rounded-lg p-3'}
-                        style={{ backgroundColor: `${colors.primary}20`, color: colors.primary }}
-                    >
-                        <ViewGridIcon className={'h-6 w-6'} />
+                    <div className={'rounded-lg p-3'} style={{ backgroundColor: colors.secondary }}>
+                        <ViewGridIcon className={'h-6 w-6'} style={{ color: colors.primary }} />
                     </div>
                 </div>
             </div>
 
             {/* Enabled Events */}
-            <div className={'rounded-lg border border-green-500/30 bg-green-500/5 p-4'}>
+            <div className={'rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: colors.headers }}>
                 <div className={'flex items-center justify-between'}>
                     <div>
                         <p className={'text-sm text-neutral-400'}>Enabled</p>
-                        <p className={'mt-1 text-2xl font-semibold text-green-400'}>{enabledEvents}</p>
+                        <p className={'mt-1 text-2xl font-semibold'} style={{ color: colors.primary }}>
+                            {enabledEvents}
+                        </p>
                         <p className={'text-xs text-neutral-500'}>{enabledPercentage}% active</p>
                     </div>
-                    <div className={'rounded-lg bg-green-500/20 p-3 text-green-400'}>
-                        <CheckCircleIcon className={'h-6 w-6'} />
+                    <div className={'rounded-lg p-3'} style={{ backgroundColor: colors.secondary }}>
+                        <CheckCircleIcon className={'h-6 w-6'} style={{ color: colors.primary }} />
                     </div>
                 </div>
             </div>
 
             {/* Disabled Events */}
-            <div className={'rounded-lg border border-neutral-700 bg-neutral-800 p-4'}>
+            <div className={'rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: colors.headers }}>
                 <div className={'flex items-center justify-between'}>
                     <div>
                         <p className={'text-sm text-neutral-400'}>Disabled</p>
                         <p className={'mt-1 text-2xl font-semibold text-neutral-300'}>{disabledEvents}</p>
                         <p className={'text-xs text-neutral-500'}>{100 - enabledPercentage}% inactive</p>
                     </div>
-                    <div className={'rounded-lg bg-neutral-700 p-3 text-neutral-400'}>
-                        <XCircleIcon className={'h-6 w-6'} />
+                    <div className={'rounded-lg p-3'} style={{ backgroundColor: colors.secondary }}>
+                        <XCircleIcon className={'h-6 w-6 text-neutral-400'} />
                     </div>
                 </div>
             </div>
 
             {/* Categories */}
-            <div className={'rounded-lg border border-neutral-700 bg-neutral-800 p-4'}>
+            <div className={'rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: colors.headers }}>
                 <div className={'flex items-center justify-between'}>
                     <div>
                         <p className={'text-sm text-neutral-400'}>Categories</p>
                         <p className={'mt-1 text-2xl font-semibold text-neutral-100'}>{categoryCount}</p>
                         <p className={'text-xs text-neutral-500'}>{webhookUrl ? 'URL configured' : 'No URL set'}</p>
                     </div>
-                    <div
-                        className={'rounded-lg p-3'}
-                        style={{ backgroundColor: `${colors.secondary}40`, color: colors.secondary }}
-                    >
-                        <svg className={'h-6 w-6'} fill={'none'} viewBox={'0 0 24 24'} stroke={'currentColor'}>
+                    <div className={'rounded-lg p-3'} style={{ backgroundColor: colors.secondary }}>
+                        <svg
+                            className={'h-6 w-6'}
+                            fill={'none'}
+                            viewBox={'0 0 24 24'}
+                            stroke={'currentColor'}
+                            style={{ color: colors.primary }}
+                        >
                             <path
                                 strokeLinecap={'round'}
                                 strokeLinejoin={'round'}

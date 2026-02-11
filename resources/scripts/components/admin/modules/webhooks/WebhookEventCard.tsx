@@ -3,6 +3,7 @@ import { WebhookEvent, toggleEventStatus } from '@/api/routes/admin/webhooks';
 import { Switch } from '@headlessui/react';
 import classNames from 'classnames';
 import Spinner from '@/elements/Spinner';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     event: WebhookEvent;
@@ -12,6 +13,7 @@ interface Props {
 export default ({ event, onUpdate }: Props) => {
     const [isLoading, setIsLoading] = useState(false);
     const [enabled, setEnabled] = useState(event.enabled);
+    const { colors } = useStoreState(s => s.theme.data!);
 
     const handleToggle = async () => {
         setIsLoading(true);
@@ -31,12 +33,11 @@ export default ({ event, onUpdate }: Props) => {
 
     return (
         <div
-            className={classNames(
-                'group relative rounded-lg border p-4 transition-all duration-200',
-                enabled
-                    ? 'border-green-500/30 bg-green-500/5 hover:border-green-500/50'
-                    : 'border-neutral-700 bg-neutral-800 hover:border-neutral-600',
-            )}
+            className={classNames('group relative rounded-lg border p-4 transition-all duration-200')}
+            style={{
+                backgroundColor: enabled ? `${colors.primary}10` : colors.headers,
+                borderColor: enabled ? colors.primary : '',
+            }}
         >
             <div className={'flex items-start justify-between'}>
                 <div className={'flex-1 pr-4'}>
@@ -56,9 +57,12 @@ export default ({ event, onUpdate }: Props) => {
                             checked={enabled}
                             onChange={handleToggle}
                             className={classNames(
-                                enabled ? 'bg-green-500' : 'bg-neutral-600',
-                                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-neutral-800',
+                                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2',
                             )}
+                            style={{
+                                backgroundColor: enabled ? colors.primary : '#52525b',
+                                boxShadow: enabled ? `0 0 0 2px ${colors.primary}40` : 'none',
+                            }}
                         >
                             <span className={'sr-only'}>Toggle webhook event</span>
                             <span
@@ -71,7 +75,8 @@ export default ({ event, onUpdate }: Props) => {
                     )}
 
                     <span
-                        className={classNames('text-xs font-medium', enabled ? 'text-green-400' : 'text-neutral-500')}
+                        className={classNames('text-xs font-medium')}
+                        style={{ color: enabled ? colors.primary : '#a1a1aa' }}
                     >
                         {enabled ? 'Enabled' : 'Disabled'}
                     </span>
@@ -79,12 +84,12 @@ export default ({ event, onUpdate }: Props) => {
             </div>
 
             {/* Subtle indicator line at bottom */}
-            <div
-                className={classNames(
-                    'absolute bottom-0 left-0 right-0 h-0.5 rounded-b-lg transition-opacity duration-200',
-                    enabled ? 'bg-green-500 opacity-100' : 'bg-transparent opacity-0',
-                )}
-            />
+            {enabled && (
+                <div
+                    className={'absolute bottom-0 left-0 right-0 h-0.5 rounded-b-lg'}
+                    style={{ backgroundColor: colors.primary }}
+                />
+            )}
         </div>
     );
 };
