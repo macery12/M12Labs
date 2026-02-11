@@ -125,8 +125,9 @@ class EverestComposer
                 'url' => !empty(config('modules.webhooks.url')),
             ],
             'mods' => [
-                'enabled' => boolval(config('modules.mods.enabled', false)),
-                'curseforge_api_key' => !empty(config('modules.mods.curseforge_api_key')),
+                'enabled' => boolval(Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false))),
+                'curseforge_api_key' => !empty(Setting::get('settings::modules:mods:curseforge_api_key', config('modules.mods.curseforge_api_key'))),
+                'default_source' => Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth')),
                 'rate_limit' => [
                     'requests_per_minute' => config('modules.mods.rate_limit.requests_per_minute', 30),
                     'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
