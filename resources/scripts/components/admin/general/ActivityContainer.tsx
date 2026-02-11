@@ -31,6 +31,7 @@ export default () => {
     // Note: These filters work on the current page of data loaded from the API.
     // Users can paginate through all results and apply filters to each page.
     // This is a frontend-only implementation to avoid backend changes.
+    const [searchInput, setSearchInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<string>('');
     const [selectedEventType, setSelectedEventType] = useState<string>('');
@@ -123,7 +124,7 @@ export default () => {
     }, [data?.items, searchQuery, selectedUser, selectedEventType, sortOrder]);
 
     // Debounced search handler
-    const handleSearchChange = useMemo(
+    const debouncedSetSearchQuery = useMemo(
         () =>
             debounce((value: string) => {
                 setSearchQuery(value);
@@ -131,14 +132,20 @@ export default () => {
         []
     );
 
+    // Update search query when input changes
+    useEffect(() => {
+        debouncedSetSearchQuery(searchInput);
+    }, [searchInput, debouncedSetSearchQuery]);
+
     // Cleanup debounced function on unmount
     useEffect(() => {
         return () => {
-            handleSearchChange.clear && handleSearchChange.clear();
+            debouncedSetSearchQuery.clear();
         };
-    }, [handleSearchChange]);
+    }, [debouncedSetSearchQuery]);
 
     const clearFilters = () => {
+        setSearchInput('');
         setSearchQuery('');
         setSelectedUser('');
         setSelectedEventType('');
@@ -147,7 +154,7 @@ export default () => {
     };
 
     const hasActiveFilters =
-        searchQuery.trim() !== '' ||
+        searchInput.trim() !== '' ||
         selectedUser !== '' ||
         selectedEventType !== '' ||
         sortOrder !== 'newest' ||
@@ -182,8 +189,8 @@ export default () => {
                             type={'text'}
                             placeholder={'Search activity...'}
                             className={'pl-10'}
-                            defaultValue={searchQuery}
-                            onChange={e => handleSearchChange(e.currentTarget.value)}
+                            value={searchInput}
+                            onChange={e => setSearchInput(e.currentTarget.value)}
                         />
                     </div>
 
@@ -216,7 +223,12 @@ export default () => {
                     {/* Sort Order */}
                     <Select
                         value={sortOrder}
-                        onChange={e => setSortOrder(e.currentTarget.value as 'newest' | 'oldest')}
+                        onChange={e => {
+                            const value = e.currentTarget.value;
+                            if (value === 'newest' || value === 'oldest') {
+                                setSortOrder(value);
+                            }
+                        }}
                     >
                         <option value={'newest'}>Newest First</option>
                         <option value={'oldest'}>Oldest First</option>
