@@ -356,6 +356,27 @@ export default ({ server }: { server: Server }) => {
         setForm(prev => ({ ...prev, [key]: value }));
     };
 
+    // Helper function to select appropriate billing cycle from a list
+    const selectBillingCycle = (cycles: BillingCycleWithPrice[]) => {
+        if (cycles.length === 0) return;
+
+        // If server already has billing_days, keep it selected if it exists in the cycles
+        if (server.billingDays) {
+            const hasCycle = cycles.some(c => c.days === server.billingDays);
+            if (hasCycle) {
+                setForm(prev => ({ ...prev, billingDays: server.billingDays }));
+                return;
+            }
+        }
+        
+        // Select default cycle or first available
+        const defaultCycle = cycles.find(c => c.is_default);
+        setForm(prev => ({
+            ...prev,
+            billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
+        }));
+    };
+
     // Load categories when dialog opens
     useEffect(() => {
         if (open) {
@@ -457,31 +478,9 @@ export default ({ server }: { server: Server }) => {
         if (form.categoryId && productId) {
             // Check cache first to avoid redundant API calls
             if (billingCyclesCache.has(productId)) {
-                console.log('Using cached billing cycles for product:', productId);
                 const cachedCycles = billingCyclesCache.get(productId)!;
                 setBillingCycles(cachedCycles);
-                
-                // Auto-select current billing cycle if it exists
-                if (server.billingDays) {
-                    const hasCycle = cachedCycles.some(c => c.days === server.billingDays);
-                    if (hasCycle) {
-                        setForm(prev => ({ ...prev, billingDays: server.billingDays }));
-                    } else {
-                        // Select default cycle
-                        const defaultCycle = cachedCycles.find(c => c.is_default);
-                        setForm(prev => ({
-                            ...prev,
-                            billingDays: defaultCycle ? defaultCycle.days : cachedCycles[0].days,
-                        }));
-                    }
-                } else {
-                    // Select default cycle
-                    const defaultCycle = cachedCycles.find(c => c.is_default);
-                    setForm(prev => ({
-                        ...prev,
-                        billingDays: defaultCycle ? defaultCycle.days : cachedCycles[0].days,
-                    }));
-                }
+                selectBillingCycle(cachedCycles);
                 return;
             }
             
@@ -499,27 +498,7 @@ export default ({ server }: { server: Server }) => {
                             'No billing cycles configured for this product. Please configure billing cycles first.',
                         );
                     } else {
-                        // If server already has billing_days, keep it selected if it exists in the cycles
-                        if (server.billingDays) {
-                            const hasCycle = cycles.some(c => c.days === server.billingDays);
-                            if (hasCycle) {
-                                setForm(prev => ({ ...prev, billingDays: server.billingDays }));
-                            } else {
-                                // Select default cycle
-                                const defaultCycle = cycles.find(c => c.is_default);
-                                setForm(prev => ({
-                                    ...prev,
-                                    billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
-                                }));
-                            }
-                        } else {
-                            // Select default cycle
-                            const defaultCycle = cycles.find(c => c.is_default);
-                            setForm(prev => ({
-                                ...prev,
-                                billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
-                            }));
-                        }
+                        selectBillingCycle(cycles);
                     }
                 })
                 .catch(err => {
