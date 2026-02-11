@@ -369,8 +369,17 @@ class CheckoutController extends ClientApiController
             $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
             $eggId = !$isRenewal ? $this->validationService->validateAndGetEggId($product, $requestedEggId) : null;
 
-            // Get billing days (default to 30 if not provided)
+            // Get billing days - for renewals, use server's billing_days if not provided
             $billingDays = (int) ($request->input('billing_days') ?? 30);
+            if ($isRenewal && !$request->has('billing_days')) {
+                $serverId = (int) $request->input('server_id');
+                if ($serverId) {
+                    $server = $request->user()->servers()->find($serverId);
+                    if ($server && $server->billing_days) {
+                        $billingDays = $server->billing_days;
+                    }
+                }
+            }
 
             // Determine order type and calculate price with coupon (including node multiplier)
             $orderType = $this->getOrderType($request);

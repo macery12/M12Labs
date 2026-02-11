@@ -482,14 +482,14 @@ export default ({ server }: { server: Server }) => {
         if (form.categoryId) {
             handleCategoryChange(form.categoryId);
         }
-    }, [form.categoryId]);
+    }, [form.categoryId, server.billingProductId]); // Include server.billingProductId to ensure proper loading
 
     // Load billing cycles when product is selected
     useEffect(() => {
         if (form.productId) {
             handleProductChange(form.productId);
         }
-    }, [form.productId]);
+    }, [form.productId, server.billingDays]); // Include server.billingDays to ensure proper loading
 
     const localStrToUTC = (localStr: string): Date => {
         const localDate = new Date(localStr);

@@ -25,4 +25,5 @@ export interface UpdateStripeIntent {
     coupon_id?: number;
     egg_id?: number;
     name?: string;
+    billing_days?: number;
 }

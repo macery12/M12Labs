@@ -18,7 +18,7 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 
 type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
 
-export default ({ id, couponId }: { id?: number; couponId?: number }) => {
+export default ({ id, couponId, billingDays }: { id?: number; couponId?: number; billingDays?: number }) => {
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
 
@@ -265,6 +265,7 @@ export default ({ id, couponId }: { id?: number; couponId?: number }) => {
                                     serverUuid={serverUuid}
                                     intent={intent.id}
                                     renewal
+                                    billingDays={billingDays}
                                 />
                             </Elements>
                         </div>

@@ -418,6 +418,7 @@ export default () => {
                                                     <PaymentContainer
                                                         id={Number(product.id)}
                                                         couponId={couponData?.coupon.id}
+                                                        billingDays={billingDays}
                                                     />
                                                 )}
                                             </div>
