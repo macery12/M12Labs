@@ -6,7 +6,7 @@ import Label from '@/elements/Label';
 import Spinner from '@/elements/Spinner';
 import { useStoreState } from '@/state/hooks';
 import { faCashRegister } from '@fortawesome/free-solid-svg-icons';
-import EditServerBillingDialog from './EditServerBillingDialog';
+import EditServerBillingModal from './EditServerBillingModal';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -89,7 +89,7 @@ export default () => {
                             </p>
                         </div>
                         <div className={'absolute top-2 right-2'}>
-                            <EditServerBillingDialog server={server} />
+                            <EditServerBillingModal server={server} />
                         </div>
                     </div>
                 </AdminBox>

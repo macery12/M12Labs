@@ -16,7 +16,7 @@ interface Props {
 export default ({ node, selected, setSelected, basePrice, billingDays }: Props) => {
     const { colors } = useStoreState(s => s.theme.data!);
     const isSelected = selected === Number(node.id);
-    
+
     // Calculate pricing if basePrice is provided
     const nodeMultiplier = node.priceMultiplier || 1.0;
     const showPricing = basePrice !== undefined && basePrice > 0;
@@ -44,15 +44,16 @@ export default ({ node, selected, setSelected, basePrice, billingDays }: Props) 
                                 {billingDays && <span className={'text-xs text-gray-500'}> / {billingDays} days</span>}
                             </p>
                             {hasPriceAdjustment && (
-                                <p 
+                                <p
                                     className={'text-xs'}
                                     css={[
                                         priceDifference > 0 && tw`text-red-400`,
                                         priceDifference < 0 && tw`text-green-400`,
                                     ]}
                                 >
-                                    {priceDifference > 0 ? '+' : ''}${priceDifference.toFixed(2)} 
-                                    {' '}({nodeMultiplier > 1 ? '+' : ''}{((nodeMultiplier - 1) * 100).toFixed(0)}%)
+                                    {priceDifference > 0 ? '+' : ''}${priceDifference.toFixed(2)} (
+                                    {nodeMultiplier > 1 ? '+' : ''}
+                                    {((nodeMultiplier - 1) * 100).toFixed(0)}%)
                                 </p>
                             )}
                         </div>

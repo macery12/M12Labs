@@ -226,7 +226,12 @@ function InternalForm() {
                                     type={'text'}
                                     placeholder={'My Amazing Server'}
                                 />
-                                <Field id={'externalId'} name={'externalId'} label={'External Identifier'} type={'text'} />
+                                <Field
+                                    id={'externalId'}
+                                    name={'externalId'}
+                                    label={'External Identifier'}
+                                    type={'text'}
+                                />
                                 <div className="xl:col-span-2">
                                     <OwnerSelect />
                                 </div>
@@ -237,7 +242,9 @@ function InternalForm() {
                                     <FormikSwitch
                                         name={'startOnCompletion'}
                                         label={'Start after installation'}
-                                        description={'Should the server be automatically started after it has been installed?'}
+                                        description={
+                                            'Should the server be automatically started after it has been installed?'
+                                        }
                                     />
                                 </div>
                             </div>
@@ -296,7 +303,9 @@ function InternalForm() {
                                         name={'limits.memory'}
                                         label={'Custom Memory (MB)'}
                                         type={'number'}
-                                        description={'The maximum amount of memory allowed for this container. Setting this to 0 will allow unlimited memory.'}
+                                        description={
+                                            'The maximum amount of memory allowed for this container. Setting this to 0 will allow unlimited memory.'
+                                        }
                                     />
                                 </div>
 
@@ -333,7 +342,9 @@ function InternalForm() {
                                         name={'limits.disk'}
                                         label={'Custom Disk Space (MB)'}
                                         type={'number'}
-                                        description={'This server will not be allowed to boot if it is using more than this amount of space.'}
+                                        description={
+                                            'This server will not be allowed to boot if it is using more than this amount of space.'
+                                        }
                                     />
                                 </div>
 
@@ -371,27 +382,38 @@ function InternalForm() {
                                             name={'limits.cpu'}
                                             label={'Custom CPU Limit (%)'}
                                             type={'number'}
-                                            description={'Each thread on the system is considered to be 100%. Setting this to 0 will allow the server to use CPU time without restriction.'}
+                                            description={
+                                                'Each thread on the system is considered to be 100%. Setting this to 0 will allow the server to use CPU time without restriction.'
+                                            }
                                         />
                                         <Field
                                             id={'limits.threads'}
                                             name={'limits.threads'}
                                             label={'CPU Pinning'}
                                             type={'text'}
-                                            description={'Advanced: Enter the specific CPU cores that this server can run on, or leave blank to allow all cores.'}
+                                            description={
+                                                'Advanced: Enter the specific CPU cores that this server can run on, or leave blank to allow all cores.'
+                                            }
                                         />
                                     </div>
                                 </div>
 
                                 {/* Other Resource Limits */}
                                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                                    <Field id={'limits.swap'} name={'limits.swap'} label={'Swap Limit (MB)'} type={'number'} />
+                                    <Field
+                                        id={'limits.swap'}
+                                        name={'limits.swap'}
+                                        label={'Swap Limit (MB)'}
+                                        type={'number'}
+                                    />
                                     <Field
                                         id={'limits.io'}
                                         name={'limits.io'}
                                         label={'Block IO Proportion'}
                                         type={'number'}
-                                        description={'Advanced: The IO performance of this server relative to other running containers. Value should be between 10 and 1000.'}
+                                        description={
+                                            'Advanced: The IO performance of this server relative to other running containers. Value should be between 10 and 1000.'
+                                        }
                                     />
                                 </div>
 
@@ -399,7 +421,9 @@ function InternalForm() {
                                     <FormikSwitch
                                         name={'limits.oomKiller'}
                                         label={'Out of Memory Killer'}
-                                        description={'Enabling the Out of Memory Killer may cause server processes to exit unexpectedly.'}
+                                        description={
+                                            'Enabling the Out of Memory Killer may cause server processes to exit unexpectedly.'
+                                        }
                                     />
                                 </div>
                             </div>
@@ -419,7 +443,9 @@ function InternalForm() {
                                             <Spinner size="small" />
                                         </div>
                                     ) : availableAllocations.length === 0 ? (
-                                        <Alert type={'warning'}>No available allocations on this node. Please create allocations first.</Alert>
+                                        <Alert type={'warning'}>
+                                            No available allocations on this node. Please create allocations first.
+                                        </Alert>
                                     ) : (
                                         <>
                                             {/* Primary Allocation Section */}
@@ -432,19 +458,20 @@ function InternalForm() {
                                                     </span>
                                                 </div>
                                                 <p className="mb-3 text-xs text-neutral-400">
-                                                    The primary allocation will be used as the default connection endpoint for your server.
+                                                    The primary allocation will be used as the default connection
+                                                    endpoint for your server.
                                                 </p>
                                                 <div className="rounded border border-blue-600/50 bg-blue-950/20 overflow-hidden max-h-[240px] overflow-y-auto">
                                                     <div className="divide-y divide-neutral-700">
                                                         {availableAllocations.map(allocation => {
                                                             const isPrimary = primaryAllocationId === allocation.id;
-                                                            
+
                                                             return (
                                                                 <div
                                                                     key={allocation.id}
                                                                     className={classNames(
                                                                         'flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-neutral-700/50',
-                                                                        isPrimary && 'bg-blue-950/40'
+                                                                        isPrimary && 'bg-blue-950/40',
                                                                     )}
                                                                     onClick={() => {
                                                                         setPrimaryAllocationId(allocation.id);
@@ -466,7 +493,10 @@ function InternalForm() {
                                                                     </div>
                                                                     {isPrimary && (
                                                                         <span className="text-xs bg-blue-500 px-2 py-0.5 rounded flex items-center gap-1">
-                                                                            <FontAwesomeIcon icon={faStar} className="text-xs" />
+                                                                            <FontAwesomeIcon
+                                                                                icon={faStar}
+                                                                                className="text-xs"
+                                                                            />
                                                                             Primary
                                                                         </span>
                                                                     )}
@@ -491,14 +521,22 @@ function InternalForm() {
                                                     </span>
                                                 </div>
                                                 <p className="mb-3 text-xs text-neutral-400">
-                                                    Select additional allocations for your server. The primary allocation cannot be deselected.
+                                                    Select additional allocations for your server. The primary
+                                                    allocation cannot be deselected.
                                                 </p>
                                                 {values.featureLimits.allocations > 0 && (
                                                     <div className="mb-3 p-2 bg-neutral-800 rounded text-xs">
                                                         <span className="text-neutral-300">
-                                                            <strong>{(primaryAllocationId !== null ? 1 : 0) + selectedAllocations.length}</strong> / <strong>{values.featureLimits.allocations}</strong> allocations used
+                                                            <strong>
+                                                                {(primaryAllocationId !== null ? 1 : 0) +
+                                                                    selectedAllocations.length}
+                                                            </strong>{' '}
+                                                            / <strong>{values.featureLimits.allocations}</strong>{' '}
+                                                            allocations used
                                                         </span>
-                                                        {((primaryAllocationId !== null ? 1 : 0) + selectedAllocations.length) >= values.featureLimits.allocations && (
+                                                        {(primaryAllocationId !== null ? 1 : 0) +
+                                                            selectedAllocations.length >=
+                                                            values.featureLimits.allocations && (
                                                             <span className="ml-2 text-yellow-400">
                                                                 (Limit reached)
                                                             </span>
@@ -510,28 +548,44 @@ function InternalForm() {
                                                         {availableAllocations
                                                             .filter(allocation => allocation.id !== primaryAllocationId)
                                                             .map(allocation => {
-                                                                const isSelected = selectedAllocations.includes(allocation.id);
-                                                                const allocationLimit = values.featureLimits.allocations;
+                                                                const isSelected = selectedAllocations.includes(
+                                                                    allocation.id,
+                                                                );
+                                                                const allocationLimit =
+                                                                    values.featureLimits.allocations;
                                                                 // Include primary allocation in the count
-                                                                const totalAllocations = (primaryAllocationId !== null ? 1 : 0) + selectedAllocations.length;
-                                                                const isAtLimit = allocationLimit > 0 && totalAllocations >= allocationLimit;
+                                                                const totalAllocations =
+                                                                    (primaryAllocationId !== null ? 1 : 0) +
+                                                                    selectedAllocations.length;
+                                                                const isAtLimit =
+                                                                    allocationLimit > 0 &&
+                                                                    totalAllocations >= allocationLimit;
                                                                 const isDisabled = !isSelected && isAtLimit;
-                                                                
+
                                                                 return (
                                                                     <div
                                                                         key={allocation.id}
                                                                         className={classNames(
                                                                             'flex items-center gap-3 p-3 transition-colors',
-                                                                            isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-neutral-700',
-                                                                            isSelected && 'bg-neutral-700'
+                                                                            isDisabled
+                                                                                ? 'opacity-50 cursor-not-allowed'
+                                                                                : 'cursor-pointer hover:bg-neutral-700',
+                                                                            isSelected && 'bg-neutral-700',
                                                                         )}
                                                                         onClick={() => {
                                                                             if (isDisabled) return;
-                                                                            
+
                                                                             if (isSelected) {
-                                                                                setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
+                                                                                setSelectedAllocations(prev =>
+                                                                                    prev.filter(
+                                                                                        id => id !== allocation.id,
+                                                                                    ),
+                                                                                );
                                                                             } else {
-                                                                                setSelectedAllocations(prev => [...prev, allocation.id]);
+                                                                                setSelectedAllocations(prev => [
+                                                                                    ...prev,
+                                                                                    allocation.id,
+                                                                                ]);
                                                                             }
                                                                         }}
                                                                     >
@@ -541,14 +595,25 @@ function InternalForm() {
                                                                             disabled={isDisabled}
                                                                             onChange={() => {
                                                                                 if (isDisabled) return;
-                                                                                
+
                                                                                 if (isSelected) {
-                                                                                    setSelectedAllocations(prev => prev.filter(id => id !== allocation.id));
+                                                                                    setSelectedAllocations(prev =>
+                                                                                        prev.filter(
+                                                                                            id => id !== allocation.id,
+                                                                                        ),
+                                                                                    );
                                                                                 } else {
-                                                                                    setSelectedAllocations(prev => [...prev, allocation.id]);
+                                                                                    setSelectedAllocations(prev => [
+                                                                                        ...prev,
+                                                                                        allocation.id,
+                                                                                    ]);
                                                                                 }
                                                                             }}
-                                                                            className={isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+                                                                            className={
+                                                                                isDisabled
+                                                                                    ? 'cursor-not-allowed'
+                                                                                    : 'cursor-pointer'
+                                                                            }
                                                                             onClick={e => e.stopPropagation()}
                                                                         />
                                                                         <span className="font-mono text-sm">
@@ -557,21 +622,37 @@ function InternalForm() {
                                                                     </div>
                                                                 );
                                                             })}
-                                                        {availableAllocations.filter(a => a.id !== primaryAllocationId).length === 0 && (
+                                                        {availableAllocations.filter(a => a.id !== primaryAllocationId)
+                                                            .length === 0 && (
                                                             <div className="p-4 text-center text-sm text-neutral-400">
                                                                 No additional allocations available.
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
-                                                {availableAllocations.filter(a => a.id !== primaryAllocationId).length > 4 && (
+                                                {availableAllocations.filter(a => a.id !== primaryAllocationId).length >
+                                                    4 && (
                                                     <p className="mt-2 text-xs text-neutral-400">
-                                                        Scroll to view all {availableAllocations.filter(a => a.id !== primaryAllocationId).length} additional allocations
+                                                        Scroll to view all{' '}
+                                                        {
+                                                            availableAllocations.filter(
+                                                                a => a.id !== primaryAllocationId,
+                                                            ).length
+                                                        }{' '}
+                                                        additional allocations
                                                     </p>
                                                 )}
-                                                {selectedAllocations.filter(id => id !== primaryAllocationId).length > 0 && (
+                                                {selectedAllocations.filter(id => id !== primaryAllocationId).length >
+                                                    0 && (
                                                     <div className="mt-3 p-3 bg-neutral-800 rounded text-xs text-neutral-300">
-                                                        <strong>{selectedAllocations.filter(id => id !== primaryAllocationId).length}</strong> additional allocation(s) selected
+                                                        <strong>
+                                                            {
+                                                                selectedAllocations.filter(
+                                                                    id => id !== primaryAllocationId,
+                                                                ).length
+                                                            }
+                                                        </strong>{' '}
+                                                        additional allocation(s) selected
                                                     </div>
                                                 )}
                                             </div>
@@ -587,7 +668,9 @@ function InternalForm() {
                                     name={'featureLimits.allocations'}
                                     label={'Allocation Limit'}
                                     type={'number'}
-                                    description={'The total number of allocations a user is allowed to create for this server.'}
+                                    description={
+                                        'The total number of allocations a user is allowed to create for this server.'
+                                    }
                                 />
                                 <Field
                                     id={'featureLimits.backups'}
@@ -601,7 +684,9 @@ function InternalForm() {
                                     name={'featureLimits.databases'}
                                     label={'Database Limit'}
                                     type={'number'}
-                                    description={'The total number of databases a user is allowed to create for this server.'}
+                                    description={
+                                        'The total number of databases a user is allowed to create for this server.'
+                                    }
                                 />
                                 <Field
                                     id={'featureLimits.subusers'}
@@ -635,7 +720,11 @@ function InternalForm() {
                             <AdminBox title={'Environment Variables'}>
                                 <div className="grid grid-cols-1 gap-y-6 gap-x-8 md:grid-cols-2">
                                     {egg.relationships.variables
-                                        ?.filter(v => Object.keys(environment).find(e => e === v.environmentVariable) !== undefined)
+                                        ?.filter(
+                                            v =>
+                                                Object.keys(environment).find(e => e === v.environmentVariable) !==
+                                                undefined,
+                                        )
                                         .map((v, i) => (
                                             <ServerVariableContainer key={i} variable={v} />
                                         ))}
@@ -659,11 +748,15 @@ function InternalForm() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
                                     <span className="text-neutral-400">Memory:</span>
-                                    <span className="font-medium text-neutral-200">{values.limits.memory} MB ({(values.limits.memory / 1024).toFixed(1)} GB)</span>
+                                    <span className="font-medium text-neutral-200">
+                                        {values.limits.memory} MB ({(values.limits.memory / 1024).toFixed(1)} GB)
+                                    </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
                                     <span className="text-neutral-400">Disk:</span>
-                                    <span className="font-medium text-neutral-200">{values.limits.disk} MB ({(values.limits.disk / 1024).toFixed(1)} GB)</span>
+                                    <span className="font-medium text-neutral-200">
+                                        {values.limits.disk} MB ({(values.limits.disk / 1024).toFixed(1)} GB)
+                                    </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
                                     <span className="text-neutral-400">CPU:</span>
@@ -678,9 +771,13 @@ function InternalForm() {
                                                     .filter(a => selectedAllocations.includes(a.id))
                                                     .map(a => (
                                                         <div key={a.id} className="flex items-center gap-2">
-                                                            <span className="font-mono text-xs">{a.getDisplayText()}</span>
+                                                            <span className="font-mono text-xs">
+                                                                {a.getDisplayText()}
+                                                            </span>
                                                             {a.id === primaryAllocationId && (
-                                                                <span className="text-xs bg-blue-500 px-1.5 py-0.5 rounded">Primary</span>
+                                                                <span className="text-xs bg-blue-500 px-1.5 py-0.5 rounded">
+                                                                    Primary
+                                                                </span>
                                                             )}
                                                         </div>
                                                     ))}
@@ -700,34 +797,30 @@ function InternalForm() {
     };
 
     return (
-        <Form onKeyDown={(e) => {
-            // Prevent form submission on Enter key press
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
-        }}>
+        <Form
+            onKeyDown={e => {
+                // Prevent form submission on Enter key press
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                }
+            }}
+        >
             <CheckoutStepper steps={getWizardSteps()} />
-            
-            <div className="mb-8">
-                {renderStep()}
-            </div>
+
+            <div className="mb-8">{renderStep()}</div>
 
             <div className="flex justify-between rounded bg-neutral-700 px-4 py-3 shadow-md">
                 <Button
                     type="button"
-                    onClick={(e) => goToPreviousStep(e)}
+                    onClick={e => goToPreviousStep(e)}
                     disabled={currentStep === 1}
                     className={currentStep === 1 ? 'invisible' : ''}
                 >
                     Previous
                 </Button>
-                
+
                 {currentStep < 5 ? (
-                    <Button
-                        type="button"
-                        onClick={(e) => goToNextStep(e)}
-                        disabled={!isStepValid(currentStep)}
-                    >
+                    <Button type="button" onClick={e => goToNextStep(e)} disabled={!isStepValid(currentStep)}>
                         Next
                     </Button>
                 ) : (

@@ -174,7 +174,9 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                         <div className={'mb-4'}>
                             <label className={'block text-sm text-gray-400 mb-1'}>API Endpoint URL</label>
                             <Input
-                                placeholder={mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'}
+                                placeholder={
+                                    mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'
+                                }
                                 value={endpoint}
                                 onChange={e => setEndpoint(e.currentTarget.value)}
                             />
@@ -194,7 +196,9 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                             />
                             <p className={'mt-1 text-xs text-gray-500'}>
                                 {mode === 'ollama'
-                                    ? `Ollama model name (smaller models recommended for Minecraft log reading / debugging). Examples: ${ollamaSmallModelSuggestions.join(', ')}`
+                                    ? `Ollama model name (smaller models recommended for Minecraft log reading / debugging). Examples: ${ollamaSmallModelSuggestions.join(
+                                          ', ',
+                                      )}`
                                     : 'OpenAI model name (e.g., gpt-3.5-turbo, gpt-4)'}
                             </p>
                         </div>
@@ -231,7 +235,9 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                             </button>
                             <button
                                 type={'submit'}
-                                className={'px-4 py-2 rounded bg-green-600 text-white hover:bg-green-500 disabled:opacity-50'}
+                                className={
+                                    'px-4 py-2 rounded bg-green-600 text-white hover:bg-green-500 disabled:opacity-50'
+                                }
                                 disabled={isSubmitting || loading || !isValidKey}
                                 onClick={() => {
                                     // keep Formik values in sync with local state

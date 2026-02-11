@@ -20,7 +20,7 @@ import PaymentContainer from './PaymentContainer';
 import ChangeEggContainer from './ChangeEggContainer';
 import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
-import { getProduct } from '@/api/routes/account/billing/products';
+import { getProduct, getProductBillingCycles, BillingCycle } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
@@ -65,6 +65,7 @@ export default () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [renewing, setRenewing] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
+    const [currentBillingCycle, setCurrentBillingCycle] = useState<BillingCycle | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
@@ -75,7 +76,8 @@ export default () => {
     const serverStatus = ServerContext.useStoreState(s => s.server.data!.status);
 
     // Get configurable renewal settings
-    const renewalDays = settings.renewal?.days || 30;
+    // Use the actual billing days from the server if available, otherwise fall back to default renewalDays
+    const actualBillingDays = billingDays || settings.renewal?.days || 30;
     const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
@@ -92,29 +94,43 @@ export default () => {
         if (isFree) {
             return freeGraceDays;
         }
-        
-        const percentage = settings.renewal?.suspension_threshold_percentage || 0.20;
+
+        const percentage = settings.renewal?.suspension_threshold_percentage || 0.2;
         const calculatedThreshold = Math.ceil(days * percentage);
         const minThreshold = settings.renewal?.min_suspension_threshold_days || 3;
         const maxThreshold = settings.renewal?.max_suspension_threshold_days || 7;
-        
+
         return Math.max(minThreshold, Math.min(maxThreshold, calculatedThreshold));
     };
 
     // Calculate the actual grace period based on billing cycle
-    const actualGracePeriod = product && billingDays
-        ? calculateGracePeriodDays(billingDays, product.price === 0)
-        : product && product.price === 0
-        ? freeGraceDays
-        : suspensionThreshold;
+    const actualGracePeriod =
+        product && billingDays
+            ? calculateGracePeriodDays(billingDays, product.price === 0)
+            : product && product.price === 0
+            ? freeGraceDays
+            : suspensionThreshold;
 
     useEffect(() => {
         clearFlashes();
 
         if (billingProductId) {
             getProduct(billingProductId)
-                .then(data => setProduct(data))
-                .then(() => setLoading(false))
+                .then(data => {
+                    setProduct(data);
+                    // Load billing cycles to get the current cycle's price
+                    return getProductBillingCycles(billingProductId);
+                })
+                .then(cycles => {
+                    // Find the billing cycle that matches the server's billing days
+                    if (billingDays && cycles) {
+                        const cycle = cycles.find(c => c.days === billingDays);
+                        if (cycle) {
+                            setCurrentBillingCycle(cycle);
+                        }
+                    }
+                    setLoading(false);
+                })
                 .catch(error => {
                     setLoading(false);
                     console.error(error);
@@ -129,7 +145,8 @@ export default () => {
         clearFlashes('server:billing');
 
         // Use renewFreeServer for free products and paid products made free by coupons
-        renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
+        // Pass the actual billing days from the server to ensure correct renewal period
+        renewFreeServer(billingProductId, serverId, couponData?.coupon.id, billingDays || undefined)
             .then(() => {
                 // Force a full page reload to refresh the renewal date
                 window.location.reload();
@@ -230,7 +247,7 @@ export default () => {
                         <Label>Billing Cycle</Label>
                         <p css={tw`text-gray-400 text-sm`}>
                             <FontAwesomeIcon icon={faCalendarAlt} css={tw`mr-1`} />
-                            Every {renewalDays} days
+                            Every {actualBillingDays} days
                         </p>
                     </div>
                 </TitledGreyBox>
@@ -242,12 +259,31 @@ export default () => {
                         <Label>Price</Label>
                         <p css={tw`text-3xl font-bold text-gray-200 mb-2`}>
                             {settings.currency.symbol}
-                            {product ? product.price : '...'}
+                            {currentBillingCycle
+                                ? currentBillingCycle.price.toFixed(2)
+                                : product
+                                ? product.price
+                                : '...'}
                             <span css={tw`text-sm font-normal text-gray-400 ml-1`}>
                                 {settings.currency.code.toUpperCase()}
                             </span>
                         </p>
-                        <p css={tw`text-gray-400 text-xs mb-3`}>per {renewalDays} day billing cycle</p>
+                        <p css={tw`text-gray-400 text-xs mb-3`}>per {actualBillingDays} day billing cycle</p>
+                        {currentBillingCycle && currentBillingCycle.discountPercent !== 0 && (
+                            <p
+                                css={tw`text-xs mb-3`}
+                                className={currentBillingCycle.discountPercent > 0 ? 'text-green-400' : 'text-red-400'}
+                            >
+                                {currentBillingCycle.discountPercent > 0 ? (
+                                    <>✓ {currentBillingCycle.discountPercent.toFixed(1)}% discount applied</>
+                                ) : (
+                                    <>
+                                        +{Math.abs(currentBillingCycle.discountPercent).toFixed(1)}% premium for shorter
+                                        cycle
+                                    </>
+                                )}
+                            </p>
+                        )}
                         <Link
                             to={'/account/billing/orders'}
                             css={tw`text-green-400 text-sm hover:text-green-300 transition-colors duration-150`}
@@ -284,7 +320,10 @@ export default () => {
                                     </p>
                                     {isPaymentDisabled ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionThresholdDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more
+                                            than {maxSuspensionThresholdDays} days due to non-payment. Please create a
+                                            support ticket to restore access. Self-service payment is no longer
+                                            available.
                                         </Alert>
                                     ) : daysRemaining > actualGracePeriod ? (
                                         <Alert type={'info'}>
@@ -311,7 +350,10 @@ export default () => {
                                 <div>
                                     {isPaymentDisabled ? (
                                         <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more than {maxSuspensionThresholdDays} days due to non-payment. Please create a support ticket to restore access. Self-service payment is no longer available.
+                                            <strong>Server Suspended</strong> - Your server has been suspended for more
+                                            than {maxSuspensionThresholdDays} days due to non-payment. Please create a
+                                            support ticket to restore access. Self-service payment is no longer
+                                            available.
                                         </Alert>
                                     ) : (
                                         <>
@@ -341,13 +383,18 @@ export default () => {
                                                 ) : (
                                                     <p css={tw`text-gray-300 text-sm`}>
                                                         {settings.currency.symbol}
-                                                        {product.price.toFixed(2)} {settings.currency.code.toUpperCase()}
+                                                        {currentBillingCycle
+                                                            ? currentBillingCycle.price.toFixed(2)
+                                                            : product.price.toFixed(2)}{' '}
+                                                        {settings.currency.code.toUpperCase()}
                                                     </p>
                                                 )}
                                             </div>
 
                                             <CouponInput
-                                                subtotal={product.price}
+                                                subtotal={
+                                                    currentBillingCycle ? currentBillingCycle.price : product.price
+                                                }
                                                 onCouponApplied={handleCouponApplied}
                                                 orderType="ren"
                                             />
@@ -371,6 +418,7 @@ export default () => {
                                                     <PaymentContainer
                                                         id={Number(product.id)}
                                                         couponId={couponData?.coupon.id}
+                                                        billingDays={billingDays}
                                                     />
                                                 )}
                                             </div>

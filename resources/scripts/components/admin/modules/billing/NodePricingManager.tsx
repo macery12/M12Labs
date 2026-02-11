@@ -284,9 +284,7 @@ export default () => {
     if (nodes.length === 0) {
         return (
             <AdminBox title={'Node Pricing Multipliers'} icon={faMapMarkerAlt}>
-                <Alert type={'info'}>
-                    No nodes found. Create nodes first to configure location-based pricing.
-                </Alert>
+                <Alert type={'info'}>No nodes found. Create nodes first to configure location-based pricing.</Alert>
             </AdminBox>
         );
     }
@@ -294,8 +292,9 @@ export default () => {
     return (
         <AdminBox title={'Node Pricing Multipliers'} icon={faMapMarkerAlt}>
             <p className={'mb-4 text-gray-400'}>
-                Configure location-based pricing for each node. The final checkout price will be multiplied by the selected node&apos;s multiplier.
-                Allowed range: <strong>0.00</strong> to <strong>{MAX_MULTIPLIER.toFixed(2)}</strong>.
+                Configure location-based pricing for each node. The final checkout price will be multiplied by the
+                selected node&apos;s multiplier. Allowed range: <strong>0.00</strong> to{' '}
+                <strong>{MAX_MULTIPLIER.toFixed(2)}</strong>.
             </p>
 
             <div css={tw`overflow-x-auto mb-4`}>
@@ -334,7 +333,9 @@ export default () => {
                                             <span css={tw`text-xs text-neutral-400`}>
                                                 ID: {node.id}
                                                 {node.deployable && <span css={tw`ml-2 text-green-400`}>• Paid</span>}
-                                                {node.deployable_free && <span css={tw`ml-2 text-blue-400`}>• Free</span>}
+                                                {node.deployable_free && (
+                                                    <span css={tw`ml-2 text-blue-400`}>• Free</span>
+                                                )}
                                             </span>
                                         </div>
                                     </td>
@@ -348,10 +349,7 @@ export default () => {
                                                 onChange={e => handleMultiplierChange(node.id, e.target.value)}
                                                 onBlur={() => handleMultiplierBlur(node.id, node.price_multiplier)}
                                                 disabled={saving}
-                                                css={[
-                                                    tw`w-24`,
-                                                    (isInvalid || isOutOfRange) && tw`border-red-500`,
-                                                ]}
+                                                css={[tw`w-24`, (isInvalid || isOutOfRange) && tw`border-red-500`]}
                                                 placeholder="1.00"
                                             />
                                             <span css={tw`text-xs text-neutral-400`}>x</span>
@@ -398,11 +396,13 @@ export default () => {
             </div>
 
             <Alert type={'info'} className={'mt-4'}>
-                <strong>How it works:</strong> When a customer selects a node during checkout, the final price is calculated as:
+                <strong>How it works:</strong> When a customer selects a node during checkout, the final price is
+                calculated as:
                 <code css={tw`mx-1 px-1 bg-neutral-700 rounded`}>
                     base_price × billing_cycle_multiplier × node_multiplier
                 </code>
-                . For example, a $10/month product with a 1.15x node multiplier would cost $11.50/month at that location.
+                . For example, a $10/month product with a 1.15x node multiplier would cost $11.50/month at that
+                location.
             </Alert>
 
             <div className={'mt-6 flex justify-between'}>
@@ -418,9 +418,7 @@ export default () => {
 
                 <div css={tw`flex gap-2`}>
                     {hasChanges && (
-                        <span css={tw`text-yellow-400 self-center mr-2 text-sm`}>
-                            You have unsaved changes
-                        </span>
+                        <span css={tw`text-yellow-400 self-center mr-2 text-sm`}>You have unsaved changes</span>
                     )}
                     <Button onClick={handleSaveAll} disabled={saving || !hasChanges}>
                         <FontAwesomeIcon icon={faSave} className="mr-2" />

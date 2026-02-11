@@ -16,27 +16,30 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Webhooks'}>
-            <FlashMessageRender byKey={'admin:webhooks'} className={'mb-4'} />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
-                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Webhook Logging</h2>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Webhook Management</h2>
                     <p
                         className={
-                            'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
+                            'mt-1 overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400'
                         }
                     >
-                        Change settings for realtime webhook monitoring.
+                        Configure and monitor real-time webhook events for your application.
                     </p>
                 </div>
             </div>
+
             <SubNavigation>
-                <SubNavigationLink to={'/admin/webhooks'} name={'Settings'} base>
+                <SubNavigationLink to={'/admin/webhooks'} name={'Configuration'} base>
                     <CogIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/webhooks/events'} name={'Events'}>
+                <SubNavigationLink to={'/admin/webhooks/events'} name={'Event Management'}>
                     <CalendarIcon />
                 </SubNavigationLink>
             </SubNavigation>
+
+            <FlashMessageRender byKey={'admin:webhooks'} className={'mb-4'} />
+
             <Routes>
                 <Route path={'/'} element={<WebhookSettings />} />
                 <Route path={'/events'} element={<WebhookEventsContainer />} />

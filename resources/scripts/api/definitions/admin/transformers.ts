@@ -57,6 +57,7 @@ export default class Transformers {
             allocationId: attributes.allocation_id,
             eggId: attributes.egg_id,
             nestId: attributes.nest_id,
+            modsEnabled: attributes.mods_enabled || false,
             limits: { ...limits, oomKiller: oom_killer },
             featureLimits: attributes.feature_limits,
             container: attributes.container,

@@ -64,10 +64,18 @@ export default ({ cycle, selected, setSelected }: Props) => {
                     </div>
                     {getDiscountLabel()}
                 </div>
-                <CheckCircleIcon
-                    className={classNames('h-6 w-6 flex-shrink-0 transition-colors', isSelected ? '' : 'text-gray-600')}
-                    style={isSelected ? { color: colors.primary } : {}}
-                />
+                <div className={'flex items-center gap-3'}>
+                    <span className={'text-xl font-bold whitespace-nowrap'} style={{ color: colors.primary }}>
+                        ${cycle.price.toFixed(2)}
+                    </span>
+                    <CheckCircleIcon
+                        className={classNames(
+                            'h-5 w-5 flex-shrink-0 transition-colors',
+                            isSelected ? '' : 'text-gray-600',
+                        )}
+                        style={isSelected ? { color: colors.primary } : {}}
+                    />
+                </div>
             </div>
         </div>
     );

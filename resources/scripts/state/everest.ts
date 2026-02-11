@@ -111,6 +111,7 @@ export interface EverestSettings {
     mods: {
         enabled: boolean;
         curseforge_api_key: boolean | string;
+        default_source?: string;
     };
     webhooks: {
         enabled: boolean;

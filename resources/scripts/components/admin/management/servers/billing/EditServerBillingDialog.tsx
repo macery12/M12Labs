@@ -48,7 +48,7 @@ export default ({ server }: { server: Server }) => {
                     if (cats.length === 0) {
                         setError('No billing categories found. Please create a category first.');
                     }
-                    
+
                     // If server has a product, try to find its category
                     if (server.billingProductId && server.relationships.product) {
                         // We need to find which category this product belongs to
@@ -72,7 +72,7 @@ export default ({ server }: { server: Server }) => {
             setLoadingProducts(true);
             setError(null);
             setProducts([]);
-            
+
             // Don't reset selectedProductId if we're loading the current server's category
             if (!server.billingProductId) {
                 setSelectedProductId(null);
@@ -86,7 +86,7 @@ export default ({ server }: { server: Server }) => {
                     if (productList.length === 0) {
                         setError('No products found in this category. Please create products first.');
                     }
-                    
+
                     // If server has a product ID and it's in this list, keep it selected
                     if (server.billingProductId) {
                         const hasProduct = productList.some((p: Product) => p.id === server.billingProductId);
@@ -114,12 +114,14 @@ export default ({ server }: { server: Server }) => {
             setLoadingBillingCycles(true);
             setError(null);
             setBillingCycles([]);
-            
+
             getBillingCycles(selectedCategoryId, selectedProductId)
                 .then(cycles => {
                     setBillingCycles(cycles);
                     if (cycles.length === 0) {
-                        setError('No billing cycles configured for this product. Please configure billing cycles first.');
+                        setError(
+                            'No billing cycles configured for this product. Please configure billing cycles first.',
+                        );
                     } else {
                         // If server already has billing_days, keep it selected if it exists in the cycles
                         if (server.billingDays) {
@@ -323,8 +325,7 @@ export default ({ server }: { server: Server }) => {
                                                     <option value="">Select a billing plan...</option>
                                                     {products.map(product => (
                                                         <option key={product.id} value={product.id}>
-                                                            {product.name} (
-                                                            {product.limits.cpu}% CPU,{' '}
+                                                            {product.name} ({product.limits.cpu}% CPU,{' '}
                                                             {(product.limits.memory / MB_TO_GB).toFixed(1)}GB RAM,{' '}
                                                             {(product.limits.disk / MB_TO_GB).toFixed(1)}GB Disk)
                                                         </option>
@@ -357,7 +358,8 @@ export default ({ server }: { server: Server }) => {
                                                         'rounded border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-400'
                                                     }
                                                 >
-                                                    No billing cycles configured. Please configure billing cycles for this product.
+                                                    No billing cycles configured. Please configure billing cycles for
+                                                    this product.
                                                 </div>
                                             ) : (
                                                 <>
@@ -378,22 +380,44 @@ export default ({ server }: { server: Server }) => {
                                                             <option key={cycle.id} value={cycle.days}>
                                                                 {cycle.days} days - ${cycle.price?.toFixed(2) || '0.00'}
                                                                 {cycle.discount_percent !== 0 && (
-                                                                    <> ({cycle.discount_percent > 0 ? '+' : ''}{cycle.discount_percent}%)</>
+                                                                    <>
+                                                                        {' '}
+                                                                        ({cycle.discount_percent > 0 ? '+' : ''}
+                                                                        {cycle.discount_percent}%)
+                                                                    </>
                                                                 )}
                                                                 {cycle.is_default && ' (Default)'}
                                                             </option>
                                                         ))}
                                                     </select>
                                                     {selectedCycle && (
-                                                        <div className={'mt-2 rounded border border-neutral-700 bg-neutral-800/50 p-3 text-sm'}>
+                                                        <div
+                                                            className={
+                                                                'mt-2 rounded border border-neutral-700 bg-neutral-800/50 p-3 text-sm'
+                                                            }
+                                                        >
                                                             <p className={'text-gray-300'}>
-                                                                <strong>Selected Cycle:</strong> {selectedCycle.days} days
+                                                                <strong>Selected Cycle:</strong> {selectedCycle.days}{' '}
+                                                                days
                                                             </p>
                                                             <p className={'text-gray-300'}>
-                                                                <strong>Price:</strong> ${selectedCycle.price?.toFixed(2) || '0.00'}
+                                                                <strong>Price:</strong> $
+                                                                {selectedCycle.price?.toFixed(2) || '0.00'}
                                                                 {selectedCycle.discount_percent !== 0 && (
-                                                                    <span className={selectedCycle.discount_percent > 0 ? 'text-green-400' : 'text-red-400'}>
-                                                                        {' '}({selectedCycle.discount_percent > 0 ? '' : '+'}{Math.abs(selectedCycle.discount_percent)}% {selectedCycle.discount_percent > 0 ? 'discount' : 'premium'})
+                                                                    <span
+                                                                        className={
+                                                                            selectedCycle.discount_percent > 0
+                                                                                ? 'text-green-400'
+                                                                                : 'text-red-400'
+                                                                        }
+                                                                    >
+                                                                        {' '}
+                                                                        ({selectedCycle.discount_percent > 0 ? '' : '+'}
+                                                                        {Math.abs(selectedCycle.discount_percent)}%{' '}
+                                                                        {selectedCycle.discount_percent > 0
+                                                                            ? 'discount'
+                                                                            : 'premium'}
+                                                                        )
                                                                     </span>
                                                                 )}
                                                             </p>

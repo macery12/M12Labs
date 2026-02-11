@@ -96,10 +96,7 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
                                     </div>
                                 </div>
                             </div>
-                            <button
-                                onClick={onClose}
-                                css={tw`text-gray-400 hover:text-white transition-colors p-2`}
-                            >
+                            <button onClick={onClose} css={tw`text-gray-400 hover:text-white transition-colors p-2`}>
                                 <FontAwesomeIcon icon={faTimes} size="lg" />
                             </button>
                         </div>

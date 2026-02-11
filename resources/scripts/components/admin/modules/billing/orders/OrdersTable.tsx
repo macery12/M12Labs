@@ -85,7 +85,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { setSort, sort, setPage, sortDirection, setFilters } = useContext(OrderContext);
     const { colors } = useStoreState(state => state.theme.data!);
-    
+
     // Filter states
     const [paymentProcessor, setPaymentProcessor] = useState<PaymentProcessor | null>(null);
     const [status, setStatus] = useState<OrderStatus | null>(null);
@@ -97,7 +97,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [searchInputText, setSearchInputText] = useState<string>('');
     const [searchLoading, setSearchLoading] = useState(false);
-    
+
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
@@ -187,7 +187,8 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
         setSearchInputText('');
     };
 
-    const hasActiveFilters = paymentProcessor || status || orderType || minAmount || maxAmount || startDate || endDate || searchQuery;
+    const hasActiveFilters =
+        paymentProcessor || status || orderType || minAmount || maxAmount || startDate || endDate || searchQuery;
 
     useEffect(() => {
         if (!error) {
@@ -219,7 +220,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                 </button>
                             )}
                         </div>
-                        
+
                         {/* Search Input */}
                         <div css={tw`mb-4`}>
                             <InputSpinner visible={searchLoading}>
@@ -231,21 +232,12 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                 />
                             </InputSpinner>
                         </div>
-                        
+
                         {/* Filter Grid */}
                         <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`}>
-                            <PaymentProcessorFilter 
-                                value={paymentProcessor} 
-                                onChange={setPaymentProcessor}
-                            />
-                            <StatusFilter
-                                value={status}
-                                onChange={setStatus}
-                            />
-                            <OrderTypeFilter
-                                value={orderType as any}
-                                onChange={setOrderType as any}
-                            />
+                            <PaymentProcessorFilter value={paymentProcessor} onChange={setPaymentProcessor} />
+                            <StatusFilter value={status} onChange={setStatus} />
+                            <OrderTypeFilter value={orderType as any} onChange={setOrderType as any} />
                             <AmountRangeFilter
                                 minValue={minAmount}
                                 maxValue={maxAmount}
@@ -262,99 +254,109 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                     </div>
                 </div>
             )}
-            
+
             <AdminTable>
                 <Pagination data={orders} onPageSelect={setPage}>
-                        <div css={tw`overflow-x-auto`}>
-                            <table css={tw`w-full table-auto`}>
-                                <TableHead>
-                                    {!minimal && (
-                                        <TableHeader
-                                            name={'Order ID'}
-                                            direction={sort === 'id' ? (sortDirection ? 1 : 2) : null}
-                                            onClick={() => setSort('id')}
-                                        />
-                                    )}
-                                    {!minimal && <TableHeader name={'Customer'} />}
-                                    <TableHeader name={'Product'} />
-                                    <TableHeader name={'Provider'} />
-                                    <TableHeader name={'Status'} />
+                    <div css={tw`overflow-x-auto`}>
+                        <table css={tw`w-full table-auto`}>
+                            <TableHead>
+                                {!minimal && (
                                     <TableHeader
-                                        name={'Amount'}
-                                        direction={sort === 'total' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('total')}
+                                        name={'Order ID'}
+                                        direction={sort === 'id' ? (sortDirection ? 1 : 2) : null}
+                                        onClick={() => setSort('id')}
                                     />
-                                    <TableHeader
-                                        name={'Created'}
-                                        direction={sort === 'created_at' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('created_at')}
-                                    />
-                                </TableHead>
-                                <TableBody>
-                                    {orders !== undefined &&
-                                        orders.items.length > 0 &&
-                                        orders.items.map(order => (
-                                            <tr 
-                                                key={order.id}
-                                                className={`h-12 cursor-pointer transition-colors ${!minimal ? getStatusRowClass(order.status) : 'hover:bg-neutral-700'}`}
-                                                onClick={() => !minimal && openInspector(order)}
-                                            >
-                                                {!minimal && (
-                                                    <td css={tw`px-6 py-4 text-sm text-left whitespace-nowrap`}>
-                                                        <CopyOnClick text={order.id.toString()}>
-                                                            <code css={tw`font-mono bg-neutral-900 rounded py-1 px-2 text-gray-300 hover:text-white transition-colors`}>
-                                                                {order.id}
-                                                            </code>
-                                                        </CopyOnClick>
-                                                    </td>
+                                )}
+                                {!minimal && <TableHeader name={'Customer'} />}
+                                <TableHeader name={'Product'} />
+                                <TableHeader name={'Provider'} />
+                                <TableHeader name={'Status'} />
+                                <TableHeader
+                                    name={'Amount'}
+                                    direction={sort === 'total' ? (sortDirection ? 1 : 2) : null}
+                                    onClick={() => setSort('total')}
+                                />
+                                <TableHeader
+                                    name={'Created'}
+                                    direction={sort === 'created_at' ? (sortDirection ? 1 : 2) : null}
+                                    onClick={() => setSort('created_at')}
+                                />
+                            </TableHead>
+                            <TableBody>
+                                {orders !== undefined &&
+                                    orders.items.length > 0 &&
+                                    orders.items.map(order => (
+                                        <tr
+                                            key={order.id}
+                                            className={`h-12 cursor-pointer transition-colors ${
+                                                !minimal ? getStatusRowClass(order.status) : 'hover:bg-neutral-700'
+                                            }`}
+                                            onClick={() => !minimal && openInspector(order)}
+                                        >
+                                            {!minimal && (
+                                                <td css={tw`px-6 py-4 text-sm text-left whitespace-nowrap`}>
+                                                    <CopyOnClick text={order.id.toString()}>
+                                                        <code
+                                                            css={tw`font-mono bg-neutral-900 rounded py-1 px-2 text-gray-300 hover:text-white transition-colors`}
+                                                        >
+                                                            {order.id}
+                                                        </code>
+                                                    </CopyOnClick>
+                                                </td>
+                                            )}
+                                            {!minimal && (
+                                                <td css={tw`px-6 py-4 text-sm text-gray-400`}>User #{order.user_id}</td>
+                                            )}
+                                            <td className={'px-6 py-4'}>
+                                                <div css={tw`flex items-center gap-2`}>
+                                                    <span css={tw`text-white font-medium`}>
+                                                        {order.server_name || order.name}
+                                                    </span>
+                                                    {order.type === 'ren' && (
+                                                        <Pill size="small" type="info">
+                                                            REN
+                                                        </Pill>
+                                                    )}
+                                                    {order.type === 'new' && (
+                                                        <Pill size="small" type="success">
+                                                            NEW
+                                                        </Pill>
+                                                    )}
+                                                    {order.type === 'upg' && (
+                                                        <Pill size="small" type="warn">
+                                                            UPG
+                                                        </Pill>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className={'px-6 py-4'}>
+                                                <PaymentProcessorBadge
+                                                    processor={order.payment_processor}
+                                                    size="small"
+                                                />
+                                            </td>
+                                            <td className={'px-6 py-4'}>
+                                                <Pill size={'small'} type={type(order.status)}>
+                                                    {order.status}
+                                                </Pill>
+                                            </td>
+                                            <td className={'px-6 py-4 font-bold text-white'}>
+                                                ${order.total.toFixed(2)}
+                                                {order.type === 'ren' && (
+                                                    <span css={tw`text-sm text-gray-400 ml-1`}>/mo</span>
                                                 )}
-                                                {!minimal && (
-                                                    <td css={tw`px-6 py-4 text-sm text-gray-400`}>
-                                                        User #{order.user_id}
-                                                    </td>
-                                                )}
-                                                <td className={'px-6 py-4'}>
-                                                    <div css={tw`flex items-center gap-2`}>
-                                                        <span css={tw`text-white font-medium`}>
-                                                            {order.server_name || order.name}
-                                                        </span>
-                                                        {order.type === 'ren' && (
-                                                            <Pill size="small" type="info">REN</Pill>
-                                                        )}
-                                                        {order.type === 'new' && (
-                                                            <Pill size="small" type="success">NEW</Pill>
-                                                        )}
-                                                        {order.type === 'upg' && (
-                                                            <Pill size="small" type="warn">UPG</Pill>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className={'px-6 py-4'}>
-                                                    <PaymentProcessorBadge 
-                                                        processor={order.payment_processor} 
-                                                        size="small"
-                                                    />
-                                                </td>
-                                                <td className={'px-6 py-4'}>
-                                                    <Pill size={'small'} type={type(order.status)}>
-                                                        {order.status}
-                                                    </Pill>
-                                                </td>
-                                                <td className={'px-6 py-4 font-bold text-white'}>
-                                                    ${order.total.toFixed(2)}
-                                                    {order.type === 'ren' && <span css={tw`text-sm text-gray-400 ml-1`}>/mo</span>}
-                                                </td>
-                                                <td className={'px-6 py-4 text-gray-400'}>
-                                                    {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                </TableBody>
-                            </table>
-                            {orders === undefined ? <Loading /> : orders.items.length < 1 ? <NoItems /> : null}
-                        </div>
-                    </Pagination>
-                </AdminTable>
+                                            </td>
+                                            <td className={'px-6 py-4 text-gray-400'}>
+                                                {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
+                                            </td>
+                                        </tr>
+                                    ))}
+                            </TableBody>
+                        </table>
+                        {orders === undefined ? <Loading /> : orders.items.length < 1 ? <NoItems /> : null}
+                    </div>
+                </Pagination>
+            </AdminTable>
 
             {/* Order Inspector Modal */}
             {!minimal && selectedOrder && (

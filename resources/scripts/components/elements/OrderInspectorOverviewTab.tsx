@@ -47,7 +47,9 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                     <div css={tw`flex justify-between items-start`}>
                         <span css={tw`text-sm text-gray-400`}>Order ID</span>
                         <CopyOnClick text={order.id.toString()}>
-                            <code css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}>
+                            <code
+                                css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            >
                                 {order.id}
                             </code>
                         </CopyOnClick>
@@ -61,9 +63,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                     <div css={tw`flex justify-between items-start`}>
                         <span css={tw`text-sm text-gray-400`}>Created</span>
                         <div css={tw`text-right`}>
-                            <div css={tw`text-sm text-white`}>
-                                {format(order.created_at, 'MMM dd, yyyy HH:mm:ss')}
-                            </div>
+                            <div css={tw`text-sm text-white`}>{format(order.created_at, 'MMM dd, yyyy HH:mm:ss')}</div>
                             <div css={tw`text-xs text-gray-500`}>
                                 {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
                             </div>

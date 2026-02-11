@@ -25,7 +25,9 @@ export default ({
 
         if (!id) return;
 
-        const returnUrl = window.location.origin + `/account/billing/processing?renewal=true&server_uuid=${serverUuid}&processor=paypal`;
+        const returnUrl =
+            window.location.origin +
+            `/account/billing/processing?renewal=true&server_uuid=${serverUuid}&processor=paypal`;
 
         try {
             // Create PayPal order for renewal with all details in one request

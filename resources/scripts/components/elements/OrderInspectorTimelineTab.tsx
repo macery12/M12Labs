@@ -42,7 +42,9 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
         // Payment initiated
         events.push({
             title: 'Payment Initiated',
-            description: `Payment process started via ${order.payment_processor.charAt(0).toUpperCase() + order.payment_processor.slice(1)}`,
+            description: `Payment process started via ${
+                order.payment_processor.charAt(0).toUpperCase() + order.payment_processor.slice(1)
+            }`,
             timestamp: order.created_at, // Usually same as creation
             icon: faCreditCard,
             color: 'text-purple-400',
@@ -117,9 +119,7 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
         <div css={tw`space-y-6`}>
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Order Timeline</h3>
-                <p css={tw`text-sm text-gray-400 mb-6`}>
-                    Chronological log of events for this order
-                </p>
+                <p css={tw`text-sm text-gray-400 mb-6`}>Chronological log of events for this order</p>
 
                 <div css={tw`relative`}>
                     {/* Timeline line */}

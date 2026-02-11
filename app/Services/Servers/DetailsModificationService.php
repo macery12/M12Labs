@@ -41,6 +41,7 @@ class DetailsModificationService
                 'description' => Arr::get($data, 'description') ?? '',
                 'renewal_date' => array_key_exists('renewal_date', $data) ? Arr::get($data, 'renewal_date') : $server->renewal_date,
                 'billing_product_id' => array_key_exists('billing_product_id', $data) ? Arr::get($data, 'billing_product_id') : $server->billing_product_id,
+                'billing_days' => array_key_exists('billing_days', $data) ? Arr::get($data, 'billing_days') : $server->billing_days,
             ])->saveOrFail();
 
             // If the owner_id value is changed we need to revoke any tokens that exist for the server

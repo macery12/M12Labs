@@ -27,10 +27,10 @@ export default () => {
     const { colors } = useStoreState(s => s.theme.data!);
     const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
-    
+
     // Use default billing cycle for plan pricing
     const currentBillingDays = settings.renewal?.default_billing_days || 30;
-    
+
     // Get multiplier steps from settings
     const getMultiplierSteps = () => {
         const stepsString = settings.renewal?.multiplier_steps;
@@ -44,14 +44,14 @@ export default () => {
             return [];
         }
     };
-    
+
     const multiplierSteps = getMultiplierSteps();
 
     // Calculate price for a plan based on current billing cycle
     const calculatePlanPrice = (plan: Product): { price: number; discount: number } => {
         const basePrice = plan.basePrice || plan.price;
         const perDayPrice = basePrice / currentBillingDays;
-        
+
         // Find matching multiplier step
         let multiplier = 1.0;
         if (multiplierSteps.length > 0) {
@@ -67,11 +67,11 @@ export default () => {
                 multiplier = sortedSteps[sortedSteps.length - 1]?.multiplier || 1.0;
             }
         }
-        
+
         const finalPrice = perDayPrice * currentBillingDays * multiplier;
         const standardPrice = perDayPrice * currentBillingDays;
         const discountPercent = standardPrice > 0 ? ((standardPrice - finalPrice) / standardPrice) * 100 : 0;
-        
+
         return {
             price: Math.round(finalPrice * 100) / 100,
             discount: Math.round(discountPercent * 10) / 10,
@@ -155,7 +155,7 @@ export default () => {
                     <div css={tw`space-y-1.5`}>
                         {plans.map(plan => {
                             const { price, discount } = calculatePlanPrice(plan);
-                            
+
                             return (
                                 <div key={plan.id} css={tw`relative`}>
                                     <div
@@ -165,13 +165,14 @@ export default () => {
                                         <div css={tw`flex-1 min-w-0 mr-3`}>
                                             <div css={tw`flex items-baseline gap-2 mb-0.5`}>
                                                 <h4 css={tw`text-sm font-medium text-gray-200`}>{plan.name}</h4>
-                                <span css={tw`text-xs font-semibold text-gray-300`}>
+                                                <span css={tw`text-xs font-semibold text-gray-300`}>
                                                     {settings.currency.symbol}
                                                     {price.toFixed(2)}
                                                 </span>
                                                 {discount !== 0 && (
                                                     <span css={tw`text-xs text-green-400`}>
-                                                        ({Math.abs(discount).toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
+                                                        ({Math.abs(discount).toFixed(1)}%{' '}
+                                                        {discount > 0 ? 'discount' : 'premium'})
                                                     </span>
                                                 )}
                                             </div>
@@ -195,7 +196,8 @@ export default () => {
                                             <ul css={tw`text-xs space-y-0.5 ml-3`}>
                                                 {Object.entries(validation.violations || {}).map(([resource, data]) => (
                                                     <li key={resource}>
-                                                        {resource}: {data.current} {data.unit} → {data.limit} {data.unit}
+                                                        {resource}: {data.current} {data.unit} → {data.limit}{' '}
+                                                        {data.unit}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -215,58 +217,60 @@ export default () => {
                 title="Confirm Plan Change"
                 description={selectedPlan ? `Change to ${selectedPlan.name}?` : ''}
             >
-                {selectedPlan && (() => {
-                    const { price, discount } = calculatePlanPrice(selectedPlan);
-                    
-                    return (
-                        <>
-                            <div css={tw`space-y-2`}>
-                                <div>
-                                    <Label>New Resources</Label>
-                                    <div css={tw`text-sm text-gray-300 space-y-1`}>
-                                        <div css={tw`flex justify-between`}>
-                                            <span>CPU:</span>
-                                            <span>{selectedPlan.limits.cpu}%</span>
-                                        </div>
-                                        <div css={tw`flex justify-between`}>
-                                            <span>RAM:</span>
-                                            <span>{selectedPlan.limits.memory} MB</span>
-                                        </div>
-                                        <div css={tw`flex justify-between`}>
-                                            <span>Disk:</span>
-                                            <span>{selectedPlan.limits.disk} MB</span>
-                                        </div>
-                                        <div css={tw`flex justify-between`}>
-                                            <span>Databases:</span>
-                                            <span>{selectedPlan.limits.database}</span>
-                                        </div>
-                                        <div css={tw`flex justify-between`}>
-                                            <span>Backups:</span>
-                                            <span>{selectedPlan.limits.backup}</span>
+                {selectedPlan &&
+                    (() => {
+                        const { price, discount } = calculatePlanPrice(selectedPlan);
+
+                        return (
+                            <>
+                                <div css={tw`space-y-2`}>
+                                    <div>
+                                        <Label>New Resources</Label>
+                                        <div css={tw`text-sm text-gray-300 space-y-1`}>
+                                            <div css={tw`flex justify-between`}>
+                                                <span>CPU:</span>
+                                                <span>{selectedPlan.limits.cpu}%</span>
+                                            </div>
+                                            <div css={tw`flex justify-between`}>
+                                                <span>RAM:</span>
+                                                <span>{selectedPlan.limits.memory} MB</span>
+                                            </div>
+                                            <div css={tw`flex justify-between`}>
+                                                <span>Disk:</span>
+                                                <span>{selectedPlan.limits.disk} MB</span>
+                                            </div>
+                                            <div css={tw`flex justify-between`}>
+                                                <span>Databases:</span>
+                                                <span>{selectedPlan.limits.database}</span>
+                                            </div>
+                                            <div css={tw`flex justify-between`}>
+                                                <span>Backups:</span>
+                                                <span>{selectedPlan.limits.backup}</span>
+                                            </div>
                                         </div>
                                     </div>
+                                    <div>
+                                        <Label>Price</Label>
+                                        <p css={tw`text-sm text-gray-300`}>
+                                            {settings.currency.symbol}
+                                            {price.toFixed(2)} {settings.currency.code.toUpperCase()} per month
+                                            {discount !== 0 && (
+                                                <span css={tw`ml-2 text-green-400 text-xs`}>
+                                                    ({Math.abs(discount).toFixed(1)}%{' '}
+                                                    {discount > 0 ? 'discount' : 'premium'})
+                                                </span>
+                                            )}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label>Price</Label>
-                                    <p css={tw`text-sm text-gray-300`}>
-                                        {settings.currency.symbol}
-                                        {price.toFixed(2)} {settings.currency.code.toUpperCase()} per month
-                                        {discount !== 0 && (
-                                            <span css={tw`ml-2 text-green-400 text-xs`}>
-                                                ({Math.abs(discount).toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
-                                            </span>
-                                        )}
+                                <Alert type={'info'} className={'mt-4'}>
+                                    <p css={tw`text-xs`}>
+                                        Resources will be updated immediately. The page will reload after the change.
                                     </p>
-                                </div>
-                            </div>
-                            <Alert type={'info'} className={'mt-4'}>
-                                <p css={tw`text-xs`}>
-                                    Resources will be updated immediately. The page will reload after the change.
-                                </p>
-                            </Alert>
-                        </>
-                    );
-                })()}
+                                </Alert>
+                            </>
+                        );
+                    })()}
                 <Dialog.Footer>
                     <Button.Text onClick={() => setShowConfirmDialog(false)} disabled={changing}>
                         Cancel

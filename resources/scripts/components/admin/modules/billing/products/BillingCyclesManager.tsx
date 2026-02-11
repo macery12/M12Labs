@@ -26,7 +26,7 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
     const [error, setError] = useState<string>('');
     const { colors } = useStoreState(state => state.theme.data!);
     const settings = useStoreState(state => state.everest.data!.billing);
-    
+
     // Get multiplier steps and default billing days from settings
     const getMultiplierSteps = () => {
         const stepsString = settings.renewal?.multiplier_steps;
@@ -40,13 +40,13 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
             return [];
         }
     };
-    
+
     const multiplierSteps = getMultiplierSteps();
     const defaultBillingDays = settings.renewal?.default_billing_days || 30;
     const calculatePrice = (days: number): number => {
         const validatedBasePrice = basePrice || 0;
         const perDayPrice = validatedBasePrice / defaultBillingDays;
-        
+
         // Find matching multiplier step
         let multiplier = 1.0;
         if (multiplierSteps.length > 0) {
@@ -62,29 +62,29 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
                 multiplier = sortedSteps[sortedSteps.length - 1].multiplier;
             }
         }
-        
+
         return Math.max(0, perDayPrice * days * multiplier);
     };
 
     const handleAddCycle = () => {
         setError('');
         const days = parseInt(newCycleDays);
-        
+
         if (isNaN(days) || days < 1 || days > 365) {
             setError('Billing cycle must be between 1 and 365 days');
             return;
         }
-        
+
         if (cycles.some(c => c.days === days)) {
             setError('A billing cycle with this duration already exists');
             return;
         }
-        
+
         const newCycle: BillingCycle = {
             days,
             isEnabled: true,
         };
-        
+
         onChange([...cycles, newCycle].sort((a, b) => a.days - b.days));
         setNewCycleDays('');
     };
@@ -102,11 +102,11 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
 
     const getDiscountPercent = (days: number): number => {
         if (days === defaultBillingDays) return 0;
-        
+
         const baseMonthlyPrice = basePrice;
         const actualPrice = calculatePrice(days);
         const equivalentMonthlyPrice = (actualPrice / days) * defaultBillingDays;
-        
+
         // Return positive for discount, negative for premium
         return ((baseMonthlyPrice - equivalentMonthlyPrice) / baseMonthlyPrice) * 100;
     };
@@ -131,9 +131,7 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
                         Add
                     </Button>
                 </div>
-                {error && (
-                    <p css={tw`text-red-400 text-xs mt-1`}>{error}</p>
-                )}
+                {error && <p css={tw`text-red-400 text-xs mt-1`}>{error}</p>}
             </div>
 
             {cycles.length === 0 ? (
@@ -146,7 +144,7 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
                     {cycles.map((cycle, index) => {
                         const price = calculatePrice(cycle.days);
                         const discount = getDiscountPercent(cycle.days);
-                        
+
                         return (
                             <div
                                 key={cycle.id || `new-${index}`}
@@ -170,7 +168,8 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
                                         ${price.toFixed(2)}
                                         {discount !== 0 && (
                                             <span css={tw`ml-2`}>
-                                                ({Math.abs(discount).toFixed(1)}% {discount > 0 ? 'discount' : 'premium'})
+                                                ({Math.abs(discount).toFixed(1)}%{' '}
+                                                {discount > 0 ? 'discount' : 'premium'})
                                             </span>
                                         )}
                                     </div>
@@ -195,7 +194,9 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
                         Price Calculation Preview
                     </div>
                     <div css={tw`text-xs space-y-1`}>
-                        <div>Base Price ({defaultBillingDays} days): ${basePrice.toFixed(2)}</div>
+                        <div>
+                            Base Price ({defaultBillingDays} days): ${basePrice.toFixed(2)}
+                        </div>
                         {multiplierSteps.length > 0 && (
                             <div>
                                 <div className="font-semibold mt-2">Multiplier Steps:</div>
