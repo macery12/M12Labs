@@ -339,6 +339,9 @@ export default ({ server }: { server: Server }) => {
     const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
     const [loadingBillingCycles, setLoadingBillingCycles] = useState<boolean>(false);
 
+    // Cache for billing cycles to avoid redundant API calls
+    const [billingCyclesCache, setBillingCyclesCache] = useState<Map<number, BillingCycleWithPrice[]>>(new Map());
+
     const [form, setForm] = useState<BillingFormData>({
         billable: Boolean(server.billingProductId),
         categoryId: null,
@@ -369,9 +372,17 @@ export default ({ server }: { server: Server }) => {
                     // If server has a product, set the category from the product relationship
                     if (server.billingProductId && server.relationships?.product) {
                         const product = server.relationships.product;
-                        const categoryId = product.categoryId;
-                        if (categoryId) {
-                            setForm(prev => ({ ...prev, categoryId: categoryId }));
+                        // The product has a category relationship or categoryUuid
+                        const category = product.relationships?.category;
+                        if (category) {
+                            // Use the category ID from the relationship
+                            setForm(prev => ({ ...prev, categoryId: category.id }));
+                        } else if (product.categoryUuid) {
+                            // Fallback: find category by UUID in the loaded categories
+                            const matchingCategory = cats.find(c => c.uuid === product.categoryUuid);
+                            if (matchingCategory) {
+                                setForm(prev => ({ ...prev, categoryId: matchingCategory.id }));
+                            }
                         }
                     } else if (server.billingProductId && cats.length === 1) {
                         // Fallback: if there's only one category, use it
@@ -404,6 +415,7 @@ export default ({ server }: { server: Server }) => {
             // Clear loaded data
             setProducts([]);
             setBillingCycles([]);
+            // Don't clear cache - keep it for performance
         }
     }, [open]);
 
@@ -443,12 +455,44 @@ export default ({ server }: { server: Server }) => {
 
     const handleProductChange = (productId: number | null) => {
         if (form.categoryId && productId) {
+            // Check cache first to avoid redundant API calls
+            if (billingCyclesCache.has(productId)) {
+                console.log('Using cached billing cycles for product:', productId);
+                const cachedCycles = billingCyclesCache.get(productId)!;
+                setBillingCycles(cachedCycles);
+                
+                // Auto-select current billing cycle if it exists
+                if (server.billingDays) {
+                    const hasCycle = cachedCycles.some(c => c.days === server.billingDays);
+                    if (hasCycle) {
+                        setForm(prev => ({ ...prev, billingDays: server.billingDays }));
+                    } else {
+                        // Select default cycle
+                        const defaultCycle = cachedCycles.find(c => c.is_default);
+                        setForm(prev => ({
+                            ...prev,
+                            billingDays: defaultCycle ? defaultCycle.days : cachedCycles[0].days,
+                        }));
+                    }
+                } else {
+                    // Select default cycle
+                    const defaultCycle = cachedCycles.find(c => c.is_default);
+                    setForm(prev => ({
+                        ...prev,
+                        billingDays: defaultCycle ? defaultCycle.days : cachedCycles[0].days,
+                    }));
+                }
+                return;
+            }
+            
             setLoadingBillingCycles(true);
             setError(null);
             setBillingCycles([]);
 
             getBillingCycles(form.categoryId, productId)
                 .then(cycles => {
+                    // Cache the results
+                    setBillingCyclesCache(prev => new Map(prev).set(productId, cycles));
                     setBillingCycles(cycles);
                     if (cycles.length === 0) {
                         setError(
