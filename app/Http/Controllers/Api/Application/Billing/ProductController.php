@@ -94,10 +94,8 @@ class ProductController extends ApplicationApiController
     /**
      * Update an existing product.
      */
-    public function update(UpdateBillingProductRequest $request, Category $category, int $productId): Response
+    public function update(UpdateBillingProductRequest $request, Category $category, Product $product): Response
     {
-        $product = Product::findOrFail($productId);
-
         try {
             $product->update([
                 'name' => $request->input('name'),
@@ -133,10 +131,8 @@ class ProductController extends ApplicationApiController
     /**
      * View an existing product.
      */
-    public function view(GetBillingProductRequest $request, Category $category, int $productId): array
+    public function view(GetBillingProductRequest $request, Category $category, Product $product): array
     {
-        $product = Product::findOrFail($productId);
-
         return $this->fractal->item($product)
             ->transformWith(ProductTransformer::class)
             ->toArray();
@@ -145,10 +141,8 @@ class ProductController extends ApplicationApiController
     /**
      * Delete a product.
      */
-    public function delete(DeleteBillingProductRequest $request, Category $category, int $productId): Response
+    public function delete(DeleteBillingProductRequest $request, Category $category, Product $product): Response
     {
-        $product = Product::findOrFail($productId);
-
         $product->delete();
 
         Activity::event('admin:billing:products:delete')
