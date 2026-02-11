@@ -92,7 +92,7 @@ export default ({ category, events, onUpdate }: Props) => {
             {/* Category Header */}
             <div
                 className={
-                    'bg-neutral-750 flex cursor-pointer items-center justify-between rounded-t-lg px-6 py-4 transition-colors hover:bg-neutral-700'
+                    'flex cursor-pointer items-center justify-between rounded-t-lg bg-neutral-800 px-6 py-4 transition-colors hover:bg-neutral-700'
                 }
                 onClick={() => setIsExpanded(!isExpanded)}
             >

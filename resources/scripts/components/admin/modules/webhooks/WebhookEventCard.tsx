@@ -35,7 +35,7 @@ export default ({ event, onUpdate }: Props) => {
                 'group relative rounded-lg border p-4 transition-all duration-200',
                 enabled
                     ? 'border-green-500/30 bg-green-500/5 hover:border-green-500/50'
-                    : 'bg-neutral-750 border-neutral-700 hover:border-neutral-600',
+                    : 'border-neutral-700 bg-neutral-800 hover:border-neutral-600',
             )}
         >
             <div className={'flex items-start justify-between'}>
