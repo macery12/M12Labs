@@ -65,6 +65,15 @@ class Category extends Model
         'allow_plan_changes' => 'boolean',
     ];
 
+    /**
+     * Get the route key for the model.
+     * This tells Laravel to use 'uuid' instead of 'id' for route model binding.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_uuid');
