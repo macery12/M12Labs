@@ -387,7 +387,7 @@ export default ({ server }: { server: Server }) => {
         }
     }, [open]);
 
-    // Reset page and form when dialog closes
+    // Reset state when dialog closes
     useEffect(() => {
         if (!open) {
             setPage(0);
@@ -406,7 +406,7 @@ export default ({ server }: { server: Server }) => {
             setProducts([]);
             setBillingCycles([]);
         }
-    }, [open, server.billingProductId, server.billingDays, server.renewalDate]);
+    }, [open]);
 
     const handleCategoryChange = (categoryId: number | null) => {
         if (categoryId) {
