@@ -144,7 +144,7 @@ export default ({ activity, children }: Props) => {
 
                         {/* Timestamp - Right aligned on desktop */}
                         <div className={'flex-shrink-0'}>
-                            <Tooltip placement={'left'} content={format(activity.timestamp, 'MMM do, yyyy H:mm:ss')}>
+                            <Tooltip placement={'top'} content={format(activity.timestamp, 'MMM do, yyyy H:mm:ss')}>
                                 <span className={'text-sm text-slate-400'}>
                                     {formatDistanceToNowStrict(activity.timestamp, { addSuffix: true })}
                                 </span>

@@ -28,6 +28,9 @@ export default () => {
     });
 
     // Client-side filter states
+    // Note: These filters work on the current page of data loaded from the API.
+    // Users can paginate through all results and apply filters to each page.
+    // This is a frontend-only implementation to avoid backend changes.
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<string>('');
     const [selectedEventType, setSelectedEventType] = useState<string>('');
@@ -127,6 +130,13 @@ export default () => {
             }, 300),
         []
     );
+
+    // Cleanup debounced function on unmount
+    useEffect(() => {
+        return () => {
+            handleSearchChange.clear && handleSearchChange.clear();
+        };
+    }, [handleSearchChange]);
 
     const clearFilters = () => {
         setSearchQuery('');
@@ -246,19 +256,24 @@ export default () => {
                                 </ActivityLogEntry>
                             ))}
                         </>
+                    ) : data?.items && data.items.length > 0 ? (
+                        <div className={'py-12 text-center'}>
+                            <p className={'text-lg font-medium text-neutral-50'}>No activity found</p>
+                            <p className={'mt-1 text-sm text-neutral-400'}>
+                                Try adjusting your filters to see more results.
+                            </p>
+                        </div>
                     ) : (
                         <div className={'py-12 text-center'}>
                             <p className={'text-lg font-medium text-neutral-50'}>No activity found</p>
                             <p className={'mt-1 text-sm text-neutral-400'}>
-                                {hasActiveFilters
-                                    ? 'Try adjusting your filters to see more results.'
-                                    : 'There are no admin logs available at this time.'}
+                                There are no admin logs available at this time.
                             </p>
                         </div>
                     )}
                 </div>
             )}
-            {data && filteredActivities.length > 0 && (
+            {data && data.items.length > 0 && (
                 <PaginationFooter
                     pagination={data.pagination}
                     onPageSelect={page => setFilters(value => ({ ...value, page }))}
