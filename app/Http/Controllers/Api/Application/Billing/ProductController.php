@@ -32,10 +32,8 @@ class ProductController extends ApplicationApiController
     /**
      * Get all categories associated with the panel.
      */
-    public function index(GetBillingProductsRequest $request, int $id): array
+    public function index(GetBillingProductsRequest $request, Category $category): array
     {
-        $category = Category::findOrFail($id);
-
         $perPage = (int) $request->query('per_page', '20');
         if ($perPage < 1 || $perPage > 100) {
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
