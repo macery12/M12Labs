@@ -305,11 +305,12 @@ export default () => {
                                                                     </span>
                                                                     {cycle.discount_percent !== 0 && (
                                                                         <span
-                                                                            css={tw`text-xs ${
+                                                                            css={[
+                                                                                tw`text-xs`,
                                                                                 cycle.discount_percent > 0
-                                                                                    ? 'text-green-400'
-                                                                                    : 'text-orange-400'
-                                                                            }`}
+                                                                                    ? tw`text-green-400`
+                                                                                    : tw`text-red-400`,
+                                                                            ]}
                                                                         >
                                                                             {cycle.discount_percent > 0 ? '-' : '+'}
                                                                             {Math.abs(cycle.discount_percent).toFixed(0)}%
@@ -364,9 +365,10 @@ export default () => {
                                             </span>
                                             {discount !== 0 && (
                                                 <span
-                                                    css={tw`text-xs font-medium ${
-                                                        discount > 0 ? 'text-green-400' : 'text-orange-400'
-                                                    }`}
+                                                    css={[
+                                                        tw`text-xs font-medium`,
+                                                        discount > 0 ? tw`text-green-400` : tw`text-red-400`,
+                                                    ]}
                                                 >
                                                     ({Math.abs(discount).toFixed(1)}%{' '}
                                                     {discount > 0 ? 'discount' : 'premium'})
