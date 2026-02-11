@@ -339,11 +339,13 @@ class CheckoutController extends ClientApiController
             }
 
             $nodeId = (int) $request->input('node_id');
+            $server = null;
+            
             // Only validate node deployment for new purchases, not renewals
             if (!$isRenewal) {
                 $this->validationService->validateNodeDeployment($nodeId, false);
             } else {
-                // For renewals, get the server's node_id
+                // For renewals, get the server object
                 $serverId = (int) $request->input('server_id');
                 if ($serverId) {
                     $server = $request->user()->servers()->find($serverId);
@@ -371,14 +373,8 @@ class CheckoutController extends ClientApiController
 
             // Get billing days - for renewals, use server's billing_days if not provided
             $billingDays = (int) ($request->input('billing_days') ?? 30);
-            if ($isRenewal && !$request->has('billing_days')) {
-                $serverId = (int) $request->input('server_id');
-                if ($serverId) {
-                    $server = $request->user()->servers()->find($serverId);
-                    if ($server && $server->billing_days) {
-                        $billingDays = $server->billing_days;
-                    }
-                }
+            if ($isRenewal && !$request->has('billing_days') && $server && $server->billing_days) {
+                $billingDays = $server->billing_days;
             }
 
             // Determine order type and calculate price with coupon (including node multiplier)
