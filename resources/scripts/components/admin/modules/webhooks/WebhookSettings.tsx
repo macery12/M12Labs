@@ -1,16 +1,16 @@
 import { Form, Formik } from 'formik';
-import tw from 'twin.macro';
 import AdminBox from '@/elements/AdminBox';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
 import useFlash from '@/plugins/useFlash';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Label from '@/elements/Label';
-import { faLink } from '@fortawesome/free-solid-svg-icons';
+import { faLink, faCheck, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import ToggleWebhooksButton from './ToggleWebhooksButton';
-import { update } from '@/api/routes/admin/webhooks';
+import { update, sendTestEvent } from '@/api/routes/admin/webhooks';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export interface WebhookSettings {
     url: string;
@@ -18,8 +18,8 @@ export interface WebhookSettings {
 
 export default () => {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
-
     const settings = useStoreState(state => state.everest.data!.webhooks);
+    const [isTesting, setIsTesting] = useState(false);
 
     const submit = (values: WebhookSettings) => {
         clearFlashes();
@@ -29,7 +29,7 @@ export default () => {
                 addFlash({
                     type: 'success',
                     key: 'admin:webhooks',
-                    message: 'Settings have been updated successfully.',
+                    message: 'Webhook URL has been updated successfully.',
                 });
             })
             .catch(error => {
@@ -38,6 +38,31 @@ export default () => {
                     error: error,
                 });
             });
+    };
+
+    const handleTestWebhook = () => {
+        if (!settings.url) {
+            addFlash({
+                type: 'danger',
+                key: 'admin:webhooks',
+                message: 'Please configure a webhook URL before testing.',
+            });
+            return;
+        }
+
+        setIsTesting(true);
+        clearFlashes();
+
+        sendTestEvent()
+            .then(() => {
+                addFlash({
+                    key: 'admin:webhooks',
+                    type: 'success',
+                    message: 'Test webhook sent successfully! Check your configured endpoint.',
+                });
+            })
+            .catch(error => clearAndAddHttpError({ key: 'admin:webhooks', error }))
+            .finally(() => setIsTesting(false));
     };
 
     useEffect(() => {
@@ -52,35 +77,100 @@ export default () => {
             }}
         >
             <Form>
-                <FlashMessageRender byKey={'admin:webhooks'} className={'mb-2'} />
-                <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
-                    <AdminBox title={'Webhook URL'} icon={faLink}>
-                        <div>
+                <FlashMessageRender byKey={'admin:webhooks'} className={'mb-4'} />
+
+                <div className={'mb-6 grid gap-6 lg:grid-cols-3'}>
+                    {/* Webhook URL Configuration */}
+                    <div className={'lg:col-span-2'}>
+                        <AdminBox title={'Webhook URL Configuration'} icon={faLink}>
                             <div>
-                                <Label className={'mt-1 mr-2'}>Webhook URL Configuration</Label>
+                                <Label className={'mb-2'}>Webhook Endpoint URL</Label>
                                 <Field
                                     id={'url'}
                                     name={'url'}
                                     placeholder={
                                         settings.url
-                                            ? 'The webhook URL has already been provided.'
-                                            : 'Provide a webhook URL here'
+                                            ? 'The webhook URL has already been configured'
+                                            : 'https://your-domain.com/webhook-endpoint'
+                                    }
+                                    description={
+                                        'Set the webhook URL where events will be sent. This URL will receive POST requests with event data.'
                                     }
                                 />
+                                {settings.url && (
+                                    <div className={'mt-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3'}>
+                                        <div className={'flex items-center space-x-2'}>
+                                            <FontAwesomeIcon icon={faCheck} className={'text-green-400'} />
+                                            <span className={'text-sm text-green-400'}>
+                                                Webhook URL is configured
+                                            </span>
+                                        </div>
+                                        <p className={'ml-6 mt-1 text-xs text-neutral-400'}>
+                                            Current URL: {settings.url === true ? 'Configured (hidden)' : settings.url}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                            <p className={'mt-1.5 text-xs text-gray-400'}>
-                                Set the webhook URL to use for sending data.
+                        </AdminBox>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className={'space-y-6'}>
+                        <AdminBox title={'Quick Actions'}>
+                            <div className={'space-y-3'}>
+                                <Button
+                                    className={'w-full'}
+                                    onClick={handleTestWebhook}
+                                    disabled={isTesting || !settings.url}
+                                    variant={Button.Variants.Secondary}
+                                >
+                                    {isTesting ? 'Sending Test...' : 'Send Test Webhook'}
+                                </Button>
+                                <ToggleWebhooksButton fullWidth />
+                            </div>
+                        </AdminBox>
+
+                        <div className={'rounded-lg border border-blue-500/30 bg-blue-500/10 p-4'}>
+                            <div className={'mb-2 flex items-center space-x-2'}>
+                                <FontAwesomeIcon icon={faExclamationTriangle} className={'text-blue-400'} />
+                                <span className={'text-sm font-medium text-blue-400'}>Integration Guide</span>
+                            </div>
+                            <p className={'text-xs text-neutral-400'}>
+                                Webhooks send POST requests with JSON payloads. Ensure your endpoint can handle
+                                incoming requests and returns a 200 status code.
                             </p>
                         </div>
-                    </AdminBox>
-                </div>
-                <div css={tw`w-full flex flex-row items-center mt-6`}>
-                    <div css={tw`flex text-xs text-gray-500`}>These changes will apply as soon you save them.</div>
-
-                    <div css={tw`flex ml-auto`}>
-                        <ToggleWebhooksButton />
-                        <Button type="submit">Save Changes</Button>
                     </div>
+                </div>
+
+                {/* Webhook Format Information */}
+                <AdminBox title={'Webhook Event Format'} className={'mb-6'}>
+                    <div className={'space-y-3'}>
+                        <p className={'text-sm text-neutral-400'}>
+                            Each webhook event is sent as a POST request with the following structure:
+                        </p>
+                        <pre className={'rounded-lg bg-neutral-900 p-4 text-xs text-neutral-300'}>
+                            {JSON.stringify(
+                                {
+                                    event: 'admin:servers:create',
+                                    timestamp: '2024-01-01T12:00:00Z',
+                                    data: {
+                                        /* Event-specific data */
+                                    },
+                                },
+                                null,
+                                2,
+                            )}
+                        </pre>
+                    </div>
+                </AdminBox>
+
+                {/* Save Button */}
+                <div className={'flex items-center justify-between'}>
+                    <div className={'text-sm text-neutral-500'}>
+                        Changes will apply immediately upon saving.
+                    </div>
+                    <Button type="submit">Save Webhook URL</Button>
                 </div>
             </Form>
         </Formik>

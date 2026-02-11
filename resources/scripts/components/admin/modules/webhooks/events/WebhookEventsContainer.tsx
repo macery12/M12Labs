@@ -1,30 +1,32 @@
 import { useEffect, useState } from 'react';
 import Spinner from '@/elements/Spinner';
 import { getEvents, sendTestEvent, toggleEventStatus, WebhookEvent } from '@/api/routes/admin/webhooks';
-import EventsTable from './EventsTable';
 import { Button } from '@/elements/button';
-import { useStoreState } from '@/state/hooks';
 import useFlash from '@/plugins/useFlash';
 import Input from '@/elements/Input';
+import WebhookCategorySection from '../WebhookCategorySection';
+import WebhookStatistics from '../WebhookStatistics';
 
 export default () => {
-    const { colors } = useStoreState(s => s.theme.data!);
     const [events, setEvents] = useState<WebhookEvent[]>();
     const [filteredEvents, setFilteredEvents] = useState<WebhookEvent[]>();
     const [searchTerm, setSearchTerm] = useState<string>('');
     const { clearFlashes, addFlash, clearAndAddHttpError } = useFlash();
 
-    useEffect(() => {
+    const loadEvents = () => {
         getEvents().then(fetchedEvents => {
             setEvents(fetchedEvents);
-            setFilteredEvents(fetchedEvents); // Set filtered events initially
+            setFilteredEvents(fetchedEvents);
         });
+    };
+
+    useEffect(() => {
+        loadEvents();
     }, []);
 
     const handleSearch = (searchValue: string) => {
         setSearchTerm(searchValue);
 
-        // Filter by key or description using searchValue (case insensitive)
         if (events) {
             const filtered = events.filter(
                 event =>
@@ -35,12 +37,26 @@ export default () => {
         }
     };
 
-    const doDisable = () => {
-        toggleEventStatus(false).then(() => window.location.reload());
+    const doDisable = async () => {
+        clearFlashes();
+        try {
+            await toggleEventStatus(false);
+            addFlash({ key: 'admin:webhooks', type: 'success', message: 'All webhooks disabled successfully!' });
+            loadEvents();
+        } catch (error) {
+            clearAndAddHttpError({ key: 'admin:webhooks', error });
+        }
     };
 
-    const doEnable = () => {
-        toggleEventStatus(true).then(() => window.location.reload());
+    const doEnable = async () => {
+        clearFlashes();
+        try {
+            await toggleEventStatus(true);
+            addFlash({ key: 'admin:webhooks', type: 'success', message: 'All webhooks enabled successfully!' });
+            loadEvents();
+        } catch (error) {
+            clearAndAddHttpError({ key: 'admin:webhooks', error });
+        }
     };
 
     const doTest = () => {
@@ -48,32 +64,69 @@ export default () => {
 
         sendTestEvent()
             .then(() => {
-                addFlash({ key: 'admin:webhooks', type: 'success', message: 'Webhook sent successfully!' });
+                addFlash({ key: 'admin:webhooks', type: 'success', message: 'Test webhook sent successfully!' });
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:webhooks', error }));
     };
 
-    if (!events) return <Spinner size={'large'} centered />;
+    if (!events || !filteredEvents) return <Spinner size={'large'} centered />;
+
+    // Group events by category
+    const categorizedEvents = filteredEvents.reduce((acc, event) => {
+        const category = event.key.split(':')[1]; // Extract category from key like "admin:billing:update"
+        if (!acc[category]) {
+            acc[category] = [];
+        }
+        acc[category].push(event);
+        return acc;
+    }, {} as Record<string, WebhookEvent[]>);
+
+    // Sort categories alphabetically
+    const sortedCategories = Object.keys(categorizedEvents).sort();
 
     return (
         <>
-            <div className={'mb-6 flex grid lg:grid-cols-2'}>
-                <Input
-                    placeholder={'Search for a webhook event...'}
-                    value={searchTerm}
-                    onChange={e => handleSearch(e.target.value)}
-                />
-                <div className={'flex justify-end'}>
-                    <div className={'w-fit space-x-3 rounded-lg p-2'} style={{ background: colors.secondary }}>
-                        <Button.Text onClick={doTest} variant={Button.Variants.Secondary}>
-                            Send Test
-                        </Button.Text>
-                        <Button.Danger onClick={doDisable}>Disable All</Button.Danger>
-                        <Button onClick={doEnable}>Enable All</Button>
-                    </div>
+            {/* Statistics Dashboard */}
+            <WebhookStatistics events={filteredEvents} />
+
+            {/* Search and Actions Bar */}
+            <div className={'mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'}>
+                <div className={'flex-1 lg:max-w-md'}>
+                    <Input
+                        placeholder={'Search webhook events by name or description...'}
+                        value={searchTerm}
+                        onChange={e => handleSearch(e.target.value)}
+                    />
+                </div>
+
+                <div className={'flex flex-wrap gap-2'}>
+                    <Button.Text onClick={doTest} variant={Button.Variants.Secondary}>
+                        Send Test Event
+                    </Button.Text>
+                    <Button.Danger onClick={doDisable}>Disable All Webhooks</Button.Danger>
+                    <Button onClick={doEnable}>Enable All Webhooks</Button>
                 </div>
             </div>
-            <EventsTable events={filteredEvents} />
+
+            {/* Categorized Webhook Events */}
+            <div>
+                {sortedCategories.length === 0 ? (
+                    <div className={'rounded-lg border border-neutral-700 bg-neutral-800 p-8 text-center'}>
+                        <p className={'text-neutral-400'}>
+                            No webhook events found matching &quot;{searchTerm}&quot;
+                        </p>
+                    </div>
+                ) : (
+                    sortedCategories.map(category => (
+                        <WebhookCategorySection
+                            key={category}
+                            category={category}
+                            events={categorizedEvents[category]}
+                            onUpdate={loadEvents}
+                        />
+                    ))
+                )}
+            </div>
         </>
     );
 };

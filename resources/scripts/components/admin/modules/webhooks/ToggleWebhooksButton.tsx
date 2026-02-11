@@ -3,7 +3,11 @@ import { Button } from '@/elements/button';
 import { update } from '@/api/routes/admin/webhooks';
 import { useNavigate } from 'react-router-dom';
 
-export default () => {
+interface Props {
+    fullWidth?: boolean;
+}
+
+export default ({ fullWidth = false }: Props) => {
     const navigate = useNavigate();
     const enabled = useStoreState(state => state.everest.data!.webhooks.enabled);
 
@@ -12,8 +16,12 @@ export default () => {
     };
 
     return (
-        <div className={'mr-4'} onClick={submit}>
-            {!enabled ? <Button>Enable Webhooks</Button> : <Button.Danger>Disable Webhooks</Button.Danger>}
+        <div className={fullWidth ? 'w-full' : 'mr-4'} onClick={submit}>
+            {!enabled ? (
+                <Button className={fullWidth ? 'w-full' : ''}>Enable Webhooks</Button>
+            ) : (
+                <Button.Danger className={fullWidth ? 'w-full' : ''}>Disable Webhooks</Button.Danger>
+            )}
         </div>
     );
 };
