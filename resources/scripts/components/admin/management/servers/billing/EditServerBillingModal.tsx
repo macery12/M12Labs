@@ -339,10 +339,13 @@ export default ({ server }: { server: Server }) => {
     const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
     const [loadingBillingCycles, setLoadingBillingCycles] = useState<boolean>(false);
 
+    // Cache for billing cycles to avoid redundant API calls
+    const [billingCyclesCache, setBillingCyclesCache] = useState<Map<number, BillingCycleWithPrice[]>>(new Map());
+
     const [form, setForm] = useState<BillingFormData>({
         billable: Boolean(server.billingProductId),
         categoryId: null,
-        productId: server.billingProductId || null,
+        productId: null, // Let category auto-selection handle setting productId to ensure proper cascade
         billingDays: server.billingDays || null,
         renewalDate: server.renewalDate
             ? new Date(server.renewalDate).toISOString().slice(0, 16)
@@ -351,6 +354,27 @@ export default ({ server }: { server: Server }) => {
 
     const update = <K extends keyof BillingFormData>(key: K, value: BillingFormData[K]) => {
         setForm(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Helper function to select appropriate billing cycle from a list
+    const selectBillingCycle = (cycles: BillingCycleWithPrice[]) => {
+        if (cycles.length === 0) return;
+
+        // If server already has billing_days, keep it selected if it exists in the cycles
+        if (server.billingDays) {
+            const hasCycle = cycles.some(c => c.days === server.billingDays);
+            if (hasCycle) {
+                setForm(prev => ({ ...prev, billingDays: server.billingDays }));
+                return;
+            }
+        }
+
+        // Select default cycle or first available
+        const defaultCycle = cycles.find(c => c.is_default);
+        setForm(prev => ({
+            ...prev,
+            billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
+        }));
     };
 
     // Load categories when dialog opens
@@ -365,13 +389,21 @@ export default ({ server }: { server: Server }) => {
                         setError('No billing categories found. Please create a category first.');
                         return;
                     }
-                    
+
                     // If server has a product, set the category from the product relationship
                     if (server.billingProductId && server.relationships?.product) {
                         const product = server.relationships.product;
-                        const categoryId = product.categoryId;
-                        if (categoryId) {
-                            setForm(prev => ({ ...prev, categoryId: categoryId }));
+                        // The product has a category relationship or categoryUuid
+                        const category = product.relationships?.category;
+                        if (category) {
+                            // Use the category ID from the relationship
+                            setForm(prev => ({ ...prev, categoryId: category.id }));
+                        } else if (product.categoryUuid) {
+                            // Fallback: find category by UUID in the loaded categories
+                            const matchingCategory = cats.find(c => c.uuid === product.categoryUuid);
+                            if (matchingCategory) {
+                                setForm(prev => ({ ...prev, categoryId: matchingCategory.id }));
+                            }
                         }
                     } else if (server.billingProductId && cats.length === 1) {
                         // Fallback: if there's only one category, use it
@@ -395,7 +427,7 @@ export default ({ server }: { server: Server }) => {
             setForm({
                 billable: Boolean(server.billingProductId),
                 categoryId: null,
-                productId: server.billingProductId || null,
+                productId: null, // Let category auto-selection handle setting productId to ensure proper cascade
                 billingDays: server.billingDays || null,
                 renewalDate: server.renewalDate
                     ? new Date(server.renewalDate).toISOString().slice(0, 16)
@@ -404,6 +436,8 @@ export default ({ server }: { server: Server }) => {
             // Clear loaded data
             setProducts([]);
             setBillingCycles([]);
+            // Don't clear cache - keep it for performance across modal reopens.
+            // Cache persists during component lifecycle and is automatically cleared when component unmounts.
         }
     }, [open]);
 
@@ -443,39 +477,29 @@ export default ({ server }: { server: Server }) => {
 
     const handleProductChange = (productId: number | null) => {
         if (form.categoryId && productId) {
+            // Check cache first to avoid redundant API calls
+            if (billingCyclesCache.has(productId)) {
+                const cachedCycles = billingCyclesCache.get(productId)!;
+                setBillingCycles(cachedCycles);
+                selectBillingCycle(cachedCycles);
+                return;
+            }
+
             setLoadingBillingCycles(true);
             setError(null);
             setBillingCycles([]);
 
             getBillingCycles(form.categoryId, productId)
                 .then(cycles => {
+                    // Cache the results
+                    setBillingCyclesCache(prev => new Map(prev).set(productId, cycles));
                     setBillingCycles(cycles);
                     if (cycles.length === 0) {
                         setError(
                             'No billing cycles configured for this product. Please configure billing cycles first.',
                         );
                     } else {
-                        // If server already has billing_days, keep it selected if it exists in the cycles
-                        if (server.billingDays) {
-                            const hasCycle = cycles.some(c => c.days === server.billingDays);
-                            if (hasCycle) {
-                                setForm(prev => ({ ...prev, billingDays: server.billingDays }));
-                            } else {
-                                // Select default cycle
-                                const defaultCycle = cycles.find(c => c.is_default);
-                                setForm(prev => ({
-                                    ...prev,
-                                    billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
-                                }));
-                            }
-                        } else {
-                            // Select default cycle
-                            const defaultCycle = cycles.find(c => c.is_default);
-                            setForm(prev => ({
-                                ...prev,
-                                billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
-                            }));
-                        }
+                        selectBillingCycle(cycles);
                     }
                 })
                 .catch(err => {
