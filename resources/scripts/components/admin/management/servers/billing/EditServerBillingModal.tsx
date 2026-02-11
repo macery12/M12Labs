@@ -364,8 +364,13 @@ export default ({ server }: { server: Server }) => {
                     if (cats.length === 0) {
                         setError('No billing categories found. Please create a category first.');
                     }
-                    // If server has a product, try to find its category
-                    if (server.billingProductId && cats.length === 1) {
+                    // If server has a product, set the category from the product relationship
+                    if (server.billingProductId && server.relationships.product) {
+                        const product = server.relationships.product;
+                        // Use categoryUuid from the product
+                        setForm(prev => ({ ...prev, categoryId: product.categoryUuid }));
+                    } else if (server.billingProductId && cats.length === 1) {
+                        // Fallback: if there's only one category, use it
                         setForm(prev => ({ ...prev, categoryId: cats[0].id }));
                     }
                 })
@@ -590,28 +595,28 @@ export default ({ server }: { server: Server }) => {
 
                 <div className="absolute bottom-0 right-0 m-4 flex gap-2">
                     {page > 0 && (
-                        <Button.Text
-                            size={Button.Sizes.Small}
-                            shape={Button.Shapes.IconSquare}
+                        <Button
+                            size={Button.Sizes.Large}
                             onClick={() => setPage(page - 1)}
                         >
-                            <ChevronLeftIcon className="h-4 w-4" />
-                        </Button.Text>
+                            <ChevronLeftIcon className="mr-1 h-5 w-5" />
+                            Previous
+                        </Button>
                     )}
 
                     {page < pages.length - 1 && (!form.billable || canProceed()) && (
-                        <Button.Text
-                            size={Button.Sizes.Small}
-                            shape={Button.Shapes.IconSquare}
+                        <Button
+                            size={Button.Sizes.Large}
                             onClick={() => setPage(page + 1)}
                         >
-                            <ChevronRightIcon className="h-4 w-4" />
-                        </Button.Text>
+                            Next
+                            <ChevronRightIcon className="ml-1 h-5 w-5" />
+                        </Button>
                     )}
 
                     {page === pages.length - 1 && (
-                        <Button.Success size={Button.Sizes.Small} onClick={submit} disabled={!canProceed()}>
-                            <CheckCircleIcon className="mr-1 h-4 w-4" /> Finish
+                        <Button.Success size={Button.Sizes.Large} onClick={submit} disabled={!canProceed()}>
+                            <CheckCircleIcon className="mr-1 h-5 w-5" /> Finish
                         </Button.Success>
                     )}
                 </div>
