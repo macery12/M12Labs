@@ -175,11 +175,17 @@ export default () => {
                                             {values.amount && !errors.amount && (
                                                 <div
                                                     css={tw`mt-3 p-3 rounded-lg border-2`}
-                                                    style={{ borderColor: colors.primary, backgroundColor: colors.secondary }}
+                                                    style={{
+                                                        borderColor: colors.primary,
+                                                        backgroundColor: colors.secondary,
+                                                    }}
                                                 >
                                                     <p css={tw`text-sm text-gray-300`}>
                                                         You are donating:{' '}
-                                                        <span css={tw`text-xl font-bold`} style={{ color: colors.primary }}>
+                                                        <span
+                                                            css={tw`text-xl font-bold`}
+                                                            style={{ color: colors.primary }}
+                                                        >
                                                             ${parseFloat(values.amount).toFixed(2)}
                                                         </span>
                                                     </p>
@@ -194,11 +200,15 @@ export default () => {
                                                 name={'message'}
                                                 placeholder={'Leave a message with your donation (optional)'}
                                                 css={tw`shadow-md border border-neutral-700 rounded p-3 w-full text-sm text-neutral-200`}
-                                                style={{
-                                                    '--tw-ring-color': colors.primary,
-                                                    backgroundColor: colors.secondary,
-                                                } as React.CSSProperties}
-                                                className={'focus:border-[var(--tw-ring-color)] focus:ring-1 focus:ring-[var(--tw-ring-color)]'}
+                                                style={
+                                                    {
+                                                        '--tw-ring-color': colors.primary,
+                                                        backgroundColor: colors.secondary,
+                                                    } as React.CSSProperties
+                                                }
+                                                className={
+                                                    'focus:border-[var(--tw-ring-color)] focus:ring-1 focus:ring-[var(--tw-ring-color)]'
+                                                }
                                                 rows={4}
                                             />
                                             {errors.message && touched.message ? (

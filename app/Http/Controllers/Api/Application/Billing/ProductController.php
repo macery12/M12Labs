@@ -32,17 +32,17 @@ class ProductController extends ApplicationApiController
     /**
      * Get all categories associated with the panel.
      */
-    public function index(GetBillingProductsRequest $request, int $id): array
+    public function index(GetBillingProductsRequest $request, string $category): array
     {
-        $category = Category::findOrFail($id);
-
         $perPage = (int) $request->query('per_page', '20');
         if ($perPage < 1 || $perPage > 100) {
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
         }
 
+        $categoryModel = Category::findOrFail((int) $category);
+
         $products = QueryBuilder::for(Product::query())
-            ->where('category_uuid', $category->uuid)
+            ->where('category_uuid', $categoryModel->uuid)
             ->allowedFilters(['id', 'name'])
             ->allowedSorts(['id', 'name', 'price'])
             ->paginate($perPage);
@@ -55,13 +55,15 @@ class ProductController extends ApplicationApiController
     /**
      * Store a new product category in the database.
      */
-    public function store(StoreBillingProductRequest $request, Category $category): JsonResponse
+    public function store(StoreBillingProductRequest $request, string $category): JsonResponse
     {
+        $categoryModel = Category::findOrFail((int) $category);
+
         // TODO(jex): clean this up, make a service or somethin'
         try {
             $product = Product::create([
                 'uuid' => Uuid::uuid4()->toString(),
-                'category_uuid' => $category->uuid,
+                'category_uuid' => $categoryModel->uuid,
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
                 'price' => (float) $request->input('price'),
@@ -96,12 +98,12 @@ class ProductController extends ApplicationApiController
     /**
      * Update an existing product.
      */
-    public function update(UpdateBillingProductRequest $request, Category $category, int $productId): Response
+    public function update(UpdateBillingProductRequest $request, string $category, string $product): Response
     {
-        $product = Product::findOrFail($productId);
+        $productModel = Product::findOrFail((int) $product);
 
         try {
-            $product->update([
+            $productModel->update([
                 'name' => $request->input('name'),
                 'icon' => $request->input('icon'),
                 'price' => (float) $request->input('price'),
@@ -117,14 +119,14 @@ class ProductController extends ApplicationApiController
 
             // Update billing cycles if provided
             if ($request->has('billing_cycles')) {
-                $this->billingCycleService->syncBillingCycles($product, $request->input('billing_cycles'));
+                $this->billingCycleService->syncBillingCycles($productModel, $request->input('billing_cycles'));
             }
         } catch (\Exception $ex) {
             throw new \Exception('Failed to update a product: ' . $ex->getMessage());
         }
 
         Activity::event('admin:billing:products:update')
-            ->property('product', $product)
+            ->property('product', $productModel)
             ->property('new_data', $request->all())
             ->description('A billing product has been updated')
             ->log();
@@ -135,11 +137,11 @@ class ProductController extends ApplicationApiController
     /**
      * View an existing product.
      */
-    public function view(GetBillingProductRequest $request, Category $category, int $productId): array
+    public function view(GetBillingProductRequest $request, string $category, string $product): array
     {
-        $product = Product::findOrFail($productId);
+        $productModel = Product::findOrFail((int) $product);
 
-        return $this->fractal->item($product)
+        return $this->fractal->item($productModel)
             ->transformWith(ProductTransformer::class)
             ->toArray();
     }
@@ -147,14 +149,13 @@ class ProductController extends ApplicationApiController
     /**
      * Delete a product.
      */
-    public function delete(DeleteBillingProductRequest $request, Category $category, int $productId): Response
+    public function delete(DeleteBillingProductRequest $request, string $category, string $product): Response
     {
-        $product = Product::findOrFail($productId);
-
-        $product->delete();
+        $productModel = Product::findOrFail((int) $product);
+        $productModel->delete();
 
         Activity::event('admin:billing:products:delete')
-            ->property('product', $product)
+            ->property('product', $productModel)
             ->description('A billing product has been deleted')
             ->log();
 

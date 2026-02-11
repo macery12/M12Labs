@@ -79,7 +79,12 @@ const renameFiles = (uuid: string, directory: string, files: { to: string; from:
     });
 };
 
-const saveFileContents = async (uuid: string, file: string, content: string, originalContent?: string): Promise<void> => {
+const saveFileContents = async (
+    uuid: string,
+    file: string,
+    content: string,
+    originalContent?: string,
+): Promise<void> => {
     // Use the new endpoint with diff tracking when originalContent is provided
     if (originalContent !== undefined) {
         await http.post(`/api/client/servers/${uuid}/files/write-with-diff`, {

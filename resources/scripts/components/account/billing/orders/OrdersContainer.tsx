@@ -89,7 +89,7 @@ function OrderTable() {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(OrderContext);
     const { colors } = useStoreState(state => state.theme.data!);
-    
+
     // Filter states
     const [paymentProcessor, setPaymentProcessor] = useState<PaymentProcessor | null>(null);
     const [status, setStatus] = useState<OrderStatus | null>(null);
@@ -101,7 +101,7 @@ function OrderTable() {
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [searchInputText, setSearchInputText] = useState<string>('');
     const [searchLoading, setSearchLoading] = useState(false);
-    
+
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
@@ -189,7 +189,8 @@ function OrderTable() {
         setSearchInputText('');
     };
 
-    const hasActiveFilters = paymentProcessor || status || orderType || minAmount || maxAmount || startDate || endDate || searchQuery;
+    const hasActiveFilters =
+        paymentProcessor || status || orderType || minAmount || maxAmount || startDate || endDate || searchQuery;
 
     useEffect(() => {
         clearFlashes();
@@ -227,7 +228,7 @@ function OrderTable() {
                             </button>
                         )}
                     </div>
-                    
+
                     {/* Search Input */}
                     <div css={tw`mb-4`}>
                         <InputSpinner visible={searchLoading}>
@@ -239,21 +240,12 @@ function OrderTable() {
                             />
                         </InputSpinner>
                     </div>
-                    
+
                     {/* Filter Grid */}
                     <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`}>
-                        <PaymentProcessorFilter 
-                            value={paymentProcessor} 
-                            onChange={setPaymentProcessor}
-                        />
-                        <StatusFilter
-                            value={status}
-                            onChange={setStatus}
-                        />
-                        <OrderTypeFilter
-                            value={orderType}
-                            onChange={setOrderType}
-                        />
+                        <PaymentProcessorFilter value={paymentProcessor} onChange={setPaymentProcessor} />
+                        <StatusFilter value={status} onChange={setStatus} />
+                        <OrderTypeFilter value={orderType} onChange={setOrderType} />
                         <AmountRangeFilter
                             minValue={minAmount}
                             maxValue={maxAmount}
@@ -269,7 +261,7 @@ function OrderTable() {
                     </div>
                 </div>
             </div>
-            
+
             <AdminTable>
                 <Pagination data={orders} onPageSelect={setPage}>
                     <div className={`overflow-x-auto`}>
@@ -298,14 +290,18 @@ function OrderTable() {
                                 {orders !== undefined &&
                                     orders.items.length > 0 &&
                                     orders.items.map(order => (
-                                        <tr 
+                                        <tr
                                             key={order.id}
-                                            className={`h-12 cursor-pointer transition-colors ${getStatusRowClass(order.status)}`}
+                                            className={`h-12 cursor-pointer transition-colors ${getStatusRowClass(
+                                                order.status,
+                                            )}`}
                                             onClick={() => openInspector(order)}
                                         >
                                             <td className={`whitespace-nowrap px-6 py-4 text-left text-sm`}>
                                                 <CopyOnClick text={order.id.toString()}>
-                                                    <code className={`rounded bg-neutral-900 py-1 px-2 font-mono text-gray-300 hover:text-white transition-colors`}>
+                                                    <code
+                                                        className={`rounded bg-neutral-900 py-1 px-2 font-mono text-gray-300 hover:text-white transition-colors`}
+                                                    >
                                                         {order.id}
                                                     </code>
                                                 </CopyOnClick>
@@ -316,19 +312,25 @@ function OrderTable() {
                                                         {order.server_name || order.name}
                                                     </span>
                                                     {order.type === 'ren' && (
-                                                        <Pill size="small" type="info">REN</Pill>
+                                                        <Pill size="small" type="info">
+                                                            REN
+                                                        </Pill>
                                                     )}
                                                     {order.type === 'new' && (
-                                                        <Pill size="small" type="success">NEW</Pill>
+                                                        <Pill size="small" type="success">
+                                                            NEW
+                                                        </Pill>
                                                     )}
                                                     {order.type === 'upg' && (
-                                                        <Pill size="small" type="warn">UPG</Pill>
+                                                        <Pill size="small" type="warn">
+                                                            UPG
+                                                        </Pill>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className={'px-6 py-4'}>
-                                                <PaymentProcessorBadge 
-                                                    processor={order.payment_processor} 
+                                                <PaymentProcessorBadge
+                                                    processor={order.payment_processor}
                                                     size="small"
                                                 />
                                             </td>
@@ -339,7 +341,9 @@ function OrderTable() {
                                             </td>
                                             <td className={'px-6 py-4 font-bold text-white'}>
                                                 ${order.total.toFixed(2)}
-                                                {order.type === 'ren' && <span css={tw`text-sm text-gray-400 ml-1`}>/mo</span>}
+                                                {order.type === 'ren' && (
+                                                    <span css={tw`text-sm text-gray-400 ml-1`}>/mo</span>
+                                                )}
                                             </td>
                                             <td className={'px-6 py-4 text-gray-400'}>
                                                 {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}

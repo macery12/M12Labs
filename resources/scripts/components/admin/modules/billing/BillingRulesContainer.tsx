@@ -242,15 +242,27 @@ export default () => {
                                 </div>
 
                                 <div className={'space-y-2'}>
-                                    <div className={'flex items-center justify-between rounded border-l-4 border-red-500/50 bg-red-500/10 px-3 py-2'}>
+                                    <div
+                                        className={
+                                            'flex items-center justify-between rounded border-l-4 border-red-500/50 bg-red-500/10 px-3 py-2'
+                                        }
+                                    >
                                         <span className={'text-gray-300'}>Short cycles (≤14 days)</span>
                                         <span className={'font-semibold text-red-400'}>Premium +20-30%</span>
                                     </div>
-                                    <div className={'flex items-center justify-between rounded border-l-4 border-blue-500/50 bg-blue-500/10 px-3 py-2'}>
+                                    <div
+                                        className={
+                                            'flex items-center justify-between rounded border-l-4 border-blue-500/50 bg-blue-500/10 px-3 py-2'
+                                        }
+                                    >
                                         <span className={'text-gray-300'}>Standard (30 days)</span>
                                         <span className={'font-semibold text-blue-400'}>Base Price 1.00x</span>
                                     </div>
-                                    <div className={'flex items-center justify-between rounded border-l-4 border-green-500/50 bg-green-500/10 px-3 py-2'}>
+                                    <div
+                                        className={
+                                            'flex items-center justify-between rounded border-l-4 border-green-500/50 bg-green-500/10 px-3 py-2'
+                                        }
+                                    >
                                         <span className={'text-gray-300'}>Long cycles (90+ days)</span>
                                         <span className={'font-semibold text-green-400'}>Discount -10-15%</span>
                                     </div>

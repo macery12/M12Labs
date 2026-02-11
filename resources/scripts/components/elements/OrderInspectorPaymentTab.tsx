@@ -43,7 +43,9 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                 <div css={tw`flex justify-between items-start`}>
                     <span css={tw`text-sm text-gray-400`}>Payment Intent ID</span>
                     <CopyOnClick text={order.payment_intent_id}>
-                        <code css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}>
+                        <code
+                            css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                        >
                             {order.payment_intent_id.length > 30
                                 ? `${order.payment_intent_id.substring(0, 30)}...`
                                 : order.payment_intent_id}
@@ -60,7 +62,9 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                 <div css={tw`flex justify-between items-start`}>
                     <span css={tw`text-sm text-gray-400`}>Mollie Payment ID</span>
                     <CopyOnClick text={order.mollie_payment_id}>
-                        <code css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}>
+                        <code
+                            css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                        >
                             {order.mollie_payment_id}
                         </code>
                     </CopyOnClick>
@@ -70,7 +74,9 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                 <div css={tw`flex justify-between items-start`}>
                     <span css={tw`text-sm text-gray-400`}>Payment Intent ID</span>
                     <CopyOnClick text={order.payment_intent_id}>
-                        <code css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}>
+                        <code
+                            css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                        >
                             {order.payment_intent_id.length > 30
                                 ? `${order.payment_intent_id.substring(0, 30)}...`
                                 : order.payment_intent_id}
@@ -87,7 +93,9 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                 <div css={tw`flex justify-between items-start`}>
                     <span css={tw`text-sm text-gray-400`}>PayPal Order ID</span>
                     <CopyOnClick text={order.paypal_order_id}>
-                        <code css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}>
+                        <code
+                            css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                        >
                             {order.paypal_order_id}
                         </code>
                     </CopyOnClick>
@@ -97,7 +105,9 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                 <div css={tw`flex justify-between items-start`}>
                     <span css={tw`text-sm text-gray-400`}>Capture ID</span>
                     <CopyOnClick text={order.paypal_capture_id}>
-                        <code css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}>
+                        <code
+                            css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                        >
                             {order.paypal_capture_id}
                         </code>
                     </CopyOnClick>
@@ -107,7 +117,9 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                 <div css={tw`flex justify-between items-start`}>
                     <span css={tw`text-sm text-gray-400`}>Payer ID</span>
                     <CopyOnClick text={order.paypal_payer_id}>
-                        <code css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}>
+                        <code
+                            css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                        >
                             {order.paypal_payer_id}
                         </code>
                     </CopyOnClick>
@@ -168,7 +180,10 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                                 css={tw`inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors`}
                             >
                                 <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                View in {order.payment_processor.charAt(0).toUpperCase() + order.payment_processor.slice(1)} Dashboard
+                                View in{' '}
+                                {order.payment_processor.charAt(0).toUpperCase() +
+                                    order.payment_processor.slice(1)}{' '}
+                                Dashboard
                             </a>
                         </div>
                     )}
@@ -199,10 +214,14 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     </div>
                     <div css={tw`pt-3 border-t border-neutral-800 text-xs text-gray-500`}>
                         <p>
-                            <strong>Status Mapping:</strong> {order.status === 'processed' ? 'Payment successfully processed and order completed' :
-                            order.status === 'pending' ? 'Payment is pending confirmation' :
-                            order.status === 'failed' ? 'Payment failed or was declined' :
-                            'Order status unknown or expired'}
+                            <strong>Status Mapping:</strong>{' '}
+                            {order.status === 'processed'
+                                ? 'Payment successfully processed and order completed'
+                                : order.status === 'pending'
+                                ? 'Payment is pending confirmation'
+                                : order.status === 'failed'
+                                ? 'Payment failed or was declined'
+                                : 'Order status unknown or expired'}
                         </p>
                     </div>
                 </div>

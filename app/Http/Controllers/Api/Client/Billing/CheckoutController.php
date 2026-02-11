@@ -128,11 +128,11 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
-        // Get billing days (default to 30 if not provided)
-        $billingDays = (int) ($request->input('billing_days') ?? 30);
-
         // Lookup server scoped to the authenticated user
         $server = $user->servers()->findOrFail($serverId);
+
+        // Get billing days from request, or use server's existing billing_days, or default to 30
+        $billingDays = (int) ($request->input('billing_days') ?? $server->billing_days ?? 30);
 
         // Calculate price with coupon for renewal (including server's node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
@@ -339,11 +339,13 @@ class CheckoutController extends ClientApiController
             }
 
             $nodeId = (int) $request->input('node_id');
+            $server = null;
+            
             // Only validate node deployment for new purchases, not renewals
             if (!$isRenewal) {
                 $this->validationService->validateNodeDeployment($nodeId, false);
             } else {
-                // For renewals, get the server's node_id
+                // For renewals, get the server object
                 $serverId = (int) $request->input('server_id');
                 if ($serverId) {
                     $server = $request->user()->servers()->find($serverId);
@@ -369,8 +371,11 @@ class CheckoutController extends ClientApiController
             $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
             $eggId = !$isRenewal ? $this->validationService->validateAndGetEggId($product, $requestedEggId) : null;
 
-            // Get billing days (default to 30 if not provided)
+            // Get billing days - for renewals, use server's billing_days if not provided
             $billingDays = (int) ($request->input('billing_days') ?? 30);
+            if ($isRenewal && !$request->has('billing_days') && $server && $server->billing_days) {
+                $billingDays = $server->billing_days;
+            }
 
             // Determine order type and calculate price with coupon (including node multiplier)
             $orderType = $this->getOrderType($request);

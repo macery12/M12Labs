@@ -28,21 +28,13 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
     const isPublishableKeyValid = () => {
         if (!data.publishable) return false;
         const key = data.publishable.trim();
-        return (
-            (key.startsWith('pk_test_') || key.startsWith('pk_live_')) &&
-            key.length >= 100 &&
-            key.length <= 120
-        );
+        return (key.startsWith('pk_test_') || key.startsWith('pk_live_')) && key.length >= 100 && key.length <= 120;
     };
 
     const isSecretKeyValid = () => {
         if (!data.secret) return false;
         const key = data.secret.trim();
-        return (
-            (key.startsWith('sk_test_') || key.startsWith('sk_live_')) &&
-            key.length >= 100 &&
-            key.length <= 120
-        );
+        return (key.startsWith('sk_test_') || key.startsWith('sk_live_')) && key.length >= 100 && key.length <= 120;
     };
 
     const isValid = () => {

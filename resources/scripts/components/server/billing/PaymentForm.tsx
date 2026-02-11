@@ -11,12 +11,14 @@ export default ({
     serverUuid,
     intent,
     renewal,
+    billingDays,
 }: {
     id?: number;
     serverId: number;
     serverUuid?: string;
     intent: string;
     renewal?: boolean;
+    billingDays?: number;
 }) => {
     const stripe = useStripe();
     const elements = useElements();
@@ -31,7 +33,7 @@ export default ({
 
         if (!stripe || !elements) return;
 
-        updateStripeIntent({ id: id!, intent, serverId, renewal }).then(() => {
+        updateStripeIntent({ id: id!, intent, serverId, renewal, billing_days: billingDays }).then(() => {
             // Build return URL with renewal flag and server UUID for renewals
             let returnUrl = window.location.origin + '/account/billing/processing';
             if (renewal && serverUuid) {

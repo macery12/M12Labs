@@ -21,7 +21,7 @@ export default () => {
                             'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
-                        View and resolve errors from payment processing, server deployment, and webhook handling. 
+                        View and resolve errors from payment processing, server deployment, and webhook handling.
                         Exceptions are automatically logged when billing operations fail.
                     </p>
                 </div>

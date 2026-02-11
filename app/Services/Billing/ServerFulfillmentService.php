@@ -143,8 +143,11 @@ class ServerFulfillmentService
         
         $server = Server::findOrFail($order->server_id);
 
+        // Get billing days from the order, or fall back to server's billing_days, or default to 30
+        $billingDays = $order->billing_days ?? $server->billing_days ?? 30;
+
         // Use the unified processor service for renewal
-        $result = $this->processorService->processRenewal($server, $product, $order->coupon_id);
+        $result = $this->processorService->processRenewal($server, $product, $order->coupon_id, $billingDays);
         
         Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
         
@@ -212,6 +215,7 @@ class ServerFulfillmentService
             'egg_id' => $order->egg_id,
             'name' => $order->name,
             'variables' => $order->variables ?? [],
+            'billing_days' => $order->billing_days ?? 30,
         ];
     }
 

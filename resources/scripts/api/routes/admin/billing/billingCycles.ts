@@ -11,11 +11,11 @@ export const getBillingCycles = async (categoryId: number, productId: number): P
         productId,
         url: `/api/application/billing/categories/${categoryId}/products/${productId}/billing-cycles`,
     });
-    
+
     const { data } = await http.get(
         `/api/application/billing/categories/${categoryId}/products/${productId}/billing-cycles`,
     );
-    
+
     console.log('getBillingCycles response for product:', productId, data.data);
     return data.data;
 };
@@ -31,7 +31,7 @@ export const syncBillingCycles = (
         cycles,
         url: `/api/application/billing/categories/${categoryId}/products/${productId}/billing-cycles/sync`,
     });
-    
+
     return new Promise((resolve, reject) => {
         http.post(`/api/application/billing/categories/${categoryId}/products/${productId}/billing-cycles/sync`, {
             cycles,

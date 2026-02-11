@@ -10,7 +10,14 @@ import { Button } from '@/elements/button';
 import type { ApplicationStore } from '@/state';
 import AdminBox from '@/elements/AdminBox';
 import { object, string, number } from 'yup';
-import { faArrowLeft, faBell, faMicrochip, faPuzzlePiece, faCalendarAlt, faDollarSign } from '@fortawesome/free-solid-svg-icons';
+import {
+    faArrowLeft,
+    faBell,
+    faMicrochip,
+    faPuzzlePiece,
+    faCalendarAlt,
+    faDollarSign,
+} from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import { createProduct, updateProduct } from '@/api/routes/admin/billing/products';
 import ProductDeleteButton from './ProductDeleteButton';
@@ -35,7 +42,7 @@ export default ({ product }: { product?: Product }) => {
     );
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const settings = useStoreState(state => state.everest.data!.billing);
-    
+
     // Get multiplier steps from settings
     const getMultiplierSteps = () => {
         const stepsString = settings.renewal?.multiplier_steps;
@@ -49,13 +56,13 @@ export default ({ product }: { product?: Product }) => {
             return [];
         }
     };
-    
+
     const multiplierSteps = getMultiplierSteps();
     const defaultBillingDays = settings.renewal?.default_billing_days || 30;
 
     useEffect(() => {
         getCategory(Number(params.id)).then(category => setUuid(category.uuid));
-        
+
         if (product) {
             getBillingCycles(Number(params.id), product.id).then(cycles => {
                 setBillingCycles(cycles.map(c => ({ id: c.id, days: c.days, isEnabled: c.isEnabled ?? true })));
@@ -84,17 +91,19 @@ export default ({ product }: { product?: Product }) => {
             createProduct(Number(params.id), submitData)
                 .then(data => {
                     setSubmitting(false);
-                    
+
                     if (billingCycles.length > 0) {
                         syncBillingCycles(
                             Number(params.id),
                             data.id,
                             billingCycles.map(c => ({ days: c.days, is_enabled: c.isEnabled })),
-                        ).then(() => {
-                            navigate(`/admin/billing/categories/${params.id}/products/${data.id}`);
-                        }).catch(error => {
-                            clearAndAddHttpError({ key: 'admin:billing:product:create', error });
-                        });
+                        )
+                            .then(() => {
+                                navigate(`/admin/billing/categories/${params.id}/products/${data.id}`);
+                            })
+                            .catch(error => {
+                                clearAndAddHttpError({ key: 'admin:billing:product:create', error });
+                            });
                     } else {
                         navigate(`/admin/billing/categories/${params.id}/products/${data.id}`);
                     }
@@ -180,7 +189,10 @@ export default ({ product }: { product?: Product }) => {
                     name: string().required().max(191).min(3),
                     icon: string().nullable().notRequired().max(191).min(3),
                     price: number().typeError('Price must be a number').required().min(0, 'Price cannot be negative'),
-                    basePrice: number().nullable().typeError('Base price must be a number').min(0, 'Base price cannot be negative'),
+                    basePrice: number()
+                        .nullable()
+                        .typeError('Base price must be a number')
+                        .min(0, 'Base price cannot be negative'),
                     description: string().nullable().max(191).min(3),
                     limits: object().shape({
                         cpu: number().required().min(0),
@@ -221,7 +233,7 @@ export default ({ product }: { product?: Product }) => {
                                         />
                                     </FieldRow>
                                 </AdminBox>
-                                
+
                                 <AdminBox title={'Pricing Configuration'} className={'lg:mt-4'} icon={faDollarSign}>
                                     <FieldRow>
                                         <Field
@@ -240,9 +252,7 @@ export default ({ product }: { product?: Product }) => {
                                             type={'text'}
                                             onChange={handleChange}
                                             label={'Base Price (30 days)'}
-                                            description={
-                                                'The base price for 30 days. Leave empty to use legacy price.'
-                                            }
+                                            description={'The base price for 30 days. Leave empty to use legacy price.'}
                                         />
                                     </FieldRow>
                                     <Alert type={'info'} className={'mt-3'}>
@@ -256,14 +266,16 @@ export default ({ product }: { product?: Product }) => {
                                                         <ul className="list-disc list-inside ml-2">
                                                             {multiplierSteps.map((step: any, idx: number) => {
                                                                 const discount = (1 - step.multiplier) * 100;
-                                                                const label = discount > 0 
-                                                                    ? `${Math.abs(discount).toFixed(0)}% discount`
-                                                                    : discount < 0
-                                                                    ? `${Math.abs(discount).toFixed(0)}% premium`
-                                                                    : 'base price';
+                                                                const label =
+                                                                    discount > 0
+                                                                        ? `${Math.abs(discount).toFixed(0)}% discount`
+                                                                        : discount < 0
+                                                                        ? `${Math.abs(discount).toFixed(0)}% premium`
+                                                                        : 'base price';
                                                                 return (
                                                                     <li key={idx}>
-                                                                        Days ≤ {step.maxDays}: {step.multiplier.toFixed(2)}x ({label})
+                                                                        Days ≤ {step.maxDays}:{' '}
+                                                                        {step.multiplier.toFixed(2)}x ({label})
                                                                     </li>
                                                                 );
                                                             })}
@@ -274,12 +286,13 @@ export default ({ product }: { product?: Product }) => {
                                                 )}
                                             </div>
                                             <div className="mt-2 text-gray-400">
-                                                To change these settings, go to <strong>Billing → Renewal Dates</strong> in the admin panel.
+                                                To change these settings, go to <strong>Billing → Renewal Dates</strong>{' '}
+                                                in the admin panel.
                                             </div>
                                         </div>
                                     </Alert>
                                 </AdminBox>
-                                
+
                                 <AdminBox title={'Resource Limits'} className={'lg:mt-4'} icon={faMicrochip}>
                                     <FieldRow>
                                         <Field
@@ -332,7 +345,7 @@ export default ({ product }: { product?: Product }) => {
                                         />
                                     </FieldRow>
                                 </AdminBox>
-                                
+
                                 <AdminBox title={'Billing Cycles'} className={'lg:mt-4'} icon={faCalendarAlt}>
                                     <BillingCyclesManager
                                         cycles={billingCycles}
@@ -340,7 +353,7 @@ export default ({ product }: { product?: Product }) => {
                                         onChange={setBillingCycles}
                                     />
                                 </AdminBox>
-                                
+
                                 {/* Dynamic alerts based on price */}
                                 {Number(values.price) === 0 && (
                                     <Alert type={'warning'} className={'mt-4'}>
