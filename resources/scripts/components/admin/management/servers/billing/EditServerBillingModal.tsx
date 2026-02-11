@@ -387,13 +387,26 @@ export default ({ server }: { server: Server }) => {
         }
     }, [open]);
 
-    // Reset page when dialog closes
+    // Reset page and form when dialog closes
     useEffect(() => {
         if (!open) {
             setPage(0);
             setError(null);
+            // Reset form to initial state
+            setForm({
+                billable: Boolean(server.billingProductId),
+                categoryId: null,
+                productId: server.billingProductId || null,
+                billingDays: server.billingDays || null,
+                renewalDate: server.renewalDate
+                    ? new Date(server.renewalDate).toISOString().slice(0, 16)
+                    : new Date().toISOString().slice(0, 16),
+            });
+            // Clear loaded data
+            setProducts([]);
+            setBillingCycles([]);
         }
-    }, [open]);
+    }, [open, server.billingProductId, server.billingDays, server.renewalDate]);
 
     const handleCategoryChange = (categoryId: number | null) => {
         if (categoryId) {
