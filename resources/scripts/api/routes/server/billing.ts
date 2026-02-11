@@ -21,6 +21,7 @@ export interface PlanChangeResponse {
         id: number;
         uuid: string;
         billing_product_id: number;
+        billing_days?: number;
         limits: {
             memory: number;
             disk: number;
@@ -30,6 +31,16 @@ export interface PlanChangeResponse {
             allocation: number;
         };
     };
+}
+
+export interface BillingCycleWithPrice {
+    id?: number;
+    days: number;
+    price: number;
+    multiplier: number;
+    discount_percent: number;
+    is_default?: boolean;
+    is_enabled?: boolean;
 }
 
 /**
@@ -55,11 +66,28 @@ export const validatePlanChange = (serverUuid: string, productId: number): Promi
 };
 
 /**
+ * Get billing cycles for a product.
+ */
+export const getBillingCyclesForProduct = (productId: number): Promise<BillingCycleWithPrice[]> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/billing/products/${productId}/billing-cycles`)
+            .then(({ data }) => resolve(data.data || []))
+            .catch(reject);
+    });
+};
+
+/**
  * Change the server's plan.
  */
-export const changePlan = (serverUuid: string, productId: number): Promise<PlanChangeResponse> => {
+export const changePlan = (
+    serverUuid: string,
+    productId: number,
+    billingDays?: number
+): Promise<PlanChangeResponse> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${serverUuid}/billing/plans/${productId}/change`)
+        http.post(`/api/client/servers/${serverUuid}/billing/plans/${productId}/change`, {
+            billing_days: billingDays,
+        })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
