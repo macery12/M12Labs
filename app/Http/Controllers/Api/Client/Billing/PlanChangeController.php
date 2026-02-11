@@ -116,8 +116,15 @@ class PlanChangeController extends ClientApiController
     {
         $newProduct = Product::findOrFail($productId);
         
+        // Validate and get billing_days from request
+        $validated = $request->validate([
+            'billing_days' => 'nullable|integer|min:1|max:365',
+        ]);
+        
+        $billingDays = $validated['billing_days'] ?? null;
+        
         try {
-            $updatedServer = $this->planChangeService->changePlan($server, $newProduct);
+            $updatedServer = $this->planChangeService->changePlan($server, $newProduct, false, $billingDays);
             
             return response()->json([
                 'success' => true,
@@ -126,6 +133,7 @@ class PlanChangeController extends ClientApiController
                     'id' => $updatedServer->id,
                     'uuid' => $updatedServer->uuid,
                     'billing_product_id' => $updatedServer->billing_product_id,
+                    'billing_days' => $updatedServer->billing_days,
                     'limits' => [
                         'memory' => $updatedServer->memory,
                         'disk' => $updatedServer->disk,
