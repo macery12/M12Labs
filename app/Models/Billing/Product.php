@@ -81,15 +81,6 @@ class Product extends Model
     ];
 
     /**
-     * Get the route key for the model.
-     * This tells Laravel to use 'uuid' instead of 'id' for route model binding.
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    /**
      * Gets information for the category associated with this product.
      */
     public function category(): BelongsTo
