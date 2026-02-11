@@ -368,7 +368,7 @@ export default ({ server }: { server: Server }) => {
                 return;
             }
         }
-        
+
         // Select default cycle or first available
         const defaultCycle = cycles.find(c => c.is_default);
         setForm(prev => ({
@@ -389,7 +389,7 @@ export default ({ server }: { server: Server }) => {
                         setError('No billing categories found. Please create a category first.');
                         return;
                     }
-                    
+
                     // If server has a product, set the category from the product relationship
                     if (server.billingProductId && server.relationships?.product) {
                         const product = server.relationships.product;
@@ -483,7 +483,7 @@ export default ({ server }: { server: Server }) => {
                 selectBillingCycle(cachedCycles);
                 return;
             }
-            
+
             setLoadingBillingCycles(true);
             setError(null);
             setBillingCycles([]);
