@@ -587,7 +587,7 @@ export default ({ server }: { server: Server }) => {
                 {page > 0 && !form.billable && (
                     <div className="mb-8">
                         <Alert type="warning">
-                            Billing is disabled. Click "Finish" to save these changes and disable automatic billing for
+                            Billing is disabled. Click &quot;Finish&quot; to save these changes and disable automatic billing for
                             this server.
                         </Alert>
                     </div>
@@ -595,20 +595,14 @@ export default ({ server }: { server: Server }) => {
 
                 <div className="absolute bottom-0 right-0 m-4 flex gap-2">
                     {page > 0 && (
-                        <Button
-                            size={Button.Sizes.Large}
-                            onClick={() => setPage(page - 1)}
-                        >
+                        <Button size={Button.Sizes.Large} onClick={() => setPage(page - 1)}>
                             <ChevronLeftIcon className="mr-1 h-5 w-5" />
                             Previous
                         </Button>
                     )}
 
                     {page < pages.length - 1 && (!form.billable || canProceed()) && (
-                        <Button
-                            size={Button.Sizes.Large}
-                            onClick={() => setPage(page + 1)}
-                        >
+                        <Button size={Button.Sizes.Large} onClick={() => setPage(page + 1)}>
                             Next
                             <ChevronRightIcon className="ml-1 h-5 w-5" />
                         </Button>

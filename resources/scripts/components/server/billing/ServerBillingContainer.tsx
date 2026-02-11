@@ -76,9 +76,8 @@ export default () => {
     const serverStatus = ServerContext.useStoreState(s => s.server.data!.status);
 
     // Get configurable renewal settings
-    const renewalDays = settings.renewal?.days || 30;
     // Use the actual billing days from the server if available, otherwise fall back to default renewalDays
-    const actualBillingDays = billingDays || renewalDays;
+    const actualBillingDays = billingDays || settings.renewal?.days || 30;
     const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
@@ -259,18 +258,28 @@ export default () => {
                         <Label>Price</Label>
                         <p css={tw`text-3xl font-bold text-gray-200 mb-2`}>
                             {settings.currency.symbol}
-                            {currentBillingCycle ? currentBillingCycle.price.toFixed(2) : product ? product.price : '...'}
+                            {currentBillingCycle
+                                ? currentBillingCycle.price.toFixed(2)
+                                : product
+                                ? product.price
+                                : '...'}
                             <span css={tw`text-sm font-normal text-gray-400 ml-1`}>
                                 {settings.currency.code.toUpperCase()}
                             </span>
                         </p>
                         <p css={tw`text-gray-400 text-xs mb-3`}>per {actualBillingDays} day billing cycle</p>
                         {currentBillingCycle && currentBillingCycle.discountPercent !== 0 && (
-                            <p css={tw`text-xs mb-3`} className={currentBillingCycle.discountPercent > 0 ? 'text-green-400' : 'text-red-400'}>
+                            <p
+                                css={tw`text-xs mb-3`}
+                                className={currentBillingCycle.discountPercent > 0 ? 'text-green-400' : 'text-red-400'}
+                            >
                                 {currentBillingCycle.discountPercent > 0 ? (
                                     <>✓ {currentBillingCycle.discountPercent.toFixed(1)}% discount applied</>
                                 ) : (
-                                    <>+{Math.abs(currentBillingCycle.discountPercent).toFixed(1)}% premium for shorter cycle</>
+                                    <>
+                                        +{Math.abs(currentBillingCycle.discountPercent).toFixed(1)}% premium for shorter
+                                        cycle
+                                    </>
                                 )}
                             </p>
                         )}
@@ -373,14 +382,18 @@ export default () => {
                                                 ) : (
                                                     <p css={tw`text-gray-300 text-sm`}>
                                                         {settings.currency.symbol}
-                                                        {currentBillingCycle ? currentBillingCycle.price.toFixed(2) : product.price.toFixed(2)}{' '}
+                                                        {currentBillingCycle
+                                                            ? currentBillingCycle.price.toFixed(2)
+                                                            : product.price.toFixed(2)}{' '}
                                                         {settings.currency.code.toUpperCase()}
                                                     </p>
                                                 )}
                                             </div>
 
                                             <CouponInput
-                                                subtotal={currentBillingCycle ? currentBillingCycle.price : product.price}
+                                                subtotal={
+                                                    currentBillingCycle ? currentBillingCycle.price : product.price
+                                                }
                                                 onCouponApplied={handleCouponApplied}
                                                 orderType="ren"
                                             />
