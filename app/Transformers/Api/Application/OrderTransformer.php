@@ -21,7 +21,7 @@ class OrderTransformer extends Transformer
     public function transform(Order $model): array
     {
         $server = $model->server;
-        
+
         return [
             'id' => $model->id,
             'name' => $model->name,

@@ -2,14 +2,13 @@
 
 namespace Everest\Tests\Unit\Services\Billing;
 
-use Mockery;
 use Everest\Tests\TestCase;
-use Illuminate\Support\Facades\Http;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
-use Everest\Models\Billing\BillingException as BillingExceptionModel;
+use Illuminate\Support\Facades\Http;
 use Everest\Exceptions\Billing\BillingException;
 use Everest\Services\Billing\PayPalPaymentService;
+use Everest\Models\Billing\BillingException as BillingExceptionModel;
 
 class PayPalPaymentServiceTest extends TestCase
 {
@@ -21,7 +20,7 @@ class PayPalPaymentServiceTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        
+
         // Mock PayPal configuration
         config()->set('modules.billing.paypal_standalone', [
             'client_id' => 'test_client_id',
@@ -104,7 +103,7 @@ class PayPalPaymentServiceTest extends TestCase
     public function testSuccessfulOrderCreationReturnsOrderData()
     {
         $orderId = 'ORDER123';
-        
+
         Http::fake([
             '*/v1/oauth2/token' => Http::response([
                 'access_token' => 'test_token',
@@ -217,14 +216,14 @@ class PayPalPaymentServiceTest extends TestCase
      */
     private function createMockProduct(): Product
     {
-        $category = Mockery::mock(Category::class);
+        $category = \Mockery::mock(Category::class);
         $category->shouldReceive('getAttribute')->with('nest_id')->andReturn(1);
-        
-        $product = Mockery::mock(Product::class);
+
+        $product = \Mockery::mock(Product::class);
         $product->shouldReceive('getAttribute')->with('id')->andReturn(123);
         $product->shouldReceive('getAttribute')->with('name')->andReturn('Test Product');
         $product->shouldReceive('getAttribute')->with('category')->andReturn($category);
-        
+
         return $product;
     }
 
@@ -233,7 +232,7 @@ class PayPalPaymentServiceTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
+        \Mockery::close();
         parent::tearDown();
     }
 }

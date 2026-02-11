@@ -16,11 +16,11 @@ use Everest\Transformers\Api\Application\ServerTransformer;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
 use Everest\Http\Requests\Api\Application\Servers\GetServerRequest;
 use Everest\Http\Requests\Api\Application\Servers\GetServersRequest;
+use Everest\Http\Requests\Api\Application\Servers\ToggleModsRequest;
 use Everest\Http\Requests\Api\Application\Servers\StoreServerRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Servers\DeleteServerRequest;
 use Everest\Http\Requests\Api\Application\Servers\UpdateServerRequest;
-use Everest\Http\Requests\Api\Application\Servers\ToggleModsRequest;
 use Everest\Http\Requests\Api\Application\Servers\StoreServerWithPresetRequest;
 
 class ServerController extends ApplicationApiController
@@ -172,7 +172,7 @@ class ServerController extends ApplicationApiController
     public function toggleMods(ToggleModsRequest $request, Server $server): JsonResponse
     {
         $modsEnabled = $request->input('mods_enabled', false);
-        
+
         $server->update(['mods_enabled' => $modsEnabled]);
 
         Activity::event('admin:servers:mods.toggle')

@@ -23,7 +23,7 @@ return new class () extends Migration {
                 DB::table('categories')
                     ->where('id', $category->id)
                     ->update([
-                        'allowed_eggs' => json_encode([(int)$category->egg_id]),
+                        'allowed_eggs' => json_encode([(int) $category->egg_id]),
                     ]);
             }
         });

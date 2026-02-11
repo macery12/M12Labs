@@ -32,7 +32,7 @@ class AIController extends ClientApiController
             return response()->stream(function () use ($request) {
                 try {
                     foreach ($this->aiService->queryStream($request->input('query')) as $chunk) {
-                        echo "data: " . json_encode(['content' => $chunk]) . "\n\n";
+                        echo 'data: ' . json_encode(['content' => $chunk]) . "\n\n";
                         ob_flush();
                         flush();
                     }
@@ -40,7 +40,7 @@ class AIController extends ClientApiController
                     ob_flush();
                     flush();
                 } catch (\Exception $e) {
-                    echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
+                    echo 'data: ' . json_encode(['error' => $e->getMessage()]) . "\n\n";
                     ob_flush();
                     flush();
                 }

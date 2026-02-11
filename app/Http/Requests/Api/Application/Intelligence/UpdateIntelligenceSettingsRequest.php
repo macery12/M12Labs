@@ -10,7 +10,7 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
     public function rules(): array
     {
         $mode = $this->input('mode', 'openai');
-        
+
         return [
             'enabled' => 'nullable|bool',
             'key' => 'nullable',
@@ -26,21 +26,24 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
                         // Validate it's a URL
                         if (!filter_var($value, FILTER_VALIDATE_URL)) {
                             $fail('The endpoint must be a valid URL.');
+
                             return;
                         }
-                        
+
                         // For OpenAI mode, require HTTPS
                         // For Ollama mode, allow both HTTP (for local) and HTTPS
                         if ($mode === 'openai' && !str_starts_with($value, 'https://')) {
                             $fail('The endpoint must use HTTPS for OpenAI mode.');
+
                             return;
                         }
-                        
+
                         if (!str_starts_with($value, 'http://') && !str_starts_with($value, 'https://')) {
                             $fail('The endpoint must start with http:// or https://.');
+
                             return;
                         }
-                        
+
                         $parsed = parse_url($value);
                         // Ensure no @ in the authority part (prevents URL confusion attacks)
                         if (isset($parsed['user']) || strpos($value, '@') !== false) {
@@ -56,6 +59,7 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
                     if ($value !== null && $value !== '') {
                         if (!is_string($value)) {
                             $fail('The model must be a string.');
+
                             return;
                         }
                         if (strlen($value) < 1 || strlen($value) > 100) {

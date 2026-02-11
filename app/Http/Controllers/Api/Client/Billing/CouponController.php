@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Coupon;
 use Everest\Exceptions\DisplayException;

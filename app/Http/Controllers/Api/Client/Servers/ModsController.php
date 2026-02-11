@@ -4,18 +4,18 @@ namespace Everest\Http\Controllers\Api\Client\Servers;
 
 use Everest\Models\Server;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Everest\Services\Mods\CurseForgeService;
+use Illuminate\Support\Facades\Http;
 use Everest\Services\Mods\ModrinthService;
+use Everest\Services\Mods\CurseForgeService;
 use Everest\Repositories\Wings\DaemonFileRepository;
-use Everest\Http\Controllers\Api\Client\ClientApiController;
-use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
-use Everest\Http\Requests\Api\Client\Servers\Mods\GetModRequest;
-use Everest\Http\Requests\Api\Client\Servers\Mods\GetModFilesRequest;
-use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
-use Everest\Http\Requests\Api\Client\Servers\Mods\GetMinecraftVersionsRequest;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
+use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Everest\Http\Requests\Api\Client\Servers\Mods\GetModRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\GetModFilesRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\GetMinecraftVersionsRequest;
 
 class ModsController extends ClientApiController
 {
@@ -36,11 +36,11 @@ class ModsController extends ClientApiController
     private function getModService(string $source = null): CurseForgeService|ModrinthService
     {
         $source = $source ?? config('modules.mods.default_source', 'modrinth');
-        
+
         if ($source === 'curseforge') {
             return $this->curseForgeService;
         }
-        
+
         return $this->modrinthService;
     }
 
@@ -74,6 +74,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $modService->searchMods($params);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -100,6 +101,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $modService->getMod($modId);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -135,6 +137,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $modService->getModFiles($modId, $params);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -162,23 +165,23 @@ class ModsController extends ClientApiController
         try {
             // Get download URL based on source
             if ($source === 'curseforge') {
-                $modFile = $this->curseForgeService->getModFile((int)$modId, (int)$fileId);
-                
+                $modFile = $this->curseForgeService->getModFile((int) $modId, (int) $fileId);
+
                 if (!isset($modFile['data'])) {
                     throw new ModsServiceException('Failed to retrieve mod file details.');
                 }
 
                 $fileData = $modFile['data'];
                 $fileName = $fileData['fileName'] ?? 'mod.jar';
-                $downloadUrl = $this->curseForgeService->getModFileDownloadUrl((int)$modId, (int)$fileId);
+                $downloadUrl = $this->curseForgeService->getModFileDownloadUrl((int) $modId, (int) $fileId);
             } else {
                 // Modrinth
                 $downloadUrl = $this->modrinthService->getDownloadUrl($fileId);
-                
+
                 // Extract filename from URL or use a default
                 $urlParts = explode('/', $downloadUrl);
                 $fileName = end($urlParts);
-                
+
                 if (empty($fileName) || !str_contains($fileName, '.')) {
                     $fileName = 'mod_' . $fileId . '.jar';
                 }
@@ -195,20 +198,20 @@ class ModsController extends ClientApiController
             // Download the mod file using streaming to avoid memory issues
             $tempPath = storage_path('app/temp/mod_' . uniqid() . '.jar');
             $tempDir = dirname($tempPath);
-            
+
             if (!is_dir($tempDir)) {
                 mkdir($tempDir, 0755, true);
             }
-            
+
             $fileHandle = fopen($tempPath, 'w');
             if (!$fileHandle) {
                 throw new ModsServiceException('Failed to create temporary file for mod download.');
             }
-            
+
             try {
                 $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
                 // Note: sink() automatically closes the file handle, so we don't call fclose() here
-                
+
                 if (!$response->successful()) {
                     @unlink($tempPath);
                     throw new ModsServiceException('Failed to download mod file from CurseForge.');
@@ -217,7 +220,7 @@ class ModsController extends ClientApiController
                 // Read and upload to server's /mods folder
                 $modContent = file_get_contents($tempPath);
                 $this->fileRepository->setServer($server)->putContent("/mods/{$fileName}", $modContent);
-                
+
                 // Clean up temp file
                 @unlink($tempPath);
             } catch (\Exception $e) {
@@ -243,6 +246,7 @@ class ModsController extends ClientApiController
             ], 500);
         } catch (\Exception $e) {
             Log::error('Mod download failed: ' . $e->getMessage());
+
             return response()->json([
                 'error' => 'An unexpected error occurred while downloading the mod.',
             ], 500);
@@ -267,6 +271,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $modService->getMinecraftVersions();
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -293,6 +298,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $modService->getModLoaderTypes();
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -328,6 +334,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $this->curseForgeService->searchModpacks($params);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -351,6 +358,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $this->curseForgeService->getModpack($modpackId);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -383,6 +391,7 @@ class ModsController extends ClientApiController
 
         try {
             $result = $this->curseForgeService->getModpackFiles($modpackId, $params);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -411,7 +420,7 @@ class ModsController extends ClientApiController
         try {
             // Get modpack file details
             $modpackFile = $this->curseForgeService->getModpackFile($modpackId, $fileId);
-            
+
             if (!isset($modpackFile['data'])) {
                 throw new ModsServiceException('Failed to retrieve modpack file details.');
             }
@@ -434,7 +443,7 @@ class ModsController extends ClientApiController
             if (!is_dir($baseTempDir)) {
                 mkdir($baseTempDir, 0755, true);
             }
-            
+
             $tempDir = $baseTempDir . '/modpack_' . uniqid('', true);
             mkdir($tempDir, 0755, true);
             $zipPath = $tempDir . '/modpack.zip';
@@ -445,15 +454,15 @@ class ModsController extends ClientApiController
                 if (!$fileHandle) {
                     throw new ModsServiceException('Failed to create temporary file for modpack download.');
                 }
-                
+
                 $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
                 // Note: sink() automatically closes the file handle, so we don't call fclose() here
-                
+
                 if (!$response->successful()) {
                     $this->deleteDirectory($tempDir);
                     throw new ModsServiceException('Failed to download modpack file from CurseForge.');
                 }
-                
+
                 // Validate downloaded file size
                 $downloadedSize = filesize($zipPath);
                 if ($downloadedSize > $maxFileSize) {
@@ -508,7 +517,7 @@ class ModsController extends ClientApiController
             // Download and install each mod from the manifest
             $downloadedMods = [];
             $failedMods = [];
-            
+
             foreach ($manifest['files'] as $modEntry) {
                 try {
                     $modFileId = $modEntry['fileID'];
@@ -516,7 +525,7 @@ class ModsController extends ClientApiController
 
                     // Get the mod file download URL (cached, serialized API call)
                     $modDownloadUrl = $this->curseForgeService->getModFileDownloadUrl($projectId, $modFileId);
-                    
+
                     // Get mod file details to get the filename (cached, serialized API call)
                     $modFileDetails = $this->curseForgeService->getModFile($projectId, $modFileId);
                     $modFileName = $modFileDetails['data']['fileName'] ?? "mod_{$projectId}_{$modFileId}.jar";
@@ -524,23 +533,23 @@ class ModsController extends ClientApiController
                     // Download the mod file to a temporary location first to avoid memory issues
                     $tempModPath = $tempDir . '/temp_' . $modFileName;
                     $modFileHandle = fopen($tempModPath, 'w');
-                    
+
                     if (!$modFileHandle) {
                         Log::warning("Failed to create temp file for mod {$projectId}");
                         $failedMods[] = ['projectId' => $projectId, 'fileId' => $modFileId];
                         continue;
                     }
-                    
+
                     try {
                         $modResponse = Http::timeout(120)->sink($modFileHandle)->get($modDownloadUrl);
                         // Note: sink() automatically closes the file handle, so we don't call fclose() here
-                        
+
                         if ($modResponse->successful()) {
                             // Read and upload the file content
                             $modContent = file_get_contents($tempModPath);
                             $this->fileRepository->setServer($server)->putContent("/mods/{$modFileName}", $modContent);
                             $downloadedMods[] = $modFileName;
-                            
+
                             // Clean up temp file
                             @unlink($tempModPath);
                         } else {
@@ -585,6 +594,7 @@ class ModsController extends ClientApiController
             ], 500);
         } catch (\Exception $e) {
             Log::error('Modpack download failed: ' . $e->getMessage());
+
             return response()->json([
                 'error' => 'An unexpected error occurred while downloading the modpack.',
             ], 500);
@@ -597,7 +607,7 @@ class ModsController extends ClientApiController
     private function uploadDirectoryRecursively(Server $server, string $localPath, string $remotePath): void
     {
         $items = scandir($localPath);
-        
+
         foreach ($items as $item) {
             if ($item === '.' || $item === '..') {
                 continue;

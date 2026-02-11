@@ -105,7 +105,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         // PayPal payment routes
         Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);
         Route::put('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'updateOrder']);
-	    Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
+        Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
         Route::get('/paypal/status', [Client\Billing\PayPalCheckoutController::class, 'checkOrderStatus']);
         Route::get('/paypal/token/{token}', [Client\Billing\PayPalCheckoutController::class, 'getOrderFromToken']);
 
@@ -195,7 +195,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/minecraft/versions', [Client\Servers\ModsController::class, 'getMinecraftVersions'])->middleware(['throttle:10,1']);
             Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:10,1']);
         });
-
 
         Route::group(['prefix' => '/schedules'], function () {
             Route::get('/', [Client\Servers\ScheduleController::class, 'index']);

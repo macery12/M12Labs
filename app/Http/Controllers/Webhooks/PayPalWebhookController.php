@@ -3,9 +3,9 @@
 namespace Everest\Http\Controllers\Webhooks;
 
 use Illuminate\Http\Request;
+use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Everest\Models\Billing\Order;
 use Everest\Services\Billing\PayPalPaymentService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
@@ -21,16 +21,13 @@ class PayPalWebhookController
 
     /**
      * Handle PayPal webhook notifications.
-     * 
+     *
      * This endpoint receives asynchronous notifications from PayPal about payment events.
      * It verifies the webhook, fetches the actual payment status from PayPal API,
      * and fulfills orders for successful payments.
-     * 
+     *
      * Important: This endpoint is public and receives requests directly from PayPal.
      * No authentication or user context is available.
-     * 
-     * @param Request $request
-     * @return JsonResponse
      */
     public function handle(Request $request): JsonResponse
     {
@@ -41,7 +38,7 @@ class PayPalWebhookController
             // Extract PayPal order ID based on event type
             // Different event types have order ID in different locations
             $paypalOrderId = null;
-            
+
             switch ($eventType) {
                 case 'PAYMENT.CAPTURE.COMPLETED':
                 case 'PAYMENT.CAPTURE.DENIED':
@@ -65,12 +62,13 @@ class PayPalWebhookController
                 default:
                     // Unsupported event type - this may be a new PayPal event we haven't implemented yet
                     // or an event not relevant to our billing flow. Return 200 to acknowledge receipt.
-                    Log::warning("Unsupported PayPal webhook event type received", [
+                    Log::warning('Unsupported PayPal webhook event type received', [
                         'event_type' => $eventType,
                         'resource_id' => $resource['id'] ?? null,
                         'resource_type' => $request->input('resource_type'),
                         'note' => 'This may be expected for certain PayPal events. Review PayPal webhook settings if unexpected.',
                     ]);
+
                     return response()->json(['ok' => true], 200);
             }
 
@@ -81,6 +79,7 @@ class PayPalWebhookController
                     'resource_id' => $resource['id'] ?? null,
                     'resource_type' => $request->input('resource_type'),
                 ]);
+
                 return response()->json(['ok' => true], 200);
             }
 
@@ -90,6 +89,7 @@ class PayPalWebhookController
             if (!$order) {
                 // Return 200 to prevent PayPal retries for non-existent orders
                 Log::warning("PayPal webhook: Order not found for PayPal order ID: {$paypalOrderId}");
+
                 return response()->json(['ok' => true], 200);
             }
 
@@ -97,6 +97,7 @@ class PayPalWebhookController
             // This prevents duplicate processing if webhook is called multiple times
             if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
                 Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
+
                 return response()->json(['ok' => true], 200);
             }
 
@@ -111,7 +112,7 @@ class PayPalWebhookController
             // https://developer.paypal.com/docs/api/orders/v2/#orders_get
             $status = $paypalOrder['status'] ?? 'UNKNOWN';
 
-            Log::info("Processing PayPal webhook", [
+            Log::info('Processing PayPal webhook', [
                 'event_type' => $eventType,
                 'paypal_order_id' => $paypalOrderId,
                 'order_id' => $order->id,
@@ -164,10 +165,6 @@ class PayPalWebhookController
 
     /**
      * Fulfill an order after successful payment.
-     * 
-     * @param Request $request
-     * @param Order $order
-     * @return void
      */
     private function fulfillOrder(Request $request, Order $order): void
     {

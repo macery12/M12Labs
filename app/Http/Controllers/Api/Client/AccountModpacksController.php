@@ -2,21 +2,18 @@
 
 namespace Everest\Http\Controllers\Api\Client;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Everest\Models\Server;
 use Everest\Models\User;
-use Everest\Services\Mods\CurseForgeService;
-use Everest\Services\Servers\ServerCreationService;
-use Everest\Services\Servers\StartupModificationService;
-use Everest\Services\Servers\ReinstallServerService;
-use Everest\Repositories\Eloquent\ServerRepository;
-use Everest\Repositories\Wings\DaemonServerRepository;
-use Everest\Transformers\Api\Client\ServerTransformer;
-use Everest\Http\Controllers\Api\Client\ClientApiController;
-use Everest\Exceptions\Service\Mods\ModsServiceException;
-use Illuminate\Support\Facades\Log;
+use Everest\Models\Server;
+use Illuminate\Http\Request;
 use Everest\Models\EggVariable;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Everest\Services\Mods\CurseForgeService;
+use Everest\Repositories\Eloquent\ServerRepository;
+use Everest\Services\Servers\ReinstallServerService;
+use Everest\Repositories\Wings\DaemonServerRepository;
+use Everest\Services\Servers\StartupModificationService;
+use Everest\Exceptions\Service\Mods\ModsServiceException;
 
 class AccountModpacksController extends ClientApiController
 {
@@ -52,6 +49,7 @@ class AccountModpacksController extends ClientApiController
 
         try {
             $result = $this->curseForgeService->searchModpacks($params);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -67,6 +65,7 @@ class AccountModpacksController extends ClientApiController
     {
         try {
             $result = $this->curseForgeService->getModpack($modpackId);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -91,6 +90,7 @@ class AccountModpacksController extends ClientApiController
 
         try {
             $result = $this->curseForgeService->getModpackFiles($modpackId, $params);
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -106,6 +106,7 @@ class AccountModpacksController extends ClientApiController
     {
         try {
             $result = $this->curseForgeService->getMinecraftVersions();
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -121,6 +122,7 @@ class AccountModpacksController extends ClientApiController
     {
         try {
             $result = $this->curseForgeService->getModLoaderTypes();
+
             return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
@@ -137,25 +139,25 @@ class AccountModpacksController extends ClientApiController
     {
         try {
             $user = $request->user();
-            
+
             // Get all servers owned by the user
             $servers = Server::where('owner_id', $user->id)
                 ->where('mods_enabled', true)
                 ->get();
-            
+
             // Filter servers to only those with CurseForge-compatible eggs
             $compatibleServers = [];
-            
+
             foreach ($servers as $server) {
                 // Check if the egg has the required environment variables
                 $hasProjectId = EggVariable::where('egg_id', $server->egg_id)
                     ->where('env_variable', 'PROJECT_ID')
                     ->exists();
-                    
+
                 $hasApiKey = EggVariable::where('egg_id', $server->egg_id)
                     ->where('env_variable', 'API_KEY')
                     ->exists();
-                
+
                 if ($hasProjectId && $hasApiKey) {
                     $compatibleServers[] = [
                         'uuid' => $server->uuid,
@@ -164,12 +166,13 @@ class AccountModpacksController extends ClientApiController
                     ];
                 }
             }
-            
+
             return response()->json([
                 'servers' => $compatibleServers,
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting compatible servers: ' . $e->getMessage());
+
             return response()->json([
                 'error' => 'An error occurred while fetching compatible servers.',
             ], 500);
@@ -210,7 +213,7 @@ class AccountModpacksController extends ClientApiController
             // If we have a project ID, try to get the modpack name
             if ($projectId) {
                 try {
-                    $modpackData = $this->curseForgeService->getModpack((int)$projectId);
+                    $modpackData = $this->curseForgeService->getModpack((int) $projectId);
                     if (isset($modpackData['data']['name'])) {
                         $modpackName = $modpackData['data']['name'];
                     }
@@ -227,6 +230,7 @@ class AccountModpacksController extends ClientApiController
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting server modpack info: ' . $e->getMessage());
+
             return response()->json([
                 'error' => 'An error occurred while fetching server modpack info.',
             ], 500);
@@ -280,11 +284,11 @@ class AccountModpacksController extends ClientApiController
             $projectIdVar = EggVariable::where('egg_id', $server->egg_id)
                 ->where('env_variable', 'PROJECT_ID')
                 ->first();
-            
+
             $versionIdVar = EggVariable::where('egg_id', $server->egg_id)
                 ->where('env_variable', 'VERSION_ID')
                 ->first();
-            
+
             $apiKeyVar = EggVariable::where('egg_id', $server->egg_id)
                 ->where('env_variable', 'API_KEY')
                 ->first();
@@ -297,17 +301,17 @@ class AccountModpacksController extends ClientApiController
 
             // Prepare environment variables
             $environment = [];
-            
+
             // Update PROJECT_ID
-            $environment['PROJECT_ID'] = (string)$modpackId;
-            
+            $environment['PROJECT_ID'] = (string) $modpackId;
+
             // Update VERSION_ID if fileId is provided
             if ($fileId && $versionIdVar) {
-                $environment['VERSION_ID'] = (string)$fileId;
+                $environment['VERSION_ID'] = (string) $fileId;
             } elseif ($versionIdVar) {
                 $environment['VERSION_ID'] = '';
             }
-            
+
             // Update API_KEY
             $environment['API_KEY'] = $apiKey;
 

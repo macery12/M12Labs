@@ -4,11 +4,10 @@ namespace Everest\Exceptions\Billing;
 
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException as BillingExceptionModel;
-use Illuminate\Http\Request;
 
 /**
  * Custom exception for billing-related errors.
- * 
+ *
  * This exception is thrown when billing operations fail and automatically
  * logs the error to the billing_exceptions table for admin review.
  */
@@ -58,6 +57,7 @@ class BillingException extends DisplayException
     public function report()
     {
         $this->logToDatabase();
+
         return parent::report();
     }
 
@@ -68,22 +68,22 @@ class BillingException extends DisplayException
     {
         try {
             $description = $this->getMessage();
-            
+
             // Add payment processor info if available
             if ($this->paymentProcessor) {
                 $description .= "\nPayment Processor: " . ucfirst($this->paymentProcessor);
             }
-            
+
             // Add external ID if available
             if ($this->externalId) {
                 $description .= "\nExternal ID: " . $this->externalId;
             }
-            
+
             // Add context if available
             if (!empty($this->context)) {
                 $description .= "\nContext: " . json_encode($this->context, JSON_PRETTY_PRINT);
             }
-            
+
             // Add stack trace for debugging
             $description .= "\n\nStack Trace:\n" . $this->getTraceAsString();
 

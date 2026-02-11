@@ -15,11 +15,11 @@ return new class () extends Migration {
                 $table->unsignedBigInteger('coupon_id')->nullable()->after('product_id');
                 $table->foreign('coupon_id')->references('id')->on('coupons')->onDelete('set null');
             }
-            
+
             if (!Schema::hasColumn('orders', 'subtotal')) {
                 $table->decimal('subtotal', 10, 2)->nullable()->after('total');
             }
-            
+
             if (!Schema::hasColumn('orders', 'discount')) {
                 $table->decimal('discount', 10, 2)->nullable()->after('subtotal');
             }

@@ -2,7 +2,6 @@
 
 namespace Everest\Models;
 
-use Everest\Models\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**

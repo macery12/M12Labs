@@ -1,14 +1,13 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
-return new class extends Migration {
+return new class () extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-
             if (!Schema::hasColumn('orders', 'paypal_order_id')) {
                 $table->string('paypal_order_id')->nullable()->after('mollie_payment_id');
             }

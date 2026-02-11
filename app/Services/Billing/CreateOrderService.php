@@ -18,16 +18,16 @@ class CreateOrderService
 
         // Get billing days from additional data or default to 30
         $billingDays = $additionalData['billing_days'] ?? 30;
-        
+
         // Get node ID for location-based pricing
         $nodeId = $additionalData['node_id'] ?? null;
-        
+
         // Calculate price based on billing cycle and node
         $priceInfo = $product->calculatePrice($billingDays, $nodeId);
         $subtotal = $priceInfo['price'];
         $multiplierUsed = $priceInfo['multiplier'];
         $nodeMultiplierUsed = $priceInfo['node_multiplier'];
-        
+
         $discount = 0;
         $total = $subtotal;
 

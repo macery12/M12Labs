@@ -267,7 +267,7 @@ class BuildModificationServiceTest extends IntegrationTestCase
 
         // All three allocations should be assigned to the server, plus the default allocation
         $this->assertCount(4, $response->allocations);
-        
+
         // Verify all allocations are assigned to the server in the database
         $this->assertDatabaseHas('allocations', ['id' => $allocations[0]->id, 'server_id' => $server->id]);
         $this->assertDatabaseHas('allocations', ['id' => $allocations[1]->id, 'server_id' => $server->id]);

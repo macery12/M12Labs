@@ -28,7 +28,7 @@ class BillingExceptionModelTest extends TestCase
     public function testNewExceptionTypesAreValidated(string $type)
     {
         $rules = BillingException::$validationRules;
-        
+
         $this->assertArrayHasKey('exception_type', $rules);
         $this->assertStringContainsString($type, $rules['exception_type']);
     }
@@ -54,7 +54,7 @@ class BillingExceptionModelTest extends TestCase
     public function testOrderIdIsNullableInValidationRules()
     {
         $rules = BillingException::$validationRules;
-        
+
         $this->assertArrayHasKey('order_id', $rules);
         $this->assertStringContainsString('nullable', $rules['order_id']);
     }
@@ -65,7 +65,7 @@ class BillingExceptionModelTest extends TestCase
     public function testUuidIsRequiredInValidationRules()
     {
         $rules = BillingException::$validationRules;
-        
+
         $this->assertArrayHasKey('uuid', $rules);
         $this->assertStringContainsString('required', $rules['uuid']);
     }
@@ -76,7 +76,7 @@ class BillingExceptionModelTest extends TestCase
     public function testTitleIsRequiredInValidationRules()
     {
         $rules = BillingException::$validationRules;
-        
+
         $this->assertArrayHasKey('title', $rules);
         $this->assertStringContainsString('required', $rules['title']);
     }
@@ -87,7 +87,7 @@ class BillingExceptionModelTest extends TestCase
     public function testDescriptionIsRequiredInValidationRules()
     {
         $rules = BillingException::$validationRules;
-        
+
         $this->assertArrayHasKey('description', $rules);
         $this->assertStringContainsString('required', $rules['description']);
     }
@@ -99,7 +99,7 @@ class BillingExceptionModelTest extends TestCase
     {
         $model = new BillingException();
         $fillable = $model->getFillable();
-        
+
         $this->assertContains('uuid', $fillable);
         $this->assertContains('order_id', $fillable);
         $this->assertContains('title', $fillable);
@@ -114,7 +114,7 @@ class BillingExceptionModelTest extends TestCase
     {
         $model = new BillingException();
         $casts = $model->getCasts();
-        
+
         $this->assertArrayHasKey('order_id', $casts);
         $this->assertEquals('int', $casts['order_id']);
     }

@@ -3,8 +3,8 @@
 namespace Everest\Http\Controllers\Api\Application\Billing;
 
 use Everest\Models\Node;
-use Everest\Facades\Activity;
 use Illuminate\Http\Request;
+use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
@@ -42,7 +42,7 @@ class NodePricingController extends ApplicationApiController
 
         // Validate multiplier
         $multiplier = $request->input('price_multiplier');
-        
+
         if ($multiplier === null) {
             throw new DisplayException('Price multiplier is required.');
         }
@@ -163,7 +163,7 @@ class NodePricingController extends ApplicationApiController
             if ($node->price_multiplier != 1.0) {
                 $node->price_multiplier = 1.0;
                 $node->save();
-                $resetCount++;
+                ++$resetCount;
             }
         }
 

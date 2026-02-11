@@ -7,14 +7,14 @@ use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
+use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Centralized validation service for billing operations.
- * 
+ *
  * This service consolidates all billing-related validation logic that was previously
  * duplicated across the old FreeProductController and PaymentController (now replaced by CheckoutController).
  */
@@ -22,15 +22,16 @@ class BillingValidationService
 {
     /**
      * BillingValidationService constructor.
-     * 
+     *
      * @param DaemonServerRepository $daemonRepository Repository for interacting with Wings daemon
      */
     public function __construct(private DaemonServerRepository $daemonRepository)
     {
     }
+
     /**
      * Validate that the billing module is enabled.
-     * 
+     *
      * @throws DisplayException if billing is disabled
      */
     public function validateBillingEnabled(): void
@@ -42,9 +43,10 @@ class BillingValidationService
 
     /**
      * Validate that a node can accept deployments of a specific type.
-     * 
+     *
      * @param int $nodeId The node ID to validate
      * @param bool $isFreeProduct Whether this is a free product
+     *
      * @throws DisplayException if the node cannot accept the deployment
      */
     public function validateNodeDeployment(int $nodeId, bool $isFreeProduct): void
@@ -64,20 +66,23 @@ class BillingValidationService
 
     /**
      * Validate and return the egg ID for a product.
-     * 
+     *
      * @param Product $product The product being purchased
      * @param int|null $requestedEggId The egg ID requested by the user (optional)
+     *
      * @return int The validated egg ID to use
+     *
      * @throws DisplayException if the requested egg is not allowed
      */
     public function validateAndGetEggId(Product $product, ?int $requestedEggId): int
     {
         $allowedEggs = $product->category->getAllowedEggs();
-        
+
         if ($requestedEggId) {
             if (!in_array($requestedEggId, $allowedEggs)) {
                 throw new DisplayException('The selected egg is not allowed for this product category.');
             }
+
             return $requestedEggId;
         }
 
@@ -87,26 +92,27 @@ class BillingValidationService
 
     /**
      * Calculate the final price after applying a coupon.
-     * 
+     *
      * @param Product $product The product being purchased
      * @param int|null $couponId The coupon ID to apply (optional)
      * @param string $orderType The order type (default: 'new')
      * @param int|null $billingDays The billing cycle days (optional, defaults to 30)
      * @param int|null $nodeId The node ID for location-based pricing (optional)
+     *
      * @return array{finalPrice: float, discount: float} The final price and discount amount
      */
     public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new', ?int $billingDays = null, ?int $nodeId = null): array
     {
         // Use billing days if provided, otherwise default to 30
         $days = $billingDays ?? 30;
-        
+
         // Calculate price based on billing cycle and node
         $priceInfo = $product->calculatePrice($days, $nodeId);
         $basePrice = $priceInfo['price'];
-        
+
         $finalPrice = $basePrice;
         $discount = 0.0;
-        
+
         if ($couponId) {
             $coupon = Coupon::find($couponId);
             if ($coupon && $coupon->isAllowedForOrderType($orderType)) {
@@ -127,9 +133,10 @@ class BillingValidationService
 
     /**
      * Validate that the final price matches the expected billing type.
-     * 
+     *
      * @param float $finalPrice The final price after discounts
      * @param bool $expectFree Whether we expect the price to be free
+     *
      * @throws DisplayException if the price doesn't match expectations
      */
     public function validatePriceType(float $finalPrice, bool $expectFree): void
@@ -148,9 +155,10 @@ class BillingValidationService
     /**
      * Validate that a user doesn't already own a free product.
      * This only applies to originally free products (not made free by coupon).
-     * 
+     *
      * @param int $userId The user ID
      * @param Product $product The product being purchased
+     *
      * @throws DisplayException if user already owns a free product
      */
     public function validateFreeProductOwnership(int $userId, Product $product): void
@@ -170,9 +178,10 @@ class BillingValidationService
     /**
      * Validate that a server can be downgraded to a new product plan.
      * Checks current resource usage against the new plan's limits.
-     * 
+     *
      * @param Server $server The server to validate
      * @param Product $newProduct The product plan to switch to
+     *
      * @return array Empty array if validation passes, or array of exceeded resources with details
      */
     public function validatePlanDowngrade(Server $server, Product $newProduct): array
