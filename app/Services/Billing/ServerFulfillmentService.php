@@ -215,6 +215,7 @@ class ServerFulfillmentService
             'egg_id' => $order->egg_id,
             'name' => $order->name,
             'variables' => $order->variables ?? [],
+            'billing_days' => $order->billing_days ?? 30,
         ];
     }
 

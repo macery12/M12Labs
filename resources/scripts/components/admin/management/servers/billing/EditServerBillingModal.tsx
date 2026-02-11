@@ -363,22 +363,29 @@ export default ({ server }: { server: Server }) => {
                     setCategories(cats);
                     if (cats.length === 0) {
                         setError('No billing categories found. Please create a category first.');
+                        setLoadingCategories(false);
+                        return;
                     }
+                    
                     // If server has a product, set the category from the product relationship
-                    if (server.billingProductId && server.relationships.product) {
+                    if (server.billingProductId && server.relationships?.product) {
                         const product = server.relationships.product;
                         // Use categoryUuid from the product
-                        setForm(prev => ({ ...prev, categoryId: product.categoryUuid }));
+                        const categoryId = product.categoryUuid;
+                        if (categoryId) {
+                            setForm(prev => ({ ...prev, categoryId: categoryId }));
+                        }
                     } else if (server.billingProductId && cats.length === 1) {
                         // Fallback: if there's only one category, use it
                         setForm(prev => ({ ...prev, categoryId: cats[0].id }));
                     }
+                    setLoadingCategories(false);
                 })
                 .catch(err => {
                     console.error('Failed to fetch categories:', err);
                     setError('Failed to load billing categories. Please try again.');
-                })
-                .finally(() => setLoadingCategories(false));
+                    setLoadingCategories(false);
+                });
         }
     }, [open]);
 

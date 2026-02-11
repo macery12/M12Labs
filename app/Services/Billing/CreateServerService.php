@@ -79,8 +79,16 @@ class CreateServerService
         }
 
         try {
-            // Use product-based renewal days (automatically handles free vs paid)
-            $renewalDays = $product->getRenewalDays();
+            // Get billing days from metadata (Stripe) or order, or default to product's renewal days
+            $billingDays = null;
+            if (isset($metadata->billing_days) && is_numeric($metadata->billing_days)) {
+                $billingDays = (int) $metadata->billing_days;
+            } elseif ($order->billing_days) {
+                $billingDays = $order->billing_days;
+            }
+            
+            // If no billing_days specified, fall back to product's default
+            $renewalDays = $billingDays ?? $product->getRenewalDays();
             
             $server = $this->creation->handle([
                 'node_id' => $metadata->node_id,
@@ -98,6 +106,7 @@ class CreateServerService
                 'environment' => $environment,
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
+                'billing_days' => $billingDays,
                 'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
