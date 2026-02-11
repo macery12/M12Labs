@@ -7,26 +7,18 @@ import EggBox from '@account/billing/order/EggBox';
 import BillingCycleBox from '@account/billing/order/BillingCycleBox';
 import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
-import CouponInput from '@account/billing/order/CouponInput';
 import CheckoutStepper from '@account/billing/order/CheckoutStepper';
-import PriceBreakdown from '@account/billing/order/PriceBreakdown';
+import SubtotalCard from '@account/billing/order/SubtotalCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faArchive,
-    faDatabase,
-    faEthernet,
     faExternalLinkAlt,
     faHdd,
     faMemory,
     faMicrochip,
-    faChevronDown,
-    faChevronRight,
-    faSync,
 } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
 import PaymentMethodSelector from './PaymentMethodSelector';
-import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
@@ -70,7 +62,6 @@ export default () => {
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
-    const [showCoupon, setShowCoupon] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
     
     // Wizard step state
@@ -355,19 +346,6 @@ export default () => {
 
     // Render different content based on current step
     const renderStepContent = () => {
-        let actualStep = currentStep;
-        
-        // Adjust step numbers if egg selection is skipped
-        if (availableEggs.length <= 1 && currentStep >= 2) {
-            actualStep++;
-        }
-        
-        // Adjust if variables are skipped
-        const hasEditableVars = eggs && eggs.some(v => v.isEditable);
-        if (!hasEditableVars && currentStep >= (availableEggs.length > 1 ? 4 : 3)) {
-            actualStep++;
-        }
-
         switch (currentStep) {
             case 1: // Node Selection
                 return (
@@ -467,17 +445,12 @@ export default () => {
             default: // Review & Name Server
                 const finalStep = getTotalSteps();
                 if (currentStep === finalStep) {
-                    const getCurrentPrice = () => {
-                        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
-                    };
-
                     return (
                         <div className={'space-y-6'}>
                             <div>
-                                <h2 className={'text-3xl font-bold text-gray-100'}>Review Your Order</h2>
+                                <h2 className={'text-3xl font-bold text-gray-100'}>Review and Confirm</h2>
                                 <p className={'mt-2 text-gray-400'}>
-                                    Review your selections and name your server before proceeding to payment.
+                                    Almost done! Name your server and review your order.
                                 </p>
                             </div>
 
@@ -486,28 +459,11 @@ export default () => {
                                 className={'rounded-lg border p-6'}
                                 style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <div className={'mb-4 flex items-center justify-between'}>
-                                    <h3 className={'text-xl font-bold text-gray-200'}>Server Name</h3>
-                                    <button
-                                        onClick={() => {
-                                            const name = generateServerName();
-                                            if (name) {
-                                                setServerName(name);
-                                                setServerNameTouched(false);
-                                            }
-                                        }}
-                                        className={'flex items-center gap-1 text-xs font-medium hover:brightness-125 transition-all'}
-                                        style={{ color: colors.primary }}
-                                        disabled={!selectedNode || !selectedEggId}
-                                        aria-label={'Auto-generate server name'}
-                                    >
-                                        <FontAwesomeIcon icon={faSync} className={'h-3 w-3'} />
-                                        Generate
-                                    </button>
-                                </div>
+                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
                                 <input
+                                    id={'server-name-input'}
                                     type={'text'}
-                                    placeholder={'Enter server name'}
+                                    placeholder={'Enter a name for your server'}
                                     value={serverName}
                                     onChange={e => {
                                         setServerName(e.target.value);
@@ -515,110 +471,80 @@ export default () => {
                                     }}
                                     required
                                     maxLength={191}
+                                    aria-invalid={serverNameTouched && !serverName.trim()}
+                                    aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
                                     className={classNames(
-                                        'w-full rounded-lg border px-4 py-3 text-sm transition-all',
+                                        'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                         'text-gray-200 placeholder-gray-500',
-                                        'focus:border-primary focus:ring-primary/20 border-gray-600 focus:outline-none focus:ring-2',
+                                        'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                        {
+                                            'border-gray-600': !serverNameTouched,
+                                            'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
+                                            'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
+                                        }
                                     )}
                                     style={{
                                         backgroundColor: colors.secondary,
-                                        borderColor: serverName.trim() ? colors.primary : undefined,
                                     }}
                                 />
                                 {serverNameTouched && !serverName.trim() && (
-                                    <p className={'mt-2 text-xs text-amber-400'}>⚠ Server name is required</p>
+                                    <p id={'server-name-error'} className={'mt-2 text-xs text-red-400'} role={'alert'}>
+                                        Server name is required to continue
+                                    </p>
                                 )}
                             </div>
 
-                            {/* Order Summary */}
+                            {/* Server Configuration Overview */}
                             <div
                                 className={'rounded-lg border p-6'}
                                 style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <h3 className={'mb-4 text-xl font-bold text-gray-200'}>Order Summary</h3>
-                                
-                                <div className={'space-y-4'}>
-                                    <div className={'flex items-start justify-between'}>
-                                        <div className={'flex items-center gap-3'}>
-                                            {product.icon && (
-                                                <img src={product.icon} className={'h-12 w-12 rounded'} alt={product.name} />
-                                            )}
-                                            <div>
-                                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
-                                                <p className={'text-sm text-gray-400'}>
-                                                    {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}
-                                                </p>
-                                            </div>
+                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Configuration</h3>
+                                <div className={'space-y-3'}>
+                                    {/* Product with Icon */}
+                                    <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
+                                        {product.icon && (
+                                            <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />
+                                        )}
+                                        <div>
+                                            <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                            <p className={'text-sm text-gray-400'}>
+                                                {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className={'border-t border-gray-700 pt-4'}>
-                                        <div className={'grid grid-cols-2 gap-4'}>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>Location</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>
-                                                    {nodes?.find(n => Number(n.id) === selectedNode)?.name}
-                                                </p>
-                                            </div>
-                                            {availableEggs.length > 1 && (
-                                                <div>
-                                                    <p className={'text-xs text-gray-500'}>Server Type</p>
-                                                    <p className={'text-sm font-medium text-gray-200'}>
-                                                        {availableEggs.find(e => e.id === selectedEggId)?.name}
-                                                    </p>
-                                                </div>
-                                            )}
+                                    {/* Resources Grid */}
+                                    <div className={'grid grid-cols-3 gap-4 pt-2'}>
+                                        <div className={'text-center'}>
+                                            <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                            <p className={'text-xs text-gray-500'}>CPU</p>
+                                            <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
                                         </div>
-                                    </div>
-
-                                    <div className={'border-t border-gray-700 pt-4'}>
-                                        <div className={'grid grid-cols-3 gap-4'}>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>CPU</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
-                                            </div>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>RAM</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>
-                                                    {(product.limits.memory / 1024).toFixed(1)} GB
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className={'text-xs text-gray-500'}>Storage</p>
-                                                <p className={'text-sm font-medium text-gray-200'}>
-                                                    {(product.limits.disk / 1024).toFixed(1)} GB
-                                                </p>
-                                            </div>
+                                        <div className={'text-center'}>
+                                            <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                            <p className={'text-xs text-gray-500'}>RAM</p>
+                                            <p className={'text-sm font-medium text-gray-200'}>
+                                                {(product.limits.memory / 1024).toFixed(1)} GB
+                                            </p>
+                                        </div>
+                                        <div className={'text-center'}>
+                                            <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                            <p className={'text-xs text-gray-500'}>Storage</p>
+                                            <p className={'text-sm font-medium text-gray-200'}>
+                                                {(product.limits.disk / 1024).toFixed(1)} GB
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Price Breakdown */}
-                            {product.price !== 0 && (() => {
-                                const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                                const selectedNodeData = nodes?.find(n => Number(n.id) === selectedNode);
-                                
-                                return (
-                                    <PriceBreakdown
-                                        basePrice={product.price}
-                                        billingDays={selectedBillingDays}
-                                        billingMultiplier={selectedCycle?.multiplier || 1.0}
-                                        billingDiscountPercent={selectedCycle?.discountPercent || 0}
-                                        nodeMultiplier={selectedNodeData?.priceMultiplier || 1.0}
-                                        nodeName={selectedNodeData?.name}
-                                        couponDiscount={couponData?.discount || 0}
-                                        couponCode={couponData?.coupon.code}
-                                    />
-                                );
-                            })()}
 
                             {/* Legal Agreements */}
                             <div
                                 className={'rounded-lg border p-6'}
                                 style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Legal Agreements</h3>
+                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Terms & Conditions</h3>
                                 <div
                                     className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
                                     style={
@@ -668,48 +594,12 @@ export default () => {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Coupon Section */}
-                            {product.price !== 0 && (
-                                <div
-                                    className={'rounded-lg border p-6'}
-                                    style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                                >
-                                    <button
-                                        onClick={() => setShowCoupon(!showCoupon)}
-                                        className={'mb-3 flex w-full items-center justify-between text-left transition-all'}
-                                        aria-label={showCoupon ? 'Hide coupon code input' : 'Show coupon code input'}
-                                        aria-expanded={showCoupon}
-                                    >
-                                        <h3 className={'text-lg font-bold text-gray-200'}>
-                                            {showCoupon ? 'Coupon Code' : 'Have a coupon?'}
-                                        </h3>
-                                        <FontAwesomeIcon 
-                                            icon={showCoupon ? faChevronDown : faChevronRight} 
-                                            className={'h-3 w-3'}
-                                            style={{ color: colors.primary }}
-                                            aria-hidden={true}
-                                        />
-                                    </button>
-                                    {showCoupon && (
-                                        <div>
-                                            <CouponInput subtotal={product.price} onCouponApplied={handleCouponApplied} />
-                                            <FlashMessageRender byKey={'coupon'} className={'mt-4'} />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     );
                 }
 
                 // Payment step
                 if (currentStep === finalStep + 1) {
-                    const getCurrentPrice = () => {
-                        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
-                    };
-
                     return (
                         <div className={'space-y-6'}>
                             <div>
@@ -773,10 +663,36 @@ export default () => {
             {/* Progress Stepper */}
             <CheckoutStepper steps={getWizardSteps()} />
 
-            {/* Main Wizard Content */}
+            {/* Main Wizard Content with Two-Column Layout */}
             <div className={'mt-10'}>
-                <div className={'mx-auto max-w-4xl'}>
-                    {renderStepContent()}
+                <div className={'mx-auto max-w-7xl'}>
+                    <div className={'grid grid-cols-1 lg:grid-cols-3 gap-8'}>
+                        {/* Left Column - Main Content */}
+                        <div className={'lg:col-span-2'}>
+                            {renderStepContent()}
+                        </div>
+                        
+                        {/* Right Column - Sticky Subtotal Card */}
+                        <div className={'lg:col-span-1'}>
+                            <div className={'sticky top-24'}>
+                                <SubtotalCard
+                                    basePrice={product.price}
+                                    selectedNode={selectedNode}
+                                    nodes={nodes}
+                                    selectedEggId={selectedEggId}
+                                    availableEggs={availableEggs}
+                                    selectedBillingDays={selectedBillingDays}
+                                    billingCycles={billingCycles}
+                                    couponDiscount={couponData?.discount || 0}
+                                    couponCode={couponData?.coupon.code}
+                                    productName={product.name}
+                                    showDetailedBreakdown={currentStep === getTotalSteps()}
+                                    showCouponInput={currentStep === getTotalSteps()}
+                                    onCouponApplied={handleCouponApplied}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
