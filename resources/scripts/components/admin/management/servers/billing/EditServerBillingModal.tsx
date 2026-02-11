@@ -369,13 +369,9 @@ export default ({ server }: { server: Server }) => {
                     // If server has a product, set the category from the product relationship
                     if (server.billingProductId && server.relationships?.product) {
                         const product = server.relationships.product;
-                        // Find the category ID from the loaded categories using the product's categoryUuid
-                        const categoryUuid = product.categoryUuid;
-                        if (categoryUuid) {
-                            const category = cats.find(c => c.uuid === categoryUuid);
-                            if (category) {
-                                setForm(prev => ({ ...prev, categoryId: category.id }));
-                            }
+                        const categoryId = product.categoryId;
+                        if (categoryId) {
+                            setForm(prev => ({ ...prev, categoryId: categoryId }));
                         }
                     } else if (server.billingProductId && cats.length === 1) {
                         // Fallback: if there's only one category, use it

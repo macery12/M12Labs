@@ -65,20 +65,20 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::get('/', [Application\Billing\CategoryController::class, 'index']);
             Route::post('/', [Application\Billing\CategoryController::class, 'store']);
 
-            Route::get('/{category:uuid}', [Application\Billing\CategoryController::class, 'view']);
-            Route::patch('/{category:uuid}', [Application\Billing\CategoryController::class, 'update']);
-            Route::delete('/{category:uuid}', [Application\Billing\CategoryController::class, 'delete']);
+            Route::get('/{category:id}', [Application\Billing\CategoryController::class, 'view']);
+            Route::patch('/{category:id}', [Application\Billing\CategoryController::class, 'update']);
+            Route::delete('/{category:id}', [Application\Billing\CategoryController::class, 'delete']);
 
-            Route::group(['prefix' => '/{category:uuid}/products'], function () {
+            Route::group(['prefix' => '/{category:id}/products'], function () {
                 Route::get('/', [Application\Billing\ProductController::class, 'index']);
                 Route::post('/', [Application\Billing\ProductController::class, 'store']);
 
-                Route::get('/{product:uuid}', [Application\Billing\ProductController::class, 'view']);
-                Route::patch('/{product:uuid}', [Application\Billing\ProductController::class, 'update']);
-                Route::delete('/{product:uuid}', [Application\Billing\ProductController::class, 'delete']);
+                Route::get('/{product:id}', [Application\Billing\ProductController::class, 'view']);
+                Route::patch('/{product:id}', [Application\Billing\ProductController::class, 'update']);
+                Route::delete('/{product:id}', [Application\Billing\ProductController::class, 'delete']);
 
                 // Billing cycle routes
-                Route::group(['prefix' => '/{product:uuid}/billing-cycles'], function () {
+                Route::group(['prefix' => '/{product:id}/billing-cycles'], function () {
                     Route::get('/', [Application\Billing\BillingCycleController::class, 'index']);
                     Route::post('/sync', [Application\Billing\BillingCycleController::class, 'sync']);
                     Route::delete('/{cycle:id}', [Application\Billing\BillingCycleController::class, 'delete']);
