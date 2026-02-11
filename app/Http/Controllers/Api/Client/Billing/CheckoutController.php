@@ -128,11 +128,11 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
-        // Get billing days (default to 30 if not provided)
-        $billingDays = (int) ($request->input('billing_days') ?? 30);
-
         // Lookup server scoped to the authenticated user
         $server = $user->servers()->findOrFail($serverId);
+
+        // Get billing days from request, or use server's existing billing_days, or default to 30
+        $billingDays = (int) ($request->input('billing_days') ?? $server->billing_days ?? 30);
 
         // Calculate price with coupon for renewal (including server's node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;

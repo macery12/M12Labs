@@ -145,7 +145,8 @@ export default () => {
         clearFlashes('server:billing');
 
         // Use renewFreeServer for free products and paid products made free by coupons
-        renewFreeServer(billingProductId, serverId, couponData?.coupon.id)
+        // Pass the actual billing days from the server to ensure correct renewal period
+        renewFreeServer(billingProductId, serverId, couponData?.coupon.id, billingDays || undefined)
             .then(() => {
                 // Force a full page reload to refresh the renewal date
                 window.location.reload();
