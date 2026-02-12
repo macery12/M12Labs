@@ -26,7 +26,28 @@ class ActivityLogController extends ClientApiController
         $activity = QueryBuilder::for($server->activity())
             ->with('actor')
             ->allowedSorts(['timestamp'])
-            ->allowedFilters([AllowedFilter::partial('event')])
+            ->allowedFilters([
+                AllowedFilter::partial('event'),
+                AllowedFilter::partial('ip'),
+                AllowedFilter::partial('description'),
+                AllowedFilter::callback('search', function ($query, $value) {
+                    $query->where(function ($q) use ($value) {
+                        $q->where('description', 'like', "%{$value}%")
+                            ->orWhere('event', 'like', "%{$value}%")
+                            ->orWhere('ip', 'like', "%{$value}%")
+                            ->orWhereHas('actor', function ($actorQuery) use ($value) {
+                                $actorQuery->where('username', 'like', "%{$value}%")
+                                    ->orWhere('email', 'like', "%{$value}%");
+                            });
+                    });
+                }),
+                AllowedFilter::callback('actor', function ($query, $value) {
+                    $query->whereHas('actor', function ($actorQuery) use ($value) {
+                        $actorQuery->where('uuid', $value);
+                    });
+                }),
+            ])
+            ->defaultSort('-timestamp')
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
             ->when(config('activity.hide_admin_activity'), function (Builder $builder) use ($server) {
                 // We could do this with a query and a lot of joins, but that gets pretty
@@ -50,5 +71,80 @@ class ActivityLogController extends ClientApiController
         return $this->fractal->collection($activity)
             ->transformWith(ActivityLogTransformer::class)
             ->toArray();
+    }
+
+    /**
+     * Returns all unique users who have activity logs for this server.
+     */
+    public function users(ClientApiRequest $request, Server $server): array
+    {
+        $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
+
+        $query = $server->activity()
+            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->whereNotNull('actor_id');
+
+        // Apply the same admin activity filter if configured
+        if (config('activity.hide_admin_activity')) {
+            $subusers = $server->subusers()->pluck('user_id')->merge($server->owner_id);
+            
+            $query->select('activity_logs.*')
+                ->leftJoin('users', function (JoinClause $join) {
+                    $join->on('users.id', 'activity_logs.actor_id')
+                        ->where('activity_logs.actor_type', (new User())->getMorphClass());
+                })
+                ->where(function (Builder $builder) use ($subusers) {
+                    $builder->whereNull('users.id')
+                        ->orWhere('users.root_admin', 0)
+                        ->orWhereIn('users.id', $subusers);
+                });
+        }
+
+        $users = $query->join('users as u', 'activity_logs.actor_id', '=', 'u.id')
+            ->select('u.uuid', 'u.username')
+            ->distinct()
+            ->orderBy('u.username')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'uuid' => $user->uuid,
+                    'username' => $user->username,
+                ];
+            });
+
+        return ['data' => $users];
+    }
+
+    /**
+     * Returns all unique event types for this server.
+     */
+    public function events(ClientApiRequest $request, Server $server): array
+    {
+        $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
+
+        $query = $server->activity()
+            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS);
+
+        // Apply the same admin activity filter if configured
+        if (config('activity.hide_admin_activity')) {
+            $subusers = $server->subusers()->pluck('user_id')->merge($server->owner_id);
+            
+            $query->select('activity_logs.*')
+                ->leftJoin('users', function (JoinClause $join) {
+                    $join->on('users.id', 'activity_logs.actor_id')
+                        ->where('activity_logs.actor_type', (new User())->getMorphClass());
+                })
+                ->where(function (Builder $builder) use ($subusers) {
+                    $builder->whereNull('users.id')
+                        ->orWhere('users.root_admin', 0)
+                        ->orWhereIn('users.id', $subusers);
+                });
+        }
+
+        $events = $query->orderBy('event')
+            ->distinct()
+            ->pluck('event');
+
+        return ['data' => $events];
     }
 }
