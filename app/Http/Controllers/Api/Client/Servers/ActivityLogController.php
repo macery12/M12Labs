@@ -110,8 +110,10 @@ class ActivityLogController extends ClientApiController
         $events = $query
             ->select('activity_logs.event')
             ->groupBy('activity_logs.event')
-            ->orderBy('activity_logs.event')
-            ->pluck('event');
+            ->get()
+            ->pluck('event')
+            ->sort()
+            ->values();
 
         return ['data' => $events];
     }
