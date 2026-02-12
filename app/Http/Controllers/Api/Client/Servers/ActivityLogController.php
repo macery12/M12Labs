@@ -79,7 +79,7 @@ class ActivityLogController extends ClientApiController
         $users = $query
             ->join('users as u', 'activity_logs.actor_id', '=', 'u.id')
             ->select('u.uuid', 'u.username')
-            ->distinct()
+            ->groupBy('u.uuid', 'u.username')
             ->orderBy('u.username')
             ->get()
             ->map(function ($user) {
@@ -108,8 +108,9 @@ class ActivityLogController extends ClientApiController
         }
 
         $events = $query
-            ->orderBy('event')
-            ->distinct()
+            ->select('activity_logs.event')
+            ->groupBy('activity_logs.event')
+            ->orderBy('activity_logs.event')
             ->pluck('event');
 
         return ['data' => $events];
