@@ -155,13 +155,13 @@ export default () => {
                 <div className={'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'}>
                     {/* Search Input */}
                     <div className={'relative'}>
-                        <div className={'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'}>
-                            <SearchIcon className={'h-5 w-5 text-neutral-400'} />
+                        <div className={'absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'}>
+                            <SearchIcon className={'h-4 w-4 text-neutral-400'} />
                         </div>
                         <Input
                             type={'text'}
                             placeholder={'Search activity...'}
-                            className={'pl-11'}
+                            className={'pl-10'}
                             value={searchInput}
                             onChange={e => setSearchInput(e.currentTarget.value)}
                         />
