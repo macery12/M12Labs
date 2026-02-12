@@ -11,7 +11,7 @@ import useFilteredObject from '@/plugins/useFilteredObject';
 import { useServerSWRKey } from '@/plugins/useSWRKey';
 import { ServerContext } from '@/state/server';
 
-export type ActivityLogFilters = QueryBuilderParams<'ip' | 'event', 'timestamp'>;
+export type ActivityLogFilters = QueryBuilderParams<'ip' | 'event' | 'search' | 'actor', 'timestamp'>;
 
 const useActivityLogs = (
     filters?: ActivityLogFilters,
@@ -36,4 +36,14 @@ const useActivityLogs = (
     );
 };
 
-export { useActivityLogs };
+const getActivityUsers = async (uuid: string): Promise<Array<{ uuid: string; username: string }>> => {
+    const { data } = await http.get(`/api/client/servers/${uuid}/activity/users`);
+    return data.data;
+};
+
+const getActivityEvents = async (uuid: string): Promise<string[]> => {
+    const { data } = await http.get(`/api/client/servers/${uuid}/activity/events`);
+    return data.data;
+};
+
+export { useActivityLogs, getActivityUsers, getActivityEvents };

@@ -34,12 +34,12 @@ class PlanChangeService
      * @param Server $server The server to change
      * @param Product $newProduct The new product/plan to switch to
      * @param bool $force Whether to force the change even if resources are being reduced
-     *
+     * @param int|null $billingDays Optional billing cycle in days (if null, keeps current billing_days)
      * @return Server The updated server
      *
      * @throws DisplayException if the plan change is not allowed
      */
-    public function changePlan(Server $server, Product $newProduct, bool $force = false): Server
+    public function changePlan(Server $server, Product $newProduct, bool $force = false, ?int $billingDays = null): Server
     {
         // Ensure the new product is in the same category as the current one
         $currentProduct = $server->billingProductId ? Product::find($server->billingProductId) : null;
@@ -86,10 +86,16 @@ class PlanChangeService
         }
 
         // Update server resources to match the new product
-        return DB::transaction(function () use ($server, $newProduct) {
+        return DB::transaction(function () use ($server, $newProduct, $billingDays) {
             // Update the billing product ID and track the change time
             $server->billing_product_id = $newProduct->id;
             $server->last_plan_change_at = \Carbon\Carbon::now();
+            
+            // Update billing_days if provided
+            if ($billingDays !== null) {
+                $server->billing_days = $billingDays;
+            }
+            
             $server->save();
 
             // Apply the new resource limits using BuildModificationService

@@ -11,6 +11,8 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::get('/overview/metrics', [Application\OverviewController::class, 'metrics']);
 
     Route::get('/activity', Application\ActivityLogController::class);
+    Route::get('/activity/users', [Application\ActivityLogController::class, 'users']);
+    Route::get('/activity/events', [Application\ActivityLogController::class, 'events']);
 
     Route::group(['prefix' => '/setup'], function () {
         Route::get('/data', [Application\Setup\SetupController::class, 'data']);
