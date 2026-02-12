@@ -2,12 +2,9 @@
 
 namespace Everest\Tests\Unit\Exceptions\Billing;
 
-use Mockery;
 use Everest\Tests\TestCase;
-use Everest\Models\Billing\Order;
-use Illuminate\Support\Facades\Log;
-use Everest\Models\Billing\BillingException as BillingExceptionModel;
 use Everest\Exceptions\Billing\BillingException;
+use Everest\Models\Billing\BillingException as BillingExceptionModel;
 
 class BillingExceptionTest extends TestCase
 {
@@ -35,7 +32,7 @@ class BillingExceptionTest extends TestCase
     public function testExceptionCanBeCreatedWithFullParameters()
     {
         $context = ['product_id' => 123, 'amount' => 19.99];
-        
+
         $exception = new BillingException(
             'Payment Failed',
             'Payment could not be processed',
@@ -120,7 +117,7 @@ class BillingExceptionTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
+        \Mockery::close();
         parent::tearDown();
     }
 }

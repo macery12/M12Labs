@@ -39,14 +39,14 @@ class SuspendBillableServersCommand extends Command
 
                 // Get the product to determine suspension threshold
                 $product = $server->product;
-                
+
                 if (!$product) {
                     continue;
                 }
 
                 // Get the server's billing cycle length
                 $billingDays = $server->billing_days;
-                
+
                 if (!$billingDays || $billingDays <= 0) {
                     // Fall back to default if billing_days is not set
                     $billingDays = config('modules.billing.renewal.default_billing_days', 30);
@@ -59,7 +59,7 @@ class SuspendBillableServersCommand extends Command
                 // Only suspend if overdue by more than the threshold
                 if ($daysOverdue > $suspensionThreshold && !$server->isSuspended()) {
                     $this->info("suspending server {$server->id}, overdue by {$daysOverdue} day(s) (threshold: {$suspensionThreshold} days for {$billingDays}-day cycle)");
-                    
+
                     // Use the exact same suspension logic as the manual suspend button
                     // This ensures servers can be manually unsuspended via admin panel
                     $this->suspend->toggle($server, SuspensionService::ACTION_SUSPEND);

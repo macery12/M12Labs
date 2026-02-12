@@ -2,7 +2,6 @@
 
 namespace Everest\Http\ViewComposers;
 
-
 use Illuminate\View\View;
 use Everest\Models\Setting;
 use Everest\Services\Billing\PaymentProcessorConfigService;
@@ -117,7 +116,7 @@ class EverestComposer
                 'endpoint' => config('modules.ai.endpoint', 'https://api.openai.com/v1'),
                 'model' => config('modules.ai.model', 'gpt-3.5-turbo'),
                 'mode' => config('modules.ai.mode', 'openai'),
-                'max_tokens' => (int)config('modules.ai.max_tokens', 200),
+                'max_tokens' => (int) config('modules.ai.max_tokens', 200),
                 'system_prompt' => config('modules.ai.system_prompt', 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.'),
             ],
             'webhooks' => [

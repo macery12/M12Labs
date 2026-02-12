@@ -80,7 +80,6 @@ class ServerDeletionService
             // clear any allocation notes for the server
             $server->allocations()->update(['notes' => null]);
 
-
             $server->delete();
         });
     }

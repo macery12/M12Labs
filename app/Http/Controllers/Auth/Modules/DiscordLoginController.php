@@ -5,10 +5,10 @@ namespace Everest\Http\Controllers\Auth\Modules;
 use Carbon\Carbon;
 use Everest\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserCreationService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
@@ -201,6 +201,7 @@ class DiscordLoginController extends AbstractLoginController
         if ($user) {
             // User exists with this Discord ID, log them in
             $this->sendLoginResponse($user, $request);
+
             return redirect('/');
         }
 
@@ -210,8 +211,10 @@ class DiscordLoginController extends AbstractLoginController
         if ($existingEmailUser) {
             // Email exists but not linked to Discord
             // For security, we don't auto-link - user should manually link in account settings
-            return redirect()->route('auth.login')->with('error', 
-                'An account with this email already exists. Please login with your password to link your Discord account.');
+            return redirect()->route('auth.login')->with(
+                'error',
+                'An account with this email already exists. Please login with your password to link your Discord account.'
+            );
         }
 
         // New user - store Discord data in session and redirect to registration

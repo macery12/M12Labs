@@ -2,17 +2,15 @@
 
 namespace Everest\Tests\Unit\Services\Billing;
 
-use Mockery;
 use Everest\Tests\TestCase;
-use Everest\Models\Billing\Product;
-use Everest\Models\Billing\Category;
-use Everest\Models\Billing\BillingException as BillingExceptionModel;
-use Everest\Exceptions\Billing\BillingException;
-use Everest\Services\Billing\MolliePaymentService;
 use Mollie\Api\MollieApiClient;
 use Mollie\Api\Resources\Payment;
-use Mollie\Api\Resources\PaymentCollection;
+use Everest\Models\Billing\Product;
+use Everest\Models\Billing\Category;
 use Mollie\Api\Endpoints\PaymentEndpoint;
+use Everest\Exceptions\Billing\BillingException;
+use Everest\Services\Billing\MolliePaymentService;
+use Everest\Models\Billing\BillingException as BillingExceptionModel;
 
 class MolliePaymentServiceTest extends TestCase
 {
@@ -40,9 +38,9 @@ class MolliePaymentServiceTest extends TestCase
         config()->set('modules.billing.mollie.api_key', 'test_key');
 
         // Mock Mollie client
-        $mollieClient = Mockery::mock(MollieApiClient::class);
-        $paymentsEndpoint = Mockery::mock(PaymentEndpoint::class);
-        
+        $mollieClient = \Mockery::mock(MollieApiClient::class);
+        $paymentsEndpoint = \Mockery::mock(PaymentEndpoint::class);
+
         $mollieClient->payments = $paymentsEndpoint;
         $paymentsEndpoint->shouldReceive('create')
             ->once()
@@ -51,18 +49,18 @@ class MolliePaymentServiceTest extends TestCase
         // We can't easily inject the mock due to the service constructor
         // So this test verifies the exception type and message structure
         $this->expectException(\Mollie\Api\Exceptions\ApiException::class);
-        
+
         // Create a partial mock to inject our mocked client
-        $service = Mockery::mock(MolliePaymentService::class)->makePartial();
+        $service = \Mockery::mock(MolliePaymentService::class)->makePartial();
         $service->shouldAllowMockingProtectedMethods();
-        
+
         $reflection = new \ReflectionClass($service);
         $property = $reflection->getProperty('mollie');
         $property->setAccessible(true);
         $property->setValue($service, $mollieClient);
 
         $product = $this->createMockProduct();
-        
+
         try {
             $service->createPayment($product, 19.99, null, 'http://return');
         } catch (BillingException $e) {
@@ -79,17 +77,17 @@ class MolliePaymentServiceTest extends TestCase
     {
         config()->set('modules.billing.mollie.api_key', 'test_key');
 
-        $mollieClient = Mockery::mock(MollieApiClient::class);
-        $paymentsEndpoint = Mockery::mock(PaymentEndpoint::class);
-        
+        $mollieClient = \Mockery::mock(MollieApiClient::class);
+        $paymentsEndpoint = \Mockery::mock(PaymentEndpoint::class);
+
         $mollieClient->payments = $paymentsEndpoint;
         $paymentsEndpoint->shouldReceive('get')
             ->once()
             ->with('tr_test123')
             ->andThrow(new \Mollie\Api\Exceptions\ApiException('Payment not found'));
 
-        $service = Mockery::mock(MolliePaymentService::class)->makePartial();
-        
+        $service = \Mockery::mock(MolliePaymentService::class)->makePartial();
+
         $reflection = new \ReflectionClass($service);
         $property = $reflection->getProperty('mollie');
         $property->setAccessible(true);
@@ -130,14 +128,14 @@ class MolliePaymentServiceTest extends TestCase
      */
     private function createMockProduct(): Product
     {
-        $category = Mockery::mock(Category::class);
+        $category = \Mockery::mock(Category::class);
         $category->shouldReceive('getAttribute')->with('nest_id')->andReturn(1);
-        
-        $product = Mockery::mock(Product::class);
+
+        $product = \Mockery::mock(Product::class);
         $product->shouldReceive('getAttribute')->with('id')->andReturn(123);
         $product->shouldReceive('getAttribute')->with('name')->andReturn('Test Product');
         $product->shouldReceive('getAttribute')->with('category')->andReturn($category);
-        
+
         return $product;
     }
 
@@ -146,7 +144,7 @@ class MolliePaymentServiceTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
+        \Mockery::close();
         parent::tearDown();
     }
 }

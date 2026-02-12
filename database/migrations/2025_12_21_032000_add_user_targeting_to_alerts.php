@@ -4,8 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      */
@@ -13,7 +12,7 @@ return new class extends Migration
     {
         // Drop the table if it exists from a previous failed migration attempt
         Schema::dropIfExists('alert_user');
-        
+
         Schema::create('alert_user', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('alert_id');
@@ -22,7 +21,7 @@ return new class extends Migration
 
             $table->foreign('alert_id')->references('id')->on('alerts')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            
+
             $table->unique(['alert_id', 'user_id']);
         });
 
@@ -40,7 +39,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('alert_user');
-        
+
         Schema::table('alerts', function (Blueprint $table) {
             $table->dropColumn('user_targeting');
         });

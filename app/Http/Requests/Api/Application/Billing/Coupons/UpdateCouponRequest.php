@@ -3,7 +3,6 @@
 namespace Everest\Http\Requests\Api\Application\Billing\Coupons;
 
 use Everest\Models\AdminRole;
-use Everest\Models\Billing\Coupon;
 use Everest\Http\Requests\Api\Application\ApplicationApiRequest;
 
 class UpdateCouponRequest extends ApplicationApiRequest

@@ -5,11 +5,11 @@ namespace Everest\Services\Servers;
 use Everest\Models\Egg;
 use Everest\Models\Server;
 use Everest\Models\Billing\Product;
+use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Database\ConnectionInterface;
-use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Repositories\Wings\DaemonFileRepository;
-use Illuminate\Support\Facades\Log;
+use Everest\Repositories\Wings\DaemonServerRepository;
 
 class ChangeServerEggService
 {
@@ -26,7 +26,7 @@ class ChangeServerEggService
 
     /**
      * Change a server's egg and trigger a reinstall.
-     * 
+     *
      * @throws \Throwable
      * @throws DisplayException
      */
@@ -89,16 +89,16 @@ class ChangeServerEggService
                     // Get list of all files and folders in the root directory
                     $fileRepository = $this->daemonFileRepository->setServer($server);
                     $files = $fileRepository->getDirectory('/');
-                    
+
                     // Extract file names from the directory listing
                     $fileNames = array_map(function ($file) {
                         return $file['name'];
                     }, $files);
-                    
+
                     // Delete all files and folders if any exist
                     if (!empty($fileNames)) {
                         $fileRepository->deleteFiles('/', $fileNames);
-                        
+
                         Log::info('Deleted all server files during egg change', [
                             'server_id' => $server->id,
                             'file_count' => count($fileNames),

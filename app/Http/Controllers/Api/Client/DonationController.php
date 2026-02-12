@@ -10,8 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 
 /**
- * Donation Controller
- * 
+ * Donation Controller.
+ *
  * Handles donation processing using the existing Stripe integration.
  * Donations do not provide any server benefits - they are simple monetary contributions.
  */
@@ -32,11 +32,10 @@ class DonationController extends ClientApiController
 
     /**
      * Get Stripe public key for donations.
-     * 
+     *
      * This endpoint is safe to call from the frontend as it only returns
      * the publishable key, which is meant to be public.
-     * 
-     * @return JsonResponse
+     *
      * @throws DisplayException if publishable key is missing or appears to be a secret key
      */
     public function getStripeKey(): JsonResponse
@@ -54,18 +53,13 @@ class DonationController extends ClientApiController
             \Log::critical('SECURITY: Secret key detected in publishable key field (donations)!', [
                 'detected_type' => 'secret_key',
             ]);
-            
-            throw new DisplayException(
-                'Critical configuration error: A secret key has been detected in the publishable key field. ' .
-                'This is a severe security risk. Please reconfigure your Stripe keys immediately with the correct key types.'
-            );
+
+            throw new DisplayException('Critical configuration error: A secret key has been detected in the publishable key field. This is a severe security risk. Please reconfigure your Stripe keys immediately with the correct key types.');
         }
 
         // Verify it looks like a valid Stripe publishable key
         if (!str_starts_with($publicKey, 'pk_')) {
-            throw new DisplayException(
-                'Invalid Stripe publishable key format. Publishable keys must start with \'pk_test_\' or \'pk_live_\'.'
-            );
+            throw new DisplayException('Invalid Stripe publishable key format. Publishable keys must start with \'pk_test_\' or \'pk_live_\'.');
         }
 
         return response()->json(['key' => $publicKey]);
@@ -73,9 +67,6 @@ class DonationController extends ClientApiController
 
     /**
      * Create a Stripe payment intent for donation.
-     * 
-     * @param Request $request
-     * @return JsonResponse
      */
     public function createIntent(Request $request): JsonResponse
     {
@@ -100,7 +91,7 @@ class DonationController extends ClientApiController
         }
 
         $paymentIntent = $this->stripe->paymentIntents->create([
-            'amount' => (int)($amount * 100), // Convert to cents
+            'amount' => (int) ($amount * 100), // Convert to cents
             'currency' => $currency,
             'payment_method_types' => array_values($paymentMethodTypes),
             'metadata' => [
@@ -118,7 +109,7 @@ class DonationController extends ClientApiController
         // Create donation record
         $message = $request->input('message');
         $message = ($message && trim($message) !== '') ? trim($message) : null;
-        
+
         Donation::create([
             'user_id' => $request->user()->id,
             'payment_intent_id' => $paymentIntent->id,
@@ -136,9 +127,6 @@ class DonationController extends ClientApiController
 
     /**
      * Complete a donation after payment is confirmed.
-     * 
-     * @param Request $request
-     * @return Response
      */
     public function complete(Request $request): Response
     {
@@ -179,9 +167,6 @@ class DonationController extends ClientApiController
 
     /**
      * Get user's donation history.
-     * 
-     * @param Request $request
-     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
@@ -196,7 +181,7 @@ class DonationController extends ClientApiController
 
     /**
      * Ensure Stripe client is initialized.
-     * 
+     *
      * @throws DisplayException if Stripe is not configured
      */
     private function ensureStripeInitialized(): void

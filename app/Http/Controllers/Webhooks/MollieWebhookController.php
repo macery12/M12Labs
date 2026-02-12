@@ -3,9 +3,9 @@
 namespace Everest\Http\Controllers\Webhooks;
 
 use Illuminate\Http\Request;
+use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Everest\Models\Billing\Order;
 use Everest\Services\Billing\MolliePaymentService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
@@ -21,16 +21,13 @@ class MollieWebhookController
 
     /**
      * Handle Mollie webhook notifications.
-     * 
+     *
      * This endpoint receives asynchronous notifications from Mollie about payment events.
      * It verifies the webhook, fetches the actual payment status from Mollie API,
      * and fulfills orders for successful payments.
-     * 
+     *
      * Important: This endpoint is public and receives requests directly from Mollie.
      * No authentication or user context is available.
-     * 
-     * @param Request $request
-     * @return JsonResponse
      */
     public function handle(Request $request): JsonResponse
     {
@@ -40,6 +37,7 @@ class MollieWebhookController
             if (!$paymentId) {
                 // Return 200 to prevent Mollie retries, but log the issue
                 Log::warning('Mollie webhook called without payment ID');
+
                 return response()->json(['ok' => true], 200);
             }
 
@@ -49,6 +47,7 @@ class MollieWebhookController
             if (!$order) {
                 // Return 200 to prevent Mollie retries for non-existent orders
                 Log::warning("Mollie webhook: Order not found for payment ID: {$paymentId}");
+
                 return response()->json(['ok' => true], 200);
             }
 
@@ -56,6 +55,7 @@ class MollieWebhookController
             // This prevents duplicate processing if webhook is called multiple times
             if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
                 Log::info("Mollie webhook: Order {$order->id} already in final state: {$order->status}");
+
                 return response()->json(['ok' => true], 200);
             }
 
@@ -89,7 +89,7 @@ class MollieWebhookController
             } elseif ($payment->isPending() || $payment->isOpen()) {
                 // PENDING/OPEN: Payment in progress or just created - no action needed yet
                 Log::info("Mollie payment {$paymentId} is pending/open for order {$order->id}");
-                // Keep current status
+            // Keep current status
             } else {
                 // Unknown status - log for investigation
                 Log::warning("Mollie payment {$paymentId} has unknown status: {$payment->status}");
@@ -108,11 +108,8 @@ class MollieWebhookController
 
     /**
      * Fulfill an order after successful payment.
-     * 
-     * @param Request $request
-     * @param Order $order
+     *
      * @param \Mollie\Api\Resources\Payment $payment
-     * @return void
      */
     private function fulfillOrder(Request $request, Order $order, $payment): void
     {

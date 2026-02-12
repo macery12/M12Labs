@@ -9,14 +9,14 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
-use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\MolliePaymentService;
+use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 
 class MollieCheckoutController extends ClientApiController
 {
@@ -34,9 +34,7 @@ class MollieCheckoutController extends ClientApiController
     /**
      * Create a Mollie payment.
      *
-     * @param Request $request
      * @param int $id Product ID
-     * @return JsonResponse
      */
     public function createPayment(Request $request, int $id): JsonResponse
     {
@@ -66,7 +64,7 @@ class MollieCheckoutController extends ClientApiController
         $returnUrl = str_contains($baseReturnUrl, '?')
             ? $baseReturnUrl . '&token=' . $token . '&processor=mollie'
             : $baseReturnUrl . '?token=' . $token . '&processor=mollie';
-        
+
         $payment = $this->mollieService->createPayment(
             $product,
             $priceInfo['finalPrice'],
@@ -110,9 +108,7 @@ class MollieCheckoutController extends ClientApiController
     /**
      * Update a payment with order details.
      *
-     * @param Request $request
      * @param int $id Product ID
-     * @return Response
      */
     public function updatePayment(Request $request, int $id): Response
     {
@@ -169,15 +165,12 @@ class MollieCheckoutController extends ClientApiController
 
     /**
      * Process a Mollie payment (webhook handler).
-     * 
+     *
      * Following Mollie best practices:
      * - Webhook receives only payment ID for security
      * - Fetch full payment details from Mollie API
      * - Handle all payment statuses: paid, failed, expired, canceled, authorized, pending, open
      * - Idempotent processing to prevent duplicate order fulfillment
-     *
-     * @param Request $request
-     * @return Response
      */
     public function processPayment(Request $request): Response
     {
@@ -186,6 +179,7 @@ class MollieCheckoutController extends ClientApiController
         if (!$paymentId) {
             // Return 200 to prevent Mollie retries, but log the issue
             \Log::warning('Mollie webhook called without payment ID');
+
             return $this->returnNoContent();
         }
 
@@ -195,6 +189,7 @@ class MollieCheckoutController extends ClientApiController
         if (!$order) {
             // Return 200 to prevent Mollie retries for non-existent orders
             \Log::warning("Mollie webhook: Order not found for payment ID: {$paymentId}");
+
             return $this->returnNoContent();
         }
 
@@ -202,6 +197,7 @@ class MollieCheckoutController extends ClientApiController
         // This prevents duplicate processing if webhook is called multiple times
         if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
             \Log::info("Mollie webhook: Order {$order->id} already in final state: {$order->status}");
+
             return $this->returnNoContent();
         }
 
@@ -236,7 +232,7 @@ class MollieCheckoutController extends ClientApiController
             } elseif ($payment->isPending() || $payment->isOpen()) {
                 // PENDING/OPEN: Payment in progress or just created - no action needed yet
                 \Log::info("Mollie payment {$paymentId} is pending/open for order {$order->id}");
-                // Keep current status
+            // Keep current status
             } else {
                 // Unknown status - log for investigation
                 \Log::warning("Mollie payment {$paymentId} has unknown status: {$payment->status}");
@@ -253,18 +249,9 @@ class MollieCheckoutController extends ClientApiController
             // Log error but return 200 to prevent infinite Mollie retries
             // Create a billing exception for admin review
             \Log::error("Mollie webhook error for payment {$paymentId}: " . $e->getMessage());
-            
+
             try {
-                throw new BillingExceptionClass(
-                    'Mollie webhook processing error',
-                    'Failed to process Mollie webhook: ' . $e->getMessage(),
-                    BillingException::TYPE_WEBHOOK,
-                    $order->id,
-                    'mollie',
-                    $paymentId,
-                    ['payment_status' => $payment->status ?? 'unknown', 'error' => $e->getMessage()],
-                    $e
-                );
+                throw new BillingExceptionClass('Mollie webhook processing error', 'Failed to process Mollie webhook: ' . $e->getMessage(), BillingException::TYPE_WEBHOOK, $order->id, 'mollie', $paymentId, ['payment_status' => $payment->status ?? 'unknown', 'error' => $e->getMessage()], $e);
             } catch (BillingExceptionClass $billingEx) {
                 // Exception is now logged, continue to return 200
             }
@@ -275,11 +262,8 @@ class MollieCheckoutController extends ClientApiController
 
     /**
      * Fulfill an order after successful payment.
-     * 
-     * @param Request $request
-     * @param Order $order
+     *
      * @param \Mollie\Api\Resources\Payment $payment
-     * @return void
      */
     private function fulfillOrder(Request $request, Order $order, $payment): void
     {
@@ -291,9 +275,6 @@ class MollieCheckoutController extends ClientApiController
 
     /**
      * Determine the order type (NEW, UPGRADE, or RENEWAL).
-     *
-     * @param Request $request
-     * @return string
      */
     private function getOrderType(Request $request): string
     {
@@ -306,7 +287,7 @@ class MollieCheckoutController extends ClientApiController
 
     /**
      * Check the status of a specific Mollie payment by payment ID.
-     * 
+     *
      * Returns detailed status information including:
      * - processed: Order is completed
      * - failed: Order failed (payment failed, expired, or canceled)
@@ -316,14 +297,11 @@ class MollieCheckoutController extends ClientApiController
      *
      * This endpoint also acts as a fallback processor - if the webhook hasn't run yet but
      * the payment is actually paid, it will process the order.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function checkPaymentStatus(Request $request): JsonResponse
     {
         $paymentId = $request->input('payment_id');
-        
+
         if (!$paymentId) {
             // Fallback: Get the latest order for this user if no payment_id provided
             $order = Order::where('user_id', $request->user()->id)
@@ -371,7 +349,7 @@ class MollieCheckoutController extends ClientApiController
                 \Log::error("Fallback fulfillment failed for order {$order->id}: " . $e->getMessage());
             }
         }
-        
+
         // If payment failed/expired/canceled, update order status
         if ($payment && $order->status === Order::STATUS_PENDING) {
             if ($payment->isFailed() || $payment->isExpired() || $payment->isCanceled()) {
@@ -391,9 +369,6 @@ class MollieCheckoutController extends ClientApiController
 
     /**
      * Get payment ID from token.
-     *
-     * @param string $token
-     * @return JsonResponse
      */
     public function getPaymentFromToken(string $token): JsonResponse
     {

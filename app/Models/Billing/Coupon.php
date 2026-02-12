@@ -4,7 +4,6 @@ namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * @property int $id
@@ -24,7 +23,7 @@ class Coupon extends Model
 {
     public const TYPE_PERCENTAGE = 'percentage';
     public const TYPE_FIXED = 'fixed';
-    
+
     public const ALLOWED_FOR_BOTH = 'both';
     public const ALLOWED_FOR_PURCHASES = 'purchases';
     public const ALLOWED_FOR_RENEWALS = 'renewals';
@@ -67,7 +66,7 @@ class Coupon extends Model
         'is_active' => 'bool',
         'allowed_for' => 'string',
     ];
-    
+
     /**
      * Default values for model attributes.
      */
@@ -113,6 +112,7 @@ class Coupon extends Model
                 // Return a mock relationship that won't execute queries
                 return $this->hasMany(CouponUsage::class)->whereRaw('1 = 0');
             }
+
             return $this->hasMany(CouponUsage::class);
         } catch (\Exception $e) {
             \Log::error('Error in coupon usage relationship: ' . $e->getMessage());
@@ -135,6 +135,7 @@ class Coupon extends Model
             return $this->usage()->count();
         } catch (\Exception $e) {
             \Log::error('Error getting coupon usage count: ' . $e->getMessage());
+
             return 0;
         }
     }
@@ -164,6 +165,7 @@ class Coupon extends Model
             return $this->usage()->count() >= $this->max_uses;
         } catch (\Exception $e) {
             \Log::error('Error checking coupon max uses: ' . $e->getMessage());
+
             return false; // If there's an error, allow the coupon to be used
         }
     }
@@ -179,9 +181,11 @@ class Coupon extends Model
 
         try {
             $userUsageCount = $this->usage()->where('user_id', $userId)->count();
+
             return $userUsageCount >= $this->max_uses_per_user;
         } catch (\Exception $e) {
             \Log::error('Error checking user coupon limit: ' . $e->getMessage());
+
             return false; // If there's an error, allow the coupon to be used
         }
     }
@@ -239,48 +243,50 @@ class Coupon extends Model
 
     /**
      * Check if this coupon is allowed for a specific order type.
-     * 
+     *
      * @param string $orderType The order type ('new', 'ren', 'upg')
+     *
      * @return bool True if the coupon is allowed for this order type
      */
     public function isAllowedForOrderType(string $orderType): bool
     {
         $allowedFor = $this->allowed_for ?? self::ALLOWED_FOR_BOTH;
-        
+
         if ($allowedFor === self::ALLOWED_FOR_BOTH) {
             return true;
         }
-        
+
         // Treat both 'new' and 'upg' as purchases
         if ($allowedFor === self::ALLOWED_FOR_PURCHASES && in_array($orderType, ['new', 'upg'])) {
             return true;
         }
-        
+
         if ($allowedFor === self::ALLOWED_FOR_RENEWALS && $orderType === 'ren') {
             return true;
         }
-        
+
         return false;
     }
 
     /**
      * Get a human-readable message for when a coupon is not allowed for an order type.
-     * 
+     *
      * @param string $orderType The order type ('new', 'ren', 'upg')
+     *
      * @return string Error message
      */
     public function getNotAllowedMessage(string $orderType): string
     {
         $allowedFor = $this->allowed_for ?? self::ALLOWED_FOR_BOTH;
-        
+
         if ($allowedFor === self::ALLOWED_FOR_PURCHASES) {
             return 'This coupon can only be used for new purchases.';
         }
-        
+
         if ($allowedFor === self::ALLOWED_FOR_RENEWALS) {
             return 'This coupon can only be used for renewals.';
         }
-        
+
         return 'This coupon is not valid for this order type.';
     }
 }
