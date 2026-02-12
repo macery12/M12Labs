@@ -59,13 +59,11 @@ class ActivityLogController extends ApplicationApiController
         $users = ActivityLog::where('is_admin', true)
             ->whereNotIn('event', ActivityLog::DISABLED_EVENTS)
             ->whereNotNull('actor_id')
-            ->with('actor')
+            ->join('users', 'activity_logs.actor_id', '=', 'users.id')
+            ->select('users.uuid', 'users.username')
+            ->distinct()
+            ->orderBy('users.username')
             ->get()
-            ->pluck('actor')
-            ->filter()
-            ->unique('id')
-            ->sortBy('username')
-            ->values()
             ->map(function ($user) {
                 return [
                     'uuid' => $user->uuid,
@@ -83,10 +81,9 @@ class ActivityLogController extends ApplicationApiController
     {
         $events = ActivityLog::where('is_admin', true)
             ->whereNotIn('event', ActivityLog::DISABLED_EVENTS)
+            ->orderBy('event')
             ->distinct()
-            ->pluck('event')
-            ->sort()
-            ->values();
+            ->pluck('event');
 
         return ['data' => $events];
     }
