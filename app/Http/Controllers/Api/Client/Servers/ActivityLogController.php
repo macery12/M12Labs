@@ -50,20 +50,7 @@ class ActivityLogController extends ClientApiController
             ->defaultSort('-timestamp')
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
             ->when(config('activity.hide_admin_activity'), function (Builder $builder) use ($server) {
-                // We could do this with a query and a lot of joins, but that gets pretty
-                // painful so for now we'll execute a simpler query.
-                $subusers = $server->subusers()->pluck('user_id')->merge($server->owner_id);
-
-                $builder->select('activity_logs.*')
-                    ->leftJoin('users', function (JoinClause $join) {
-                        $join->on('users.id', 'activity_logs.actor_id')
-                            ->where('activity_logs.actor_type', (new User())->getMorphClass());
-                    })
-                    ->where(function (Builder $builder) use ($subusers) {
-                        $builder->whereNull('users.id')
-                            ->orWhere('users.root_admin', 0)
-                            ->orWhereIn('users.id', $subusers);
-                    });
+                $this->applyAdminActivityFilter($builder, $server);
             })
             ->paginate(min($request->query('per_page', 25), 100))
             ->appends($request->query());
@@ -86,21 +73,11 @@ class ActivityLogController extends ClientApiController
 
         // Apply the same admin activity filter if configured
         if (config('activity.hide_admin_activity')) {
-            $subusers = $server->subusers()->pluck('user_id')->merge($server->owner_id);
-            
-            $query->select('activity_logs.*')
-                ->leftJoin('users', function (JoinClause $join) {
-                    $join->on('users.id', 'activity_logs.actor_id')
-                        ->where('activity_logs.actor_type', (new User())->getMorphClass());
-                })
-                ->where(function (Builder $builder) use ($subusers) {
-                    $builder->whereNull('users.id')
-                        ->orWhere('users.root_admin', 0)
-                        ->orWhereIn('users.id', $subusers);
-                });
+            $this->applyAdminActivityFilter($query, $server);
         }
 
-        $users = $query->join('users as u', 'activity_logs.actor_id', '=', 'u.id')
+        $users = $query
+            ->join('users as u', 'activity_logs.actor_id', '=', 'u.id')
             ->select('u.uuid', 'u.username')
             ->distinct()
             ->orderBy('u.username')
@@ -127,24 +104,36 @@ class ActivityLogController extends ClientApiController
 
         // Apply the same admin activity filter if configured
         if (config('activity.hide_admin_activity')) {
-            $subusers = $server->subusers()->pluck('user_id')->merge($server->owner_id);
-            
-            $query->select('activity_logs.*')
-                ->leftJoin('users', function (JoinClause $join) {
-                    $join->on('users.id', 'activity_logs.actor_id')
-                        ->where('activity_logs.actor_type', (new User())->getMorphClass());
-                })
-                ->where(function (Builder $builder) use ($subusers) {
-                    $builder->whereNull('users.id')
-                        ->orWhere('users.root_admin', 0)
-                        ->orWhereIn('users.id', $subusers);
-                });
+            $this->applyAdminActivityFilter($query, $server);
         }
 
-        $events = $query->orderBy('event')
+        $events = $query
+            ->orderBy('event')
             ->distinct()
             ->pluck('event');
 
         return ['data' => $events];
+    }
+
+    /**
+     * Apply the admin activity filter to hide admin users from activity logs
+     * unless they are the server owner or a subuser.
+     */
+    private function applyAdminActivityFilter(Builder $builder, Server $server): void
+    {
+        // We could do this with a query and a lot of joins, but that gets pretty
+        // painful so for now we'll execute a simpler query.
+        $subusers = $server->subusers()->pluck('user_id')->merge($server->owner_id);
+
+        $builder->select('activity_logs.*')
+            ->leftJoin('users', function (JoinClause $join) {
+                $join->on('users.id', 'activity_logs.actor_id')
+                    ->where('activity_logs.actor_type', (new User())->getMorphClass());
+            })
+            ->where(function (Builder $builder) use ($subusers) {
+                $builder->whereNull('users.id')
+                    ->orWhere('users.root_admin', 0)
+                    ->orWhereIn('users.id', $subusers);
+            });
     }
 }
