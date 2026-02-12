@@ -153,7 +153,7 @@ export default () => {
                         <Input
                             type={'text'}
                             placeholder={'Search activity...'}
-                            className={'pl-11'}
+                            className={'!pl-11'}
                             value={searchInput}
                             onChange={e => setSearchInput(e.currentTarget.value)}
                         />
