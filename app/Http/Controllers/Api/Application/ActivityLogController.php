@@ -20,13 +20,74 @@ class ActivityLogController extends ApplicationApiController
 
         $activity = QueryBuilder::for($activityQuery)
             ->with('actor')
-            ->allowedFilters([AllowedFilter::partial('event')])
+            ->allowedFilters([
+                AllowedFilter::partial('event'),
+                AllowedFilter::partial('ip'),
+                AllowedFilter::partial('description'),
+                AllowedFilter::callback('search', function ($query, $value) {
+                    $query->where(function ($q) use ($value) {
+                        $q->where('description', 'like', "%{$value}%")
+                            ->orWhere('event', 'like', "%{$value}%")
+                            ->orWhere('ip', 'like', "%{$value}%")
+                            ->orWhereHas('actor', function ($actorQuery) use ($value) {
+                                $actorQuery->where('username', 'like', "%{$value}%")
+                                    ->orWhere('email', 'like', "%{$value}%");
+                            });
+                    });
+                }),
+                AllowedFilter::callback('actor', function ($query, $value) {
+                    $query->whereHas('actor', function ($actorQuery) use ($value) {
+                        $actorQuery->where('uuid', $value);
+                    });
+                }),
+            ])
             ->allowedSorts(['timestamp'])
+            ->defaultSort('-timestamp')
             ->paginate(min($request->query('per_page', 25), 100))
             ->appends($request->query());
 
         return $this->fractal->collection($activity)
             ->transformWith(ActivityLogTransformer::class)
             ->toArray();
+    }
+
+    /**
+     * Returns all unique users who have activity logs.
+     */
+    public function users(ActivityRequest $request): array
+    {
+        $users = ActivityLog::where('is_admin', true)
+            ->whereNotIn('event', ActivityLog::DISABLED_EVENTS)
+            ->whereNotNull('actor_id')
+            ->with('actor')
+            ->get()
+            ->pluck('actor')
+            ->filter()
+            ->unique('id')
+            ->sortBy('username')
+            ->values()
+            ->map(function ($user) {
+                return [
+                    'uuid' => $user->uuid,
+                    'username' => $user->username,
+                ];
+            });
+
+        return ['data' => $users];
+    }
+
+    /**
+     * Returns all unique event types.
+     */
+    public function events(ActivityRequest $request): array
+    {
+        $events = ActivityLog::where('is_admin', true)
+            ->whereNotIn('event', ActivityLog::DISABLED_EVENTS)
+            ->distinct()
+            ->pluck('event')
+            ->sort()
+            ->values();
+
+        return ['data' => $events];
     }
 }

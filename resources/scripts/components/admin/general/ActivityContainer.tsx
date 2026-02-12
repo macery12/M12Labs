@@ -11,117 +11,87 @@ import classNames from 'classnames';
 import ActivityLogEntry from '@/elements/activity/ActivityLogEntry';
 import Tooltip from '@/elements/tooltip/Tooltip';
 import useLocationHash from '@/plugins/useLocationHash';
-import { ActivityLogFilters, useActivityLogs } from '@/api/routes/admin/activity';
+import { ActivityLogFilters, useActivityLogs, getActivityUsers, getActivityEvents } from '@/api/routes/admin/activity';
 import { useStoreState } from '@/state/hooks';
 import Input from '@/elements/Input';
 import Select from '@/elements/Select';
 import debounce from 'debounce';
-import { ActivityLog } from '@definitions/account';
 
 export default () => {
     const { hash } = useLocationHash();
     const { clearAndAddHttpError } = useFlashKey('account');
-    const [filters, setFilters] = useState<ActivityLogFilters>({ page: 1, sorts: { timestamp: -1 } });
+    
+    // Filter states that will be sent to backend
+    const [searchInput, setSearchInput] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedUser, setSelectedUser] = useState<string>('');
+    const [selectedEventType, setSelectedEventType] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<'-timestamp' | 'timestamp'>('-timestamp');
+    const [currentPage, setCurrentPage] = useState(1);
+    
+    // All users and events (loaded from backend)
+    const [allUsers, setAllUsers] = useState<Array<{ uuid: string; username: string }>>([]);
+    const [allEvents, setAllEvents] = useState<string[]>([]);
+    const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
+
+    // Build filters for API
+    const filters = useMemo<ActivityLogFilters>(() => {
+        const f: ActivityLogFilters = {
+            page: currentPage,
+            sorts: { timestamp: sortOrder === '-timestamp' ? -1 : 1 },
+            filters: {},
+        };
+        
+        // Add hash filters if present
+        if (hash.ip) f.filters!.ip = hash.ip;
+        if (hash.event) f.filters!.event = hash.event;
+        
+        if (searchQuery.trim()) {
+            f.filters!.search = searchQuery;
+        }
+        
+        if (selectedUser) {
+            f.filters!.actor = selectedUser;
+        }
+        
+        if (selectedEventType) {
+            f.filters!.event = selectedEventType;
+        }
+        
+        return f;
+    }, [searchQuery, selectedUser, selectedEventType, sortOrder, currentPage, hash]);
+
     const { data, isValidating, error } = useActivityLogs(filters, {
         revalidateOnMount: true,
         revalidateOnFocus: false,
     });
 
-    // Client-side filter states
-    // Note: These filters work on the current page of data loaded from the API.
-    // Users can paginate through all results and apply filters to each page.
-    // This is a frontend-only implementation to avoid backend changes.
-    const [searchInput, setSearchInput] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedUser, setSelectedUser] = useState<string>('');
-    const [selectedEventType, setSelectedEventType] = useState<string>('');
-    const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-
     const enabled: boolean = useStoreState(state => state.settings.data!.activity.enabled.admin);
 
     if (!enabled) return <></>;
 
+    // Load all users and events on mount
     useEffect(() => {
-        setFilters(value => ({ ...value, filters: { ip: hash.ip, event: hash.event } }));
-    }, [hash]);
+        const loadMetadata = async () => {
+            try {
+                const [users, events] = await Promise.all([
+                    getActivityUsers(),
+                    getActivityEvents(),
+                ]);
+                setAllUsers(users);
+                setAllEvents(events);
+            } catch (err) {
+                console.error('Failed to load activity metadata:', err);
+            } finally {
+                setIsLoadingMetadata(false);
+            }
+        };
+        loadMetadata();
+    }, []);
 
     useEffect(() => {
         clearAndAddHttpError(error);
     }, [error]);
-
-    // Extract unique users from activity data
-    const uniqueUsers = useMemo(() => {
-        if (!data?.items) return [];
-        const users = new Map<string, { uuid: string; username: string }>();
-        data.items.forEach(activity => {
-            if (activity.relationships.actor) {
-                const actor = activity.relationships.actor;
-                users.set(actor.uuid, { uuid: actor.uuid, username: actor.username });
-            }
-        });
-        return Array.from(users.values()).sort((a, b) => a.username.localeCompare(b.username));
-    }, [data?.items]);
-
-    // Extract unique event types
-    const uniqueEventTypes = useMemo(() => {
-        if (!data?.items) return [];
-        const events = new Set<string>();
-        data.items.forEach(activity => {
-            events.add(activity.event);
-        });
-        return Array.from(events).sort();
-    }, [data?.items]);
-
-    // Client-side filtering and sorting
-    const filteredActivities = useMemo(() => {
-        if (!data?.items) return [];
-
-        let filtered = [...data.items];
-
-        // Search filter
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(activity => {
-                const actor = activity.relationships.actor;
-                const actorName = actor?.username?.toLowerCase() || '';
-                const actorEmail = actor?.email?.toLowerCase() || '';
-                const event = (activity.description || activity.event).toLowerCase();
-                const ip = activity.ip?.toLowerCase() || '';
-                const serverId = String(activity.properties.server_id || '').toLowerCase();
-                const serverName = String(activity.properties.server || '').toLowerCase();
-
-                return (
-                    actorName.includes(query) ||
-                    actorEmail.includes(query) ||
-                    event.includes(query) ||
-                    ip.includes(query) ||
-                    serverId.includes(query) ||
-                    serverName.includes(query)
-                );
-            });
-        }
-
-        // User filter
-        if (selectedUser) {
-            filtered = filtered.filter(
-                activity => activity.relationships.actor?.uuid === selectedUser
-            );
-        }
-
-        // Event type filter
-        if (selectedEventType) {
-            filtered = filtered.filter(activity => activity.event === selectedEventType);
-        }
-
-        // Sort
-        filtered.sort((a, b) => {
-            const timeA = a.timestamp.getTime();
-            const timeB = b.timestamp.getTime();
-            return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
-        });
-
-        return filtered;
-    }, [data?.items, searchQuery, selectedUser, selectedEventType, sortOrder]);
 
     // Debounced search handler
     const debouncedSetSearchQuery = useMemo(
@@ -149,17 +119,20 @@ export default () => {
         setSearchQuery('');
         setSelectedUser('');
         setSelectedEventType('');
-        setSortOrder('newest');
-        setFilters(value => ({ ...value, filters: {} }));
+        setSortOrder('-timestamp');
+        setCurrentPage(1);
     };
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedUser, selectedEventType, sortOrder]);
 
     const hasActiveFilters =
         searchInput.trim() !== '' ||
         selectedUser !== '' ||
         selectedEventType !== '' ||
-        sortOrder !== 'newest' ||
-        filters.filters?.event ||
-        filters.filters?.ip;
+        sortOrder !== '-timestamp';
 
     return (
         <AdminContentBlock title={'Admin Activity'}>
@@ -188,7 +161,7 @@ export default () => {
                         <Input
                             type={'text'}
                             placeholder={'Search activity...'}
-                            className={'pl-10'}
+                            className={'pl-11'}
                             value={searchInput}
                             onChange={e => setSearchInput(e.currentTarget.value)}
                         />
@@ -198,9 +171,10 @@ export default () => {
                     <Select
                         value={selectedUser}
                         onChange={e => setSelectedUser(e.currentTarget.value)}
+                        disabled={isLoadingMetadata}
                     >
                         <option value={''}>All Users</option>
-                        {uniqueUsers.map(user => (
+                        {allUsers.map(user => (
                             <option key={user.uuid} value={user.uuid}>
                                 {user.username}
                             </option>
@@ -211,9 +185,10 @@ export default () => {
                     <Select
                         value={selectedEventType}
                         onChange={e => setSelectedEventType(e.currentTarget.value)}
+                        disabled={isLoadingMetadata}
                     >
                         <option value={''}>All Event Types</option>
-                        {uniqueEventTypes.map(event => (
+                        {allEvents.map(event => (
                             <option key={event} value={event}>
                                 {event}
                             </option>
@@ -225,13 +200,13 @@ export default () => {
                         value={sortOrder}
                         onChange={e => {
                             const value = e.currentTarget.value;
-                            if (value === 'newest' || value === 'oldest') {
+                            if (value === '-timestamp' || value === 'timestamp') {
                                 setSortOrder(value);
                             }
                         }}
                     >
-                        <option value={'newest'}>Newest First</option>
-                        <option value={'oldest'}>Oldest First</option>
+                        <option value={'-timestamp'}>Newest First</option>
+                        <option value={'timestamp'}>Oldest First</option>
                     </Select>
                 </div>
 
@@ -254,9 +229,9 @@ export default () => {
                 <Spinner centered />
             ) : (
                 <div className={'bg-slate-700'}>
-                    {filteredActivities.length > 0 ? (
+                    {data?.items && data.items.length > 0 ? (
                         <>
-                            {filteredActivities.map(activity => (
+                            {data.items.map(activity => (
                                 <ActivityLogEntry key={activity.id} activity={activity}>
                                     {typeof activity.properties.useragent === 'string' && (
                                         <Tooltip content={activity.properties.useragent} placement={'top'}>
@@ -268,18 +243,13 @@ export default () => {
                                 </ActivityLogEntry>
                             ))}
                         </>
-                    ) : data?.items && data.items.length > 0 ? (
-                        <div className={'py-12 text-center'}>
-                            <p className={'text-lg font-medium text-neutral-50'}>No activity found</p>
-                            <p className={'mt-1 text-sm text-neutral-400'}>
-                                Try adjusting your filters to see more results.
-                            </p>
-                        </div>
                     ) : (
                         <div className={'py-12 text-center'}>
                             <p className={'text-lg font-medium text-neutral-50'}>No activity found</p>
                             <p className={'mt-1 text-sm text-neutral-400'}>
-                                There are no admin logs available at this time.
+                                {hasActiveFilters
+                                    ? 'Try adjusting your filters to see more results.'
+                                    : 'There are no admin logs available at this time.'}
                             </p>
                         </div>
                     )}
@@ -288,7 +258,7 @@ export default () => {
             {data && data.items.length > 0 && (
                 <PaginationFooter
                     pagination={data.pagination}
-                    onPageSelect={page => setFilters(value => ({ ...value, page }))}
+                    onPageSelect={page => setCurrentPage(page)}
                 />
             )}
         </AdminContentBlock>
