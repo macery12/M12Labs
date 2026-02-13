@@ -3,12 +3,11 @@
 namespace Everest\Services\Mods;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Everest\Exceptions\Service\Mods\ModsServiceException;
 use Everest\Models\CurseForgeRequestLog;
+use GuzzleHttp\Exception\GuzzleException;
+use Everest\Exceptions\Service\Mods\ModsServiceException;
 
 class CurseForgeService
 {
@@ -47,8 +46,6 @@ class CurseForgeService
 
     /**
      * Acquire a lock to serialize API requests (max concurrency = 1).
-     *
-     * @return bool
      */
     private function acquireApiLock(): bool
     {
@@ -61,6 +58,7 @@ class CurseForgeService
         if (!$lockAcquired) {
             // Wait a bit and retry once
             usleep(500000); // 500ms
+
             return Cache::lock($lockKey, 60)->get(function () {
                 return true;
             });
@@ -88,8 +86,6 @@ class CurseForgeService
 
     /**
      * Track 429 errors and trigger lockout if threshold is reached.
-     *
-     * @return void
      */
     private function track429Error(): void
     {
@@ -113,8 +109,6 @@ class CurseForgeService
 
     /**
      * Reset 429 error counter on successful request.
-     *
-     * @return void
      */
     private function reset429Counter(): void
     {
@@ -123,8 +117,6 @@ class CurseForgeService
 
     /**
      * Simple throttling - just space requests 1-2 seconds apart.
-     *
-     * @return void
      */
     private function simpleThrottle(): void
     {
@@ -146,10 +138,6 @@ class CurseForgeService
 
     /**
      * Track a CurseForge API request in the database.
-     *
-     * @param string $endpoint
-     * @param int $statusCode
-     * @return void
      */
     private function trackRequest(string $endpoint, int $statusCode): void
     {
@@ -162,7 +150,7 @@ class CurseForgeService
 
             // Probabilistic cleanup (5% chance) to reduce overhead under high load
             // Full cleanup happens every ~20 requests on average
-            if (rand(1, 20) === 1) {
+            if (mt_rand(1, 20) === 1) {
                 CurseForgeRequestLog::where('requested_at', '<', now()->subHours(25))->delete();
             }
         } catch (\Exception $e) {
@@ -173,8 +161,6 @@ class CurseForgeService
 
     /**
      * Get current rate limit usage with hourly and daily analytics.
-     *
-     * @return array
      */
     public function getRateLimitUsage(): array
     {
@@ -203,8 +189,6 @@ class CurseForgeService
 
     /**
      * Get legacy 429 error tracking data (deprecated but kept for compatibility).
-     *
-     * @return array
      */
     public function get429ErrorTracking(): array
     {
@@ -292,16 +276,17 @@ class CurseForgeService
 
                     // If we're near the threshold, use longer delays (30-60s)
                     if ($count >= $this->max429BeforeLockout - 10) {
-                        $delay = rand(30, 60); // 30-60 second delay when approaching lockout
+                        $delay = mt_rand(30, 60); // 30-60 second delay when approaching lockout
                         Log::warning("CurseForge 429 (near threshold), waiting {$delay}s before retry");
                     } else {
-                        $delay = rand(5, 10); // 5-10 second delay for normal 429s
+                        $delay = mt_rand(5, 10); // 5-10 second delay for normal 429s
                         Log::warning("CurseForge 429, waiting {$delay}s before retry");
                     }
 
                     // Only retry a few times per call to avoid infinite loops
                     if ($retryAttempt < 3) {
                         sleep($delay);
+
                         return $this->makeRequest($method, $path, $params, $retryAttempt + 1);
                     } else {
                         throw new ModsServiceException('CurseForge API rate limit (429) exceeded after retries.');
@@ -359,7 +344,7 @@ class CurseForgeService
      * Search for mods in the CurseForge database.
      *
      * @param array $params Search parameters
-     * @return array
+     *
      * @throws ModsServiceException
      */
     public function searchMods(array $params = []): array
@@ -393,8 +378,6 @@ class CurseForgeService
     /**
      * Get details of a specific mod.
      *
-     * @param int $modId
-     * @return array
      * @throws ModsServiceException
      */
     public function getMod(int $modId): array
@@ -409,9 +392,8 @@ class CurseForgeService
     /**
      * Get files for a specific mod.
      *
-     * @param int $modId
      * @param array $params Filter parameters
-     * @return array
+     *
      * @throws ModsServiceException
      */
     public function getModFiles(int $modId, array $params = []): array
@@ -435,9 +417,6 @@ class CurseForgeService
     /**
      * Get details of a specific mod file.
      *
-     * @param int $modId
-     * @param int $fileId
-     * @return array
      * @throws ModsServiceException
      */
     public function getModFile(int $modId, int $fileId): array
@@ -448,9 +427,6 @@ class CurseForgeService
     /**
      * Get download URL for a mod file.
      *
-     * @param int $modId
-     * @param int $fileId
-     * @return string
      * @throws ModsServiceException
      */
     public function getModFileDownloadUrl(int $modId, int $fileId): string
@@ -467,7 +443,6 @@ class CurseForgeService
     /**
      * Get available Minecraft versions.
      *
-     * @return array
      * @throws ModsServiceException
      */
     public function getMinecraftVersions(): array
@@ -483,7 +458,6 @@ class CurseForgeService
     /**
      * Get available mod loader types.
      *
-     * @return array
      * @throws ModsServiceException
      */
     public function getModLoaderTypes(): array
@@ -500,7 +474,7 @@ class CurseForgeService
      * Search for modpacks in the CurseForge database.
      *
      * @param array $params Search parameters
-     * @return array
+     *
      * @throws ModsServiceException
      */
     public function searchModpacks(array $params = []): array
@@ -537,8 +511,6 @@ class CurseForgeService
     /**
      * Get details of a specific modpack.
      *
-     * @param int $modpackId
-     * @return array
      * @throws ModsServiceException
      */
     public function getModpack(int $modpackId): array
@@ -553,9 +525,8 @@ class CurseForgeService
     /**
      * Get files for a specific modpack.
      *
-     * @param int $modpackId
      * @param array $params Filter parameters
-     * @return array
+     *
      * @throws ModsServiceException
      */
     public function getModpackFiles(int $modpackId, array $params = []): array
@@ -579,9 +550,6 @@ class CurseForgeService
     /**
      * Get details of a specific modpack file.
      *
-     * @param int $modpackId
-     * @param int $fileId
-     * @return array
      * @throws ModsServiceException
      */
     public function getModpackFile(int $modpackId, int $fileId): array

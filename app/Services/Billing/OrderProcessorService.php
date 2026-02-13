@@ -11,10 +11,10 @@ use Everest\Models\Billing\CouponUsage;
 
 /**
  * Unified order processing service for billing operations.
- * 
+ *
  * This service consolidates order creation and processing logic that was previously
  * duplicated across the old FreeProductController and PaymentController (now replaced by CheckoutController).
- * 
+ *
  * Responsibilities:
  * - Create orders with proper metadata
  * - Record coupon usage
@@ -32,9 +32,9 @@ class OrderProcessorService
 
     /**
      * Create a new server order and process it.
-     * 
+     *
      * This method handles both free and paid server creation.
-     * 
+     *
      * @param Request $request The HTTP request
      * @param User $user The user creating the order
      * @param Product $product The product being purchased
@@ -45,6 +45,7 @@ class OrderProcessorService
      * @param string|null $paymentIntentId The Stripe payment intent ID (for paid orders)
      * @param string|null $serverName The custom server name (optional)
      * @param int $billingDays The billing cycle days (defaults to 30)
+     *
      * @return array{server: Server, order: Order}
      */
     public function createServerOrder(
@@ -97,13 +98,14 @@ class OrderProcessorService
 
     /**
      * Process a server renewal.
-     * 
+     *
      * This method handles both free and paid server renewals.
-     * 
+     *
      * @param Server $server The server to renew
      * @param Product $product The product to renew with
      * @param int|null $couponId The coupon ID (optional)
      * @param int $billingDays The billing cycle days (defaults to 30)
+     *
      * @return array{server: Server, order: Order}
      */
     public function processRenewal(
@@ -125,7 +127,7 @@ class OrderProcessorService
 
     /**
      * Record a coupon usage.
-     * 
+     *
      * @param int $couponId The coupon ID
      * @param int $userId The user ID
      * @param int $orderId The order ID
@@ -142,7 +144,7 @@ class OrderProcessorService
 
     /**
      * Update an order's name after server creation.
-     * 
+     *
      * @param Order $order The order to update
      * @param Server $server The created server
      */

@@ -76,11 +76,11 @@ class Category extends Model
     public function getAllowedEggs(): array
     {
         $allowedEggs = $this->allowed_eggs;
-        
+
         if (empty($allowedEggs) || !is_array($allowedEggs)) {
             return [$this->egg_id];
         }
-        
+
         return $allowedEggs;
     }
 
@@ -90,6 +90,7 @@ class Category extends Model
     public function getDefaultEggId(): int
     {
         $allowedEggs = $this->getAllowedEggs();
+
         return $allowedEggs[0] ?? $this->egg_id;
     }
 }

@@ -11,6 +11,8 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::get('/overview/metrics', [Application\OverviewController::class, 'metrics']);
 
     Route::get('/activity', Application\ActivityLogController::class);
+    Route::get('/activity/users', [Application\ActivityLogController::class, 'users']);
+    Route::get('/activity/events', [Application\ActivityLogController::class, 'events']);
 
     Route::group(['prefix' => '/setup'], function () {
         Route::get('/data', [Application\Setup\SetupController::class, 'data']);
@@ -235,13 +237,13 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/alerts'], function () {
         // Legacy settings endpoint
         Route::patch('/', [Application\Alerts\AlertController::class, 'update']);
-        
+
         // New CRUD endpoints for multiple alerts
         Route::get('/', [Application\Alerts\AlertController::class, 'index']);
         Route::post('/', [Application\Alerts\AlertController::class, 'store']);
         Route::patch('/{alert:id}', [Application\Alerts\AlertController::class, 'updateAlert']);
         Route::delete('/{alert:id}', [Application\Alerts\AlertController::class, 'destroy']);
-        
+
         // User search for alert targeting
         Route::get('/users/search', [Application\Alerts\AlertController::class, 'searchUsers']);
     });

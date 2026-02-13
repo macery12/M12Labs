@@ -12,8 +12,8 @@ use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Billing\Coupons\GetCouponsRequest;
 use Everest\Http\Requests\Api\Application\Billing\Coupons\StoreCouponRequest;
-use Everest\Http\Requests\Api\Application\Billing\Coupons\UpdateCouponRequest;
 use Everest\Http\Requests\Api\Application\Billing\Coupons\DeleteCouponRequest;
+use Everest\Http\Requests\Api\Application\Billing\Coupons\UpdateCouponRequest;
 
 class CouponController extends ApplicationApiController
 {

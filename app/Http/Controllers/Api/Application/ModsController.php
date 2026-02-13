@@ -6,11 +6,11 @@ use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\ModrinthService;
+use Everest\Services\Mods\CurseForgeService;
+use Everest\Http\Requests\Api\Application\Mods\GetModsAnalyticsRequest;
 use Everest\Http\Requests\Api\Application\Mods\UpdateModsSettingsRequest;
 use Everest\Http\Requests\Api\Application\Mods\DeleteCurseForgeKeyRequest;
-use Everest\Http\Requests\Api\Application\Mods\GetModsAnalyticsRequest;
 
 class ModsController extends ApplicationApiController
 {

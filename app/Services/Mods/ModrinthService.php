@@ -3,9 +3,9 @@
 namespace Everest\Services\Mods;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use GuzzleHttp\Exception\GuzzleException;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
 
 class ModrinthService
@@ -42,8 +42,6 @@ class ModrinthService
 
     /**
      * Simple throttling for Modrinth API.
-     *
-     * @return void
      */
     private function simpleThrottle(): void
     {
@@ -80,8 +78,6 @@ class ModrinthService
 
     /**
      * Track a request for rate limiting purposes.
-     *
-     * @return void
      */
     private function trackRequest(): void
     {
@@ -196,7 +192,7 @@ class ModrinthService
      * Search for mods in the Modrinth database.
      *
      * @param array $params Search parameters
-     * @return array
+     *
      * @throws ModsServiceException
      */
     public function searchMods(array $params = []): array
@@ -271,10 +267,6 @@ class ModrinthService
 
     /**
      * Transform Modrinth search response to CurseForge-compatible format.
-     *
-     * @param array $response
-     * @param array $searchParams
-     * @return array
      */
     private function transformSearchResponse(array $response, array $searchParams): array
     {
@@ -298,9 +290,6 @@ class ModrinthService
 
     /**
      * Transform a Modrinth mod object to CurseForge-compatible format.
-     *
-     * @param array $modrinthMod
-     * @return array
      */
     private function transformModToCommonFormat(array $modrinthMod): array
     {
@@ -353,7 +342,7 @@ class ModrinthService
      * Get details of a specific mod.
      *
      * @param string $modId Modrinth project ID or slug
-     * @return array
+     *
      * @throws ModsServiceException
      */
     public function getMod(string $modId): array
@@ -372,9 +361,6 @@ class ModrinthService
 
     /**
      * Transform detailed Modrinth mod to CurseForge-compatible format.
-     *
-     * @param array $modrinthMod
-     * @return array
      */
     private function transformModDetailsToCommonFormat(array $modrinthMod): array
     {
@@ -435,9 +421,8 @@ class ModrinthService
     /**
      * Get versions/files for a specific mod.
      *
-     * @param string $modId
      * @param array $params Filter parameters
-     * @return array
+     *
      * @throws ModsServiceException
      */
     public function getModFiles(string $modId, array $params = []): array
@@ -477,10 +462,6 @@ class ModrinthService
 
     /**
      * Transform Modrinth versions to CurseForge-compatible files format.
-     *
-     * @param array $versions
-     * @param array $params
-     * @return array
      */
     private function transformFilesResponse(array $versions, array $params): array
     {
@@ -507,9 +488,6 @@ class ModrinthService
 
     /**
      * Transform a Modrinth version to CurseForge file format.
-     *
-     * @param array $version
-     * @return array
      */
     private function transformVersionToFile(array $version): array
     {
@@ -549,9 +527,6 @@ class ModrinthService
 
     /**
      * Map Modrinth version type to CurseForge release type.
-     *
-     * @param string $versionType
-     * @return int
      */
     private function mapVersionType(string $versionType): int
     {
@@ -565,9 +540,6 @@ class ModrinthService
 
     /**
      * Map Modrinth dependency type to CurseForge relation type.
-     *
-     * @param string $dependencyType
-     * @return int
      */
     private function mapDependencyType(string $dependencyType): int
     {
@@ -582,8 +554,6 @@ class ModrinthService
     /**
      * Get download URL for a mod file.
      *
-     * @param string $versionId
-     * @return string
      * @throws ModsServiceException
      */
     public function getDownloadUrl(string $versionId): string
@@ -601,7 +571,6 @@ class ModrinthService
     /**
      * Get Minecraft versions.
      *
-     * @return array
      * @throws ModsServiceException
      */
     public function getMinecraftVersions(): array
@@ -634,7 +603,6 @@ class ModrinthService
     /**
      * Get mod loader types.
      *
-     * @return array
      * @throws ModsServiceException
      */
     public function getModLoaderTypes(): array
@@ -658,6 +626,7 @@ class ModrinthService
         return [
             'data' => array_map(function ($loader) use ($loaderIdMap) {
                 $loaderName = $loader['name'] ?? '';
+
                 return [
                     'id' => $loaderIdMap[$loaderName] ?? 0,
                     'gameVersionTypeId' => 0,
@@ -670,8 +639,6 @@ class ModrinthService
 
     /**
      * Get rate limit usage for analytics.
-     *
-     * @return array
      */
     public function getRateLimitUsage(): array
     {

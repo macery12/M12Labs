@@ -2,21 +2,20 @@
 
 namespace Everest\Tests\Unit\Services\Billing;
 
-use Mockery;
-use Everest\Tests\TestCase;
-use Illuminate\Http\Request;
 use Everest\Models\Egg;
 use Everest\Models\Server;
+use Everest\Tests\TestCase;
+use Illuminate\Http\Request;
 use Everest\Models\Allocation;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
-use Everest\Models\Billing\BillingException as BillingExceptionModel;
-use Everest\Exceptions\Billing\BillingException;
 use Everest\Exceptions\DisplayException;
+use Everest\Exceptions\Billing\BillingException;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Servers\ServerCreationService;
 use Everest\Services\Servers\VariableValidatorService;
+use Everest\Models\Billing\BillingException as BillingExceptionModel;
 
 class CreateServerServiceTest extends TestCase
 {
@@ -30,10 +29,10 @@ class CreateServerServiceTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        
-        $this->serverCreation = Mockery::mock(ServerCreationService::class);
-        $this->variableValidator = Mockery::mock(VariableValidatorService::class);
-        
+
+        $this->serverCreation = \Mockery::mock(ServerCreationService::class);
+        $this->variableValidator = \Mockery::mock(VariableValidatorService::class);
+
         $this->service = new CreateServerService(
             $this->serverCreation,
             $this->variableValidator
@@ -48,7 +47,7 @@ class CreateServerServiceTest extends TestCase
         $request = $this->createMockRequest();
         $product = $this->createMockProduct();
         $order = $this->createMockOrder();
-        
+
         $metadata = new \stdClass();
         $metadata->node_id = 1;
         $metadata->variables = null;
@@ -77,24 +76,24 @@ class CreateServerServiceTest extends TestCase
         $request = $this->createMockRequest();
         $product = $this->createMockProduct();
         $order = $this->createMockOrder();
-        
+
         $metadata = new \stdClass();
         $metadata->node_id = 1;
         $metadata->variables = null;
 
         // Mock allocation exists
-        $allocation = Mockery::mock(Allocation::class);
+        $allocation = \Mockery::mock(Allocation::class);
         $allocation->shouldReceive('getAttribute')->with('id')->andReturn(100);
-        
+
         Allocation::shouldReceive('where')->andReturnSelf();
         Allocation::shouldReceive('first')->andReturn($allocation);
 
         // Mock egg
-        $egg = Mockery::mock(Egg::class);
+        $egg = \Mockery::mock(Egg::class);
         $egg->shouldReceive('getAttribute')->with('id')->andReturn(1);
         $egg->shouldReceive('getAttribute')->with('startup')->andReturn('startup command');
         $egg->shouldReceive('getAttribute')->with('docker_images')->andReturn(['image1']);
-        
+
         Egg::shouldReceive('findOrFail')->andReturn($egg);
 
         // Mock server creation to fail
@@ -122,24 +121,24 @@ class CreateServerServiceTest extends TestCase
         $request = $this->createMockRequest();
         $product = $this->createMockProduct();
         $order = $this->createMockOrder();
-        
+
         $metadata = new \stdClass();
         $metadata->node_id = 1;
         $metadata->variables = null;
 
         // Mock allocation exists
-        $allocation = Mockery::mock(Allocation::class);
+        $allocation = \Mockery::mock(Allocation::class);
         $allocation->shouldReceive('getAttribute')->with('id')->andReturn(100);
-        
+
         Allocation::shouldReceive('where')->andReturnSelf();
         Allocation::shouldReceive('first')->andReturn($allocation);
 
         // Mock egg
-        $egg = Mockery::mock(Egg::class);
+        $egg = \Mockery::mock(Egg::class);
         $egg->shouldReceive('getAttribute')->with('id')->andReturn(1);
         $egg->shouldReceive('getAttribute')->with('startup')->andReturn('startup command');
         $egg->shouldReceive('getAttribute')->with('docker_images')->andReturn(['image1']);
-        
+
         Egg::shouldReceive('findOrFail')->andReturn($egg);
 
         // Mock server creation to throw unexpected exception
@@ -161,13 +160,13 @@ class CreateServerServiceTest extends TestCase
      */
     private function createMockRequest(): Request
     {
-        $user = Mockery::mock('Everest\Models\User');
+        $user = \Mockery::mock('Everest\Models\User');
         $user->shouldReceive('getAttribute')->with('id')->andReturn(1);
         $user->shouldReceive('getAttribute')->with('username')->andReturn('testuser');
-        
-        $request = Mockery::mock(Request::class);
+
+        $request = \Mockery::mock(Request::class);
         $request->shouldReceive('user')->andReturn($user);
-        
+
         return $request;
     }
 
@@ -176,11 +175,11 @@ class CreateServerServiceTest extends TestCase
      */
     private function createMockProduct(): Product
     {
-        $category = Mockery::mock(Category::class);
+        $category = \Mockery::mock(Category::class);
         $category->shouldReceive('getAttribute')->with('nest_id')->andReturn(1);
         $category->shouldReceive('getDefaultEggId')->andReturn(1);
-        
-        $product = Mockery::mock(Product::class);
+
+        $product = \Mockery::mock(Product::class);
         $product->shouldReceive('getAttribute')->with('id')->andReturn(123);
         $product->shouldReceive('getAttribute')->with('name')->andReturn('Test Product');
         $product->shouldReceive('getAttribute')->with('category')->andReturn($category);
@@ -191,7 +190,7 @@ class CreateServerServiceTest extends TestCase
         $product->shouldReceive('getAttribute')->with('backup_limit')->andReturn(1);
         $product->shouldReceive('getAttribute')->with('allocation_limit')->andReturn(1);
         $product->shouldReceive('getRenewalDays')->andReturn(30);
-        
+
         return $product;
     }
 
@@ -200,10 +199,10 @@ class CreateServerServiceTest extends TestCase
      */
     private function createMockOrder(): Order
     {
-        $order = Mockery::mock(Order::class);
+        $order = \Mockery::mock(Order::class);
         $order->shouldReceive('getAttribute')->with('id')->andReturn(456);
         $order->shouldReceive('getAttribute')->with('egg_id')->andReturn(1);
-        
+
         return $order;
     }
 
@@ -212,7 +211,7 @@ class CreateServerServiceTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
+        \Mockery::close();
         parent::tearDown();
     }
 }

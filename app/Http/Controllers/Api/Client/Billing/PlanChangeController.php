@@ -2,8 +2,8 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
-use Illuminate\Http\JsonResponse;
 use Everest\Models\Server;
+use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
 use Everest\Exceptions\DisplayException;
@@ -24,10 +24,6 @@ class PlanChangeController extends ClientApiController
 
     /**
      * Get all available plans in the same category as the server's current plan.
-     * 
-     * @param GetServerRequest $request
-     * @param Server $server
-     * @return array
      */
     public function getAvailablePlans(GetServerRequest $request, Server $server): array
     {
@@ -36,17 +32,17 @@ class PlanChangeController extends ClientApiController
         }
 
         $currentProduct = Product::findOrFail($server->billing_product_id);
-        
+
         // Get the category to check if plan changes are allowed
         $category = Category::where('uuid', $currentProduct->category_uuid)->first();
-        
+
         // If category doesn't exist or plan changes are not allowed, return empty list
         if (!$category || !$category->allow_plan_changes) {
             return $this->fractal->collection(collect([]))
                 ->transformWith(ProductTransformer::class)
                 ->toArray();
         }
-        
+
         // Get all products in the same category
         $products = Product::where('category_uuid', $currentProduct->category_uuid)
             ->where('id', '!=', $currentProduct->id)
@@ -60,16 +56,11 @@ class PlanChangeController extends ClientApiController
     /**
      * Validate if a plan change is possible.
      * Returns validation results including any resource violations.
-     * 
-     * @param GetServerRequest $request
-     * @param Server $server
-     * @param int $productId
-     * @return JsonResponse
      */
     public function validatePlanChange(GetServerRequest $request, Server $server, int $productId): JsonResponse
     {
         $newProduct = Product::findOrFail($productId);
-        
+
         if (!$server->billing_product_id) {
             return response()->json([
                 'valid' => false,
@@ -78,7 +69,7 @@ class PlanChangeController extends ClientApiController
         }
 
         $currentProduct = Product::find($server->billing_product_id);
-        
+
         // Ensure products are in the same category
         if ($currentProduct && $currentProduct->category_uuid !== $newProduct->category_uuid) {
             return response()->json([
@@ -89,7 +80,7 @@ class PlanChangeController extends ClientApiController
 
         // Check for resource violations
         $violations = $this->validationService->validatePlanDowngrade($server, $newProduct);
-        
+
         if (!empty($violations)) {
             return response()->json([
                 'valid' => false,
@@ -106,18 +97,20 @@ class PlanChangeController extends ClientApiController
 
     /**
      * Apply a plan change to the server.
-     * 
-     * @param GetServerRequest $request
-     * @param Server $server
-     * @param int $productId
-     * @return JsonResponse
      */
     public function changePlan(GetServerRequest $request, Server $server, int $productId): JsonResponse
     {
         $newProduct = Product::findOrFail($productId);
         
+        // Validate and get billing_days from request
+        $validated = $request->validate([
+            'billing_days' => 'nullable|integer|min:1|max:365',
+        ]);
+        
+        $billingDays = $validated['billing_days'] ?? null;
+        
         try {
-            $updatedServer = $this->planChangeService->changePlan($server, $newProduct);
+            $updatedServer = $this->planChangeService->changePlan($server, $newProduct, false, $billingDays);
             
             return response()->json([
                 'success' => true,
@@ -126,6 +119,7 @@ class PlanChangeController extends ClientApiController
                     'id' => $updatedServer->id,
                     'uuid' => $updatedServer->uuid,
                     'billing_product_id' => $updatedServer->billing_product_id,
+                    'billing_days' => $updatedServer->billing_days,
                     'limits' => [
                         'memory' => $updatedServer->memory,
                         'disk' => $updatedServer->disk,

@@ -10,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
-use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
@@ -18,10 +17,11 @@ use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 
 /**
- * Unified Checkout Controller
- * 
+ * Unified Checkout Controller.
+ *
  * Handles both free and paid product purchases and renewals.
  * This controller consolidates billing operations that were previously split
  * between FreeProductController and PaymentController.
@@ -54,9 +54,6 @@ class CheckoutController extends ClientApiController
 
     /**
      * Process a free product purchase.
-     * 
-     * @param Request $request
-     * @return array
      */
     public function processFree(Request $request): array
     {
@@ -115,9 +112,6 @@ class CheckoutController extends ClientApiController
 
     /**
      * Renew a free server.
-     * 
-     * @param Request $request
-     * @return array
      */
     public function renewFree(Request $request): array
     {
@@ -151,13 +145,12 @@ class CheckoutController extends ClientApiController
 
     /**
      * Get Stripe public key.
-     * 
+     *
      * This endpoint is safe to call from the frontend as it only returns
      * the publishable key, which is meant to be public.
-     * 
-     * @param Request $request
+     *
      * @param int $id Product ID
-     * @return JsonResponse
+     *
      * @throws BillingExceptionClass if publishable key is missing or appears to be a secret key
      */
     public function getStripeKey(Request $request, int $id): JsonResponse
@@ -165,15 +158,7 @@ class CheckoutController extends ClientApiController
         $publicKey = (string) config('modules.billing.keys.publishable') ?? null;
 
         if (!$publicKey) {
-            throw new BillingExceptionClass(
-                'The Stripe Public API key is missing',
-                'Add the Stripe \'publishable\' key to your billing panel',
-                BillingException::TYPE_STOREFRONT,
-                null,
-                'stripe',
-                null,
-                ['key_missing' => true]
-            );
+            throw new BillingExceptionClass('The Stripe Public API key is missing', 'Add the Stripe \'publishable\' key to your billing panel', BillingException::TYPE_STOREFRONT, null, 'stripe', null, ['key_missing' => true]);
         }
 
         // SECURITY: Verify this is actually a publishable key, not a secret key
@@ -184,29 +169,13 @@ class CheckoutController extends ClientApiController
                 'detected_type' => 'secret_key',
                 'user_id' => $request->user()?->id,
             ]);
-            
-            throw new BillingExceptionClass(
-                'Critical security error: Secret key in public field',
-                'A secret key has been detected in the publishable key field. This is a severe security risk. Please reconfigure your Stripe keys immediately with the correct key types.',
-                BillingException::TYPE_STOREFRONT,
-                null,
-                'stripe',
-                null,
-                ['security_violation' => true]
-            );
+
+            throw new BillingExceptionClass('Critical security error: Secret key in public field', 'A secret key has been detected in the publishable key field. This is a severe security risk. Please reconfigure your Stripe keys immediately with the correct key types.', BillingException::TYPE_STOREFRONT, null, 'stripe', null, ['security_violation' => true]);
         }
 
         // Verify it looks like a valid Stripe publishable key
         if (!str_starts_with($publicKey, 'pk_')) {
-            throw new BillingExceptionClass(
-                'Invalid Stripe publishable key format',
-                'Publishable keys must start with \'pk_test_\' or \'pk_live_\'.',
-                BillingException::TYPE_STOREFRONT,
-                null,
-                'stripe',
-                null,
-                ['invalid_format' => true]
-            );
+            throw new BillingExceptionClass('Invalid Stripe publishable key format', 'Publishable keys must start with \'pk_test_\' or \'pk_live_\'.', BillingException::TYPE_STOREFRONT, null, 'stripe', null, ['invalid_format' => true]);
         }
 
         return response()->json(['key' => $publicKey]);
@@ -214,16 +183,15 @@ class CheckoutController extends ClientApiController
 
     /**
      * Create a Stripe payment intent.
-     * 
-     * @param Request $request
+     *
      * @param int $id Product ID
-     * @return JsonResponse
+     *
      * @throws BillingExceptionClass
      */
     public function createIntent(Request $request, int $id): JsonResponse
     {
         $this->ensureStripeInitialized();
-        
+
         $product = Product::findOrFail($id);
 
         try {
@@ -255,15 +223,7 @@ class CheckoutController extends ClientApiController
             ]);
 
             if (!$paymentIntent->client_secret) {
-                throw new BillingExceptionClass(
-                    'PaymentIntent client secret not generated',
-                    'The payment intent was created but the client secret was not generated. Please check your Stripe configuration.',
-                    BillingException::TYPE_PAYMENT,
-                    null,
-                    'stripe',
-                    $paymentIntent->id ?? null,
-                    ['product_id' => $product->id, 'amount' => $priceInfo['finalPrice']]
-                );
+                throw new BillingExceptionClass('PaymentIntent client secret not generated', 'The payment intent was created but the client secret was not generated. Please check your Stripe configuration.', BillingException::TYPE_PAYMENT, null, 'stripe', $paymentIntent->id ?? null, ['product_id' => $product->id, 'amount' => $priceInfo['finalPrice']]);
             }
 
             return response()->json([
@@ -278,50 +238,31 @@ class CheckoutController extends ClientApiController
                 'error' => $e->getMessage(),
                 'stripe_code' => $e->getStripeCode(),
             ]);
-            
-            throw new BillingExceptionClass(
-                'Stripe payment intent creation failed',
-                'Failed to create payment intent: ' . $e->getMessage() . '. Please check your payment details and try again.',
-                BillingException::TYPE_PAYMENT,
-                null,
-                'stripe',
-                null,
-                ['product_id' => $product->id, 'stripe_error' => $e->getStripeCode()],
-                $e
-            );
+
+            throw new BillingExceptionClass('Stripe payment intent creation failed', 'Failed to create payment intent: ' . $e->getMessage() . '. Please check your payment details and try again.', BillingException::TYPE_PAYMENT, null, 'stripe', null, ['product_id' => $product->id, 'stripe_error' => $e->getStripeCode()], $e);
         } catch (\Exception $e) {
             \Log::error('Payment intent creation exception', [
                 'product_id' => $product->id,
                 'error' => $e->getMessage(),
             ]);
-            
-            throw new BillingExceptionClass(
-                'Payment intent creation error',
-                'An unexpected error occurred while creating payment intent: ' . $e->getMessage(),
-                BillingException::TYPE_PAYMENT,
-                null,
-                'stripe',
-                null,
-                ['product_id' => $product->id, 'error' => $e->getMessage()],
-                $e
-            );
+
+            throw new BillingExceptionClass('Payment intent creation error', 'An unexpected error occurred while creating payment intent: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'stripe', null, ['product_id' => $product->id, 'error' => $e->getMessage()], $e);
         }
     }
 
     /**
      * Update a payment intent with order details.
-     * 
-     * @param Request $request
+     *
      * @param int|null $id Product ID
-     * @return Response
+     *
      * @throws BillingExceptionClass
      */
     public function updateIntent(Request $request, ?int $id = null): Response
     {
         $this->ensureStripeInitialized();
-        
+
         $product = Product::findOrFail($id);
-        
+
         try {
             $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
 
@@ -340,7 +281,7 @@ class CheckoutController extends ClientApiController
 
             $nodeId = (int) $request->input('node_id');
             $server = null;
-            
+
             // Only validate node deployment for new purchases, not renewals
             if (!$isRenewal) {
                 $this->validationService->validateNodeDeployment($nodeId, false);
@@ -356,15 +297,7 @@ class CheckoutController extends ClientApiController
             }
 
             if (!$intent) {
-                throw new BillingExceptionClass(
-                    'PaymentIntent does not exist',
-                    'The payment intent requested does not exist. Please try creating a new payment.',
-                    BillingException::TYPE_PAYMENT,
-                    null,
-                    'stripe',
-                    $request->input('intent'),
-                    ['intent_id' => $request->input('intent')]
-                );
+                throw new BillingExceptionClass('PaymentIntent does not exist', 'The payment intent requested does not exist. Please try creating a new payment.', BillingException::TYPE_PAYMENT, null, 'stripe', $request->input('intent'), ['intent_id' => $request->input('intent')]);
             }
 
             // For renewals, egg_id is not required
@@ -383,8 +316,8 @@ class CheckoutController extends ClientApiController
             $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType, $billingDays, $nodeId);
 
             // Update the intent amount if it has changed
-            if ($intent->amount !== (int)($priceInfo['finalPrice'] * 100)) {
-                $intent->amount = (int)($priceInfo['finalPrice'] * 100);
+            if ($intent->amount !== (int) ($priceInfo['finalPrice'] * 100)) {
+                $intent->amount = (int) ($priceInfo['finalPrice'] * 100);
             }
 
             $metadata = [
@@ -429,47 +362,27 @@ class CheckoutController extends ClientApiController
                 'error' => $e->getMessage(),
                 'stripe_code' => $e->getStripeCode(),
             ]);
-            
-            throw new BillingExceptionClass(
-                'Stripe payment intent update failed',
-                'Failed to update payment intent: ' . $e->getMessage() . '. Please try again.',
-                BillingException::TYPE_PAYMENT,
-                null,
-                'stripe',
-                $request->input('intent'),
-                ['stripe_error' => $e->getStripeCode()],
-                $e
-            );
+
+            throw new BillingExceptionClass('Stripe payment intent update failed', 'Failed to update payment intent: ' . $e->getMessage() . '. Please try again.', BillingException::TYPE_PAYMENT, null, 'stripe', $request->input('intent'), ['stripe_error' => $e->getStripeCode()], $e);
         } catch (\Exception $e) {
             \Log::error('Payment intent update exception', [
                 'intent_id' => $request->input('intent'),
                 'error' => $e->getMessage(),
             ]);
-            
-            throw new BillingExceptionClass(
-                'Payment intent update error',
-                'An unexpected error occurred while updating payment intent: ' . $e->getMessage(),
-                BillingException::TYPE_PAYMENT,
-                null,
-                'stripe',
-                $request->input('intent'),
-                ['error' => $e->getMessage()],
-                $e
-            );
+
+            throw new BillingExceptionClass('Payment intent update error', 'An unexpected error occurred while updating payment intent: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'stripe', $request->input('intent'), ['error' => $e->getMessage()], $e);
         }
     }
 
     /**
      * Process a paid order.
-     * 
-     * @param Request $request
-     * @return Response
+     *
      * @throws BillingExceptionClass
      */
     public function processPaid(Request $request): Response
     {
         $this->ensureStripeInitialized();
-        
+
         try {
             $order = Order::where('user_id', $request->user()->id)->latest()->first();
             $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
@@ -478,15 +391,7 @@ class CheckoutController extends ClientApiController
             $this->validationService->validateBillingEnabled();
 
             if (!$intent) {
-                throw new BillingExceptionClass(
-                    'Unable to fetch PaymentIntent',
-                    'Unable to fetch payment intent from Stripe. Please try again or contact support.',
-                    BillingException::TYPE_PAYMENT,
-                    $order?->id,
-                    'stripe',
-                    $request->input('intent'),
-                    ['intent_id' => $request->input('intent')]
-                );
+                throw new BillingExceptionClass('Unable to fetch PaymentIntent', 'Unable to fetch payment intent from Stripe. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order?->id, 'stripe', $request->input('intent'), ['intent_id' => $request->input('intent')]);
             }
 
             // Check if order has already been processed
@@ -500,15 +405,7 @@ class CheckoutController extends ClientApiController
             // If the payment wasn't successful, mark the order as failed
             if ($intent->status !== 'requires_capture') {
                 $order->update(['status' => Order::STATUS_FAILED]);
-                throw new BillingExceptionClass(
-                    'Payment not ready for capture',
-                    'The payment was not successful or is not ready to be captured. Status: ' . $intent->status,
-                    BillingException::TYPE_PAYMENT,
-                    $order->id,
-                    'stripe',
-                    $intent->id,
-                    ['intent_status' => $intent->status]
-                );
+                throw new BillingExceptionClass('Payment not ready for capture', 'The payment was not successful or is not ready to be captured. Status: ' . $intent->status, BillingException::TYPE_PAYMENT, $order->id, 'stripe', $intent->id, ['intent_status' => $intent->status]);
             }
 
             // Use centralized fulfillment service to create/renew server
@@ -522,30 +419,12 @@ class CheckoutController extends ClientApiController
                     // Payment capture failed - delete the server and log exception
                     $server->delete();
 
-                    throw new BillingExceptionClass(
-                        'Failed to capture payment via Stripe',
-                        'The server was created but payment capture failed: ' . $ex->getMessage() . '. The server has been removed. Please try again.',
-                        BillingException::TYPE_PAYMENT,
-                        $order->id,
-                        'stripe',
-                        $intent->id,
-                        ['stripe_error' => $ex->getStripeCode(), 'server_id' => $server->id],
-                        $ex
-                    );
+                    throw new BillingExceptionClass('Failed to capture payment via Stripe', 'The server was created but payment capture failed: ' . $ex->getMessage() . '. The server has been removed. Please try again.', BillingException::TYPE_PAYMENT, $order->id, 'stripe', $intent->id, ['stripe_error' => $ex->getStripeCode(), 'server_id' => $server->id], $ex);
                 } catch (\Exception $ex) {
                     // Unexpected error during capture - delete the server
                     $server->delete();
 
-                    throw new BillingExceptionClass(
-                        'Unexpected error during payment capture',
-                        'An unexpected error occurred while capturing payment: ' . $ex->getMessage() . '. The server has been removed. Please try again.',
-                        BillingException::TYPE_PAYMENT,
-                        $order->id,
-                        'stripe',
-                        $intent->id,
-                        ['server_id' => $server->id, 'error' => $ex->getMessage()],
-                        $ex
-                    );
+                    throw new BillingExceptionClass('Unexpected error during payment capture', 'An unexpected error occurred while capturing payment: ' . $ex->getMessage() . '. The server has been removed. Please try again.', BillingException::TYPE_PAYMENT, $order->id, 'stripe', $intent->id, ['server_id' => $server->id, 'error' => $ex->getMessage()], $ex);
                 }
             }
 
@@ -558,63 +437,34 @@ class CheckoutController extends ClientApiController
                 'error' => $e->getMessage(),
                 'stripe_code' => $e->getStripeCode(),
             ]);
-            
+
             $order = Order::where('user_id', $request->user()->id)->latest()->first();
-            throw new BillingExceptionClass(
-                'Stripe order processing failed',
-                'Failed to process order: ' . $e->getMessage() . '. Please contact support.',
-                BillingException::TYPE_PAYMENT,
-                $order?->id,
-                'stripe',
-                $request->input('intent'),
-                ['stripe_error' => $e->getStripeCode()],
-                $e
-            );
+            throw new BillingExceptionClass('Stripe order processing failed', 'Failed to process order: ' . $e->getMessage() . '. Please contact support.', BillingException::TYPE_PAYMENT, $order?->id, 'stripe', $request->input('intent'), ['stripe_error' => $e->getStripeCode()], $e);
         } catch (\Exception $e) {
             \Log::error('Order processing exception', [
                 'intent_id' => $request->input('intent'),
                 'error' => $e->getMessage(),
             ]);
-            
+
             $order = Order::where('user_id', $request->user()->id)->latest()->first();
-            throw new BillingExceptionClass(
-                'Order processing error',
-                'An unexpected error occurred while processing your order: ' . $e->getMessage(),
-                BillingException::TYPE_PAYMENT,
-                $order?->id,
-                'stripe',
-                $request->input('intent'),
-                ['error' => $e->getMessage()],
-                $e
-            );
+            throw new BillingExceptionClass('Order processing error', 'An unexpected error occurred while processing your order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, $order?->id, 'stripe', $request->input('intent'), ['error' => $e->getMessage()], $e);
         }
     }
 
     /**
      * Ensure Stripe client is initialized.
-     * 
+     *
      * @throws BillingExceptionClass if Stripe is not configured
      */
     private function ensureStripeInitialized(): void
     {
         if (!$this->stripe) {
-            throw new BillingExceptionClass(
-                'Stripe is not configured',
-                'Stripe payment processing is not configured. Please contact support or try a different payment method.',
-                BillingException::TYPE_STOREFRONT,
-                null,
-                'stripe',
-                null,
-                ['configured' => false]
-            );
+            throw new BillingExceptionClass('Stripe is not configured', 'Stripe payment processing is not configured. Please contact support or try a different payment method.', BillingException::TYPE_STOREFRONT, null, 'stripe', null, ['configured' => false]);
         }
     }
 
     /**
      * Determine the order type (NEW, UPGRADE, or RENEWAL).
-     * 
-     * @param Request $request
-     * @return string
      */
     private function getOrderType(Request $request): string
     {

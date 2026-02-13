@@ -136,7 +136,7 @@ class FileController extends ClientApiController
 
         if ($this->diffService->isTextFile($file) && $originalContent !== null) {
             $diff = $this->diffService->calculateDiff($originalContent, $content, $file);
-            
+
             $activity->property('diff', [
                 'additions' => $diff['additions'],
                 'deletions' => $diff['deletions'],

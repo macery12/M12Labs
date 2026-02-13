@@ -8,7 +8,7 @@ import { ActivityLog, Transformers } from '@definitions/account';
 import useFilteredObject from '@/plugins/useFilteredObject';
 import { useUserSWRKey } from '@/plugins/useSWRKey';
 
-export type ActivityLogFilters = QueryBuilderParams<'ip' | 'event', 'timestamp'>;
+export type ActivityLogFilters = QueryBuilderParams<'ip' | 'event' | 'search' | 'actor', 'timestamp'>;
 
 const useActivityLogs = (
     filters?: ActivityLogFilters,
@@ -32,4 +32,14 @@ const useActivityLogs = (
     );
 };
 
-export { useActivityLogs };
+const getActivityUsers = async (): Promise<Array<{ uuid: string; username: string }>> => {
+    const { data } = await http.get('/api/application/activity/users');
+    return data.data;
+};
+
+const getActivityEvents = async (): Promise<string[]> => {
+    const { data } = await http.get('/api/application/activity/events');
+    return data.data;
+};
+
+export { useActivityLogs, getActivityUsers, getActivityEvents };

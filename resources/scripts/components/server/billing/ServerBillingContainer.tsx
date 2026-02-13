@@ -333,7 +333,7 @@ export default () => {
                                         <div>
                                             <p css={tw`text-gray-300 text-sm mb-3`}>
                                                 {daysRemaining >= 0 ? (
-                                                    <>Renew for {freeRenewalDays} more days.</>
+                                                    <>Renew for {actualBillingDays} more days.</>
                                                 ) : (
                                                     <>
                                                         Grace period: {daysOverdue}/{actualGracePeriod} days

@@ -3,8 +3,8 @@
 namespace Everest\Services\AI;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Exception\GuzzleException;
 use Everest\Exceptions\Service\AI\AIServiceException;
 
 class OpenAIService
@@ -32,7 +32,7 @@ class OpenAIService
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
             'timeout' => 120,
-            #'stream' => true, // Enable streaming support
+            // 'stream' => true, // Enable streaming support
         ]);
     }
 
@@ -52,12 +52,12 @@ class OpenAIService
             $headers = [
                 'Content-Type' => 'application/json',
             ];
-            
+
             // Only add Authorization header if API key is provided (OpenAI mode)
             if (!empty($this->apiKey)) {
                 $headers['Authorization'] = 'Bearer ' . $this->apiKey;
             }
-            
+
             // Build request payload based on mode
             if ($this->mode === 'openai') {
                 // OpenAI new API format
@@ -67,17 +67,17 @@ class OpenAIService
                         [
                             'role' => 'system',
                             'content' => [
-                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
-                            ]
+                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt],
+                            ],
                         ],
                         [
                             'role' => 'user',
                             'content' => [
-                                ['type' => 'input_text', 'text' => $prompt]
-                            ]
-                        ]
+                                ['type' => 'input_text', 'text' => $prompt],
+                            ],
+                        ],
                     ],
-                    'max_output_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'max_output_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
                 ];
             } else {
                 // Ollama format (keep existing)
@@ -93,14 +93,14 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
                     'temperature' => $options['temperature'] ?? 0.7,
                     'stream' => $options['stream'] ?? false,
                 ];
             }
 
             $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
-            
+
             $response = $this->client->post($endpoint, [
                 'headers' => $headers,
                 'json' => $payload,
@@ -149,9 +149,11 @@ class OpenAIService
     {
         try {
             $this->query('Hello, this is a test message. Please respond with OK.');
+
             return true;
         } catch (AIServiceException $e) {
             Log::warning('AI Service connection test failed: ' . $e->getMessage());
+
             return false;
         }
     }
@@ -173,12 +175,12 @@ class OpenAIService
                 'Content-Type' => 'application/json',
                 'Accept' => 'text/event-stream',
             ];
-            
+
             // Only add Authorization header if API key is provided (OpenAI mode)
             if (!empty($this->apiKey)) {
                 $headers['Authorization'] = 'Bearer ' . $this->apiKey;
             }
-            
+
             // Build request payload based on mode
             if ($this->mode === 'openai') {
                 // OpenAI new API format
@@ -188,17 +190,17 @@ class OpenAIService
                         [
                             'role' => 'system',
                             'content' => [
-                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt]
-                            ]
+                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt],
+                            ],
                         ],
                         [
                             'role' => 'user',
                             'content' => [
-                                ['type' => 'input_text', 'text' => $prompt]
-                            ]
-                        ]
+                                ['type' => 'input_text', 'text' => $prompt],
+                            ],
+                        ],
                     ],
-                    'max_output_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'max_output_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
                 ];
             } else {
                 // Ollama format (keep existing)
@@ -214,14 +216,14 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int)config('modules.ai.max_tokens', 200),
+                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
                     'temperature' => $options['temperature'] ?? 0.7,
                     'stream' => true,
                 ];
             }
 
             $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
-            
+
             $response = $this->client->post($endpoint, [
                 'headers' => $headers,
                 'json' => $payload,
@@ -268,7 +270,7 @@ class OpenAIService
                                 }
                             }
                         }
-                        
+
                         $currentEvent = null; // Reset event after processing data
                     }
                 }

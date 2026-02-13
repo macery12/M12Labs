@@ -20,15 +20,13 @@ class BillingCycleController extends ClientApiController
 
     /**
      * Get available billing cycles for a product with prices.
-     * 
-     * @param Request $request
+     *
      * @param int $id The product ID from the route
-     * @return JsonResponse
      */
     public function index(Request $request, int $id): JsonResponse
     {
         $product = Product::findOrFail($id);
-        
+
         // Get billing cycles with calculated prices
         $cycles = $this->billingCycleService->getAvailableCycles($product);
 
@@ -43,7 +41,7 @@ class BillingCycleController extends ClientApiController
                     $request->input('type', 'new'),
                     $cycle['days']
                 );
-                
+
                 $cycle['price_with_coupon'] = $priceInfo['finalPrice'];
                 $cycle['coupon_discount'] = $priceInfo['discount'];
             }

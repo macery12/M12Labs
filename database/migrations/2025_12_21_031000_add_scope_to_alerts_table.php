@@ -4,15 +4,14 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::table('alerts', function (Blueprint $table) {
-            $table->string('scope')->default('global')->after('position'); 
+            $table->string('scope')->default('global')->after('position');
             // Scopes: global, dashboard, server, billing, account, admin
             $table->boolean('show_button')->default(false)->after('dismissible');
             // Whether to show a floating button to reopen dismissed popup alerts

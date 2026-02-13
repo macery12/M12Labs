@@ -71,71 +71,108 @@ export default ({ activity, children }: Props) => {
 
     return (
         <div
-            className={'group grid grid-cols-10 py-4 last:rounded-b last:border-0 border-b-2 border-black/50'}
+            className={'group grid grid-cols-10 py-5 px-4 last:rounded-b last:border-0 border-b border-slate-600/50 hover:bg-slate-600/30 transition-colors duration-150'}
             style={{ backgroundColor: colors.secondary }}
         >
-            <div className={'hidden select-none items-center justify-center 2xl:col-span-1 2xl:flex'}>
-                <div className={'flex h-10 w-10 items-center overflow-hidden rounded-full bg-slate-600'}>
+            {/* Avatar Column - Always visible on larger screens */}
+            <div className={'hidden items-start justify-center pt-1 sm:col-span-1 sm:flex 2xl:col-span-1'}>
+                <div className={'flex h-12 w-12 items-center overflow-hidden rounded-full bg-slate-600 ring-2 ring-slate-500/50'}>
                     <Avatar name={actor?.uuid || 'system'} />
                 </div>
             </div>
+
+            {/* Content Column */}
             <div className={'col-span-10 flex flex-col sm:col-span-9'}>
-                <div className={'flex'}>
-                    <div className={'flex-1 px-4 sm:px-0'}>
-                        <div className={'flex items-center text-slate-50'}>
-                            <Tooltip placement={'top'} content={actor?.email || 'System User'}>
-                                <span className={'font-bold'}>{actor?.username || 'System'}</span>
-                            </Tooltip>
-                            <span className={'text-slate-400 mx-2'}>&bull;</span>
-                            <Link
-                                to={`#${pathTo({ event: activity.event })}`}
-                                className={
-                                    'text-gray-300 transition-colors duration-75 hover:text-cyan-400 active:text-cyan-400'
-                                }
-                            >
-                                {activity.description ?? activity.event}
-                            </Link>
-                            <div className={classNames(style.icons, 'group-hover:text-slate-300')}>
-                                {activity.isApi && (
-                                    <Tooltip placement={'top'} content={'Using API Key'}>
-                                        <TerminalIcon />
+                <div className={'flex flex-col space-y-2'}>
+                    {/* Main Info Row */}
+                    <div className={'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2'}>
+                        <div className={'flex-1 min-w-0'}>
+                            {/* User and Action */}
+                            <div className={'flex flex-wrap items-center gap-x-2 gap-y-1'}>
+                                <div className={'flex items-center gap-2'}>
+                                    {/* Mobile Avatar */}
+                                    <div className={'flex h-8 w-8 items-center overflow-hidden rounded-full bg-slate-600 sm:hidden'}>
+                                        <Avatar name={actor?.uuid || 'system'} />
+                                    </div>
+                                    <Tooltip placement={'top'} content={actor?.email || 'System User'}>
+                                        <span className={'font-semibold text-slate-50 text-base'}>
+                                            {actor?.username || 'System'}
+                                        </span>
                                     </Tooltip>
-                                )}
-                                {activity.event.startsWith('server:sftp.') && (
-                                    <Tooltip placement={'top'} content={'Using SFTP'}>
-                                        <FolderOpenIcon />
-                                    </Tooltip>
-                                )}
-                                {children}
+                                </div>
+                                <div className={classNames(style.icons, 'group-hover:text-slate-300')}>
+                                    {activity.isApi && (
+                                        <Tooltip placement={'top'} content={'Using API Key'}>
+                                            <TerminalIcon />
+                                        </Tooltip>
+                                    )}
+                                    {activity.event.startsWith('server:sftp.') && (
+                                        <Tooltip placement={'top'} content={'Using SFTP'}>
+                                            <FolderOpenIcon />
+                                        </Tooltip>
+                                    )}
+                                    {children}
+                                </div>
                             </div>
-                        </div>
-                        <p className={style.description}>
-                            <Translate ns={'activity'} values={properties} i18nKey={activity.event.replace(':', '.')} />
-                        </p>
-                        {fileDiff && (
-                            <div className="mt-2 text-xs text-slate-400">
-                                <span className="text-green-400">+{fileDiff.additions}</span>
-                                <span className="mx-1">/</span>
-                                <span className="text-red-400">-{fileDiff.deletions}</span>
-                                <span className="ml-1">lines changed</span>
+
+                            {/* Action Description */}
+                            <div className={'mt-1.5'}>
+                                <Link
+                                    to={`#${pathTo({ event: activity.event })}`}
+                                    className={
+                                        'font-medium text-slate-200 transition-colors duration-75 hover:text-cyan-400 active:text-cyan-400'
+                                    }
+                                >
+                                    {activity.description ?? activity.event}
+                                </Link>
                             </div>
-                        )}
-                        <div className={'mt-1 flex items-center text-sm'}>
-                            {activity.ip && (
-                                <span>
-                                    {activity.ip}
-                                    <span className={'text-slate-400'}>&nbsp;|&nbsp;</span>
-                                </span>
+
+                            {/* Activity Details */}
+                            <p className={classNames(style.description, 'mt-1')}>
+                                <Translate ns={'activity'} values={properties} i18nKey={activity.event.replace(':', '.')} />
+                            </p>
+
+                            {fileDiff && (
+                                <div className="mt-2 text-xs text-slate-400">
+                                    <span className="text-green-400">+{fileDiff.additions}</span>
+                                    <span className="mx-1">/</span>
+                                    <span className="text-red-400">-{fileDiff.deletions}</span>
+                                    <span className="ml-1">lines changed</span>
+                                </div>
                             )}
-                            <Tooltip placement={'right'} content={format(activity.timestamp, 'MMM do, yyyy H:mm:ss')}>
-                                <span>{formatDistanceToNowStrict(activity.timestamp, { addSuffix: true })}</span>
+                        </div>
+
+                        {/* Timestamp - Right aligned on desktop */}
+                        <div className={'flex-shrink-0'}>
+                            <Tooltip placement={'top'} content={format(activity.timestamp, 'MMM do, yyyy H:mm:ss')}>
+                                <span className={'text-sm text-slate-400'}>
+                                    {formatDistanceToNowStrict(activity.timestamp, { addSuffix: true })}
+                                </span>
                             </Tooltip>
                         </div>
                     </div>
-                    {activity.hasAdditionalMetadata && <ActivityLogMetaButton meta={activity.properties} />}
+
+                    {/* Secondary Info Row */}
+                    <div className={'flex items-center justify-between text-xs text-slate-500'}>
+                        <div className={'flex items-center gap-2'}>
+                            {activity.ip && (
+                                <span className={'font-mono bg-slate-700/50 px-2 py-0.5 rounded'}>
+                                    {activity.ip}
+                                </span>
+                            )}
+                            {activity.id && (
+                                <span className={'text-slate-600'}>
+                                    ID: {activity.id.substring(0, 8)}
+                                </span>
+                            )}
+                        </div>
+                        {activity.hasAdditionalMetadata && <ActivityLogMetaButton meta={activity.properties} />}
+                    </div>
                 </div>
+
+                {/* File Diff */}
                 {fileDiff && (
-                    <div className="mt-3 px-4 sm:px-0">
+                    <div className="mt-3">
                         <FileDiffViewer diff={fileDiff} />
                     </div>
                 )}

@@ -35,13 +35,13 @@ class ServerTransformer extends Transformer
         $service = Container::getInstance()->make(StartupCommandService::class);
 
         $user = $this->request->user();
-        
+
         // Check if server supports modpacks by checking for required environment variables
         $modpacksSupported = false;
         if ($server->mods_enabled && $server->relationLoaded('variables')) {
             $hasProjectId = false;
             $hasVersionId = false;
-            
+
             foreach ($server->variables as $variable) {
                 if ($variable->env_variable === 'PROJECT_ID') {
                     $hasProjectId = true;
@@ -54,7 +54,7 @@ class ServerTransformer extends Transformer
                     break;
                 }
             }
-            
+
             $modpacksSupported = $hasProjectId && $hasVersionId;
         }
 

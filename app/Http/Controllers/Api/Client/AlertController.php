@@ -3,8 +3,8 @@
 namespace Everest\Http\Controllers\Api\Client;
 
 use Everest\Models\Alert;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class AlertController extends ClientApiController
 {
@@ -16,7 +16,7 @@ class AlertController extends ClientApiController
     {
         $scope = $request->input('scope', 'global');
         $user = $request->user();
-        
+
         $alerts = Alert::active()
             ->forScope($scope)
             ->forUser($user->id)

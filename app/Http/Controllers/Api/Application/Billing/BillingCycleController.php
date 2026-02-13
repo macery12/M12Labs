@@ -2,9 +2,9 @@
 
 namespace Everest\Http\Controllers\Api\Application\Billing;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\BillingCycle;
 use Everest\Services\Billing\BillingCycleService;
@@ -46,14 +46,14 @@ class BillingCycleController extends ApplicationApiController
             'request_path' => $request->path(),
             'route_params' => $request->route()->parameters(),
         ]);
-        
+
         $productModel = Product::findOrFail($product);
-        
+
         \Log::info('Product loaded', [
             'product_id' => $productModel->id,
             'product_name' => $productModel->name,
         ]);
-        
+
         $validated = $request->validate([
             'cycles' => 'required|array',
             'cycles.*.days' => 'required|integer|min:1|max:365',

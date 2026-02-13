@@ -5,18 +5,18 @@ namespace Everest\Services\Billing;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
+use Illuminate\Support\Facades\DB;
 use Everest\Models\Billing\Product;
+use Illuminate\Support\Facades\Log;
 use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Central server fulfillment service for paid orders.
- * 
+ *
  * This service centralizes the server creation/renewal logic for all payment processors
  * (Stripe, PayPal, Mollie). It ensures consistent behavior and reduces code duplication.
- * 
+ *
  * Key responsibilities:
  * - Idempotency checks to prevent duplicate order processing
  * - Routing to renewal or new server creation based on order type
@@ -33,28 +33,30 @@ class ServerFulfillmentService
 
     /**
      * Fulfill an order by creating a server or processing a renewal.
-     * 
+     *
      * This method handles the complete fulfillment process:
      * 1. Validates the order hasn't already been processed (idempotency)
      * 2. Creates a new server OR processes a renewal based on order type
      * 3. Records coupon usage if applicable
      * 4. Updates order status to processed
-     * 
+     *
      * IMPORTANT: Server creation must be committed BEFORE calling Wings to ensure
      * the server exists in the database when Wings calls back to fetch configuration.
      * We use optimistic concurrency control to prevent duplicate processing.
-     * 
+     *
      * @param Request $request The HTTP request
      * @param Order $order The order to fulfill
      * @param object|null $paymentMetadata Optional metadata from payment processor (Stripe, PayPal, Mollie)
+     *
      * @return Server The created or renewed server
+     *
      * @throws DisplayException if order is already processed or fulfillment fails
      */
     public function fulfillOrder(Request $request, Order $order, ?object $paymentMetadata = null): Server
     {
         // Refresh order to get latest status
         $order->refresh();
-        
+
         // Idempotency check: if order is already processed, don't process again
         // This is a normal scenario in concurrent webhook/payment systems
         if ($order->status === Order::STATUS_PROCESSED) {
@@ -85,14 +87,14 @@ class ServerFulfillmentService
                 // Optimistic concurrency control: fetch fresh order instance
                 // This ensures we're working with the latest data and prevents race conditions
                 $currentOrder = Order::where('id', $order->id)->firstOrFail();
-                
+
                 if ($currentOrder->status === Order::STATUS_PROCESSED) {
                     DB::rollBack();
                     Log::info("Order {$currentOrder->id} was processed by another request during fulfillment");
                     // Server is created, order is marked processed - this is OK
                     return $server;
                 }
-                
+
                 // Record coupon usage for non-renewal orders
                 // (Renewals are handled by OrderProcessorService)
                 // Use $currentOrder (fresh instance) to ensure we're working with latest data
@@ -116,9 +118,9 @@ class ServerFulfillmentService
                 // Log the error but don't throw - return the server
                 Log::warning("Order {$order->id} - server {$server->id} created successfully, but status update failed. Manual intervention may be needed.");
             }
-            
+
             Log::info("Successfully fulfilled order {$order->id}, server {$server->id}");
-            
+
             return $server;
         } catch (\Exception $e) {
             Log::error("Failed to fulfill order {$order->id}: " . $e->getMessage());
@@ -128,10 +130,12 @@ class ServerFulfillmentService
 
     /**
      * Process a renewal order.
-     * 
+     *
      * @param Order $order The renewal order
      * @param Product $product The product to renew with
+     *
      * @return Server The renewed server
+     *
      * @throws DisplayException if server ID is missing
      */
     private function processRenewal(Order $order, Product $product): Server
@@ -140,7 +144,7 @@ class ServerFulfillmentService
         if (!$order->server_id) {
             throw new DisplayException('Server ID not found in order record for renewal.');
         }
-        
+
         $server = Server::findOrFail($order->server_id);
 
         // Get billing days from the order, or fall back to server's billing_days, or default to 30
@@ -148,19 +152,20 @@ class ServerFulfillmentService
 
         // Use the unified processor service for renewal
         $result = $this->processorService->processRenewal($server, $product, $order->coupon_id, $billingDays);
-        
+
         Log::info("Completed server renewal for order {$order->id}, server {$server->id}");
-        
+
         return $result['server'];
     }
 
     /**
      * Process a new server order.
-     * 
+     *
      * @param Request $request The HTTP request
      * @param Order $order The new server order
      * @param Product $product The product being purchased
      * @param object|null $paymentMetadata Optional metadata from payment processor
+     *
      * @return Server The created server
      */
     private function processNewServer(Request $request, Order $order, Product $product, ?object $paymentMetadata = null): Server
@@ -177,19 +182,20 @@ class ServerFulfillmentService
 
         // Create the server using the centralized creation service
         $server = $this->serverCreation->process($request, $product, $metadata, $order);
-        
+
         Log::info("Created new server {$server->id} for order {$order->id}");
-        
+
         return $server;
     }
 
     /**
      * Build metadata object for server creation.
-     * 
+     *
      * Prefers payment metadata if available (Stripe), otherwise uses order data (PayPal, Mollie).
-     * 
+     *
      * @param Order $order The order containing server creation data
      * @param object|null $paymentMetadata Optional metadata from payment processor
+     *
      * @return object Metadata object with required fields
      */
     private function buildMetadata(Order $order, ?object $paymentMetadata = null): object
@@ -198,13 +204,14 @@ class ServerFulfillmentService
         if ($paymentMetadata !== null) {
             // Create a copy to avoid modifying the original
             $metadata = clone $paymentMetadata;
-            
+
             // Decode variables if they're JSON encoded
             if (isset($metadata->variables) && !empty($metadata->variables)) {
                 if (is_string($metadata->variables)) {
                     $metadata->variables = json_decode($metadata->variables, true) ?? [];
                 }
             }
+
             return $metadata;
         }
 
@@ -221,9 +228,9 @@ class ServerFulfillmentService
 
     /**
      * Record coupon usage for an order.
-     * 
+     *
      * Uses firstOrCreate to be idempotent and avoid race conditions.
-     * 
+     *
      * @param Order $order The order to record coupon usage for
      */
     private function recordCouponUsage(Order $order): void
@@ -237,7 +244,7 @@ class ServerFulfillmentService
                 'used_at' => now(),
             ]
         );
-        
+
         Log::info("Recorded coupon usage for order {$order->id}");
     }
 }

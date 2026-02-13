@@ -2,9 +2,9 @@
 
 namespace Everest\Tests\Unit\Models\Billing;
 
-use Everest\Tests\TestCase;
 use Everest\Models\Node;
 use Everest\Models\Setting;
+use Everest\Tests\TestCase;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,7 +19,7 @@ class NodePriceMultiplierTest extends TestCase
     public function testDefaultNodePriceMultiplierIsOne()
     {
         $node = Node::factory()->create();
-        
+
         $this->assertEquals(1.0, $node->price_multiplier);
     }
 
@@ -30,7 +30,7 @@ class NodePriceMultiplierTest extends TestCase
     {
         $node = new Node();
         $fillable = $node->getFillable();
-        
+
         $this->assertContains('price_multiplier', $fillable);
     }
 
@@ -41,7 +41,7 @@ class NodePriceMultiplierTest extends TestCase
     {
         $node = new Node();
         $casts = $node->getCasts();
-        
+
         $this->assertArrayHasKey('price_multiplier', $casts);
         $this->assertEquals('float', $casts['price_multiplier']);
     }
@@ -62,7 +62,7 @@ class NodePriceMultiplierTest extends TestCase
             'description' => 'Test',
             'nest_id' => 1,
         ]);
-        
+
         $product = Product::create([
             'name' => 'Test Product',
             'description' => 'Test',
@@ -78,7 +78,7 @@ class NodePriceMultiplierTest extends TestCase
 
         // Set default billing days
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
-        
+
         // Calculate price for 30 days with node multiplier
         $result = $product->calculatePrice(30, $node->id);
 
@@ -98,7 +98,7 @@ class NodePriceMultiplierTest extends TestCase
             'description' => 'Test',
             'nest_id' => 1,
         ]);
-        
+
         $product = Product::create([
             'name' => 'Test Product',
             'description' => 'Test',
@@ -113,7 +113,7 @@ class NodePriceMultiplierTest extends TestCase
         ]);
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
-        
+
         // Calculate price without node
         $result = $product->calculatePrice(30);
 
@@ -132,7 +132,7 @@ class NodePriceMultiplierTest extends TestCase
             'description' => 'Test',
             'nest_id' => 1,
         ]);
-        
+
         $product = Product::create([
             'name' => 'Test Product',
             'description' => 'Test',
@@ -147,7 +147,7 @@ class NodePriceMultiplierTest extends TestCase
         ]);
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
-        
+
         // Calculate price with non-existent node ID
         $result = $product->calculatePrice(30, 99999);
 
@@ -170,7 +170,7 @@ class NodePriceMultiplierTest extends TestCase
             'description' => 'Test',
             'nest_id' => 1,
         ]);
-        
+
         $product = Product::create([
             'name' => 'Test Product',
             'description' => 'Test',
@@ -185,7 +185,7 @@ class NodePriceMultiplierTest extends TestCase
         ]);
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
-        
+
         $result = $product->calculatePrice(30, $node->id);
 
         // Price should be rounded to 2 decimal places
@@ -207,7 +207,7 @@ class NodePriceMultiplierTest extends TestCase
             'description' => 'Test',
             'nest_id' => 1,
         ]);
-        
+
         $product = Product::create([
             'name' => 'Test Product',
             'description' => 'Test',
@@ -222,7 +222,7 @@ class NodePriceMultiplierTest extends TestCase
         ]);
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
-        
+
         $result = $product->calculatePrice(30, $node->id);
 
         $this->assertEquals(0.0, $result['price']);
@@ -243,7 +243,7 @@ class NodePriceMultiplierTest extends TestCase
             'description' => 'Test',
             'nest_id' => 1,
         ]);
-        
+
         $product = Product::create([
             'name' => 'Test Product',
             'description' => 'Test',
@@ -258,7 +258,7 @@ class NodePriceMultiplierTest extends TestCase
         ]);
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
-        
+
         $result = $product->calculatePrice(30, $node->id);
 
         // Expected: $10 * 1.0 * 0.85 = $8.50
@@ -280,7 +280,7 @@ class NodePriceMultiplierTest extends TestCase
             'description' => 'Test',
             'nest_id' => 1,
         ]);
-        
+
         $product = Product::create([
             'name' => 'Test Product',
             'description' => 'Test',
@@ -295,7 +295,7 @@ class NodePriceMultiplierTest extends TestCase
         ]);
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
-        
+
         $result = $product->calculatePrice(30, $node->id);
 
         // Expected: $10 * 1.0 * 1.50 = $15.00

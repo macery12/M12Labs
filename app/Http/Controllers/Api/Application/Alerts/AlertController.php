@@ -3,17 +3,17 @@
 namespace Everest\Http\Controllers\Api\Application\Alerts;
 
 use Ramsey\Uuid\Uuid;
+use Everest\Models\User;
 use Everest\Models\Alert;
 use Everest\Models\Setting;
-use Everest\Models\User;
+use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Everest\Http\Controllers\Api\Application\ApplicationApiController;
-use Everest\Http\Requests\Api\Application\Alerts\CreateAlertRequest;
-use Everest\Http\Requests\Api\Application\Alerts\UpdateAlertRequest;
-use Everest\Http\Requests\Api\Application\Alerts\DeleteAlertRequest;
 use Everest\Http\Requests\Api\Application\Alerts\GetAlertsRequest;
+use Everest\Http\Requests\Api\Application\Alerts\CreateAlertRequest;
+use Everest\Http\Requests\Api\Application\Alerts\DeleteAlertRequest;
+use Everest\Http\Requests\Api\Application\Alerts\UpdateAlertRequest;
+use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Alerts\UpdateAlertSettingsRequest;
 
 class AlertController extends ApplicationApiController

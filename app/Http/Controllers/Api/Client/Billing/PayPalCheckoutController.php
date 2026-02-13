@@ -4,20 +4,20 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
+use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
-use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
-use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\PayPalPaymentService;
+use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 
 class PayPalCheckoutController extends ClientApiController
 {
@@ -35,9 +35,7 @@ class PayPalCheckoutController extends ClientApiController
     /**
      * Create a PayPal order.
      *
-     * @param Request $request
      * @param int $id Product ID
-     * @return JsonResponse
      */
     public function createOrder(Request $request, int $id): JsonResponse
     {
@@ -67,7 +65,7 @@ class PayPalCheckoutController extends ClientApiController
         $returnUrl = str_contains($baseReturnUrl, '?')
             ? $baseReturnUrl . '&token=' . $token . '&processor=paypal'
             : $baseReturnUrl . '?token=' . $token . '&processor=paypal';
-        
+
         $cancelUrl = url('/account/billing/cancel');
 
         // Create PayPal order
@@ -114,9 +112,7 @@ class PayPalCheckoutController extends ClientApiController
     /**
      * Update a PayPal order with details.
      *
-     * @param Request $request
      * @param int $id Product ID
-     * @return Response
      */
     public function updateOrder(Request $request, int $id): Response
     {
@@ -168,7 +164,7 @@ class PayPalCheckoutController extends ClientApiController
             'variables' => $variables,
         ]);
 
-        Log::info("PayPal order updated successfully", [
+        Log::info('PayPal order updated successfully', [
             'order_id' => $order->id,
             'paypal_order_id' => $paypalOrderId,
             'updated_data' => [
@@ -185,38 +181,28 @@ class PayPalCheckoutController extends ClientApiController
     /**
      * Capture a PayPal order after customer approval.
      *
-     * @param Request $request
-     * @return JsonResponse
      * @throws BillingExceptionClass
      */
     public function captureOrder(Request $request): JsonResponse
     {
         // IMMEDIATE TEST LOG - This should ALWAYS appear if endpoint is hit
-        Log::info("=== PAYPAL CAPTURE ENDPOINT HIT ===", [
+        Log::info('=== PAYPAL CAPTURE ENDPOINT HIT ===', [
             'method' => $request->method(),
             'url' => $request->fullUrl(),
             'user_id' => $request->user()->id ?? 'not authenticated',
             'all_input' => $request->all(),
         ]);
-        
+
         $paypalOrderId = $request->input('order_id');
-        
-        Log::info("PayPal capture requested", [
+
+        Log::info('PayPal capture requested', [
             'paypal_order_id' => $paypalOrderId,
             'user_id' => $request->user()->id,
         ]);
-        
+
         if (!$paypalOrderId) {
-            Log::error("PayPal capture failed: No order ID provided");
-            throw new BillingExceptionClass(
-                'PayPal order ID missing',
-                'PayPal order ID is required to capture payment.',
-                BillingException::TYPE_VALIDATION,
-                null,
-                'paypal',
-                null,
-                ['user_id' => $request->user()->id]
-            );
+            Log::error('PayPal capture failed: No order ID provided');
+            throw new BillingExceptionClass('PayPal order ID missing', 'PayPal order ID is required to capture payment.', BillingException::TYPE_VALIDATION, null, 'paypal', null, ['user_id' => $request->user()->id]);
         }
 
         try {
@@ -225,7 +211,7 @@ class PayPalCheckoutController extends ClientApiController
                 ->where('user_id', $request->user()->id)
                 ->firstOrFail();
 
-            Log::info("Found order for capture", [
+            Log::info('Found order for capture', [
                 'order_id' => $order->id,
                 'order_status' => $order->status,
                 'paypal_order_id' => $paypalOrderId,
@@ -233,7 +219,8 @@ class PayPalCheckoutController extends ClientApiController
 
             // Check idempotency - already processed?
             if ($order->status === Order::STATUS_PROCESSED) {
-                Log::info("Order already processed, returning success", ['order_id' => $order->id]);
+                Log::info('Order already processed, returning success', ['order_id' => $order->id]);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Order already processed',
@@ -243,57 +230,41 @@ class PayPalCheckoutController extends ClientApiController
 
             // Verify the PayPal order is approved
             $isApproved = $this->paypalService->isOrderApproved($paypalOrderId);
-            Log::info("PayPal order approval status", [
+            Log::info('PayPal order approval status', [
                 'paypal_order_id' => $paypalOrderId,
                 'is_approved' => $isApproved,
             ]);
-            
+
             if (!$isApproved) {
-                Log::warning("PayPal order not approved yet", ['paypal_order_id' => $paypalOrderId]);
-                throw new BillingExceptionClass(
-                    'PayPal order not approved',
-                    'PayPal order is not approved yet. Please complete the payment on PayPal.',
-                    BillingException::TYPE_PAYMENT,
-                    $order->id,
-                    'paypal',
-                    $paypalOrderId,
-                    ['order_status' => 'not_approved']
-                );
+                Log::warning('PayPal order not approved yet', ['paypal_order_id' => $paypalOrderId]);
+                throw new BillingExceptionClass('PayPal order not approved', 'PayPal order is not approved yet. Please complete the payment on PayPal.', BillingException::TYPE_PAYMENT, $order->id, 'paypal', $paypalOrderId, ['order_status' => 'not_approved']);
             }
 
             // Capture the payment
-            Log::info("Attempting to capture PayPal payment", ['paypal_order_id' => $paypalOrderId]);
+            Log::info('Attempting to capture PayPal payment', ['paypal_order_id' => $paypalOrderId]);
             $captureResult = $this->paypalService->captureOrder($paypalOrderId);
-            
+
             // Verify capture was successful
             $captureStatus = $captureResult['status'] ?? '';
-            Log::info("PayPal capture result", [
+            Log::info('PayPal capture result', [
                 'paypal_order_id' => $paypalOrderId,
                 'capture_status' => $captureStatus,
             ]);
-            
+
             if ($captureStatus !== 'COMPLETED') {
-                Log::error("PayPal capture failed", [
+                Log::error('PayPal capture failed', [
                     'paypal_order_id' => $paypalOrderId,
                     'expected_status' => 'COMPLETED',
                     'actual_status' => $captureStatus,
                 ]);
-                throw new BillingExceptionClass(
-                    'PayPal capture failed',
-                    'Failed to capture PayPal payment. Status: ' . $captureStatus . '. Please try again or contact support.',
-                    BillingException::TYPE_PAYMENT,
-                    $order->id,
-                    'paypal',
-                    $paypalOrderId,
-                    ['capture_status' => $captureStatus, 'capture_result' => $captureResult]
-                );
+                throw new BillingExceptionClass('PayPal capture failed', 'Failed to capture PayPal payment. Status: ' . $captureStatus . '. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order->id, 'paypal', $paypalOrderId, ['capture_status' => $captureStatus, 'capture_result' => $captureResult]);
             }
 
             // Extract and save PayPal transaction details
             $purchaseUnit = $captureResult['purchase_units'][0] ?? null;
             $capture = $purchaseUnit['payments']['captures'][0] ?? null;
             $payer = $captureResult['payer'] ?? null;
-            
+
             if ($capture) {
                 $order->paypal_capture_id = $capture['id'] ?? null;
                 $order->paypal_status = $capture['status'] ?? null;
@@ -301,15 +272,15 @@ class PayPalCheckoutController extends ClientApiController
                 $order->paypal_currency = $capture['amount']['currency_code'] ?? null;
                 $order->paypal_captured_at = isset($capture['create_time']) ? \Carbon\Carbon::parse($capture['create_time']) : null;
             }
-            
+
             if ($payer) {
                 $order->paypal_payer_id = $payer['payer_id'] ?? null;
                 $order->paypal_payer_email = $payer['email_address'] ?? null;
             }
-            
+
             $order->save();
-            
-            Log::info("Saved PayPal transaction details", [
+
+            Log::info('Saved PayPal transaction details', [
                 'order_id' => $order->id,
                 'capture_id' => $order->paypal_capture_id,
                 'payer_email' => $order->paypal_payer_email,
@@ -318,12 +289,12 @@ class PayPalCheckoutController extends ClientApiController
             ]);
 
             // Fulfill the order
-            Log::info("Starting order fulfillment", ['order_id' => $order->id]);
+            Log::info('Starting order fulfillment', ['order_id' => $order->id]);
             try {
                 $this->fulfillOrder($request, $order);
-                Log::info("Order fulfillment completed successfully", ['order_id' => $order->id]);
+                Log::info('Order fulfillment completed successfully', ['order_id' => $order->id]);
             } catch (\Exception $e) {
-                Log::error("Order fulfillment failed", [
+                Log::error('Order fulfillment failed', [
                     'order_id' => $order->id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -333,7 +304,7 @@ class PayPalCheckoutController extends ClientApiController
 
             // Reload order to get updated status
             $order->refresh();
-            Log::info("Final order status after fulfillment", [
+            Log::info('Final order status after fulfillment', [
                 'order_id' => $order->id,
                 'status' => $order->status,
             ]);
@@ -347,44 +318,32 @@ class PayPalCheckoutController extends ClientApiController
             // Re-throw billing exceptions to display to user
             throw $e;
         } catch (\Exception $e) {
-            Log::error("PayPal capture exception", [
+            Log::error('PayPal capture exception', [
                 'paypal_order_id' => $paypalOrderId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             $order = Order::where('paypal_order_id', $paypalOrderId)
                 ->where('user_id', $request->user()->id)
                 ->first();
-            
-            throw new BillingExceptionClass(
-                'PayPal capture error',
-                'An unexpected error occurred while capturing PayPal payment: ' . $e->getMessage(),
-                BillingException::TYPE_PAYMENT,
-                $order?->id,
-                'paypal',
-                $paypalOrderId,
-                ['error' => $e->getMessage()],
-                $e
-            );
+
+            throw new BillingExceptionClass('PayPal capture error', 'An unexpected error occurred while capturing PayPal payment: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, $order?->id, 'paypal', $paypalOrderId, ['error' => $e->getMessage()], $e);
         }
     }
 
     /**
      * Check the status of a PayPal order.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function checkOrderStatus(Request $request): JsonResponse
     {
         $paypalOrderId = $request->input('order_id');
-        
-        Log::info("PayPal order status check requested", [
+
+        Log::info('PayPal order status check requested', [
             'paypal_order_id' => $paypalOrderId,
             'user_id' => $request->user()->id,
         ]);
-        
+
         if (!$paypalOrderId) {
             // Fallback: Get the latest PayPal order for this user
             $order = Order::where('user_id', $request->user()->id)
@@ -399,10 +358,11 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         if (!$order) {
-            Log::warning("PayPal status check: Order not found", [
+            Log::warning('PayPal status check: Order not found', [
                 'paypal_order_id' => $paypalOrderId,
                 'user_id' => $request->user()->id,
             ]);
+
             return response()->json([
                 'processed' => false,
                 'failed' => false,
@@ -427,7 +387,7 @@ class PayPalCheckoutController extends ClientApiController
         $failed = $order->status === Order::STATUS_FAILED;
         $pending = !$processed && !$failed;
 
-        Log::info("PayPal order status check result", [
+        Log::info('PayPal order status check result', [
             'order_id' => $order->id,
             'paypal_order_id' => $order->paypal_order_id,
             'internal_status' => $order->status,
@@ -449,10 +409,6 @@ class PayPalCheckoutController extends ClientApiController
 
     /**
      * Get order details from token.
-     *
-     * @param Request $request
-     * @param string $token
-     * @return JsonResponse
      */
     public function getOrderFromToken(Request $request, string $token): JsonResponse
     {
@@ -470,10 +426,6 @@ class PayPalCheckoutController extends ClientApiController
 
     /**
      * Fulfill an order after successful payment.
-     *
-     * @param Request $request
-     * @param Order $order
-     * @return void
      */
     private function fulfillOrder(Request $request, Order $order): void
     {
@@ -483,9 +435,6 @@ class PayPalCheckoutController extends ClientApiController
 
     /**
      * Determine the order type (NEW or RENEWAL).
-     *
-     * @param Request $request
-     * @return string
      */
     private function getOrderType(Request $request): string
     {
@@ -498,15 +447,12 @@ class PayPalCheckoutController extends ClientApiController
 
     /**
      * Process PayPal webhook notifications.
-     * 
+     *
      * This endpoint receives asynchronous notifications from PayPal about payment events.
      * It verifies the webhook, fetches the actual payment status from PayPal API,
      * and fulfills orders for successful payments.
-     * 
+     *
      * Important: This route is outside authentication middleware as PayPal calls it directly.
-     * 
-     * @param Request $request
-     * @return Response
      */
     public function processPayment(Request $request): Response
     {
@@ -516,7 +462,7 @@ class PayPalCheckoutController extends ClientApiController
         // Extract PayPal order ID based on event type
         // Different event types have order ID in different locations
         $paypalOrderId = null;
-        
+
         switch ($eventType) {
             case 'PAYMENT.CAPTURE.COMPLETED':
             case 'PAYMENT.CAPTURE.DENIED':
@@ -540,12 +486,13 @@ class PayPalCheckoutController extends ClientApiController
             default:
                 // Unsupported event type - this may be a new PayPal event we haven't implemented yet
                 // or an event not relevant to our billing flow. Return 200 to acknowledge receipt.
-                Log::warning("Unsupported PayPal webhook event type received", [
+                Log::warning('Unsupported PayPal webhook event type received', [
                     'event_type' => $eventType,
                     'resource_id' => $resource['id'] ?? null,
                     'resource_type' => $request->input('resource_type'),
                     'note' => 'This may be expected for certain PayPal events. Review PayPal webhook settings if unexpected.',
                 ]);
+
                 return $this->returnNoContent();
         }
 
@@ -556,6 +503,7 @@ class PayPalCheckoutController extends ClientApiController
                 'resource_id' => $resource['id'] ?? null,
                 'resource_type' => $request->input('resource_type'),
             ]);
+
             return $this->returnNoContent();
         }
 
@@ -565,6 +513,7 @@ class PayPalCheckoutController extends ClientApiController
         if (!$order) {
             // Return 200 to prevent PayPal retries for non-existent orders
             Log::warning("PayPal webhook: Order not found for PayPal order ID: {$paypalOrderId}");
+
             return $this->returnNoContent();
         }
 
@@ -572,6 +521,7 @@ class PayPalCheckoutController extends ClientApiController
         // This prevents duplicate processing if webhook is called multiple times
         if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
             Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
+
             return $this->returnNoContent();
         }
 
@@ -587,7 +537,7 @@ class PayPalCheckoutController extends ClientApiController
             // https://developer.paypal.com/docs/api/orders/v2/#orders_get
             $status = $paypalOrder['status'] ?? 'UNKNOWN';
 
-            Log::info("Processing PayPal webhook", [
+            Log::info('Processing PayPal webhook', [
                 'event_type' => $eventType,
                 'paypal_order_id' => $paypalOrderId,
                 'order_id' => $order->id,
@@ -641,18 +591,9 @@ class PayPalCheckoutController extends ClientApiController
                 'exception' => get_class($e),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             try {
-                throw new BillingExceptionClass(
-                    'PayPal webhook processing error',
-                    'Failed to process PayPal webhook: ' . $e->getMessage(),
-                    BillingException::TYPE_WEBHOOK,
-                    $order->id,
-                    'paypal',
-                    $paypalOrderId,
-                    ['event_type' => $eventType, 'error' => $e->getMessage()],
-                    $e
-                );
+                throw new BillingExceptionClass('PayPal webhook processing error', 'Failed to process PayPal webhook: ' . $e->getMessage(), BillingException::TYPE_WEBHOOK, $order->id, 'paypal', $paypalOrderId, ['event_type' => $eventType, 'error' => $e->getMessage()], $e);
             } catch (BillingExceptionClass $billingEx) {
                 // Exception is now logged, continue to return 200
             }

@@ -4,8 +4,8 @@ namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
 use Everest\Models\Setting;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -120,14 +120,15 @@ class Product extends Model
     /**
      * Calculate suspension threshold based on billing cycle length.
      * Uses a capped percentage-based model with maximum 7-day grace period.
-     * 
+     *
      * Formula: min(max(billingDays * 20%, 3), 7)
      * - 7-day cycle → 3 days (minimum)
      * - 30-day cycle → 6 days
      * - 90-day cycle → 7 days (capped)
      * - 180+ day cycle → 7 days (capped)
-     * 
+     *
      * @param int $billingDays The billing cycle length in days
+     *
      * @return int The suspension threshold in days
      */
     public function getSuspensionThresholdForBillingCycle(int $billingDays): int
@@ -174,9 +175,10 @@ class Product extends Model
 
     /**
      * Calculate price for a specific billing cycle.
-     * 
+     *
      * @param int $days Number of billing days
      * @param int|null $nodeId Optional node ID to apply node pricing multiplier
+     *
      * @return array ['price' => float, 'multiplier' => float, 'discount_percent' => float, 'node_multiplier' => float]
      */
     public function calculatePrice(int $days, ?int $nodeId = null): array
@@ -188,18 +190,18 @@ class Product extends Model
         // Get multiplier steps from settings
         $stepsJson = Setting::get('settings::modules:billing:renewal:multiplier_steps');
         $steps = [];
-        
+
         if ($stepsJson) {
             $decoded = json_decode($stepsJson, true);
             if (is_array($decoded)) {
                 $steps = $decoded;
                 // Sort by maxDays to ensure correct matching
-                usort($steps, function($a, $b) {
+                usort($steps, function ($a, $b) {
                     return $a['maxDays'] <=> $b['maxDays'];
                 });
             }
         }
-        
+
         // Default steps if none configured
         if (empty($steps)) {
             $steps = [
@@ -221,7 +223,7 @@ class Product extends Model
                 break;
             }
         }
-        
+
         // If no step matched (days > all maxDays), use the last step's multiplier
         if ($billingMultiplier === 1.0 && !empty($steps)) {
             $billingMultiplier = end($steps)['multiplier'];
