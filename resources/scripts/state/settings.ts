@@ -8,7 +8,6 @@ export interface SiteSettings {
     mode: PanelMode;
     debug: boolean;
     locale: string;
-    auto_update: boolean;
     indicators: boolean;
     speed_dial: boolean;
     setup: boolean;
