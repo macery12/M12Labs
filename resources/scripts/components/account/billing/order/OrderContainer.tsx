@@ -1,5 +1,5 @@
 import Spinner from '@/elements/Spinner';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
@@ -54,8 +54,6 @@ export default () => {
     const [selectedEggId, setSelectedEggId] = useState<number | undefined>();
     const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
 
-    const [termsAgreed, setTermsAgreed] = useState<boolean>(false);
-    const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
@@ -316,17 +314,30 @@ export default () => {
             .catch(error => console.error(error));
     }, [product, selectedEggId]);
 
+    // Auto-generate server name when selections change
+    useEffect(() => {
+        if (!serverNameTouched && product && selectedNode && selectedEggId) {
+            const generatedName = generateServerName();
+            if (generatedName) {
+                setServerName(generatedName);
+            }
+        }
+    }, [selectedNode, selectedEggId, product, serverNameTouched, generateServerName]);
+
+    // Clear coupon when billing cycle changes to prevent showing incorrect totals
+    useEffect(() => {
+        if (couponData) {
+            // Clear the coupon data to force revalidation with new price
+            setCouponData(null);
+        }
+        // Note: couponData is intentionally NOT in the dependency array to avoid infinite loops
+        // We only want to clear it when selectedBillingDays changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedBillingDays]);
+
     if (!product) return <Spinner centered />;
 
-    return (
-        <PageContentBlock title={'Your Order'}>
-            <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            <div className={'mb-8'}>
-                <h1 className={'text-4xl font-bold text-gray-100'}>Complete Your Order</h1>
-                <p className={'mt-2 text-base text-gray-400'}>
-                    Customize your server configuration and complete your purchase.
-                </p>
-            </div>
+    if (!product) return <Spinner centered />;
 
     // Render different content based on current step
     const renderStepContent = () => {
@@ -479,8 +490,6 @@ export default () => {
                                     </p>
                                 )}
                             </div>
-                        </section>
-                    )}
 
                             {/* Server Configuration Overview */}
                             <div
@@ -506,11 +515,6 @@ export default () => {
                                             </p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </div>
 
                                     {/* Resources Grid */}
                                     <div className={'grid grid-cols-3 gap-4 pt-2'}>
@@ -551,18 +555,20 @@ export default () => {
                                         'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'
                                     }
                                     style={
-                                        termsAgreed
+                                        legalAgreed
                                             ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
                                             : { borderColor: '#374151', backgroundColor: colors.secondary }
                                     }
+                                    onClick={() => setLegalAgreed(!legalAgreed)}
                                 >
                                     <AdminCheckbox
-                                        name={'terms'}
-                                        checked={termsAgreed}
-                                        onChange={() => setTermsAgreed(!termsAgreed)}
+                                        name={'legal'}
+                                        checked={legalAgreed}
+                                        onChange={() => setLegalAgreed(!legalAgreed)}
                                     />
-                                    <div className={'min-w-0 flex-1'} onClick={() => setTermsAgreed(!termsAgreed)}>
-                                        <p className={'text-xs font-medium text-gray-200'}>
+                                    <div className={'min-w-0 flex-1'}>
+                                        <p className={'text-sm font-medium text-gray-200'}>
+                                            I agree to the{' '}
                                             <a
                                                 href={billing.links.terms}
                                                 target={'_blank'}
@@ -571,34 +577,10 @@ export default () => {
                                                 style={{ color: colors.primary }}
                                                 onClick={e => e.stopPropagation()}
                                             >
-                                                Terms of Service{' '}
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                                Terms of Service
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
                                             </a>
-                                        </p>
-                                        {termsAgreed && (
-                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
-                                                ✓ Accepted
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div
-                                    className={
-                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all'
-                                    }
-                                    style={
-                                        privacyAgreed
-                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
-                                    }
-                                >
-                                    <AdminCheckbox
-                                        name={'privacy'}
-                                        checked={privacyAgreed}
-                                        onChange={() => setPrivacyAgreed(!privacyAgreed)}
-                                    />
-                                    <div className={'min-w-0 flex-1'} onClick={() => setPrivacyAgreed(!privacyAgreed)}>
-                                        <p className={'text-xs font-medium text-gray-200'}>
+                                            {' and '}
                                             <a
                                                 href={billing.links.privacy}
                                                 target={'_blank'}
@@ -607,12 +589,12 @@ export default () => {
                                                 style={{ color: colors.primary }}
                                                 onClick={e => e.stopPropagation()}
                                             >
-                                                Privacy Policy{' '}
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'text-xs'} />
+                                                Privacy Policy
+                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
                                             </a>
                                         </p>
-                                        {privacyAgreed && (
-                                            <p className={'mt-0.5 text-xs'} style={{ color: colors.primary }}>
+                                        {legalAgreed && (
+                                            <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
                                                 ✓ Accepted
                                             </p>
                                         )}
@@ -620,6 +602,8 @@ export default () => {
                                 </div>
                             </div>
                         </div>
+                    );
+                }
 
                 // Payment step
                 if (currentStep === finalStep + 1) {
@@ -631,15 +615,11 @@ export default () => {
                                     Choose your payment method to complete your order.
                                 </p>
                             </div>
-                        )}
 
-                        {/* Checkout Button Card */}
-                        {termsAgreed && privacyAgreed && (
                             <div
-                                style={{ backgroundColor: colors.secondary }}
-                                className={'rounded-lg border border-gray-700 p-6'}
+                                className={'rounded-lg border p-6'}
+                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
                             >
-                                <h3 className={'mb-4 text-lg font-bold text-gray-200'}>Complete Order</h3>
                                 {product.price === 0 || couponData?.total === 0 ? (
                                     <div>
                                         <p className={'mb-4 text-sm text-gray-300'}>
@@ -652,18 +632,16 @@ export default () => {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <div>
-                                        <PaymentMethodSelector
-                                            selectedNode={selectedNode}
-                                            product={product}
-                                            vars={vars}
-                                            intent={intent}
-                                            stripe={stripe}
-                                            couponId={couponData?.coupon.id}
-                                            selectedEggId={selectedEggId}
-                                            serverName={serverName}
-                                        />
-                                    </div>
+                                    <PaymentMethodSelector
+                                        selectedNode={selectedNode}
+                                        product={product}
+                                        vars={vars}
+                                        intent={intent}
+                                        stripe={stripe}
+                                        couponId={couponData?.coupon.id}
+                                        selectedEggId={selectedEggId}
+                                        serverName={serverName}
+                                    />
                                 )}
                             </div>
                         </div>
