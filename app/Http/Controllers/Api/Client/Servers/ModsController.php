@@ -478,9 +478,53 @@ class ModsController extends ClientApiController
                 throw $e;
             }
 
-            // Extract the zip file
+            // Extract the zip file with path traversal protection
             $zip = new \ZipArchive();
             if ($zip->open($zipPath) === true) {
+                // Validate all entries to prevent Zip Slip attacks
+                $realTempDir = realpath($tempDir);
+                if ($realTempDir === false) {
+                    $zip->close();
+                    $this->deleteDirectory($tempDir);
+                    throw new ModsServiceException('Failed to resolve temporary directory path.');
+                }
+
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $entry = $zip->getNameIndex($i);
+                    
+                    // Resolve the full path and check if it's within the temp directory
+                    $extractPath = $tempDir . '/' . $entry;
+                    // Normalize path to prevent traversal
+                    $normalizedPath = str_replace(['\\', '/./'], ['/', '/'], $extractPath);
+                    $normalizedPath = preg_replace('#/+#', '/', $normalizedPath);
+                    
+                    // Check for path traversal attempts
+                    if (strpos($normalizedPath, '../') !== false || strpos($entry, '../') !== false) {
+                        $zip->close();
+                        $this->deleteDirectory($tempDir);
+                        throw new ModsServiceException('Modpack contains invalid file paths (path traversal detected).');
+                    }
+                    
+                    // Additional check: ensure extracted path would be within temp directory
+                    $parentDir = dirname($normalizedPath);
+                    if ($parentDir !== $tempDir && strpos($parentDir, $realTempDir) !== 0) {
+                        // For safety, also check if any parent directory escapes
+                        $testPath = $normalizedPath;
+                        while ($testPath !== '/' && $testPath !== '.') {
+                            if (!str_starts_with($testPath, $realTempDir)) {
+                                $zip->close();
+                                $this->deleteDirectory($tempDir);
+                                throw new ModsServiceException('Modpack contains paths outside allowed directory.');
+                            }
+                            $testPath = dirname($testPath);
+                            if ($testPath === $tempDir || $testPath === $realTempDir) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // All entries validated, safe to extract
                 $zip->extractTo($tempDir);
                 $zip->close();
             } else {
@@ -602,18 +646,38 @@ class ModsController extends ClientApiController
     }
 
     /**
-     * Recursively upload a directory to the server.
+     * Recursively upload a directory to the server with path validation.
      */
     private function uploadDirectoryRecursively(Server $server, string $localPath, string $remotePath): void
     {
         $items = scandir($localPath);
+        
+        // Validate the base local path
+        $realLocalPath = realpath($localPath);
+        if ($realLocalPath === false) {
+            throw new ModsServiceException('Invalid local path for upload.');
+        }
 
         foreach ($items as $item) {
             if ($item === '.' || $item === '..') {
                 continue;
             }
+            
+            // Validate item name to prevent path traversal
+            if (strpos($item, '..') !== false || strpos($item, '/') !== false || strpos($item, '\\') !== false) {
+                Log::warning("Skipping potentially malicious file/directory name: {$item}");
+                continue;
+            }
 
             $localItemPath = $localPath . '/' . $item;
+            
+            // Ensure the resolved path is still within the original base path
+            $realItemPath = realpath($localItemPath);
+            if ($realItemPath === false || strpos($realItemPath, $realLocalPath) !== 0) {
+                Log::warning("Skipping file outside allowed directory: {$localItemPath}");
+                continue;
+            }
+            
             $remoteItemPath = rtrim($remotePath, '/') . '/' . $item;
 
             if (is_dir($localItemPath)) {
