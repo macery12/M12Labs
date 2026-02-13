@@ -13,9 +13,9 @@ use Everest\Console\Commands\User\DeleteUserCommand;
 class DeleteUserCommandSQLInjectionTest extends TestCase
 {
     /**
-     * Test that wildcard characters in search terms are properly escaped.
+     * Test that percent wildcards in search terms are properly escaped.
      */
-    public function testSearchTermEscapesLikeWildcards()
+    public function testSearchTermEscapesPercentWildcard()
     {
         // Create test users
         User::factory()->create(['email' => 'user1@example.com', 'username' => 'user1']);

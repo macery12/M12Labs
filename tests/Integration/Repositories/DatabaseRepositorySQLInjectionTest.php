@@ -65,7 +65,8 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
         $pdoMock->shouldReceive('quote')
             ->once()
             ->with($maliciousPassword)
-            ->andReturn("'\\'; DROP DATABASE panel; --'");
+            // PDO quote() doubles single quotes instead of using backslash escaping
+            ->andReturn("'''; DROP DATABASE panel; --'");
 
         $connectionMock = \Mockery::mock();
         $connectionMock->shouldReceive('getPdo')
@@ -75,8 +76,8 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
         $connectionMock->shouldReceive('statement')
             ->once()
             ->with(\Mockery::on(function ($sql) {
-                // Verify the password is properly quoted
-                $this->assertStringContainsString("IDENTIFIED BY '\\'; DROP DATABASE panel; --'", $sql);
+                // Verify the password is properly quoted (PDO doubles single quotes)
+                $this->assertStringContainsString("IDENTIFIED BY '''; DROP DATABASE panel; --'", $sql);
 
                 return true;
             }))
