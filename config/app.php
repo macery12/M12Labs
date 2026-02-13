@@ -15,30 +15,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Automatic Updates
-    |--------------------------------------------------------------------------
-    | Allow Jexactyl to update itself in the background in line with the latest
-    | GitHub software release. This feature is off by default.
-    */
-    'auto_update' => false,
-
-    /*
-    |--------------------------------------------------------------------------
     | Admin Indicators
     |--------------------------------------------------------------------------
     | Allow the panel to display small indicators in the top-right of the UI
     | when certain Jexactyl features are toggled to 'on'.
     */
     'indicators' => false,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Is Setup
-    |--------------------------------------------------------------------------
-    | This variable toggles whether Jexactyl has been configured and is ready
-    | for use. This should ideally be done via the UI.
-    */
-    'auto_update' => false,
 
     /*
     |--------------------------------------------------------------------------

@@ -5,7 +5,6 @@ namespace Everest\Console;
 use Everest\Models\ActivityLog;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
-use Everest\Console\Commands\AutoUpdateCommand;
 use Everest\Console\Commands\Billing\CleanupOrdersCommand;
 use Everest\Console\Commands\Billing\ExpireCouponsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -44,10 +43,6 @@ class Kernel extends ConsoleKernel
 
         if (config('activity.prune_days')) {
             $schedule->command(PruneCommand::class, ['--model' => [ActivityLog::class]])->daily();
-        }
-
-        if (config('app.auto_update')) {
-            $schedule->command(AutoUpdateCommand::class)->daily();
         }
 
         if (config('modules.billing.enabled')) {

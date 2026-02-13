@@ -4,7 +4,6 @@ import { PanelMode } from '@/state/settings';
 export interface GeneralSettings {
     name: string;
     logo: URL | null;
-    auto_update: boolean;
     indicators: boolean;
     speed_dial: boolean;
     activity: {
@@ -21,7 +20,6 @@ export const updateGeneralSettings = async (settings: Partial<GeneralSettings>):
         http.patch(`/api/application/settings`, {
             'app:name': settings.name,
             'app:logo': settings.logo,
-            'app:auto_update': settings.auto_update,
             'app:indicators': settings.indicators,
             'app:speed_dial': settings.speed_dial,
 

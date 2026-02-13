@@ -10,7 +10,6 @@ import {
     faHeart,
     faLayerGroup,
     faQuestionCircle,
-    faRecycle,
     faServer,
     faTicket,
     faUserPlus,
@@ -135,16 +134,6 @@ export default () => {
             </AdminBox>
             <AdminBox title={'Suggested Actions'} className={'mt-6'} icon={faQuestionCircle}>
                 <div className={'grid gap-4 lg:grid-cols-3'}>
-                    {!settings.auto_update && (
-                        <SuggestionCard
-                            icon={faRecycle}
-                            link={'/admin/settings'}
-                            title={'Enable automatic updates'}
-                            description={
-                                'By setting up automatic updates, you can keep Jexactyl stable and secure in the background.'
-                            }
-                        />
-                    )}
                     {!everest.auth.registration.enabled && (
                         <SuggestionCard
                             icon={faUserPlus}
