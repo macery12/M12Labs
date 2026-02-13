@@ -140,7 +140,7 @@ export default () => {
                         <div className={'mt-4'}>
                             <label className={'text-xs uppercase text-neutral-400'}>Optional Jar URL</label>
                             <InputField
-                                className={'mt-2 w-full'}
+                                className={'mt-2 w-full bg-neutral-800 text-neutral-200'}
                                 value={jarUrl}
                                 onChange={e => setJarUrl(e.target.value)}
                                 placeholder={'https://.../DiscordSRV-....jar'}
@@ -180,7 +180,7 @@ export default () => {
                         <div className={'mt-4'}>
                             <label className={'text-xs uppercase text-neutral-400'}>Bot Token</label>
                             <InputField
-                                className={'mt-2 w-full'}
+                                className={'mt-2 w-full bg-neutral-800 text-neutral-200'}
                                 value={botToken}
                                 onChange={e => setBotToken(e.target.value)}
                                 placeholder={'Paste bot token'}
@@ -222,7 +222,7 @@ export default () => {
                         <div className={'mt-4'}>
                             <label className={'text-xs uppercase text-neutral-400'}>Discord Channel ID</label>
                             <InputField
-                                className={'mt-2 w-full'}
+                                className={'mt-2 w-full bg-neutral-800 text-neutral-200'}
                                 value={globalChannelId}
                                 onChange={e => setGlobalChannelId(e.target.value)}
                                 placeholder={'123456789012345678'}
@@ -262,7 +262,7 @@ export default () => {
                         <div className={'mt-4'}>
                             <label className={'text-xs uppercase text-neutral-400'}>Application Client ID</label>
                             <InputField
-                                className={'mt-2 w-full'}
+                                className={'mt-2 w-full bg-neutral-800 text-neutral-200'}
                                 value={clientId}
                                 onChange={e => setClientId(e.target.value)}
                                 placeholder={'123456789012345678'}
