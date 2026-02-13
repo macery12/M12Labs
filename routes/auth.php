@@ -29,6 +29,7 @@ Route::middleware(['throttle:authentication'])->group(function () {
 
     Route::post('/register', [Auth\LoginController::class, 'register'])->middleware('recaptcha');
     Route::post('/check-username', [Auth\LoginController::class, 'checkUsername'])
+        ->middleware('throttle:10,1') // 10 requests per minute to prevent enumeration
         ->name('auth.check-username');
 
     Route::post('/modules/discord', [Auth\Modules\DiscordLoginController::class, 'requestToken'])->middleware('recaptcha');

@@ -93,15 +93,25 @@ class BillingValidationService
     /**
      * Calculate the final price after applying a coupon.
      *
+     * SECURITY: This method now validates coupon eligibility including:
+     * - Active status
+     * - Expiration
+     * - Max uses (global and per-user)
+     * - Minimum order total
+     * - Order type (new/renewal)
+     *
      * @param Product $product The product being purchased
      * @param int|null $couponId The coupon ID to apply (optional)
      * @param string $orderType The order type (default: 'new')
      * @param int|null $billingDays The billing cycle days (optional, defaults to 30)
      * @param int|null $nodeId The node ID for location-based pricing (optional)
+     * @param int|null $userId The user ID for per-user coupon validation (required if coupon is used)
      *
      * @return array{finalPrice: float, discount: float} The final price and discount amount
+     *
+     * @throws DisplayException if coupon validation fails
      */
-    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new', ?int $billingDays = null, ?int $nodeId = null): array
+    public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new', ?int $billingDays = null, ?int $nodeId = null, ?int $userId = null): array
     {
         // Use billing days if provided, otherwise default to 30
         $days = $billingDays ?? 30;
@@ -115,10 +125,34 @@ class BillingValidationService
 
         if ($couponId) {
             $coupon = Coupon::find($couponId);
-            if ($coupon && $coupon->isAllowedForOrderType($orderType)) {
-                $discount = $coupon->calculateDiscount($basePrice);
-                $finalPrice = max(0, $basePrice - $discount);
+            
+            if (!$coupon) {
+                throw new DisplayException('The specified coupon does not exist.');
             }
+
+            // SECURITY FIX: Validate coupon eligibility before applying
+            if ($userId === null) {
+                throw new DisplayException('User ID is required for coupon validation.');
+            }
+
+            // Check if coupon can be used
+            $validation = $coupon->canBeUsed($userId, $basePrice);
+            if (!$validation['valid']) {
+                throw new DisplayException($validation['message']);
+            }
+
+            // Check if coupon is allowed for this order type
+            if (!$coupon->isAllowedForOrderType($orderType)) {
+                $allowedTypes = [
+                    Coupon::ALLOWED_FOR_PURCHASES => 'new purchases',
+                    Coupon::ALLOWED_FOR_RENEWALS => 'renewals',
+                ];
+                $allowed = $allowedTypes[$coupon->allowed_for] ?? $coupon->allowed_for;
+                throw new DisplayException("This coupon is only valid for {$allowed}.");
+            }
+
+            $discount = $coupon->calculateDiscount($basePrice);
+            $finalPrice = max(0, $basePrice - $discount);
         }
 
         return [
