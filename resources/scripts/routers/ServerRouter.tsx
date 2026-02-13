@@ -1,5 +1,5 @@
 import TransferListener from '@server/TransferListener';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { NavLink, Route, Routes, useParams } from 'react-router-dom';
 import WebsocketHandler from '@server/WebsocketHandler';
 import { ServerContext, ServerStatus } from '@/state/server';
@@ -22,6 +22,7 @@ import classNames from 'classnames';
 import NavigationBar from '@/elements/NavigationBar';
 import ScopedAlert from '@account/ScopedAlert';
 import BypassModeHeader from '@/elements/BypassModeHeader';
+import FloatingWindowsLayer, { type FloatingServerWindow } from '@server/floating/FloatingWindowsLayer';
 
 function statusToColor(status: ServerStatus): string {
     switch (status) {
@@ -84,6 +85,65 @@ function ServerRouter() {
     const status = ServerContext.useStoreState(state => state.status.value);
 
     const categories = ['data', 'configuration'] as const;
+    const topWindowZRef = useRef(200);
+    const [floatingWindows, setFloatingWindows] = useState<FloatingServerWindow[]>([]);
+
+    const getNextWindowZ = () => {
+        topWindowZRef.current += 1;
+        return topWindowZRef.current;
+    };
+
+    const openFloatingWindow = (route: (typeof routes.server)[number]) => {
+        if (!route.name || !params.id) {
+            return;
+        }
+
+        const path = route.path;
+        const zIndex = getNextWindowZ();
+
+        setFloatingWindows(prev => {
+            const nextOffset = prev.length % 8;
+
+            return [
+                ...prev,
+                {
+                    id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                    serverId: params.id,
+                    serverUuid: server?.uuid ?? '',
+                    serverName: server?.name ?? `Server ${params.id}`,
+                    routePath: path,
+                    title: route.name || 'Window',
+                    x: 180 + nextOffset * 24,
+                    y: 120 + nextOffset * 18,
+                    width: path.startsWith('files') ? 980 : 920,
+                    height: path.startsWith('files') ? 700 : 620,
+                    zIndex,
+                },
+            ];
+        });
+    };
+
+    const handleRouteContextMenu = (event: MouseEvent, route: (typeof routes.server)[number]) => {
+        event.preventDefault();
+        openFloatingWindow(route);
+    };
+
+    const closeFloatingWindow = (id: string) => {
+        setFloatingWindows(prev => prev.filter(win => win.id !== id));
+    };
+
+    const focusFloatingWindow = (id: string) => {
+        const nextZ = getNextWindowZ();
+        setFloatingWindows(prev => prev.map(win => (win.id === id ? { ...win, zIndex: nextZ } : win)));
+    };
+
+    const moveFloatingWindow = (id: string, x: number, y: number) => {
+        setFloatingWindows(prev => prev.map(win => (win.id === id ? { ...win, x, y } : win)));
+    };
+
+    const resizeFloatingWindow = (id: string, width: number, height: number) => {
+        setFloatingWindows(prev => prev.map(win => (win.id === id ? { ...win, width, height } : win)));
+    };
 
     // Check if admin has bypassed the conflict screen
     const isConflictBypassed =
@@ -144,7 +204,8 @@ function ServerRouter() {
                         .filter(
                             route =>
                                 route.name &&
-                                (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
+                                (!route.condition ||
+                                    route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
                         )
                         .map(route => (
                             <MobileSidebar.Link
@@ -187,10 +248,16 @@ function ServerRouter() {
                                 route =>
                                     !route.category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
+                                    (!route.condition ||
+                                        route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
                             )
                             .map(route => (
-                                <NavLink to={route.path} key={route.path} end={route.end}>
+                                <NavLink
+                                    to={route.path}
+                                    key={route.path}
+                                    end={route.end}
+                                    onContextMenu={event => handleRouteContextMenu(event, route)}
+                                >
                                     <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
                                     <span>{route.name}</span>
                                 </NavLink>
@@ -200,7 +267,8 @@ function ServerRouter() {
                                 route =>
                                     route.category === category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
+                                    (!route.condition ||
+                                        route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
                             );
                             if (categoryRoutes.length === 0) return null;
 
@@ -208,7 +276,12 @@ function ServerRouter() {
                                 <Fragment key={category}>
                                     <Sidebar.Section>{category[0]!.toUpperCase() + category.slice(1)}</Sidebar.Section>
                                     {categoryRoutes.map(route => (
-                                        <NavLink to={route.path} key={route.path} end={route.end}>
+                                        <NavLink
+                                            to={route.path}
+                                            key={route.path}
+                                            end={route.end}
+                                            onContextMenu={event => handleRouteContextMenu(event, route)}
+                                        >
                                             <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
                                             <span>{route.name}</span>
                                         </NavLink>
@@ -245,6 +318,15 @@ function ServerRouter() {
                             />
                         )}
                         <NavigationBar />
+                        <FloatingWindowsLayer
+                            windows={floatingWindows}
+                            currentServerId={params.id || ''}
+                            onClose={closeFloatingWindow}
+                            onFocus={focusFloatingWindow}
+                            onMove={moveFloatingWindow}
+                            onResize={resizeFloatingWindow}
+                            serverRoutes={routes.server}
+                        />
                         {inConflictState &&
                         (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${server?.id}`))) &&
                         !isConflictBypassed ? (
