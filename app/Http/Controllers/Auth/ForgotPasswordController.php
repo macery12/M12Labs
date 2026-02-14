@@ -5,6 +5,7 @@ namespace Everest\Http\Controllers\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Crypt;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Models\User;
@@ -31,7 +32,19 @@ class ForgotPasswordController extends AbstractLoginController
             throw new DisplayException('The information provided was incorrect.');
         }
 
-        if (!$user->recovery_code || !password_verify($request->input('code'), $user->recovery_code)) {
+        // Check if user has a recovery code
+        if (!$user->recovery_code) {
+            throw new DisplayException('The information provided was incorrect.');
+        }
+
+        // Decrypt the recovery code and compare with provided code
+        try {
+            $decryptedCode = Crypt::decryptString($user->recovery_code);
+        } catch (\Exception $e) {
+            throw new DisplayException('The information provided was incorrect.');
+        }
+
+        if ($decryptedCode !== $request->input('code')) {
             throw new DisplayException('The information provided was incorrect.');
         }
 
