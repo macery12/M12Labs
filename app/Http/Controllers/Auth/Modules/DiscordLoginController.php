@@ -203,15 +203,30 @@ class DiscordLoginController extends AbstractLoginController
             return redirect()->route('auth.login')->with('error', 'Failed to retrieve Discord account information.');
         }
 
+        \Log::info('Discord authenticate - Account data retrieved', [
+            'discord_id' => $account->id,
+            'discord_username' => $account->username,
+            'has_linking_session' => $request->session()->has('discord_account_linking'),
+            'is_authenticated' => !is_null($request->user()),
+        ]);
+
         // Check if this is account linking from the account page
         if ($request->session()->has('discord_account_linking')) {
+            \Log::info('Discord authenticate - Account linking flow detected');
             $request->session()->forget('discord_account_linking');
             
             $user = $request->user();
             if ($user) {
+                \Log::info('Discord authenticate - User authenticated, proceeding with link', ['user_id' => $user->id]);
+                
                 // Check if this Discord ID is already linked to another account
                 $existingUser = User::where('external_id', $account->id)->first();
                 if ($existingUser && $existingUser->id !== $user->id) {
+                    \Log::warning('Discord authenticate - Discord ID already linked to another user', [
+                        'discord_id' => $account->id,
+                        'existing_user_id' => $existingUser->id,
+                        'current_user_id' => $user->id,
+                    ]);
                     return redirect('/account')->with('error', 'This Discord account is already linked to another user.');
                 }
                 
@@ -222,6 +237,12 @@ class DiscordLoginController extends AbstractLoginController
                     'discord_avatar' => $account->avatar ?? null,
                 ]);
                 
+                \Log::info('Discord authenticate - Successfully linked Discord to user', [
+                    'user_id' => $user->id,
+                    'discord_id' => $account->id,
+                    'discord_username' => $account->username,
+                ]);
+                
                 Activity::event('user:discord.linked')
                     ->withRequestMetadata()
                     ->property(['discord_username' => $account->username])
@@ -230,6 +251,7 @@ class DiscordLoginController extends AbstractLoginController
                 return redirect('/account?discord_linked=success');
             }
             
+            \Log::warning('Discord authenticate - Account linking session exists but user not authenticated');
             // User not authenticated, redirect to login
             return redirect()->route('auth.login')->with('error', 'Please login first to link your Discord account.');
         }

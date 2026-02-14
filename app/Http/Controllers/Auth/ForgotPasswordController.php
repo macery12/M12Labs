@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserUpdateService;
+use Everest\Models\User;
 
 class ForgotPasswordController extends AbstractLoginController
 {

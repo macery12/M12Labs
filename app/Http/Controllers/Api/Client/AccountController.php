@@ -232,6 +232,7 @@ class AccountController extends ClientApiController
         
         // Store a flag to indicate this is account linking, not login/registration
         $request->session()->put('discord_account_linking', true);
+        $request->session()->save(); // Ensure session is saved before redirect
         
         $url = 'https://discord.com/api/oauth2/authorize?'
             . 'client_id=' . $clientId
