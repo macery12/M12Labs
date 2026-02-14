@@ -209,59 +209,7 @@ class DiscordLoginController extends AbstractLoginController
             'discord_id' => $account->id,
             'discord_username' => $account->username,
             'discord_email' => $account->email ?? null,
-            'has_linking_session' => $request->session()->has('discord_account_linking'),
-            'is_authenticated' => !is_null($request->user()),
-            'session_id' => $request->session()->getId(),
         ]);
-
-        // Check if this is account linking from the account page (user already authenticated)
-        if ($request->session()->has('discord_account_linking')) {
-            \Log::info('Discord authenticate - Account linking flow detected');
-            
-            $user = $request->user();
-            if (!$user) {
-                \Log::warning('Discord authenticate - Account linking session exists but user not authenticated', [
-                    'session_id' => $request->session()->getId(),
-                ]);
-                $request->session()->forget('discord_account_linking');
-                return redirect()->route('auth.login')->with('error', 'Your session expired. Please login and try linking Discord again.');
-            }
-            
-            \Log::info('Discord authenticate - User authenticated, proceeding with link', ['user_id' => $user->id]);
-            
-            // Check if this Discord ID is already linked to another account
-            $existingUser = User::where('external_id', $account->id)->first();
-            if ($existingUser && $existingUser->id !== $user->id) {
-                \Log::warning('Discord authenticate - Discord ID already linked to another user', [
-                    'discord_id' => $account->id,
-                    'existing_user_id' => $existingUser->id,
-                    'current_user_id' => $user->id,
-                ]);
-                $request->session()->forget('discord_account_linking');
-                return redirect('/account')->with('error', 'This Discord account is already linked to another user.');
-            }
-            
-            // Link Discord to current user's account
-            $user->update([
-                'external_id' => $account->id,
-                'discord_username' => $account->username,
-                'discord_avatar' => $account->avatar ?? null,
-            ]);
-            
-            \Log::info('Discord authenticate - Successfully linked Discord to user', [
-                'user_id' => $user->id,
-                'discord_id' => $account->id,
-                'discord_username' => $account->username,
-            ]);
-            
-            Activity::event('user:discord.linked')
-                ->withRequestMetadata()
-                ->property(['discord_username' => $account->username])
-                ->log();
-            
-            $request->session()->forget('discord_account_linking');
-            return redirect('/account?discord_linked=success');
-        }
 
         // Check if user exists with this Discord ID (external_id)
         $user = User::where('external_id', $account->id)->first();

@@ -3,7 +3,6 @@ import UpdatePasswordForm from '@account/forms/UpdatePasswordForm';
 import UpdateEmailAddressForm from '@account/forms/UpdateEmailAddressForm';
 import ConfigureTwoFactorForm from '@account/forms/ConfigureTwoFactorForm';
 import RecoveryCodeSection from '@account/RecoveryCodeSection';
-import DiscordLinkingSection from '@account/DiscordLinkingSection';
 import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
 import { breakpoint } from '@/assets/theme';
@@ -54,11 +53,9 @@ export default () => {
                 </ContentBox>
             </Container>
             
-            <Container css={tw`lg:grid lg:grid-cols-2 gap-8 mb-10`}>
+            <div css={tw`mb-10`}>
                 <RecoveryCodeSection />
-                
-                <DiscordLinkingSection />
-            </Container>
+            </div>
         </PageContentBlock>
     );
 };
