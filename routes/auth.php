@@ -59,6 +59,11 @@ Route::middleware(['throttle:authentication'])->group(function () {
     Route::post('/password', [Auth\ForgotPasswordController::class, 'verify'])
         ->name('auth.post.forgot-password')
         ->middleware('recaptcha');
+    
+    // Public password reset request endpoint (for locked-out users)
+    Route::post('/password-reset-request', [Auth\PublicPasswordResetRequestController::class, 'store'])
+        ->middleware('recaptcha')
+        ->name('auth.password-reset-request');
 });
 
 // Password reset routes. This endpoint is hit after going through

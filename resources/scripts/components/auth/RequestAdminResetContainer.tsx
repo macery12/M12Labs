@@ -4,14 +4,14 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
-import { createPasswordResetRequest } from '@/api/routes/account/password-reset-requests';
-import { httpErrorToHuman } from '@/api/http';
+import http, { httpErrorToHuman } from '@/api/http';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import { Button } from '@/elements/button';
 import Field from '@/elements/Field';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {
+    account_identifier: string;
     discord_username: string;
     contact_email: string;
     reason: string;
@@ -26,7 +26,7 @@ function RequestAdminResetContainer() {
     }, []);
 
     const handleSubmission = (
-        { discord_username, contact_email, reason }: Values,
+        { account_identifier, discord_username, contact_email, reason }: Values,
         { setSubmitting, resetForm }: FormikHelpers<Values>,
     ) => {
         clearFlashes();
@@ -42,11 +42,11 @@ function RequestAdminResetContainer() {
             return;
         }
 
-        const data: any = { reason };
+        const data: any = { account_identifier, reason };
         if (discord_username) data.discord_username = discord_username;
         if (contact_email) data.contact_email = contact_email;
 
-        createPasswordResetRequest(data)
+        http.post('/auth/password-reset-request', data)
             .then(() => {
                 resetForm();
                 addFlash({
@@ -67,8 +67,9 @@ function RequestAdminResetContainer() {
     return (
         <Formik
             onSubmit={handleSubmission}
-            initialValues={{ discord_username: '', contact_email: '', reason: '' }}
+            initialValues={{ account_identifier: '', discord_username: '', contact_email: '', reason: '' }}
             validationSchema={object().shape({
+                account_identifier: string().required('You must provide your email or username.'),
                 discord_username: string(),
                 contact_email: string().email('Must be a valid email address.'),
                 reason: string()
@@ -78,17 +79,28 @@ function RequestAdminResetContainer() {
         >
             {({ isSubmitting }) => (
                 <LoginFormContainer title={'Request Admin Password Reset'} css={tw`w-full flex`}>
-                    <p css={tw`text-sm text-neutral-300 mb-6`}>
-                        If you cannot access your email or recovery code, you can request assistance from an
-                        administrator. Please provide at least one way to contact you and explain why you need help.
-                    </p>
+                    <div css={tw`bg-blue-500/10 border border-blue-500/30 rounded-md p-4 mb-6`}>
+                        <p css={tw`text-sm text-blue-200`}>
+                            If you cannot access your email or recovery code, you can request assistance from an
+                            administrator. Please provide your account information and at least one way to contact you.
+                        </p>
+                    </div>
 
                     <Field
-                        label={'Discord Username (Optional)'}
-                        description={'Your Discord username so administrators can contact you.'}
-                        name={'discord_username'}
+                        label={'Email or Username'}
+                        description={'The email address or username associated with your account.'}
+                        name={'account_identifier'}
                         type={'text'}
                     />
+
+                    <div className={'mt-6'}>
+                        <Field
+                            label={'Discord Username (Optional)'}
+                            description={'Your Discord username so administrators can contact you.'}
+                            name={'discord_username'}
+                            type={'text'}
+                        />
+                    </div>
 
                     <div className={'mt-6'}>
                         <Field
@@ -102,14 +114,16 @@ function RequestAdminResetContainer() {
                     <div className={'mt-6'}>
                         <Field
                             label={'Reason for Request'}
-                            description={'Please explain why you need your password reset and why you cannot use the normal recovery process.'}
+                            description={
+                                'Please explain why you need your password reset and why you cannot use the normal recovery process.'
+                            }
                             name={'reason'}
                             type={'textarea'}
                         />
                     </div>
 
                     <div css={tw`mt-6`}>
-                        <Button type={'submit'} className={'w-full'} size={Button.Sizes.Large} disabled={isSubmitting}>
+                        <Button type={'submit'} size={Button.Sizes.Large} disabled={isSubmitting} css={tw`w-full`}>
                             Submit Request
                         </Button>
                     </div>
@@ -117,13 +131,13 @@ function RequestAdminResetContainer() {
                     <div css={tw`mt-6 text-center`}>
                         <Link
                             to={'/auth/password'}
-                            css={tw`text-xs text-neutral-300 tracking-wide no-underline uppercase font-medium hover:text-neutral-600 mr-4`}
+                            css={tw`text-xs text-neutral-400 tracking-wide no-underline uppercase hover:text-neutral-200 transition-colors mr-4`}
                         >
                             Back to Password Reset
                         </Link>
                         <Link
                             to={'/auth/login'}
-                            css={tw`text-xs text-neutral-300 tracking-wide no-underline uppercase font-medium hover:text-neutral-600`}
+                            css={tw`text-xs text-neutral-400 tracking-wide no-underline uppercase hover:text-neutral-200 transition-colors`}
                         >
                             Return to Login
                         </Link>

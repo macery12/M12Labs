@@ -137,7 +137,7 @@ function ForgotPasswordContainer() {
                     <div css={tw`mt-6 text-center`}>
                         <Link
                             to={'/auth/login'}
-                            css={tw`text-xs text-neutral-300 tracking-wide no-underline uppercase font-medium hover:text-neutral-600`}
+                            css={tw`text-xs text-neutral-400 tracking-wide no-underline uppercase hover:text-neutral-200 transition-colors`}
                         >
                             Return to Login
                         </Link>
@@ -145,7 +145,7 @@ function ForgotPasswordContainer() {
                     <div css={tw`mt-4 text-center`}>
                         <Link
                             to={'/auth/request-admin-reset'}
-                            css={tw`text-xs text-neutral-400 tracking-wide no-underline hover:text-neutral-300`}
+                            css={tw`inline-block text-xs text-blue-400 tracking-wide no-underline hover:text-blue-300 transition-colors bg-blue-500/10 hover:bg-blue-500/20 px-4 py-2 rounded-md border border-blue-500/30`}
                         >
                             Can&apos;t access your email or recovery code? Request admin assistance
                         </Link>
