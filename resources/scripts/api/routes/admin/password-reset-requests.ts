@@ -1,0 +1,31 @@
+import http from '@/api/http';
+
+export interface AdminPasswordResetRequest {
+    id: number;
+    user_id: number;
+    user_email: string;
+    user_username: string;
+    discord_username?: string;
+    contact_email?: string;
+    reason: string;
+    status: 'pending' | 'approved' | 'denied';
+    admin_id?: number;
+    admin_username?: string;
+    admin_notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export const getAllPasswordResetRequests = async (status?: string): Promise<AdminPasswordResetRequest[]> => {
+    const params = status ? { status } : {};
+    const { data } = await http.get('/api/application/password-reset-requests', { params });
+    return data.data || [];
+};
+
+export const approvePasswordResetRequest = async (id: number, adminNotes?: string): Promise<void> => {
+    await http.post(`/api/application/password-reset-requests/${id}/approve`, { admin_notes: adminNotes });
+};
+
+export const denyPasswordResetRequest = async (id: number, adminNotes?: string): Promise<void> => {
+    await http.post(`/api/application/password-reset-requests/${id}/deny`, { admin_notes: adminNotes });
+};

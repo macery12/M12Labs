@@ -20,6 +20,8 @@ const WebhookRouter = lazy(() => import('@/components/admin/modules/webhooks/Web
 const ThemeContainer = lazy(() => import('@/components/admin/modules/theme/ThemeContainer'));
 const AlertRouter = lazy(() => import('@/components/admin/modules/alert/AlertRouter'));
 
+const PasswordResetRequestsContainer = lazy(() => import('@/components/admin/security/PasswordResetRequestsContainer'));
+
 const NodeRouter = lazy(() => import('@/components/admin/management/nodes/NodeRouter'));
 const NodesContainer = lazy(() => import('@/components/admin/management/nodes/NodesContainer'));
 const NewNodeContainer = lazy(() => import('@/components/admin/management/nodes/NewNodeContainer'));
@@ -75,6 +77,15 @@ const admin: AdminRouteDefinition[] = [
     route('theme', ThemeContainer, { name: 'Theme', icon: Icon.PencilAltIcon, category: 'appearance' }),
     route('links/*', LinksContainer, { name: 'Links', icon: Icon.LinkIcon, category: 'appearance' }),
     route('alerts/*', AlertRouter, { name: 'Alerts', icon: Icon.ShieldExclamationIcon, category: 'appearance' }),
+
+    /**
+     * Admin - Security Routes
+     */
+    route('security/password-reset-requests', PasswordResetRequestsContainer, {
+        name: 'Password Reset Requests',
+        icon: Icon.KeyIcon,
+        category: 'security',
+    }),
 
     /**
      * Admin - Management Routes

@@ -17,6 +17,21 @@ class AccountDiscordController extends ClientApiController
     }
 
     /**
+     * Get Discord account status.
+     */
+    public function getStatus(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return new JsonResponse([
+            'linked' => !empty($user->external_id),
+            'discord_id' => $user->external_id,
+            'discord_username' => $user->discord_username,
+            'discord_avatar' => $user->discord_avatar,
+        ]);
+    }
+
+    /**
      * Get Discord OAuth URL for linking account.
      */
     public function getLinkUrl(Request $request): JsonResponse

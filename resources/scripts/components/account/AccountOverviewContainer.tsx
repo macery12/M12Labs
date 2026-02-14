@@ -2,6 +2,8 @@ import ContentBox from '@/elements/ContentBox';
 import UpdatePasswordForm from '@account/forms/UpdatePasswordForm';
 import UpdateEmailAddressForm from '@account/forms/UpdateEmailAddressForm';
 import ConfigureTwoFactorForm from '@account/forms/ConfigureTwoFactorForm';
+import LinkDiscordForm from '@account/forms/LinkDiscordForm';
+import PasswordResetRequests from '@account/forms/PasswordResetRequests';
 import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
 import { breakpoint } from '@/assets/theme';
@@ -49,6 +51,16 @@ export default () => {
 
                 <ContentBox css={tw`md:ml-8 mt-8 md:mt-0`} title="Two-Step Verification">
                     <ConfigureTwoFactorForm />
+                </ContentBox>
+            </Container>
+
+            <Container css={tw`lg:grid lg:grid-cols-2 mb-10`}>
+                <ContentBox title="Discord Account" showFlashes="account:discord">
+                    <LinkDiscordForm />
+                </ContentBox>
+
+                <ContentBox css={tw`mt-8 sm:mt-0 sm:ml-8`} title="Password Reset Requests" showFlashes="account:reset-requests">
+                    <PasswordResetRequests />
                 </ContentBox>
             </Container>
         </PageContentBlock>

@@ -142,6 +142,14 @@ function ForgotPasswordContainer() {
                             Return to Login
                         </Link>
                     </div>
+                    <div css={tw`mt-4 text-center`}>
+                        <Link
+                            to={'/auth/request-admin-reset'}
+                            css={tw`text-xs text-neutral-400 tracking-wide no-underline hover:text-neutral-300`}
+                        >
+                            Can&apos;t access your email or recovery code? Request admin assistance
+                        </Link>
+                    </div>
                 </LoginFormContainer>
             )}
         </Formik>

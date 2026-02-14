@@ -79,6 +79,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         });
 
         Route::prefix('/discord')->group(function () {
+            Route::get('/status', [Client\AccountDiscordController::class, 'getStatus']);
             Route::get('/link-url', [Client\AccountDiscordController::class, 'getLinkUrl']);
             Route::post('/unlink', [Client\AccountDiscordController::class, 'unlink']);
         });

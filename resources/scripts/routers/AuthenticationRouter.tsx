@@ -4,6 +4,7 @@ import ForgotPasswordContainer from '@/components/auth/ForgotPasswordContainer';
 import ResetPasswordContainer from '@/components/auth/ResetPasswordContainer';
 import LoginCheckpointContainer from '@/components/auth/LoginCheckpointContainer';
 import DiscordRegistrationContainer from '@/components/auth/DiscordRegistrationContainer';
+import RequestAdminResetContainer from '@/components/auth/RequestAdminResetContainer';
 import { NotFound } from '@/elements/ScreenBlock';
 import tw, { styled } from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
@@ -29,6 +30,7 @@ export default () => {
                     <Route path="discord/register" element={<DiscordRegistrationContainer />} />
                     <Route path="password" element={<ForgotPasswordContainer />} />
                     <Route path="password/reset/:token" element={<ResetPasswordContainer />} />
+                    <Route path="request-admin-reset" element={<RequestAdminResetContainer />} />
                     <Route path="*" element={<NotFound onBack={() => navigate('/auth/login')} />} />
                 </Routes>
             </div>
