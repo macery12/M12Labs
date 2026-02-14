@@ -32,6 +32,16 @@ const getStatusLabel = (status: string | undefined) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
+const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+        return format(parseISO(dateString), 'MMM dd, yyyy HH:mm');
+    } catch (error) {
+        console.error('Invalid date format:', dateString, error);
+        return 'Invalid Date';
+    }
+};
+
 export default function PasswordResetRequestsContainer() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState<number | null>(null);
@@ -153,7 +163,7 @@ export default function PasswordResetRequestsContainer() {
                                 <div css={tw`text-right`}>
                                     <p css={tw`text-xs text-neutral-400`}>Submitted</p>
                                     <p css={tw`text-sm text-neutral-300`}>
-                                        {format(parseISO(request.created_at), 'MMM dd, yyyy HH:mm')}
+                                        {formatDate(request.created_at)}
                                     </p>
                                 </div>
                             </div>
@@ -184,7 +194,7 @@ export default function PasswordResetRequestsContainer() {
                                     {request.admin_username && (
                                         <p css={tw`text-xs text-neutral-400 mt-2`}>
                                             By {request.admin_username} on{' '}
-                                            {format(parseISO(request.updated_at), 'MMM dd, yyyy HH:mm')}
+                                            {formatDate(request.updated_at)}
                                         </p>
                                     )}
                                 </div>
