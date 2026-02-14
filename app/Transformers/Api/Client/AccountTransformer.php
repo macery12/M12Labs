@@ -27,6 +27,9 @@ class AccountTransformer extends Transformer
             'email' => $model->email,
             'language' => $model->language,
             'has_discord_linked' => !empty($model->external_id),
+            'discord_username' => $model->discord_username,
+            'discord_avatar' => $model->discord_avatar,
+            'has_recovery_code' => !is_null($model->recovery_code),
         ];
     }
 }

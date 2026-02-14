@@ -41,7 +41,8 @@ class UserCreationService
             $data['password'] = $this->hasher->make(str_random(30));
         }
 
-        $data['recovery_code'] = Crypt::encryptString(str_random(32));
+        // Recovery code is NOT generated automatically - user must generate it manually from account page
+        $data['recovery_code'] = null;
 
         /** @var \Everest\Models\User $user */
         $user = $this->repository->create(array_merge($data, [

@@ -150,6 +150,33 @@ class AccountController extends ClientApiController
     }
     
     /**
+     * Generate a new recovery code for the user.
+     * This only works if the user doesn't have one already.
+     */
+    public function generateRecoveryCode(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        // Check if user already has a recovery code
+        if ($user->recovery_code) {
+            return new JsonResponse(['error' => 'Recovery code already exists'], Response::HTTP_CONFLICT);
+        }
+        
+        // Generate new recovery code
+        $recoveryCode = str_random(32);
+        $user->recovery_code = Crypt::encryptString($recoveryCode);
+        $user->save();
+        
+        Activity::event('user:recovery-code.generated')
+            ->withRequestMetadata()
+            ->log();
+        
+        return new JsonResponse([
+            'message' => 'Recovery code generated successfully',
+        ]);
+    }
+    
+    /**
      * Check if the recovery code has been downloaded.
      */
     public function checkRecoveryCodeStatus(Request $request): JsonResponse

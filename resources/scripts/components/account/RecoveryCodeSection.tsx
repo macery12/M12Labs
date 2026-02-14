@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import tw from 'twin.macro';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDownload, faShieldAlt, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faDownload, faShieldAlt, faCheckCircle, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/elements/button';
 import ContentBox from '@/elements/ContentBox';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
@@ -18,6 +18,7 @@ export default function RecoveryCodeSection() {
     const [status, setStatus] = useState<RecoveryCodeStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
+    const [generating, setGenerating] = useState(false);
     const { clearFlashes, addFlash } = useFlash();
 
     useEffect(() => {
@@ -32,6 +33,31 @@ export default function RecoveryCodeSection() {
                 console.error('Failed to check recovery code status:', err);
             })
             .finally(() => setLoading(false));
+    };
+
+    const generateRecoveryCode = () => {
+        setGenerating(true);
+        clearFlashes('account:recovery-code');
+
+        http.post('/api/client/account/recovery-code/generate')
+            .then(() => {
+                addFlash({
+                    key: 'account:recovery-code',
+                    type: 'success',
+                    message: 'Recovery code generated successfully! You can now download it.',
+                });
+                checkStatus();
+            })
+            .catch(err => {
+                console.error('Failed to generate recovery code:', err);
+                const message = err.response?.data?.error || 'Failed to generate recovery code.';
+                addFlash({
+                    key: 'account:recovery-code',
+                    type: 'error',
+                    message,
+                });
+            })
+            .finally(() => setGenerating(false));
     };
 
     const downloadRecoveryCode = () => {
@@ -88,14 +114,43 @@ export default function RecoveryCodeSection() {
             
             {status && (
                 <div>
-                    {status.can_download ? (
+                    {!status.has_recovery_code ? (
                         <>
                             <div css={tw`mb-4`}>
                                 <div css={tw`flex items-start`}>
                                     <FontAwesomeIcon icon={faShieldAlt} css={tw`text-yellow-400 mr-3 mt-1 text-xl`} />
                                     <div css={tw`flex-1`}>
                                         <p css={tw`text-sm text-gray-300 mb-2`}>
-                                            Your recovery code can be used to regain access to your account if you lose your password or 2FA device.
+                                            A recovery code can be used to regain access to your account if you lose your password or 2FA device.
+                                        </p>
+                                        <p css={tw`text-sm text-gray-400`}>
+                                            You haven't generated a recovery code yet. Generate one now to secure your account.
+                                        </p>
+                                        <p css={tw`text-xs text-gray-500 mt-2`}>
+                                            If you never generate a recovery code, you'll need to contact an administrator for account recovery.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div css={tw`flex justify-center`}>
+                                <Button.Success
+                                    onClick={generateRecoveryCode}
+                                    disabled={generating}
+                                >
+                                    <FontAwesomeIcon icon={faPlus} css={tw`mr-2`} />
+                                    {generating ? 'Generating...' : 'Generate Recovery Code'}
+                                </Button.Success>
+                            </div>
+                        </>
+                    ) : status.can_download ? (
+                        <>
+                            <div css={tw`mb-4`}>
+                                <div css={tw`flex items-start`}>
+                                    <FontAwesomeIcon icon={faShieldAlt} css={tw`text-yellow-400 mr-3 mt-1 text-xl`} />
+                                    <div css={tw`flex-1`}>
+                                        <p css={tw`text-sm text-gray-300 mb-2`}>
+                                            Your recovery code has been generated and is ready to download.
                                         </p>
                                         <p css={tw`text-sm text-yellow-400 font-medium`}>
                                             ⚠️ This code can only be downloaded once. Keep it in a safe place!
@@ -124,11 +179,7 @@ export default function RecoveryCodeSection() {
                                 </p>
                             </div>
                         </div>
-                    ) : (
-                        <div css={tw`text-gray-400 text-sm`}>
-                            <p>No recovery code available.</p>
-                        </div>
-                    )}
+                    ) : null}
                 </div>
             )}
         </ContentBox>

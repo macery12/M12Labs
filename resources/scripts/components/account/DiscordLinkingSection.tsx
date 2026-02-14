@@ -9,31 +9,46 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import http from '@/api/http';
 import useFlash from '@/plugins/useFlash';
 import { Dialog } from '@/elements/dialog';
+import { useStoreActions, useStoreState } from '@/state/hooks';
 
 export default function DiscordLinkingSection() {
-    const [hasDiscord, setHasDiscord] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const user = useStoreState((state) => state.user.data);
+    const mutateUser = useStoreActions((actions) => actions.user.setUserData);
+    const [loading, setLoading] = useState(false);
     const [unlinking, setUnlinking] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const { clearFlashes, addFlash } = useFlash();
 
+    // Check if we just returned from Discord OAuth
     useEffect(() => {
-        checkDiscordStatus();
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('discord_linked') === 'success') {
+            addFlash({
+                key: 'account:discord',
+                type: 'success',
+                message: 'Discord account linked successfully!',
+            });
+            
+            // Refresh user data
+            refreshUserData();
+            
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }, []);
 
-    const checkDiscordStatus = () => {
-        setLoading(true);
+    const refreshUserData = () => {
         http.get('/api/client/account')
             .then(({ data }) => {
-                setHasDiscord(data.attributes.has_discord_linked || false);
+                mutateUser(data.attributes);
             })
             .catch(err => {
-                console.error('Failed to check Discord status:', err);
-            })
-            .finally(() => setLoading(false));
+                console.error('Failed to refresh user data:', err);
+            });
     };
 
     const linkDiscord = () => {
+        setLoading(true);
         clearFlashes('account:discord');
         
         // Get Discord OAuth URL from the account endpoint (no recaptcha needed)
@@ -44,11 +59,13 @@ export default function DiscordLinkingSection() {
             })
             .catch(err => {
                 console.error('Failed to start Discord linking:', err);
+                const message = err.response?.data?.error || 'Failed to start Discord linking process.';
                 addFlash({
                     key: 'account:discord',
                     type: 'error',
-                    message: 'Failed to start Discord linking process.',
+                    message,
                 });
+                setLoading(false);
             });
     };
 
@@ -63,8 +80,8 @@ export default function DiscordLinkingSection() {
                     type: 'success',
                     message: 'Discord account unlinked successfully.',
                 });
-                setHasDiscord(false);
                 setShowConfirm(false);
+                refreshUserData();
             })
             .catch(err => {
                 console.error('Failed to unlink Discord:', err);
@@ -77,6 +94,10 @@ export default function DiscordLinkingSection() {
             })
             .finally(() => setUnlinking(false));
     };
+
+    const hasDiscord = user?.has_discord_linked || false;
+    const discordUsername = user?.discord_username;
+    const discordAvatar = user?.discord_avatar;
 
     return (
         <>
@@ -102,13 +123,32 @@ export default function DiscordLinkingSection() {
                 <div>
                     {hasDiscord ? (
                         <>
-                            <div css={tw`mb-4 flex items-center text-green-400`}>
-                                <FontAwesomeIcon icon={faCheckCircle} css={tw`mr-3 text-xl`} />
-                                <div>
-                                    <p css={tw`font-medium`}>Discord account linked</p>
-                                    <p css={tw`text-sm text-gray-400 mt-1`}>
-                                        Your Discord account is linked for easy login and 2FA recovery.
-                                    </p>
+                            <div css={tw`mb-4`}>
+                                <div css={tw`flex items-start`}>
+                                    <FontAwesomeIcon icon={faCheckCircle} css={tw`text-green-400 mr-3 mt-1 text-xl`} />
+                                    <div css={tw`flex-1`}>
+                                        <p css={tw`font-medium text-green-400`}>Discord account linked</p>
+                                        {discordUsername && (
+                                            <div css={tw`flex items-center mt-2`}>
+                                                {discordAvatar && (
+                                                    <img
+                                                        src={`https://cdn.discordapp.com/avatars/${user?.external_id}/${discordAvatar}.png?size=64`}
+                                                        alt="Discord avatar"
+                                                        css={tw`w-10 h-10 rounded-full mr-3`}
+                                                    />
+                                                )}
+                                                <div>
+                                                    <p css={tw`text-sm text-gray-300`}>{discordUsername}</p>
+                                                    <p css={tw`text-xs text-gray-500`}>Linked for login & 2FA recovery</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!discordUsername && (
+                                            <p css={tw`text-sm text-gray-400 mt-1`}>
+                                                Your Discord account is linked for easy login and 2FA recovery.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             

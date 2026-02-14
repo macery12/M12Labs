@@ -216,14 +216,18 @@ class DiscordLoginController extends AbstractLoginController
                 }
                 
                 // Link Discord to current user's account
-                $user->external_id = $account->id;
-                $user->save();
+                $user->update([
+                    'external_id' => $account->id,
+                    'discord_username' => $account->username,
+                    'discord_avatar' => $account->avatar ?? null,
+                ]);
                 
                 Activity::event('user:discord.linked')
                     ->withRequestMetadata()
+                    ->property(['discord_username' => $account->username])
                     ->log();
                 
-                return redirect('/account')->with('success', 'Discord account linked successfully!');
+                return redirect('/account?discord_linked=success');
             }
             
             // User not authenticated, redirect to login
