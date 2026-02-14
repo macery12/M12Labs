@@ -118,16 +118,24 @@ class AccountDiscordController extends ClientApiController
 
         // Update the user's Discord info
         $user = User::findOrFail($userId);
+        
+        // Discord removed discriminators in May 2023
+        // New usernames don't have discriminators, old ones might still have them
+        $discordUsername = $account['username'];
+        if (isset($account['discriminator']) && $account['discriminator'] !== '0') {
+            $discordUsername .= '#' . $account['discriminator'];
+        }
+        
         $user->update([
             'external_id' => $account['id'],
-            'discord_username' => $account['username'] . '#' . ($account['discriminator'] ?? '0'),
+            'discord_username' => $discordUsername,
             'discord_avatar' => $account['avatar'] ?? null,
         ]);
 
         Activity::event('user:discord.linked')
             ->subject($user)
             ->property('discord_id', $account['id'])
-            ->property('discord_username', $account['username'])
+            ->property('discord_username', $discordUsername)
             ->property('ip', $request->ip())
             ->property('user_agent', $request->userAgent())
             ->log();
