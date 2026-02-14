@@ -3,6 +3,7 @@
 namespace Everest\Transformers\Api\Application;
 
 use Everest\Models\PasswordResetRequest;
+use Everest\Services\Acl\Api\AdminAcl;
 use Everest\Transformers\Api\Transformer;
 use League\Fractal\Resource\Item;
 use League\Fractal\Resource\NullResource;

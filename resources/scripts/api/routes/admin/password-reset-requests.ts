@@ -33,8 +33,9 @@ export const getPasswordResetRequestCount = async (): Promise<number> => {
     return data.count || 0;
 };
 
-export const approvePasswordResetRequest = async (id: number, adminNotes?: string): Promise<void> => {
-    await http.post(`/api/application/password-reset-requests/${id}/approve`, { admin_notes: adminNotes });
+export const approvePasswordResetRequest = async (id: number, adminNotes?: string): Promise<any> => {
+    const { data } = await http.post(`/api/application/password-reset-requests/${id}/approve`, { admin_notes: adminNotes });
+    return data;
 };
 
 export const denyPasswordResetRequest = async (id: number, adminNotes?: string): Promise<void> => {

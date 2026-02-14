@@ -47,7 +47,7 @@ export default function PasswordResetRequestsContainer() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState<number | null>(null);
     const [requests, setRequests] = useState<AdminPasswordResetRequest[]>([]);
-    const [filter, setFilter] = useState<string>('');
+    const [filter, setFilter] = useState<string>('pending');
     const [adminNotes, setAdminNotes] = useState<Record<number, string>>({});
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlashKey('admin:password-reset-requests');
     const { colors } = useStoreState(state => state.theme.data!);
@@ -70,11 +70,40 @@ export default function PasswordResetRequestsContainer() {
         clearFlashes();
 
         approvePasswordResetRequest(id, adminNotes)
-            .then(() => {
-                addFlash({
-                    type: 'success',
-                    message: 'Password reset request approved.',
-                });
+            .then((response) => {
+                // In JSON-API format, the temporary password might be in attributes or a separate included object
+                let tempPassword: string | null = null;
+                
+                // Check if it's in the main data attributes
+                if (response?.data?.attributes?.temporary_password) {
+                    tempPassword = response.data.attributes.temporary_password;
+                }
+                
+                // Check if it's in included array
+                if (!tempPassword && response?.included) {
+                    const tempPasswordObj = response.included.find((item: any) => 
+                        item.object === 'temporary_password' || item.temporary_password
+                    );
+                    if (tempPasswordObj?.attributes?.temporary_password) {
+                        tempPassword = tempPasswordObj.attributes.temporary_password;
+                    } else if (tempPasswordObj?.temporary_password) {
+                        tempPassword = tempPasswordObj.temporary_password;
+                    }
+                }
+
+                if (tempPassword) {
+                    addFlash({
+                        type: 'success',
+                        title: 'Password Reset Approved',
+                        message: `Temporary Password: ${tempPassword}\n\nPlease copy this password and provide it to the user. They should change it immediately after logging in.`,
+                    });
+                } else {
+                    addFlash({
+                        type: 'success',
+                        message: 'Password reset request approved. Check the response for the temporary password.',
+                    });
+                    console.log('Approve response:', response);
+                }
                 loadRequests();
             })
             .catch(clearAndAddHttpError)
