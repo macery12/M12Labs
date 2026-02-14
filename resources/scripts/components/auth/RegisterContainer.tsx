@@ -187,6 +187,21 @@ function RegisterContainer() {
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
                         />
+                        {values.password && values.password_confirmation && (
+                            <p
+                                css={tw`text-xs mt-1 ${
+                                    values.password === values.password_confirmation
+                                        ? 'text-green-500'
+                                        : 'text-red-500'
+                                }`}
+                            >
+                                {values.password === values.password_confirmation ? (
+                                    <>✓ Passwords match</>
+                                ) : (
+                                    <>✗ Passwords do not match</>
+                                )}
+                            </p>
+                        )}
                     </div>
                     <div css={tw`mt-6`}>
                         <Button

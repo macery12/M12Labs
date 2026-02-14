@@ -27,7 +27,6 @@ class RegisterRequest extends FormRequest
                     ->symbols()
                     ->uncompromised(),
             ],
-            'confirm_password' => 'required|string',
         ];
     }
 
