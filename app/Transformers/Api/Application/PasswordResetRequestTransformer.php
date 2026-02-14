@@ -75,7 +75,7 @@ class PasswordResetRequestTransformer extends Transformer
     /**
      * Include the temporary password (only if just approved and encrypted).
      */
-    public function includeTemporaryPassword(PasswordResetRequest $model): array|NullResource
+    public function includeTemporaryPassword(PasswordResetRequest $model): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_USERS) || !$model->generated_password) {
             return $this->null();
@@ -83,9 +83,11 @@ class PasswordResetRequestTransformer extends Transformer
 
         try {
             $password = decrypt($model->generated_password);
-            return [
-                'temporary_password' => $password,
-            ];
+            
+            // Return as a Fractal Item with a simple transformer
+            return $this->item($password, function ($password) {
+                return ['temporary_password' => $password];
+            }, 'temporary_password');
         } catch (\Exception $e) {
             return $this->null();
         }
