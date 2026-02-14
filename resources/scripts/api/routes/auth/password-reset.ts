@@ -26,11 +26,11 @@ const requestPasswordReset = (
     email: string,
     code: string,
     password: string,
-    password_confirm: string,
+    password_confirmation: string,
     recaptchaData?: string,
 ): Promise<string> => {
     return new Promise((resolve, reject) => {
-        http.post('/auth/password', { email, code, 'g-recaptcha-response': recaptchaData, password, password_confirm })
+        http.post('/auth/password', { email, code, 'g-recaptcha-response': recaptchaData, password, password_confirmation })
             .then(response => resolve(response.data.status || ''))
             .catch(reject);
     });
