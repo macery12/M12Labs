@@ -2,7 +2,9 @@
 
 namespace Everest\Http\Controllers\Auth;
 
+use Everest\Models\User;
 use Illuminate\Http\Request;
+use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
@@ -38,6 +40,11 @@ class ForgotPasswordController extends AbstractLoginController
         }
 
         $user = $this->updateService->handle($user, ['password' => $request->input('password')]);
+
+        Activity::event('user:password-reset.recovery-code')
+            ->property('ip', $request->ip())
+            ->property('user_agent', $request->userAgent())
+            ->log();
 
         if (!$user->use_totp) {
             $this->sendLoginResponse($user, $request);

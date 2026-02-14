@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Everest\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
 use PragmaRX\Google2FA\Google2FA;
 use Illuminate\Support\Facades\Event;
@@ -97,7 +98,7 @@ class LoginCheckpointController extends AbstractLoginController
 
     /**
      * Determines if a given recovery token is valid for the user account. If we find a matching token
-     * it will be deleted from the database.
+     * it will be deleted from the database and usage will be tracked.
      *
      * @throws \Exception
      */
@@ -105,6 +106,19 @@ class LoginCheckpointController extends AbstractLoginController
     {
         foreach ($user->recoveryTokens as $token) {
             if (password_verify($value, $token->token)) {
+                // Track usage before deleting
+                $token->update([
+                    'used_at' => Carbon::now(),
+                    'last_used_ip' => request()->ip(),
+                ]);
+
+                // Log the recovery token usage
+                Activity::event('user:recovery-token.used')
+                    ->property('ip', request()->ip())
+                    ->property('user_agent', request()->userAgent())
+                    ->log();
+
+                // Single-use: delete after use
                 $token->delete();
 
                 return true;

@@ -64,7 +64,10 @@ class TwoFactorController extends ClientApiController
 
         $tokens = $this->toggleTwoFactorService->handle($request->user(), $data['code'], true);
 
-        Activity::event('user:two-factor.create')->log();
+        Activity::event('user:two-factor.enabled')
+            ->property('ip', $request->ip())
+            ->property('user_agent', $request->userAgent())
+            ->log();
 
         return new JsonResponse([
             'object' => 'recovery_tokens',
@@ -94,7 +97,10 @@ class TwoFactorController extends ClientApiController
             'use_totp' => false,
         ]);
 
-        Activity::event('user:two-factor.delete')->log();
+        Activity::event('user:two-factor.disabled')
+            ->property('ip', $request->ip())
+            ->property('user_agent', $request->userAgent())
+            ->log();
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

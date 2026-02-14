@@ -31,6 +31,8 @@ class UserTransformer extends Transformer
         return [
             'id' => $model->id,
             'external_id' => $model->external_id,
+            'discord_username' => $model->discord_username,
+            'discord_avatar' => $model->discord_avatar,
             'uuid' => $model->uuid,
             'username' => $model->username,
             'email' => $model->email,
