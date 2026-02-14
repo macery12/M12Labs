@@ -8,6 +8,7 @@ import tw from 'twin.macro';
 import { object, string } from 'yup';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
@@ -36,6 +37,7 @@ function RegisterContainer() {
     const token = useRef('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
+    const [password, setPassword] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
@@ -174,7 +176,12 @@ function RegisterContainer() {
                             name={'password'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setFieldValue('password', e.target.value);
+                                setPassword(e.target.value);
+                            }}
                         />
+                        <PasswordStrengthIndicator password={password} showPwnedWarning={true} />
                     </div>
                     <div css={tw`mt-6`}>
                         <Field

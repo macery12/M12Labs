@@ -1,7 +1,7 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
@@ -9,6 +9,7 @@ import { object, string } from 'yup';
 
 import { login, externalLogin } from '@/api/routes/auth/login';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import RecoveryCodeModal from '@/components/auth/RecoveryCodeModal';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
@@ -25,6 +26,7 @@ interface Values {
 function LoginContainer() {
     const ref = useRef<Reaptcha>(null);
     const token = useRef('');
+    const [showRecoveryModal, setShowRecoveryModal] = useState(false);
 
     const appName = useStoreState(state => state.settings.data!.name);
     const modules = useStoreState(state => state.everest.data!.auth.modules);
@@ -67,8 +69,13 @@ function LoginContainer() {
         login({ ...values, recaptchaData: token.current })
             .then(response => {
                 if (response.complete) {
-                    // @ts-expect-error this is valid
-                    window.location = response.intended || '/';
+                    // Check if we should show recovery code modal
+                    if (response.showRecoveryCode) {
+                        setShowRecoveryModal(true);
+                    } else {
+                        // @ts-expect-error this is valid
+                        window.location = response.intended || '/';
+                    }
                     return;
                 }
 
@@ -86,14 +93,23 @@ function LoginContainer() {
     };
 
     return (
-        <Formik
-            onSubmit={onSubmit}
-            initialValues={{ username: '', password: '' }}
-            validationSchema={object().shape({
-                username: string().required('A username or email must be provided.'),
-                password: string().required('Please enter your account password.'),
-            })}
-        >
+        <>
+            <RecoveryCodeModal
+                visible={showRecoveryModal}
+                onDismissed={() => {
+                    setShowRecoveryModal(false);
+                    // @ts-expect-error this is valid
+                    window.location = '/';
+                }}
+            />
+            <Formik
+                onSubmit={onSubmit}
+                initialValues={{ username: '', password: '' }}
+                validationSchema={object().shape({
+                    username: string().required('A username or email must be provided.'),
+                    password: string().required('Please enter your account password.'),
+                })}
+            >
             {({ isSubmitting, setSubmitting, submitForm }) => (
                 <LoginFormContainer title={`Welcome to ${appName}`}>
                     <Field
@@ -176,6 +192,7 @@ function LoginContainer() {
                 </LoginFormContainer>
             )}
         </Formik>
+        </>
     );
 }
 

@@ -45,6 +45,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::put('/email', [Client\AccountController::class, 'updateEmail'])->name('api:client.account.update-email');
         Route::put('/password', [Client\AccountController::class, 'updatePassword'])->name('api:client.account.update-password');
+        Route::get('/recovery-code', [Client\AccountController::class, 'getRecoveryCode'])->name('api:client.account.recovery-code');
 
         Route::get('/activity', Client\ActivityLogController::class)->name('api:client.account.activity');
 

@@ -36,4 +36,12 @@ const setupAccount = (values: { username: string; password: string }): Promise<v
     });
 };
 
-export { updateAccountPassword, updateAccountEmail, setupAccount };
+const getRecoveryCode = (): Promise<{ recovery_code: string }> => {
+    return new Promise((resolve, reject) => {
+        http.get('/api/client/account/recovery-code')
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export { updateAccountPassword, updateAccountEmail, setupAccount, getRecoveryCode };

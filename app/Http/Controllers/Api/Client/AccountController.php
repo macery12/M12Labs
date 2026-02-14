@@ -7,6 +7,7 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Crypt;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Transformers\Api\Client\AccountTransformer;
 use Everest\Http\Requests\Api\Client\Account\SetupUserRequest;
@@ -82,5 +83,32 @@ class AccountController extends ClientApiController
         $user = $this->updateService->handle($request->user(), $request->validated());
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
+    }
+    
+    /**
+     * Get the recovery code for the authenticated user.
+     * This is only available once after registration.
+     */
+    public function getRecoveryCode(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->recovery_code) {
+            return new JsonResponse(['error' => 'No recovery code available'], Response::HTTP_NOT_FOUND);
+        }
+        
+        try {
+            $recoveryCode = Crypt::decryptString($user->recovery_code);
+            
+            Activity::event('user:recovery-code.viewed')
+                ->withRequestMetadata()
+                ->log();
+            
+            return new JsonResponse([
+                'recovery_code' => $recoveryCode,
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'Unable to retrieve recovery code'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

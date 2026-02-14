@@ -20,6 +20,7 @@ const login = ({ username, password, recaptchaData }: LoginData): Promise<AuthRe
                     complete: response.data.data.complete,
                     intended: response.data.data.intended || undefined,
                     confirmationToken: response.data.data.confirmation_token || undefined,
+                    showRecoveryCode: response.data.data.show_recovery_code || false,
                 });
             })
             .catch(reject);

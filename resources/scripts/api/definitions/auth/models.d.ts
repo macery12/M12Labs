@@ -15,6 +15,7 @@ interface AuthResponse extends Model {
     complete: boolean;
     intended?: string;
     confirmationToken?: string;
+    showRecoveryCode?: boolean;
 }
 
 interface PasswordResetResponse extends Model {
