@@ -2,7 +2,6 @@ import ContentBox from '@/elements/ContentBox';
 import UpdatePasswordForm from '@account/forms/UpdatePasswordForm';
 import UpdateEmailAddressForm from '@account/forms/UpdateEmailAddressForm';
 import ConfigureTwoFactorForm from '@account/forms/ConfigureTwoFactorForm';
-import RecoveryCodeSection from '@account/RecoveryCodeSection';
 import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
 import { breakpoint } from '@/assets/theme';
@@ -52,10 +51,6 @@ export default () => {
                     <ConfigureTwoFactorForm />
                 </ContentBox>
             </Container>
-            
-            <div css={tw`mb-10`}>
-                <RecoveryCodeSection />
-            </div>
         </PageContentBlock>
     );
 };

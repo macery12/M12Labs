@@ -8,7 +8,6 @@ import tw from 'twin.macro';
 import { object, string } from 'yup';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
-import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
@@ -29,7 +28,7 @@ interface Values {
     username: string;
     email: string;
     password: string;
-    password_confirmation: string;
+    confirm_password: string;
 }
 
 function RegisterContainer() {
@@ -37,7 +36,6 @@ function RegisterContainer() {
     const token = useRef('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
-    const [password, setPassword] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
@@ -112,16 +110,12 @@ function RegisterContainer() {
     return (
         <Formik
             onSubmit={onSubmit}
-            initialValues={{ username: '', email: '', password: '', password_confirmation: '' }}
+            initialValues={{ username: '', email: '', password: '', confirm_password: '' }}
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
                 email: string().email().required('You must provide a valid email.'),
                 password: string().required('Please enter your account password.'),
-                password_confirmation: string()
-                    .required('Please enter the password confirmation.')
-                    .test('passwords-match', 'Passwords must match', function(value) {
-                        return this.parent.password === value;
-                    }),
+                confirm_password: string().required('Please enter the password confirmation.'),
             })}
         >
             {({ isSubmitting, setSubmitting, submitForm, setFieldValue }) => (
@@ -180,19 +174,14 @@ function RegisterContainer() {
                             name={'password'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                setFieldValue('password', e.target.value);
-                                setPassword(e.target.value);
-                            }}
                         />
-                        <PasswordStrengthIndicator password={password} showPwnedWarning={true} />
                     </div>
                     <div css={tw`mt-6`}>
                         <Field
                             type={'password'}
                             label={'Confirm Password'}
                             icon={faUnlockKeyhole}
-                            name={'password_confirmation'}
+                            name={'confirm_password'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
                         />

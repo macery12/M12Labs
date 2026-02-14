@@ -1,7 +1,7 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';

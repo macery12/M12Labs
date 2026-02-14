@@ -4,7 +4,6 @@ namespace Everest\Http\Controllers\Auth\Modules;
 
 use Carbon\Carbon;
 use Everest\Models\User;
-use Everest\Facades\Activity;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -40,15 +39,8 @@ class DiscordLoginController extends AbstractLoginController
             $this->sendLockoutResponse($request);
         }
 
-        $clientId = config('modules.auth.discord.client_id');
-        $clientSecret = config('modules.auth.discord.client_secret');
-        
-        if (empty($clientId) || empty($clientSecret)) {
-            throw new DisplayException('Discord integration is not configured. Please contact an administrator.');
-        }
-
         return 'https://discord.com/api/oauth2/authorize?'
-            . 'client_id=' . $clientId
+            . 'client_id=' . config('modules.auth.discord.client_id')
             . '&redirect_uri=' . route('auth.modules.discord.authenticate')
             . '&response_type=code&scope=identify%20email'
             . '&state=' . encrypt($request->ip());
@@ -190,7 +182,6 @@ class DiscordLoginController extends AbstractLoginController
         $response = json_decode($response);
 
         if (!isset($response->access_token)) {
-            \Log::error('Discord authenticate - Failed to get access token', ['response' => $response]);
             return redirect()->route('auth.login')->with('error', 'Failed to authenticate with Discord.');
         }
 
@@ -201,15 +192,8 @@ class DiscordLoginController extends AbstractLoginController
         $account = json_decode($account);
 
         if (!isset($account->id)) {
-            \Log::error('Discord authenticate - Failed to get account info', ['account' => $account]);
             return redirect()->route('auth.login')->with('error', 'Failed to retrieve Discord account information.');
         }
-
-        \Log::info('Discord authenticate - Account data retrieved', [
-            'discord_id' => $account->id,
-            'discord_username' => $account->username,
-            'discord_email' => $account->email ?? null,
-        ]);
 
         // Check if user exists with this Discord ID (external_id)
         $user = User::where('external_id', $account->id)->first();

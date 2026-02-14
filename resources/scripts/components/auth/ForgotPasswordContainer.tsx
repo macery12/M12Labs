@@ -9,7 +9,6 @@ import { object, string } from 'yup';
 import { requestPasswordReset } from '@/api/routes/auth/password-reset';
 import { httpErrorToHuman } from '@/api/http';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
-import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import { Button } from '@/elements/button';
 import Field from '@/elements/Field';
 import useFlash from '@/plugins/useFlash';
@@ -18,7 +17,7 @@ interface Values {
     email: string;
     code: string;
     password: string;
-    password_confirmation: string;
+    password_confirm: string;
 }
 
 function ForgotPasswordContainer() {
@@ -33,7 +32,7 @@ function ForgotPasswordContainer() {
     }, []);
 
     const handleSubmission = (
-        { email, code, password, password_confirmation }: Values,
+        { email, code, password, password_confirm }: Values,
         { setSubmitting, resetForm }: FormikHelpers<Values>,
     ) => {
         clearFlashes();
@@ -51,7 +50,7 @@ function ForgotPasswordContainer() {
             return;
         }
 
-        requestPasswordReset(email, code, password, password_confirmation, token.current)
+        requestPasswordReset(email, code, password, password_confirm, token.current)
             .then(response => {
                 resetForm();
                 addFlash({ type: 'success', title: 'Success', message: response });
@@ -73,17 +72,17 @@ function ForgotPasswordContainer() {
     return (
         <Formik
             onSubmit={handleSubmission}
-            initialValues={{ email: '', code: '', password: '', password_confirmation: '' }}
+            initialValues={{ email: '', code: '', password: '', password_confirm: '' }}
             validationSchema={object().shape({
                 email: string()
                     .email('A valid email address must be provided to continue.')
                     .required('A valid email address must be provided to continue.'),
                 code: string().required('You must enter your account recovery code to continue.'),
                 password: string().min(8).required(),
-                password_confirmation: string().min(8).required(),
+                password_confirm: string().min(8).required(),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm, values }) => (
+            {({ isSubmitting, setSubmitting, submitForm }) => (
                 <LoginFormContainer title={'Reset your Password'} css={tw`w-full flex`}>
                     <Field
                         label={'Email Address'}
@@ -108,12 +107,11 @@ function ForgotPasswordContainer() {
                             name={'password'}
                             type={'password'}
                         />
-                        <PasswordStrengthIndicator password={values.password} />
                     </div>
                     <Field
                         label={'Confirm New Password'}
                         description={'For extra security, re-enter the above password.'}
-                        name={'password_confirmation'}
+                        name={'password_confirm'}
                         type={'password'}
                     />
                     <div css={tw`mt-6`}>

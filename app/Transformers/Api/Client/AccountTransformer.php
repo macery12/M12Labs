@@ -26,7 +26,6 @@ class AccountTransformer extends Transformer
             'username' => $model->username,
             'email' => $model->email,
             'language' => $model->language,
-            'has_recovery_code' => !is_null($model->recovery_code),
         ];
     }
 }

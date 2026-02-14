@@ -7,13 +7,11 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Crypt;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Transformers\Api\Client\AccountTransformer;
 use Everest\Http\Requests\Api\Client\Account\SetupUserRequest;
 use Everest\Http\Requests\Api\Client\Account\UpdateEmailRequest;
 use Everest\Http\Requests\Api\Client\Account\UpdatePasswordRequest;
-use Everest\Exceptions\DisplayException;
 
 class AccountController extends ClientApiController
 {
@@ -84,112 +82,5 @@ class AccountController extends ClientApiController
         $user = $this->updateService->handle($request->user(), $request->validated());
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
-    }
-    
-    /**
-     * Get the recovery code for the authenticated user.
-     * This can only be downloaded once - after that it's marked as viewed.
-     */
-    public function getRecoveryCode(Request $request): JsonResponse
-    {
-        $user = $request->user();
-        
-        if (!$user->recovery_code) {
-            return new JsonResponse(['error' => 'No recovery code available'], Response::HTTP_NOT_FOUND);
-        }
-        
-        // Check if already downloaded (we'll use a session flag for this)
-        if ($request->session()->has('recovery_code_downloaded_' . $user->id)) {
-            return new JsonResponse(['error' => 'Recovery code has already been downloaded'], Response::HTTP_FORBIDDEN);
-        }
-        
-        try {
-            // The recovery_code is encrypted, so decrypt it
-            $recoveryCode = Crypt::decryptString($user->recovery_code);
-            
-            // Mark as downloaded
-            $request->session()->put('recovery_code_downloaded_' . $user->id, true);
-            
-            Activity::event('user:recovery-code.viewed')
-                ->withRequestMetadata()
-                ->log();
-            
-            return new JsonResponse([
-                'recovery_code' => $recoveryCode,
-            ]);
-        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // Recovery code is corrupted or encrypted with wrong key
-            // Generate a new one and save it
-            \Log::warning('Recovery code corrupted for user ' . $user->id . ', regenerating', [
-                'error' => $e->getMessage(),
-                'recovery_code_length' => strlen($user->recovery_code),
-            ]);
-            
-            // Generate new recovery code
-            $newRecoveryCode = str_random(32);
-            $user->recovery_code = Crypt::encryptString($newRecoveryCode);
-            $user->save();
-            
-            // Mark as downloaded
-            $request->session()->put('recovery_code_downloaded_' . $user->id, true);
-            
-            Activity::event('user:recovery-code.regenerated')
-                ->withRequestMetadata()
-                ->log();
-            
-            return new JsonResponse([
-                'recovery_code' => $newRecoveryCode,
-                'regenerated' => true,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Unexpected error retrieving recovery code for user ' . $user->id, [
-                'error' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Unable to retrieve recovery code'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-    
-    /**
-     * Generate a new recovery code for the user.
-     * This only works if the user doesn't have one already.
-     */
-    public function generateRecoveryCode(Request $request): JsonResponse
-    {
-        $user = $request->user();
-        
-        // Check if user already has a recovery code
-        if ($user->recovery_code) {
-            return new JsonResponse(['error' => 'Recovery code already exists'], Response::HTTP_CONFLICT);
-        }
-        
-        // Generate new recovery code
-        $recoveryCode = str_random(32);
-        $user->recovery_code = Crypt::encryptString($recoveryCode);
-        $user->save();
-        
-        Activity::event('user:recovery-code.generated')
-            ->withRequestMetadata()
-            ->log();
-        
-        return new JsonResponse([
-            'message' => 'Recovery code generated successfully',
-        ]);
-    }
-    
-    /**
-     * Check if the recovery code has been downloaded.
-     */
-    public function checkRecoveryCodeStatus(Request $request): JsonResponse
-    {
-        $user = $request->user();
-        
-        $hasRecoveryCode = !empty($user->recovery_code);
-        $alreadyDownloaded = $request->session()->has('recovery_code_downloaded_' . $user->id);
-        
-        return new JsonResponse([
-            'has_recovery_code' => $hasRecoveryCode,
-            'already_downloaded' => $alreadyDownloaded,
-            'can_download' => $hasRecoveryCode && !$alreadyDownloaded,
-        ]);
     }
 }

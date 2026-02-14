@@ -27,13 +27,13 @@ class RegisterRequest extends FormRequest
                     ->symbols()
                     ->uncompromised(),
             ],
+            'confirm_password' => 'required|string',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'password.confirmed' => 'The password confirmation does not match.',
             'password.min' => 'Password must be at least 8 characters long.',
             'password.mixed' => 'Password must contain both uppercase and lowercase letters.',
             'password.numbers' => 'Password must contain at least one number.',

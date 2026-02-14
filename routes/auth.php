@@ -34,6 +34,7 @@ Route::middleware(['throttle:authentication'])->group(function () {
 
     Route::post('/modules/discord', [Auth\Modules\DiscordLoginController::class, 'requestToken'])->middleware('recaptcha');
     Route::get('/modules/discord/authenticate', [Auth\Modules\DiscordLoginController::class, 'authenticate'])
+        ->middleware('recaptcha')
         ->name('auth.modules.discord.authenticate');
     Route::get('/modules/discord/registration-data', [Auth\Modules\DiscordLoginController::class, 'getRegistrationData'])
         ->name('auth.modules.discord.registration-data');
