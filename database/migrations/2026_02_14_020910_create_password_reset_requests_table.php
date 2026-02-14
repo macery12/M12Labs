@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('contact_email')->nullable();
             $table->text('reason');
             $table->enum('status', ['pending', 'approved', 'denied'])->default('pending');
-            $table->string('generated_password')->nullable(); // Encrypted temporary password
             $table->unsignedInteger('reviewed_by')->nullable(); // Admin user ID who reviewed
             $table->timestamp('reviewed_at')->nullable();
             $table->text('admin_notes')->nullable();
