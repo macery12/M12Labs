@@ -78,6 +78,16 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/install', [Client\AccountModpacksController::class, 'install']);
         });
 
+        Route::prefix('/discord')->group(function () {
+            Route::get('/link-url', [Client\AccountDiscordController::class, 'getLinkUrl']);
+            Route::post('/unlink', [Client\AccountDiscordController::class, 'unlink']);
+        });
+
+        Route::prefix('/password-reset-requests')->group(function () {
+            Route::get('/', [Client\PasswordResetRequestController::class, 'index']);
+            Route::post('/', [Client\PasswordResetRequestController::class, 'store']);
+        });
+
         Route::post('/setup', [Client\AccountController::class, 'setup']);
     });
 

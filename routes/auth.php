@@ -48,6 +48,12 @@ Route::middleware(['throttle:authentication'])->group(function () {
         ->middleware('recaptcha')
         ->name('auth.modules.google.authenticate');
 
+    // Discord account linking for authenticated users
+    Route::get('/modules/discord/link/callback', [\Everest\Http\Controllers\Api\Client\AccountDiscordController::class, 'handleCallback'])
+        ->withoutMiddleware('guest')
+        ->middleware('auth')
+        ->name('auth.modules.discord.link.callback');
+
     // Forgot password route. A post to this endpoint will trigger an
     // email to be sent containing a reset token.
     Route::post('/password', [Auth\ForgotPasswordController::class, 'verify'])

@@ -423,6 +423,21 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Password Reset Request Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/password-reset-requests
+    |
+    */
+    Route::group(['prefix' => '/password-reset-requests'], function () {
+        Route::get('/', [Application\PasswordResetRequestController::class, 'index']);
+        Route::get('/{resetRequest:id}', [Application\PasswordResetRequestController::class, 'view']);
+        Route::post('/{resetRequest:id}/approve', [Application\PasswordResetRequestController::class, 'approve']);
+        Route::post('/{resetRequest:id}/deny', [Application\PasswordResetRequestController::class, 'deny']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | Role Controller Routes
     |--------------------------------------------------------------------------
     |
