@@ -40,7 +40,12 @@ export default function RecoveryCodeSection() {
 
         http.get('/api/client/account/recovery-code')
             .then(({ data }) => {
-                const content = `RECOVERY CODE - KEEP THIS SAFE!\n\nYour account recovery code:\n${data.recovery_code}\n\nThis code can be used to recover your account if you lose access.\nStore it in a safe place. Do not share it with anyone.\n\nGenerated: ${new Date().toLocaleString()}\n\nWARNING: This code can only be downloaded once. Keep it safe!`;
+                const regenerated = data.regenerated || false;
+                const warningText = regenerated 
+                    ? '\n\n⚠️ NOTE: Your recovery code was regenerated because the previous one was corrupted.\nThis is your NEW recovery code. The old one is no longer valid.'
+                    : '';
+                    
+                const content = `RECOVERY CODE - KEEP THIS SAFE!\n\nYour account recovery code:\n${data.recovery_code}\n\nThis code can be used to recover your account if you lose access.\nStore it in a safe place. Do not share it with anyone.\n\nGenerated: ${new Date().toLocaleString()}\n\nWARNING: This code can only be downloaded once. Keep it safe!${warningText}`;
                 
                 const blob = new Blob([content], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
@@ -52,10 +57,14 @@ export default function RecoveryCodeSection() {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
 
+                const successMsg = regenerated
+                    ? 'Recovery code downloaded! Note: A new code was generated because the previous one was corrupted.'
+                    : 'Recovery code downloaded successfully! Keep it safe.';
+
                 addFlash({
                     key: 'account:recovery-code',
                     type: 'success',
-                    message: 'Recovery code downloaded successfully! Keep it safe.',
+                    message: successMsg,
                 });
 
                 // Update status
@@ -95,13 +104,15 @@ export default function RecoveryCodeSection() {
                                 </div>
                             </div>
                             
-                            <Button.Success
-                                onClick={downloadRecoveryCode}
-                                disabled={downloading}
-                            >
-                                <FontAwesomeIcon icon={faDownload} css={tw`mr-2`} />
-                                {downloading ? 'Downloading...' : 'Download Recovery Code'}
-                            </Button.Success>
+                            <div css={tw`flex justify-center`}>
+                                <Button.Success
+                                    onClick={downloadRecoveryCode}
+                                    disabled={downloading}
+                                >
+                                    <FontAwesomeIcon icon={faDownload} css={tw`mr-2`} />
+                                    {downloading ? 'Downloading...' : 'Download Recovery Code'}
+                                </Button.Success>
+                            </div>
                         </>
                     ) : status.already_downloaded ? (
                         <div css={tw`flex items-center text-green-400`}>

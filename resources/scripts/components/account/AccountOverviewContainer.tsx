@@ -54,7 +54,7 @@ export default () => {
                 </ContentBox>
             </Container>
             
-            <Container css={tw`lg:grid lg:grid-cols-2 mb-10`}>
+            <Container css={tw`lg:grid lg:grid-cols-2 gap-8 mb-10`}>
                 <RecoveryCodeSection />
                 
                 <DiscordLinkingSection />

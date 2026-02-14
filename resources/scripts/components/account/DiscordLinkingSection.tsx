@@ -112,12 +112,14 @@ export default function DiscordLinkingSection() {
                                 </div>
                             </div>
                             
-                            <Button.Danger
-                                onClick={() => setShowConfirm(true)}
-                            >
-                                <FontAwesomeIcon icon={faUnlink} css={tw`mr-2`} />
-                                Unlink Discord Account
-                            </Button.Danger>
+                            <div css={tw`flex justify-center`}>
+                                <Button.Danger
+                                    onClick={() => setShowConfirm(true)}
+                                >
+                                    <FontAwesomeIcon icon={faUnlink} css={tw`mr-2`} />
+                                    Unlink Discord Account
+                                </Button.Danger>
+                            </div>
                         </>
                     ) : (
                         <>
@@ -135,12 +137,14 @@ export default function DiscordLinkingSection() {
                                 </div>
                             </div>
                             
-                            <Button.Info
-                                onClick={linkDiscord}
-                            >
-                                <FontAwesomeIcon icon={faLink} css={tw`mr-2`} />
-                                Link Discord Account
-                            </Button.Info>
+                            <div css={tw`flex justify-center`}>
+                                <Button.Info
+                                    onClick={linkDiscord}
+                                >
+                                    <FontAwesomeIcon icon={faLink} css={tw`mr-2`} />
+                                    Link Discord Account
+                                </Button.Info>
+                            </div>
                         </>
                     )}
                 </div>

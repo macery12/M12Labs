@@ -40,8 +40,15 @@ class DiscordLoginController extends AbstractLoginController
             $this->sendLockoutResponse($request);
         }
 
+        $clientId = config('modules.auth.discord.client_id');
+        $clientSecret = config('modules.auth.discord.client_secret');
+        
+        if (empty($clientId) || empty($clientSecret)) {
+            throw new DisplayException('Discord integration is not configured. Please contact an administrator.');
+        }
+
         return 'https://discord.com/api/oauth2/authorize?'
-            . 'client_id=' . config('modules.auth.discord.client_id')
+            . 'client_id=' . $clientId
             . '&redirect_uri=' . route('auth.modules.discord.authenticate')
             . '&response_type=code&scope=identify%20email'
             . '&state=' . encrypt($request->ip());

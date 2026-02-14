@@ -118,12 +118,29 @@ class AccountController extends ClientApiController
                 'recovery_code' => $recoveryCode,
             ]);
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // Log the decryption error for debugging
-            \Log::error('Failed to decrypt recovery code for user ' . $user->id, [
+            // Recovery code is corrupted or encrypted with wrong key
+            // Generate a new one and save it
+            \Log::warning('Recovery code corrupted for user ' . $user->id . ', regenerating', [
                 'error' => $e->getMessage(),
                 'recovery_code_length' => strlen($user->recovery_code),
             ]);
-            return new JsonResponse(['error' => 'Unable to retrieve recovery code'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            
+            // Generate new recovery code
+            $newRecoveryCode = str_random(32);
+            $user->recovery_code = Crypt::encryptString($newRecoveryCode);
+            $user->save();
+            
+            // Mark as downloaded
+            $request->session()->put('recovery_code_downloaded_' . $user->id, true);
+            
+            Activity::event('user:recovery-code.regenerated')
+                ->withRequestMetadata()
+                ->log();
+            
+            return new JsonResponse([
+                'recovery_code' => $newRecoveryCode,
+                'regenerated' => true,
+            ]);
         } catch (\Exception $e) {
             \Log::error('Unexpected error retrieving recovery code for user ' . $user->id, [
                 'error' => $e->getMessage(),
@@ -176,11 +193,21 @@ class AccountController extends ClientApiController
      */
     public function getDiscordLinkUrl(Request $request): JsonResponse
     {
+        // Check if Discord is configured
+        $clientId = config('modules.auth.discord.client_id');
+        $clientSecret = config('modules.auth.discord.client_secret');
+        
+        if (empty($clientId) || empty($clientSecret)) {
+            return new JsonResponse([
+                'error' => 'Discord integration is not configured. Please contact an administrator.'
+            ], Response::HTTP_SERVICE_UNAVAILABLE);
+        }
+        
         // Store a flag to indicate this is account linking, not login/registration
         $request->session()->put('discord_account_linking', true);
         
         $url = 'https://discord.com/api/oauth2/authorize?'
-            . 'client_id=' . config('modules.auth.discord.client_id')
+            . 'client_id=' . $clientId
             . '&redirect_uri=' . route('auth.modules.discord.authenticate')
             . '&response_type=code&scope=identify%20email'
             . '&state=' . encrypt($request->ip());
