@@ -104,6 +104,7 @@ class AccountController extends ClientApiController
         }
         
         try {
+            // The recovery_code is encrypted, so decrypt it
             $recoveryCode = Crypt::decryptString($user->recovery_code);
             
             // Mark as downloaded
@@ -116,7 +117,17 @@ class AccountController extends ClientApiController
             return new JsonResponse([
                 'recovery_code' => $recoveryCode,
             ]);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            // Log the decryption error for debugging
+            \Log::error('Failed to decrypt recovery code for user ' . $user->id, [
+                'error' => $e->getMessage(),
+                'recovery_code_length' => strlen($user->recovery_code),
+            ]);
+            return new JsonResponse(['error' => 'Unable to retrieve recovery code'], Response::HTTP_INTERNAL_SERVER_ERROR);
         } catch (\Exception $e) {
+            \Log::error('Unexpected error retrieving recovery code for user ' . $user->id, [
+                'error' => $e->getMessage(),
+            ]);
             return new JsonResponse(['error' => 'Unable to retrieve recovery code'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -157,5 +168,23 @@ class AccountController extends ClientApiController
             ->log();
         
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
+    }
+    
+    /**
+     * Get Discord OAuth URL for linking account.
+     * This is separate from the login flow and doesn't require recaptcha.
+     */
+    public function getDiscordLinkUrl(Request $request): JsonResponse
+    {
+        // Store a flag to indicate this is account linking, not login/registration
+        $request->session()->put('discord_account_linking', true);
+        
+        $url = 'https://discord.com/api/oauth2/authorize?'
+            . 'client_id=' . config('modules.auth.discord.client_id')
+            . '&redirect_uri=' . route('auth.modules.discord.authenticate')
+            . '&response_type=code&scope=identify%20email'
+            . '&state=' . encrypt($request->ip());
+        
+        return new JsonResponse(['url' => $url]);
     }
 }

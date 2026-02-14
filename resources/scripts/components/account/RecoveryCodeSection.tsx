@@ -98,7 +98,6 @@ export default function RecoveryCodeSection() {
                             <Button.Success
                                 onClick={downloadRecoveryCode}
                                 disabled={downloading}
-                                css={tw`w-full`}
                             >
                                 <FontAwesomeIcon icon={faDownload} css={tw`mr-2`} />
                                 {downloading ? 'Downloading...' : 'Download Recovery Code'}

@@ -36,11 +36,11 @@ export default function DiscordLinkingSection() {
     const linkDiscord = () => {
         clearFlashes('account:discord');
         
-        // Request Discord OAuth URL
-        http.post('/auth/modules/discord')
+        // Get Discord OAuth URL from the account endpoint (no recaptcha needed)
+        http.get('/api/client/account/discord/link-url')
             .then(({ data }) => {
                 // Redirect to Discord OAuth
-                window.location.href = data;
+                window.location.href = data.url;
             })
             .catch(err => {
                 console.error('Failed to start Discord linking:', err);
@@ -114,7 +114,6 @@ export default function DiscordLinkingSection() {
                             
                             <Button.Danger
                                 onClick={() => setShowConfirm(true)}
-                                css={tw`w-full`}
                             >
                                 <FontAwesomeIcon icon={faUnlink} css={tw`mr-2`} />
                                 Unlink Discord Account
@@ -138,7 +137,6 @@ export default function DiscordLinkingSection() {
                             
                             <Button.Info
                                 onClick={linkDiscord}
-                                css={tw`w-full`}
                             >
                                 <FontAwesomeIcon icon={faLink} css={tw`mr-2`} />
                                 Link Discord Account

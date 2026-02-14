@@ -4,6 +4,7 @@ namespace Everest\Http\Controllers\Auth\Modules;
 
 use Carbon\Carbon;
 use Everest\Models\User;
+use Everest\Facades\Activity;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -193,6 +194,33 @@ class DiscordLoginController extends AbstractLoginController
 
         if (!isset($account->id)) {
             return redirect()->route('auth.login')->with('error', 'Failed to retrieve Discord account information.');
+        }
+
+        // Check if this is account linking from the account page
+        if ($request->session()->has('discord_account_linking')) {
+            $request->session()->forget('discord_account_linking');
+            
+            $user = $request->user();
+            if ($user) {
+                // Check if this Discord ID is already linked to another account
+                $existingUser = User::where('external_id', $account->id)->first();
+                if ($existingUser && $existingUser->id !== $user->id) {
+                    return redirect('/account')->with('error', 'This Discord account is already linked to another user.');
+                }
+                
+                // Link Discord to current user's account
+                $user->external_id = $account->id;
+                $user->save();
+                
+                Activity::event('user:discord.linked')
+                    ->withRequestMetadata()
+                    ->log();
+                
+                return redirect('/account')->with('success', 'Discord account linked successfully!');
+            }
+            
+            // User not authenticated, redirect to login
+            return redirect()->route('auth.login')->with('error', 'Please login first to link your Discord account.');
         }
 
         // Check if user exists with this Discord ID (external_id)
