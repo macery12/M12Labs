@@ -98,11 +98,7 @@ class LoginController extends AbstractLoginController
             $this->sendLockoutResponse($request);
         }
 
-        $user = $this->createAccount($request->validated());
-        
-        // Store a flag in session to show recovery code modal after login
-        $request->session()->put('show_recovery_code', true);
-        $request->session()->put('user_id_for_recovery', $user->id);
+        $this->createAccount($request->validated());
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

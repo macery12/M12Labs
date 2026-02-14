@@ -13,6 +13,7 @@ use Everest\Transformers\Api\Client\AccountTransformer;
 use Everest\Http\Requests\Api\Client\Account\SetupUserRequest;
 use Everest\Http\Requests\Api\Client\Account\UpdateEmailRequest;
 use Everest\Http\Requests\Api\Client\Account\UpdatePasswordRequest;
+use Everest\Exceptions\DisplayException;
 
 class AccountController extends ClientApiController
 {
@@ -87,7 +88,7 @@ class AccountController extends ClientApiController
     
     /**
      * Get the recovery code for the authenticated user.
-     * This is only available once after registration.
+     * This can only be downloaded once - after that it's marked as viewed.
      */
     public function getRecoveryCode(Request $request): JsonResponse
     {
@@ -97,8 +98,16 @@ class AccountController extends ClientApiController
             return new JsonResponse(['error' => 'No recovery code available'], Response::HTTP_NOT_FOUND);
         }
         
+        // Check if already downloaded (we'll use a session flag for this)
+        if ($request->session()->has('recovery_code_downloaded_' . $user->id)) {
+            return new JsonResponse(['error' => 'Recovery code has already been downloaded'], Response::HTTP_FORBIDDEN);
+        }
+        
         try {
             $recoveryCode = Crypt::decryptString($user->recovery_code);
+            
+            // Mark as downloaded
+            $request->session()->put('recovery_code_downloaded_' . $user->id, true);
             
             Activity::event('user:recovery-code.viewed')
                 ->withRequestMetadata()
@@ -110,5 +119,43 @@ class AccountController extends ClientApiController
         } catch (\Exception $e) {
             return new JsonResponse(['error' => 'Unable to retrieve recovery code'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+    
+    /**
+     * Check if the recovery code has been downloaded.
+     */
+    public function checkRecoveryCodeStatus(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        $hasRecoveryCode = !empty($user->recovery_code);
+        $alreadyDownloaded = $request->session()->has('recovery_code_downloaded_' . $user->id);
+        
+        return new JsonResponse([
+            'has_recovery_code' => $hasRecoveryCode,
+            'already_downloaded' => $alreadyDownloaded,
+            'can_download' => $hasRecoveryCode && !$alreadyDownloaded,
+        ]);
+    }
+    
+    /**
+     * Unlink Discord account.
+     */
+    public function unlinkDiscord(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (empty($user->external_id)) {
+            throw new DisplayException('No Discord account is linked to your account.');
+        }
+        
+        // Remove the external_id to unlink Discord
+        $this->updateService->handle($user, ['external_id' => null]);
+        
+        Activity::event('user:discord.unlinked')
+            ->withRequestMetadata()
+            ->log();
+        
+        return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }
 }

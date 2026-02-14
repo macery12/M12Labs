@@ -92,25 +92,6 @@ abstract class AbstractLoginController extends Controller
         $this->auth->guard()->login($user, true);
 
         Event::dispatch(new DirectLogin($user, true));
-        
-        // Check if we should show recovery code (new registration)
-        $showRecoveryCode = $request->session()->get('show_recovery_code', false);
-        $userIdForRecovery = $request->session()->get('user_id_for_recovery');
-        
-        // Only show recovery code if this is the user who just registered
-        if ($showRecoveryCode && $userIdForRecovery === $user->id) {
-            $request->session()->forget('show_recovery_code');
-            $request->session()->forget('user_id_for_recovery');
-            
-            return new JsonResponse([
-                'data' => [
-                    'complete' => true,
-                    'intended' => $this->redirectPath(),
-                    'user' => $user->toReactObject(),
-                    'show_recovery_code' => true,
-                ],
-            ]);
-        }
 
         return new JsonResponse([
             'data' => [

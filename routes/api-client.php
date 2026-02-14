@@ -46,6 +46,8 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::put('/email', [Client\AccountController::class, 'updateEmail'])->name('api:client.account.update-email');
         Route::put('/password', [Client\AccountController::class, 'updatePassword'])->name('api:client.account.update-password');
         Route::get('/recovery-code', [Client\AccountController::class, 'getRecoveryCode'])->name('api:client.account.recovery-code');
+        Route::get('/recovery-code/status', [Client\AccountController::class, 'checkRecoveryCodeStatus'])->name('api:client.account.recovery-code.status');
+        Route::delete('/discord', [Client\AccountController::class, 'unlinkDiscord'])->name('api:client.account.unlink-discord');
 
         Route::get('/activity', Client\ActivityLogController::class)->name('api:client.account.activity');
 

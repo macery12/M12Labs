@@ -26,6 +26,7 @@ class AccountTransformer extends Transformer
             'username' => $model->username,
             'email' => $model->email,
             'language' => $model->language,
+            'has_discord_linked' => !empty($model->external_id),
         ];
     }
 }
