@@ -18,7 +18,7 @@ interface Values {
     email: string;
     code: string;
     password: string;
-    password_confirm: string;
+    password_confirmation: string;
 }
 
 function ForgotPasswordContainer() {
@@ -34,7 +34,7 @@ function ForgotPasswordContainer() {
     }, []);
 
     const handleSubmission = (
-        { email, code, password, password_confirm }: Values,
+        { email, code, password, password_confirmation }: Values,
         { setSubmitting, resetForm }: FormikHelpers<Values>,
     ) => {
         clearFlashes();
@@ -52,7 +52,7 @@ function ForgotPasswordContainer() {
             return;
         }
 
-        requestPasswordReset(email, code, password, password_confirm, token.current)
+        requestPasswordReset(email, code, password, password_confirmation, token.current)
             .then(response => {
                 resetForm();
                 addFlash({ type: 'success', title: 'Success', message: response });
@@ -74,14 +74,14 @@ function ForgotPasswordContainer() {
     return (
         <Formik
             onSubmit={handleSubmission}
-            initialValues={{ email: '', code: '', password: '', password_confirm: '' }}
+            initialValues={{ email: '', code: '', password: '', password_confirmation: '' }}
             validationSchema={object().shape({
                 email: string()
                     .email('A valid email address must be provided to continue.')
                     .required('A valid email address must be provided to continue.'),
                 code: string().required('You must enter your account recovery code to continue.'),
                 password: string().min(8).required(),
-                password_confirm: string().min(8).required(),
+                password_confirmation: string().min(8).required(),
             })}
         >
             {({ isSubmitting, setSubmitting, submitForm }) => (
@@ -115,7 +115,7 @@ function ForgotPasswordContainer() {
                     <Field
                         label={'Confirm New Password'}
                         description={'For extra security, re-enter the above password.'}
-                        name={'password_confirm'}
+                        name={'password_confirmation'}
                         type={'password'}
                     />
                     <div css={tw`mt-6`}>
