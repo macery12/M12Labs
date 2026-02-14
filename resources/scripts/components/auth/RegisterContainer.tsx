@@ -189,11 +189,12 @@ function RegisterContainer() {
                         />
                         {values.password && values.password_confirmation && (
                             <p
-                                css={tw`text-xs mt-1 ${
+                                css={[
+                                    tw`text-xs mt-1`,
                                     values.password === values.password_confirmation
-                                        ? 'text-green-500'
-                                        : 'text-red-500'
-                                }`}
+                                        ? tw`text-green-500`
+                                        : tw`text-red-500`,
+                                ]}
                             >
                                 {values.password === values.password_confirmation ? (
                                     <>✓ Passwords match</>
