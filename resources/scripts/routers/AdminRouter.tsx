@@ -11,8 +11,10 @@ import routes from './routes';
 import Spinner from '@/elements/Spinner';
 import { NotFound } from '@/elements/ScreenBlock';
 import { PuzzleIcon, ReplyIcon } from '@heroicons/react/outline';
-import { Fragment } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import ScopedAlert from '@account/ScopedAlert';
+import { getPasswordResetRequestCount } from '@/api/routes/admin/password-reset-requests';
+import tw from 'twin.macro';
 
 function AdminRouter() {
     const theme = useStoreState(state => state.theme.data!);
@@ -23,6 +25,23 @@ function AdminRouter() {
 
     const categories = ['general', 'modules', 'appearance', 'management', 'services'] as const;
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_admin_${user.uuid}`, false);
+    const [pendingResetCount, setPendingResetCount] = useState<number>(0);
+
+    useEffect(() => {
+        // Load pending count on mount
+        getPasswordResetRequestCount()
+            .then(setPendingResetCount)
+            .catch(console.error);
+
+        // Refresh count every 30 seconds
+        const interval = setInterval(() => {
+            getPasswordResetRequestCount()
+                .then(setPendingResetCount)
+                .catch(console.error);
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className={'flex h-screen'}>
@@ -77,6 +96,13 @@ function AdminRouter() {
                                         <NavLink to={route.path} key={route.path} end={route.end}>
                                             <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
                                             <span>{route.name}</span>
+                                            {route.path === 'auth' && pendingResetCount > 0 && (
+                                                <span
+                                                    css={tw`ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center`}
+                                                >
+                                                    {pendingResetCount}
+                                                </span>
+                                            )}
                                         </NavLink>
                                     ))}
                             </Fragment>

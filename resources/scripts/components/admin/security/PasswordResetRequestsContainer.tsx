@@ -11,7 +11,7 @@ import {
 import { httpErrorToHuman } from '@/api/http';
 import { useFlashKey } from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faTimes, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { Textarea } from '@/elements/Input';
@@ -153,7 +153,7 @@ export default function PasswordResetRequestsContainer() {
                                 <div css={tw`text-right`}>
                                     <p css={tw`text-xs text-neutral-400`}>Submitted</p>
                                     <p css={tw`text-sm text-neutral-300`}>
-                                        {format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}
+                                        {format(parseISO(request.created_at), 'MMM dd, yyyy HH:mm')}
                                     </p>
                                 </div>
                             </div>
@@ -184,7 +184,7 @@ export default function PasswordResetRequestsContainer() {
                                     {request.admin_username && (
                                         <p css={tw`text-xs text-neutral-400 mt-2`}>
                                             By {request.admin_username} on{' '}
-                                            {format(new Date(request.updated_at), 'MMM dd, yyyy HH:mm')}
+                                            {format(parseISO(request.updated_at), 'MMM dd, yyyy HH:mm')}
                                         </p>
                                     )}
                                 </div>
