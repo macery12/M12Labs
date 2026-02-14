@@ -60,6 +60,9 @@ const admin: AdminRouteDefinition[] = [
      * Admin - Module Routes
      */
     route('auth', AuthContainer, { name: 'Auth', icon: Icon.KeyIcon, category: 'modules', advanced: true }),
+    route('auth/password-reset-requests', PasswordResetRequestsContainer, {
+        name: 'Password Reset Requests',
+    }),
     route('billing/*', BillingRouter, { name: 'Billing', icon: Icon.CashIcon, category: 'modules', advanced: true }),
     route('tickets/*', TicketRouter, { name: 'Tickets', icon: Icon.TicketIcon, category: 'modules', advanced: true }),
     route('ai/*', AIRouter, { name: 'AI', icon: Icon.SparklesIcon, category: 'modules', advanced: true }),
@@ -77,15 +80,6 @@ const admin: AdminRouteDefinition[] = [
     route('theme', ThemeContainer, { name: 'Theme', icon: Icon.PencilAltIcon, category: 'appearance' }),
     route('links/*', LinksContainer, { name: 'Links', icon: Icon.LinkIcon, category: 'appearance' }),
     route('alerts/*', AlertRouter, { name: 'Alerts', icon: Icon.ShieldExclamationIcon, category: 'appearance' }),
-
-    /**
-     * Admin - Security Routes
-     */
-    route('security/password-reset-requests', PasswordResetRequestsContainer, {
-        name: 'Password Reset Requests',
-        icon: Icon.KeyIcon,
-        category: 'security',
-    }),
 
     /**
      * Admin - Management Routes

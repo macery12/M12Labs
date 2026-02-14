@@ -8,6 +8,7 @@ import tw from 'twin.macro';
 import { object, string } from 'yup';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
@@ -37,6 +38,7 @@ function RegisterContainer() {
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+    const [passwordValid, setPasswordValid] = useState(false);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
@@ -118,8 +120,14 @@ function RegisterContainer() {
                 confirm_password: string().required('Please enter the password confirmation.'),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm, setFieldValue }) => (
+            {({ isSubmitting, setSubmitting, submitForm, setFieldValue, values }) => (
                 <LoginFormContainer title={`Create an Account`}>
+                    <div css={tw`bg-blue-500/10 border border-blue-500/30 rounded-md p-4 mb-6`}>
+                        <p css={tw`text-sm text-blue-200`}>
+                            Welcome! Create your account to get started. Please choose a strong password.
+                        </p>
+                    </div>
+
                     <div>
                         <Field
                             type={'text'}
@@ -137,8 +145,8 @@ function RegisterContainer() {
                             <div css={tw`mt-2 flex items-center text-sm`}>
                                 {usernameStatus === 'checking' && (
                                     <>
-                                        <FontAwesomeIcon icon={faSpinner} spin css={tw`text-gray-400 mr-2`} />
-                                        <span css={tw`text-gray-400`}>{usernameMessage}</span>
+                                        <FontAwesomeIcon icon={faSpinner} spin css={tw`text-neutral-400 mr-2`} />
+                                        <span css={tw`text-neutral-400`}>{usernameMessage}</span>
                                     </>
                                 )}
                                 {usernameStatus === 'available' && (
@@ -162,7 +170,7 @@ function RegisterContainer() {
                             label={'Email Address'}
                             icon={faAt}
                             name={'email'}
-                            placeholder={'user@jexpanel.com'}
+                            placeholder={'user@example.com'}
                             disabled={isSubmitting}
                         />
                     </div>
@@ -174,6 +182,10 @@ function RegisterContainer() {
                             name={'password'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
+                        />
+                        <PasswordStrengthIndicator
+                            password={values.password}
+                            onValidityChange={setPasswordValid}
                         />
                     </div>
                     <div css={tw`mt-6`}>
@@ -190,11 +202,11 @@ function RegisterContainer() {
                         <Button
                             type={'submit'}
                             loading={isSubmitting}
-                            className={'w-full'}
                             size={Button.Sizes.Large}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || usernameStatus === 'taken'}
+                            css={tw`w-full`}
                         >
-                            Register
+                            Create Account
                         </Button>
                     </div>
                     {recaptchaEnabled && (
@@ -215,9 +227,9 @@ function RegisterContainer() {
                     <div css={tw`mt-6 text-center`}>
                         <Link
                             to={'/auth/login'}
-                            css={tw`text-xs text-neutral-300 tracking-wide no-underline uppercase font-medium hover:text-neutral-600`}
+                            css={tw`text-xs text-neutral-400 tracking-wide no-underline uppercase hover:text-neutral-200 transition-colors`}
                         >
-                            Return to Login
+                            Already have an account? Sign in
                         </Link>
                     </div>
                 </LoginFormContainer>

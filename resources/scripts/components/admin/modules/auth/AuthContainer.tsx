@@ -12,6 +12,8 @@ import Onboarding from '@admin/modules/auth/modules/Onboarding';
 import GoogleSSO from './modules/GoogleSSO';
 import JGuard from './modules/JGuard';
 import Unfinished from '@/elements/Unfinished';
+import { Link } from 'react-router-dom';
+import { ShieldCheckIcon } from '@heroicons/react/outline';
 
 export default () => {
     const [visible, setVisible] = useState<boolean>(false);
@@ -35,7 +37,17 @@ export default () => {
                         Configure and manage the authentication flow for users.
                     </p>
                 </div>
-                <div css={tw`flex ml-auto pl-4`}>
+                <div css={tw`flex ml-auto pl-4 gap-3`}>
+                    <Link to={'/admin/auth/password-reset-requests'}>
+                        <Button
+                            type={'button'}
+                            size={Button.Sizes.Large}
+                            css={tw`h-10 px-4 py-0 whitespace-nowrap`}
+                        >
+                            <ShieldCheckIcon css={tw`w-5 h-5 mr-2`} />
+                            Reset Requests
+                        </Button>
+                    </Link>
                     <Button
                         type={'button'}
                         size={Button.Sizes.Large}
