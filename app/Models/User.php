@@ -26,6 +26,8 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  *
  * @property int $id
  * @property string|null $external_id
+ * @property string|null $discord_username
+ * @property string|null $discord_avatar
  * @property string $uuid
  * @property string $username
  * @property string $email
@@ -121,6 +123,8 @@ class User extends Model implements
      */
     protected $fillable = [
         'external_id',
+        'discord_username',
+        'discord_avatar',
         'username',
         'email',
         'password',
@@ -286,6 +290,11 @@ class User extends Model implements
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);
+    }
+
+    public function passwordResetRequests(): HasMany
+    {
+        return $this->hasMany(PasswordResetRequest::class);
     }
 
     /**
