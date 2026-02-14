@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $contact_email
  * @property string $reason
  * @property string $status
- * @property string|null $generated_password
  * @property int|null $reviewed_by
  * @property \Carbon\Carbon|null $reviewed_at
  * @property string|null $admin_notes
@@ -36,7 +35,6 @@ class PasswordResetRequest extends Model
         'contact_email',
         'reason',
         'status',
-        'generated_password',
         'reviewed_by',
         'reviewed_at',
         'admin_notes',
@@ -48,15 +46,12 @@ class PasswordResetRequest extends Model
         'reviewed_at' => 'datetime',
     ];
 
-    protected $hidden = ['generated_password'];
-
     public static array $validationRules = [
         'user_id' => 'required|exists:users,id',
         'discord_username' => 'nullable|string|max:191',
         'contact_email' => 'nullable|email|max:191',
         'reason' => 'required|string',
         'status' => 'required|in:pending,approved,denied',
-        'generated_password' => 'nullable|string',
         'reviewed_by' => 'nullable|exists:users,id',
         'reviewed_at' => 'nullable|date',
         'admin_notes' => 'nullable|string',
