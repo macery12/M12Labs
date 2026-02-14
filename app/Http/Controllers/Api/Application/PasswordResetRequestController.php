@@ -6,18 +6,15 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\PasswordResetRequest;
-use Everest\Services\Users\UserUpdateService;
 use Illuminate\Contracts\Validation\Factory as ValidationFactory;
 use Everest\Transformers\Api\Application\PasswordResetRequestTransformer;
 
 class PasswordResetRequestController extends ApplicationApiController
 {
     public function __construct(
-        private ValidationFactory $validation,
-        private UserUpdateService $updateService
+        private ValidationFactory $validation
     ) {
         parent::__construct();
     }
@@ -69,10 +66,10 @@ class PasswordResetRequestController extends ApplicationApiController
     }
 
     /**
-     * Approve a password reset request and generate a temporary password.
+     * Approve a password reset request.
+     * Note: Admin must manually reset the password via the Users page.
      *
      * @throws \Illuminate\Validation\ValidationException
-     * @throws \Everest\Exceptions\Model\DataValidationException
      */
     public function approve(Request $request, PasswordResetRequest $resetRequest): array
     {
@@ -86,18 +83,9 @@ class PasswordResetRequestController extends ApplicationApiController
 
         $data = $validator->validate();
 
-        // Generate a secure random password
-        $temporaryPassword = $this->generateSecurePassword();
-
-        // Update the user's password
-        $this->updateService->handle($resetRequest->user, [
-            'password' => $temporaryPassword,
-        ]);
-
-        // Update the reset request
+        // Update the reset request (no password generation - admin handles manually)
         $resetRequest->update([
             'status' => PasswordResetRequest::STATUS_APPROVED,
-            'generated_password' => encrypt($temporaryPassword),
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
             'admin_notes' => $data['admin_notes'] ?? null,
@@ -120,7 +108,6 @@ class PasswordResetRequestController extends ApplicationApiController
 
         return $this->fractal->item($resetRequest->fresh())
             ->transformWith(PasswordResetRequestTransformer::class)
-            ->parseIncludes(['temporary_password'])
             ->toArray();
     }
 
@@ -167,32 +154,5 @@ class PasswordResetRequestController extends ApplicationApiController
         return $this->fractal->item($resetRequest->fresh())
             ->transformWith(PasswordResetRequestTransformer::class)
             ->toArray();
-    }
-
-    /**
-     * Generate a secure random password.
-     */
-    private function generateSecurePassword(): string
-    {
-        // Generate a 16-character password with mixed case, numbers, and symbols
-        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
-        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $numbers = '0123456789';
-        $symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-
-        $password = '';
-        $password .= $lowercase[random_int(0, strlen($lowercase) - 1)];
-        $password .= $uppercase[random_int(0, strlen($uppercase) - 1)];
-        $password .= $numbers[random_int(0, strlen($numbers) - 1)];
-        $password .= $symbols[random_int(0, strlen($symbols) - 1)];
-
-        // Fill the rest with random characters
-        $allChars = $lowercase . $uppercase . $numbers . $symbols;
-        for ($i = 0; $i < 12; $i++) {
-            $password .= $allChars[random_int(0, strlen($allChars) - 1)];
-        }
-
-        // Shuffle the password
-        return str_shuffle($password);
     }
 }

@@ -13,7 +13,7 @@ import { useFlashKey } from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faTimes, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faTimes, faFilter, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { Textarea } from '@/elements/Input';
 import { useStoreState } from '@/state/hooks';
 
@@ -71,39 +71,17 @@ export default function PasswordResetRequestsContainer() {
 
         approvePasswordResetRequest(id, adminNotes)
             .then((response) => {
-                // In JSON-API format, the temporary password might be in attributes or a separate included object
-                let tempPassword: string | null = null;
+                // Get the user info from the response
+                const userId = response?.data?.attributes?.user_id;
                 
-                // Check if it's in the main data attributes
-                if (response?.data?.attributes?.temporary_password) {
-                    tempPassword = response.data.attributes.temporary_password;
-                }
+                addFlash({
+                    type: 'success',
+                    title: 'Password Reset Request Approved',
+                    message: userId 
+                        ? `Request approved. Now go to Users > Edit User #${userId} to manually reset their password.`
+                        : 'Request approved. Please manually reset the user\'s password via the Users page.',
+                });
                 
-                // Check if it's in included array
-                if (!tempPassword && response?.included) {
-                    const tempPasswordObj = response.included.find((item: any) => 
-                        item.object === 'temporary_password' || item.temporary_password
-                    );
-                    if (tempPasswordObj?.attributes?.temporary_password) {
-                        tempPassword = tempPasswordObj.attributes.temporary_password;
-                    } else if (tempPasswordObj?.temporary_password) {
-                        tempPassword = tempPasswordObj.temporary_password;
-                    }
-                }
-
-                if (tempPassword) {
-                    addFlash({
-                        type: 'success',
-                        title: 'Password Reset Approved',
-                        message: `Temporary Password: ${tempPassword}\n\nPlease copy this password and provide it to the user. They should change it immediately after logging in.`,
-                    });
-                } else {
-                    addFlash({
-                        type: 'success',
-                        message: 'Password reset request approved. Check the response for the temporary password.',
-                    });
-                    console.log('Approve response:', response);
-                }
                 loadRequests();
             })
             .catch(clearAndAddHttpError)
@@ -134,6 +112,21 @@ export default function PasswordResetRequestsContainer() {
                     <p css={tw`text-base text-neutral-400`}>
                         Manage user password reset requests that require admin assistance.
                     </p>
+                </div>
+            </div>
+
+            {/* Information Tip */}
+            <div css={tw`mb-6 p-4 rounded border-l-4 border-blue-500`} style={{ backgroundColor: colors.headers }}>
+                <div css={tw`flex items-start gap-3`}>
+                    <FontAwesomeIcon icon={faInfoCircle} css={tw`text-blue-400 mt-1`} />
+                    <div>
+                        <h3 css={tw`text-sm font-semibold text-neutral-100 mb-1`}>Password Reset Workflow</h3>
+                        <p css={tw`text-sm text-neutral-300`}>
+                            When you approve a request, you must manually reset the user's password via the Users page.
+                            Choose a secure temporary password and provide it to the user through their preferred contact method.
+                            Instruct them to change it immediately after logging in.
+                        </p>
+                    </div>
                 </div>
             </div>
 
