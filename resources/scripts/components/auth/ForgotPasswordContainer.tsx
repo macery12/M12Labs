@@ -1,7 +1,7 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
@@ -9,6 +9,7 @@ import { object, string } from 'yup';
 import { requestPasswordReset } from '@/api/routes/auth/password-reset';
 import { httpErrorToHuman } from '@/api/http';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import { Button } from '@/elements/button';
 import Field from '@/elements/Field';
 import useFlash from '@/plugins/useFlash';
@@ -23,6 +24,7 @@ interface Values {
 function ForgotPasswordContainer() {
     const ref = useRef<Reaptcha>(null);
     const token = useRef('');
+    const [password, setPassword] = useState('');
 
     const { clearFlashes, addFlash } = useFlash();
     const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
@@ -106,7 +108,9 @@ function ForgotPasswordContainer() {
                             description={"Enter the new password you'd like to use for this user account."}
                             name={'password'}
                             type={'password'}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                         />
+                        <PasswordStrengthIndicator password={password} />
                     </div>
                     <Field
                         label={'Confirm New Password'}

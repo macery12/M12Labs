@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Models\User;
+use Everest\Http\Requests\Auth\ForgotPasswordRequest;
 
 class ForgotPasswordController extends AbstractLoginController
 {
@@ -22,11 +23,11 @@ class ForgotPasswordController extends AbstractLoginController
     /**
      * Validate the information provided for resetting a password.
      */
-    protected function verify(Request $request): JsonResponse|RedirectResponse
+    public function verify(ForgotPasswordRequest $request): JsonResponse|RedirectResponse
     {
         try {
             $user = User::where('email', $request->input('email'))->firstOrFail();
-        } catch (DisplayException $ex) {
+        } catch (\Exception $ex) {
             throw new DisplayException('The information provided was incorrect.');
         }
 
@@ -34,16 +35,12 @@ class ForgotPasswordController extends AbstractLoginController
             throw new DisplayException('The information provided was incorrect.');
         }
 
-        if ($request->input('password') !== $request->input('password_confirm')) {
-            throw new DisplayException('The passwords entered do not match.');
-        }
-
         $user = $this->updateService->handle($user, ['password' => $request->input('password')]);
 
         if (!$user->use_totp) {
-            $this->sendLoginResponse($user, $request);
-        } else {
-            redirect()->route('auth.login');
+            return $this->sendLoginResponse($user, $request);
         }
+
+        return redirect()->route('auth.login');
     }
 }
