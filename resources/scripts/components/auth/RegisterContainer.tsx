@@ -29,7 +29,7 @@ interface Values {
     username: string;
     email: string;
     password: string;
-    confirm_password: string;
+    password_confirmation: string;
 }
 
 function RegisterContainer() {
@@ -112,12 +112,16 @@ function RegisterContainer() {
     return (
         <Formik
             onSubmit={onSubmit}
-            initialValues={{ username: '', email: '', password: '', confirm_password: '' }}
+            initialValues={{ username: '', email: '', password: '', password_confirmation: '' }}
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
                 email: string().email().required('You must provide a valid email.'),
                 password: string().required('Please enter your account password.'),
-                confirm_password: string().required('Please enter the password confirmation.'),
+                password_confirmation: string()
+                    .required('Please enter the password confirmation.')
+                    .test('passwords-match', 'Passwords must match', function(value) {
+                        return this.parent.password === value;
+                    }),
             })}
         >
             {({ isSubmitting, setSubmitting, submitForm, setFieldValue }) => (
@@ -188,7 +192,7 @@ function RegisterContainer() {
                             type={'password'}
                             label={'Confirm Password'}
                             icon={faUnlockKeyhole}
-                            name={'confirm_password'}
+                            name={'password_confirmation'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
                         />
