@@ -78,7 +78,7 @@ class CheckoutController extends ClientApiController
 
         // Calculate price with coupon for new purchase (including node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays, $nodeId);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays, $nodeId, $user->id);
 
         // Validate this is a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -130,7 +130,7 @@ class CheckoutController extends ClientApiController
 
         // Calculate price with coupon for renewal (including server's node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren', $billingDays, $server->node_id);
+        $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'ren', $billingDays, $server->node_id, $user->id);
 
         // Validate this is a free renewal
         $this->validationService->validatePriceType($priceInfo['finalPrice'], true);
@@ -200,7 +200,7 @@ class CheckoutController extends ClientApiController
 
             // Calculate price with coupon using validation service for new purchase
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays);
+            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays, null, $request->user()->id);
 
             // Validate this is not a free order
             $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
@@ -313,7 +313,7 @@ class CheckoutController extends ClientApiController
             // Determine order type and calculate price with coupon (including node multiplier)
             $orderType = $this->getOrderType($request);
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
-            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType, $billingDays, $nodeId);
+            $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType, $billingDays, $nodeId, $request->user()->id);
 
             // Update the intent amount if it has changed
             if ($intent->amount !== (int) ($priceInfo['finalPrice'] * 100)) {

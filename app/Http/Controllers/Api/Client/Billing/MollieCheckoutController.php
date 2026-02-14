@@ -50,7 +50,10 @@ class MollieCheckoutController extends ClientApiController
         $priceInfo = $this->validationService->calculatePriceWithCoupon(
             $product,
             $couponId,
-            $isRenewal ? 'renewal' : 'new'
+            $isRenewal ? 'ren' : 'new',
+            null, // billing days - use default
+            null, // node ID
+            $request->user()->id
         );
 
         // Validate this is not a free order
