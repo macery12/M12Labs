@@ -13,6 +13,7 @@ import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import register, { checkUsernameAvailability } from '@/api/routes/auth/register';
 import { login } from '@/api/routes/auth/login';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import {
     faAt,
     faIdBadge,
@@ -28,7 +29,7 @@ interface Values {
     username: string;
     email: string;
     password: string;
-    confirm_password: string;
+    password_confirmation: string;
 }
 
 function RegisterContainer() {
@@ -110,15 +111,15 @@ function RegisterContainer() {
     return (
         <Formik
             onSubmit={onSubmit}
-            initialValues={{ username: '', email: '', password: '', confirm_password: '' }}
+            initialValues={{ username: '', email: '', password: '', password_confirmation: '' }}
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
                 email: string().email().required('You must provide a valid email.'),
                 password: string().required('Please enter your account password.'),
-                confirm_password: string().required('Please enter the password confirmation.'),
+                password_confirmation: string().required('Please enter the password confirmation.'),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm, setFieldValue }) => (
+            {({ isSubmitting, setSubmitting, submitForm, setFieldValue, values }) => (
                 <LoginFormContainer title={`Create an Account`}>
                     <div>
                         <Field
@@ -175,13 +176,14 @@ function RegisterContainer() {
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
                         />
+                        <PasswordStrengthIndicator password={values.password} />
                     </div>
                     <div css={tw`mt-6`}>
                         <Field
                             type={'password'}
                             label={'Confirm Password'}
                             icon={faUnlockKeyhole}
-                            name={'confirm_password'}
+                            name={'password_confirmation'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
                         />
