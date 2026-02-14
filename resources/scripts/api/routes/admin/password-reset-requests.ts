@@ -19,6 +19,12 @@ export interface AdminPasswordResetRequest {
 export const getAllPasswordResetRequests = async (status?: string): Promise<AdminPasswordResetRequest[]> => {
     const params = status ? { status } : {};
     const { data } = await http.get('/api/application/password-reset-requests', { params });
+    
+    // Handle JSON-API format: data is array of objects with attributes
+    if (data.data && Array.isArray(data.data)) {
+        return data.data.map((item: any) => item.attributes || item);
+    }
+    
     return data.data || [];
 };
 

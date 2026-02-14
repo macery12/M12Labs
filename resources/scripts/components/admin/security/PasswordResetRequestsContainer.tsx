@@ -15,6 +15,7 @@ import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faTimes, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { Textarea } from '@/elements/Input';
+import { useStoreState } from '@/state/hooks';
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -49,6 +50,7 @@ export default function PasswordResetRequestsContainer() {
     const [filter, setFilter] = useState<string>('');
     const [adminNotes, setAdminNotes] = useState<Record<number, string>>({});
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlashKey('admin:password-reset-requests');
+    const { colors } = useStoreState(state => state.theme.data!);
 
     const loadRequests = useCallback(() => {
         clearFlashes();
@@ -111,7 +113,8 @@ export default function PasswordResetRequestsContainer() {
                 <select
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
-                    css={tw`block w-48 px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-sm text-neutral-100 focus:border-primary-400 focus:outline-none`}
+                    css={tw`block w-48 px-3 py-2 border border-neutral-600 rounded text-sm text-neutral-100 focus:outline-none`}
+                    style={{ backgroundColor: colors.background, borderColor: colors.primary }}
                 >
                     <option value="">All Requests</option>
                     <option value="pending">Pending</option>
@@ -123,7 +126,7 @@ export default function PasswordResetRequestsContainer() {
             <SpinnerOverlay visible={loading} size="large" />
 
             {!loading && requests.length === 0 ? (
-                <div css={tw`bg-neutral-700 p-8 rounded text-center`}>
+                <div css={tw`p-8 rounded text-center`} style={{ backgroundColor: colors.background }}>
                     <p css={tw`text-neutral-400`}>
                         {filter
                             ? `No ${filter} password reset requests found.`
@@ -135,7 +138,8 @@ export default function PasswordResetRequestsContainer() {
                     {requests.map(request => (
                         <div
                             key={request.id}
-                            css={tw`bg-neutral-700 p-6 rounded border border-neutral-600 relative`}
+                            css={tw`p-6 rounded border border-slate-700 relative`}
+                            style={{ backgroundColor: colors.background }}
                         >
                             {submitting === request.id && <SpinnerOverlay visible size="large" />}
 
@@ -188,7 +192,7 @@ export default function PasswordResetRequestsContainer() {
                             </div>
 
                             {request.admin_notes && (
-                                <div css={tw`bg-neutral-800 p-3 rounded mb-4`}>
+                                <div css={tw`p-3 rounded mb-4 border border-slate-600`} style={{ backgroundColor: colors.headers }}>
                                     <p css={tw`text-xs text-neutral-400 mb-1`}>Admin Notes</p>
                                     <p css={tw`text-sm text-neutral-200`}>{request.admin_notes}</p>
                                     {request.admin_username && (
