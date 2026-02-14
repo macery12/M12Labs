@@ -431,6 +431,7 @@ Route::middleware([AdminSubject::class])->group(function () {
     */
     Route::group(['prefix' => '/password-reset-requests'], function () {
         Route::get('/', [Application\PasswordResetRequestController::class, 'index']);
+        Route::get('/count', [Application\PasswordResetRequestController::class, 'count']);
         Route::get('/{resetRequest:id}', [Application\PasswordResetRequestController::class, 'view']);
         Route::post('/{resetRequest:id}/approve', [Application\PasswordResetRequestController::class, 'approve']);
         Route::post('/{resetRequest:id}/deny', [Application\PasswordResetRequestController::class, 'deny']);

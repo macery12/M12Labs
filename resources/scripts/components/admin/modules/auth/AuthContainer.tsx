@@ -3,7 +3,7 @@ import AdminContentBlock from '@/elements/AdminContentBlock';
 import Registration from '@admin/modules/auth/Registration';
 import Security from './Security';
 import { Button } from '@/elements/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog } from '@/elements/dialog';
 import AuthModules from '@/components/admin/modules/auth/Modules';
 import { useStoreState } from '@/state/hooks';
@@ -14,10 +14,28 @@ import JGuard from './modules/JGuard';
 import Unfinished from '@/elements/Unfinished';
 import { Link } from 'react-router-dom';
 import { ShieldCheckIcon } from '@heroicons/react/outline';
+import { getPasswordResetRequestCount } from '@/api/routes/admin/password-reset-requests';
 
 export default () => {
     const [visible, setVisible] = useState<boolean>(false);
+    const [pendingCount, setPendingCount] = useState<number>(0);
     const modules = useStoreState(state => state.everest.data!.auth.modules);
+
+    useEffect(() => {
+        // Load pending count on mount
+        getPasswordResetRequestCount()
+            .then(setPendingCount)
+            .catch(console.error);
+
+        // Refresh count every 30 seconds
+        const interval = setInterval(() => {
+            getPasswordResetRequestCount()
+                .then(setPendingCount)
+                .catch(console.error);
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <AdminContentBlock title={'Authentication'}>
@@ -42,10 +60,17 @@ export default () => {
                         <Button
                             type={'button'}
                             size={Button.Sizes.Large}
-                            css={tw`h-10 px-4 py-0 whitespace-nowrap`}
+                            css={tw`h-10 px-4 py-0 whitespace-nowrap relative`}
                         >
                             <ShieldCheckIcon css={tw`w-5 h-5 mr-2`} />
                             Reset Requests
+                            {pendingCount > 0 && (
+                                <span
+                                    css={tw`absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center`}
+                                >
+                                    {pendingCount}
+                                </span>
+                            )}
                         </Button>
                     </Link>
                     <Button

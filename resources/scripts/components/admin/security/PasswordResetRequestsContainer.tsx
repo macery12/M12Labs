@@ -27,7 +27,8 @@ const getStatusColor = (status: string) => {
     }
 };
 
-const getStatusLabel = (status: string) => {
+const getStatusLabel = (status: string | undefined) => {
+    if (!status) return 'Unknown';
     return status.charAt(0).toUpperCase() + status.slice(1);
 };
 

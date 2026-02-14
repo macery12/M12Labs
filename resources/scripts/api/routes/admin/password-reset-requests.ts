@@ -22,6 +22,11 @@ export const getAllPasswordResetRequests = async (status?: string): Promise<Admi
     return data.data || [];
 };
 
+export const getPasswordResetRequestCount = async (): Promise<number> => {
+    const { data } = await http.get('/api/application/password-reset-requests/count');
+    return data.count || 0;
+};
+
 export const approvePasswordResetRequest = async (id: number, adminNotes?: string): Promise<void> => {
     await http.post(`/api/application/password-reset-requests/${id}/approve`, { admin_notes: adminNotes });
 };

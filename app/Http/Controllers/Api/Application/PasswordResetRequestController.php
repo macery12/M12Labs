@@ -47,6 +47,18 @@ class PasswordResetRequestController extends ApplicationApiController
     }
 
     /**
+     * Get count of pending password reset requests.
+     */
+    public function count(Request $request): JsonResponse
+    {
+        $count = PasswordResetRequest::where('status', PasswordResetRequest::STATUS_PENDING)->count();
+
+        return new JsonResponse([
+            'count' => $count,
+        ]);
+    }
+
+    /**
      * Get a specific password reset request.
      */
     public function view(Request $request, PasswordResetRequest $resetRequest): array
