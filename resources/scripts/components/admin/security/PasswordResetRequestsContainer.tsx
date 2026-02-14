@@ -46,11 +46,11 @@ export default function PasswordResetRequestsContainer() {
             .then(setRequests)
             .catch(clearAndAddHttpError)
             .finally(() => setLoading(false));
-    }, [filter, clearFlashes, clearAndAddHttpError]);
+    }, [filter]);
 
     useEffect(() => {
         loadRequests();
-    }, [loadRequests]);
+    }, [filter]);
 
     const handleApprove = (id: number, adminNotes?: string) => {
         setSubmitting(id);

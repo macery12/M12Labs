@@ -42,7 +42,7 @@ class PasswordResetRequestController extends ApplicationApiController
         $requests = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return $this->fractal->collection($requests)
-            ->transformWith($this->getTransformer(PasswordResetRequestTransformer::class))
+            ->transformWith(PasswordResetRequestTransformer::class)
             ->toArray();
     }
 
@@ -52,7 +52,7 @@ class PasswordResetRequestController extends ApplicationApiController
     public function view(Request $request, PasswordResetRequest $resetRequest): array
     {
         return $this->fractal->item($resetRequest)
-            ->transformWith($this->getTransformer(PasswordResetRequestTransformer::class))
+            ->transformWith(PasswordResetRequestTransformer::class)
             ->toArray();
     }
 
@@ -107,7 +107,7 @@ class PasswordResetRequestController extends ApplicationApiController
             ->log();
 
         return $this->fractal->item($resetRequest->fresh())
-            ->transformWith($this->getTransformer(PasswordResetRequestTransformer::class))
+            ->transformWith(PasswordResetRequestTransformer::class)
             ->parseIncludes(['temporary_password'])
             ->toArray();
     }
@@ -153,7 +153,7 @@ class PasswordResetRequestController extends ApplicationApiController
             ->log();
 
         return $this->fractal->item($resetRequest->fresh())
-            ->transformWith($this->getTransformer(PasswordResetRequestTransformer::class))
+            ->transformWith(PasswordResetRequestTransformer::class)
             ->toArray();
     }
 
