@@ -117,6 +117,15 @@ export interface EverestSettings {
         enabled: boolean;
         url: boolean;
     };
+    email: {
+        resend: {
+            enabled: boolean;
+            api_key: boolean;
+            from_email: string;
+            from_name: string;
+            reply_to: string;
+        };
+    };
 }
 
 export interface EverestStore {
