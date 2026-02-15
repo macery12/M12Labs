@@ -16,7 +16,6 @@ class SettingsServiceProvider extends ServiceProvider
         // Jexactyl-specific keys
         'app:name', 'app:logo', 'app:mode', 'app:setup', 'app:locale',
         'app:speed_dial', 'app:indicators',
-        'recaptcha:enabled', 'recaptcha:secret_key', 'recaptcha:website_key',
         'pterodactyl:guzzle:timeout', 'pterodactyl:guzzle:connect_timeout',
         'pterodactyl:console:count', 'pterodactyl:console:frequency',
         'pterodactyl:auth:2fa_required',

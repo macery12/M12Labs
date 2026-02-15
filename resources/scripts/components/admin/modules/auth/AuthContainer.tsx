@@ -2,6 +2,7 @@ import tw from 'twin.macro';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import Registration from '@admin/modules/auth/Registration';
 import Security from './Security';
+import CaptchaSettings from './CaptchaSettings';
 import { Button } from '@/elements/button';
 import { useState } from 'react';
 import { Dialog } from '@/elements/dialog';
@@ -50,6 +51,7 @@ export default () => {
             <div className={'grid gap-4 md:grid-cols-2 xl:grid-cols-3'}>
                 <Registration />
                 <Security />
+                <CaptchaSettings />
                 {modules.onboarding.enabled && <Onboarding />}
                 {modules.jguard.enabled && <JGuard />}
                 {modules.discord.enabled && <DiscordSSO />}
