@@ -26,7 +26,7 @@ class UpdateResendSettingsRequest extends ApplicationApiRequest
     /**
      * Normalize the request data for storage.
      */
-    public function normalize(): array
+    public function normalize(?array $only = null): array
     {
         return [
             'modules:email:resend:enabled' => $this->input('enabled', false) ? 'true' : 'false',
