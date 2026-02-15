@@ -1,5 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
-import debounce from 'debounce';
+import { useState, useEffect } from 'react';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import AdminBox from '@/elements/AdminBox';
@@ -9,54 +8,80 @@ import { useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
 import { updateSettings } from '@/api/routes/admin/email';
 import Switch from '@/elements/Switch';
+import { Button } from '@/elements/button';
 
 export default () => {
     const { status, setStatus } = useStatus();
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
     const settings = useStoreState(state => state.everest.data!.email.resend);
 
+    // Form state - controlled components
     const [enabled, setEnabled] = useState(settings.enabled);
-    const [apiKeyModified, setApiKeyModified] = useState(false);
+    const [apiKey, setApiKey] = useState('');
+    const [fromEmail, setFromEmail] = useState(settings.from_email || '');
+    const [fromName, setFromName] = useState(settings.from_name || '');
+    const [replyTo, setReplyTo] = useState(settings.reply_to || '');
+    
+    // Track if API key field has been touched
+    const [apiKeyTouched, setApiKeyTouched] = useState(false);
+    
+    // Track if form has unsaved changes
+    const [hasChanges, setHasChanges] = useState(false);
 
-    const update = (key: string, value: any) => {
+    // Initialize form when settings change (after save)
+    useEffect(() => {
+        setEnabled(settings.enabled);
+        setFromEmail(settings.from_email || '');
+        setFromName(settings.from_name || '');
+        setReplyTo(settings.reply_to || '');
+        // Don't reset API key field as it's password type
+    }, [settings]);
+
+    // Track changes
+    useEffect(() => {
+        const changed = 
+            enabled !== settings.enabled ||
+            (apiKeyTouched && apiKey !== '') ||
+            fromEmail !== (settings.from_email || '') ||
+            fromName !== (settings.from_name || '') ||
+            replyTo !== (settings.reply_to || '');
+        
+        setHasChanges(changed);
+    }, [enabled, apiKey, apiKeyTouched, fromEmail, fromName, replyTo, settings]);
+
+    const handleSave = () => {
         clearFlashes();
         setStatus('loading');
 
-        // Update local state immediately for enabled toggle
-        if (key === 'enabled') {
-            setEnabled(value);
-        }
+        // Build update data - only include fields that should be updated
+        const updateData: Record<string, any> = {
+            enabled,
+            from_email: fromEmail,
+            from_name: fromName,
+            reply_to: replyTo,
+        };
 
-        // Don't send api_key if it hasn't been modified (still showing placeholder)
-        const updateData: Record<string, any> = {};
-        if (key === 'api_key' && !apiKeyModified) {
-            // User hasn't modified the API key field, don't send it
-            return;
+        // Only include API key if user has entered a new one
+        if (apiKeyTouched && apiKey) {
+            updateData.api_key = apiKey;
         }
-        
-        updateData[key] = value;
 
         updateSettings(updateData)
-            .then(() => setStatus('success'))
+            .then(() => {
+                setStatus('success');
+                setHasChanges(false);
+                setApiKeyTouched(false);
+                setApiKey(''); // Clear the password field after successful save
+                addFlash({
+                    key: 'email:resend',
+                    type: 'success',
+                    message: 'Email settings saved successfully',
+                });
+            })
             .catch(error => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:resend', error });
             });
-    };
-
-    // Create debounced version of update function (500ms delay)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedUpdate = useCallback(
-        debounce((key: string, value: any) => {
-            update(key, value);
-        }, 500),
-        [apiKeyModified]
-    );
-
-    const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setApiKeyModified(true);
-        debouncedUpdate('api_key', value);
     };
 
     return (
@@ -65,8 +90,8 @@ export default () => {
                 <Label>Enable Resend Email</Label>
                 <Switch
                     name={'enabled'}
-                    defaultChecked={enabled}
-                    onChange={e => update('enabled', e.target.checked)}
+                    checked={enabled}
+                    onChange={e => setEnabled(e.target.checked)}
                 />
                 <p className={'mt-1 text-xs text-gray-400'}>
                     Enable or disable the Resend email system.
@@ -78,24 +103,33 @@ export default () => {
                     <div className={'mt-6'}>
                         <Label>API Key</Label>
                         <Input
-                            placeholder={'re_xxxxxxxxxxxxxxxxxxxx'}
+                            placeholder={settings.api_key ? 'API key is set (enter new key to change)' : 're_xxxxxxxxxxxxxxxxxxxx'}
                             id={'api_key'}
                             type={'password'}
                             name={'api_key'}
                             autoComplete={'off'}
-                            defaultValue={settings.api_key ? '••••••••••••••••' : ''}
-                            onChange={handleApiKeyChange}
+                            value={apiKey}
+                            onChange={e => {
+                                setApiKey(e.target.value);
+                                setApiKeyTouched(true);
+                            }}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
-                            Your Resend API key. Get it from{' '}
-                            <a
-                                href="https://resend.com/api-keys"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300"
-                            >
-                                resend.com/api-keys
-                            </a>
+                            {settings.api_key ? (
+                                <>API key is configured. Enter a new key to replace it.</>
+                            ) : (
+                                <>
+                                    Your Resend API key. Get it from{' '}
+                                    <a
+                                        href="https://resend.com/api-keys"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-400 hover:text-blue-300"
+                                    >
+                                        resend.com/api-keys
+                                    </a>
+                                </>
+                            )}
                         </p>
                     </div>
 
@@ -107,8 +141,8 @@ export default () => {
                             type={'email'}
                             name={'from_email'}
                             autoComplete={'off'}
-                            defaultValue={settings.from_email}
-                            onChange={e => debouncedUpdate('from_email', e.target.value)}
+                            value={fromEmail}
+                            onChange={e => setFromEmail(e.target.value)}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
                             The email address to send emails from. Must be verified in Resend.
@@ -123,8 +157,8 @@ export default () => {
                             type={'text'}
                             name={'from_name'}
                             autoComplete={'off'}
-                            defaultValue={settings.from_name}
-                            onChange={e => debouncedUpdate('from_name', e.target.value)}
+                            value={fromName}
+                            onChange={e => setFromName(e.target.value)}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
                             The name that will appear in the "From" field of emails.
@@ -139,12 +173,18 @@ export default () => {
                             type={'email'}
                             name={'reply_to'}
                             autoComplete={'off'}
-                            defaultValue={settings.reply_to}
-                            onChange={e => debouncedUpdate('reply_to', e.target.value)}
+                            value={replyTo}
+                            onChange={e => setReplyTo(e.target.value)}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
                             Optional: Email address for replies.
                         </p>
+                    </div>
+
+                    <div className={'mt-6 flex justify-end'}>
+                        <Button onClick={handleSave} disabled={!hasChanges}>
+                            Save Changes
+                        </Button>
                     </div>
                 </>
             )}
