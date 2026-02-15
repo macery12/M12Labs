@@ -172,25 +172,6 @@ class UserController extends ApplicationApiController
             ->description('A user was suspended')
             ->log();
 
-        // Dispatch email notification events
-        if ($wasSuspended) {
-            // User is being unsuspended
-            event(new AccountUnsuspended(
-                user: $user,
-                correlationId: Str::uuid()->toString()
-            ));
-        } else {
-            // User is being suspended
-            event(new AccountLocked(
-                user: $user,
-                reason: 'Account suspended by administrator',
-                correlationId: Str::uuid()->toString()
-            ));
-        }
-
-        return $this->returnNoContent();
-    }
-
         return $this->returnNoContent();
     }
 
