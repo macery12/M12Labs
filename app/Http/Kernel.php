@@ -8,7 +8,7 @@ use Illuminate\Http\Middleware\HandleCors;
 use Everest\Http\Middleware\EncryptCookies;
 use Everest\Http\Middleware\Api\IsValidJson;
 use Everest\Http\Middleware\VerifyCsrfToken;
-use Everest\Http\Middleware\VerifyReCaptcha;
+use Everest\Http\Middleware\VerifyTurnstile;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Http\Middleware\TrustProxies;
 use Everest\Http\Middleware\LanguageMiddleware;
@@ -95,7 +95,7 @@ class Kernel extends HttpKernel
         'throttle' => ThrottleRequests::class,
         'can' => Authorize::class,
         'bindings' => SubstituteBindings::class,
-        'recaptcha' => VerifyReCaptcha::class,
+        'captcha' => VerifyTurnstile::class,
         'node.maintenance' => MaintenanceMiddleware::class,
     ];
 }

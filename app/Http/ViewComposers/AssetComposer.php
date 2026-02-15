@@ -11,6 +11,8 @@ class AssetComposer
      */
     public function compose(View $view): void
     {
+        $turnstileService = app(\Everest\Services\Auth\TurnstileService::class);
+        
         $view->with('siteConfiguration', [
             'name' => config('app.name') ?? 'Everest',
             'logo' => config('app.logo') ?? null,
@@ -20,9 +22,9 @@ class AssetComposer
             'locale' => config('app.locale') ?? 'en',
             'speed_dial' => boolval(config('app.speed_dial', false)),
             'indicators' => boolval(config('app.indicators', false)),
-            'recaptcha' => [
-                'enabled' => config('recaptcha.enabled', false),
-                'siteKey' => config('recaptcha.website_key') ?? '',
+            'captcha' => [
+                'enabled' => $turnstileService->isEnabled(),
+                'siteKey' => $turnstileService->getSiteKey() ?? '',
             ],
             'activity' => [
                 'enabled' => [
