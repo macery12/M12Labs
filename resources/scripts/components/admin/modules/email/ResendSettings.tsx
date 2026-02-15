@@ -5,16 +5,16 @@ import AdminBox from '@/elements/AdminBox';
 import { faEnvelope, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useFlash from '@/plugins/useFlash';
-import { useStoreState } from '@/state/hooks';
+import { useStoreState, useStoreActions } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
 import { updateSettings } from '@/api/routes/admin/email';
-import Switch from '@/elements/Switch';
 import { Button } from '@/elements/button';
 
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
     const settings = useStoreState(state => state.everest.data!.email.resend);
+    const updateEverest = useStoreActions(actions => actions.everest.updateEverest);
 
     // Form state - controlled components
     const [enabled, setEnabled] = useState(settings.enabled);
@@ -22,39 +22,28 @@ export default () => {
     const [fromEmail, setFromEmail] = useState(settings.from_email || '');
     const [fromName, setFromName] = useState(settings.from_name || '');
     const [replyTo, setReplyTo] = useState(settings.reply_to || '');
-    
-    // Track if API key field has been touched
-    const [apiKeyTouched, setApiKeyTouched] = useState(false);
-    
-    // Track if form has unsaved changes
-    const [hasChanges, setHasChanges] = useState(false);
 
-    // Initialize form when settings change (after save)
+    // Initialize form when settings change
     useEffect(() => {
         setEnabled(settings.enabled);
         setFromEmail(settings.from_email || '');
         setFromName(settings.from_name || '');
         setReplyTo(settings.reply_to || '');
-        // Don't reset API key field as it's password type
     }, [settings]);
 
-    // Track changes
-    useEffect(() => {
-        const changed = 
-            enabled !== settings.enabled ||
-            (apiKeyTouched && apiKey !== '') ||
-            fromEmail !== (settings.from_email || '') ||
-            fromName !== (settings.from_name || '') ||
-            replyTo !== (settings.reply_to || '');
-        
-        setHasChanges(changed);
-    }, [enabled, apiKey, apiKeyTouched, fromEmail, fromName, replyTo, settings]);
+    // Simple change detection - has ANY field changed from saved settings?
+    const hasChanges = 
+        enabled !== settings.enabled ||
+        fromEmail !== (settings.from_email || '') ||
+        fromName !== (settings.from_name || '') ||
+        replyTo !== (settings.reply_to || '') ||
+        apiKey.trim() !== ''; // API key changed if user entered anything
 
     const handleSave = () => {
         clearFlashes();
         setStatus('loading');
 
-        // Build update data - only include fields that should be updated
+        // Build update data - always include all fields
         const updateData: Record<string, any> = {
             enabled,
             from_email: fromEmail,
@@ -62,26 +51,34 @@ export default () => {
             reply_to: replyTo,
         };
 
-        // Only include API key if user has entered a new one
-        if (apiKeyTouched && apiKey) {
+        // Only include API key if user entered a new one
+        if (apiKey.trim()) {
             updateData.api_key = apiKey;
         }
 
         updateSettings(updateData)
             .then(() => {
                 setStatus('success');
-                setHasChanges(false);
-                setApiKeyTouched(false);
                 setApiKey(''); // Clear the password field after successful save
+                
+                // Update global state immediately instead of reloading page
+                updateEverest({
+                    email: {
+                        resend: {
+                            enabled,
+                            api_key: apiKey.trim() ? true : settings.api_key, // Keep current status if not updated
+                            from_email: fromEmail,
+                            from_name: fromName,
+                            reply_to: replyTo,
+                        },
+                    },
+                });
+
                 addFlash({
                     key: 'email:resend',
                     type: 'success',
-                    message: 'Email settings saved successfully. Refreshing page...',
+                    message: 'Email settings saved successfully',
                 });
-                // Reload the page after a short delay to refresh the state
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
             })
             .catch(error => {
                 setStatus('error');
@@ -89,18 +86,25 @@ export default () => {
             });
     };
 
+    const toggleEnabled = () => {
+        setEnabled(!enabled);
+    };
+
     return (
         <AdminBox title={'Resend Email Settings'} icon={faEnvelope} byKey={'email:resend'} status={status}>
             <div>
-                <Label>Enable Resend Email</Label>
-                <Switch
-                    name={'enabled'}
-                    checked={enabled}
-                    onChange={e => setEnabled(e.target.checked)}
-                />
-                <p className={'mt-1 text-xs text-gray-400'}>
-                    Enable or disable the Resend email system.
-                </p>
+                <Label>Email System Status</Label>
+                <div className={'flex items-center gap-4'}>
+                    <Button
+                        onClick={toggleEnabled}
+                        className={enabled ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                    >
+                        {enabled ? 'Enabled' : 'Disabled'}
+                    </Button>
+                    <span className={'text-sm text-gray-400'}>
+                        Click to {enabled ? 'disable' : 'enable'} the Resend email system
+                    </span>
+                </div>
             </div>
 
             <div className={'mt-6'}>
@@ -121,14 +125,7 @@ export default () => {
                     name={'api_key'}
                     autoComplete={'off'}
                     value={apiKey}
-                    onChange={e => {
-                        const value = e.target.value;
-                        setApiKey(value);
-                        // Only mark as touched if user actually enters text
-                        if (value) {
-                            setApiKeyTouched(true);
-                        }
-                    }}
+                    onChange={e => setApiKey(e.target.value)}
                 />
                 <p className={'mt-1 text-xs text-gray-400'}>
                     {settings.api_key ? (
