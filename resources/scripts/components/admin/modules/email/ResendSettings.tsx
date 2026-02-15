@@ -249,7 +249,7 @@ export default () => {
             </div>
 
             <div className={'mt-6'}>
-                <Label>From Email</Label>
+                <Label>From Email <span className={'text-red-500'}>*</span></Label>
                 <Input
                     placeholder={'noreply@example.com'}
                     id={'from_email'}
@@ -260,7 +260,20 @@ export default () => {
                     onChange={e => setFromEmail(e.target.value)}
                 />
                 <p className={'mt-1 text-xs text-gray-400'}>
-                    The email address to send emails from. Must be verified in Resend.
+                    <strong>Required:</strong> The email address to send emails from.
+                </p>
+                <p className={'mt-1 text-xs text-yellow-400'}>
+                    ⚠️ <strong>Important:</strong> The domain of this email (e.g., "example.com" from "noreply@example.com") 
+                    must be verified in your Resend account at{' '}
+                    <a
+                        href="https://resend.com/domains"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline"
+                    >
+                        resend.com/domains
+                    </a>
+                    {' '}or emails will fail with "domain is invalid" error.
                 </p>
             </div>
 

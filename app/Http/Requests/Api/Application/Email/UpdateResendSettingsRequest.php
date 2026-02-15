@@ -9,12 +9,37 @@ class UpdateResendSettingsRequest extends ApplicationApiRequest
 {
     public function rules(): array
     {
-        return [
+        $rules = [
             'enabled' => 'nullable|bool',
             'api_key' => 'nullable|string|min:1|max:255',
             'from_email' => 'nullable|email|max:255',
             'from_name' => 'nullable|string|max:255',
             'reply_to' => 'nullable|email|max:255',
+        ];
+
+        // If enabling the email system, require from_email and api_key
+        if ($this->input('enabled') === true) {
+            $rules['from_email'] = 'required|email|max:255';
+            
+            // Only require API key if it's not already set
+            $existingApiKey = \Everest\Models\Setting::get('settings::modules:email:resend:api_key');
+            if (empty($existingApiKey) || !empty($this->input('api_key'))) {
+                $rules['api_key'] = 'required|string|min:1|max:255';
+            }
+        }
+
+        return $rules;
+    }
+    
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'from_email.required' => 'From email address is required when email system is enabled. This domain must be verified in your Resend account.',
+            'from_email.email' => 'From email address must be a valid email address.',
+            'api_key.required' => 'API key is required when email system is enabled.',
         ];
     }
 

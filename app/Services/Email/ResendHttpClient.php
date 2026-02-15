@@ -70,6 +70,12 @@ class ResendHttpClient
 
                 // Handle specific error codes
                 if ($statusCode === 400) {
+                    // Check if it's a domain-related error
+                    if (stripos($errorMessage, 'domain') !== false || stripos($errorMessage, 'from') !== false) {
+                        throw new ResendValidationException(
+                            $errorMessage . ' - Make sure the domain in your "From Email" is verified in your Resend account at https://resend.com/domains'
+                        );
+                    }
                     throw new ResendValidationException($errorMessage);
                 }
 

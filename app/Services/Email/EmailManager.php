@@ -32,7 +32,24 @@ class EmailManager
         $apiKey = Setting::get('settings::modules:email:resend:api_key');
         if (empty($apiKey)) {
             Log::error('Resend API key not configured');
-            return EmailResult::failure('Resend API key not configured');
+            return EmailResult::failure('Resend API key not configured. Please configure the API key in Admin → Email settings.');
+        }
+
+        // Get from settings
+        $from = Setting::get('settings::modules:email:resend:from_email');
+        $fromName = Setting::get('settings::modules:email:resend:from_name');
+        $replyTo = Setting::get('settings::modules:email:resend:reply_to');
+
+        // Validate required from_email is configured
+        if (empty($from)) {
+            Log::error('Resend from_email not configured');
+            return EmailResult::failure('From email address not configured. Please set the "From Email" in Admin → Email settings.');
+        }
+
+        // Validate from_email format
+        if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
+            Log::error('Resend from_email has invalid format', ['from' => $from]);
+            return EmailResult::failure('From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.');
         }
 
         // Render HTML content
@@ -40,11 +57,6 @@ class EmailManager
         
         // Get or generate text content
         $text = $email->text() ?? $this->htmlToText($html);
-
-        // Get from settings
-        $from = Setting::get('settings::modules:email:resend:from_email');
-        $fromName = Setting::get('settings::modules:email:resend:from_name');
-        $replyTo = Setting::get('settings::modules:email:resend:reply_to');
 
         // Create email message
         $message = new EmailMessage(

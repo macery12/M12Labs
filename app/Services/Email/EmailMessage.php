@@ -35,13 +35,19 @@ class EmailMessage
             $data['tags'] = $this->tags;
         }
 
-        if ($this->from !== null) {
+        // From field is REQUIRED by Resend API
+        // Format: "Name <email@domain.com>" or "email@domain.com"
+        if ($this->from !== null && $this->from !== '') {
             $data['from'] = $this->fromName 
                 ? "{$this->fromName} <{$this->from}>" 
                 : $this->from;
+        } else {
+            // This should never happen if EmailManager validates correctly
+            // But include a fallback to prevent API errors
+            throw new \InvalidArgumentException('From email address is required but was not provided');
         }
 
-        if ($this->replyTo !== null) {
+        if ($this->replyTo !== null && $this->replyTo !== '') {
             $data['reply_to'] = $this->replyTo;
         }
 
