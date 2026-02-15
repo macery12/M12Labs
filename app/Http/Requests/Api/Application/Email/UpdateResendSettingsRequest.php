@@ -17,13 +17,26 @@ class UpdateResendSettingsRequest extends ApplicationApiRequest
             'reply_to' => 'nullable|email|max:255',
         ];
 
-        // If enabling the email system, require from_email and api_key
+        // If enabling the email system, ensure from_email and api_key are configured
+        // Either they must be in this request, OR already saved in database
         if ($this->input('enabled') === true) {
-            $rules['from_email'] = 'required|email|max:255';
+            // Check if from_email is in request or already saved
+            $existingFromEmail = \Everest\Models\Setting::get('settings::modules:email:resend:from_email');
+            $hasFromEmailInRequest = !empty($this->input('from_email'));
+            $hasFromEmailInDatabase = !empty($existingFromEmail);
             
-            // Only require API key if it's not already set
+            // Require from_email if not in request AND not in database
+            if (!$hasFromEmailInRequest && !$hasFromEmailInDatabase) {
+                $rules['from_email'] = 'required|email|max:255';
+            }
+            
+            // Check if API key is in request or already saved
             $existingApiKey = \Everest\Models\Setting::get('settings::modules:email:resend:api_key');
-            if (empty($existingApiKey) || !empty($this->input('api_key'))) {
+            $hasApiKeyInRequest = !empty($this->input('api_key'));
+            $hasApiKeyInDatabase = !empty($existingApiKey);
+            
+            // Require API key if not in request AND not in database
+            if (!$hasApiKeyInRequest && !$hasApiKeyInDatabase) {
                 $rules['api_key'] = 'required|string|min:1|max:255';
             }
         }
@@ -37,9 +50,9 @@ class UpdateResendSettingsRequest extends ApplicationApiRequest
     public function messages(): array
     {
         return [
-            'from_email.required' => 'From email address is required when email system is enabled. This domain must be verified in your Resend account.',
+            'from_email.required' => 'From email address must be configured before enabling the email system. Please set it in the "From Email" field and save settings first. The domain must be verified in your Resend account.',
             'from_email.email' => 'From email address must be a valid email address.',
-            'api_key.required' => 'API key is required when email system is enabled.',
+            'api_key.required' => 'API key must be configured before enabling the email system. Please enter your Resend API key first.',
         ];
     }
 
