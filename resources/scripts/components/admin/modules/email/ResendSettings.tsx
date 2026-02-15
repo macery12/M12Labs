@@ -122,8 +122,12 @@ export default () => {
                     autoComplete={'off'}
                     value={apiKey}
                     onChange={e => {
-                        setApiKey(e.target.value);
-                        setApiKeyTouched(true);
+                        const value = e.target.value;
+                        setApiKey(value);
+                        // Only mark as touched if user actually enters text
+                        if (value) {
+                            setApiKeyTouched(true);
+                        }
                     }}
                 />
                 <p className={'mt-1 text-xs text-gray-400'}>

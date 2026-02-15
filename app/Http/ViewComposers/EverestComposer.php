@@ -138,7 +138,7 @@ class EverestComposer
             ],
             'email' => [
                 'resend' => [
-                    'enabled' => boolval(Setting::get('settings::modules:email:resend:enabled', 'false')) === true || Setting::get('settings::modules:email:resend:enabled', 'false') === 'true',
+                    'enabled' => Setting::get('settings::modules:email:resend:enabled', 'false') === 'true',
                     'api_key' => !empty(Setting::get('settings::modules:email:resend:api_key', '')),
                     'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
                     'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
