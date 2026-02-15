@@ -1,24 +1,15 @@
 import { useEffect, useState } from 'react';
-import { httpGet, httpPut } from '@/api/http';
-import { useFlash } from '@/plugins/useFlash';
+import {
+    getNotificationSettings,
+    updateGlobalNotificationToggle,
+    updateNotificationSetting,
+    type EmailNotificationSetting,
+    type NotificationSettingsResponse,
+} from '@/api/routes/admin/email';
+import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import Spinner from '@/elements/Spinner';
 import Label from '@/elements/Label';
-
-interface EmailNotificationSetting {
-    id: number;
-    template_key: string;
-    enabled: boolean;
-    category: string;
-    name: string;
-    description: string | null;
-    rate_limit_exempt: boolean;
-}
-
-interface NotificationSettingsResponse {
-    global_enabled: boolean;
-    categories: Record<string, EmailNotificationSetting[]>;
-}
 
 export default () => {
     const [loading, setLoading] = useState(true);
@@ -34,7 +25,7 @@ export default () => {
     const loadSettings = async () => {
         setLoading(true);
         try {
-            const data = await httpGet<NotificationSettingsResponse>('/api/application/email/notifications');
+            const data = await getNotificationSettings();
             setGlobalEnabled(data.global_enabled);
             setCategories(data.categories);
         } catch (error: any) {
@@ -53,9 +44,7 @@ export default () => {
         setToggling({ ...toggling, global: true });
 
         try {
-            await httpPut('/api/application/email/notifications/global', {
-                enabled: !globalEnabled,
-            });
+            await updateGlobalNotificationToggle(!globalEnabled);
 
             setGlobalEnabled(!globalEnabled);
             addFlash({
@@ -79,9 +68,7 @@ export default () => {
         setToggling({ ...toggling, [setting.template_key]: true });
 
         try {
-            await httpPut(`/api/application/email/notifications/${setting.id}`, {
-                enabled: !setting.enabled,
-            });
+            await updateNotificationSetting(setting.id, !setting.enabled);
 
             // Update local state
             const updatedCategories = { ...categories };
