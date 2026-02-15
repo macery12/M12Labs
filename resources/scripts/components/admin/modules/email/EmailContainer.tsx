@@ -3,7 +3,7 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import ResendSettings from '@/components/admin/modules/email/ResendSettings';
 import SendTestEmail from '@/components/admin/modules/email/SendTestEmail';
 import SendCustomEmail from '@/components/admin/modules/email/SendCustomEmail';
-import FlashMessageRender from '@/elements/FlashMessageRenderer';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 export default () => {
     return (
