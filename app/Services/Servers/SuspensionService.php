@@ -3,7 +3,10 @@
 namespace Everest\Services\Servers;
 
 use Everest\Models\Server;
+use Illuminate\Support\Str;
 use Webmozart\Assert\Assert;
+use Everest\Events\Email\ServerSuspended;
+use Everest\Events\Email\ServerUnsuspended;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -50,6 +53,22 @@ class SuspensionService
         try {
             // Tell wings to re-sync the server state.
             $this->daemonServerRepository->setServer($server)->sync();
+            
+            // Dispatch email notification events
+            if ($isSuspending) {
+                event(new ServerSuspended(
+                    server: $server,
+                    user: $server->user,
+                    reason: 'Server suspended by administrator',
+                    correlationId: Str::uuid()->toString()
+                ));
+            } else {
+                event(new ServerUnsuspended(
+                    server: $server,
+                    user: $server->user,
+                    correlationId: Str::uuid()->toString()
+                ));
+            }
         } catch (\Exception $exception) {
             // Rollback the server's suspension status if wings fails to sync the server.
             $server->update([

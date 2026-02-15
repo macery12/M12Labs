@@ -7,6 +7,8 @@ use Everest\Events\Email\PasswordResetRequested;
 use Everest\Events\Email\PasswordChanged;
 use Everest\Events\Email\NewLoginDetected;
 use Everest\Events\Email\ServerCreatedEmail;
+use Everest\Events\Email\ServerSuspended;
+use Everest\Events\Email\ServerUnsuspended;
 use Everest\Events\Email\TwoFactorEnabled;
 use Everest\Events\Email\TwoFactorDisabled;
 
@@ -23,6 +25,8 @@ class EmailTypeRegistry
         TwoFactorEnabled::class => 'auth.2fa_enabled',
         TwoFactorDisabled::class => 'auth.2fa_disabled',
         ServerCreatedEmail::class => 'server.created',
+        ServerSuspended::class => 'server.suspended',
+        ServerUnsuspended::class => 'server.unsuspended',
     ];
 
     /**
@@ -163,6 +167,25 @@ class EmailTypeRegistry
                     'serverId' => $event->server->uuidShort,
                     'serverUrl' => url("/server/{$event->server->uuidShort}"),
                     'nodeLocation' => $event->server->node->name ?? 'Unknown',
+                ];
+                break;
+
+            case ServerSuspended::class:
+                /** @var ServerSuspended $event */
+                $data = [
+                    'userName' => $event->user->name ?? $event->user->username,
+                    'serverName' => $event->server->name,
+                    'reason' => $event->reason,
+                    'suspendedAt' => now()->format('F j, Y g:i A'),
+                ];
+                break;
+
+            case ServerUnsuspended::class:
+                /** @var ServerUnsuspended $event */
+                $data = [
+                    'userName' => $event->user->name ?? $event->user->username,
+                    'serverName' => $event->server->name,
+                    'unsuspendedAt' => now()->format('F j, Y g:i A'),
                 ];
                 break;
         }

@@ -98,9 +98,10 @@ class LoginController extends AbstractLoginController
             $this->sendLockoutResponse($request);
         }
 
-        $this->createAccount($request->validated());
+        $user = $this->createAccount($request->validated());
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        // Automatically log in the user after successful registration
+        return $this->sendLoginResponse($user, $request);
     }
 
     /**
