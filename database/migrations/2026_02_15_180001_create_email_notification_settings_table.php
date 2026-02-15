@@ -88,6 +88,16 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
+                'template_key' => 'auth.account_unsuspended',
+                'enabled' => true,
+                'category' => 'auth',
+                'name' => 'Account Unsuspended',
+                'description' => 'Notification when account is unsuspended',
+                'rate_limit_exempt' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'template_key' => 'auth.2fa_enabled',
                 'enabled' => true,
                 'category' => 'auth',
