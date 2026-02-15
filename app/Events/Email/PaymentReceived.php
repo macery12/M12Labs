@@ -17,6 +17,10 @@ class PaymentReceived
         public string $paymentMethod,
         public ?string $invoiceId = null,
         public string $correlationId = '',
+        public bool $isRenewal = false,
+        public ?float $originalAmount = null,
+        public ?float $discountAmount = null,
+        public ?string $couponCode = null,
     ) {
     }
 }

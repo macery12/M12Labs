@@ -17,6 +17,8 @@ class PaymentFailed
         public string $reason,
         public ?string $invoiceId = null,
         public string $correlationId = '',
+        public string $paymentMethod = 'Unknown',
+        public bool $isRenewal = false,
     ) {
     }
 }

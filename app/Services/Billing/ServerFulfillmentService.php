@@ -110,6 +110,9 @@ class ServerFulfillmentService
                 }
 
                 DB::commit();
+
+                // Dispatch PaymentReceived email event after successful fulfillment
+                $this->dispatchPaymentReceivedEmail($currentOrder, $product);
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error("Failed to update order status for order {$order->id}: " . $e->getMessage());
@@ -246,5 +249,77 @@ class ServerFulfillmentService
         );
 
         Log::info("Recorded coupon usage for order {$order->id}");
+    }
+
+    /**
+     * Dispatch PaymentReceived email event after successful order fulfillment.
+     *
+     * @param Order $order The completed order
+     * @param Product $product The product associated with the order
+     */
+    private function dispatchPaymentReceivedEmail(Order $order, Product $product): void
+    {
+        try {
+            $user = $order->user;
+            if (!$user) {
+                Log::warning("Cannot dispatch PaymentReceived email for order {$order->id}: user not found");
+                return;
+            }
+
+            // Get currency from config
+            $currency = config('modules.billing.currency.code', 'USD');
+
+            // Determine payment method
+            $paymentMethod = 'Unknown';
+            if ($order->payment_processor === 'paypal') {
+                $paymentMethod = 'PayPal';
+            } elseif ($order->payment_processor === 'mollie') {
+                $paymentMethod = 'Mollie';
+            } elseif ($order->payment_processor === 'stripe') {
+                $paymentMethod = 'Stripe';
+            }
+
+            // Get coupon info if applicable
+            $couponCode = null;
+            $originalAmount = null;
+            $discountAmount = null;
+
+            if ($order->coupon_id) {
+                $coupon = \Everest\Models\Billing\Coupon::find($order->coupon_id);
+                if ($coupon) {
+                    $couponCode = $coupon->code;
+                    // Calculate original amount before discount
+                    $finalAmount = $order->amount ?? $product->price;
+                    if ($coupon->type === 'percent') {
+                        $originalAmount = $finalAmount / (1 - ($coupon->value / 100));
+                        $discountAmount = $originalAmount - $finalAmount;
+                    } else {
+                        // Fixed discount
+                        $originalAmount = $finalAmount + $coupon->value;
+                        $discountAmount = $coupon->value;
+                    }
+                }
+            }
+
+            $isRenewal = $order->type === Order::TYPE_REN;
+
+            event(new \Everest\Events\Email\PaymentReceived(
+                user: $user,
+                amount: $order->amount ?? $product->price,
+                currency: $currency,
+                paymentMethod: $paymentMethod,
+                invoiceId: (string) $order->id,
+                correlationId: \Illuminate\Support\Str::uuid()->toString(),
+                isRenewal: $isRenewal,
+                originalAmount: $originalAmount,
+                discountAmount: $discountAmount,
+                couponCode: $couponCode,
+            ));
+
+            Log::info("Dispatched PaymentReceived email for order {$order->id}");
+        } catch (\Exception $e) {
+            // Don't fail the order if email dispatch fails
+            Log::error("Failed to dispatch PaymentReceived email for order {$order->id}: " . $e->getMessage());
+        }
     }
 }

@@ -55,5 +55,12 @@ class Kernel extends ConsoleKernel
 
         // Process deferred emails every 5 minutes
         $schedule->command(ProcessDeferredEmailsCommand::class)->everyFiveMinutes();
+
+        // Send server renewal notices (run daily - checks for servers expiring in 7, 3, and 1 day)
+        if (config('modules.billing.enabled')) {
+            $schedule->command('email:send-renewal-notices', ['--days' => 7])->dailyAt('09:00'); // 7 days notice
+            $schedule->command('email:send-renewal-notices', ['--days' => 3])->dailyAt('09:15'); // 3 days notice
+            $schedule->command('email:send-renewal-notices', ['--days' => 1])->dailyAt('09:30'); // 1 day notice
+        }
     }
 }

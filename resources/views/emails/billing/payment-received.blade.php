@@ -1,19 +1,25 @@
 @component('mail::message')
-# Payment Received
+# Payment Received{{ $isRenewal ? ' - Server Renewal' : '' }}
 
 Hello {{ $userName }},
 
-We've successfully received your payment!
+We've successfully received your payment{{ $isRenewal ? ' for your server renewal' : '' }}!
 
 **Payment Details:**
+@if($originalAmount && $discountAmount && $couponCode)
+- Original Amount: {{ $currency }} {{ $originalAmount }}
+- Discount ({{ $couponCode }}): -{{ $currency }} {{ $discountAmount }}
+- **Final Amount: {{ $currency }} {{ $amount }}**
+@else
 - Amount: {{ $currency }} {{ $amount }}
+@endif
 - Payment Method: {{ $paymentMethod }}
 - Transaction Date: {{ $transactionDate }}
 @if($invoiceId !== 'N/A')
 - Invoice ID: {{ $invoiceId }}
 @endif
 
-Thank you for your payment. Your account has been credited and your services will continue uninterrupted.
+Thank you for your payment. Your {{ $isRenewal ? 'server has been renewed and' : 'account has been credited and your' }} services will continue uninterrupted.
 
 @component('mail::button', ['url' => url('/billing')])
 View Billing History

@@ -56,8 +56,8 @@ class EmailTypeRegistry
         'server.suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
         'server.unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
         'server.expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
-        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate'],
-        'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl'],
+        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode'],
+        'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
         'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'expiresAt', 'suspensionTime', 'renewalAmount', 'currency'],
     ];
 
@@ -228,6 +228,10 @@ class EmailTypeRegistry
                     'paymentMethod' => $event->paymentMethod,
                     'invoiceId' => $event->invoiceId ?? 'N/A',
                     'transactionDate' => now()->format('F j, Y g:i A'),
+                    'isRenewal' => $event->isRenewal,
+                    'originalAmount' => $event->originalAmount ? number_format($event->originalAmount, 2) : null,
+                    'discountAmount' => $event->discountAmount ? number_format($event->discountAmount, 2) : null,
+                    'couponCode' => $event->couponCode,
                 ];
                 break;
 
@@ -240,6 +244,8 @@ class EmailTypeRegistry
                     'reason' => $event->reason,
                     'invoiceId' => $event->invoiceId ?? 'N/A',
                     'retryUrl' => url('/billing'),
+                    'paymentMethod' => $event->paymentMethod,
+                    'isRenewal' => $event->isRenewal,
                 ];
                 break;
 
