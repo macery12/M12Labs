@@ -1,6 +1,14 @@
 import http from '@/api/http';
 
 export interface ResendSettings {
+    enabled: boolean;
+    api_key: boolean; // true if key exists, false otherwise
+    from_email: string;
+    from_name: string;
+    reply_to: string;
+}
+
+export interface ResendSettingsUpdate {
     enabled?: boolean;
     api_key?: string;
     from_email?: string;
@@ -25,10 +33,18 @@ export interface EmailResponse {
     error?: string;
 }
 
-export const updateSettings = (settings: ResendSettings): Promise<void> => {
+export const getSettings = (): Promise<ResendSettings> => {
     return new Promise((resolve, reject) => {
-        http.put(`/api/application/email/settings`, settings)
-            .then(() => resolve())
+        http.get<ResendSettings>(`/api/application/email/settings`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const updateSettings = (settings: ResendSettingsUpdate): Promise<ResendSettings> => {
+    return new Promise((resolve, reject) => {
+        http.put<ResendSettings>(`/api/application/email/settings`, settings)
+            .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };

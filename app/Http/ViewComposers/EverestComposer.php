@@ -136,15 +136,6 @@ class EverestComposer
                     'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
                 ],
             ],
-            'email' => [
-                'resend' => [
-                    'enabled' => Setting::get('settings::modules:email:resend:enabled', 'false') === 'true',
-                    'api_key' => !empty(Setting::get('settings::modules:email:resend:api_key', '')),
-                    'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
-                    'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
-                    'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
-                ],
-            ],
         ]);
     }
 }

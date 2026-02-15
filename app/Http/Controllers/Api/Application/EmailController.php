@@ -23,11 +23,25 @@ class EmailController extends ApplicationApiController
     }
 
     /**
+     * Get current email settings from database.
+     */
+    public function getSettings(): JsonResponse
+    {
+        return response()->json([
+            'enabled' => Setting::get('settings::modules:email:resend:enabled', 'false') === 'true',
+            'api_key' => !empty(Setting::get('settings::modules:email:resend:api_key', '')),
+            'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
+            'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
+            'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
+        ]);
+    }
+
+    /**
      * Update the Resend email settings.
      *
      * @throws \Throwable
      */
-    public function updateSettings(UpdateResendSettingsRequest $request): Response
+    public function updateSettings(UpdateResendSettingsRequest $request): JsonResponse
     {
         foreach ($request->normalize() as $key => $value) {
             // Don't overwrite existing API key with empty string
@@ -44,7 +58,8 @@ class EmailController extends ApplicationApiController
             ->description('Resend email settings were updated')
             ->log();
 
-        return $this->returnNoContent();
+        // Return updated settings instead of 204
+        return $this->getSettings();
     }
 
     /**
