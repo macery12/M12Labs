@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import Label from '@/elements/Label';
-import Input from '@/elements/Input';
+import Input, { Textarea } from '@/elements/Input';
 import AdminBox from '@/elements/AdminBox';
 import { faEnvelopeOpenText } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import useStatus from '@/plugins/useStatus';
 import { sendCustomEmail } from '@/api/routes/admin/email';
-import Button from '@/elements/Button';
-import Textarea from '@/elements/Textarea';
+import { Button } from '@/elements/button';
 
 export default () => {
     const { status, setStatus } = useStatus();

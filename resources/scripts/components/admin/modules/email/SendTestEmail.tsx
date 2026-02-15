@@ -6,7 +6,7 @@ import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import useStatus from '@/plugins/useStatus';
 import { sendTestEmail } from '@/api/routes/admin/email';
-import Button from '@/elements/Button';
+import { Button } from '@/elements/button';
 
 export default () => {
     const { status, setStatus } = useStatus();
