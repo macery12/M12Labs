@@ -13,7 +13,7 @@ export default () => {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(state => state.everest.data!.auth.captcha);
 
-    const update = async (key: string, value: any) => {
+    const update = (key: string, value: any) => {
         clearFlashes();
         setStatus('loading');
 
