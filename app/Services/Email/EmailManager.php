@@ -183,17 +183,22 @@ class EmailManager
         $text = $this->htmlToText($html);
 
         // Create tags
+        // Sanitize tag values: Resend only accepts ASCII letters, numbers, underscores, or dashes
+        $sanitizedTemplateKey = str_replace('.', '_', $templateKey);
+        
         $tags = [
             [
                 'name' => 'template_key',
-                'value' => $templateKey,
+                'value' => $sanitizedTemplateKey,
             ],
         ];
 
         if ($correlationId) {
+            // Sanitize correlation ID: remove any special characters except allowed ones
+            $sanitizedCorrelationId = preg_replace('/[^a-zA-Z0-9_-]/', '_', $correlationId);
             $tags[] = [
                 'name' => 'correlation_id',
-                'value' => substr($correlationId, 0, 256), // Resend tag value limit
+                'value' => substr($sanitizedCorrelationId, 0, 256), // Resend tag value limit
             ];
         }
 
