@@ -14,6 +14,9 @@ We've successfully received your payment{{ $isRenewal ? ' for your server renewa
 - Amount: {{ $currency }} {{ $amount }}
 @endif
 - Payment Method: {{ $paymentMethod }}
+@if($billingCycle)
+- Billing Cycle: {{ $billingCycle }}
+@endif
 - Transaction Date: {{ $transactionDate }}
 @if($invoiceId !== 'N/A')
 - Invoice ID: {{ $invoiceId }}

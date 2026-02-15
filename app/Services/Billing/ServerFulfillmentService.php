@@ -302,6 +302,7 @@ class ServerFulfillmentService
             }
 
             $isRenewal = $order->type === Order::TYPE_REN;
+            $billingDays = $order->billing_days ?? null;
 
             event(new \Everest\Events\Email\PaymentReceived(
                 user: $user,
@@ -314,6 +315,7 @@ class ServerFulfillmentService
                 originalAmount: $originalAmount,
                 discountAmount: $discountAmount,
                 couponCode: $couponCode,
+                billingDays: $billingDays,
             ));
 
             Log::info("Dispatched PaymentReceived email for order {$order->id}");

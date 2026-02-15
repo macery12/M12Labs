@@ -8,6 +8,9 @@ Your server **{{ $serverName }}** is approaching its renewal date and requires y
 **Important Information:**
 - Expires: {{ $expiresAt }}
 - Renewal Amount: {{ $currency }} {{ $renewalAmount }}
+@if($billingCycle)
+- Billing Cycle: {{ $billingCycle }}
+@endif
 - **Suspension Time: {{ $suspensionTime }}**
 
 **What happens if I don't renew?**

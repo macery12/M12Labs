@@ -56,9 +56,9 @@ class EmailTypeRegistry
         'server.suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
         'server.unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
         'server.expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
-        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode'],
+        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle'],
         'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
-        'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'expiresAt', 'suspensionTime', 'renewalAmount', 'currency'],
+        'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'expiresAt', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],
     ];
 
     /**
@@ -221,6 +221,7 @@ class EmailTypeRegistry
 
             case PaymentReceived::class:
                 /** @var PaymentReceived $event */
+                $billingCycle = self::formatBillingCycle($event->billingDays);
                 $data = [
                     'userName' => $event->user->name ?? $event->user->username,
                     'amount' => number_format($event->amount, 2),
@@ -232,6 +233,8 @@ class EmailTypeRegistry
                     'originalAmount' => $event->originalAmount ? number_format($event->originalAmount, 2) : null,
                     'discountAmount' => $event->discountAmount ? number_format($event->discountAmount, 2) : null,
                     'couponCode' => $event->couponCode,
+                    'billingDays' => $event->billingDays,
+                    'billingCycle' => $billingCycle,
                 ];
                 break;
 
@@ -251,6 +254,7 @@ class EmailTypeRegistry
 
             case ServerRenewalNotice::class:
                 /** @var ServerRenewalNotice $event */
+                $billingCycle = self::formatBillingCycle($event->billingDays);
                 $data = [
                     'userName' => $event->user->name ?? $event->user->username,
                     'serverName' => $event->server->name,
@@ -259,6 +263,8 @@ class EmailTypeRegistry
                     'suspensionTime' => $event->suspensionTime,
                     'renewalAmount' => number_format($event->renewalAmount, 2),
                     'currency' => strtoupper($event->currency),
+                    'billingDays' => $event->billingDays,
+                    'billingCycle' => $billingCycle,
                 ];
                 break;
         }
@@ -277,6 +283,38 @@ class EmailTypeRegistry
         }
 
         return null;
+    }
+
+    /**
+     * Format billing cycle days into human-readable text.
+     */
+    private static function formatBillingCycle(?int $days): string
+    {
+        if (!$days) {
+            return 'One-time';
+        }
+
+        // Common billing cycles
+        if ($days === 1) {
+            return 'Daily';
+        } elseif ($days === 7) {
+            return 'Weekly';
+        } elseif ($days === 14) {
+            return 'Bi-weekly';
+        } elseif ($days === 30) {
+            return 'Monthly';
+        } elseif ($days === 60) {
+            return 'Bi-monthly';
+        } elseif ($days === 90) {
+            return 'Quarterly';
+        } elseif ($days === 180) {
+            return 'Semi-annually';
+        } elseif ($days === 365) {
+            return 'Annually';
+        } else {
+            // For custom periods, return as "{X} days"
+            return $days . ' days';
+        }
     }
 
     /**

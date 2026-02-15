@@ -21,6 +21,7 @@ class PaymentReceived
         public ?float $originalAmount = null,
         public ?float $discountAmount = null,
         public ?string $couponCode = null,
+        public ?int $billingDays = null,
     ) {
     }
 }

@@ -39,8 +39,7 @@ class SendServerRenewalNoticesCommand extends Command
 
         // Find servers expiring in the specified timeframe
         // Only send for active servers (not suspended or already expired)
-        $servers = Server::whereNotNull('renewal_period')
-            ->whereNotNull('expires_at')
+        $servers = Server::whereNotNull('expires_at')
             ->whereBetween('expires_at', [$expiresStart, $expiresEnd])
             ->where('status', '!=', 'suspended')
             ->with(['user', 'node'])
@@ -105,6 +104,9 @@ class SendServerRenewalNoticesCommand extends Command
         // Get renewal amount from server's billing amount or default to 0
         $renewalAmount = $server->billing_amount ?? 0;
 
+        // Get billing cycle (days) - defaults to 30 if not set
+        $billingDays = $server->billing_days ?? 30;
+
         // Calculate suspension time (typically same day as expiration or 1 day after)
         $suspensionTime = $server->expires_at->copy()->addDay();
 
@@ -119,6 +121,7 @@ class SendServerRenewalNoticesCommand extends Command
             suspensionTime: $suspensionTime->format('F j, Y \a\t g:i A'),
             renewalAmount: $renewalAmount,
             currency: $currency,
+            billingDays: $billingDays,
             correlationId: \Illuminate\Support\Str::uuid()->toString(),
         ));
 
@@ -127,6 +130,7 @@ class SendServerRenewalNoticesCommand extends Command
             'user_id' => $server->user_id,
             'expires_at' => $server->expires_at->toDateTimeString(),
             'days_until_expiry' => $daysUntilExpiry,
+            'billing_days' => $billingDays,
         ]);
     }
 }

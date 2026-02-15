@@ -19,6 +19,7 @@ class ServerRenewalNotice
         public string $suspensionTime,
         public float $renewalAmount,
         public string $currency,
+        public int $billingDays = 30,
         public string $correlationId = '',
     ) {
     }
