@@ -309,9 +309,9 @@ class EmailManager
             'server.suspended' => 'Your Server Has Been Suspended',
             'server.unsuspended' => 'Your Server Has Been Unsuspended',
             'server.expiring_soon' => 'Your Server Is Expiring Soon',
-            'billing.invoice_created' => 'New Invoice',
-            'billing.invoice_paid' => 'Invoice Payment Received',
-            'billing.payment_failed' => 'Payment Failed',
+            'billing.payment_received' => 'Payment Received - Thank You',
+            'billing.payment_failed' => 'Payment Failed - Action Required',
+            'billing.server_renewal_notice' => 'Server Renewal Notice - Action Required',
         ];
 
         return $subjects[$templateKey] ?? 'Notification';

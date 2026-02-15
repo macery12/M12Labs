@@ -13,6 +13,9 @@ use Everest\Events\Email\ServerSuspended;
 use Everest\Events\Email\ServerUnsuspended;
 use Everest\Events\Email\TwoFactorEnabled;
 use Everest\Events\Email\TwoFactorDisabled;
+use Everest\Events\Email\PaymentReceived;
+use Everest\Events\Email\PaymentFailed;
+use Everest\Events\Email\ServerRenewalNotice;
 
 class EmailTypeRegistry
 {
@@ -31,6 +34,9 @@ class EmailTypeRegistry
         ServerCreatedEmail::class => 'server.created',
         ServerSuspended::class => 'server.suspended',
         ServerUnsuspended::class => 'server.unsuspended',
+        PaymentReceived::class => 'billing.payment_received',
+        PaymentFailed::class => 'billing.payment_failed',
+        ServerRenewalNotice::class => 'billing.server_renewal_notice',
     ];
 
     /**
@@ -50,9 +56,9 @@ class EmailTypeRegistry
         'server.suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
         'server.unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
         'server.expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
-        'billing.invoice_created' => ['userName', 'invoiceNumber', 'amount', 'dueDate', 'invoiceUrl'],
-        'billing.invoice_paid' => ['userName', 'invoiceNumber', 'amount', 'paidAt'],
-        'billing.payment_failed' => ['userName', 'invoiceNumber', 'amount', 'reason', 'retryUrl'],
+        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate'],
+        'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl'],
+        'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'expiresAt', 'suspensionTime', 'renewalAmount', 'currency'],
     ];
 
     /**
@@ -210,6 +216,43 @@ class EmailTypeRegistry
                     'userName' => $event->user->name ?? $event->user->username,
                     'serverName' => $event->server->name,
                     'unsuspendedAt' => now()->format('F j, Y g:i A'),
+                ];
+                break;
+
+            case PaymentReceived::class:
+                /** @var PaymentReceived $event */
+                $data = [
+                    'userName' => $event->user->name ?? $event->user->username,
+                    'amount' => number_format($event->amount, 2),
+                    'currency' => strtoupper($event->currency),
+                    'paymentMethod' => $event->paymentMethod,
+                    'invoiceId' => $event->invoiceId ?? 'N/A',
+                    'transactionDate' => now()->format('F j, Y g:i A'),
+                ];
+                break;
+
+            case PaymentFailed::class:
+                /** @var PaymentFailed $event */
+                $data = [
+                    'userName' => $event->user->name ?? $event->user->username,
+                    'amount' => number_format($event->amount, 2),
+                    'currency' => strtoupper($event->currency),
+                    'reason' => $event->reason,
+                    'invoiceId' => $event->invoiceId ?? 'N/A',
+                    'retryUrl' => url('/billing'),
+                ];
+                break;
+
+            case ServerRenewalNotice::class:
+                /** @var ServerRenewalNotice $event */
+                $data = [
+                    'userName' => $event->user->name ?? $event->user->username,
+                    'serverName' => $event->server->name,
+                    'renewalUrl' => $event->renewalUrl,
+                    'expiresAt' => $event->expiresAt,
+                    'suspensionTime' => $event->suspensionTime,
+                    'renewalAmount' => number_format($event->renewalAmount, 2),
+                    'currency' => strtoupper($event->currency),
                 ];
                 break;
         }

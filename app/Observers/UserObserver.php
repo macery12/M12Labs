@@ -33,38 +33,6 @@ class UserObserver
     }
 
     /**
-     * Listen to the User updated event.
-     */
-    public function updated(User $user): void
-    {
-        // Check if state was changed (suspension toggle)
-        if ($user->wasChanged('state')) {
-            $isSuspended = $user->state === 'suspended';
-            
-            if ($isSuspended) {
-                // User was just suspended
-                event(new Events\User\Suspended($user));
-                
-                // Dispatch email notification
-                event(new Events\Email\AccountLocked(
-                    user: $user,
-                    reason: 'Account suspended by administrator',
-                    correlationId: Str::uuid()->toString()
-                ));
-            } else if ($user->getOriginal('state') === 'suspended') {
-                // User was just unsuspended (state changed from 'suspended' to something else)
-                event(new Events\User\Unsuspended($user));
-                
-                // Dispatch email notification
-                event(new Events\Email\AccountUnsuspended(
-                    user: $user,
-                    correlationId: Str::uuid()->toString()
-                ));
-            }
-        }
-    }
-
-    /**
      * Listen to the User deleting event.
      */
     public function deleting(User $user): void
