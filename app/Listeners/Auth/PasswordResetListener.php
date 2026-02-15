@@ -4,6 +4,7 @@ namespace Everest\Listeners\Auth;
 
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
+use Everest\Events\Email\PasswordChanged;
 use Illuminate\Auth\Events\PasswordReset;
 
 class PasswordResetListener
@@ -21,5 +22,11 @@ class PasswordResetListener
             ->withRequestMetadata()
             ->subject($event->user)
             ->log();
+
+        // Dispatch password changed email notification
+        event(new PasswordChanged(
+            user: $event->user,
+            correlationId: \Illuminate\Support\Str::uuid()->toString()
+        ));
     }
 }

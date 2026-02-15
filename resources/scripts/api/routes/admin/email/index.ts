@@ -64,3 +64,42 @@ export const sendCustomEmail = (data: SendCustomEmailRequest): Promise<EmailResp
             .catch(reject);
     });
 };
+
+export interface EmailNotificationSetting {
+    id: number;
+    template_key: string;
+    enabled: boolean;
+    category: string;
+    name: string;
+    description: string | null;
+    rate_limit_exempt: boolean;
+}
+
+export interface NotificationSettingsResponse {
+    global_enabled: boolean;
+    categories: Record<string, EmailNotificationSetting[]>;
+}
+
+export const getNotificationSettings = (): Promise<NotificationSettingsResponse> => {
+    return new Promise((resolve, reject) => {
+        http.get<NotificationSettingsResponse>(`/api/application/email/notifications`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const updateGlobalNotificationToggle = (enabled: boolean): Promise<{ success: boolean; enabled: boolean }> => {
+    return new Promise((resolve, reject) => {
+        http.put<{ success: boolean; enabled: boolean }>(`/api/application/email/notifications/global`, { enabled })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const updateNotificationSetting = (id: number, enabled: boolean): Promise<{ success: boolean; setting: EmailNotificationSetting }> => {
+    return new Promise((resolve, reject) => {
+        http.put<{ success: boolean; setting: EmailNotificationSetting }>(`/api/application/email/notifications/${id}`, { enabled })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};

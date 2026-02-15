@@ -194,9 +194,6 @@ importers:
       react-transition-group:
         specifier: ^4.4.5
         version: 4.4.5(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      reaptcha:
-        specifier: 1.12.1
-        version: 1.12.1(react@18.2.0)
       sockette:
         specifier: 2.0.6
         version: 2.0.6
@@ -3126,11 +3123,6 @@ packages:
   readdirp@3.6.0:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
     engines: {node: '>=8.10.0'}
-
-  reaptcha@1.12.1:
-    resolution: {integrity: sha512-zoppfGKHmo8x4PBmSrIQYQOGgVp1e8wMhr6KbwAdbQ76rSky1DcDCXLWRtBg7HGXn2hw+o+0hknafMB0rnrzZQ==}
-    peerDependencies:
-      react: ^16 || ^17 || ^18
 
   reduce-css-calc@2.1.8:
     resolution: {integrity: sha512-8liAVezDmUcH+tdzoEGrhfbGcP7nOV4NkGE3a74+qqvE7nt9i4sKLGBuZNOnpI4WiGksiNPklZxva80061QiPg==}
@@ -6699,10 +6691,6 @@ snapshots:
   readdirp@3.6.0:
     dependencies:
       picomatch: 2.3.1
-
-  reaptcha@1.12.1(react@18.2.0):
-    dependencies:
-      react: 18.2.0
 
   reduce-css-calc@2.1.8:
     dependencies:

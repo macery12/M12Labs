@@ -219,14 +219,17 @@ class MollieCheckoutController extends ClientApiController
                 // FAILED: Payment attempt failed definitively
                 \Log::info("Mollie payment {$paymentId} failed for order {$order->id}");
                 $order->update(['status' => Order::STATUS_FAILED]);
+                $this->dispatchPaymentFailedEmail($order, 'Payment failed', 'mollie');
             } elseif ($payment->isExpired()) {
                 // EXPIRED: Payment window expired (customer didn't complete in time)
                 \Log::info("Mollie payment {$paymentId} expired for order {$order->id}");
                 $order->update(['status' => Order::STATUS_FAILED]);
+                $this->dispatchPaymentFailedEmail($order, 'Payment expired - customer did not complete payment in time', 'mollie');
             } elseif ($payment->isCanceled()) {
                 // CANCELED: Customer actively canceled the payment
                 \Log::info("Mollie payment {$paymentId} canceled by customer for order {$order->id}");
                 $order->update(['status' => Order::STATUS_FAILED]);
+                $this->dispatchPaymentFailedEmail($order, 'Payment canceled by customer', 'mollie');
             } elseif ($payment->isAuthorized()) {
                 // AUTHORIZED: Payment authorized but not captured yet (Klarna, credit cards)
                 // Keep as pending until captured
@@ -389,5 +392,39 @@ class MollieCheckoutController extends ClientApiController
             'payment_id' => $order->mollie_payment_id,
             'user_id' => $order->user_id,
         ]);
+    }
+
+    /**
+     * Dispatch PaymentFailed email event.
+     */
+    private function dispatchPaymentFailedEmail(Order $order, string $reason, string $processor): void
+    {
+        try {
+            $user = $order->user;
+            if (!$user) {
+                \Log::warning("Cannot dispatch PaymentFailed email for order {$order->id}: user not found");
+                return;
+            }
+
+            $currency = config('modules.billing.currency.code', 'USD');
+            $product = Product::find($order->product_id);
+            $amount = $order->amount ?? ($product ? $product->price : 0);
+            $isRenewal = $order->type === Order::TYPE_REN;
+
+            event(new \Everest\Events\Email\PaymentFailed(
+                user: $user,
+                amount: $amount,
+                currency: $currency,
+                reason: $reason,
+                invoiceId: (string) $order->id,
+                correlationId: \Illuminate\Support\Str::uuid()->toString(),
+                paymentMethod: ucfirst($processor),
+                isRenewal: $isRenewal,
+            ));
+
+            \Log::info("Dispatched PaymentFailed email for order {$order->id}");
+        } catch (\Exception $e) {
+            \Log::error("Failed to dispatch PaymentFailed email for order {$order->id}: " . $e->getMessage());
+        }
     }
 }

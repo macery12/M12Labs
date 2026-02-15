@@ -260,6 +260,8 @@ class PayPalCheckoutController extends ClientApiController
                     'expected_status' => 'COMPLETED',
                     'actual_status' => $captureStatus,
                 ]);
+                // Dispatch PaymentFailed email
+                $this->dispatchPaymentFailedEmail($order, 'PayPal capture failed. Status: ' . $captureStatus, 'paypal');
                 throw new BillingExceptionClass('PayPal capture failed', 'Failed to capture PayPal payment. Status: ' . $captureStatus . '. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order->id, 'paypal', $paypalOrderId, ['capture_status' => $captureStatus, 'capture_result' => $captureResult]);
             }
 
@@ -603,5 +605,39 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         return $this->returnNoContent();
+    }
+
+    /**
+     * Dispatch PaymentFailed email event.
+     */
+    private function dispatchPaymentFailedEmail(Order $order, string $reason, string $processor): void
+    {
+        try {
+            $user = $order->user;
+            if (!$user) {
+                Log::warning("Cannot dispatch PaymentFailed email for order {$order->id}: user not found");
+                return;
+            }
+
+            $currency = config('modules.billing.currency.code', 'USD');
+            $product = Product::find($order->product_id);
+            $amount = $order->amount ?? ($product ? $product->price : 0);
+            $isRenewal = $order->type === Order::TYPE_REN;
+
+            event(new \Everest\Events\Email\PaymentFailed(
+                user: $user,
+                amount: $amount,
+                currency: $currency,
+                reason: $reason,
+                invoiceId: (string) $order->id,
+                correlationId: \Illuminate\Support\Str::uuid()->toString(),
+                paymentMethod: ucfirst($processor),
+                isRenewal: $isRenewal,
+            ));
+
+            Log::info("Dispatched PaymentFailed email for order {$order->id}");
+        } catch (\Exception $e) {
+            Log::error("Failed to dispatch PaymentFailed email for order {$order->id}: " . $e->getMessage());
+        }
     }
 }

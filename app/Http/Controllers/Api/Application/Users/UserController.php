@@ -4,9 +4,12 @@ namespace Everest\Http\Controllers\Api\Application\Users;
 
 use Everest\Models\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Everest\Events\Email\AccountLocked;
+use Everest\Events\Email\AccountUnsuspended;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Everest\Exceptions\DisplayException;
@@ -161,7 +164,8 @@ class UserController extends ApplicationApiController
             throw new \Exception('You cannot suspend an administrator.');
         }
 
-        $user->update(['state' => $user->isSuspended() ? '' : 'suspended']);
+        $wasSuspended = $user->isSuspended();
+        $user->update(['state' => $wasSuspended ? '' : 'suspended']);
 
         Activity::event('admin:users:suspend')
             ->property('user', $user)
