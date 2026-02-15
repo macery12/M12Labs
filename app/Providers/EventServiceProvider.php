@@ -11,12 +11,14 @@ use Everest\Observers\ServerObserver;
 use Everest\Observers\SubuserObserver;
 use Everest\Observers\EggVariableObserver;
 use Everest\Listeners\Auth\AuthenticationListener;
+use Everest\Listeners\Email\EmailNotificationListener;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
 {
     protected $subscribe = [
         AuthenticationListener::class,
+        EmailNotificationListener::class,
     ];
 
     /**
