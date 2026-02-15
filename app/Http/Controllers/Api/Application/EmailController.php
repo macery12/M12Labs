@@ -3,6 +3,9 @@
 namespace Everest\Http\Controllers\Api\Application;
 
 use Everest\Models\Setting;
+use Everest\Models\EmailNotificationSetting;
+use Everest\Models\EmailQuota;
+use Everest\Models\User;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -136,5 +139,162 @@ class EmailController extends ApplicationApiController
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Get all email notification settings.
+     */
+    public function getNotificationSettings(): JsonResponse
+    {
+        $settings = EmailNotificationSetting::orderBy('category')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('category');
+
+        $globalEnabled = Setting::get('settings::modules:email:notifications:global_enabled', 'true') === 'true';
+
+        return response()->json([
+            'global_enabled' => $globalEnabled,
+            'categories' => $settings,
+        ]);
+    }
+
+    /**
+     * Update global email notification toggle.
+     */
+    public function updateGlobalToggle(): JsonResponse
+    {
+        $enabled = request()->input('enabled');
+
+        Setting::set('settings::modules:email:notifications:global_enabled', $enabled ? 'true' : 'false');
+
+        Activity::event('admin:email:notifications:global-toggle')
+            ->property('enabled', $enabled)
+            ->description('Global email notifications ' . ($enabled ? 'enabled' : 'disabled'))
+            ->log();
+
+        return response()->json([
+            'success' => true,
+            'enabled' => $enabled,
+        ]);
+    }
+
+    /**
+     * Update a specific email notification setting.
+     */
+    public function updateNotificationSetting(string $id): JsonResponse
+    {
+        $setting = EmailNotificationSetting::findOrFail($id);
+        $enabled = request()->input('enabled');
+
+        $setting->enabled = $enabled;
+        $setting->save();
+
+        Activity::event('admin:email:notifications:toggle')
+            ->property('template_key', $setting->template_key)
+            ->property('enabled', $enabled)
+            ->description("Email notification '{$setting->name}' " . ($enabled ? 'enabled' : 'disabled'))
+            ->log();
+
+        return response()->json([
+            'success' => true,
+            'setting' => $setting,
+        ]);
+    }
+
+    /**
+     * Get email quota information.
+     */
+    public function getQuotaInfo(): JsonResponse
+    {
+        // Get aggregate quota stats across all users
+        $totalQuotas = EmailQuota::selectRaw('
+            plan,
+            COUNT(*) as user_count,
+            SUM(monthly_sent) as total_monthly_sent,
+            SUM(daily_sent) as total_daily_sent,
+            SUM(monthly_overage) as total_overage
+        ')
+            ->groupBy('plan')
+            ->get();
+
+        return response()->json([
+            'quotas_by_plan' => $totalQuotas,
+        ]);
+    }
+
+    /**
+     * Get email quota for a specific user.
+     */
+    public function getUserQuota(int $userId): JsonResponse
+    {
+        $user = User::findOrFail($userId);
+        $quota = EmailQuota::where('user_id', $userId)->first();
+
+        if (!$quota) {
+            return response()->json([
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'username' => $user->username,
+                ],
+                'quota' => null,
+            ]);
+        }
+
+        $remaining = $quota->getRemainingQuota();
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'username' => $user->username,
+            ],
+            'quota' => [
+                'plan' => $quota->plan,
+                'monthly_limit' => $quota->monthly_limit,
+                'daily_limit' => $quota->daily_limit,
+                'monthly_sent' => $quota->monthly_sent,
+                'daily_sent' => $quota->daily_sent,
+                'monthly_overage' => $quota->monthly_overage,
+                'remaining' => $remaining,
+                'month_reset_at' => $quota->month_reset_at,
+                'day_reset_at' => $quota->day_reset_at,
+            ],
+        ]);
+    }
+
+    /**
+     * Update user email quota plan.
+     */
+    public function updateUserQuota(int $userId): JsonResponse
+    {
+        $plan = request()->input('plan', 'free');
+
+        if (!in_array($plan, ['free', 'pro', 'scale'])) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid plan. Must be one of: free, pro, scale',
+            ], 400);
+        }
+
+        $quota = EmailQuota::getOrCreateForUser($userId, $plan);
+        
+        $planConfig = EmailQuota::PLANS[$plan];
+        $quota->plan = $plan;
+        $quota->monthly_limit = $planConfig['monthly_limit'];
+        $quota->daily_limit = $planConfig['daily_limit'];
+        $quota->save();
+
+        Activity::event('admin:email:quota:update')
+            ->property('user_id', $userId)
+            ->property('plan', $plan)
+            ->description("Updated email quota plan for user {$userId} to {$plan}")
+            ->log();
+
+        return response()->json([
+            'success' => true,
+            'quota' => $quota,
+        ]);
     }
 }

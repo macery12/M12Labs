@@ -186,6 +186,16 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
         Route::post('/test', [Application\EmailController::class, 'sendTest']);
         Route::post('/send', [Application\EmailController::class, 'sendCustom']);
+        
+        // Email notification settings
+        Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
+        Route::put('/notifications/global', [Application\EmailController::class, 'updateGlobalToggle']);
+        Route::put('/notifications/{id}', [Application\EmailController::class, 'updateNotificationSetting']);
+        
+        // Email quota management
+        Route::get('/quotas', [Application\EmailController::class, 'getQuotaInfo']);
+        Route::get('/quotas/user/{userId}', [Application\EmailController::class, 'getUserQuota']);
+        Route::put('/quotas/user/{userId}', [Application\EmailController::class, 'updateUserQuota']);
     });
 
     /*
