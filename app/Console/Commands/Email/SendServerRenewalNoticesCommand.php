@@ -14,7 +14,7 @@ class SendServerRenewalNoticesCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'email:send-renewal-notices
-                            {--days=7 : Send notices for servers expiring in this many days}
+                            {--days=7 : Send notices for servers expiring within the next X days}
                             {--dry-run : Preview servers without sending emails}';
 
     /**
@@ -30,12 +30,12 @@ class SendServerRenewalNoticesCommand extends Command
         $daysAhead = (int) $this->option('days');
         $isDryRun = $this->option('dry-run');
 
-        $this->info("Finding servers expiring in {$daysAhead} days...");
+        $this->info("Finding servers expiring within the next {$daysAhead} days...");
 
         // Calculate the date range for servers needing renewal
-        $renewalDate = Carbon::now()->addDays($daysAhead);
-        $renewalStart = $renewalDate->copy()->startOfDay();
-        $renewalEnd = $renewalDate->copy()->endOfDay();
+        // Find servers renewing from now until X days in the future
+        $renewalStart = Carbon::now();
+        $renewalEnd = Carbon::now()->addDays($daysAhead)->endOfDay();
 
         // Find servers with renewal date in the specified timeframe
         // Only send for active servers (not suspended or already expired)
@@ -46,11 +46,11 @@ class SendServerRenewalNoticesCommand extends Command
             ->get();
 
         if ($servers->isEmpty()) {
-            $this->info('No servers found with renewal in ' . $daysAhead . ' days.');
+            $this->info('No servers found with renewal within the next ' . $daysAhead . ' days.');
             return Command::SUCCESS;
         }
 
-        $this->info("Found {$servers->count()} server(s) with renewal on {$renewalDate->format('Y-m-d')}");
+        $this->info("Found {$servers->count()} server(s) with renewal within the next {$daysAhead} days");
 
         $sentCount = 0;
         $skippedCount = 0;
