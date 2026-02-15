@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import debounce from 'debounce';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import AdminBox from '@/elements/AdminBox';
@@ -15,6 +16,7 @@ export default () => {
     const settings = useStoreState(state => state.everest.data!.email.resend);
 
     const [enabled, setEnabled] = useState(settings.enabled);
+    const [apiKeyModified, setApiKeyModified] = useState(false);
 
     const update = (key: string, value: any) => {
         clearFlashes();
@@ -25,12 +27,36 @@ export default () => {
             setEnabled(value);
         }
 
-        updateSettings({ [key]: value })
+        // Don't send api_key if it hasn't been modified (still showing placeholder)
+        const updateData: Record<string, any> = {};
+        if (key === 'api_key' && !apiKeyModified) {
+            // User hasn't modified the API key field, don't send it
+            return;
+        }
+        
+        updateData[key] = value;
+
+        updateSettings(updateData)
             .then(() => setStatus('success'))
             .catch(error => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:resend', error });
             });
+    };
+
+    // Create debounced version of update function (500ms delay)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedUpdate = useCallback(
+        debounce((key: string, value: any) => {
+            update(key, value);
+        }, 500),
+        [apiKeyModified]
+    );
+
+    const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setApiKeyModified(true);
+        debouncedUpdate('api_key', value);
     };
 
     return (
@@ -58,7 +84,7 @@ export default () => {
                             name={'api_key'}
                             autoComplete={'off'}
                             defaultValue={settings.api_key ? '••••••••••••••••' : ''}
-                            onChange={e => update('api_key', e.target.value)}
+                            onChange={handleApiKeyChange}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
                             Your Resend API key. Get it from{' '}
@@ -82,7 +108,7 @@ export default () => {
                             name={'from_email'}
                             autoComplete={'off'}
                             defaultValue={settings.from_email}
-                            onChange={e => update('from_email', e.target.value)}
+                            onChange={e => debouncedUpdate('from_email', e.target.value)}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
                             The email address to send emails from. Must be verified in Resend.
@@ -98,7 +124,7 @@ export default () => {
                             name={'from_name'}
                             autoComplete={'off'}
                             defaultValue={settings.from_name}
-                            onChange={e => update('from_name', e.target.value)}
+                            onChange={e => debouncedUpdate('from_name', e.target.value)}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
                             The name that will appear in the "From" field of emails.
@@ -114,7 +140,7 @@ export default () => {
                             name={'reply_to'}
                             autoComplete={'off'}
                             defaultValue={settings.reply_to}
-                            onChange={e => update('reply_to', e.target.value)}
+                            onChange={e => debouncedUpdate('reply_to', e.target.value)}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
                             Optional: Email address for replies.
