@@ -11,7 +11,7 @@ export interface SiteSettings {
     indicators: boolean;
     speed_dial: boolean;
     setup: boolean;
-    recaptcha: {
+    captcha: {
         enabled: boolean;
         siteKey: string;
     };

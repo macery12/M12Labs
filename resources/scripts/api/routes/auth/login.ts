@@ -1,14 +1,14 @@
 import http from '@/api/http';
 import { type AuthResponse, type LoginData } from '@definitions/auth';
 
-const login = ({ username, password, recaptchaData }: LoginData): Promise<AuthResponse> => {
+const login = ({ username, password, ...rest }: LoginData & Record<string, any>): Promise<AuthResponse> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>
                 http.post('/auth/login', {
                     user: username,
                     password,
-                    'g-recaptcha-response': recaptchaData,
+                    ...rest,
                 }),
             )
             .then(response => {

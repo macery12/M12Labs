@@ -3,7 +3,6 @@ import { Model } from '@definitions';
 interface LoginData extends Model {
     username: string;
     password: string;
-    recaptchaData?: string | null;
 }
 
 interface RegisterData extends LoginData {
