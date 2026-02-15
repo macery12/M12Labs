@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import AdminBox from '@/elements/AdminBox';
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
@@ -75,8 +76,12 @@ export default () => {
                 addFlash({
                     key: 'email:resend',
                     type: 'success',
-                    message: 'Email settings saved successfully',
+                    message: 'Email settings saved successfully. Refreshing page...',
                 });
+                // Reload the page after a short delay to refresh the state
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             })
             .catch(error => {
                 setStatus('error');
@@ -98,96 +103,106 @@ export default () => {
                 </p>
             </div>
 
-            {enabled && (
-                <>
-                    <div className={'mt-6'}>
-                        <Label>API Key</Label>
-                        <Input
-                            placeholder={settings.api_key ? 'API key is set (enter new key to change)' : 're_xxxxxxxxxxxxxxxxxxxx'}
-                            id={'api_key'}
-                            type={'password'}
-                            name={'api_key'}
-                            autoComplete={'off'}
-                            value={apiKey}
-                            onChange={e => {
-                                setApiKey(e.target.value);
-                                setApiKeyTouched(true);
-                            }}
+            <div className={'mt-6'}>
+                <Label>
+                    API Key
+                    {settings.api_key && (
+                        <FontAwesomeIcon 
+                            icon={faCheckCircle} 
+                            className={'ml-2 text-green-500'} 
+                            title="API key is configured"
                         />
-                        <p className={'mt-1 text-xs text-gray-400'}>
-                            {settings.api_key ? (
-                                <>API key is configured. Enter a new key to replace it.</>
-                            ) : (
-                                <>
-                                    Your Resend API key. Get it from{' '}
-                                    <a
-                                        href="https://resend.com/api-keys"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-400 hover:text-blue-300"
-                                    >
-                                        resend.com/api-keys
-                                    </a>
-                                </>
-                            )}
-                        </p>
-                    </div>
+                    )}
+                </Label>
+                <Input
+                    placeholder={settings.api_key ? 'API key is set (leave empty to keep current)' : 're_xxxxxxxxxxxxxxxxxxxx'}
+                    id={'api_key'}
+                    type={'password'}
+                    name={'api_key'}
+                    autoComplete={'off'}
+                    value={apiKey}
+                    onChange={e => {
+                        setApiKey(e.target.value);
+                        setApiKeyTouched(true);
+                    }}
+                />
+                <p className={'mt-1 text-xs text-gray-400'}>
+                    {settings.api_key ? (
+                        <span className={'text-green-400'}>
+                            ✓ API key is configured. Leave empty to keep current, or enter a new key to replace it.
+                        </span>
+                    ) : (
+                        <>
+                            Your Resend API key. Get it from{' '}
+                            <a
+                                href="https://resend.com/api-keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300"
+                            >
+                                resend.com/api-keys
+                            </a>
+                        </>
+                    )}
+                </p>
+                <p className={'mt-1 text-xs text-gray-500 italic'}>
+                    🔒 API keys are encrypted in transit via HTTPS and stored securely in the database.
+                </p>
+            </div>
 
-                    <div className={'mt-6'}>
-                        <Label>From Email</Label>
-                        <Input
-                            placeholder={'noreply@example.com'}
-                            id={'from_email'}
-                            type={'email'}
-                            name={'from_email'}
-                            autoComplete={'off'}
-                            value={fromEmail}
-                            onChange={e => setFromEmail(e.target.value)}
-                        />
-                        <p className={'mt-1 text-xs text-gray-400'}>
-                            The email address to send emails from. Must be verified in Resend.
-                        </p>
-                    </div>
+            <div className={'mt-6'}>
+                <Label>From Email</Label>
+                <Input
+                    placeholder={'noreply@example.com'}
+                    id={'from_email'}
+                    type={'email'}
+                    name={'from_email'}
+                    autoComplete={'off'}
+                    value={fromEmail}
+                    onChange={e => setFromEmail(e.target.value)}
+                />
+                <p className={'mt-1 text-xs text-gray-400'}>
+                    The email address to send emails from. Must be verified in Resend.
+                </p>
+            </div>
 
-                    <div className={'mt-6'}>
-                        <Label>From Name</Label>
-                        <Input
-                            placeholder={'My App'}
-                            id={'from_name'}
-                            type={'text'}
-                            name={'from_name'}
-                            autoComplete={'off'}
-                            value={fromName}
-                            onChange={e => setFromName(e.target.value)}
-                        />
-                        <p className={'mt-1 text-xs text-gray-400'}>
-                            The name that will appear in the "From" field of emails.
-                        </p>
-                    </div>
+            <div className={'mt-6'}>
+                <Label>From Name</Label>
+                <Input
+                    placeholder={'My App'}
+                    id={'from_name'}
+                    type={'text'}
+                    name={'from_name'}
+                    autoComplete={'off'}
+                    value={fromName}
+                    onChange={e => setFromName(e.target.value)}
+                />
+                <p className={'mt-1 text-xs text-gray-400'}>
+                    The name that will appear in the "From" field of emails.
+                </p>
+            </div>
 
-                    <div className={'mt-6'}>
-                        <Label>Reply-To Email</Label>
-                        <Input
-                            placeholder={'support@example.com'}
-                            id={'reply_to'}
-                            type={'email'}
-                            name={'reply_to'}
-                            autoComplete={'off'}
-                            value={replyTo}
-                            onChange={e => setReplyTo(e.target.value)}
-                        />
-                        <p className={'mt-1 text-xs text-gray-400'}>
-                            Optional: Email address for replies.
-                        </p>
-                    </div>
+            <div className={'mt-6'}>
+                <Label>Reply-To Email</Label>
+                <Input
+                    placeholder={'support@example.com'}
+                    id={'reply_to'}
+                    type={'email'}
+                    name={'reply_to'}
+                    autoComplete={'off'}
+                    value={replyTo}
+                    onChange={e => setReplyTo(e.target.value)}
+                />
+                <p className={'mt-1 text-xs text-gray-400'}>
+                    Optional: Email address for replies.
+                </p>
+            </div>
 
-                    <div className={'mt-6 flex justify-end'}>
-                        <Button onClick={handleSave} disabled={!hasChanges}>
-                            Save Changes
-                        </Button>
-                    </div>
-                </>
-            )}
+            <div className={'mt-6 flex justify-end'}>
+                <Button onClick={handleSave} disabled={!hasChanges}>
+                    Save Changes
+                </Button>
+            </div>
         </AdminBox>
     );
 };
