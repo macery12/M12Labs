@@ -3,12 +3,12 @@ import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 import { requestPasswordReset } from '@/api/routes/auth/password-reset';
 import { httpErrorToHuman } from '@/api/http';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import Turnstile from '@/components/elements/Turnstile';
 import { Button } from '@/elements/button';
 import Field from '@/elements/Field';
 import useFlash from '@/plugins/useFlash';
@@ -21,11 +21,10 @@ interface Values {
 }
 
 function ForgotPasswordContainer() {
-    const ref = useRef<Reaptcha>(null);
     const token = useRef('');
 
     const { clearFlashes, addFlash } = useFlash();
-    const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
+    const { enabled: captchaEnabled, siteKey } = useStoreState(state => state.settings.data!.captcha);
 
     useEffect(() => {
         clearFlashes();
@@ -36,19 +35,6 @@ function ForgotPasswordContainer() {
         { setSubmitting, resetForm }: FormikHelpers<Values>,
     ) => {
         clearFlashes();
-
-        // If there is no token in the state yet, request the token and then abort this submit request
-        // since it will be re-submitted when the recaptcha data is returned by the component.
-        if (recaptchaEnabled && !token) {
-            ref.current!.execute().catch(error => {
-                console.error(error);
-
-                setSubmitting(false);
-                addFlash({ type: 'error', title: 'Error', message: httpErrorToHuman(error) });
-            });
-
-            return;
-        }
 
         requestPasswordReset(email, code, password, password_confirm, token.current)
             .then(response => {
@@ -61,9 +47,6 @@ function ForgotPasswordContainer() {
             })
             .then(() => {
                 token.current = '';
-                if (ref.current !== null) {
-                    void ref.current.reset();
-                }
 
                 setSubmitting(false);
             });
@@ -82,7 +65,7 @@ function ForgotPasswordContainer() {
                 password_confirm: string().min(8).required(),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm }) => (
+            {({ isSubmitting }) => (
                 <LoginFormContainer title={'Reset your Password'} css={tw`w-full flex`}>
                     <Field
                         label={'Email Address'}
@@ -115,24 +98,27 @@ function ForgotPasswordContainer() {
                         type={'password'}
                     />
                     <div css={tw`mt-6`}>
-                        <Button type={'submit'} className={'w-full'} size={Button.Sizes.Large} disabled={isSubmitting}>
+                        <Button
+                            type={'submit'}
+                            className={'w-full'}
+                            size={Button.Sizes.Large}
+                            disabled={isSubmitting || (captchaEnabled && !token.current)}
+                        >
                             Attempt Login
                         </Button>
                     </div>
-                    {recaptchaEnabled && (
-                        <Reaptcha
-                            ref={ref}
-                            size={'invisible'}
-                            sitekey={siteKey || '_invalid_key'}
-                            onVerify={response => {
-                                token.current = response;
-                                void submitForm();
-                            }}
-                            onExpire={() => {
-                                setSubmitting(false);
-                                token.current = '';
-                            }}
-                        />
+                    {captchaEnabled && siteKey && (
+                        <div css={tw`mt-4 flex justify-center`}>
+                            <Turnstile
+                                siteKey={siteKey}
+                                onVerify={response => {
+                                    token.current = response;
+                                }}
+                                onExpire={() => {
+                                    token.current = '';
+                                }}
+                            />
+                        </div>
                     )}
                     <div css={tw`mt-6 text-center`}>
                         <Link

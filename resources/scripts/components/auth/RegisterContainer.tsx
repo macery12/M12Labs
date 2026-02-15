@@ -3,11 +3,11 @@ import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import Turnstile from '@/components/elements/Turnstile';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
@@ -33,14 +33,13 @@ interface Values {
 }
 
 function RegisterContainer() {
-    const ref = useRef<Reaptcha>(null);
     const token = useRef('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
+    const { enabled: captchaEnabled, siteKey } = useStoreState(state => state.settings.data!.captcha);
 
     useEffect(() => {
         clearFlashes();
@@ -77,22 +76,9 @@ function RegisterContainer() {
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes();
 
-        // If there is no token in the state yet, request the token and then abort this submit request
-        // since it will be re-submitted when the recaptcha data is returned by the component.
-        if (recaptchaEnabled && !token) {
-            ref.current!.execute().catch(error => {
-                console.error(error);
-
-                setSubmitting(false);
-                clearAndAddHttpError({ error });
-            });
-
-            return;
-        }
-
-        register({ ...values, recaptchaData: token.current })
+        register({ ...values, 'cf-turnstile-response': token.current })
             .then(() => {
-                login({ ...values, recaptchaData: token.current }).then(() => {
+                login({ ...values, 'cf-turnstile-response': token.current }).then(() => {
                     // @ts-expect-error this is valid
                     window.location = '/';
                 });
@@ -101,7 +87,6 @@ function RegisterContainer() {
                 console.error(error);
 
                 token.current = '';
-                if (ref.current) ref.current.reset();
 
                 setSubmitting(false);
                 clearAndAddHttpError({ error });
@@ -119,7 +104,7 @@ function RegisterContainer() {
                 password_confirmation: string().required('Please enter the password confirmation.'),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm, setFieldValue, values }) => (
+            {({ isSubmitting, setFieldValue, values }) => (
                 <LoginFormContainer title={`Create an Account`}>
                     <div>
                         <Field
@@ -210,25 +195,23 @@ function RegisterContainer() {
                             loading={isSubmitting}
                             className={'w-full'}
                             size={Button.Sizes.Large}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || (captchaEnabled && !token.current)}
                         >
                             Register
                         </Button>
                     </div>
-                    {recaptchaEnabled && (
-                        <Reaptcha
-                            ref={ref}
-                            size={'invisible'}
-                            sitekey={siteKey || '_invalid_key'}
-                            onVerify={response => {
-                                token.current = response;
-                                submitForm();
-                            }}
-                            onExpire={() => {
-                                setSubmitting(false);
-                                token.current = '';
-                            }}
-                        />
+                    {captchaEnabled && siteKey && (
+                        <div css={tw`mt-4 flex justify-center`}>
+                            <Turnstile
+                                siteKey={siteKey}
+                                onVerify={response => {
+                                    token.current = response;
+                                }}
+                                onExpire={() => {
+                                    token.current = '';
+                                }}
+                            />
+                        </div>
                     )}
                     <div css={tw`mt-6 text-center`}>
                         <Link
