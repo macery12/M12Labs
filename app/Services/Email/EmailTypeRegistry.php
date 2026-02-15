@@ -58,7 +58,7 @@ class EmailTypeRegistry
         'server.expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
         'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle'],
         'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
-        'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'expiresAt', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],
+        'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'renewalDate', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],
     ];
 
     /**
@@ -259,7 +259,7 @@ class EmailTypeRegistry
                     'userName' => $event->user->name ?? $event->user->username,
                     'serverName' => $event->server->name,
                     'renewalUrl' => $event->renewalUrl,
-                    'expiresAt' => $event->expiresAt,
+                    'renewalDate' => $event->renewalDate,
                     'suspensionTime' => $event->suspensionTime,
                     'renewalAmount' => number_format($event->renewalAmount, 2),
                     'currency' => strtoupper($event->currency),

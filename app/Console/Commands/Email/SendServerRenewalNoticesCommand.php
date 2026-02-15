@@ -32,25 +32,25 @@ class SendServerRenewalNoticesCommand extends Command
 
         $this->info("Finding servers expiring in {$daysAhead} days...");
 
-        // Calculate the date range for expiring servers
-        $expiresAt = Carbon::now()->addDays($daysAhead);
-        $expiresStart = $expiresAt->copy()->startOfDay();
-        $expiresEnd = $expiresAt->copy()->endOfDay();
+        // Calculate the date range for servers needing renewal
+        $renewalDate = Carbon::now()->addDays($daysAhead);
+        $renewalStart = $renewalDate->copy()->startOfDay();
+        $renewalEnd = $renewalDate->copy()->endOfDay();
 
-        // Find servers expiring in the specified timeframe
+        // Find servers with renewal date in the specified timeframe
         // Only send for active servers (not suspended or already expired)
-        $servers = Server::whereNotNull('expires_at')
-            ->whereBetween('expires_at', [$expiresStart, $expiresEnd])
+        $servers = Server::whereNotNull('renewal_date')
+            ->whereBetween('renewal_date', [$renewalStart, $renewalEnd])
             ->where('status', '!=', 'suspended')
             ->with(['user', 'node'])
             ->get();
 
         if ($servers->isEmpty()) {
-            $this->info('No servers found expiring in ' . $daysAhead . ' days.');
+            $this->info('No servers found with renewal in ' . $daysAhead . ' days.');
             return Command::SUCCESS;
         }
 
-        $this->info("Found {$servers->count()} server(s) expiring on {$expiresAt->format('Y-m-d')}");
+        $this->info("Found {$servers->count()} server(s) with renewal on {$renewalDate->format('Y-m-d')}");
 
         $sentCount = 0;
         $skippedCount = 0;
@@ -97,7 +97,7 @@ class SendServerRenewalNoticesCommand extends Command
     /**
      * Send renewal notice for a server.
      */
-    private function sendRenewalNotice(Server $server, int $daysUntilExpiry): void
+    private function sendRenewalNotice(Server $server, int $daysUntilRenewal): void
     {
         $currency = config('modules.billing.currency.code', 'USD');
         
@@ -107,8 +107,8 @@ class SendServerRenewalNoticesCommand extends Command
         // Get billing cycle (days) - defaults to 30 if not set
         $billingDays = $server->billing_days ?? 30;
 
-        // Calculate suspension time (typically same day as expiration or 1 day after)
-        $suspensionTime = $server->expires_at->copy()->addDay();
+        // Calculate suspension time (typically renewal_date + 1 day)
+        $suspensionTime = $server->renewal_date->copy()->addDay();
 
         // Generate renewal URL pointing to server billing page
         $renewalUrl = url("/server/{$server->uuidShort}/billing");
@@ -117,7 +117,7 @@ class SendServerRenewalNoticesCommand extends Command
             user: $server->user,
             server: $server,
             renewalUrl: $renewalUrl,
-            expiresAt: $server->expires_at->format('F j, Y \a\t g:i A'),
+            renewalDate: $server->renewal_date->format('F j, Y \a\t g:i A'),
             suspensionTime: $suspensionTime->format('F j, Y \a\t g:i A'),
             renewalAmount: $renewalAmount,
             currency: $currency,
@@ -128,8 +128,8 @@ class SendServerRenewalNoticesCommand extends Command
         Log::info("Sent renewal notice for server {$server->id}", [
             'server_id' => $server->id,
             'user_id' => $server->user_id,
-            'expires_at' => $server->expires_at->toDateTimeString(),
-            'days_until_expiry' => $daysUntilExpiry,
+            'renewal_date' => $server->renewal_date->toDateTimeString(),
+            'days_until_renewal' => $daysUntilRenewal,
             'billing_days' => $billingDays,
         ]);
     }

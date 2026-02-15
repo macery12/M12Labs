@@ -6,7 +6,7 @@ Hello {{ $userName }},
 Your server **{{ $serverName }}** is approaching its renewal date and requires your attention.
 
 **Important Information:**
-- Expires: {{ $expiresAt }}
+- Renewal Date: {{ $renewalDate }}
 - Renewal Amount: {{ $currency }} {{ $renewalAmount }}
 @if($billingCycle)
 - Billing Cycle: {{ $billingCycle }}

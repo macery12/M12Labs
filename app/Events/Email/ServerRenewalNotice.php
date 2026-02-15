@@ -15,7 +15,7 @@ class ServerRenewalNotice
         public User $user,
         public Server $server,
         public string $renewalUrl,
-        public string $expiresAt,
+        public string $renewalDate,
         public string $suspensionTime,
         public float $renewalAmount,
         public string $currency,
