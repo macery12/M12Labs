@@ -7,15 +7,29 @@ import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
 import { updateModule } from '@/api/routes/admin/auth/module';
+import { useState, useEffect } from 'react';
 
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(state => state.everest.data!.auth.captcha);
 
+    // Local state to track the current provider selection for immediate UI updates
+    const [currentProvider, setCurrentProvider] = useState(settings.provider);
+
+    // Sync local state with store state when it changes
+    useEffect(() => {
+        setCurrentProvider(settings.provider);
+    }, [settings.provider]);
+
     const update = (key: string, value: any) => {
         clearFlashes();
         setStatus('loading');
+
+        // Update local state immediately for provider changes
+        if (key === 'provider') {
+            setCurrentProvider(value);
+        }
 
         updateModule('captcha', key, value)
             .then(() => setStatus('success'))
@@ -35,10 +49,10 @@ export default () => {
                     onChange={e => update('provider', e.target.value)}
                     autoComplete={'off'}
                 >
-                    <option value={'disabled'} selected={settings.provider === 'disabled'}>
+                    <option value={'disabled'} selected={currentProvider === 'disabled'}>
                         Disabled
                     </option>
-                    <option value={'turnstile'} selected={settings.provider === 'turnstile'}>
+                    <option value={'turnstile'} selected={currentProvider === 'turnstile'}>
                         Cloudflare Turnstile
                     </option>
                 </Select>
@@ -46,7 +60,7 @@ export default () => {
                     Select the captcha provider to use for authentication forms.
                 </p>
             </div>
-            {settings.provider === 'turnstile' && (
+            {currentProvider === 'turnstile' && (
                 <>
                     <div className={'mt-6'}>
                         <Label>Site Key</Label>
