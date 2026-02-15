@@ -175,6 +175,20 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Email Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/email
+    |
+    */
+    Route::group(['prefix' => '/email'], function () {
+        Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
+        Route::post('/test', [Application\EmailController::class, 'sendTest']);
+        Route::post('/send', [Application\EmailController::class, 'sendCustom']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | API Controller Routes
     |--------------------------------------------------------------------------
     |

@@ -98,6 +98,10 @@ class AdminRole extends Model
     public const MODS_READ = 'mods.read';
     public const MODS_UPDATE = 'mods.update';
 
+    public const EMAIL_READ = 'email.read';
+    public const EMAIL_UPDATE = 'email.update';
+    public const EMAIL_SEND = 'email.send';
+
     public const WEBHOOKS_READ = 'webhooks.read';
     public const WEBHOOKS_UPDATE = 'webhooks.update';
 
@@ -242,6 +246,14 @@ class AdminRole extends Model
             'keys' => [
                 'read' => 'View the Mods module analytics and settings.',
                 'update' => 'Control the Mods module settings and API keys.',
+            ],
+        ],
+        'email' => [
+            'description' => 'Permissions to configure the Email system.',
+            'keys' => [
+                'read' => 'View the email configuration.',
+                'update' => 'Update email settings.',
+                'send' => 'Send custom emails.',
             ],
         ],
         'webhooks' => [
