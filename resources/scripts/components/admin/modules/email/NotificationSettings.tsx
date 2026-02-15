@@ -119,11 +119,14 @@ export default () => {
                         </p>
                     </div>
                     <Button
-                        onClick={toggleGlobal}
-                        disabled={toggling.global}
+                        onClick={() => {
+                            if (!toggling.global) {
+                                toggleGlobal();
+                            }
+                        }}
                         className={`px-4 py-2 ${
                             globalEnabled ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                        }`}
+                        } ${toggling.global ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {toggling.global ? <Spinner size='small' /> : globalEnabled ? 'Enabled' : 'Disabled'}
                     </Button>
@@ -159,12 +162,19 @@ export default () => {
                                 </div>
 
                                 <Button
-                                    onClick={() => toggleSetting(setting)}
-                                    disabled={toggling[setting.template_key] || !globalEnabled}
+                                    onClick={() => {
+                                        if (!toggling[setting.template_key] && globalEnabled) {
+                                            toggleSetting(setting);
+                                        }
+                                    }}
                                     className={`ml-4 px-4 py-2 ${
                                         setting.enabled
                                             ? 'bg-green-600 hover:bg-green-700'
                                             : 'bg-red-600 hover:bg-red-700'
+                                    } ${
+                                        toggling[setting.template_key] || !globalEnabled
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : ''
                                     }`}
                                 >
                                     {toggling[setting.template_key] ? (
