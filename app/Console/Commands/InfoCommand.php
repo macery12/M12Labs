@@ -8,7 +8,7 @@ use Illuminate\Contracts\Config\Repository as ConfigRepository;
 
 class InfoCommand extends Command
 {
-    protected $description = 'Displays the application, database, and email configurations along with the panel version.';
+    protected $description = 'Displays the application and database configurations along with the panel version.';
 
     protected $signature = 'p:info';
 
