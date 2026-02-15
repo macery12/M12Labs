@@ -104,7 +104,7 @@ function ForgotPasswordContainer() {
                             size={Button.Sizes.Large}
                             disabled={isSubmitting || (captchaEnabled && !token.current)}
                         >
-                            Attempt Login
+                            Reset Password
                         </Button>
                     </div>
                     {captchaEnabled && siteKey && (
