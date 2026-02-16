@@ -347,12 +347,26 @@ class EmailTypeRegistry
     private static function templateKeyCandidates(string $templateKey): array
     {
         $normalized = self::normalizeTemplateKey($templateKey);
-        $dotLegacy = str_replace('_', '.', $normalized);
+        $dotLegacy = self::toLegacyDotTemplateKey($normalized);
 
         return array_values(array_unique([
             $normalized,
             $dotLegacy,
             $templateKey,
         ]));
+    }
+
+    private static function toLegacyDotTemplateKey(string $templateKey): string
+    {
+        if (str_contains($templateKey, '.')) {
+            return $templateKey;
+        }
+
+        $parts = explode('_', $templateKey, 2);
+        if (count($parts) === 2) {
+            return $parts[0] . '.' . $parts[1];
+        }
+
+        return $templateKey;
     }
 }

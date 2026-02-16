@@ -59,4 +59,17 @@ class EmailTypeRegistryTest extends TestCase
             'expiresIn' => '60 minutes',
         ], $validData);
     }
+
+    public function testLegacyDotTemplateCandidateUsesFirstUnderscoreSplit(): void
+    {
+        $reflection = new \ReflectionClass(EmailTypeRegistry::class);
+        $method = $reflection->getMethod('toLegacyDotTemplateKey');
+        $method->setAccessible(true);
+
+        $this->assertSame('simple', $method->invoke(null, 'simple'));
+        $this->assertSame('auth.reset', $method->invoke(null, 'auth.reset'));
+        $this->assertSame('auth.password_reset', $method->invoke(null, 'auth_password_reset'));
+        $this->assertSame('auth.password_reset_confirm', $method->invoke(null, 'auth_password_reset_confirm'));
+        $this->assertSame('billing.server_renewal_notice', $method->invoke(null, 'billing_server_renewal_notice'));
+    }
 }
