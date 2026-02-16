@@ -21,6 +21,8 @@ class EmailTypeRegistry
 {
     /**
      * Map event classes to template keys.
+     * Uses dot notation for template keys (e.g., 'auth.password_reset').
+     * Note: Dots are automatically sanitized to underscores in email tags by EmailMessage.
      */
     private const EVENT_TO_TEMPLATE = [
         AccountCreated::class => 'auth.account_created',
@@ -42,6 +44,7 @@ class EmailTypeRegistry
     /**
      * Define allowed variables for each template.
      * This is a security allowlist - only these variables can be passed to templates.
+     * Uses dot notation for template keys (e.g., 'auth.password_reset').
      */
     private const TEMPLATE_VARIABLES = [
         'auth.account_created' => ['userName', 'userEmail', 'loginUrl'],
@@ -63,11 +66,20 @@ class EmailTypeRegistry
 
     /**
      * Get template key for an event.
+     * Uses instanceof to handle proxied events correctly.
      */
     public static function getTemplateKey(object $event): ?string
     {
-        $eventClass = get_class($event);
-        return self::EVENT_TO_TEMPLATE[$eventClass] ?? null;
+        // Use instanceof instead of get_class() to handle proxied/queued events
+        // Laravel often wraps events in proxies (e.g., PasswordResetRequested_Proxy)
+        // which would fail exact class name matching
+        foreach (self::EVENT_TO_TEMPLATE as $class => $template) {
+            if ($event instanceof $class) {
+                return $template;
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -109,164 +121,137 @@ class EmailTypeRegistry
 
     /**
      * Extract data from an event for template rendering.
+     * Uses instanceof to handle proxied events correctly.
      */
     public static function extractDataFromEvent(object $event): array
     {
         $data = [];
-        $eventClass = get_class($event);
 
-        switch ($eventClass) {
-            case AccountCreated::class:
-                /** @var AccountCreated $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'userEmail' => $event->user->email,
-                    'loginUrl' => url('/auth/login'),
-                ];
-                break;
-
-            case AccountLocked::class:
-                /** @var AccountLocked $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'reason' => $event->reason,
-                    'suspendedAt' => now()->format('F j, Y g:i A'),
-                    'supportUrl' => url('/support'),
-                ];
-                break;
-
-            case AccountUnsuspended::class:
-                /** @var AccountUnsuspended $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'unsuspendedAt' => now()->format('F j, Y g:i A'),
-                ];
-                break;
-
-            case PasswordResetRequested::class:
-                /** @var PasswordResetRequested $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'resetUrl' => $event->resetUrl,
-                    'expiresIn' => '60 minutes',
-                ];
-                break;
-
-            case PasswordChanged::class:
-                /** @var PasswordChanged $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'changedAt' => now()->format('F j, Y g:i A'),
-                    'ipAddress' => request()->ip() ?? 'Unknown',
-                ];
-                break;
-
-            case NewLoginDetected::class:
-                /** @var NewLoginDetected $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'ipAddress' => $event->ipAddress,
-                    'userAgent' => $event->userAgent,
-                    'location' => 'Unknown', // Could integrate with IP geolocation service
-                    'loginTime' => now()->format('F j, Y g:i A'),
-                ];
-                break;
-
-            case TwoFactorEnabled::class:
-                /** @var TwoFactorEnabled $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'enabledAt' => now()->format('F j, Y g:i A'),
-                ];
-                break;
-
-            case TwoFactorDisabled::class:
-                /** @var TwoFactorDisabled $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'disabledAt' => now()->format('F j, Y g:i A'),
-                    'ipAddress' => request()->ip() ?? 'Unknown',
-                ];
-                break;
-
-            case ServerCreatedEmail::class:
-                /** @var ServerCreatedEmail $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'serverName' => $event->server->name,
-                    'serverId' => $event->server->uuidShort,
-                    'serverUrl' => url("/server/{$event->server->uuidShort}"),
-                    'nodeLocation' => $event->server->node->name ?? 'Unknown',
-                ];
-                break;
-
-            case ServerSuspended::class:
-                /** @var ServerSuspended $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'serverName' => $event->server->name,
-                    'reason' => $event->reason,
-                    'suspendedAt' => now()->format('F j, Y g:i A'),
-                ];
-                break;
-
-            case ServerUnsuspended::class:
-                /** @var ServerUnsuspended $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'serverName' => $event->server->name,
-                    'unsuspendedAt' => now()->format('F j, Y g:i A'),
-                ];
-                break;
-
-            case PaymentReceived::class:
-                /** @var PaymentReceived $event */
-                $billingCycle = self::formatBillingCycle($event->billingDays);
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'amount' => number_format($event->amount, 2),
-                    'currency' => strtoupper($event->currency),
-                    'paymentMethod' => $event->paymentMethod,
-                    'invoiceId' => $event->invoiceId ?? 'N/A',
-                    'transactionDate' => now()->format('F j, Y g:i A'),
-                    'isRenewal' => $event->isRenewal,
-                    'originalAmount' => $event->originalAmount ? number_format($event->originalAmount, 2) : null,
-                    'discountAmount' => $event->discountAmount ? number_format($event->discountAmount, 2) : null,
-                    'couponCode' => $event->couponCode,
-                    'billingDays' => $event->billingDays,
-                    'billingCycle' => $billingCycle,
-                ];
-                break;
-
-            case PaymentFailed::class:
-                /** @var PaymentFailed $event */
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'amount' => number_format($event->amount, 2),
-                    'currency' => strtoupper($event->currency),
-                    'reason' => $event->reason,
-                    'invoiceId' => $event->invoiceId ?? 'N/A',
-                    'retryUrl' => url('/billing'),
-                    'paymentMethod' => $event->paymentMethod,
-                    'isRenewal' => $event->isRenewal,
-                ];
-                break;
-
-            case ServerRenewalNotice::class:
-                /** @var ServerRenewalNotice $event */
-                $billingCycle = self::formatBillingCycle($event->billingDays);
-                $data = [
-                    'userName' => $event->user->name ?? $event->user->username,
-                    'serverName' => $event->server->name,
-                    'renewalUrl' => $event->renewalUrl,
-                    'renewalDate' => $event->renewalDate,
-                    'suspensionTime' => $event->suspensionTime,
-                    'renewalAmount' => number_format($event->renewalAmount, 2),
-                    'currency' => strtoupper($event->currency),
-                    'billingDays' => $event->billingDays,
-                    'billingCycle' => $billingCycle,
-                ];
-                break;
+        // Use instanceof instead of switch(get_class()) to handle proxied/queued events
+        if ($event instanceof AccountCreated) {
+            /** @var AccountCreated $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'userEmail' => $event->user->email,
+                'loginUrl' => url('/auth/login'),
+            ];
+        } elseif ($event instanceof AccountLocked) {
+            /** @var AccountLocked $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'reason' => $event->reason,
+                'suspendedAt' => now()->format('F j, Y g:i A'),
+                'supportUrl' => url('/support'),
+            ];
+        } elseif ($event instanceof AccountUnsuspended) {
+            /** @var AccountUnsuspended $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'unsuspendedAt' => now()->format('F j, Y g:i A'),
+            ];
+        } elseif ($event instanceof PasswordResetRequested) {
+            /** @var PasswordResetRequested $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'resetUrl' => $event->resetUrl,
+                'expiresIn' => '60 minutes',
+            ];
+        } elseif ($event instanceof PasswordChanged) {
+            /** @var PasswordChanged $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'changedAt' => now()->format('F j, Y g:i A'),
+                'ipAddress' => request()->ip() ?? 'Unknown',
+            ];
+        } elseif ($event instanceof NewLoginDetected) {
+            /** @var NewLoginDetected $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'ipAddress' => $event->ipAddress,
+                'userAgent' => $event->userAgent,
+                'location' => 'Unknown', // Could integrate with IP geolocation service
+                'loginTime' => now()->format('F j, Y g:i A'),
+            ];
+        } elseif ($event instanceof TwoFactorEnabled) {
+            /** @var TwoFactorEnabled $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'enabledAt' => now()->format('F j, Y g:i A'),
+            ];
+        } elseif ($event instanceof TwoFactorDisabled) {
+            /** @var TwoFactorDisabled $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'disabledAt' => now()->format('F j, Y g:i A'),
+                'ipAddress' => request()->ip() ?? 'Unknown',
+            ];
+        } elseif ($event instanceof ServerCreatedEmail) {
+            /** @var ServerCreatedEmail $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'serverName' => $event->server->name,
+                'serverId' => $event->server->uuidShort,
+                'serverUrl' => url("/server/{$event->server->uuidShort}"),
+                'nodeLocation' => $event->server->node->name ?? 'Unknown',
+            ];
+        } elseif ($event instanceof ServerSuspended) {
+            /** @var ServerSuspended $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'serverName' => $event->server->name,
+                'reason' => $event->reason,
+                'suspendedAt' => now()->format('F j, Y g:i A'),
+            ];
+        } elseif ($event instanceof ServerUnsuspended) {
+            /** @var ServerUnsuspended $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'serverName' => $event->server->name,
+                'unsuspendedAt' => now()->format('F j, Y g:i A'),
+            ];
+        } elseif ($event instanceof PaymentReceived) {
+            /** @var PaymentReceived $event */
+            $billingCycle = self::formatBillingCycle($event->billingDays);
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'amount' => number_format($event->amount, 2),
+                'currency' => strtoupper($event->currency),
+                'paymentMethod' => $event->paymentMethod,
+                'invoiceId' => $event->invoiceId ?? 'N/A',
+                'transactionDate' => now()->format('F j, Y g:i A'),
+                'isRenewal' => $event->isRenewal,
+                'originalAmount' => $event->originalAmount ? number_format($event->originalAmount, 2) : null,
+                'discountAmount' => $event->discountAmount ? number_format($event->discountAmount, 2) : null,
+                'couponCode' => $event->couponCode,
+                'billingDays' => $event->billingDays,
+                'billingCycle' => $billingCycle,
+            ];
+        } elseif ($event instanceof PaymentFailed) {
+            /** @var PaymentFailed $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'amount' => number_format($event->amount, 2),
+                'currency' => strtoupper($event->currency),
+                'reason' => $event->reason,
+                'invoiceId' => $event->invoiceId ?? 'N/A',
+                'retryUrl' => url('/billing'),
+                'paymentMethod' => $event->paymentMethod,
+                'isRenewal' => $event->isRenewal,
+            ];
+        } elseif ($event instanceof ServerRenewalNotice) {
+            /** @var ServerRenewalNotice $event */
+            $billingCycle = self::formatBillingCycle($event->billingDays);
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'serverName' => $event->server->name,
+                'renewalUrl' => $event->renewalUrl,
+                'renewalDate' => $event->renewalDate,
+                'suspensionTime' => $event->suspensionTime,
+                'renewalAmount' => number_format($event->renewalAmount, 2),
+                'currency' => strtoupper($event->currency),
+                'billingDays' => $event->billingDays,
+                'billingCycle' => $billingCycle,
+            ];
         }
 
         return $data;

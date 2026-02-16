@@ -147,8 +147,15 @@ class EmailManager
         }
 
         // Convert template key to view path (auth.password_reset -> emails.auth.password-reset)
-        $viewPath = 'emails.' . str_replace('.', '.', $templateKey);
-        $viewPath = str_replace('_', '-', $viewPath); // Convert underscores to hyphens for file names
+        // Split on first dot to get category and action
+        $parts = explode('.', $templateKey, 2);
+        if (count($parts) === 2) {
+            // auth.password_reset -> emails.auth.password-reset
+            $viewPath = 'emails.' . $parts[0] . '.' . str_replace('_', '-', $parts[1]);
+        } else {
+            // Fallback for unexpected format
+            $viewPath = 'emails.' . $templateKey;
+        }
 
         // Get subject from template key
         $subject = $this->getSubjectForTemplate($templateKey);
@@ -164,19 +171,6 @@ class EmailManager
                 'correlation_id' => $correlationId,
             ]);
 
-            // Log the failure
-            EmailLog::create([
-                'to' => $recipient,
-                'subject' => $subject,
-                'template_key' => $templateKey,
-                'correlation_id' => $correlationId,
-                'provider' => 'resend',
-                'user_id' => $userId,
-                'success' => false,
-                'status' => 'failed',
-                'error' => 'Template rendering failed: ' . $e->getMessage(),
-            ]);
-
             return EmailResult::failure('Failed to render email template: ' . $e->getMessage());
         }
 
@@ -184,22 +178,17 @@ class EmailManager
         $text = $this->htmlToText($html);
 
         // Create tags
-        // Sanitize tag values: Resend only accepts ASCII letters, numbers, underscores, or dashes
-        $sanitizedTemplateKey = str_replace('.', '_', $templateKey);
-        
         $tags = [
             [
                 'name' => 'template_key',
-                'value' => $sanitizedTemplateKey,
+                'value' => $templateKey,
             ],
         ];
 
         if ($correlationId) {
-            // Sanitize correlation ID: remove any special characters except allowed ones
-            $sanitizedCorrelationId = preg_replace('/[^a-zA-Z0-9_-]/', '_', $correlationId);
             $tags[] = [
                 'name' => 'correlation_id',
-                'value' => substr($sanitizedCorrelationId, 0, 256), // Resend tag value limit
+                'value' => $correlationId,
             ];
         }
 
@@ -219,20 +208,29 @@ class EmailManager
         $service = new ResendService($apiKey);
         $result = $service->send($message);
 
-        // Log the attempt
-        EmailLog::create([
-            'to' => $recipient,
-            'subject' => $subject,
-            'template_key' => $templateKey,
-            'correlation_id' => $correlationId,
-            'message_id' => $result->messageId,
-            'provider' => 'resend',
-            'user_id' => $userId,
-            'success' => $result->success,
-            'status' => $result->success ? 'sent' : 'failed',
-            'error' => $result->error,
-            'tags' => $tags,
-        ]);
+        // Get sanitized tags for logging
+        $messageArray = $message->toArray();
+        $sanitizedTags = $messageArray['tags'] ?? [];
+
+        // Log the send attempt (single source of truth for email logging)
+        // Use updateOrCreate to prevent duplicates if something else creates a minimal log first
+        EmailLog::updateOrCreate(
+            [
+                'provider' => 'resend',
+                'message_id' => $result->messageId,
+            ],
+            [
+                'to' => $recipient,
+                'subject' => $subject,
+                'template_key' => $templateKey,
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'success' => $result->success,
+                'status' => $result->success ? 'sent' : 'failed',
+                'error' => $result->error,
+                'tags' => $sanitizedTags,
+            ]
+        );
 
         return $result;
     }

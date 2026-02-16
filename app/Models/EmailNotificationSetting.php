@@ -43,7 +43,7 @@ class EmailNotificationSetting extends Model
         if (!in_array($globalEnabled, ['1', 'true', 'yes', 'on'], true)) {
             return false;
         }
-
+        
         $setting = static::where('template_key', $templateKey)->first();
         
         return $setting ? $setting->enabled : false;

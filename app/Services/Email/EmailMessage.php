@@ -20,6 +20,14 @@ class EmailMessage
     }
 
     /**
+     * Sanitize tag values (replaces dots and special chars with underscores).
+     */
+    private function sanitizeTag(string $value): string
+    {
+        return preg_replace(self::TAG_ALLOWED_PATTERN, '_', $value);
+    }
+
+    /**
      * Convert the email message to an array for the Resend API.
      */
     public function toArray(): array
@@ -35,18 +43,22 @@ class EmailMessage
         }
 
         if ($this->tags !== null && count($this->tags) > 0) {
-            $tags = collect($this->tags)->map(function (array $tag) {
-                $name = preg_replace(self::TAG_ALLOWED_PATTERN, '_', (string) ($tag['name'] ?? ''));
-                $value = preg_replace(self::TAG_ALLOWED_PATTERN, '_', (string) ($tag['value'] ?? ''));
+            $cleanTags = [];
 
-                return [
-                    'name' => substr($name, 0, self::MAX_TAG_LENGTH),
-                    'value' => substr($value, 0, self::MAX_TAG_LENGTH),
-                ];
-            })->filter(fn (array $tag) => $tag['name'] !== '' && $tag['value'] !== '')->values()->all();
+            foreach ($this->tags as $tag) {
+                $name = $this->sanitizeTag((string) ($tag['name'] ?? ''));
+                $value = $this->sanitizeTag((string) ($tag['value'] ?? ''));
 
-            if (!empty($tags)) {
-                $data['tags'] = $tags;
+                $name = substr($name, 0, self::MAX_TAG_LENGTH);
+                $value = substr($value, 0, self::MAX_TAG_LENGTH);
+
+                if ($name !== '' && $value !== '') {
+                    $cleanTags[] = ['name' => $name, 'value' => $value];
+                }
+            }
+
+            if (!empty($cleanTags)) {
+                $data['tags'] = $cleanTags;
             }
         }
 
