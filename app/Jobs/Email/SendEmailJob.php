@@ -47,7 +47,7 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     public function handle(EmailManager $emailManager): void
     {
-        $logTemplateKey = str_replace('.', '_', $this->templateKey);
+        $logTemplateKey = $this->templateKeyForLog();
         $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
 
         Log::info('SendEmailJob: Starting', [
@@ -161,7 +161,7 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        $logTemplateKey = str_replace('.', '_', $this->templateKey);
+        $logTemplateKey = $this->templateKeyForLog();
         $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
 
         Log::error('SendEmailJob: Job failed permanently', [
@@ -183,5 +183,10 @@ class SendEmailJob extends Job implements ShouldQueue
             'status' => 'failed',
             'error' => $exception->getMessage(),
         ]);
+    }
+
+    private function templateKeyForLog(): string
+    {
+        return str_replace('.', '_', $this->templateKey);
     }
 }
