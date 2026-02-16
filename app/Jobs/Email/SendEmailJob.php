@@ -71,7 +71,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Check if this email type is enabled
-        if (!EmailNotificationSetting::isEnabled($this->templateKey)) {
+        if (!EmailNotificationSetting::isEnabled($logTemplateKey)) {
             Log::info('SendEmailJob: Email type disabled', [
                 'template_key' => $logTemplateKey,
                 'correlation_id' => $correlationId,
@@ -80,7 +80,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Check rate limiting (if user ID provided and not exempt)
-        if ($this->userId && !EmailNotificationSetting::isRateLimitExempt($this->templateKey)) {
+        if ($this->userId && !EmailNotificationSetting::isRateLimitExempt($logTemplateKey)) {
             $quota = EmailQuota::getOrCreateForUser($this->userId);
             
             if (!$quota->reserveQuota(1)) {
@@ -113,7 +113,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Validate variables
-        [$validData, $errors] = EmailTypeRegistry::validateVariables($this->templateKey, $this->data);
+        [$validData, $errors] = EmailTypeRegistry::validateVariables($logTemplateKey, $this->data);
         
         if (!empty($errors)) {
             Log::error('SendEmailJob: Variable validation failed', [
@@ -141,7 +141,7 @@ class SendEmailJob extends Job implements ShouldQueue
         // Send the email
         try {
             $result = $emailManager->sendFromTemplate(
-                $this->templateKey,
+                $logTemplateKey,
                 $this->recipient,
                 $validData,
                 $correlationId,
@@ -201,7 +201,7 @@ class SendEmailJob extends Job implements ShouldQueue
 
     private function templateKeyForLog(): string
     {
-        return str_replace('.', '_', $this->templateKey);
+        return EmailNotificationSetting::normalizeTemplateKey($this->templateKey);
     }
 
     private function dispatchDedupeKey(string $correlationId, string $logTemplateKey): string

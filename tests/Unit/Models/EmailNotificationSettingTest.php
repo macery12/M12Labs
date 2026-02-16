@@ -17,5 +17,6 @@ class EmailNotificationSettingTest extends TestCase
     {
         $this->assertSame('auth_password_reset', EmailNotificationSetting::normalizeTemplateKey('auth_password_reset'));
         $this->assertSame('billing_server_renewal_notice', EmailNotificationSetting::normalizeTemplateKey('billing_server_renewal_notice'));
+        $this->assertSame('auth_password_reset', EmailNotificationSetting::normalizeTemplateKey(' AUTH.PASSWORD_RESET '));
     }
 }

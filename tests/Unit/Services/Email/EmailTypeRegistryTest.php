@@ -34,4 +34,13 @@ class EmailTypeRegistryTest extends TestCase
         $this->assertSame(['userName', 'resetUrl', 'expiresIn'], $underscore);
         $this->assertSame($underscore, $dot);
     }
+
+    public function testAllowedVariablesSupportsNormalizedCaseAndWhitespace(): void
+    {
+        $normalized = EmailTypeRegistry::getAllowedVariables(' auth_password_reset ');
+        $legacy = EmailTypeRegistry::getAllowedVariables(' AUTH.PASSWORD_RESET ');
+
+        $this->assertSame(['userName', 'resetUrl', 'expiresIn'], $normalized);
+        $this->assertSame($normalized, $legacy);
+    }
 }

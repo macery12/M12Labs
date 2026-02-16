@@ -61,7 +61,7 @@ class EmailNotificationSetting extends Model
 
     public static function normalizeTemplateKey(string $templateKey): string
     {
-        return str_replace('.', '_', $templateKey);
+        return strtolower(str_replace('.', '_', trim($templateKey)));
     }
 
     /**
