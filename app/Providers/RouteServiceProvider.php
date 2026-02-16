@@ -111,12 +111,12 @@ class RouteServiceProvider extends ServiceProvider
             )->by($key);
         });
 
-        RateLimiter::for('password-reset-ip', fn (Request $request) => Limit::perHour(3)->by($request->ip()));
+        RateLimiter::for('password-reset-ip', fn (Request $request) => Limit::perMinutes(3, 20)->by($request->ip()));
 
         RateLimiter::for('password-reset-email', function (Request $request) {
             $email = strtolower((string) $request->input('email', ''));
 
-            return Limit::perHour(5)->by($email !== '' ? $email : $request->ip());
+            return Limit::perMinutes(5, 20)->by($email !== '' ? $email : $request->ip());
         });
     }
 }
