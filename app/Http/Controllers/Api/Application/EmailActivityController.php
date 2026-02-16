@@ -29,9 +29,16 @@ class EmailActivityController extends ApplicationApiController
         
         $query = EmailDelivery::query()->with('user:id,email,username');
 
-        // Apply filters
+        // Apply filters - map old 'sent'/'failed' to new status values
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $status = $request->input('status');
+            if ($status === 'sent') {
+                $query->where('status', 'sent');
+            } elseif ($status === 'failed') {
+                $query->where('status', 'failed');
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         if ($request->filled('template_key')) {
@@ -74,7 +81,13 @@ class EmailActivityController extends ApplicationApiController
 
         $deliveries = $query->paginate($perPage);
 
-        return response()->json($deliveries);
+        // Transform deliveries to match old EmailLog format for frontend compatibility
+        $transformed = $deliveries->toArray();
+        $transformed['data'] = array_map(function ($delivery) {
+            return $this->transformDeliveryToLegacyFormat($delivery);
+        }, $transformed['data']);
+
+        return response()->json($transformed);
     }
 
     /**
@@ -87,9 +100,26 @@ class EmailActivityController extends ApplicationApiController
             'deliveryAttempts'
         ])->findOrFail($id);
 
+        // Transform to legacy format for frontend compatibility
+        $log = $this->transformDeliveryToLegacyFormat($delivery->toArray());
+        
+        // Add attempt information
+        $retryHistory = [];
+        foreach ($delivery->deliveryAttempts as $attempt) {
+            $retryHistory[] = [
+                'attempt' => $attempt->attempt_number,
+                'timestamp' => $attempt->started_at->toIso8601String(),
+                'error' => $attempt->error,
+                'status' => $attempt->status,
+                'duration_ms' => $attempt->duration_ms,
+            ];
+        }
+
         return response()->json([
-            'delivery' => $delivery,
-            'attempts' => $delivery->deliveryAttempts,
+            'log' => $log,
+            'sanitized_variables' => [], // Not stored in new structure
+            'retry_history' => $retryHistory,
+            'related_emails' => [], // Could be implemented later if needed
         ]);
     }
 
@@ -280,5 +310,33 @@ class EmailActivityController extends ApplicationApiController
             ->values();
 
         return response()->json(['template_keys' => $templateKeys]);
+    }
+
+    /**
+     * Transform EmailDelivery to legacy EmailLog format for frontend compatibility.
+     * Maps new field names to old ones expected by the frontend.
+     */
+    private function transformDeliveryToLegacyFormat(array $delivery): array
+    {
+        return [
+            'id' => $delivery['id'],
+            'to' => $delivery['recipient'], // recipient -> to
+            'subject' => $delivery['subject'],
+            'template_key' => $delivery['template_key'],
+            'correlation_id' => $delivery['correlation_id'],
+            'message_id' => $delivery['last_message_id'], // last_message_id -> message_id
+            'provider' => $delivery['provider'],
+            'user_id' => $delivery['user_id'],
+            'success' => $delivery['status'] === 'sent', // status -> success (boolean)
+            'status' => $delivery['status'],
+            'attempt_count' => $delivery['attempts'], // attempts -> attempt_count
+            'duration_ms' => null, // Not available in delivery table
+            'error' => $delivery['last_error'], // last_error -> error
+            'tags' => $delivery['tags'],
+            'metadata' => null, // Not available in new structure
+            'created_at' => $delivery['created_at'],
+            'updated_at' => $delivery['updated_at'],
+            'user' => $delivery['user'] ?? null,
+        ];
     }
 }
