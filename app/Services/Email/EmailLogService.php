@@ -80,9 +80,9 @@ class EmailLogService
         }
 
         // From here on: safe to create/update
-        $uniqueKey = $hasMessageKey
-            ? ['provider' => $data['provider'], 'message_id' => $data['message_id']]
-            : ['correlation_id' => $data['correlation_id']];
+        $uniqueKey = $hasCorrelationKey
+            ? ['correlation_id' => $data['correlation_id']]
+            : ['provider' => $data['provider'], 'message_id' => $data['message_id']];
 
         try {
             $log = EmailLog::updateOrCreate($uniqueKey, $data);
