@@ -19,7 +19,7 @@ const Table = styled.table`
 `;
 
 const Th = styled.th`
-    ${tw`px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-700`}
+    ${tw`px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider border-b border-gray-700`}
 `;
 
 const Td = styled.td`
@@ -27,7 +27,7 @@ const Td = styled.td`
 `;
 
 const StatCard = styled.div`
-    ${tw`bg-gray-800 rounded-lg p-4 border border-gray-700`}
+    ${tw`bg-neutral-800 rounded-lg p-4 border border-gray-700`}
 `;
 
 export default () => {
@@ -131,8 +131,8 @@ export default () => {
 
     if (!data) {
         return (
-            <div className='bg-gray-800 rounded-lg border border-gray-700 py-12 text-center'>
-                <p className='text-gray-400 text-lg'>Failed to load deferred email queue</p>
+            <div className='bg-neutral-800 rounded-lg border border-gray-700 py-12 text-center'>
+                <p className='text-neutral-400 text-lg'>Failed to load deferred email queue</p>
             </div>
         );
     }
@@ -152,17 +152,17 @@ export default () => {
                 <StatCard>
                     <div className='flex items-center justify-between'>
                         <div>
-                            <p className='text-sm text-gray-400'>Total Queued</p>
+                            <p className='text-sm text-neutral-400'>Total Queued</p>
                             <p className='text-2xl font-bold text-white mt-1'>{data.stats.total_queued}</p>
                         </div>
-                        <FontAwesomeIcon icon={faClock} className='text-gray-600 text-3xl' />
+                        <FontAwesomeIcon icon={faClock} className='text-neutral-600 text-3xl' />
                     </div>
                 </StatCard>
 
                 <StatCard>
                     <div className='flex items-center justify-between'>
                         <div>
-                            <p className='text-sm text-gray-400'>Due Now</p>
+                            <p className='text-sm text-neutral-400'>Due Now</p>
                             <p className='text-2xl font-bold text-yellow-400 mt-1'>{data.stats.due_now}</p>
                         </div>
                         <FontAwesomeIcon icon={faCheckCircle} className='text-yellow-600 text-3xl' />
@@ -172,21 +172,21 @@ export default () => {
                 <StatCard>
                     <div className='flex items-center justify-between'>
                         <div>
-                            <p className='text-sm text-gray-400'>Next Send</p>
+                            <p className='text-sm text-neutral-400'>Next Send</p>
                             <p className='text-sm font-medium text-white mt-1'>
                                 {data.stats.next_send_time
                                     ? new Date(data.stats.next_send_time).toLocaleString()
                                     : 'N/A'}
                             </p>
                         </div>
-                        <FontAwesomeIcon icon={faClock} className='text-gray-600 text-3xl' />
+                        <FontAwesomeIcon icon={faClock} className='text-neutral-600 text-3xl' />
                     </div>
                 </StatCard>
             </div>
 
             {/* Queue Table */}
             {data.deferred.data.length > 0 ? (
-                <div className='bg-gray-800 rounded-lg border border-gray-700 overflow-hidden'>
+                <div className='bg-neutral-800 rounded-lg border border-gray-700 overflow-hidden'>
                     <div className='overflow-x-auto'>
                         <Table>
                             <thead>
@@ -201,10 +201,10 @@ export default () => {
                             </thead>
                             <tbody>
                                 {data.deferred.data.map((email) => (
-                                    <tr key={email.id} className='hover:bg-gray-800 transition-colors'>
+                                    <tr key={email.id} className='hover:bg-neutral-800 transition-colors'>
                                         <Td>
                                             <div className='flex items-center'>
-                                                <span className='text-gray-300'>{email.recipient}</span>
+                                                <span className='text-neutral-300'>{email.recipient}</span>
                                                 {email.user && (
                                                     <span className='ml-2 text-xs text-gray-500'>
                                                         ({email.user.username})
@@ -226,7 +226,7 @@ export default () => {
                                             <div className='flex items-center'>
                                                 <span
                                                     className={`text-sm ${
-                                                        isDue(email.scheduled_at) ? 'text-yellow-400' : 'text-gray-400'
+                                                        isDue(email.scheduled_at) ? 'text-yellow-400' : 'text-neutral-400'
                                                     }`}
                                                 >
                                                     {formatDate(email.scheduled_at)}
@@ -239,7 +239,7 @@ export default () => {
                                             </div>
                                         </Td>
                                         <Td>
-                                            <span className={email.attempts > 1 ? 'text-yellow-400' : 'text-gray-400'}>
+                                            <span className={email.attempts > 1 ? 'text-yellow-400' : 'text-neutral-400'}>
                                                 {email.attempts}
                                             </span>
                                         </Td>
@@ -284,8 +284,8 @@ export default () => {
                     </div>
                 </div>
             ) : (
-                <div className='bg-gray-800 rounded-lg border border-gray-700 py-12 text-center'>
-                    <p className='text-gray-400 text-lg'>No deferred emails in queue</p>
+                <div className='bg-neutral-800 rounded-lg border border-gray-700 py-12 text-center'>
+                    <p className='text-neutral-400 text-lg'>No deferred emails in queue</p>
                     <p className='text-gray-500 text-sm mt-2'>All emails are being delivered normally</p>
                 </div>
             )}

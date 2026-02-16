@@ -27,19 +27,19 @@ class EmailActivityController extends ApplicationApiController
         $query = EmailLog::query()->with('user:id,email,username');
 
         // Apply filters
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
 
-        if ($request->has('template_key')) {
+        if ($request->filled('template_key')) {
             $query->where('template_key', $request->input('template_key'));
         }
 
-        if ($request->has('recipient')) {
+        if ($request->filled('recipient')) {
             $query->where('to', 'like', '%' . $request->input('recipient') . '%');
         }
 
-        if ($request->has('user_id')) {
+        if ($request->filled('user_id')) {
             $query->where('user_id', $request->input('user_id'));
         }
 
@@ -48,11 +48,11 @@ class EmailActivityController extends ApplicationApiController
         }
 
         // Date range filter
-        if ($request->has('date_from')) {
+        if ($request->filled('date_from')) {
             $query->where('created_at', '>=', $request->input('date_from'));
         }
 
-        if ($request->has('date_to')) {
+        if ($request->filled('date_to')) {
             $query->where('created_at', '<=', $request->input('date_to'));
         }
 

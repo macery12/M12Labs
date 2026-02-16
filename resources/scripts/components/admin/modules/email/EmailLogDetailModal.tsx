@@ -26,7 +26,7 @@ const ModalContent = styled.div`
 `;
 
 const Section = styled.div`
-    ${tw`mb-6 pb-6 border-b border-gray-700 last:border-b-0`}
+    ${tw`mb-6 pb-6 border-b border-neutral-700 last:border-b-0`}
 `;
 
 const SectionTitle = styled.h3`
@@ -42,7 +42,7 @@ const DetailItem = styled.div`
 `;
 
 const DetailLabel = styled.span`
-    ${tw`text-xs font-medium text-gray-400 uppercase mb-1`}
+    ${tw`text-xs font-medium text-neutral-400 uppercase mb-1`}
 `;
 
 const DetailValue = styled.span`
@@ -216,7 +216,7 @@ export default ({ logId, onClose }: Props) => {
                                 <DetailItem>
                                     <DetailLabel>Template Key</DetailLabel>
                                     <DetailValue>
-                                        <code className='bg-gray-800 px-2 py-1 rounded text-blue-400'>
+                                        <code className='bg-neutral-800 px-2 py-1 rounded text-blue-400'>
                                             {detail.log.template_key || 'custom'}
                                         </code>
                                     </DetailValue>
@@ -295,7 +295,7 @@ export default ({ logId, onClose }: Props) => {
                                                 <div className='text-sm font-medium text-gray-200'>
                                                     Attempt #{attempt.attempt}
                                                 </div>
-                                                <div className='text-xs text-gray-400'>
+                                                <div className='text-xs text-neutral-400'>
                                                     {formatDate(attempt.timestamp)}
                                                 </div>
                                                 {attempt.error && (
@@ -318,18 +318,18 @@ export default ({ logId, onClose }: Props) => {
                                     {detail.related_emails.map((email) => (
                                         <div
                                             key={email.id}
-                                            className='bg-gray-800 p-3 rounded flex items-center justify-between'
+                                            className='bg-neutral-800 p-3 rounded flex items-center justify-between'
                                         >
                                             <div>
                                                 <div className='text-sm font-medium text-gray-200'>
                                                     {email.subject}
                                                 </div>
-                                                <div className='text-xs text-gray-400'>
+                                                <div className='text-xs text-neutral-400'>
                                                     {email.to} • {formatDate(email.created_at)} •{' '}
                                                     <code className='text-blue-400'>{email.template_key}</code>
                                                 </div>
                                             </div>
-                                            <span className='text-xs px-2 py-1 rounded bg-gray-700 text-gray-300'>
+                                            <span className='text-xs px-2 py-1 rounded bg-gray-700 text-neutral-300'>
                                                 {email.status}
                                             </span>
                                         </div>

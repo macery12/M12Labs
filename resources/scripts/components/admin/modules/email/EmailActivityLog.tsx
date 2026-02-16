@@ -28,11 +28,11 @@ const Table = styled.table`
 `;
 
 const Th = styled.th`
-    ${tw`px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-700`}
+    ${tw`px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider border-b border-neutral-700`}
 `;
 
 const Td = styled.td`
-    ${tw`px-4 py-3 text-sm border-b border-gray-700`}
+    ${tw`px-4 py-3 text-sm border-b border-neutral-700`}
 `;
 
 const StatusBadge = styled.span<{ status: string }>`
@@ -48,15 +48,15 @@ const StatusBadge = styled.span<{ status: string }>`
             case 'blocked':
                 return tw`bg-yellow-900 text-yellow-300`;
             case 'skipped':
-                return tw`bg-gray-700 text-gray-300`;
+                return tw`bg-neutral-700 text-neutral-300`;
             default:
-                return tw`bg-gray-700 text-gray-300`;
+                return tw`bg-neutral-700 text-neutral-300`;
         }
     }}
 `;
 
 const FilterContainer = styled.div`
-    ${tw`mb-6 p-4 bg-gray-800 rounded-lg border border-gray-700`}
+    ${tw`mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-700`}
 `;
 
 const FilterGrid = styled.div`
@@ -64,11 +64,11 @@ const FilterGrid = styled.div`
 `;
 
 const Select = styled.select`
-    ${tw`w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+    ${tw`w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded text-sm text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
 `;
 
 const Input = styled.input`
-    ${tw`w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+    ${tw`w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded text-sm text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
 `;
 
 const getStatusIcon = (status: string) => {
@@ -292,7 +292,7 @@ export default () => {
                 </div>
             ) : logs && logs.data.length > 0 ? (
                 <>
-                    <div className='bg-gray-800 rounded-lg border border-gray-700 overflow-hidden'>
+                    <div className='bg-neutral-800 rounded-lg border border-gray-700 overflow-hidden'>
                         <div className='overflow-x-auto'>
                             <Table>
                                 <thead>
@@ -308,7 +308,7 @@ export default () => {
                                 </thead>
                                 <tbody>
                                     {logs.data.map((log) => (
-                                        <tr key={log.id} className='hover:bg-gray-800 transition-colors'>
+                                        <tr key={log.id} className='hover:bg-neutral-800 transition-colors'>
                                             <Td>
                                                 <StatusBadge status={log.status}>
                                                     <FontAwesomeIcon icon={getStatusIcon(log.status)} className='mr-1' />
@@ -318,7 +318,7 @@ export default () => {
                                             <Td className='text-gray-400'>{formatDate(log.created_at)}</Td>
                                             <Td>
                                                 <div className='flex items-center'>
-                                                    <span className='text-gray-300'>{log.to}</span>
+                                                    <span className='text-neutral-300'>{log.to}</span>
                                                     {log.user && (
                                                         <span className='ml-2 text-xs text-gray-500'>
                                                             ({log.user.username})
@@ -383,7 +383,7 @@ export default () => {
                     )}
                 </>
             ) : (
-                <div className='bg-gray-800 rounded-lg border border-gray-700 py-12 text-center'>
+                <div className='bg-neutral-800 rounded-lg border border-gray-700 py-12 text-center'>
                     <p className='text-gray-400 text-lg'>No email logs found</p>
                     <p className='text-gray-500 text-sm mt-2'>Try adjusting your filters</p>
                 </div>

@@ -22,15 +22,9 @@ export default () => {
             <FlashMessageRender byKey={'email:deferred'} />
 
             <SubNavigation>
-                <SubNavigationLink to='/admin/email' name='Settings' base>
-                    Settings
-                </SubNavigationLink>
-                <SubNavigationLink to='/admin/email/activity' name='Activity Log'>
-                    Activity Log
-                </SubNavigationLink>
-                <SubNavigationLink to='/admin/email/queue' name='Deferred Queue'>
-                    Deferred Queue
-                </SubNavigationLink>
+                <SubNavigationLink to='/admin/email' name='Settings' base />
+                <SubNavigationLink to='/admin/email/activity' name='Activity Log' />
+                <SubNavigationLink to='/admin/email/queue' name='Deferred Queue' />
             </SubNavigation>
 
             <Routes>
