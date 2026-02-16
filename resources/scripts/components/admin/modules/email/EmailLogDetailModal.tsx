@@ -218,7 +218,7 @@ export default ({ logId, onClose }: Props) => {
                                 <DetailItem>
                                     <DetailLabel>Template Key</DetailLabel>
                                     <DetailValue>
-                                        <code className='bg-neutral-800 px-2 py-1 rounded text-blue-400'>
+                                        <code className='bg-neutral-800 px-2 py-1 rounded text-neutral-300'>
                                             {detail.log.template_key || 'custom'}
                                         </code>
                                     </DetailValue>
@@ -294,7 +294,7 @@ export default ({ logId, onClose }: Props) => {
                                                 />
                                             </TimelineIcon>
                                             <TimelineContent>
-                                                <div className='text-sm font-medium text-gray-200'>
+                                                <div className='text-sm font-medium text-neutral-200'>
                                                     Attempt #{attempt.attempt}
                                                 </div>
                                                 <div className='text-xs text-neutral-400'>
@@ -328,7 +328,7 @@ export default ({ logId, onClose }: Props) => {
                                                 </div>
                                                 <div className='text-xs text-neutral-400'>
                                                     {email.to} • {formatDate(email.created_at)} •{' '}
-                                                    <code className='text-blue-400'>{email.template_key}</code>
+                                                    <code className='text-neutral-300'>{email.template_key}</code>
                                                 </div>
                                             </div>
                                             <span className='text-xs px-2 py-1 rounded bg-gray-700 text-neutral-300'>

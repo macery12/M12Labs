@@ -49,15 +49,15 @@ class EmailActivityController extends ApplicationApiController
 
         // Date range filter
         if ($request->filled('date_from')) {
-            $query->where('created_at', '>=', $request->input('date_from'));
+            $query->where('created_at', '>=', $request->input('date_from') . ' 00:00:00');
         }
 
         if ($request->filled('date_to')) {
-            $query->where('created_at', '<=', $request->input('date_to'));
+            $query->where('created_at', '<=', $request->input('date_to') . ' 23:59:59');
         }
 
         // Default date range: last 7 days
-        if (!$request->has('date_from') && !$request->has('date_to')) {
+        if (!$request->filled('date_from') && !$request->filled('date_to')) {
             $query->where('created_at', '>=', now()->subDays(7));
         }
 

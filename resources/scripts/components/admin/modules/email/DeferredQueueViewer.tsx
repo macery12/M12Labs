@@ -19,15 +19,15 @@ const Table = styled.table`
 `;
 
 const Th = styled.th`
-    ${tw`px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider border-b border-gray-700`}
+    ${tw`px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider border-b border-neutral-700`}
 `;
 
 const Td = styled.td`
-    ${tw`px-4 py-3 text-sm border-b border-gray-700`}
+    ${tw`px-4 py-3 text-sm border-b border-neutral-700`}
 `;
 
 const StatCard = styled.div`
-    ${tw`bg-neutral-800 rounded-lg p-4 border border-gray-700`}
+    ${tw`bg-neutral-800 rounded-lg p-4 border border-neutral-700`}
 `;
 
 export default () => {
@@ -131,7 +131,7 @@ export default () => {
 
     if (!data) {
         return (
-            <div className='bg-neutral-800 rounded-lg border border-gray-700 py-12 text-center'>
+            <div className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'>
                 <p className='text-neutral-400 text-lg'>Failed to load deferred email queue</p>
             </div>
         );
@@ -186,7 +186,7 @@ export default () => {
 
             {/* Queue Table */}
             {data.deferred.data.length > 0 ? (
-                <div className='bg-neutral-800 rounded-lg border border-gray-700 overflow-hidden'>
+                <div className='bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden'>
                     <div className='overflow-x-auto'>
                         <Table>
                             <thead>
@@ -213,7 +213,7 @@ export default () => {
                                             </div>
                                         </Td>
                                         <Td>
-                                            <code className='text-xs bg-gray-900 px-2 py-1 rounded text-blue-400'>
+                                            <code className='text-xs bg-neutral-900 px-2 py-1 rounded text-neutral-300'>
                                                 {email.template_key}
                                             </code>
                                         </Td>
@@ -284,7 +284,7 @@ export default () => {
                     </div>
                 </div>
             ) : (
-                <div className='bg-neutral-800 rounded-lg border border-gray-700 py-12 text-center'>
+                <div className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'>
                     <p className='text-neutral-400 text-lg'>No deferred emails in queue</p>
                     <p className='text-gray-500 text-sm mt-2'>All emails are being delivered normally</p>
                 </div>

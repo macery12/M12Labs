@@ -35,24 +35,12 @@ const Td = styled.td`
     ${tw`px-4 py-3 text-sm border-b border-neutral-700`}
 `;
 
-const StatusBadge = styled.span<{ status: string }>`
+const StatusBadge = styled.span<{ success: boolean }>`
     ${tw`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium`}
-    ${(props) => {
-        switch (props.status) {
-            case 'sent':
-                return tw`bg-green-900 text-green-300`;
-            case 'failed':
-                return tw`bg-red-900 text-red-300`;
-            case 'deferred':
-                return tw`bg-yellow-900 text-yellow-300`;
-            case 'blocked':
-                return tw`bg-yellow-900 text-yellow-300`;
-            case 'skipped':
-                return tw`bg-neutral-700 text-neutral-300`;
-            default:
-                return tw`bg-neutral-700 text-neutral-300`;
-        }
-    }}
+    ${(props) => props.success 
+        ? tw`bg-green-900 text-green-300`
+        : tw`bg-red-900 text-red-300`
+    }
 `;
 
 const FilterContainer = styled.div`
@@ -71,20 +59,8 @@ const Input = styled.input`
     ${tw`w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded text-sm text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
 `;
 
-const getStatusIcon = (status: string) => {
-    switch (status) {
-        case 'sent':
-            return faCheckCircle;
-        case 'failed':
-            return faTimesCircle;
-        case 'deferred':
-            return faClock;
-        case 'blocked':
-        case 'skipped':
-            return faBan;
-        default:
-            return faCheckCircle;
-    }
+const getStatusIcon = (success: boolean) => {
+    return success ? faCheckCircle : faTimesCircle;
 };
 
 export default () => {
@@ -168,8 +144,22 @@ export default () => {
     const quickDateRange = (days: number) => {
         const now = new Date();
         const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        updateFilter('date_from', from.toISOString().split('T')[0]);
-        updateFilter('date_to', now.toISOString().split('T')[0]);
+        const newFilters = { 
+            ...filters, 
+            date_from: from.toISOString().split('T')[0],
+            date_to: now.toISOString().split('T')[0],
+            page: 1
+        };
+        setFilters(newFilters);
+
+        // Update URL params
+        const newParams = new URLSearchParams();
+        Object.entries(newFilters).forEach(([k, v]) => {
+            if (v !== '' && v !== false) {
+                newParams.set(k, String(v));
+            }
+        });
+        setSearchParams(newParams);
     };
 
     const formatDate = (dateString: string) => {
@@ -310,9 +300,9 @@ export default () => {
                                     {logs.data.map((log) => (
                                         <tr key={log.id} className='hover:bg-neutral-800 transition-colors'>
                                             <Td>
-                                                <StatusBadge status={log.status}>
-                                                    <FontAwesomeIcon icon={getStatusIcon(log.status)} className='mr-1' />
-                                                    {log.status}
+                                                <StatusBadge success={log.success}>
+                                                    <FontAwesomeIcon icon={getStatusIcon(log.success)} className='mr-1' />
+                                                    {log.success ? 'SENT' : 'FAILED'}
                                                 </StatusBadge>
                                             </Td>
                                             <Td className='text-gray-400'>{formatDate(log.created_at)}</Td>
@@ -327,7 +317,7 @@ export default () => {
                                                 </div>
                                             </Td>
                                             <Td>
-                                                <code className='text-xs bg-gray-900 px-2 py-1 rounded text-blue-400'>
+                                                <code className='text-xs bg-neutral-900 px-2 py-1 rounded text-neutral-300'>
                                                     {log.template_key || 'custom'}
                                                 </code>
                                             </Td>
