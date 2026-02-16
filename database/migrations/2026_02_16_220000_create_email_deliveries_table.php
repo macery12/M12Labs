@@ -16,7 +16,7 @@ return new class extends Migration
             $table->uuid('correlation_id')->unique();
             $table->string('template_key')->nullable();
             $table->string('recipient');
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedInteger('user_id')->nullable();
             $table->string('subject');
             $table->string('provider')->default('resend');
             $table->string('status')->default('queued'); // queued, deferred, sending, sent, failed, skipped, blocked
