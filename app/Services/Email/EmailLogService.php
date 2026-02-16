@@ -38,18 +38,32 @@ class EmailLogService
             return null;
         }
 
-        // Ensure correlation_id is set (should always be present due to validation)
-        $correlationId = $data['correlation_id'];
+        // Determine the unique key to use for updateOrCreate
+        // Prefer (provider, message_id) if available, otherwise use correlation_id
+        $uniqueKey = [];
+        if (!empty($data['message_id']) && !empty($data['provider'])) {
+            // Use provider + message_id as unique key (most reliable)
+            $uniqueKey = [
+                'provider' => $data['provider'],
+                'message_id' => $data['message_id'],
+            ];
+        } elseif (!empty($data['correlation_id'])) {
+            // Fallback to correlation_id
+            $uniqueKey = ['correlation_id' => $data['correlation_id']];
+        } else {
+            Log::error('EmailLogService: No suitable unique key found', [
+                'has_message_id' => !empty($data['message_id']),
+                'has_correlation_id' => !empty($data['correlation_id']),
+            ]);
+            return null;
+        }
 
         try {
-            // Use updateOrCreate with correlation_id as unique key
-            $log = EmailLog::updateOrCreate(
-                ['correlation_id' => $correlationId],
-                $data
-            );
+            // Use updateOrCreate with the determined unique key
+            $log = EmailLog::updateOrCreate($uniqueKey, $data);
 
             Log::debug('EmailLogService: Log created/updated', [
-                'correlation_id' => $correlationId,
+                'unique_key' => $uniqueKey,
                 'status' => $data['status'] ?? 'unknown',
                 'template_key' => $data['template_key'] ?? null,
             ]);
@@ -57,7 +71,7 @@ class EmailLogService
             return $log;
         } catch (\Exception $e) {
             Log::error('EmailLogService: Failed to create/update log', [
-                'correlation_id' => $correlationId,
+                'unique_key' => $uniqueKey,
                 'error' => $e->getMessage(),
             ]);
             return null;
