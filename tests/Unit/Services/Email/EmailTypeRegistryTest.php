@@ -43,4 +43,20 @@ class EmailTypeRegistryTest extends TestCase
         $this->assertSame(['userName', 'resetUrl', 'expiresIn'], $normalized);
         $this->assertSame($normalized, $legacy);
     }
+
+    public function testValidateVariablesAllowsPasswordResetPayloadForUnderscoreTemplate(): void
+    {
+        [$validData, $errors] = EmailTypeRegistry::validateVariables('auth_password_reset', [
+            'userName' => 'user',
+            'resetUrl' => 'https://example.com/reset',
+            'expiresIn' => '60 minutes',
+        ]);
+
+        $this->assertSame([], $errors);
+        $this->assertSame([
+            'userName' => 'user',
+            'resetUrl' => 'https://example.com/reset',
+            'expiresIn' => '60 minutes',
+        ], $validData);
+    }
 }
