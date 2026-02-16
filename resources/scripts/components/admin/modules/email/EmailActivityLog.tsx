@@ -46,7 +46,7 @@ const StatusBadge = styled.span<{ status: string }>`
             case 'deferred':
                 return tw`bg-yellow-900 text-yellow-300`;
             case 'blocked':
-                return tw`bg-orange-900 text-orange-300`;
+                return tw`bg-yellow-900 text-yellow-300`;
             case 'skipped':
                 return tw`bg-gray-700 text-gray-300`;
             default:
@@ -308,7 +308,7 @@ export default () => {
                                 </thead>
                                 <tbody>
                                     {logs.data.map((log) => (
-                                        <tr key={log.id} className='hover:bg-gray-750 transition-colors'>
+                                        <tr key={log.id} className='hover:bg-gray-800 transition-colors'>
                                             <Td>
                                                 <StatusBadge status={log.status}>
                                                     <FontAwesomeIcon icon={getStatusIcon(log.status)} className='mr-1' />

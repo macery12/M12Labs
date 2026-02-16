@@ -50,7 +50,7 @@ const DetailValue = styled.span`
 `;
 
 const CodeBlock = styled.pre`
-    ${tw`bg-gray-950 p-4 rounded text-xs overflow-x-auto text-green-400 font-mono`}
+    ${tw`bg-gray-900 p-4 rounded text-xs overflow-x-auto text-green-400 font-mono`}
 `;
 
 const StatusBadge = styled.span<{ success: boolean }>`
