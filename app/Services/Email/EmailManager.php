@@ -126,14 +126,37 @@ class EmailManager
                 ['name' => 'correlation_id', 'value' => $correlationId],
             ];
 
-            $delivery = $tracker->startDelivery(
-                correlationId: $correlationId,
-                recipient: $recipient,
-                subject: $subject,
-                templateKey: $templateKey,
-                userId: $userId,
-                tags: $tags
-            );
+            try {
+                $delivery = $tracker->startDelivery(
+                    correlationId: $correlationId,
+                    recipient: $recipient,
+                    subject: $subject,
+                    templateKey: $templateKey,
+                    userId: $userId,
+                    tags: $tags
+                );
+            } catch (\Exception $e) {
+                // If tables don't exist, log clear error message
+                Log::error('EmailDeliveryTracker failed to create delivery - tables may not exist', [
+                    'error' => $e->getMessage(),
+                    'correlation_id' => $correlationId,
+                    'hint' => 'Run "php artisan migrate" to create email_deliveries and email_delivery_attempts tables',
+                ]);
+                
+                // Continue sending email even if logging fails
+                // Create a temporary delivery object to avoid null reference errors
+                $delivery = new EmailDelivery([
+                    'id' => 0,
+                    'correlation_id' => $correlationId,
+                    'recipient' => $recipient,
+                    'subject' => $subject,
+                    'template_key' => $templateKey,
+                    'user_id' => $userId,
+                    'status' => 'queued',
+                    'attempts' => 0,
+                    'provider' => 'resend',
+                ]);
+            }
         }
 
         // Check if Resend is enabled
@@ -245,9 +268,17 @@ class EmailManager
             replyTo: $replyTo
         );
 
-        // Start attempt tracking
+        // Start attempt tracking (with error handling)
         $requestPayload = $message->toArray();
-        $attempt = $tracker->startAttempt($delivery, $attemptNumber, $requestPayload);
+        $attempt = null;
+        try {
+            $attempt = $tracker->startAttempt($delivery, $attemptNumber, $requestPayload);
+        } catch (\Exception $e) {
+            Log::warning('Failed to create delivery attempt record', [
+                'error' => $e->getMessage(),
+                'correlation_id' => $correlationId,
+            ]);
+        }
 
         // Send via Resend
         try {
@@ -255,31 +286,58 @@ class EmailManager
             $result = $service->send($message);
 
             if ($result->success) {
-                // Success - update attempt
-                $tracker->finishAttemptSuccess(
-                    attempt: $attempt,
-                    providerMessageId: $result->messageId,
-                    statusCode: $result->statusCode,
-                    responsePayload: ['id' => $result->messageId]
-                );
+                // Success - update attempt if it was created
+                if ($attempt) {
+                    try {
+                        $tracker->finishAttemptSuccess(
+                            attempt: $attempt,
+                            providerMessageId: $result->messageId,
+                            statusCode: $result->statusCode,
+                            responsePayload: ['id' => $result->messageId]
+                        );
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to update attempt success', [
+                            'error' => $e->getMessage(),
+                            'correlation_id' => $correlationId,
+                        ]);
+                    }
+                }
             } else {
-                // Failure - update attempt
-                $tracker->finishAttemptFailure(
-                    attempt: $attempt,
-                    error: $result->error ?? 'Unknown error',
-                    statusCode: $result->statusCode
-                );
+                // Failure - update attempt if it was created
+                if ($attempt) {
+                    try {
+                        $tracker->finishAttemptFailure(
+                            attempt: $attempt,
+                            error: $result->error ?? 'Unknown error',
+                            statusCode: $result->statusCode
+                        );
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to update attempt failure', [
+                            'error' => $e->getMessage(),
+                            'correlation_id' => $correlationId,
+                        ]);
+                    }
+                }
             }
 
             return $result;
         } catch (\Exception $e) {
-            // Exception during send - update attempt
-            $tracker->finishAttemptFailure(
-                attempt: $attempt,
-                error: $e->getMessage(),
-                statusCode: method_exists($e, 'getCode') ? $e->getCode() : 0,
-                exception: $e
-            );
+            // Exception during send - update attempt if it was created
+            if ($attempt) {
+                try {
+                    $tracker->finishAttemptFailure(
+                        attempt: $attempt,
+                        error: $e->getMessage(),
+                        statusCode: method_exists($e, 'getCode') ? $e->getCode() : 0,
+                        exception: $e
+                    );
+                } catch (\Exception $logException) {
+                    Log::warning('Failed to update attempt exception', [
+                        'error' => $logException->getMessage(),
+                        'correlation_id' => $correlationId,
+                    ]);
+                }
+            }
 
             return EmailResult::failure($e->getMessage(), $e->getCode());
         }
