@@ -14,51 +14,103 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Mapping of old (dot notation) to new (underscore notation) template keys
-        $keyMappings = [
-            'auth.account_created' => 'auth_account_created',
-            'auth.email_verification' => 'auth_email_verification',
-            'auth.password_reset' => 'auth_password_reset',
-            'auth.password_changed' => 'auth_password_changed',
-            'auth.new_login' => 'auth_new_login',
-            'auth.account_locked' => 'auth_account_locked',
-            'auth.account_unsuspended' => 'auth_account_unsuspended',
-            'auth.2fa_enabled' => 'auth_2fa_enabled',
-            'auth.2fa_disabled' => 'auth_2fa_disabled',
-            'server.created' => 'server_created',
-            'server.suspended' => 'server_suspended',
-            'server.unsuspended' => 'server_unsuspended',
-            'server.expiring_soon' => 'server_expiring_soon',
-            'billing.payment_received' => 'billing_payment_received',
-            'billing.payment_failed' => 'billing_payment_failed',
-            'billing.server_renewal_notice' => 'billing_server_renewal_notice',
-        ];
-
         // Update email_notification_settings table
         if (Schema::hasTable('email_notification_settings')) {
-            foreach ($keyMappings as $oldKey => $newKey) {
-                DB::table('email_notification_settings')
-                    ->where('template_key', $oldKey)
-                    ->update(['template_key' => $newKey]);
-            }
+            DB::statement("
+                UPDATE email_notification_settings
+                SET template_key = CASE template_key
+                    WHEN 'auth.account_created' THEN 'auth_account_created'
+                    WHEN 'auth.email_verification' THEN 'auth_email_verification'
+                    WHEN 'auth.password_reset' THEN 'auth_password_reset'
+                    WHEN 'auth.password_changed' THEN 'auth_password_changed'
+                    WHEN 'auth.new_login' THEN 'auth_new_login'
+                    WHEN 'auth.account_locked' THEN 'auth_account_locked'
+                    WHEN 'auth.account_unsuspended' THEN 'auth_account_unsuspended'
+                    WHEN 'auth.2fa_enabled' THEN 'auth_2fa_enabled'
+                    WHEN 'auth.2fa_disabled' THEN 'auth_2fa_disabled'
+                    WHEN 'server.created' THEN 'server_created'
+                    WHEN 'server.suspended' THEN 'server_suspended'
+                    WHEN 'server.unsuspended' THEN 'server_unsuspended'
+                    WHEN 'server.expiring_soon' THEN 'server_expiring_soon'
+                    WHEN 'billing.payment_received' THEN 'billing_payment_received'
+                    WHEN 'billing.payment_failed' THEN 'billing_payment_failed'
+                    WHEN 'billing.server_renewal_notice' THEN 'billing_server_renewal_notice'
+                    ELSE template_key
+                END
+                WHERE template_key IN (
+                    'auth.account_created', 'auth.email_verification', 'auth.password_reset',
+                    'auth.password_changed', 'auth.new_login', 'auth.account_locked',
+                    'auth.account_unsuspended', 'auth.2fa_enabled', 'auth.2fa_disabled',
+                    'server.created', 'server.suspended', 'server.unsuspended', 'server.expiring_soon',
+                    'billing.payment_received', 'billing.payment_failed', 'billing.server_renewal_notice'
+                )
+            ");
         }
 
         // Update email_logs table
         if (Schema::hasTable('email_logs')) {
-            foreach ($keyMappings as $oldKey => $newKey) {
-                DB::table('email_logs')
-                    ->where('template_key', $oldKey)
-                    ->update(['template_key' => $newKey]);
-            }
+            DB::statement("
+                UPDATE email_logs
+                SET template_key = CASE template_key
+                    WHEN 'auth.account_created' THEN 'auth_account_created'
+                    WHEN 'auth.email_verification' THEN 'auth_email_verification'
+                    WHEN 'auth.password_reset' THEN 'auth_password_reset'
+                    WHEN 'auth.password_changed' THEN 'auth_password_changed'
+                    WHEN 'auth.new_login' THEN 'auth_new_login'
+                    WHEN 'auth.account_locked' THEN 'auth_account_locked'
+                    WHEN 'auth.account_unsuspended' THEN 'auth_account_unsuspended'
+                    WHEN 'auth.2fa_enabled' THEN 'auth_2fa_enabled'
+                    WHEN 'auth.2fa_disabled' THEN 'auth_2fa_disabled'
+                    WHEN 'server.created' THEN 'server_created'
+                    WHEN 'server.suspended' THEN 'server_suspended'
+                    WHEN 'server.unsuspended' THEN 'server_unsuspended'
+                    WHEN 'server.expiring_soon' THEN 'server_expiring_soon'
+                    WHEN 'billing.payment_received' THEN 'billing_payment_received'
+                    WHEN 'billing.payment_failed' THEN 'billing_payment_failed'
+                    WHEN 'billing.server_renewal_notice' THEN 'billing_server_renewal_notice'
+                    ELSE template_key
+                END
+                WHERE template_key IN (
+                    'auth.account_created', 'auth.email_verification', 'auth.password_reset',
+                    'auth.password_changed', 'auth.new_login', 'auth.account_locked',
+                    'auth.account_unsuspended', 'auth.2fa_enabled', 'auth.2fa_disabled',
+                    'server.created', 'server.suspended', 'server.unsuspended', 'server.expiring_soon',
+                    'billing.payment_received', 'billing.payment_failed', 'billing.server_renewal_notice'
+                )
+            ");
         }
 
         // Update deferred_emails table
         if (Schema::hasTable('deferred_emails')) {
-            foreach ($keyMappings as $oldKey => $newKey) {
-                DB::table('deferred_emails')
-                    ->where('template_key', $oldKey)
-                    ->update(['template_key' => $newKey]);
-            }
+            DB::statement("
+                UPDATE deferred_emails
+                SET template_key = CASE template_key
+                    WHEN 'auth.account_created' THEN 'auth_account_created'
+                    WHEN 'auth.email_verification' THEN 'auth_email_verification'
+                    WHEN 'auth.password_reset' THEN 'auth_password_reset'
+                    WHEN 'auth.password_changed' THEN 'auth_password_changed'
+                    WHEN 'auth.new_login' THEN 'auth_new_login'
+                    WHEN 'auth.account_locked' THEN 'auth_account_locked'
+                    WHEN 'auth.account_unsuspended' THEN 'auth_account_unsuspended'
+                    WHEN 'auth.2fa_enabled' THEN 'auth_2fa_enabled'
+                    WHEN 'auth.2fa_disabled' THEN 'auth_2fa_disabled'
+                    WHEN 'server.created' THEN 'server_created'
+                    WHEN 'server.suspended' THEN 'server_suspended'
+                    WHEN 'server.unsuspended' THEN 'server_unsuspended'
+                    WHEN 'server.expiring_soon' THEN 'server_expiring_soon'
+                    WHEN 'billing.payment_received' THEN 'billing_payment_received'
+                    WHEN 'billing.payment_failed' THEN 'billing_payment_failed'
+                    WHEN 'billing.server_renewal_notice' THEN 'billing_server_renewal_notice'
+                    ELSE template_key
+                END
+                WHERE template_key IN (
+                    'auth.account_created', 'auth.email_verification', 'auth.password_reset',
+                    'auth.password_changed', 'auth.new_login', 'auth.account_locked',
+                    'auth.account_unsuspended', 'auth.2fa_enabled', 'auth.2fa_disabled',
+                    'server.created', 'server.suspended', 'server.unsuspended', 'server.expiring_soon',
+                    'billing.payment_received', 'billing.payment_failed', 'billing.server_renewal_notice'
+                )
+            ");
         }
     }
 
@@ -70,51 +122,103 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Mapping of new (underscore notation) to old (dot notation) template keys
-        $keyMappings = [
-            'auth_account_created' => 'auth.account_created',
-            'auth_email_verification' => 'auth.email_verification',
-            'auth_password_reset' => 'auth.password_reset',
-            'auth_password_changed' => 'auth.password_changed',
-            'auth_new_login' => 'auth.new_login',
-            'auth_account_locked' => 'auth.account_locked',
-            'auth_account_unsuspended' => 'auth.account_unsuspended',
-            'auth_2fa_enabled' => 'auth.2fa_enabled',
-            'auth_2fa_disabled' => 'auth.2fa_disabled',
-            'server_created' => 'server.created',
-            'server_suspended' => 'server.suspended',
-            'server_unsuspended' => 'server.unsuspended',
-            'server_expiring_soon' => 'server.expiring_soon',
-            'billing_payment_received' => 'billing.payment_received',
-            'billing_payment_failed' => 'billing.payment_failed',
-            'billing_server_renewal_notice' => 'billing.server_renewal_notice',
-        ];
-
         // Revert email_notification_settings table
         if (Schema::hasTable('email_notification_settings')) {
-            foreach ($keyMappings as $newKey => $oldKey) {
-                DB::table('email_notification_settings')
-                    ->where('template_key', $newKey)
-                    ->update(['template_key' => $oldKey]);
-            }
+            DB::statement("
+                UPDATE email_notification_settings
+                SET template_key = CASE template_key
+                    WHEN 'auth_account_created' THEN 'auth.account_created'
+                    WHEN 'auth_email_verification' THEN 'auth.email_verification'
+                    WHEN 'auth_password_reset' THEN 'auth.password_reset'
+                    WHEN 'auth_password_changed' THEN 'auth.password_changed'
+                    WHEN 'auth_new_login' THEN 'auth.new_login'
+                    WHEN 'auth_account_locked' THEN 'auth.account_locked'
+                    WHEN 'auth_account_unsuspended' THEN 'auth.account_unsuspended'
+                    WHEN 'auth_2fa_enabled' THEN 'auth.2fa_enabled'
+                    WHEN 'auth_2fa_disabled' THEN 'auth.2fa_disabled'
+                    WHEN 'server_created' THEN 'server.created'
+                    WHEN 'server_suspended' THEN 'server.suspended'
+                    WHEN 'server_unsuspended' THEN 'server.unsuspended'
+                    WHEN 'server_expiring_soon' THEN 'server.expiring_soon'
+                    WHEN 'billing_payment_received' THEN 'billing.payment_received'
+                    WHEN 'billing_payment_failed' THEN 'billing.payment_failed'
+                    WHEN 'billing_server_renewal_notice' THEN 'billing.server_renewal_notice'
+                    ELSE template_key
+                END
+                WHERE template_key IN (
+                    'auth_account_created', 'auth_email_verification', 'auth_password_reset',
+                    'auth_password_changed', 'auth_new_login', 'auth_account_locked',
+                    'auth_account_unsuspended', 'auth_2fa_enabled', 'auth_2fa_disabled',
+                    'server_created', 'server_suspended', 'server_unsuspended', 'server_expiring_soon',
+                    'billing_payment_received', 'billing_payment_failed', 'billing_server_renewal_notice'
+                )
+            ");
         }
 
         // Revert email_logs table
         if (Schema::hasTable('email_logs')) {
-            foreach ($keyMappings as $newKey => $oldKey) {
-                DB::table('email_logs')
-                    ->where('template_key', $newKey)
-                    ->update(['template_key' => $oldKey]);
-            }
+            DB::statement("
+                UPDATE email_logs
+                SET template_key = CASE template_key
+                    WHEN 'auth_account_created' THEN 'auth.account_created'
+                    WHEN 'auth_email_verification' THEN 'auth.email_verification'
+                    WHEN 'auth_password_reset' THEN 'auth.password_reset'
+                    WHEN 'auth_password_changed' THEN 'auth.password_changed'
+                    WHEN 'auth_new_login' THEN 'auth.new_login'
+                    WHEN 'auth_account_locked' THEN 'auth.account_locked'
+                    WHEN 'auth_account_unsuspended' THEN 'auth.account_unsuspended'
+                    WHEN 'auth_2fa_enabled' THEN 'auth.2fa_enabled'
+                    WHEN 'auth_2fa_disabled' THEN 'auth.2fa_disabled'
+                    WHEN 'server_created' THEN 'server.created'
+                    WHEN 'server_suspended' THEN 'server.suspended'
+                    WHEN 'server_unsuspended' THEN 'server.unsuspended'
+                    WHEN 'server_expiring_soon' THEN 'server.expiring_soon'
+                    WHEN 'billing_payment_received' THEN 'billing.payment_received'
+                    WHEN 'billing_payment_failed' THEN 'billing.payment_failed'
+                    WHEN 'billing_server_renewal_notice' THEN 'billing.server_renewal_notice'
+                    ELSE template_key
+                END
+                WHERE template_key IN (
+                    'auth_account_created', 'auth_email_verification', 'auth_password_reset',
+                    'auth_password_changed', 'auth_new_login', 'auth_account_locked',
+                    'auth_account_unsuspended', 'auth_2fa_enabled', 'auth_2fa_disabled',
+                    'server_created', 'server_suspended', 'server_unsuspended', 'server_expiring_soon',
+                    'billing_payment_received', 'billing_payment_failed', 'billing_server_renewal_notice'
+                )
+            ");
         }
 
         // Revert deferred_emails table
         if (Schema::hasTable('deferred_emails')) {
-            foreach ($keyMappings as $newKey => $oldKey) {
-                DB::table('deferred_emails')
-                    ->where('template_key', $newKey)
-                    ->update(['template_key' => $oldKey]);
-            }
+            DB::statement("
+                UPDATE deferred_emails
+                SET template_key = CASE template_key
+                    WHEN 'auth_account_created' THEN 'auth.account_created'
+                    WHEN 'auth_email_verification' THEN 'auth.email_verification'
+                    WHEN 'auth_password_reset' THEN 'auth.password_reset'
+                    WHEN 'auth_password_changed' THEN 'auth.password_changed'
+                    WHEN 'auth_new_login' THEN 'auth.new_login'
+                    WHEN 'auth_account_locked' THEN 'auth.account_locked'
+                    WHEN 'auth_account_unsuspended' THEN 'auth.account_unsuspended'
+                    WHEN 'auth_2fa_enabled' THEN 'auth.2fa_enabled'
+                    WHEN 'auth_2fa_disabled' THEN 'auth.2fa_disabled'
+                    WHEN 'server_created' THEN 'server.created'
+                    WHEN 'server_suspended' THEN 'server.suspended'
+                    WHEN 'server_unsuspended' THEN 'server.unsuspended'
+                    WHEN 'server_expiring_soon' THEN 'server.expiring_soon'
+                    WHEN 'billing_payment_received' THEN 'billing.payment_received'
+                    WHEN 'billing_payment_failed' THEN 'billing.payment_failed'
+                    WHEN 'billing_server_renewal_notice' THEN 'billing.server_renewal_notice'
+                    ELSE template_key
+                END
+                WHERE template_key IN (
+                    'auth_account_created', 'auth_email_verification', 'auth_password_reset',
+                    'auth_password_changed', 'auth_new_login', 'auth_account_locked',
+                    'auth_account_unsuspended', 'auth_2fa_enabled', 'auth_2fa_disabled',
+                    'server_created', 'server_suspended', 'server_unsuspended', 'server_expiring_soon',
+                    'billing_payment_received', 'billing_payment_failed', 'billing_server_renewal_notice'
+                )
+            ");
         }
     }
 };
