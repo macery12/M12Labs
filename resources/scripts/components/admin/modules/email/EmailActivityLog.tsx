@@ -292,7 +292,7 @@ export default () => {
                 </div>
             ) : logs && logs.data.length > 0 ? (
                 <>
-                    <div className='bg-neutral-800 rounded-lg border border-gray-700 overflow-hidden'>
+                    <div className='bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden'>
                         <div className='overflow-x-auto'>
                             <Table>
                                 <thead>
@@ -383,14 +383,14 @@ export default () => {
                     )}
                 </>
             ) : (
-                <div className='bg-neutral-800 rounded-lg border border-gray-700 py-12 text-center'>
+                <div className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'>
                     <p className='text-gray-400 text-lg'>No email logs found</p>
                     <p className='text-gray-500 text-sm mt-2'>Try adjusting your filters</p>
                 </div>
             )}
 
-            {selectedLog && (
-                <EmailLogDetailModal logId={selectedLog} onClose={() => setSelectedLog(null)} />
+            {selectedLog !== null && (
+                <EmailLogDetailModal key={selectedLog} logId={selectedLog} onClose={() => setSelectedLog(null)} />
             )}
         </div>
     );

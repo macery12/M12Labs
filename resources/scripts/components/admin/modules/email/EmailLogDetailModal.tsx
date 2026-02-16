@@ -15,6 +15,7 @@ import {
     faRedo,
     faExternalLinkAlt,
 } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     logId: number;
@@ -22,7 +23,7 @@ interface Props {
 }
 
 const ModalContent = styled.div`
-    ${tw`bg-gray-900 rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto`}
+    ${tw`rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto`}
 `;
 
 const Section = styled.div`
@@ -30,7 +31,7 @@ const Section = styled.div`
 `;
 
 const SectionTitle = styled.h3`
-    ${tw`text-lg font-semibold mb-4 text-gray-200`}
+    ${tw`text-lg font-semibold mb-4 text-neutral-200`}
 `;
 
 const DetailGrid = styled.div`
@@ -46,11 +47,11 @@ const DetailLabel = styled.span`
 `;
 
 const DetailValue = styled.span`
-    ${tw`text-sm text-gray-200`}
+    ${tw`text-sm text-neutral-200`}
 `;
 
 const CodeBlock = styled.pre`
-    ${tw`bg-gray-900 p-4 rounded text-xs overflow-x-auto text-green-400 font-mono`}
+    ${tw`bg-neutral-900 p-4 rounded text-xs overflow-x-auto text-green-400 font-mono`}
 `;
 
 const StatusBadge = styled.span<{ success: boolean }>`
@@ -80,6 +81,7 @@ export default ({ logId, onClose }: Props) => {
     const [resending, setResending] = useState(false);
     const [detail, setDetail] = useState<EmailLogDetail | null>(null);
     const { addFlash } = useFlash();
+    const theme = useStoreState(state => state.theme.data!);
 
     useEffect(() => {
         loadDetail();
@@ -149,7 +151,7 @@ export default ({ logId, onClose }: Props) => {
 
     return (
         <Modal visible={true} onDismissed={onClose} dismissable={true}>
-            <ModalContent>
+            <ModalContent style={{ backgroundColor: theme.colors.secondary }}>
                 {loading ? (
                     <div className='flex items-center justify-center py-12'>
                         <Spinner size='large' />
