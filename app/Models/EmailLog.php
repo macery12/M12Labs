@@ -18,6 +18,7 @@ namespace Everest\Models;
  * @property int $attempt_count
  * @property int|null $duration_ms
  * @property string|null $error
+ * @property int|null $status_code
  * @property array|null $tags
  * @property array|null $metadata
  * @property string|null $rendered_subject
@@ -47,6 +48,7 @@ class EmailLog extends Model
         'attempt_count',
         'duration_ms',
         'error',
+        'status_code',
         'tags',
         'metadata',
         'rendered_subject',
@@ -63,6 +65,7 @@ class EmailLog extends Model
         'user_id' => 'integer',
         'attempt_count' => 'integer',
         'duration_ms' => 'integer',
+        'status_code' => 'integer',
     ];
 
     /**
