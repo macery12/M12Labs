@@ -14,11 +14,14 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SendEmailJob extends Job implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    private const DUPLICATE_DISPATCH_TTL_SECONDS = 45;
 
     /**
      * The number of times the job may be attempted.
@@ -49,12 +52,23 @@ class SendEmailJob extends Job implements ShouldQueue
     {
         $logTemplateKey = $this->templateKeyForLog();
         $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
+        $dedupeKey = $this->dispatchDedupeKey($correlationId, $logTemplateKey);
 
         Log::info('SendEmailJob: Starting', [
             'template_key' => $this->templateKey,
             'recipient' => $this->recipient,
             'correlation_id' => $correlationId,
         ]);
+
+        if (!Cache::add($dedupeKey, true, now()->addSeconds(self::DUPLICATE_DISPATCH_TTL_SECONDS))) {
+            Log::warning('SendEmailJob: Duplicate dispatch suppressed', [
+                'template_key' => $logTemplateKey,
+                'recipient' => $this->recipient,
+                'correlation_id' => $correlationId,
+            ]);
+
+            return;
+        }
 
         // Check if this email type is enabled
         if (!EmailNotificationSetting::isEnabled($this->templateKey)) {
@@ -188,5 +202,10 @@ class SendEmailJob extends Job implements ShouldQueue
     private function templateKeyForLog(): string
     {
         return str_replace('.', '_', $this->templateKey);
+    }
+
+    private function dispatchDedupeKey(string $correlationId, string $logTemplateKey): string
+    {
+        return "email_dispatch:{$correlationId}:{$logTemplateKey}:{$this->recipient}";
     }
 }
