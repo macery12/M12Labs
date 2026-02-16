@@ -107,12 +107,8 @@ class EmailManager
      * Send an email from a template key.
      * This is the main method used by the event-driven email system.
      * 
-     * IMPORTANT: Only creates email logs when ALL required fields are present:
-     * - user_id
-     * - template_key
-     * - correlation_id
-     * 
-     * If any required field is missing, the email is still sent but NOT logged.
+     * IMPORTANT: Always creates complete email logs with all required fields.
+     * If user_id is not provided, attempts to look it up by email address.
      */
     public function sendFromTemplate(
         string $templateKey,
@@ -126,15 +122,24 @@ class EmailManager
         // Ensure we have a correlation_id for tracking
         $correlationId = $correlationId ?? \Illuminate\Support\Str::uuid()->toString();
         
-        // Validate if we have all required fields for logging
-        $canLog = !empty($userId) && !empty($templateKey) && !empty($correlationId);
+        // If user_id not provided, try to look it up by email
+        if (!$userId) {
+            $user = \Everest\Models\User::where('email', $recipient)->first();
+            if ($user) {
+                $userId = $user->id;
+                Log::debug('EmailManager: Found user_id from recipient email', [
+                    'recipient' => $recipient,
+                    'user_id' => $userId,
+                ]);
+            }
+        }
         
-        if (!$canLog) {
-            Log::warning('Email will be sent but NOT logged due to missing required fields', [
-                'has_user_id' => !empty($userId),
-                'has_template_key' => !empty($templateKey),
-                'has_correlation_id' => !empty($correlationId),
+        // Log a warning if user_id is still missing (shouldn't happen for user-related emails)
+        if (!$userId) {
+            Log::warning('EmailManager: Sending email without user_id', [
                 'recipient' => $recipient,
+                'template_key' => $templateKey,
+                'correlation_id' => $correlationId,
             ]);
         }
         
@@ -146,21 +151,19 @@ class EmailManager
                 'correlation_id' => $correlationId,
             ]);
 
-            // Only log if we have required fields
-            if ($canLog) {
-                $this->emailLogService->createOrUpdate([
-                    'correlation_id' => $correlationId,
-                    'user_id' => $userId,
-                    'template_key' => $templateKey,
-                    'to' => $recipient,
-                    'subject' => $this->getSubjectForTemplate($templateKey),
-                    'provider' => 'resend',
-                    'status' => 'skipped',
-                    'error' => 'Email sending is disabled',
-                    'success' => false,
-                    'attempt_count' => 1,
-                ]);
-            }
+            // Always log, even if fields are missing
+            $this->emailLogService->createOrUpdate([
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'template_key' => $templateKey,
+                'to' => $recipient,
+                'subject' => $this->getSubjectForTemplate($templateKey),
+                'provider' => 'resend',
+                'status' => 'skipped',
+                'error' => 'Email sending is disabled',
+                'success' => false,
+                'attempt_count' => 1,
+            ]);
 
             return EmailResult::success('disabled');
         }
@@ -170,20 +173,18 @@ class EmailManager
         if (empty($apiKey)) {
             Log::error('Resend API key not configured');
             
-            if ($canLog) {
-                $this->emailLogService->createOrUpdate([
-                    'correlation_id' => $correlationId,
-                    'user_id' => $userId,
-                    'template_key' => $templateKey,
-                    'to' => $recipient,
-                    'subject' => $this->getSubjectForTemplate($templateKey),
-                    'provider' => 'resend',
-                    'status' => 'failed',
-                    'error' => 'Resend API key not configured',
-                    'success' => false,
-                    'attempt_count' => 1,
-                ]);
-            }
+            $this->emailLogService->createOrUpdate([
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'template_key' => $templateKey,
+                'to' => $recipient,
+                'subject' => $this->getSubjectForTemplate($templateKey),
+                'provider' => 'resend',
+                'status' => 'failed',
+                'error' => 'Resend API key not configured',
+                'success' => false,
+                'attempt_count' => 1,
+            ]);
             
             return EmailResult::failure('Resend API key not configured. Please configure the API key in Admin → Email settings.');
         }
@@ -197,20 +198,18 @@ class EmailManager
         if (empty($from)) {
             Log::error('Resend from_email not configured');
             
-            if ($canLog) {
-                $this->emailLogService->createOrUpdate([
-                    'correlation_id' => $correlationId,
-                    'user_id' => $userId,
-                    'template_key' => $templateKey,
-                    'to' => $recipient,
-                    'subject' => $this->getSubjectForTemplate($templateKey),
-                    'provider' => 'resend',
-                    'status' => 'failed',
-                    'error' => 'From email address not configured',
-                    'success' => false,
-                    'attempt_count' => 1,
-                ]);
-            }
+            $this->emailLogService->createOrUpdate([
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'template_key' => $templateKey,
+                'to' => $recipient,
+                'subject' => $this->getSubjectForTemplate($templateKey),
+                'provider' => 'resend',
+                'status' => 'failed',
+                'error' => 'From email address not configured',
+                'success' => false,
+                'attempt_count' => 1,
+            ]);
             
             return EmailResult::failure('From email address not configured. Please set the "From Email" in Admin → Email settings.');
         }
@@ -219,20 +218,18 @@ class EmailManager
         if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
             Log::error('Resend from_email has invalid format', ['from' => $from]);
             
-            if ($canLog) {
-                $this->emailLogService->createOrUpdate([
-                    'correlation_id' => $correlationId,
-                    'user_id' => $userId,
-                    'template_key' => $templateKey,
-                    'to' => $recipient,
-                    'subject' => $this->getSubjectForTemplate($templateKey),
-                    'provider' => 'resend',
-                    'status' => 'failed',
-                    'error' => 'From email address has invalid format: ' . $from,
-                    'success' => false,
-                    'attempt_count' => 1,
-                ]);
-            }
+            $this->emailLogService->createOrUpdate([
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'template_key' => $templateKey,
+                'to' => $recipient,
+                'subject' => $this->getSubjectForTemplate($templateKey),
+                'provider' => 'resend',
+                'status' => 'failed',
+                'error' => 'From email address has invalid format: ' . $from,
+                'success' => false,
+                'attempt_count' => 1,
+            ]);
             
             return EmailResult::failure('From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.');
         }
@@ -262,20 +259,18 @@ class EmailManager
                 'correlation_id' => $correlationId,
             ]);
 
-            if ($canLog) {
-                $this->emailLogService->createOrUpdate([
-                    'correlation_id' => $correlationId,
-                    'user_id' => $userId,
-                    'template_key' => $templateKey,
-                    'to' => $recipient,
-                    'subject' => $subject,
-                    'provider' => 'resend',
-                    'status' => 'failed',
-                    'error' => 'Failed to render email template: ' . $e->getMessage(),
-                    'success' => false,
-                    'attempt_count' => 1,
-                ]);
-            }
+            $this->emailLogService->createOrUpdate([
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'template_key' => $templateKey,
+                'to' => $recipient,
+                'subject' => $subject,
+                'provider' => 'resend',
+                'status' => 'failed',
+                'error' => 'Failed to render email template: ' . $e->getMessage(),
+                'success' => false,
+                'attempt_count' => 1,
+            ]);
 
             return EmailResult::failure('Failed to render email template: ' . $e->getMessage());
         }
@@ -318,56 +313,51 @@ class EmailManager
             $result = $service->send($message);
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);
 
-            // Only create log if we have all required fields
-            // This is the SINGLE point where we create/update the complete log entry
-            if ($canLog) {
-                $this->emailLogService->createOrUpdate([
-                    'correlation_id' => $correlationId,
-                    'user_id' => $userId,
-                    'template_key' => $templateKey,
-                    'to' => $recipient,
-                    'subject' => $subject,
-                    'provider' => 'resend',
-                    'message_id' => $result->messageId,
-                    'success' => $result->success,
-                    'status' => $result->success ? 'sent' : 'failed',
-                    'error' => $result->error,
-                    'status_code' => $result->statusCode,
-                    'duration_ms' => $durationMs,
-                    'rendered_subject' => $subject,
-                    'rendered_html' => $html,
-                    'rendered_text' => $text,
-                    'tags' => $sanitizedTags,
-                    'template_variables' => $data,
-                    'attempt_count' => 1,
-                ]);
-            }
+            // Always create/update log entry (will update partial logs if they exist)
+            $this->emailLogService->createOrUpdate([
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'template_key' => $templateKey,
+                'to' => $recipient,
+                'subject' => $subject,
+                'provider' => 'resend',
+                'message_id' => $result->messageId,
+                'success' => $result->success,
+                'status' => $result->success ? 'sent' : 'failed',
+                'error' => $result->error,
+                'status_code' => $result->statusCode,
+                'duration_ms' => $durationMs,
+                'rendered_subject' => $subject,
+                'rendered_html' => $html,
+                'rendered_text' => $text,
+                'tags' => $sanitizedTags,
+                'template_variables' => $data,
+                'attempt_count' => 1,
+            ]);
 
             return $result;
         } catch (\Exception $e) {
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);
             
-            // Only create log if we have all required fields
-            if ($canLog) {
-                $this->emailLogService->createOrUpdate([
-                    'correlation_id' => $correlationId,
-                    'user_id' => $userId,
-                    'template_key' => $templateKey,
-                    'to' => $recipient,
-                    'subject' => $subject,
-                    'provider' => 'resend',
-                    'success' => false,
-                    'status' => 'failed',
-                    'error' => $e->getMessage(),
-                    'duration_ms' => $durationMs,
-                    'rendered_subject' => $subject,
-                    'rendered_html' => $html,
-                    'rendered_text' => $text,
-                    'tags' => $sanitizedTags,
-                    'template_variables' => $data,
-                    'attempt_count' => 1,
-                ]);
-            }
+            // Always create/update log entry even on exception
+            $this->emailLogService->createOrUpdate([
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'template_key' => $templateKey,
+                'to' => $recipient,
+                'subject' => $subject,
+                'provider' => 'resend',
+                'success' => false,
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+                'duration_ms' => $durationMs,
+                'rendered_subject' => $subject,
+                'rendered_html' => $html,
+                'rendered_text' => $text,
+                'tags' => $sanitizedTags,
+                'template_variables' => $data,
+                'attempt_count' => 1,
+            ]);
 
             throw $e;
         }

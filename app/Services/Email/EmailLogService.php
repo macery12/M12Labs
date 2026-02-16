@@ -19,23 +19,22 @@ class EmailLogService
     private const REQUIRED_FIELDS = ['user_id', 'template_key', 'correlation_id'];
 
     /**
-     * Create or update an email log with validation.
+     * Create or update an email log.
      * 
-     * Only creates a log if ALL required fields are present.
-     * Returns null if validation fails.
+     * Logs a warning if required fields are missing but still saves the data.
+     * Uses updateOrCreate to update existing partial logs with complete data.
      *
      * @param array $data Log data to save
-     * @return EmailLog|null Created or updated log, or null if validation failed
+     * @return EmailLog|null Created or updated log, or null if error occurred
      */
     public function createOrUpdate(array $data): ?EmailLog
     {
-        // Validate required fields are present and non-empty
+        // Warn if required fields are missing, but continue to save
         if (!$this->hasRequiredFields($data)) {
-            Log::warning('EmailLogService: Attempted to create log without required fields', [
+            Log::warning('EmailLogService: Saving log with incomplete data', [
                 'data' => $this->sanitizeForLog($data),
                 'missing_fields' => $this->getMissingFields($data),
             ]);
-            return null;
         }
 
         // Determine the unique key to use for updateOrCreate
@@ -43,6 +42,7 @@ class EmailLogService
         $uniqueKey = [];
         if (!empty($data['message_id']) && !empty($data['provider'])) {
             // Use provider + message_id as unique key (most reliable)
+            // This allows us to UPDATE partial logs when we get the complete data
             $uniqueKey = [
                 'provider' => $data['provider'],
                 'message_id' => $data['message_id'],
@@ -51,21 +51,35 @@ class EmailLogService
             // Fallback to correlation_id
             $uniqueKey = ['correlation_id' => $data['correlation_id']];
         } else {
-            Log::error('EmailLogService: No suitable unique key found', [
+            // No unique key available - this should rarely happen
+            // Create a new log entry without a unique constraint
+            Log::warning('EmailLogService: No unique key available, creating new log', [
                 'has_message_id' => !empty($data['message_id']),
                 'has_correlation_id' => !empty($data['correlation_id']),
             ]);
-            return null;
+            
+            try {
+                $log = EmailLog::create($data);
+                return $log;
+            } catch (\Exception $e) {
+                Log::error('EmailLogService: Failed to create log without unique key', [
+                    'error' => $e->getMessage(),
+                ]);
+                return null;
+            }
         }
 
         try {
             // Use updateOrCreate with the determined unique key
+            // If a partial log exists, this will UPDATE it with complete data
             $log = EmailLog::updateOrCreate($uniqueKey, $data);
 
             Log::debug('EmailLogService: Log created/updated', [
+                'id' => $log->id,
                 'unique_key' => $uniqueKey,
                 'status' => $data['status'] ?? 'unknown',
                 'template_key' => $data['template_key'] ?? null,
+                'has_complete_data' => $this->hasRequiredFields($data),
             ]);
 
             return $log;
