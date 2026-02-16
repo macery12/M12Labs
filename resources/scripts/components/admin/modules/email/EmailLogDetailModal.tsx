@@ -312,31 +312,47 @@ export default ({ logId, onClose }: Props) => {
                             </Section>
                         )}
 
-                        {/* Related Emails */}
-                        {detail.related_emails.length > 0 && (
+                        {/* All Attempts (Grouped by Correlation ID) */}
+                        {detail.all_attempts && detail.all_attempts.length > 1 && (
                             <Section>
-                                <SectionTitle>Related Emails (Same Correlation ID)</SectionTitle>
-                                <div className='space-y-2'>
-                                    {detail.related_emails.map((email) => (
-                                        <div
-                                            key={email.id}
-                                            className='bg-neutral-800 p-3 rounded flex items-center justify-between'
-                                        >
-                                            <div>
-                                                <div className='text-sm font-medium text-gray-200'>
-                                                    {email.subject}
+                                <SectionTitle>All Attempts ({detail.attempt_count} total)</SectionTitle>
+                                <div className='text-sm text-neutral-400 mb-4'>
+                                    This email was attempted {detail.attempt_count} time(s). Below is the complete history:
+                                </div>
+                                <Timeline>
+                                    {detail.all_attempts.map((attempt, idx) => (
+                                        <TimelineItem key={attempt.id}>
+                                            <TimelineIcon success={attempt.success}>
+                                                <FontAwesomeIcon
+                                                    icon={attempt.success ? faCheckCircle : faTimesCircle}
+                                                />
+                                            </TimelineIcon>
+                                            <TimelineContent>
+                                                <div className='flex items-center justify-between mb-1'>
+                                                    <div className='text-sm font-medium text-neutral-200'>
+                                                        Attempt #{idx + 1} - {attempt.status}
+                                                    </div>
+                                                    {attempt.duration_ms && (
+                                                        <span className='text-xs text-neutral-400'>
+                                                            {attempt.duration_ms}ms
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className='text-xs text-neutral-400'>
-                                                    {email.to} • {formatDate(email.created_at)} •{' '}
-                                                    <code className='text-neutral-300'>{email.template_key}</code>
+                                                    {formatDate(attempt.created_at)}
+                                                    {attempt.created_at !== attempt.updated_at && (
+                                                        <> (Updated: {formatDate(attempt.updated_at)})</>
+                                                    )}
                                                 </div>
-                                            </div>
-                                            <span className='text-xs px-2 py-1 rounded bg-gray-700 text-neutral-300'>
-                                                {email.status}
-                                            </span>
-                                        </div>
+                                                {attempt.error && (
+                                                    <div className='mt-2 text-xs text-red-400 bg-red-900/20 p-2 rounded'>
+                                                        {attempt.error}
+                                                    </div>
+                                                )}
+                                            </TimelineContent>
+                                        </TimelineItem>
                                     ))}
-                                </div>
+                                </Timeline>
                             </Section>
                         )}
                     </>

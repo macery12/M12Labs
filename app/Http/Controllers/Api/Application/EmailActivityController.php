@@ -19,51 +19,64 @@ class EmailActivityController extends ApplicationApiController
 
     /**
      * Get email activity logs with pagination and filtering.
+     * 
+     * Logs are grouped by correlation_id to show only the latest entry for each unique email.
+     * This prevents displaying duplicates while still preserving retry history.
      */
     public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->input('per_page', 25), 100);
         
-        $query = EmailLog::query()->with('user:id,email,username');
+        // Get the latest log for each correlation_id
+        // This ensures we only show one row per email send, even with retries
+        $subquery = EmailLog::select('correlation_id', \DB::raw('MAX(id) as latest_id'))
+            ->whereNotNull('correlation_id')
+            ->groupBy('correlation_id');
+
+        $query = EmailLog::query()
+            ->with('user:id,email,username')
+            ->joinSub($subquery, 'latest', function ($join) {
+                $join->on('email_logs.id', '=', 'latest.latest_id');
+            });
 
         // Apply filters
         if ($request->filled('status')) {
             $status = $request->input('status');
             if ($status === 'sent') {
-                $query->where('success', true);
+                $query->where('email_logs.success', true);
             } elseif ($status === 'failed') {
-                $query->where('success', false);
+                $query->where('email_logs.success', false);
             }
         }
 
         if ($request->filled('template_key')) {
-            $query->where('template_key', $request->input('template_key'));
+            $query->where('email_logs.template_key', $request->input('template_key'));
         }
 
         if ($request->filled('recipient')) {
-            $query->where('to', 'like', '%' . $request->input('recipient') . '%');
+            $query->where('email_logs.to', 'like', '%' . $request->input('recipient') . '%');
         }
 
         if ($request->filled('user_id')) {
-            $query->where('user_id', $request->input('user_id'));
+            $query->where('email_logs.user_id', $request->input('user_id'));
         }
 
         if ($request->has('only_failures') && $request->input('only_failures') === 'true') {
-            $query->where('success', false);
+            $query->where('email_logs.success', false);
         }
 
         // Date range filter
         if ($request->filled('date_from')) {
-            $query->where('created_at', '>=', $request->input('date_from') . ' 00:00:00');
+            $query->where('email_logs.created_at', '>=', $request->input('date_from') . ' 00:00:00');
         }
 
         if ($request->filled('date_to')) {
-            $query->where('created_at', '<=', $request->input('date_to') . ' 23:59:59');
+            $query->where('email_logs.created_at', '<=', $request->input('date_to') . ' 23:59:59');
         }
 
         // Default date range: last 7 days
         if (!$request->filled('date_from') && !$request->filled('date_to')) {
-            $query->where('created_at', '>=', now()->subDays(7));
+            $query->where('email_logs.created_at', '>=', now()->subDays(7));
         }
 
         // Sorting
@@ -71,38 +84,42 @@ class EmailActivityController extends ApplicationApiController
         $sortDir = $request->input('sort_dir', 'desc');
         
         if (in_array($sortBy, ['created_at', 'status', 'template_key', 'to'])) {
-            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+            $query->orderBy('email_logs.' . $sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
         }
 
-        $logs = $query->paginate($perPage);
+        $logs = $query->select('email_logs.*')->paginate($perPage);
 
         return response()->json($logs);
     }
 
     /**
      * Get details of a specific email log entry.
+     * 
+     * Includes all retry attempts for this correlation_id to show complete history.
      */
     public function show(int $id): JsonResponse
     {
         $log = EmailLog::with('user:id,email,username')->findOrFail($id);
 
-        // Get retry history from metadata if available
-        $retryHistory = $log->metadata['retry_history'] ?? [];
-
-        // Get related emails by correlation_id
-        $relatedEmails = [];
+        // Get ALL log entries for this correlation_id (including retries/duplicates)
+        // Sort by created_at to show chronological history
+        $allAttempts = [];
         if ($log->correlation_id) {
-            $relatedEmails = EmailLog::where('correlation_id', $log->correlation_id)
-                ->where('id', '!=', $log->id)
-                ->select('id', 'to', 'subject', 'template_key', 'status', 'created_at')
+            $allAttempts = EmailLog::where('correlation_id', $log->correlation_id)
+                ->orderBy('created_at', 'asc')
+                ->select('id', 'status', 'success', 'error', 'attempt_count', 'duration_ms', 'created_at', 'updated_at')
                 ->get();
         }
 
+        // Get retry history from metadata if available
+        $retryHistory = $log->metadata['retry_history'] ?? [];
+
         return response()->json([
             'log' => $log,
+            'all_attempts' => $allAttempts,
+            'attempt_count' => count($allAttempts),
             'sanitized_variables' => $log->getSanitizedVariables(),
             'retry_history' => $retryHistory,
-            'related_emails' => $relatedEmails,
         ]);
     }
 

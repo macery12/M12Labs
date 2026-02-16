@@ -132,19 +132,22 @@ export interface EmailLog {
 
 export interface EmailLogDetail {
     log: EmailLog;
+    all_attempts: Array<{
+        id: number;
+        status: string;
+        success: boolean;
+        error: string | null;
+        attempt_count: number;
+        duration_ms: number | null;
+        created_at: string;
+        updated_at: string;
+    }>;
+    attempt_count: number;
     sanitized_variables: Record<string, any>;
     retry_history: Array<{
         attempt: number;
         timestamp: string;
         error?: string;
-    }>;
-    related_emails: Array<{
-        id: number;
-        to: string;
-        subject: string;
-        template_key: string | null;
-        status: string;
-        created_at: string;
     }>;
 }
 
