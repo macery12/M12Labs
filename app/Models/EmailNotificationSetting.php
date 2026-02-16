@@ -44,7 +44,7 @@ class EmailNotificationSetting extends Model
             return false;
         }
 
-        $setting = static::where('template_key', self::normalizeTemplateKey($templateKey))->first();
+        $setting = static::where('template_key', $templateKey)->first();
         
         return $setting ? $setting->enabled : false;
     }
@@ -54,14 +54,9 @@ class EmailNotificationSetting extends Model
      */
     public static function isRateLimitExempt(string $templateKey): bool
     {
-        $setting = static::where('template_key', self::normalizeTemplateKey($templateKey))->first();
+        $setting = static::where('template_key', $templateKey)->first();
         
         return $setting ? $setting->rate_limit_exempt : false;
-    }
-
-    public static function normalizeTemplateKey(string $templateKey): string
-    {
-        return strtolower(str_replace('.', '_', trim($templateKey)));
     }
 
     /**

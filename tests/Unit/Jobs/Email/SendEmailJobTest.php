@@ -11,13 +11,13 @@ use Illuminate\Support\Facades\Cache;
 
 class SendEmailJobTest extends TestCase
 {
-    public function testFailedLogsUseFailedStatusAndUnderscoreTemplateKey(): void
+    public function testFailedLogsUseFailedStatusAndTemplateKeyAsProvided(): void
     {
         $emailLog = m::mock('alias:Everest\Models\EmailLog');
         $emailLog->shouldReceive('create')
             ->once()
             ->with(m::on(function (array $payload) {
-                $this->assertSame('auth_password_reset', $payload['template_key']);
+                $this->assertSame('auth.password_reset', $payload['template_key']);
                 $this->assertSame('failed', $payload['status']);
                 $this->assertFalse($payload['success']);
 
@@ -40,7 +40,7 @@ class SendEmailJobTest extends TestCase
         Cache::shouldReceive('add')
             ->once()
             ->with(
-                'email_dispatch:corr-123:auth_password_reset:user@example.com',
+                'email_dispatch:corr-123:auth.password_reset:user@example.com',
                 true,
                 m::on(function ($ttl) {
                     return $ttl instanceof Carbon && abs($ttl->diffInSeconds(now()->addSeconds(45), false)) <= 1;

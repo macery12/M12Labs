@@ -201,7 +201,7 @@ class SendEmailJob extends Job implements ShouldQueue
 
     private function templateKeyForLog(): string
     {
-        return EmailNotificationSetting::normalizeTemplateKey($this->templateKey);
+        return $this->templateKey;
     }
 
     private function dispatchDedupeKey(string $correlationId, string $logTemplateKey): string

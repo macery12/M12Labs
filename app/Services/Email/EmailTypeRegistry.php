@@ -75,13 +75,7 @@ class EmailTypeRegistry
      */
     public static function getAllowedVariables(string $templateKey): array
     {
-        foreach (self::templateKeyCandidates($templateKey) as $candidate) {
-            if (isset(self::TEMPLATE_VARIABLES[$candidate])) {
-                return self::TEMPLATE_VARIABLES[$candidate];
-            }
-        }
-
-        return [];
+        return self::TEMPLATE_VARIABLES[$templateKey] ?? [];
     }
 
     /**
@@ -339,34 +333,4 @@ class EmailTypeRegistry
         return self::EVENT_TO_TEMPLATE;
     }
 
-    private static function normalizeTemplateKey(string $templateKey): string
-    {
-        return strtolower(str_replace('.', '_', trim($templateKey)));
-    }
-
-    private static function templateKeyCandidates(string $templateKey): array
-    {
-        $normalized = self::normalizeTemplateKey($templateKey);
-        $dotLegacy = self::toLegacyDotTemplateKey($normalized);
-
-        return array_values(array_unique([
-            $normalized,
-            $dotLegacy,
-            $templateKey,
-        ]));
-    }
-
-    private static function toLegacyDotTemplateKey(string $templateKey): string
-    {
-        if (str_contains($templateKey, '.')) {
-            return $templateKey;
-        }
-
-        $parts = explode('_', $templateKey, 2);
-        if (count($parts) === 2) {
-            return $parts[0] . '.' . $parts[1];
-        }
-
-        return $templateKey;
-    }
 }

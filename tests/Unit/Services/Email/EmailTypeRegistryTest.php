@@ -29,19 +29,14 @@ class EmailTypeRegistryTest extends TestCase
     public function testAllowedVariablesSupportsDotOrUnderscoreTemplateKey(): void
     {
         $underscore = EmailTypeRegistry::getAllowedVariables('auth_password_reset');
-        $dot = EmailTypeRegistry::getAllowedVariables('auth.password_reset');
-
         $this->assertSame(['userName', 'resetUrl', 'expiresIn'], $underscore);
-        $this->assertSame($underscore, $dot);
+        $this->assertSame([], EmailTypeRegistry::getAllowedVariables('auth.password_reset'));
     }
 
-    public function testAllowedVariablesSupportsNormalizedCaseAndWhitespace(): void
+    public function testAllowedVariablesDoesNotNormalizeInput(): void
     {
-        $normalized = EmailTypeRegistry::getAllowedVariables(' auth_password_reset ');
-        $legacy = EmailTypeRegistry::getAllowedVariables(' AUTH.PASSWORD_RESET ');
-
-        $this->assertSame(['userName', 'resetUrl', 'expiresIn'], $normalized);
-        $this->assertSame($normalized, $legacy);
+        $this->assertSame([], EmailTypeRegistry::getAllowedVariables(' auth_password_reset '));
+        $this->assertSame([], EmailTypeRegistry::getAllowedVariables('AUTH.PASSWORD_RESET'));
     }
 
     public function testValidateVariablesAllowsPasswordResetPayloadForUnderscoreTemplate(): void
@@ -60,16 +55,4 @@ class EmailTypeRegistryTest extends TestCase
         ], $validData);
     }
 
-    public function testLegacyDotTemplateCandidateUsesFirstUnderscoreSplit(): void
-    {
-        $reflection = new \ReflectionClass(EmailTypeRegistry::class);
-        $method = $reflection->getMethod('toLegacyDotTemplateKey');
-        $method->setAccessible(true);
-
-        $this->assertSame('simple', $method->invoke(null, 'simple'));
-        $this->assertSame('auth.reset', $method->invoke(null, 'auth.reset'));
-        $this->assertSame('auth.password_reset', $method->invoke(null, 'auth_password_reset'));
-        $this->assertSame('auth.password_reset_confirm', $method->invoke(null, 'auth_password_reset_confirm'));
-        $this->assertSame('billing.server_renewal_notice', $method->invoke(null, 'billing_server_renewal_notice'));
-    }
 }
