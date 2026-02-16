@@ -4,6 +4,7 @@ namespace Everest\Services\Email;
 
 use Everest\Models\Setting;
 use Everest\Models\EmailLog;
+use Everest\Models\EmailDelivery;
 use Everest\Services\Email\Emails\BaseEmail;
 use Everest\Services\Email\Emails\CustomMessageEmail;
 use Everest\Exceptions\Service\Email\ResendException;
@@ -103,14 +104,39 @@ class EmailManager
     /**
      * Send an email from a template key.
      * This is the main method used by the event-driven email system.
+     * 
+     * @param EmailDelivery|null $delivery Pre-created delivery record from SendEmailJob
+     * @param int $attemptNumber Current attempt number (1-based, from job retry count)
      */
     public function sendFromTemplate(
         string $templateKey,
         string $recipient,
         array $data,
-        ?string $correlationId = null,
-        ?int $userId = null
+        string $correlationId,
+        ?int $userId = null,
+        ?EmailDelivery $delivery = null,
+        int $attemptNumber = 1
     ): EmailResult {
+        $tracker = app(EmailDeliveryTracker::class);
+
+        // If no delivery provided, create one (for direct calls outside job system)
+        if (!$delivery) {
+            $subject = $this->getSubjectForTemplate($templateKey);
+            $tags = [
+                ['name' => 'template_key', 'value' => $templateKey],
+                ['name' => 'correlation_id', 'value' => $correlationId],
+            ];
+
+            $delivery = $tracker->startDelivery(
+                correlationId: $correlationId,
+                recipient: $recipient,
+                subject: $subject,
+                templateKey: $templateKey,
+                userId: $userId,
+                tags: $tags
+            );
+        }
+
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
@@ -119,14 +145,20 @@ class EmailManager
                 'correlation_id' => $correlationId,
             ]);
 
+            $tracker->markSkipped($delivery, 'Email sending is disabled');
             return EmailResult::success('disabled');
         }
 
         // Get API key from settings
         $apiKey = Setting::get('settings::modules:email:resend:api_key');
         if (empty($apiKey)) {
-            Log::error('Resend API key not configured');
-            return EmailResult::failure('Resend API key not configured. Please configure the API key in Admin → Email settings.');
+            $error = 'Resend API key not configured. Please configure the API key in Admin → Email settings.';
+            Log::error($error);
+            
+            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
+            $tracker->finishAttemptFailure($attempt, $error, 0);
+            
+            return EmailResult::failure($error);
         }
 
         // Get from settings
@@ -136,14 +168,24 @@ class EmailManager
 
         // Validate required from_email is configured
         if (empty($from)) {
-            Log::error('Resend from_email not configured');
-            return EmailResult::failure('From email address not configured. Please set the "From Email" in Admin → Email settings.');
+            $error = 'From email address not configured. Please set the "From Email" in Admin → Email settings.';
+            Log::error($error);
+            
+            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
+            $tracker->finishAttemptFailure($attempt, $error, 0);
+            
+            return EmailResult::failure($error);
         }
 
         // Validate from_email format
         if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
-            Log::error('Resend from_email has invalid format', ['from' => $from]);
-            return EmailResult::failure('From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.');
+            $error = 'From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.';
+            Log::error($error);
+            
+            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
+            $tracker->finishAttemptFailure($attempt, $error, 0);
+            
+            return EmailResult::failure($error);
         }
 
         // Convert template key to view path (auth.password_reset -> emails.auth.password-reset)
@@ -164,14 +206,17 @@ class EmailManager
         try {
             $html = View::make($viewPath, $data)->render();
         } catch (\Exception $e) {
-            Log::error('Failed to render email template', [
+            $error = 'Failed to render email template: ' . $e->getMessage();
+            Log::error($error, [
                 'template_key' => $templateKey,
                 'view_path' => $viewPath,
-                'error' => $e->getMessage(),
                 'correlation_id' => $correlationId,
             ]);
 
-            return EmailResult::failure('Failed to render email template: ' . $e->getMessage());
+            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
+            $tracker->finishAttemptFailure($attempt, $error, 0, $e);
+
+            return EmailResult::failure($error);
         }
 
         // Generate text content
@@ -183,14 +228,11 @@ class EmailManager
                 'name' => 'template_key',
                 'value' => $templateKey,
             ],
-        ];
-
-        if ($correlationId) {
-            $tags[] = [
+            [
                 'name' => 'correlation_id',
                 'value' => $correlationId,
-            ];
-        }
+            ],
+        ];
 
         // Create email message
         $message = new EmailMessage(
@@ -204,35 +246,44 @@ class EmailManager
             replyTo: $replyTo
         );
 
+        // Start attempt tracking
+        $requestPayload = $message->toArray();
+        $attempt = $tracker->startAttempt($delivery, $attemptNumber, $requestPayload);
+
         // Send via Resend
-        $service = new ResendService($apiKey);
-        $result = $service->send($message);
+        try {
+            $service = new ResendService($apiKey);
+            $result = $service->send($message);
 
-        // Get sanitized tags for logging
-        $messageArray = $message->toArray();
-        $sanitizedTags = $messageArray['tags'] ?? [];
+            if ($result->success) {
+                // Success - update attempt
+                $tracker->finishAttemptSuccess(
+                    attempt: $attempt,
+                    providerMessageId: $result->messageId,
+                    statusCode: $result->statusCode,
+                    responsePayload: ['id' => $result->messageId]
+                );
+            } else {
+                // Failure - update attempt
+                $tracker->finishAttemptFailure(
+                    attempt: $attempt,
+                    error: $result->error ?? 'Unknown error',
+                    statusCode: $result->statusCode
+                );
+            }
 
-        // Log the send attempt (single source of truth for email logging)
-        // Use updateOrCreate to prevent duplicates if something else creates a minimal log first
-        EmailLog::updateOrCreate(
-            [
-                'provider' => 'resend',
-                'message_id' => $result->messageId,
-            ],
-            [
-                'to' => $recipient,
-                'subject' => $subject,
-                'template_key' => $templateKey,
-                'correlation_id' => $correlationId,
-                'user_id' => $userId,
-                'success' => $result->success,
-                'status' => $result->success ? 'sent' : 'failed',
-                'error' => $result->error,
-                'tags' => $sanitizedTags,
-            ]
-        );
+            return $result;
+        } catch (\Exception $e) {
+            // Exception during send - update attempt
+            $tracker->finishAttemptFailure(
+                attempt: $attempt,
+                error: $e->getMessage(),
+                statusCode: method_exists($e, 'getCode') ? $e->getCode() : 0,
+                exception: $e
+            );
 
-        return $result;
+            return EmailResult::failure($e->getMessage(), $e->getCode());
+        }
     }
 
     /**

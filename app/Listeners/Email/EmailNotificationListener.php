@@ -37,8 +37,9 @@ class EmailNotificationListener
         // Extract data
         $data = EmailTypeRegistry::extractDataFromEvent($event);
         
-        // Get correlation ID
-        $correlationId = EmailTypeRegistry::getCorrelationId($event);
+        // Generate or get correlation ID (ONLY generate here, never in EmailManager)
+        $correlationId = EmailTypeRegistry::getCorrelationId($event) 
+            ?? \Illuminate\Support\Str::uuid()->toString();
         
         // Get user ID if available
         $userId = property_exists($event, 'user') && $event->user ? $event->user->id : null;

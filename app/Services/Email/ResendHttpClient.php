@@ -31,12 +31,14 @@ class ResendHttpClient
 
     /**
      * Send an email via the Resend API.
+     * Returns array with response data and metadata.
      *
      * @throws ResendException
      */
     public function sendEmail(array $payload): array
     {
         $attempt = 0;
+        $lastException = null;
 
         while ($attempt < self::MAX_RETRIES) {
             try {
@@ -52,39 +54,38 @@ class ResendHttpClient
                 $body = json_decode($response->getBody()->getContents(), true);
 
                 if ($statusCode === 200 || $statusCode === 201) {
-                    return $body;
+                    return [
+                        'body' => $body,
+                        'status_code' => $statusCode,
+                    ];
                 }
 
-                throw new ResendException('Unexpected status code: ' . $statusCode);
+                throw new ResendException('Unexpected status code: ' . $statusCode, $statusCode);
             } catch (RequestException $e) {
+                $lastException = $e;
                 $statusCode = $e->getResponse()?->getStatusCode();
                 $responseBody = $e->getResponse()?->getBody()->getContents();
                 $errorData = $responseBody ? json_decode($responseBody, true) : null;
                 $errorMessage = $errorData['message'] ?? $e->getMessage();
-
-                Log::error('Resend API error', [
-                    'status_code' => $statusCode,
-                    'error' => $errorMessage,
-                    'payload' => $payload,
-                ]);
 
                 // Handle specific error codes
                 if ($statusCode === 400) {
                     // Check if it's a domain-related error
                     if (stripos($errorMessage, 'domain') !== false || stripos($errorMessage, 'from') !== false) {
                         throw new ResendValidationException(
-                            $errorMessage . ' - Make sure the domain in your "From Email" is verified in your Resend account at https://resend.com/domains'
+                            $errorMessage . ' - Make sure the domain in your "From Email" is verified in your Resend account at https://resend.com/domains',
+                            $statusCode
                         );
                     }
-                    throw new ResendValidationException($errorMessage);
+                    throw new ResendValidationException($errorMessage, $statusCode);
                 }
 
                 if ($statusCode === 401) {
-                    throw new ResendAuthenticationException($errorMessage);
+                    throw new ResendAuthenticationException($errorMessage, $statusCode);
                 }
 
                 if ($statusCode === 429) {
-                    throw new ResendRateLimitException($errorMessage);
+                    throw new ResendRateLimitException($errorMessage, $statusCode);
                 }
 
                 // Handle 5xx errors with exponential backoff
@@ -97,20 +98,20 @@ class ResendHttpClient
                         continue;
                     }
 
-                    throw new ResendServerException($errorMessage);
+                    throw new ResendServerException($errorMessage, $statusCode);
                 }
 
                 // Unknown error
-                throw new ResendException($errorMessage);
+                throw new ResendException($errorMessage, $statusCode ?? 0);
             } catch (GuzzleException $e) {
                 Log::error('Resend HTTP client error', [
                     'error' => $e->getMessage(),
                 ]);
 
-                throw new ResendException('HTTP client error: ' . $e->getMessage());
+                throw new ResendException('HTTP client error: ' . $e->getMessage(), 0);
             }
         }
 
-        throw new ResendServerException('Maximum retry attempts exceeded');
+        throw new ResendServerException('Maximum retry attempts exceeded', 500);
     }
 }

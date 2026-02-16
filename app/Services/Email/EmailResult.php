@@ -15,11 +15,12 @@ class EmailResult
     /**
      * Create a successful result.
      */
-    public static function success(string $messageId): self
+    public static function success(string $messageId, ?int $statusCode = null): self
     {
         return new self(
             success: true,
-            messageId: $messageId
+            messageId: $messageId,
+            statusCode: $statusCode
         );
     }
 
