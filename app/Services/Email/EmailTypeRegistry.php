@@ -72,25 +72,44 @@ class EmailTypeRegistry
 
     /**
      * Get allowed variables for a template.
+     * Normalizes the template key to underscore format and falls back to trying dot format.
      */
     public static function getAllowedVariables(string $templateKey): array
     {
-        return self::TEMPLATE_VARIABLES[$templateKey] ?? [];
+        // Normalize to underscore format (dots to underscores)
+        $normalizedKey = str_replace('.', '_', $templateKey);
+        
+        // Try normalized key first
+        if (isset(self::TEMPLATE_VARIABLES[$normalizedKey])) {
+            return self::TEMPLATE_VARIABLES[$normalizedKey];
+        }
+        
+        // Fallback: try original key as-is (in case it was already correct)
+        if (isset(self::TEMPLATE_VARIABLES[$templateKey])) {
+            return self::TEMPLATE_VARIABLES[$templateKey];
+        }
+        
+        // No match found
+        return [];
     }
 
     /**
      * Validate that data contains only allowed variables.
      * Returns array of [valid_data, errors].
+     * Normalizes template key to underscore format for consistent validation.
      */
     public static function validateVariables(string $templateKey, array $data): array
     {
-        $allowed = self::getAllowedVariables($templateKey);
+        // Normalize template key to underscore format
+        $normalizedKey = str_replace('.', '_', $templateKey);
+        
+        $allowed = self::getAllowedVariables($normalizedKey);
         $errors = [];
         $validData = [];
 
         foreach ($data as $key => $value) {
             if (!in_array($key, $allowed, true)) {
-                $errors[] = "Variable '$key' is not allowed for template '$templateKey'";
+                $errors[] = "Variable '$key' is not allowed for template '$normalizedKey'";
             } else {
                 $validData[$key] = $value;
             }
@@ -100,7 +119,7 @@ class EmailTypeRegistry
         $required = ['userName']; // userName is required for all templates
         foreach ($required as $req) {
             if (!array_key_exists($req, $data)) {
-                $errors[] = "Required variable '$req' is missing for template '$templateKey'";
+                $errors[] = "Required variable '$req' is missing for template '$normalizedKey'";
             }
         }
 

@@ -111,6 +111,9 @@ class EmailManager
         ?string $correlationId = null,
         ?int $userId = null
     ): EmailResult {
+        // Normalize template key to underscore format
+        $templateKey = str_replace('.', '_', $templateKey);
+        
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
@@ -301,9 +304,13 @@ class EmailManager
 
     /**
      * Get email subject for a template key.
+     * Normalizes template key to underscore format for lookup.
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
+        // Normalize to underscore format
+        $normalizedKey = str_replace('.', '_', $templateKey);
+        
         $subjects = [
             'auth_account_created' => 'Welcome to Your Account',
             'auth_email_verification' => 'Verify Your Email Address',
@@ -323,6 +330,6 @@ class EmailManager
             'billing_server_renewal_notice' => 'Server Renewal Notice - Action Required',
         ];
 
-        return $subjects[$templateKey] ?? 'Notification';
+        return $subjects[$normalizedKey] ?? 'Notification';
     }
 }

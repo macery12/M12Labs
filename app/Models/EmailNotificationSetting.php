@@ -35,6 +35,7 @@ class EmailNotificationSetting extends Model
 
     /**
      * Check if a specific email type is enabled.
+     * Normalizes template key to underscore format for database lookup.
      */
     public static function isEnabled(string $templateKey): bool
     {
@@ -44,17 +45,24 @@ class EmailNotificationSetting extends Model
             return false;
         }
 
-        $setting = static::where('template_key', $templateKey)->first();
+        // Normalize to underscore format
+        $normalizedKey = str_replace('.', '_', $templateKey);
+        
+        $setting = static::where('template_key', $normalizedKey)->first();
         
         return $setting ? $setting->enabled : false;
     }
 
     /**
      * Check if a template is exempt from rate limiting.
+     * Normalizes template key to underscore format for database lookup.
      */
     public static function isRateLimitExempt(string $templateKey): bool
     {
-        $setting = static::where('template_key', $templateKey)->first();
+        // Normalize to underscore format
+        $normalizedKey = str_replace('.', '_', $templateKey);
+        
+        $setting = static::where('template_key', $normalizedKey)->first();
         
         return $setting ? $setting->rate_limit_exempt : false;
     }
