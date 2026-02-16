@@ -306,6 +306,25 @@ class EmailManager
         $messageArray = $message->toArray();
         $sanitizedTags = $messageArray['tags'] ?? [];
 
+        // PHASE 1: Create initial log BEFORE sending (with correlation_id as key)
+        // This ensures we always have a log entry even if sending fails
+        $this->emailLogService->createOrUpdate([
+            'correlation_id' => $correlationId,
+            'user_id' => $userId,
+            'template_key' => $templateKey,
+            'to' => $recipient,
+            'subject' => $subject,
+            'provider' => 'resend',
+            'status' => 'processing',
+            'success' => false,
+            'attempt_count' => 1,
+            'rendered_subject' => $subject,
+            'rendered_html' => $html,
+            'rendered_text' => $text,
+            'tags' => $sanitizedTags,
+            'template_variables' => $data,
+        ]);
+
         // Send via Resend
         $service = new ResendService($apiKey);
         
@@ -313,50 +332,27 @@ class EmailManager
             $result = $service->send($message);
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);
 
-            // Always create/update log entry (will update partial logs if they exist)
-            $this->emailLogService->createOrUpdate([
-                'correlation_id' => $correlationId,
-                'user_id' => $userId,
-                'template_key' => $templateKey,
-                'to' => $recipient,
-                'subject' => $subject,
-                'provider' => 'resend',
+            // PHASE 2: Update the SAME log with message_id and final status
+            // Use where() + update() to ensure we update the existing row by correlation_id
+            EmailLog::where('correlation_id', $correlationId)->update([
                 'message_id' => $result->messageId,
                 'success' => $result->success,
                 'status' => $result->success ? 'sent' : 'failed',
                 'error' => $result->error,
                 'status_code' => $result->statusCode,
                 'duration_ms' => $durationMs,
-                'rendered_subject' => $subject,
-                'rendered_html' => $html,
-                'rendered_text' => $text,
-                'tags' => $sanitizedTags,
-                'template_variables' => $data,
-                'attempt_count' => 1,
             ]);
 
             return $result;
         } catch (\Exception $e) {
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);
             
-            // Always create/update log entry even on exception
-            $this->emailLogService->createOrUpdate([
-                'correlation_id' => $correlationId,
-                'user_id' => $userId,
-                'template_key' => $templateKey,
-                'to' => $recipient,
-                'subject' => $subject,
-                'provider' => 'resend',
+            // PHASE 2: Update the SAME log with error and failed status
+            EmailLog::where('correlation_id', $correlationId)->update([
                 'success' => false,
                 'status' => 'failed',
                 'error' => $e->getMessage(),
                 'duration_ms' => $durationMs,
-                'rendered_subject' => $subject,
-                'rendered_html' => $html,
-                'rendered_text' => $text,
-                'tags' => $sanitizedTags,
-                'template_variables' => $data,
-                'attempt_count' => 1,
             ]);
 
             throw $e;
