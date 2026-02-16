@@ -113,6 +113,9 @@ class EmailManager
     ): EmailResult {
         $startTime = microtime(true);
         
+        // Ensure we have a correlation_id for tracking
+        $correlationId = $correlationId ?? \Illuminate\Support\Str::uuid()->toString();
+        
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
@@ -122,12 +125,10 @@ class EmailManager
             ]);
 
             // Update the log entry (should already exist from SendEmailJob)
-            if ($correlationId) {
-                EmailLog::where('correlation_id', $correlationId)->update([
-                    'status' => 'skipped',
-                    'error' => 'Email sending is disabled',
-                ]);
-            }
+            EmailLog::where('correlation_id', $correlationId)->update([
+                'status' => 'skipped',
+                'error' => 'Email sending is disabled',
+            ]);
 
             return EmailResult::success('disabled');
         }
@@ -137,12 +138,10 @@ class EmailManager
         if (empty($apiKey)) {
             Log::error('Resend API key not configured');
             
-            if ($correlationId) {
-                EmailLog::where('correlation_id', $correlationId)->update([
-                    'status' => 'failed',
-                    'error' => 'Resend API key not configured',
-                ]);
-            }
+            EmailLog::where('correlation_id', $correlationId)->update([
+                'status' => 'failed',
+                'error' => 'Resend API key not configured',
+            ]);
             
             return EmailResult::failure('Resend API key not configured. Please configure the API key in Admin → Email settings.');
         }
@@ -156,12 +155,10 @@ class EmailManager
         if (empty($from)) {
             Log::error('Resend from_email not configured');
             
-            if ($correlationId) {
-                EmailLog::where('correlation_id', $correlationId)->update([
-                    'status' => 'failed',
-                    'error' => 'From email address not configured',
-                ]);
-            }
+            EmailLog::where('correlation_id', $correlationId)->update([
+                'status' => 'failed',
+                'error' => 'From email address not configured',
+            ]);
             
             return EmailResult::failure('From email address not configured. Please set the "From Email" in Admin → Email settings.');
         }
@@ -170,12 +167,10 @@ class EmailManager
         if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
             Log::error('Resend from_email has invalid format', ['from' => $from]);
             
-            if ($correlationId) {
-                EmailLog::where('correlation_id', $correlationId)->update([
-                    'status' => 'failed',
-                    'error' => 'From email address has invalid format: ' . $from,
-                ]);
-            }
+            EmailLog::where('correlation_id', $correlationId)->update([
+                'status' => 'failed',
+                'error' => 'From email address has invalid format: ' . $from,
+            ]);
             
             return EmailResult::failure('From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.');
         }
@@ -205,12 +200,10 @@ class EmailManager
                 'correlation_id' => $correlationId,
             ]);
 
-            if ($correlationId) {
-                EmailLog::where('correlation_id', $correlationId)->update([
-                    'status' => 'failed',
-                    'error' => 'Failed to render email template: ' . $e->getMessage(),
-                ]);
-            }
+            EmailLog::where('correlation_id', $correlationId)->update([
+                'status' => 'failed',
+                'error' => 'Failed to render email template: ' . $e->getMessage(),
+            ]);
 
             return EmailResult::failure('Failed to render email template: ' . $e->getMessage());
         }
@@ -224,14 +217,11 @@ class EmailManager
                 'name' => 'template_key',
                 'value' => $templateKey,
             ],
-        ];
-
-        if ($correlationId) {
-            $tags[] = [
+            [
                 'name' => 'correlation_id',
                 'value' => $correlationId,
-            ];
-        }
+            ],
+        ];
 
         // Create email message
         $message = new EmailMessage(
@@ -250,15 +240,13 @@ class EmailManager
         $sanitizedTags = $messageArray['tags'] ?? [];
 
         // Update the log with rendered content and sanitized tags before sending
-        if ($correlationId) {
-            EmailLog::where('correlation_id', $correlationId)->update([
-                'rendered_subject' => $subject,
-                'rendered_html' => $html,
-                'rendered_text' => $text,
-                'tags' => $sanitizedTags,
-                'template_variables' => $data,
-            ]);
-        }
+        EmailLog::where('correlation_id', $correlationId)->update([
+            'rendered_subject' => $subject,
+            'rendered_html' => $html,
+            'rendered_text' => $text,
+            'tags' => $sanitizedTags,
+            'template_variables' => $data,
+        ]);
 
         // Send via Resend
         $service = new ResendService($apiKey);
@@ -269,30 +257,26 @@ class EmailManager
 
             // Update the log with the final result
             // Use correlation_id to find and update the existing log entry
-            if ($correlationId) {
-                EmailLog::where('correlation_id', $correlationId)->update([
-                    'message_id' => $result->messageId,
-                    'success' => $result->success,
-                    'status' => $result->success ? 'sent' : 'failed',
-                    'error' => $result->error,
-                    'status_code' => $result->statusCode,
-                    'duration_ms' => $durationMs,
-                ]);
-            }
+            EmailLog::where('correlation_id', $correlationId)->update([
+                'message_id' => $result->messageId,
+                'success' => $result->success,
+                'status' => $result->success ? 'sent' : 'failed',
+                'error' => $result->error,
+                'status_code' => $result->statusCode,
+                'duration_ms' => $durationMs,
+            ]);
 
             return $result;
         } catch (\Exception $e) {
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);
             
             // Update log with error
-            if ($correlationId) {
-                EmailLog::where('correlation_id', $correlationId)->update([
-                    'success' => false,
-                    'status' => 'failed',
-                    'error' => $e->getMessage(),
-                    'duration_ms' => $durationMs,
-                ]);
-            }
+            EmailLog::where('correlation_id', $correlationId)->update([
+                'success' => false,
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+                'duration_ms' => $durationMs,
+            ]);
 
             throw $e;
         }
