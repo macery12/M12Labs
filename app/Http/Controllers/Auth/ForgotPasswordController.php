@@ -3,6 +3,7 @@
 namespace Everest\Http\Controllers\Auth;
 
 use Everest\Models\User;
+use Everest\Models\Setting;
 use Everest\Models\EmailNotificationSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -66,7 +67,9 @@ class ForgotPasswordController extends AbstractLoginController
             'email' => 'required|email',
         ]);
 
-        $this->passwordResetService->sendResetLink($request->string('email')->toString());
+        if ($this->isEmailResetEnabled()) {
+            $this->passwordResetService->sendResetLink($request->string('email')->toString());
+        }
 
         return response()->json([
             'message' => 'If account exists, reset email sent',
@@ -100,16 +103,20 @@ class ForgotPasswordController extends AbstractLoginController
             return false;
         }
 
+        if (Setting::get('settings::modules:email:resend:enabled', 'false') === 'true') {
+            return true;
+        }
+
         $mailer = config('mail.default');
 
-        if (in_array($mailer, ['array', 'log'], true)) {
+        if (in_array($mailer, ['array', 'log'], true) || !config('mail.from.address')) {
             return false;
         }
 
-        if (!config('mail.from.address')) {
+        if ($mailer === 'smtp' && !config('mail.mailers.smtp.host')) {
             return false;
         }
 
-        return $mailer !== 'smtp' || (bool) config('mail.mailers.smtp.host');
+        return (bool) config("mail.mailers.{$mailer}.transport");
     }
 }
