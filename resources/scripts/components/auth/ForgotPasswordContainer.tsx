@@ -35,7 +35,10 @@ function ForgotPasswordContainer() {
         clearFlashes();
         getPasswordResetMethod()
             .then(method => setResetMethod(method))
-            .catch(() => setResetMethod('recovery_code'));
+            .catch(error => {
+                console.error(error);
+                setResetMethod('email');
+            });
     }, []);
 
     const handleSubmission = (

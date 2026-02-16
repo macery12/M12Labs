@@ -103,7 +103,8 @@ class ForgotPasswordController extends AbstractLoginController
             return false;
         }
 
-        if (Setting::get('settings::modules:email:resend:enabled', 'false') === 'true') {
+        $emailModuleEnabled = strtolower((string) Setting::get('settings::modules:email:resend:enabled', 'false'));
+        if (in_array($emailModuleEnabled, ['1', 'true', 'yes', 'on'], true)) {
             return true;
         }
 
