@@ -72,25 +72,14 @@ class EmailTypeRegistry
 
     /**
      * Get allowed variables for a template.
-     * Normalizes the template key to underscore format and falls back to trying dot format.
+     * Normalizes the template key to underscore format.
      */
     public static function getAllowedVariables(string $templateKey): array
     {
         // Normalize to underscore format (dots to underscores)
         $normalizedKey = str_replace('.', '_', $templateKey);
         
-        // Try normalized key first
-        if (isset(self::TEMPLATE_VARIABLES[$normalizedKey])) {
-            return self::TEMPLATE_VARIABLES[$normalizedKey];
-        }
-        
-        // Fallback: try original key as-is (in case it was already correct)
-        if (isset(self::TEMPLATE_VARIABLES[$templateKey])) {
-            return self::TEMPLATE_VARIABLES[$templateKey];
-        }
-        
-        // No match found
-        return [];
+        return self::TEMPLATE_VARIABLES[$normalizedKey] ?? [];
     }
 
     /**
