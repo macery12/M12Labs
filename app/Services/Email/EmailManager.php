@@ -171,19 +171,6 @@ class EmailManager
                 'correlation_id' => $correlationId,
             ]);
 
-            // Log the failure
-            EmailLog::create([
-                'to' => $recipient,
-                'subject' => $subject,
-                'template_key' => $templateKey,
-                'correlation_id' => $correlationId,
-                'provider' => 'resend',
-                'user_id' => $userId,
-                'success' => false,
-                'status' => 'failed',
-                'error' => 'Template rendering failed: ' . $e->getMessage(),
-            ]);
-
             return EmailResult::failure('Failed to render email template: ' . $e->getMessage());
         }
 
@@ -226,19 +213,24 @@ class EmailManager
         $sanitizedTags = $messageArray['tags'] ?? [];
 
         // Log the send attempt (single source of truth for email logging)
-        EmailLog::create([
-            'to' => $recipient,
-            'subject' => $subject,
-            'template_key' => $templateKey,
-            'correlation_id' => $correlationId,
-            'message_id' => $result->messageId,
-            'provider' => 'resend',
-            'user_id' => $userId,
-            'success' => $result->success,
-            'status' => $result->success ? 'sent' : 'failed',
-            'error' => $result->error,
-            'tags' => $sanitizedTags, // Store sanitized tags
-        ]);
+        // Use updateOrCreate to prevent duplicates if something else creates a minimal log first
+        EmailLog::updateOrCreate(
+            [
+                'provider' => 'resend',
+                'message_id' => $result->messageId,
+            ],
+            [
+                'to' => $recipient,
+                'subject' => $subject,
+                'template_key' => $templateKey,
+                'correlation_id' => $correlationId,
+                'user_id' => $userId,
+                'success' => $result->success,
+                'status' => $result->success ? 'sent' : 'failed',
+                'error' => $result->error,
+                'tags' => $sanitizedTags,
+            ]
+        );
 
         return $result;
     }
