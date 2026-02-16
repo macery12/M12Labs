@@ -44,10 +44,13 @@ class SendEmailJob extends Job implements ShouldQueue
 
     /**
      * Execute the job.
+     * 
+     * NOTE: This job does NOT create EmailLog entries.
+     * All logging is handled by EmailManager, which has access to complete context.
      */
     public function handle(EmailManager $emailManager): void
     {
-        // Ensure we have a correlation_id and store it for use in failed() method
+        // Ensure we have a correlation_id for tracking
         if (!$this->correlationId) {
             $this->correlationId = \Illuminate\Support\Str::uuid()->toString();
         }
@@ -57,28 +60,8 @@ class SendEmailJob extends Job implements ShouldQueue
             'recipient' => $this->recipient,
             'correlation_id' => $this->correlationId,
             'attempt' => $this->attempts(),
+            'user_id' => $this->userId,
         ]);
-
-        // Get subject for template key (for early log)
-        $subject = $this->getSubjectForTemplate($this->templateKey);
-
-        // Create or update the initial log entry with status='processing'
-        // This ensures we have a single log row from the start
-        $log = EmailLog::updateOrCreate(
-            [
-                'correlation_id' => $this->correlationId,
-            ],
-            [
-                'to' => $this->recipient,
-                'subject' => $subject,
-                'template_key' => $this->templateKey,
-                'user_id' => $this->userId,
-                'provider' => 'resend',
-                'status' => 'processing',
-                'attempt_count' => $this->attempts(),
-                'success' => false,
-            ]
-        );
 
         // Check if this email type is enabled
         if (!EmailNotificationSetting::isEnabled($this->templateKey)) {
@@ -87,12 +70,7 @@ class SendEmailJob extends Job implements ShouldQueue
                 'correlation_id' => $this->correlationId,
             ]);
             
-            // Update log to skipped status
-            $log->update([
-                'status' => 'skipped',
-                'error' => 'Email type disabled in notification settings',
-            ]);
-            
+            // Don't create logs here - let EmailManager handle it if called
             return;
         }
 
@@ -125,12 +103,7 @@ class SendEmailJob extends Job implements ShouldQueue
                     'scheduled_at' => $nextAvailable,
                 ]);
 
-                // Update log to deferred status
-                $log->update([
-                    'status' => 'deferred',
-                    'error' => "Quota exceeded: {$reason}",
-                ]);
-
+                // Don't create logs here - let EmailManager handle it if called
                 return;
             }
         }
@@ -145,16 +118,11 @@ class SendEmailJob extends Job implements ShouldQueue
                 'correlation_id' => $this->correlationId,
             ]);
 
-            // Update log to failed status
-            $log->update([
-                'status' => 'failed',
-                'error' => 'Variable validation failed: ' . implode(', ', $errors),
-            ]);
-
+            // Don't create logs here - throw exception and let it bubble up
             throw new \Exception('Variable validation failed: ' . implode(', ', $errors));
         }
 
-        // Send the email (EmailManager will update the log with final status)
+        // Send the email (EmailManager will handle ALL logging)
         try {
             $startTime = microtime(true);
             
@@ -195,8 +163,8 @@ class SendEmailJob extends Job implements ShouldQueue
     /**
      * Handle a job failure.
      * 
-     * Updates the log entry to failed status. The log entry should already exist
-     * from the handle() method, and correlationId is guaranteed to be set.
+     * NOTE: Does NOT create log entries. All logging is handled by EmailManager.
+     * This just logs the failure to application logs for debugging.
      */
     public function failed(\Throwable $exception): void
     {
@@ -205,42 +173,11 @@ class SendEmailJob extends Job implements ShouldQueue
             'recipient' => $this->recipient,
             'error' => $exception->getMessage(),
             'correlation_id' => $this->correlationId,
+            'user_id' => $this->userId,
         ]);
         
-        // Update the existing log entry to failed status
-        // correlationId is guaranteed to be set (either from constructor or generated in handle())
-        if ($this->correlationId) {
-            EmailLog::where('correlation_id', $this->correlationId)->update([
-                'status' => 'failed',
-                'error' => $exception->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Get email subject for a template key.
-     */
-    private function getSubjectForTemplate(string $templateKey): string
-    {
-        $subjects = [
-            'auth.account_created' => 'Welcome to Your Account',
-            'auth.email_verification' => 'Verify Your Email Address',
-            'auth.password_reset' => 'Reset Your Password',
-            'auth.password_changed' => 'Your Password Has Been Changed',
-            'auth.new_login' => 'New Login Detected',
-            'auth.account_locked' => 'Your Account Has Been Suspended',
-            'auth.account_unsuspended' => 'Your Account Has Been Restored',
-            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server.created' => 'Your Server Has Been Created',
-            'server.suspended' => 'Your Server Has Been Suspended',
-            'server.unsuspended' => 'Your Server Has Been Unsuspended',
-            'server.expiring_soon' => 'Your Server Is Expiring Soon',
-            'billing.payment_received' => 'Payment Received - Thank You',
-            'billing.payment_failed' => 'Payment Failed - Action Required',
-            'billing.server_renewal_notice' => 'Server Renewal Notice - Action Required',
-        ];
-
-        return $subjects[$templateKey] ?? 'Notification';
+        // Don't create database logs here - EmailManager handles all logging
+        // The exception should have already been logged by EmailManager if it
+        // had all required fields (user_id, template_key, correlation_id)
     }
 }
