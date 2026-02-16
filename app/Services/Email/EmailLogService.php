@@ -33,76 +33,60 @@ class EmailLogService
      */
     public function createOrUpdate(array $data): ?EmailLog
     {
-        $hasMessageKey = !empty($data['provider']) && !empty($data['message_id']);
-        $hasCorrelationKey = !empty($data['correlation_id']);
+        $provider = $data['provider'] ?? null;
+        $messageId = $data['message_id'] ?? null;
+        $correlationId = $data['correlation_id'] ?? null;
 
-        // If required fields are missing, NEVER create a brand new row
-        if (!$this->hasRequiredFields($data)) {
-            Log::warning('EmailLogService: Incomplete data - will only update existing log', [
-                'missing_fields' => $this->getMissingFields($data),
-                'has_message_key' => $hasMessageKey,
-                'has_correlation_key' => $hasCorrelationKey,
-            ]);
+        // If we have correlation_id, always treat it as the primary identity
+        if (!empty($correlationId)) {
+            // 1) Upsert the correlation row
+            $log = EmailLog::updateOrCreate(
+                ['correlation_id' => $correlationId],
+                $data
+            );
 
-            // If we can match an existing row, update it (fill in later)
-            if ($hasMessageKey) {
-                $existing = EmailLog::where('provider', $data['provider'])
-                    ->where('message_id', $data['message_id'])
+            // 2) If we also have message_id, attempt to attach it safely
+            if (!empty($provider) && !empty($messageId)) {
+                // If another row already owns this provider+message_id, merge into it
+                $byMessage = EmailLog::where('provider', $provider)
+                    ->where('message_id', $messageId)
                     ->first();
 
-                if ($existing) {
-                    $existing->update($data);
-                    Log::debug('EmailLogService: Updated existing log by message_id', [
-                        'id' => $existing->id,
-                        'message_id' => $data['message_id'],
-                    ]);
-                    return $existing;
+                if ($byMessage && $byMessage->id !== $log->id) {
+                    // Merge: keep the byMessage row (unique authority),
+                    // copy missing fields from $log, then delete $log
+                    $merged = array_filter(array_merge($log->toArray(), $data), fn($v) => $v !== null);
+
+                    $byMessage->update($merged);
+
+                    // Avoid orphan duplicates
+                    $log->delete();
+
+                    return $byMessage;
                 }
+
+                // Otherwise, safe to set message_id on the correlation row
+                $log->update([
+                    'provider' => $provider,
+                    'message_id' => $messageId,
+                ]);
             }
-
-            if ($hasCorrelationKey) {
-                $existing = EmailLog::where('correlation_id', $data['correlation_id'])->first();
-                if ($existing) {
-                    $existing->update($data);
-                    Log::debug('EmailLogService: Updated existing log by correlation_id', [
-                        'id' => $existing->id,
-                        'correlation_id' => $data['correlation_id'],
-                    ]);
-                    return $existing;
-                }
-            }
-
-            // Otherwise: skip entirely
-            Log::debug('EmailLogService: Skipping create (incomplete log, no existing row to update)', [
-                'missing_fields' => $this->getMissingFields($data),
-            ]);
-            return null;
-        }
-
-        // From here on: safe to create/update
-        $uniqueKey = $hasCorrelationKey
-            ? ['correlation_id' => $data['correlation_id']]
-            : ['provider' => $data['provider'], 'message_id' => $data['message_id']];
-
-        try {
-            $log = EmailLog::updateOrCreate($uniqueKey, $data);
-
-            Log::debug('EmailLogService: Log created/updated with complete data', [
-                'id' => $log->id,
-                'unique_key' => $uniqueKey,
-                'status' => $data['status'] ?? 'unknown',
-                'template_key' => $data['template_key'] ?? null,
-            ]);
 
             return $log;
-        } catch (\Exception $e) {
-            Log::error('EmailLogService: Failed to create/update log', [
-                'unique_key' => $uniqueKey,
-                'error' => $e->getMessage(),
-            ]);
-            return null;
         }
+
+        // No correlation_id: only update/create if we have provider+message_id
+        if (!empty($provider) && !empty($messageId)) {
+            return EmailLog::updateOrCreate(
+                ['provider' => $provider, 'message_id' => $messageId],
+                $data
+            );
+        }
+
+        // Nothing stable to key on: skip
+        return null;
     }
+
 
     /**
      * Update an existing log by correlation_id.
