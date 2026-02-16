@@ -117,8 +117,8 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      *
-     * This migration is not reversible because we don't want to revert to the problematic dot notation.
-     * If absolutely necessary to rollback, you should manually restore from a backup.
+     * Reverts template keys back to dot notation. Note that while this is technically possible,
+     * it's not recommended as the dot notation causes ASCII encoding issues.
      */
     public function down(): void
     {
