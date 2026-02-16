@@ -14,7 +14,7 @@ class EmailMessageTest extends TestCase
             subject: 'Subject',
             html: '<p>Hello</p>',
             tags: [
-                ['name' => 'template.key', 'value' => 'auth.password_reset'],
+                ['name' => 'template.key', 'value' => 'auth_password_reset'],
                 ['name' => '', 'value' => 'value'],
                 ['name' => 'name', 'value' => ''],
                 ['name' => 'corr', 'value' => 'abc-123:xyz'],

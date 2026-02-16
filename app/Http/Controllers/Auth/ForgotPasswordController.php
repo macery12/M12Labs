@@ -109,7 +109,7 @@ class ForgotPasswordController extends AbstractLoginController
 
     private function isEmailResetEnabled(): bool
     {
-        if (!EmailNotificationSetting::isEnabled('auth.password_reset')) {
+        if (!EmailNotificationSetting::isEnabled('auth_password_reset')) {
             return false;
         }
 

@@ -145,7 +145,7 @@ Check in backend:
 ```php
 use Everest\Models\EmailNotificationSetting;
 
-$emailResetEnabled = EmailNotificationSetting::isEnabled('auth.password_reset');
+$emailResetEnabled = EmailNotificationSetting::isEnabled('auth_password_reset');
 ```
 
 Return method based on this check:
