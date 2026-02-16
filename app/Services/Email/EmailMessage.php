@@ -21,6 +21,12 @@ class EmailMessage
 
     /**
      * Convert the email message to an array for the Resend API.
+     * 
+     * Tags are automatically sanitized to prevent ASCII errors:
+     * - Only allows: A-Z, a-z, 0-9, underscore, hyphen
+     * - Converts dots and other characters to underscores
+     * - This ensures template keys with dots (e.g., 'auth.password_reset') 
+     *   are safe when used as tag values (becomes 'auth_password_reset')
      */
     public function toArray(): array
     {
@@ -36,6 +42,8 @@ class EmailMessage
 
         if ($this->tags !== null && count($this->tags) > 0) {
             $tags = collect($this->tags)->map(function (array $tag) {
+                // Sanitize tag name and value to prevent ASCII errors
+                // Converts dots, spaces, and special characters to underscores
                 $name = preg_replace(self::TAG_ALLOWED_PATTERN, '_', (string) ($tag['name'] ?? ''));
                 $value = preg_replace(self::TAG_ALLOWED_PATTERN, '_', (string) ($tag['value'] ?? ''));
 

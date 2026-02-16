@@ -111,9 +111,6 @@ class EmailManager
         ?string $correlationId = null,
         ?int $userId = null
     ): EmailResult {
-        // Normalize template key to underscore format
-        $templateKey = str_replace('.', '_', $templateKey);
-        
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
@@ -149,15 +146,15 @@ class EmailManager
             return EmailResult::failure('From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.');
         }
 
-        // Convert template key to view path (auth_password_reset -> emails.auth.password-reset)
-        // First, split the template key to get category and action
-        $parts = explode('_', $templateKey, 2);
+        // Convert template key to view path (auth.password_reset -> emails.auth.password-reset)
+        // Split on first dot to get category and action
+        $parts = explode('.', $templateKey, 2);
         if (count($parts) === 2) {
-            // auth_password_reset -> emails.auth.password-reset
+            // auth.password_reset -> emails.auth.password-reset
             $viewPath = 'emails.' . $parts[0] . '.' . str_replace('_', '-', $parts[1]);
         } else {
             // Fallback for unexpected format
-            $viewPath = 'emails.' . str_replace('_', '-', $templateKey);
+            $viewPath = 'emails.' . $templateKey;
         }
 
         // Get subject from template key
@@ -194,22 +191,19 @@ class EmailManager
         $text = $this->htmlToText($html);
 
         // Create tags
-        // Sanitize tag values: Resend only accepts ASCII letters, numbers, underscores, or dashes
-        $sanitizedTemplateKey = str_replace('.', '_', $templateKey);
-        
+        // Note: EmailMessage will automatically sanitize tag values to prevent ASCII errors
+        // Dots in template keys will be converted to underscores automatically
         $tags = [
             [
                 'name' => 'template_key',
-                'value' => $sanitizedTemplateKey,
+                'value' => $templateKey,
             ],
         ];
 
         if ($correlationId) {
-            // Sanitize correlation ID: remove any special characters except allowed ones
-            $sanitizedCorrelationId = preg_replace('/[^a-zA-Z0-9_-]/', '_', $correlationId);
             $tags[] = [
                 'name' => 'correlation_id',
-                'value' => substr($sanitizedCorrelationId, 0, 256), // Resend tag value limit
+                'value' => $correlationId, // Will be sanitized by EmailMessage
             ];
         }
 
@@ -304,32 +298,28 @@ class EmailManager
 
     /**
      * Get email subject for a template key.
-     * Normalizes template key to underscore format for lookup.
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
-        // Normalize to underscore format
-        $normalizedKey = str_replace('.', '_', $templateKey);
-        
         $subjects = [
-            'auth_account_created' => 'Welcome to Your Account',
-            'auth_email_verification' => 'Verify Your Email Address',
-            'auth_password_reset' => 'Reset Your Password',
-            'auth_password_changed' => 'Your Password Has Been Changed',
-            'auth_new_login' => 'New Login Detected',
-            'auth_account_locked' => 'Your Account Has Been Suspended',
-            'auth_account_unsuspended' => 'Your Account Has Been Restored',
-            'auth_2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth_2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server_created' => 'Your Server Has Been Created',
-            'server_suspended' => 'Your Server Has Been Suspended',
-            'server_unsuspended' => 'Your Server Has Been Unsuspended',
-            'server_expiring_soon' => 'Your Server Is Expiring Soon',
-            'billing_payment_received' => 'Payment Received - Thank You',
-            'billing_payment_failed' => 'Payment Failed - Action Required',
-            'billing_server_renewal_notice' => 'Server Renewal Notice - Action Required',
+            'auth.account_created' => 'Welcome to Your Account',
+            'auth.email_verification' => 'Verify Your Email Address',
+            'auth.password_reset' => 'Reset Your Password',
+            'auth.password_changed' => 'Your Password Has Been Changed',
+            'auth.new_login' => 'New Login Detected',
+            'auth.account_locked' => 'Your Account Has Been Suspended',
+            'auth.account_unsuspended' => 'Your Account Has Been Restored',
+            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
+            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
+            'server.created' => 'Your Server Has Been Created',
+            'server.suspended' => 'Your Server Has Been Suspended',
+            'server.unsuspended' => 'Your Server Has Been Unsuspended',
+            'server.expiring_soon' => 'Your Server Is Expiring Soon',
+            'billing.payment_received' => 'Payment Received - Thank You',
+            'billing.payment_failed' => 'Payment Failed - Action Required',
+            'billing.server_renewal_notice' => 'Server Renewal Notice - Action Required',
         ];
 
-        return $subjects[$normalizedKey] ?? 'Notification';
+        return $subjects[$templateKey] ?? 'Notification';
     }
 }

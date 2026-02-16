@@ -21,44 +21,47 @@ class EmailTypeRegistry
 {
     /**
      * Map event classes to template keys.
+     * Uses dot notation for template keys (e.g., 'auth.password_reset').
+     * Note: Dots are automatically sanitized to underscores in email tags by EmailMessage.
      */
     private const EVENT_TO_TEMPLATE = [
-        AccountCreated::class => 'auth_account_created',
-        AccountLocked::class => 'auth_account_locked',
-        AccountUnsuspended::class => 'auth_account_unsuspended',
-        PasswordResetRequested::class => 'auth_password_reset',
-        PasswordChanged::class => 'auth_password_changed',
-        NewLoginDetected::class => 'auth_new_login',
-        TwoFactorEnabled::class => 'auth_2fa_enabled',
-        TwoFactorDisabled::class => 'auth_2fa_disabled',
-        ServerCreatedEmail::class => 'server_created',
-        ServerSuspended::class => 'server_suspended',
-        ServerUnsuspended::class => 'server_unsuspended',
-        PaymentReceived::class => 'billing_payment_received',
-        PaymentFailed::class => 'billing_payment_failed',
-        ServerRenewalNotice::class => 'billing_server_renewal_notice',
+        AccountCreated::class => 'auth.account_created',
+        AccountLocked::class => 'auth.account_locked',
+        AccountUnsuspended::class => 'auth.account_unsuspended',
+        PasswordResetRequested::class => 'auth.password_reset',
+        PasswordChanged::class => 'auth.password_changed',
+        NewLoginDetected::class => 'auth.new_login',
+        TwoFactorEnabled::class => 'auth.2fa_enabled',
+        TwoFactorDisabled::class => 'auth.2fa_disabled',
+        ServerCreatedEmail::class => 'server.created',
+        ServerSuspended::class => 'server.suspended',
+        ServerUnsuspended::class => 'server.unsuspended',
+        PaymentReceived::class => 'billing.payment_received',
+        PaymentFailed::class => 'billing.payment_failed',
+        ServerRenewalNotice::class => 'billing.server_renewal_notice',
     ];
 
     /**
      * Define allowed variables for each template.
      * This is a security allowlist - only these variables can be passed to templates.
+     * Uses dot notation for template keys (e.g., 'auth.password_reset').
      */
     private const TEMPLATE_VARIABLES = [
-        'auth_account_created' => ['userName', 'userEmail', 'loginUrl'],
-        'auth_account_locked' => ['userName', 'reason', 'suspendedAt', 'supportUrl'],
-        'auth_account_unsuspended' => ['userName', 'unsuspendedAt'],
-        'auth_password_reset' => ['userName', 'resetUrl', 'expiresIn'],
-        'auth_password_changed' => ['userName', 'changedAt', 'ipAddress'],
-        'auth_new_login' => ['userName', 'ipAddress', 'userAgent', 'location', 'loginTime'],
-        'auth_2fa_enabled' => ['userName', 'enabledAt'],
-        'auth_2fa_disabled' => ['userName', 'disabledAt', 'ipAddress'],
-        'server_created' => ['userName', 'serverName', 'serverId', 'serverUrl', 'nodeLocation'],
-        'server_suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
-        'server_unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
-        'server_expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
-        'billing_payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle'],
-        'billing_payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
-        'billing_server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'renewalDate', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],
+        'auth.account_created' => ['userName', 'userEmail', 'loginUrl'],
+        'auth.account_locked' => ['userName', 'reason', 'suspendedAt', 'supportUrl'],
+        'auth.account_unsuspended' => ['userName', 'unsuspendedAt'],
+        'auth.password_reset' => ['userName', 'resetUrl', 'expiresIn'],
+        'auth.password_changed' => ['userName', 'changedAt', 'ipAddress'],
+        'auth.new_login' => ['userName', 'ipAddress', 'userAgent', 'location', 'loginTime'],
+        'auth.2fa_enabled' => ['userName', 'enabledAt'],
+        'auth.2fa_disabled' => ['userName', 'disabledAt', 'ipAddress'],
+        'server.created' => ['userName', 'serverName', 'serverId', 'serverUrl', 'nodeLocation'],
+        'server.suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
+        'server.unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
+        'server.expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
+        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle'],
+        'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
+        'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'renewalDate', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],
     ];
 
     /**
@@ -81,41 +84,25 @@ class EmailTypeRegistry
 
     /**
      * Get allowed variables for a template.
-     * Normalizes the template key to underscore format.
-     * 
-     * This method accepts both dot notation (legacy) and underscore notation:
-     * - 'auth.password_reset' → normalized to 'auth_password_reset'
-     * - 'auth_password_reset' → stays as 'auth_password_reset'
      */
     public static function getAllowedVariables(string $templateKey): array
     {
-        // Normalize to underscore format (dots to underscores)
-        $normalizedKey = str_replace('.', '_', $templateKey);
-        
-        // Use the constant directly (issue was in getTemplateKey, not here)
-        return self::TEMPLATE_VARIABLES[$normalizedKey] ?? [];
+        return self::TEMPLATE_VARIABLES[$templateKey] ?? [];
     }
 
     /**
      * Validate that data contains only allowed variables.
      * Returns array of [valid_data, errors].
-     * 
-     * Normalizes template key to underscore format for consistent validation.
-     * Error messages intentionally use the normalized key to reflect the internal format.
      */
     public static function validateVariables(string $templateKey, array $data): array
     {
-        // Normalize template key to underscore format
-        // Error messages will use this normalized format for consistency
-        $normalizedKey = str_replace('.', '_', $templateKey);
-        
-        $allowed = self::getAllowedVariables($normalizedKey);
+        $allowed = self::getAllowedVariables($templateKey);
         $errors = [];
         $validData = [];
 
         foreach ($data as $key => $value) {
             if (!in_array($key, $allowed, true)) {
-                $errors[] = "Variable '$key' is not allowed for template '$normalizedKey'";
+                $errors[] = "Variable '$key' is not allowed for template '$templateKey'";
             } else {
                 $validData[$key] = $value;
             }
@@ -125,7 +112,7 @@ class EmailTypeRegistry
         $required = ['userName']; // userName is required for all templates
         foreach ($required as $req) {
             if (!array_key_exists($req, $data)) {
-                $errors[] = "Required variable '$req' is missing for template '$normalizedKey'";
+                $errors[] = "Required variable '$req' is missing for template '$templateKey'";
             }
         }
 

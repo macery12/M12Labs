@@ -28,7 +28,7 @@ return new class extends Migration
         DB::table('email_notification_settings')->insert([
             // Auth/Security emails
             [
-                'template_key' => 'auth_account_created',
+                'template_key' => 'auth.account_created',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => 'Account Created',
@@ -38,7 +38,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_email_verification',
+                'template_key' => 'auth.email_verification',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => 'Email Verification',
@@ -48,7 +48,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_password_reset',
+                'template_key' => 'auth.password_reset',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => 'Password Reset Request',
@@ -58,7 +58,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_password_changed',
+                'template_key' => 'auth.password_changed',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => 'Password Successfully Changed',
@@ -68,7 +68,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_new_login',
+                'template_key' => 'auth.new_login',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => 'New Login Detected',
@@ -78,7 +78,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_account_locked',
+                'template_key' => 'auth.account_locked',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => 'Account Locked/Suspended',
@@ -88,7 +88,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_account_unsuspended',
+                'template_key' => 'auth.account_unsuspended',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => 'Account Unsuspended',
@@ -98,7 +98,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_2fa_enabled',
+                'template_key' => 'auth.2fa_enabled',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => '2FA Enabled',
@@ -108,7 +108,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'auth_2fa_disabled',
+                'template_key' => 'auth.2fa_disabled',
                 'enabled' => true,
                 'category' => 'auth',
                 'name' => '2FA Disabled',
@@ -119,7 +119,7 @@ return new class extends Migration
             ],
             // Server emails
             [
-                'template_key' => 'server_created',
+                'template_key' => 'server.created',
                 'enabled' => true,
                 'category' => 'server',
                 'name' => 'Server Created',
@@ -129,7 +129,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'server_suspended',
+                'template_key' => 'server.suspended',
                 'enabled' => true,
                 'category' => 'server',
                 'name' => 'Server Suspended',
@@ -139,7 +139,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'server_unsuspended',
+                'template_key' => 'server.unsuspended',
                 'enabled' => true,
                 'category' => 'server',
                 'name' => 'Server Unsuspended',
@@ -149,7 +149,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'server_expiring_soon',
+                'template_key' => 'server.expiring_soon',
                 'enabled' => false,
                 'category' => 'server',
                 'name' => 'Server Expiring Soon',
@@ -160,7 +160,7 @@ return new class extends Migration
             ],
             // Billing emails
             [
-                'template_key' => 'billing_payment_received',
+                'template_key' => 'billing.payment_received',
                 'enabled' => true,
                 'category' => 'billing',
                 'name' => 'Payment Received',
@@ -170,7 +170,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'billing_payment_failed',
+                'template_key' => 'billing.payment_failed',
                 'enabled' => true,
                 'category' => 'billing',
                 'name' => 'Payment Failed',
@@ -180,7 +180,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'template_key' => 'billing_server_renewal_notice',
+                'template_key' => 'billing.server_renewal_notice',
                 'enabled' => true,
                 'category' => 'billing',
                 'name' => 'Server Renewal Notice',
