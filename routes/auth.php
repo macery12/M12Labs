@@ -17,6 +17,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', [Auth\LoginController::class, 'index'])->name('auth.login');
 Route::get('/password', [Auth\LoginController::class, 'index'])->name('auth.forgot-password');
 Route::get('/password/reset/{token}', [Auth\LoginController::class, 'index'])->name('auth.reset');
+Route::prefix('/password-reset')->group(function () {
+    Route::get('/method', [Auth\ForgotPasswordController::class, 'method'])->name('auth.password-reset.method');
+    Route::post('/email', [Auth\ForgotPasswordController::class, 'requestEmailReset'])
+        ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email', 'captcha'])
+        ->name('auth.password-reset.email');
+    Route::post('/reset', [Auth\ForgotPasswordController::class, 'resetWithToken'])
+        ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email', 'captcha'])
+        ->name('auth.password-reset.reset');
+});
 
 // Apply a throttle to authentication action endpoints, in addition to the
 // captcha endpoints to slow down manual attack spammers even more. 🤷‍
@@ -49,8 +58,7 @@ Route::middleware(['throttle:authentication'])->group(function () {
         ->middleware('captcha')
         ->name('auth.modules.google.authenticate');
 
-    // Forgot password route. A post to this endpoint will trigger an
-    // email to be sent containing a reset token.
+    // Recovery code based password reset endpoint.
     Route::post('/password', [Auth\ForgotPasswordController::class, 'verify'])
         ->name('auth.post.forgot-password')
         ->middleware('captcha');

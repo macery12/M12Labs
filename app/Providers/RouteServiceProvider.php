@@ -110,5 +110,13 @@ class RouteServiceProvider extends ServiceProvider
                 config('http.rate_limit.application')
             )->by($key);
         });
+
+        RateLimiter::for('password-reset-ip', fn (Request $request) => Limit::perMinutes(3, 20)->by($request->ip()));
+
+        RateLimiter::for('password-reset-email', function (Request $request) {
+            $email = strtolower((string) $request->input('email', ''));
+
+            return Limit::perMinutes(5, 20)->by($email !== '' ? $email : $request->ip());
+        });
     }
 }

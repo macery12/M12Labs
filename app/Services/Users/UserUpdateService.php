@@ -2,8 +2,10 @@
 
 namespace Everest\Services\Users;
 
+use Everest\Events\Email\PasswordChanged;
 use Everest\Models\User;
 use Illuminate\Contracts\Hashing\Hasher;
+use Illuminate\Support\Str;
 use Everest\Traits\Services\HasUserLevels;
 
 class UserUpdateService
@@ -24,7 +26,9 @@ class UserUpdateService
      */
     public function handle(User $user, array $data): User
     {
-        if (!empty(array_get($data, 'password'))) {
+        $passwordChanged = !empty(array_get($data, 'password'));
+
+        if ($passwordChanged) {
             $data['password'] = $this->hasher->make($data['password']);
         } else {
             unset($data['password']);
@@ -32,6 +36,15 @@ class UserUpdateService
 
         $user->forceFill($data)->saveOrFail();
 
-        return $user->refresh();
+        $user = $user->refresh();
+
+        if ($passwordChanged) {
+            event(new PasswordChanged(
+                user: $user,
+                correlationId: Str::uuid()->toString()
+            ));
+        }
+
+        return $user;
     }
 }
