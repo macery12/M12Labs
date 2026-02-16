@@ -191,8 +191,6 @@ class EmailManager
         $text = $this->htmlToText($html);
 
         // Create tags
-        // Note: EmailMessage will automatically sanitize tag values to prevent ASCII errors
-        // Dots in template keys will be converted to underscores automatically
         $tags = [
             [
                 'name' => 'template_key',
@@ -203,7 +201,7 @@ class EmailManager
         if ($correlationId) {
             $tags[] = [
                 'name' => 'correlation_id',
-                'value' => $correlationId, // Will be sanitized by EmailMessage
+                'value' => $correlationId,
             ];
         }
 
@@ -223,12 +221,11 @@ class EmailManager
         $service = new ResendService($apiKey);
         $result = $service->send($message);
 
-        // Get the sanitized tags that were actually sent to the API
-        // This prevents ASCII errors when tags are stored in the database
+        // Get sanitized tags for logging
         $messageArray = $message->toArray();
         $sanitizedTags = $messageArray['tags'] ?? [];
 
-        // Log the attempt
+        // Log the send attempt (single source of truth for email logging)
         EmailLog::create([
             'to' => $recipient,
             'subject' => $subject,

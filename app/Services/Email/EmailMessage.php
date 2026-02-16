@@ -20,26 +20,15 @@ class EmailMessage
     }
 
     /**
-     * Sanitize a tag value to meet Resend API requirements.
-     * Tags must match ^[A-Za-z0-9_-]+$ (only ASCII letters, numbers, underscores, or dashes).
-     * 
-     * @param string $value The tag value to sanitize
-     * @return string The sanitized value with invalid characters replaced by underscores
+     * Sanitize tag values (replaces dots and special chars with underscores).
      */
     private function sanitizeTag(string $value): string
     {
-        // Replace any character that's not A-Z, a-z, 0-9, underscore, or dash with underscore
         return preg_replace(self::TAG_ALLOWED_PATTERN, '_', $value);
     }
 
     /**
      * Convert the email message to an array for the Resend API.
-     * 
-     * Tags are automatically sanitized to prevent ASCII errors:
-     * - Only allows: A-Z, a-z, 0-9, underscore, hyphen
-     * - Converts dots and other characters to underscores
-     * - This ensures template keys with dots (e.g., 'auth.password_reset') 
-     *   are safe when used as tag values (becomes 'auth_password_reset')
      */
     public function toArray(): array
     {
@@ -57,20 +46,14 @@ class EmailMessage
             $cleanTags = [];
 
             foreach ($this->tags as $tag) {
-                // Sanitize both tag name and value using the dedicated sanitization method
-                // This ensures Resend API requirements are met: ^[A-Za-z0-9_-]+$
                 $name = $this->sanitizeTag((string) ($tag['name'] ?? ''));
                 $value = $this->sanitizeTag((string) ($tag['value'] ?? ''));
 
-                // Trim to max length and skip empty tags
                 $name = substr($name, 0, self::MAX_TAG_LENGTH);
                 $value = substr($value, 0, self::MAX_TAG_LENGTH);
 
                 if ($name !== '' && $value !== '') {
-                    $cleanTags[] = [
-                        'name' => $name,
-                        'value' => $value,
-                    ];
+                    $cleanTags[] = ['name' => $name, 'value' => $value];
                 }
             }
 
