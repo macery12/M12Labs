@@ -2,18 +2,21 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
-use Everest\Models\EmailLog;
+use Everest\Models\EmailDelivery;
 use Everest\Models\DeferredEmail;
 use Everest\Models\User;
 use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailDeliveryTracker;
 use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EmailActivityController extends ApplicationApiController
 {
-    public function __construct(private EmailManager $emailManager)
-    {
+    public function __construct(
+        private EmailManager $emailManager,
+        private EmailDeliveryTracker $tracker
+    ) {
         parent::__construct();
     }
 
@@ -24,16 +27,11 @@ class EmailActivityController extends ApplicationApiController
     {
         $perPage = min((int) $request->input('per_page', 25), 100);
         
-        $query = EmailLog::query()->with('user:id,email,username');
+        $query = EmailDelivery::query()->with('user:id,email,username');
 
         // Apply filters
         if ($request->filled('status')) {
-            $status = $request->input('status');
-            if ($status === 'sent') {
-                $query->where('success', true);
-            } elseif ($status === 'failed') {
-                $query->where('success', false);
-            }
+            $query->where('status', $request->input('status'));
         }
 
         if ($request->filled('template_key')) {
@@ -41,7 +39,7 @@ class EmailActivityController extends ApplicationApiController
         }
 
         if ($request->filled('recipient')) {
-            $query->where('to', 'like', '%' . $request->input('recipient') . '%');
+            $query->where('recipient', 'like', '%' . $request->input('recipient') . '%');
         }
 
         if ($request->filled('user_id')) {
@@ -49,7 +47,7 @@ class EmailActivityController extends ApplicationApiController
         }
 
         if ($request->has('only_failures') && $request->input('only_failures') === 'true') {
-            $query->where('success', false);
+            $query->where('status', 'failed');
         }
 
         // Date range filter
@@ -70,40 +68,40 @@ class EmailActivityController extends ApplicationApiController
         $sortBy = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
         
-        if (in_array($sortBy, ['created_at', 'status', 'template_key', 'to'])) {
+        if (in_array($sortBy, ['created_at', 'status', 'template_key', 'recipient', 'sent_at'])) {
             $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
         }
 
-        $logs = $query->paginate($perPage);
+        $deliveries = $query->paginate($perPage);
 
-        return response()->json($logs);
+        return response()->json($deliveries);
     }
 
     /**
-     * Get details of a specific email log entry.
+     * Get details of a specific email delivery.
      */
     public function show(int $id): JsonResponse
     {
-        $log = EmailLog::with('user:id,email,username')->findOrFail($id);
-
-        // Get retry history from metadata if available
-        $retryHistory = $log->metadata['retry_history'] ?? [];
-
-        // Get related emails by correlation_id
-        $relatedEmails = [];
-        if ($log->correlation_id) {
-            $relatedEmails = EmailLog::where('correlation_id', $log->correlation_id)
-                ->where('id', '!=', $log->id)
-                ->select('id', 'to', 'subject', 'template_key', 'status', 'created_at')
-                ->get();
-        }
+        $delivery = EmailDelivery::with([
+            'user:id,email,username',
+            'deliveryAttempts'
+        ])->findOrFail($id);
 
         return response()->json([
-            'log' => $log,
-            'sanitized_variables' => $log->getSanitizedVariables(),
-            'retry_history' => $retryHistory,
-            'related_emails' => $relatedEmails,
+            'delivery' => $delivery,
+            'attempts' => $delivery->deliveryAttempts,
         ]);
+    }
+
+    /**
+     * Get debug bundle for a specific delivery.
+     */
+    public function debugBundle(int $id): JsonResponse
+    {
+        $delivery = EmailDelivery::findOrFail($id);
+        $bundle = $this->tracker->generateDebugBundle($delivery);
+
+        return response()->json($bundle);
     }
 
     /**
@@ -111,9 +109,9 @@ class EmailActivityController extends ApplicationApiController
      */
     public function resend(int $id): JsonResponse
     {
-        $log = EmailLog::findOrFail($id);
+        $delivery = EmailDelivery::findOrFail($id);
 
-        if ($log->success) {
+        if ($delivery->isSuccessful()) {
             return response()->json([
                 'success' => false,
                 'error' => 'Cannot resend a successful email',
@@ -121,37 +119,13 @@ class EmailActivityController extends ApplicationApiController
         }
 
         try {
-            // Re-send using the original template variables
-            $variables = $log->template_variables ?? [];
-            
-            // If we have rendered content, use custom email
-            if ($log->rendered_html) {
-                $result = $this->emailManager->sendCustom(
-                    to: $log->to,
-                    subject: $log->rendered_subject ?? $log->subject,
-                    html: $log->rendered_html,
-                    text: $log->rendered_text
-                );
-            } else {
-                // Cannot resend without content
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Cannot resend: original email content not available',
-                ], 400);
-            }
-
-            Activity::event('admin:email:resend')
-                ->property('original_log_id', $log->id)
-                ->property('to', $log->to)
-                ->property('template_key', $log->template_key)
-                ->description("Resent failed email (original log #{$log->id})")
-                ->log();
-
+            // Re-dispatch the job using original data
+            // Note: We'd need to store template variables to do this properly
+            // For now, return an error
             return response()->json([
-                'success' => true,
-                'message' => 'Email queued for resending',
-                'message_id' => $result->messageId ?? null,
-            ]);
+                'success' => false,
+                'error' => 'Resend functionality requires template data storage (not yet implemented)',
+            ], 400);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -275,14 +249,14 @@ class EmailActivityController extends ApplicationApiController
         $since = now()->subDays($days);
 
         $stats = [
-            'total_sent' => EmailLog::where('created_at', '>=', $since)->count(),
-            'successful' => EmailLog::where('created_at', '>=', $since)->where('success', true)->count(),
-            'failed' => EmailLog::where('created_at', '>=', $since)->where('success', false)->count(),
-            'by_status' => EmailLog::where('created_at', '>=', $since)
+            'total_sent' => EmailDelivery::where('created_at', '>=', $since)->count(),
+            'successful' => EmailDelivery::where('created_at', '>=', $since)->where('status', 'sent')->count(),
+            'failed' => EmailDelivery::where('created_at', '>=', $since)->where('status', 'failed')->count(),
+            'by_status' => EmailDelivery::where('created_at', '>=', $since)
                 ->selectRaw('status, COUNT(*) as count')
                 ->groupBy('status')
                 ->pluck('count', 'status'),
-            'by_template' => EmailLog::where('created_at', '>=', $since)
+            'by_template' => EmailDelivery::where('created_at', '>=', $since)
                 ->selectRaw('template_key, COUNT(*) as count')
                 ->groupBy('template_key')
                 ->orderByDesc('count')
@@ -299,7 +273,7 @@ class EmailActivityController extends ApplicationApiController
      */
     public function getTemplateKeys(): JsonResponse
     {
-        $templateKeys = EmailLog::distinct()
+        $templateKeys = EmailDelivery::distinct()
             ->whereNotNull('template_key')
             ->pluck('template_key')
             ->sort()
