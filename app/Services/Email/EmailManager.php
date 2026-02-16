@@ -149,7 +149,7 @@ class EmailManager
             return EmailResult::failure('From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.');
         }
 
-        // Convert template key to view path (auth.password_reset -> emails.auth.password-reset)
+        // Convert template key to view path (auth_password_reset -> emails.auth.password-reset)
         $viewPath = 'emails.' . $dotTemplateKey;
         $viewPath = str_replace('_', '-', $viewPath); // Convert underscores to hyphens for file names
 
@@ -312,23 +312,25 @@ class EmailManager
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
+        $templateKey = str_replace('.', '_', $templateKey);
+
         $subjects = [
-            'auth.account_created' => 'Welcome to Your Account',
-            'auth.email_verification' => 'Verify Your Email Address',
-            'auth.password_reset' => 'Reset Your Password',
-            'auth.password_changed' => 'Your Password Has Been Changed',
-            'auth.new_login' => 'New Login Detected',
-            'auth.account_locked' => 'Your Account Has Been Suspended',
-            'auth.account_unsuspended' => 'Your Account Has Been Restored',
-            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server.created' => 'Your Server Has Been Created',
-            'server.suspended' => 'Your Server Has Been Suspended',
-            'server.unsuspended' => 'Your Server Has Been Unsuspended',
-            'server.expiring_soon' => 'Your Server Is Expiring Soon',
-            'billing.payment_received' => 'Payment Received - Thank You',
-            'billing.payment_failed' => 'Payment Failed - Action Required',
-            'billing.server_renewal_notice' => 'Server Renewal Notice - Action Required',
+            'auth_account_created' => 'Welcome to Your Account',
+            'auth_email_verification' => 'Verify Your Email Address',
+            'auth_password_reset' => 'Reset Your Password',
+            'auth_password_changed' => 'Your Password Has Been Changed',
+            'auth_new_login' => 'New Login Detected',
+            'auth_account_locked' => 'Your Account Has Been Suspended',
+            'auth_account_unsuspended' => 'Your Account Has Been Restored',
+            'auth_2fa_enabled' => 'Two-Factor Authentication Enabled',
+            'auth_2fa_disabled' => 'Two-Factor Authentication Disabled',
+            'server_created' => 'Your Server Has Been Created',
+            'server_suspended' => 'Your Server Has Been Suspended',
+            'server_unsuspended' => 'Your Server Has Been Unsuspended',
+            'server_expiring_soon' => 'Your Server Is Expiring Soon',
+            'billing_payment_received' => 'Payment Received - Thank You',
+            'billing_payment_failed' => 'Payment Failed - Action Required',
+            'billing_server_renewal_notice' => 'Server Renewal Notice - Action Required',
         ];
 
         return $subjects[$templateKey] ?? 'Notification';

@@ -13,13 +13,9 @@ class EmailNotificationSettingTest extends TestCase
         $this->assertSame('billing_server_renewal_notice', EmailNotificationSetting::normalizeTemplateKey('billing.server_renewal_notice'));
     }
 
-    public function testLegacyDotTemplateConversionFromNormalizedKey(): void
+    public function testNormalizeTemplateKeyKeepsUnderscoreFormatAsIs(): void
     {
-        $reflection = new \ReflectionClass(EmailNotificationSetting::class);
-        $method = $reflection->getMethod('toLegacyDotTemplateKey');
-        $method->setAccessible(true);
-
-        $this->assertSame('auth.password_reset', $method->invoke(null, 'auth_password_reset'));
-        $this->assertSame('billing.server_renewal_notice', $method->invoke(null, 'billing_server_renewal_notice'));
+        $this->assertSame('auth_password_reset', EmailNotificationSetting::normalizeTemplateKey('auth_password_reset'));
+        $this->assertSame('billing_server_renewal_notice', EmailNotificationSetting::normalizeTemplateKey('billing_server_renewal_notice'));
     }
 }

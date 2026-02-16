@@ -44,7 +44,7 @@ class EmailNotificationSetting extends Model
             return false;
         }
 
-        $setting = static::findByTemplateKey($templateKey);
+        $setting = static::where('template_key', self::normalizeTemplateKey($templateKey))->first();
         
         return $setting ? $setting->enabled : false;
     }
@@ -54,7 +54,7 @@ class EmailNotificationSetting extends Model
      */
     public static function isRateLimitExempt(string $templateKey): bool
     {
-        $setting = static::findByTemplateKey($templateKey);
+        $setting = static::where('template_key', self::normalizeTemplateKey($templateKey))->first();
         
         return $setting ? $setting->rate_limit_exempt : false;
     }
@@ -62,52 +62,6 @@ class EmailNotificationSetting extends Model
     public static function normalizeTemplateKey(string $templateKey): string
     {
         return str_replace('.', '_', $templateKey);
-    }
-
-    private static function toLegacyDotTemplateKey(string $templateKey): string
-    {
-        if (str_contains($templateKey, '.')) {
-            return $templateKey;
-        }
-
-        $parts = explode('_', $templateKey, 2);
-        if (count($parts) === 2) {
-            return $parts[0] . '.' . $parts[1];
-        }
-
-        return $templateKey;
-    }
-
-    private static function templateKeyCandidates(string $templateKey): array
-    {
-        return array_values(array_unique([
-            self::normalizeTemplateKey($templateKey),
-            self::toLegacyDotTemplateKey($templateKey),
-            $templateKey,
-        ]));
-    }
-
-    private static function findByTemplateKey(string $templateKey): ?self
-    {
-        $normalized = self::normalizeTemplateKey($templateKey);
-        $setting = static::where('template_key', $normalized)->first();
-        if ($setting) {
-            return $setting;
-        }
-
-        $legacy = self::toLegacyDotTemplateKey($templateKey);
-        if ($legacy !== $normalized) {
-            $setting = static::where('template_key', $legacy)->first();
-            if ($setting) {
-                return $setting;
-            }
-        }
-
-        if ($templateKey !== $normalized && $templateKey !== $legacy) {
-            return static::where('template_key', $templateKey)->first();
-        }
-
-        return null;
     }
 
     /**

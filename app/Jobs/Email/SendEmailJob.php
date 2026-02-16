@@ -55,7 +55,7 @@ class SendEmailJob extends Job implements ShouldQueue
         $dedupeKey = $this->dispatchDedupeKey($correlationId, $logTemplateKey);
 
         Log::info('SendEmailJob: Starting', [
-            'template_key' => $this->templateKey,
+            'template_key' => $logTemplateKey,
             'recipient' => $this->recipient,
             'correlation_id' => $correlationId,
         ]);
