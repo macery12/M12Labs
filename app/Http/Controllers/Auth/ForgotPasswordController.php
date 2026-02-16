@@ -2,18 +2,25 @@
 
 namespace Everest\Http\Controllers\Auth;
 
+use Everest\Models\User;
+use Everest\Models\EmailNotificationSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserUpdateService;
+use Everest\Services\Auth\PasswordResetService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ForgotPasswordController extends AbstractLoginController
 {
     /**
      * ForgotPasswordController constructor.
      */
-    public function __construct(private UserUpdateService $updateService)
+    public function __construct(
+        private UserUpdateService $updateService,
+        private PasswordResetService $passwordResetService
+    )
     {
         parent::__construct();
     }
@@ -21,11 +28,11 @@ class ForgotPasswordController extends AbstractLoginController
     /**
      * Validate the information provided for resetting a password.
      */
-    protected function verify(Request $request): JsonResponse|RedirectResponse
+    public function verify(Request $request): JsonResponse|RedirectResponse
     {
         try {
             $user = User::where('email', $request->input('email'))->firstOrFail();
-        } catch (DisplayException $ex) {
+        } catch (ModelNotFoundException $ex) {
             throw new DisplayException('The information provided was incorrect.');
         }
 
@@ -40,9 +47,69 @@ class ForgotPasswordController extends AbstractLoginController
         $user = $this->updateService->handle($user, ['password' => $request->input('password')]);
 
         if (!$user->use_totp) {
-            $this->sendLoginResponse($user, $request);
-        } else {
-            redirect()->route('auth.login');
+            return $this->sendLoginResponse($user, $request);
         }
+
+        return response()->json(['redirect_to' => route('auth.login')]);
+    }
+
+    public function method(): JsonResponse
+    {
+        return response()->json([
+            'method' => $this->isEmailResetEnabled() ? 'email' : 'recovery_code',
+        ]);
+    }
+
+    public function requestEmailReset(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $this->passwordResetService->sendResetLink($request->string('email')->toString());
+
+        return response()->json([
+            'message' => 'If account exists, reset email sent',
+        ]);
+    }
+
+    public function resetWithToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $success = $this->passwordResetService->resetPassword(
+            $request->string('email')->toString(),
+            $request->string('token')->toString(),
+            $request->string('password')->toString()
+        );
+
+        if (!$success) {
+            throw new DisplayException('The password reset token is invalid or has expired.');
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    private function isEmailResetEnabled(): bool
+    {
+        if (!EmailNotificationSetting::isEnabled('auth.password_reset')) {
+            return false;
+        }
+
+        $mailer = config('mail.default');
+
+        if (in_array($mailer, ['array', 'log'], true)) {
+            return false;
+        }
+
+        if (!config('mail.from.address')) {
+            return false;
+        }
+
+        return $mailer !== 'smtp' || (bool) config('mail.mailers.smtp.host');
     }
 }

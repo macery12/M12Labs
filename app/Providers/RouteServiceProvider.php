@@ -63,6 +63,10 @@ class RouteServiceProvider extends ServiceProvider
                 ->scopeBindings()
                 ->group(base_path('routes/api-remote.php'));
 
+            Route::middleware(['api', 'guest'])
+                ->prefix('/api')
+                ->group(base_path('routes/api-auth.php'));
+
             // Payment webhooks - no authentication required
             Route::prefix('/api')
                 ->group(base_path('routes/webhooks.php'));
@@ -109,6 +113,14 @@ class RouteServiceProvider extends ServiceProvider
                 config('http.rate_limit.application_period'),
                 config('http.rate_limit.application')
             )->by($key);
+        });
+
+        RateLimiter::for('password-reset-ip', fn (Request $request) => Limit::perHour(3)->by($request->ip()));
+
+        RateLimiter::for('password-reset-email', function (Request $request) {
+            $email = strtolower((string) $request->input('email', ''));
+
+            return Limit::perHour(5)->by($email !== '' ? $email : $request->ip());
         });
     }
 }

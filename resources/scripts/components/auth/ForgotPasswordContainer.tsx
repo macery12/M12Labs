@@ -1,11 +1,15 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
-import { requestPasswordReset } from '@/api/routes/auth/password-reset';
+import {
+    getPasswordResetMethod,
+    requestPasswordReset,
+    requestPasswordResetEmail,
+} from '@/api/routes/auth/password-reset';
 import { httpErrorToHuman } from '@/api/http';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import Turnstile from '@/components/elements/Turnstile';
@@ -22,12 +26,16 @@ interface Values {
 
 function ForgotPasswordContainer() {
     const token = useRef('');
+    const [resetMethod, setResetMethod] = useState<'email' | 'recovery_code'>('email');
 
     const { clearFlashes, addFlash } = useFlash();
     const { enabled: captchaEnabled, siteKey } = useStoreState(state => state.settings.data!.captcha);
 
     useEffect(() => {
         clearFlashes();
+        getPasswordResetMethod()
+            .then(method => setResetMethod(method))
+            .catch(() => setResetMethod('recovery_code'));
     }, []);
 
     const handleSubmission = (
@@ -36,7 +44,12 @@ function ForgotPasswordContainer() {
     ) => {
         clearFlashes();
 
-        requestPasswordReset(email, code, password, password_confirm, token.current)
+        const request =
+            resetMethod === 'email'
+                ? requestPasswordResetEmail(email)
+                : requestPasswordReset(email, code, password, password_confirm, token.current);
+
+        request
             .then(response => {
                 resetForm();
                 addFlash({ type: 'success', title: 'Success', message: response });
@@ -47,7 +60,6 @@ function ForgotPasswordContainer() {
             })
             .then(() => {
                 token.current = '';
-
                 setSubmitting(false);
             });
     };
@@ -60,9 +72,12 @@ function ForgotPasswordContainer() {
                 email: string()
                     .email('A valid email address must be provided to continue.')
                     .required('A valid email address must be provided to continue.'),
-                code: string().required('You must enter your account recovery code to continue.'),
-                password: string().min(8).required(),
-                password_confirm: string().min(8).required(),
+                code:
+                    resetMethod === 'recovery_code'
+                        ? string().required('You must enter your account recovery code to continue.')
+                        : string(),
+                password: resetMethod === 'recovery_code' ? string().min(8).required() : string(),
+                password_confirm: resetMethod === 'recovery_code' ? string().min(8).required() : string(),
             })}
         >
             {({ isSubmitting }) => (
@@ -73,41 +88,47 @@ function ForgotPasswordContainer() {
                         name={'email'}
                         type={'email'}
                     />
-                    <div className={'mt-6'}>
-                        <Field
-                            label={'Account Recovery Code'}
-                            description={
-                                "Enter the account recovery code you were given when your account was created. Don't have this code? Contact our support for assistance."
-                            }
-                            name={'code'}
-                            type={'text'}
-                        />
-                    </div>
-                    <div className={'my-6'}>
-                        <Field
-                            label={'New Password'}
-                            description={"Enter the new password you'd like to use for this user account."}
-                            name={'password'}
-                            type={'password'}
-                        />
-                    </div>
-                    <Field
-                        label={'Confirm New Password'}
-                        description={'For extra security, re-enter the above password.'}
-                        name={'password_confirm'}
-                        type={'password'}
-                    />
+                    {resetMethod === 'recovery_code' && (
+                        <>
+                            <div className={'mt-6'}>
+                                <Field
+                                    label={'Account Recovery Code'}
+                                    description={
+                                        "Enter the account recovery code you were given when your account was created. Don't have this code? Contact our support for assistance."
+                                    }
+                                    name={'code'}
+                                    type={'text'}
+                                />
+                            </div>
+                            <div className={'my-6'}>
+                                <Field
+                                    label={'New Password'}
+                                    description={"Enter the new password you'd like to use for this user account."}
+                                    name={'password'}
+                                    type={'password'}
+                                />
+                            </div>
+                            <Field
+                                label={'Confirm New Password'}
+                                description={'For extra security, re-enter the above password.'}
+                                name={'password_confirm'}
+                                type={'password'}
+                            />
+                        </>
+                    )}
                     <div css={tw`mt-6`}>
                         <Button
                             type={'submit'}
                             className={'w-full'}
                             size={Button.Sizes.Large}
-                            disabled={isSubmitting || (captchaEnabled && !token.current)}
+                            disabled={
+                                isSubmitting || (resetMethod === 'recovery_code' && captchaEnabled && !token.current)
+                            }
                         >
-                            Reset Password
+                            {resetMethod === 'email' ? 'Send Reset Link' : 'Reset Password'}
                         </Button>
                     </div>
-                    {captchaEnabled && siteKey && (
+                    {resetMethod === 'recovery_code' && captchaEnabled && siteKey && (
                         <div css={tw`mt-4 flex justify-center`}>
                             <Turnstile
                                 siteKey={siteKey}

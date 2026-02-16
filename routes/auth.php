@@ -49,8 +49,7 @@ Route::middleware(['throttle:authentication'])->group(function () {
         ->middleware('captcha')
         ->name('auth.modules.google.authenticate');
 
-    // Forgot password route. A post to this endpoint will trigger an
-    // email to be sent containing a reset token.
+    // Recovery code based password reset endpoint.
     Route::post('/password', [Auth\ForgotPasswordController::class, 'verify'])
         ->name('auth.post.forgot-password')
         ->middleware('captcha');
