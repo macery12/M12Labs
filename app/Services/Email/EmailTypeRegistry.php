@@ -83,7 +83,23 @@ class EmailTypeRegistry
         // Normalize to underscore format (dots to underscores)
         $normalizedKey = str_replace('.', '_', $templateKey);
         
-        return self::TEMPLATE_VARIABLES[$normalizedKey] ?? [];
+        // Debug logging to diagnose the issue
+        \Illuminate\Support\Facades\Log::debug('EmailTypeRegistry::getAllowedVariables called', [
+            'original_key' => $templateKey,
+            'normalized_key' => $normalizedKey,
+            'has_key_in_array' => isset(self::TEMPLATE_VARIABLES[$normalizedKey]),
+            'array_keys' => array_keys(self::TEMPLATE_VARIABLES),
+        ]);
+        
+        $result = self::TEMPLATE_VARIABLES[$normalizedKey] ?? [];
+        
+        \Illuminate\Support\Facades\Log::debug('EmailTypeRegistry::getAllowedVariables result', [
+            'template_key' => $normalizedKey,
+            'result' => $result,
+            'result_count' => count($result),
+        ]);
+        
+        return $result;
     }
 
     /**
