@@ -73,6 +73,10 @@ class EmailTypeRegistry
     /**
      * Get allowed variables for a template.
      * Normalizes the template key to underscore format.
+     * 
+     * This method accepts both dot notation (legacy) and underscore notation:
+     * - 'auth.password_reset' → normalized to 'auth_password_reset'
+     * - 'auth_password_reset' → stays as 'auth_password_reset'
      */
     public static function getAllowedVariables(string $templateKey): array
     {
@@ -85,14 +89,16 @@ class EmailTypeRegistry
     /**
      * Validate that data contains only allowed variables.
      * Returns array of [valid_data, errors].
+     * 
      * Normalizes template key to underscore format for consistent validation.
+     * Error messages intentionally use the normalized key to reflect the internal format.
      */
     public static function validateVariables(string $templateKey, array $data): array
     {
         // Normalize template key to underscore format
+        // Error messages will use this normalized format for consistency
         $normalizedKey = str_replace('.', '_', $templateKey);
         
-        // Pass normalized key to avoid redundant normalization
         $allowed = self::getAllowedVariables($normalizedKey);
         $errors = [];
         $validData = [];
