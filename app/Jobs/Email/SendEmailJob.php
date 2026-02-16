@@ -3,12 +3,13 @@
 namespace Everest\Jobs\Email;
 
 use Everest\Jobs\Job;
-use Everest\Models\EmailLog;
+use Everest\Models\EmailDelivery;
 use Everest\Models\EmailQuota;
 use Everest\Models\DeferredEmail;
 use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Email\EmailTypeRegistry;
+use Everest\Services\Email\EmailDeliveryTracker;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -32,6 +33,7 @@ class SendEmailJob extends Job implements ShouldQueue
 
     /**
      * Create a new job instance.
+     * Note: correlationId should ALWAYS be provided by EmailNotificationListener.
      */
     public function __construct(
         public string $templateKey,
@@ -40,27 +42,48 @@ class SendEmailJob extends Job implements ShouldQueue
         public ?int $userId = null,
         public ?string $correlationId = null
     ) {
+        // Ensure we have correlation_id (fallback only for direct job dispatch)
+        $this->correlationId = $correlationId ?? \Illuminate\Support\Str::uuid()->toString();
     }
 
     /**
      * Execute the job.
      */
-    public function handle(EmailManager $emailManager): void
+    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker): void
     {
-        $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
-
         Log::info('SendEmailJob: Starting', [
             'template_key' => $this->templateKey,
             'recipient' => $this->recipient,
-            'correlation_id' => $correlationId,
+            'correlation_id' => $this->correlationId,
+            'attempt' => $this->attempts(),
         ]);
+
+        // Get subject for the email
+        $subject = $this->getSubjectForTemplate($this->templateKey);
+
+        // Check for existing delivery or create new one
+        $delivery = $tracker->findByCorrelationId($this->correlationId);
+        
+        if (!$delivery) {
+            // First attempt - create delivery record
+            $delivery = $tracker->startDelivery(
+                correlationId: $this->correlationId,
+                recipient: $this->recipient,
+                subject: $subject,
+                templateKey: $this->templateKey,
+                userId: $this->userId,
+                tags: $this->buildTags()
+            );
+        }
 
         // Check if this email type is enabled
         if (!EmailNotificationSetting::isEnabled($this->templateKey)) {
             Log::info('SendEmailJob: Email type disabled', [
                 'template_key' => $this->templateKey,
-                'correlation_id' => $correlationId,
+                'correlation_id' => $this->correlationId,
             ]);
+            
+            $tracker->markSkipped($delivery, "Email type '{$this->templateKey}' is disabled");
             return;
         }
 
@@ -80,15 +103,17 @@ class SendEmailJob extends Job implements ShouldQueue
                     'user_id' => $this->userId,
                     'reason' => $reason,
                     'scheduled_at' => $nextAvailable,
-                    'correlation_id' => $correlationId,
+                    'correlation_id' => $this->correlationId,
                 ]);
+
+                $tracker->markDeferred($delivery, $reason, $nextAvailable);
 
                 DeferredEmail::create([
                     'user_id' => $this->userId,
                     'template_key' => $this->templateKey,
                     'recipient' => $this->recipient,
                     'data' => $this->data,
-                    'correlation_id' => $correlationId,
+                    'correlation_id' => $this->correlationId,
                     'reason' => $reason,
                     'scheduled_at' => $nextAvailable,
                 ]);
@@ -104,50 +129,37 @@ class SendEmailJob extends Job implements ShouldQueue
             Log::error('SendEmailJob: Variable validation failed', [
                 'template_key' => $this->templateKey,
                 'errors' => $errors,
-                'correlation_id' => $correlationId,
+                'correlation_id' => $this->correlationId,
             ]);
 
-            // Don't log here - EmailManager will log the failure when the exception is caught
             throw new \Exception('Variable validation failed: ' . implode(', ', $errors));
         }
 
-        // Send the email
-        try {
-            $result = $emailManager->sendFromTemplate(
-                $this->templateKey,
-                $this->recipient,
-                $validData,
-                $correlationId,
-                $this->userId
-            );
+        // Send the email - EmailManager will use tracker to log attempts
+        $result = $emailManager->sendFromTemplate(
+            templateKey: $this->templateKey,
+            recipient: $this->recipient,
+            data: $validData,
+            correlationId: $this->correlationId,
+            userId: $this->userId,
+            delivery: $delivery,
+            attemptNumber: $this->attempts()
+        );
 
-            if (!$result->success) {
-                throw new \Exception($result->error ?? 'Unknown error');
-            }
-
-            Log::info('SendEmailJob: Email sent successfully', [
-                'template_key' => $this->templateKey,
-                'recipient' => $this->recipient,
-                'message_id' => $result->messageId,
-                'correlation_id' => $correlationId,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('SendEmailJob: Failed to send email', [
-                'template_key' => $this->templateKey,
-                'recipient' => $this->recipient,
-                'error' => $e->getMessage(),
-                'correlation_id' => $correlationId,
-            ]);
-
-            throw $e;
+        if (!$result->success) {
+            throw new \Exception($result->error ?? 'Unknown error');
         }
+
+        Log::info('SendEmailJob: Email sent successfully', [
+            'template_key' => $this->templateKey,
+            'recipient' => $this->recipient,
+            'message_id' => $result->messageId,
+            'correlation_id' => $this->correlationId,
+        ]);
     }
 
     /**
      * Handle a job failure.
-     * 
-     * Note: We don't create EmailLog here because EmailManager already logged
-     * the failure when the exception was thrown. This prevents duplicate logs.
      */
     public function failed(\Throwable $exception): void
     {
@@ -158,7 +170,49 @@ class SendEmailJob extends Job implements ShouldQueue
             'correlation_id' => $this->correlationId,
         ]);
 
-        // EmailManager has already created the failure log
-        // No need to log again here
+        // The final attempt failure has already been logged by EmailManager
+        // No additional action needed here
+    }
+
+    /**
+     * Get subject for template.
+     */
+    private function getSubjectForTemplate(string $templateKey): string
+    {
+        $subjects = [
+            'auth.account_created' => 'Welcome to ' . config('app.name'),
+            'auth.account_locked' => 'Your Account Has Been Locked',
+            'auth.account_unsuspended' => 'Your Account Has Been Reactivated',
+            'auth.password_reset' => 'Reset Your Password',
+            'auth.password_changed' => 'Your Password Has Been Changed',
+            'auth.new_login' => 'New Login Detected',
+            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
+            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
+            'server.created' => 'Your Server Has Been Created',
+            'server.suspended' => 'Server Suspended',
+            'server.unsuspended' => 'Server Reactivated',
+            'billing.payment_received' => 'Payment Received',
+            'billing.payment_failed' => 'Payment Failed',
+            'billing.server_renewal_notice' => 'Server Renewal Notice',
+        ];
+
+        return $subjects[$templateKey] ?? 'Notification from ' . config('app.name');
+    }
+
+    /**
+     * Build tags for the email.
+     */
+    private function buildTags(): array
+    {
+        return [
+            [
+                'name' => 'template_key',
+                'value' => $this->templateKey,
+            ],
+            [
+                'name' => 'correlation_id',
+                'value' => $this->correlationId,
+            ],
+        ];
     }
 }
