@@ -29,10 +29,16 @@ const requestPasswordReset = (
     code: string,
     password: string,
     password_confirm: string,
-    ...rest: any[]
+    captchaToken?: string,
 ): Promise<string> => {
     return new Promise((resolve, reject) => {
-        http.post('/auth/password', { email, code, password, password_confirm, ...rest })
+        http.post('/auth/password', {
+            email,
+            code,
+            password,
+            password_confirm,
+            'cf-turnstile-response': captchaToken ?? '',
+        })
             .then(response => resolve(response.data.status || ''))
             .catch(reject);
     });
@@ -46,9 +52,9 @@ const getPasswordResetMethod = (): Promise<PasswordResetMethod> => {
     });
 };
 
-const requestPasswordResetEmail = (email: string): Promise<string> => {
+const requestPasswordResetEmail = (email: string, captchaToken?: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-        http.post('/auth/password-reset/email', { email })
+        http.post('/auth/password-reset/email', { email, 'cf-turnstile-response': captchaToken ?? '' })
             .then(response => resolve(response.data.message || 'If account exists, reset email sent'))
             .catch(reject);
     });
@@ -57,6 +63,7 @@ const requestPasswordResetEmail = (email: string): Promise<string> => {
 const resetPasswordWithToken = (
     email: string,
     data: { token: string; password: string; passwordConfirmation: string },
+    captchaToken?: string,
 ): Promise<boolean> => {
     return new Promise((resolve, reject) => {
         http.post('/auth/password-reset/reset', {
@@ -64,6 +71,7 @@ const resetPasswordWithToken = (
             token: data.token,
             password: data.password,
             password_confirmation: data.passwordConfirmation,
+            'cf-turnstile-response': captchaToken ?? '',
         })
             .then(response => resolve(Boolean(response.data.success)))
             .catch(reject);

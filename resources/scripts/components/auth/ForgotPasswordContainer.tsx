@@ -49,7 +49,7 @@ function ForgotPasswordContainer() {
 
         const request =
             resetMethod === 'email'
-                ? requestPasswordResetEmail(email)
+                ? requestPasswordResetEmail(email, token.current)
                 : requestPasswordReset(email, code, password, password_confirm, token.current);
 
         request
@@ -124,14 +124,12 @@ function ForgotPasswordContainer() {
                             type={'submit'}
                             className={'w-full'}
                             size={Button.Sizes.Large}
-                            disabled={
-                                isSubmitting || (resetMethod === 'recovery_code' && captchaEnabled && !token.current)
-                            }
+                            disabled={isSubmitting || (captchaEnabled && !token.current)}
                         >
                             {resetMethod === 'email' ? 'Send Reset Link' : 'Reset Password'}
                         </Button>
                     </div>
-                    {resetMethod === 'recovery_code' && captchaEnabled && siteKey && (
+                    {captchaEnabled && siteKey && (
                         <div css={tw`mt-4 flex justify-center`}>
                             <Turnstile
                                 siteKey={siteKey}

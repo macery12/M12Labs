@@ -12,6 +12,7 @@ use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Services\Auth\PasswordResetService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\Rules\Password;
 
 class ForgotPasswordController extends AbstractLoginController
 {
@@ -81,7 +82,16 @@ class ForgotPasswordController extends AbstractLoginController
         $request->validate([
             'email' => 'required|email',
             'token' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised(),
+            ],
         ]);
 
         $success = $this->passwordResetService->resetPassword(
@@ -103,8 +113,8 @@ class ForgotPasswordController extends AbstractLoginController
             return false;
         }
 
-        $emailModuleEnabled = strtolower((string) Setting::get('settings::modules:email:resend:enabled', 'false'));
-        if (in_array($emailModuleEnabled, ['1', 'true', 'yes', 'on'], true)) {
+        $emailResendEnabled = (string) Setting::get('settings::modules:email:resend:enabled', '0') === '1';
+        if ($emailResendEnabled) {
             return true;
         }
 

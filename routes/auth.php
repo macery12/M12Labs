@@ -20,10 +20,10 @@ Route::get('/password/reset/{token}', [Auth\LoginController::class, 'index'])->n
 Route::prefix('/password-reset')->group(function () {
     Route::get('/method', [Auth\ForgotPasswordController::class, 'method'])->name('auth.password-reset.method');
     Route::post('/email', [Auth\ForgotPasswordController::class, 'requestEmailReset'])
-        ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email'])
+        ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email', 'captcha'])
         ->name('auth.password-reset.email');
     Route::post('/reset', [Auth\ForgotPasswordController::class, 'resetWithToken'])
-        ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email'])
+        ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email', 'captcha'])
         ->name('auth.password-reset.reset');
 });
 
