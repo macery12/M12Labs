@@ -40,7 +40,7 @@ const requestPasswordReset = (
 
 const getPasswordResetMethod = (): Promise<PasswordResetMethod> => {
     return new Promise((resolve, reject) => {
-        http.get('/api/auth/password-reset/method')
+        http.get('/auth/password-reset/method')
             .then(response => resolve(response.data.method))
             .catch(reject);
     });
@@ -48,7 +48,7 @@ const getPasswordResetMethod = (): Promise<PasswordResetMethod> => {
 
 const requestPasswordResetEmail = (email: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-        http.post('/api/auth/password-reset/email', { email })
+        http.post('/auth/password-reset/email', { email })
             .then(response => resolve(response.data.message || 'If account exists, reset email sent'))
             .catch(reject);
     });
@@ -59,7 +59,7 @@ const resetPasswordWithToken = (
     data: { token: string; password: string; passwordConfirmation: string },
 ): Promise<boolean> => {
     return new Promise((resolve, reject) => {
-        http.post('/api/auth/password-reset/reset', {
+        http.post('/auth/password-reset/reset', {
             email,
             token: data.token,
             password: data.password,
