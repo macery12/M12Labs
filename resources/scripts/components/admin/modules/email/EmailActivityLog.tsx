@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     getEmailLogs,
@@ -70,7 +70,9 @@ export default () => {
     const [templateKeys, setTemplateKeys] = useState<string[]>([]);
     const [selectedLog, setSelectedLog] = useState<number | null>(null);
     const [showFilters, setShowFilters] = useState(true);
+    const [recipientInput, setRecipientInput] = useState(searchParams.get('recipient') || '');
     const { addFlash } = useFlash();
+    const recipientDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -113,8 +115,35 @@ export default () => {
         }
     };
 
+    const handleRecipientChange = (value: string) => {
+        setRecipientInput(value);
+        
+        // Clear existing timeout
+        if (recipientDebounceRef.current) {
+            clearTimeout(recipientDebounceRef.current);
+        }
+        
+        // Set new timeout for 3 seconds
+        recipientDebounceRef.current = setTimeout(() => {
+            updateFilter('recipient', value);
+        }, 3000);
+    };
+
+    useEffect(() => {
+        // Cleanup on unmount
+        return () => {
+            if (recipientDebounceRef.current) {
+                clearTimeout(recipientDebounceRef.current);
+            }
+        };
+    }, []);
+
     const updateFilter = (key: string, value: any) => {
-        const newFilters = { ...filters, [key]: value, page: 1 };
+        const newFilters = { ...filters, [key]: value };
+        // Reset to page 1 only when changing filters, not when changing page itself
+        if (key !== 'page') {
+            newFilters.page = 1;
+        }
         setFilters(newFilters);
 
         // Update URL params
@@ -138,6 +167,7 @@ export default () => {
             page: 1,
         };
         setFilters(newFilters);
+        setRecipientInput('');
         setSearchParams(new URLSearchParams());
     };
 
@@ -192,14 +222,11 @@ export default () => {
 
                     <FilterGrid>
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-gray-400'>Status</label>
+                            <label className='block text-sm font-medium mb-1 text-neutral-400'>Status</label>
                             <Select value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
                                 <option value=''>All Statuses</option>
-                                <option value='sent'>Sent</option>
+                                <option value='sent'>Sent (Success)</option>
                                 <option value='failed'>Failed</option>
-                                <option value='deferred'>Deferred</option>
-                                <option value='blocked'>Blocked</option>
-                                <option value='skipped'>Skipped</option>
                             </Select>
                         </div>
 
@@ -219,13 +246,14 @@ export default () => {
                         </div>
 
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-gray-400'>Recipient</label>
+                            <label className='block text-sm font-medium mb-1 text-neutral-400'>Recipient</label>
                             <Input
                                 type='text'
                                 placeholder='Search recipient...'
-                                value={filters.recipient}
-                                onChange={(e) => updateFilter('recipient', e.target.value)}
+                                value={recipientInput}
+                                onChange={(e) => handleRecipientChange(e.target.value)}
                             />
+                            <p className='text-xs text-neutral-500 mt-1'>Auto-searches 3 seconds after you stop typing</p>
                         </div>
 
                         <div>

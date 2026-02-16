@@ -28,7 +28,12 @@ class EmailActivityController extends ApplicationApiController
 
         // Apply filters
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $status = $request->input('status');
+            if ($status === 'sent') {
+                $query->where('success', true);
+            } elseif ($status === 'failed') {
+                $query->where('success', false);
+            }
         }
 
         if ($request->filled('template_key')) {
