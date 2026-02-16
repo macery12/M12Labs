@@ -47,12 +47,15 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     public function handle(EmailManager $emailManager): void
     {
-        $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
+        // Ensure we have a correlation_id and store it for use in failed() method
+        if (!$this->correlationId) {
+            $this->correlationId = \Illuminate\Support\Str::uuid()->toString();
+        }
 
         Log::info('SendEmailJob: Starting', [
             'template_key' => $this->templateKey,
             'recipient' => $this->recipient,
-            'correlation_id' => $correlationId,
+            'correlation_id' => $this->correlationId,
             'attempt' => $this->attempts(),
         ]);
 
@@ -63,7 +66,7 @@ class SendEmailJob extends Job implements ShouldQueue
         // This ensures we have a single log row from the start
         $log = EmailLog::updateOrCreate(
             [
-                'correlation_id' => $correlationId,
+                'correlation_id' => $this->correlationId,
             ],
             [
                 'to' => $this->recipient,
@@ -81,7 +84,7 @@ class SendEmailJob extends Job implements ShouldQueue
         if (!EmailNotificationSetting::isEnabled($this->templateKey)) {
             Log::info('SendEmailJob: Email type disabled', [
                 'template_key' => $this->templateKey,
-                'correlation_id' => $correlationId,
+                'correlation_id' => $this->correlationId,
             ]);
             
             // Update log to skipped status
@@ -109,7 +112,7 @@ class SendEmailJob extends Job implements ShouldQueue
                     'user_id' => $this->userId,
                     'reason' => $reason,
                     'scheduled_at' => $nextAvailable,
-                    'correlation_id' => $correlationId,
+                    'correlation_id' => $this->correlationId,
                 ]);
 
                 DeferredEmail::create([
@@ -117,7 +120,7 @@ class SendEmailJob extends Job implements ShouldQueue
                     'template_key' => $this->templateKey,
                     'recipient' => $this->recipient,
                     'data' => $this->data,
-                    'correlation_id' => $correlationId,
+                    'correlation_id' => $this->correlationId,
                     'reason' => $reason,
                     'scheduled_at' => $nextAvailable,
                 ]);
@@ -139,7 +142,7 @@ class SendEmailJob extends Job implements ShouldQueue
             Log::error('SendEmailJob: Variable validation failed', [
                 'template_key' => $this->templateKey,
                 'errors' => $errors,
-                'correlation_id' => $correlationId,
+                'correlation_id' => $this->correlationId,
             ]);
 
             // Update log to failed status
@@ -159,7 +162,7 @@ class SendEmailJob extends Job implements ShouldQueue
                 $this->templateKey,
                 $this->recipient,
                 $validData,
-                $correlationId,
+                $this->correlationId,
                 $this->userId
             );
 
@@ -173,7 +176,7 @@ class SendEmailJob extends Job implements ShouldQueue
                 'template_key' => $this->templateKey,
                 'recipient' => $this->recipient,
                 'message_id' => $result->messageId,
-                'correlation_id' => $correlationId,
+                'correlation_id' => $this->correlationId,
                 'duration_ms' => $durationMs,
             ]);
         } catch (\Exception $e) {
@@ -181,7 +184,7 @@ class SendEmailJob extends Job implements ShouldQueue
                 'template_key' => $this->templateKey,
                 'recipient' => $this->recipient,
                 'error' => $e->getMessage(),
-                'correlation_id' => $correlationId,
+                'correlation_id' => $this->correlationId,
                 'attempt' => $this->attempts(),
             ]);
 
@@ -192,8 +195,8 @@ class SendEmailJob extends Job implements ShouldQueue
     /**
      * Handle a job failure.
      * 
-     * Note: We don't create EmailLog here because EmailManager already logged
-     * the failure when the exception was thrown. This prevents duplicate logs.
+     * Updates the log entry to failed status. The log entry should already exist
+     * from the handle() method, and correlationId is guaranteed to be set.
      */
     public function failed(\Throwable $exception): void
     {
@@ -203,14 +206,15 @@ class SendEmailJob extends Job implements ShouldQueue
             'error' => $exception->getMessage(),
             'correlation_id' => $this->correlationId,
         ]);
-
-        // Update the log entry to failed status
-        $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
         
-        EmailLog::where('correlation_id', $correlationId)->update([
-            'status' => 'failed',
-            'error' => $exception->getMessage(),
-        ]);
+        // Update the existing log entry to failed status
+        // correlationId is guaranteed to be set (either from constructor or generated in handle())
+        if ($this->correlationId) {
+            EmailLog::where('correlation_id', $this->correlationId)->update([
+                'status' => 'failed',
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**
