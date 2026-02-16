@@ -39,7 +39,8 @@ class EmailNotificationSetting extends Model
     public static function isEnabled(string $templateKey): bool
     {
         // Check global kill switch
-        if ((string) Setting::get('settings::modules:email:notifications:global_enabled', '1') !== '1') {
+        $globalEnabled = strtolower((string) Setting::get('settings::modules:email:notifications:global_enabled', '1'));
+        if (!in_array($globalEnabled, ['1', 'true', 'yes', 'on'], true)) {
             return false;
         }
 
