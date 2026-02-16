@@ -12,7 +12,8 @@ class ResendServiceTest extends TestCase
 {
     public function testSendDoesNotCreateStandaloneEmailLogEntries(): void
     {
-        m::mock('alias:Everest\Models\EmailLog')
+        $emailLog = m::mock('alias:Everest\Models\EmailLog');
+        $emailLog
             ->shouldReceive('create')
             ->never();
 
