@@ -4,6 +4,9 @@ namespace Everest\Services\Email;
 
 class EmailMessage
 {
+    private const TAG_ALLOWED_PATTERN = '/[^A-Za-z0-9_-]/';
+    private const MAX_TAG_LENGTH = 256;
+
     public function __construct(
         public string $to,
         public string $subject,
@@ -32,7 +35,19 @@ class EmailMessage
         }
 
         if ($this->tags !== null && count($this->tags) > 0) {
-            $data['tags'] = $this->tags;
+            $tags = collect($this->tags)->map(function (array $tag) {
+                $name = preg_replace(self::TAG_ALLOWED_PATTERN, '_', (string) ($tag['name'] ?? ''));
+                $value = preg_replace(self::TAG_ALLOWED_PATTERN, '_', (string) ($tag['value'] ?? ''));
+
+                return [
+                    'name' => substr($name, 0, self::MAX_TAG_LENGTH),
+                    'value' => substr($value, 0, self::MAX_TAG_LENGTH),
+                ];
+            })->filter(fn (array $tag) => $tag['name'] !== '' && $tag['value'] !== '')->values()->all();
+
+            if (!empty($tags)) {
+                $data['tags'] = $tags;
+            }
         }
 
         // From field is REQUIRED by Resend API
