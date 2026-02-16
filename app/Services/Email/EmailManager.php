@@ -173,6 +173,7 @@ class EmailManager
                 'provider' => 'resend',
                 'user_id' => $userId,
                 'success' => false,
+                'status' => 'failed',
                 'error' => 'Template rendering failed: ' . $e->getMessage(),
             ]);
 
@@ -228,6 +229,7 @@ class EmailManager
             'provider' => 'resend',
             'user_id' => $userId,
             'success' => $result->success,
+            'status' => $result->success ? 'sent' : 'failed',
             'error' => $result->error,
             'tags' => $tags,
         ]);

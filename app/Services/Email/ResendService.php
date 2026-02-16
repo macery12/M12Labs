@@ -72,6 +72,7 @@ class ResendService
                 'subject' => $message->subject,
                 'message_id' => $messageId,
                 'success' => $success,
+                'status' => $success ? 'sent' : 'failed',
                 'error' => $error,
                 'tags' => $message->tags ? json_encode($message->tags) : null,
             ]);

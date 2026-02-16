@@ -72,4 +72,12 @@ class DeferredEmail extends Model
         $this->attempts++;
         $this->save();
     }
+
+    /**
+     * Relationship: Get the user associated with this deferred email.
+     */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }
