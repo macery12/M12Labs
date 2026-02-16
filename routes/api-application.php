@@ -196,6 +196,18 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/quotas', [Application\EmailController::class, 'getQuotaInfo']);
         Route::get('/quotas/user/{userId}', [Application\EmailController::class, 'getUserQuota']);
         Route::put('/quotas/user/{userId}', [Application\EmailController::class, 'updateUserQuota']);
+        
+        // Email activity logs
+        Route::get('/logs', [Application\EmailActivityController::class, 'index']);
+        Route::get('/logs/stats', [Application\EmailActivityController::class, 'getStats']);
+        Route::get('/logs/templates', [Application\EmailActivityController::class, 'getTemplateKeys']);
+        Route::get('/logs/{id}', [Application\EmailActivityController::class, 'show']);
+        Route::post('/logs/{id}/resend', [Application\EmailActivityController::class, 'resend']);
+        
+        // Deferred email queue
+        Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);
+        Route::post('/deferred/{id}/send-now', [Application\EmailActivityController::class, 'sendDeferredNow']);
+        Route::delete('/deferred/{id}', [Application\EmailActivityController::class, 'cancelDeferred']);
     });
 
     /*
