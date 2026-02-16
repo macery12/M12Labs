@@ -223,6 +223,11 @@ class EmailManager
         $service = new ResendService($apiKey);
         $result = $service->send($message);
 
+        // Get the sanitized tags that were actually sent to the API
+        // This prevents ASCII errors when tags are stored in the database
+        $messageArray = $message->toArray();
+        $sanitizedTags = $messageArray['tags'] ?? [];
+
         // Log the attempt
         EmailLog::create([
             'to' => $recipient,
@@ -235,7 +240,7 @@ class EmailManager
             'success' => $result->success,
             'status' => $result->success ? 'sent' : 'failed',
             'error' => $result->error,
-            'tags' => $tags,
+            'tags' => $sanitizedTags, // Store sanitized tags
         ]);
 
         return $result;

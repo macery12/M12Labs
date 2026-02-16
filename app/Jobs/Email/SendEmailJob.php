@@ -107,18 +107,7 @@ class SendEmailJob extends Job implements ShouldQueue
                 'correlation_id' => $correlationId,
             ]);
 
-            // Log failed attempt
-            EmailLog::create([
-                'to' => $this->recipient,
-                'subject' => 'Email validation failed',
-                'template_key' => $this->templateKey,
-                'correlation_id' => $correlationId,
-                'provider' => 'resend',
-                'user_id' => $this->userId,
-                'success' => false,
-                'error' => 'Variable validation failed: ' . implode(', ', $errors),
-            ]);
-
+            // Don't log here - EmailManager will log the failure when the exception is caught
             throw new \Exception('Variable validation failed: ' . implode(', ', $errors));
         }
 
@@ -156,6 +145,9 @@ class SendEmailJob extends Job implements ShouldQueue
 
     /**
      * Handle a job failure.
+     * 
+     * Note: We don't create EmailLog here because EmailManager already logged
+     * the failure when the exception was thrown. This prevents duplicate logs.
      */
     public function failed(\Throwable $exception): void
     {
@@ -166,16 +158,7 @@ class SendEmailJob extends Job implements ShouldQueue
             'correlation_id' => $this->correlationId,
         ]);
 
-        // Log the failed attempt
-        EmailLog::create([
-            'to' => $this->recipient,
-            'subject' => 'Email job failed',
-            'template_key' => $this->templateKey,
-            'correlation_id' => $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString(),
-            'provider' => 'resend',
-            'user_id' => $this->userId,
-            'success' => false,
-            'error' => $exception->getMessage(),
-        ]);
+        // EmailManager has already created the failure log
+        // No need to log again here
     }
 }
