@@ -3,7 +3,6 @@
 namespace Everest\Services\Email;
 
 use Everest\Models\Setting;
-use Everest\Models\EmailLog;
 use Everest\Models\EmailDelivery;
 use Everest\Services\Email\Emails\BaseEmail;
 use Everest\Services\Email\Emails\CustomMessageEmail;
