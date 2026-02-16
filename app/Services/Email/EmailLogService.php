@@ -15,71 +15,83 @@ class EmailLogService
 {
     /**
      * Required fields that must be present before creating a log entry.
+     * Note: user_id is NOT required as it can legitimately be NULL for system/admin emails.
      */
-    private const REQUIRED_FIELDS = ['user_id', 'template_key', 'correlation_id'];
+    private const REQUIRED_FIELDS = ['template_key', 'correlation_id'];
 
     /**
      * Create or update an email log.
      * 
-     * Logs a warning if required fields are missing but still saves the data.
-     * Uses updateOrCreate to update existing partial logs with complete data.
+     * CRITICAL BEHAVIOR:
+     * - If required fields are MISSING: only UPDATE existing rows, never create new ones
+     * - If required fields are PRESENT: create or update as normal
+     * 
+     * This prevents creating incomplete logs while allowing progressive updates.
      *
      * @param array $data Log data to save
-     * @return EmailLog|null Created or updated log, or null if error occurred
+     * @return EmailLog|null Created or updated log, or null if skipped
      */
     public function createOrUpdate(array $data): ?EmailLog
     {
-        // Warn if required fields are missing, but continue to save
+        $hasMessageKey = !empty($data['provider']) && !empty($data['message_id']);
+        $hasCorrelationKey = !empty($data['correlation_id']);
+
+        // If required fields are missing, NEVER create a brand new row
         if (!$this->hasRequiredFields($data)) {
-            Log::warning('EmailLogService: Saving log with incomplete data', [
-                'data' => $this->sanitizeForLog($data),
+            Log::warning('EmailLogService: Incomplete data - will only update existing log', [
+                'missing_fields' => $this->getMissingFields($data),
+                'has_message_key' => $hasMessageKey,
+                'has_correlation_key' => $hasCorrelationKey,
+            ]);
+
+            // If we can match an existing row, update it (fill in later)
+            if ($hasMessageKey) {
+                $existing = EmailLog::where('provider', $data['provider'])
+                    ->where('message_id', $data['message_id'])
+                    ->first();
+
+                if ($existing) {
+                    $existing->update($data);
+                    Log::debug('EmailLogService: Updated existing log by message_id', [
+                        'id' => $existing->id,
+                        'message_id' => $data['message_id'],
+                    ]);
+                    return $existing;
+                }
+            }
+
+            if ($hasCorrelationKey) {
+                $existing = EmailLog::where('correlation_id', $data['correlation_id'])->first();
+                if ($existing) {
+                    $existing->update($data);
+                    Log::debug('EmailLogService: Updated existing log by correlation_id', [
+                        'id' => $existing->id,
+                        'correlation_id' => $data['correlation_id'],
+                    ]);
+                    return $existing;
+                }
+            }
+
+            // Otherwise: skip entirely
+            Log::debug('EmailLogService: Skipping create (incomplete log, no existing row to update)', [
                 'missing_fields' => $this->getMissingFields($data),
             ]);
+            return null;
         }
 
-        // Determine the unique key to use for updateOrCreate
-        // Prefer (provider, message_id) if available, otherwise use correlation_id
-        $uniqueKey = [];
-        if (!empty($data['message_id']) && !empty($data['provider'])) {
-            // Use provider + message_id as unique key (most reliable)
-            // This allows us to UPDATE partial logs when we get the complete data
-            $uniqueKey = [
-                'provider' => $data['provider'],
-                'message_id' => $data['message_id'],
-            ];
-        } elseif (!empty($data['correlation_id'])) {
-            // Fallback to correlation_id
-            $uniqueKey = ['correlation_id' => $data['correlation_id']];
-        } else {
-            // No unique key available - this should rarely happen
-            // Create a new log entry without a unique constraint
-            Log::warning('EmailLogService: No unique key available, creating new log', [
-                'has_message_id' => !empty($data['message_id']),
-                'has_correlation_id' => !empty($data['correlation_id']),
-            ]);
-            
-            try {
-                $log = EmailLog::create($data);
-                return $log;
-            } catch (\Exception $e) {
-                Log::error('EmailLogService: Failed to create log without unique key', [
-                    'error' => $e->getMessage(),
-                ]);
-                return null;
-            }
-        }
+        // From here on: safe to create/update
+        $uniqueKey = $hasMessageKey
+            ? ['provider' => $data['provider'], 'message_id' => $data['message_id']]
+            : ['correlation_id' => $data['correlation_id']];
 
         try {
-            // Use updateOrCreate with the determined unique key
-            // If a partial log exists, this will UPDATE it with complete data
             $log = EmailLog::updateOrCreate($uniqueKey, $data);
 
-            Log::debug('EmailLogService: Log created/updated', [
+            Log::debug('EmailLogService: Log created/updated with complete data', [
                 'id' => $log->id,
                 'unique_key' => $uniqueKey,
                 'status' => $data['status'] ?? 'unknown',
                 'template_key' => $data['template_key'] ?? null,
-                'has_complete_data' => $this->hasRequiredFields($data),
             ]);
 
             return $log;
