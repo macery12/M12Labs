@@ -89,11 +89,11 @@ class EmailTypeRegistry
      */
     public static function validateVariables(string $templateKey, array $data): array
     {
-        // Normalize template key to underscore format (for error messages and consistency)
+        // Normalize template key to underscore format
         $normalizedKey = str_replace('.', '_', $templateKey);
         
-        // getAllowedVariables will also normalize, but we need $normalizedKey for error messages
-        $allowed = self::getAllowedVariables($templateKey);
+        // Pass normalized key to avoid redundant normalization
+        $allowed = self::getAllowedVariables($normalizedKey);
         $errors = [];
         $validData = [];
 
