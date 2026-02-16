@@ -44,7 +44,7 @@ class EmailNotificationSetting extends Model
             return false;
         }
 
-        $setting = static::whereIn('template_key', self::templateKeyCandidates($templateKey))->first();
+        $setting = static::findByTemplateKey($templateKey);
         
         return $setting ? $setting->enabled : false;
     }
@@ -54,7 +54,7 @@ class EmailNotificationSetting extends Model
      */
     public static function isRateLimitExempt(string $templateKey): bool
     {
-        $setting = static::whereIn('template_key', self::templateKeyCandidates($templateKey))->first();
+        $setting = static::findByTemplateKey($templateKey);
         
         return $setting ? $setting->rate_limit_exempt : false;
     }
@@ -85,6 +85,29 @@ class EmailNotificationSetting extends Model
             self::toLegacyDotTemplateKey($templateKey),
             $templateKey,
         ]));
+    }
+
+    private static function findByTemplateKey(string $templateKey): ?self
+    {
+        $normalized = self::normalizeTemplateKey($templateKey);
+        $setting = static::where('template_key', $normalized)->first();
+        if ($setting) {
+            return $setting;
+        }
+
+        $legacy = self::toLegacyDotTemplateKey($templateKey);
+        if ($legacy !== $normalized) {
+            $setting = static::where('template_key', $legacy)->first();
+            if ($setting) {
+                return $setting;
+            }
+        }
+
+        if ($templateKey !== $normalized && $templateKey !== $legacy) {
+            return static::where('template_key', $templateKey)->first();
+        }
+
+        return null;
     }
 
     /**
