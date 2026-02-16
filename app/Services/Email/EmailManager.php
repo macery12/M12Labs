@@ -111,11 +111,14 @@ class EmailManager
         ?string $correlationId = null,
         ?int $userId = null
     ): EmailResult {
+        $dotTemplateKey = $this->toDotTemplateKey($templateKey);
+        $logTemplateKey = str_replace('.', '_', $dotTemplateKey);
+
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
                 'recipient' => $recipient,
-                'template_key' => $templateKey,
+                'template_key' => $logTemplateKey,
                 'correlation_id' => $correlationId,
             ]);
 
@@ -147,18 +150,18 @@ class EmailManager
         }
 
         // Convert template key to view path (auth.password_reset -> emails.auth.password-reset)
-        $viewPath = 'emails.' . str_replace('.', '.', $templateKey);
+        $viewPath = 'emails.' . $dotTemplateKey;
         $viewPath = str_replace('_', '-', $viewPath); // Convert underscores to hyphens for file names
 
         // Get subject from template key
-        $subject = $this->getSubjectForTemplate($templateKey);
+        $subject = $this->getSubjectForTemplate($dotTemplateKey);
 
         // Render HTML content from template
         try {
             $html = View::make($viewPath, $data)->render();
         } catch (\Exception $e) {
             Log::error('Failed to render email template', [
-                'template_key' => $templateKey,
+                'template_key' => $logTemplateKey,
                 'view_path' => $viewPath,
                 'error' => $e->getMessage(),
                 'correlation_id' => $correlationId,
@@ -168,7 +171,7 @@ class EmailManager
             EmailLog::create([
                 'to' => $recipient,
                 'subject' => $subject,
-                'template_key' => $templateKey,
+                'template_key' => $logTemplateKey,
                 'correlation_id' => $correlationId,
                 'provider' => 'resend',
                 'user_id' => $userId,
@@ -185,12 +188,10 @@ class EmailManager
 
         // Create tags
         // Sanitize tag values: Resend only accepts ASCII letters, numbers, underscores, or dashes
-        $sanitizedTemplateKey = str_replace('.', '_', $templateKey);
-        
         $tags = [
             [
                 'name' => 'template_key',
-                'value' => $sanitizedTemplateKey,
+                'value' => $logTemplateKey,
             ],
         ];
 
@@ -223,7 +224,7 @@ class EmailManager
         EmailLog::create([
             'to' => $recipient,
             'subject' => $subject,
-            'template_key' => $templateKey,
+            'template_key' => $logTemplateKey,
             'correlation_id' => $correlationId,
             'message_id' => $result->messageId,
             'provider' => 'resend',
@@ -235,6 +236,20 @@ class EmailManager
         ]);
 
         return $result;
+    }
+
+    private function toDotTemplateKey(string $templateKey): string
+    {
+        if (str_contains($templateKey, '.')) {
+            return $templateKey;
+        }
+
+        $parts = explode('_', $templateKey, 2);
+        if (count($parts) === 2) {
+            return $parts[0] . '.' . $parts[1];
+        }
+
+        return $templateKey;
     }
 
     /**

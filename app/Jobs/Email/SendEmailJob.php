@@ -47,6 +47,7 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     public function handle(EmailManager $emailManager): void
     {
+        $logTemplateKey = str_replace('.', '_', $this->templateKey);
         $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
 
         Log::info('SendEmailJob: Starting', [
@@ -58,7 +59,7 @@ class SendEmailJob extends Job implements ShouldQueue
         // Check if this email type is enabled
         if (!EmailNotificationSetting::isEnabled($this->templateKey)) {
             Log::info('SendEmailJob: Email type disabled', [
-                'template_key' => $this->templateKey,
+                'template_key' => $logTemplateKey,
                 'correlation_id' => $correlationId,
             ]);
             return;
@@ -76,7 +77,7 @@ class SendEmailJob extends Job implements ShouldQueue
                     : 'monthly_limit';
 
                 Log::info('SendEmailJob: Quota exceeded, deferring', [
-                    'template_key' => $this->templateKey,
+                    'template_key' => $logTemplateKey,
                     'user_id' => $this->userId,
                     'reason' => $reason,
                     'scheduled_at' => $nextAvailable,
@@ -85,7 +86,7 @@ class SendEmailJob extends Job implements ShouldQueue
 
                 DeferredEmail::create([
                     'user_id' => $this->userId,
-                    'template_key' => $this->templateKey,
+                    'template_key' => $logTemplateKey,
                     'recipient' => $this->recipient,
                     'data' => $this->data,
                     'correlation_id' => $correlationId,
@@ -102,7 +103,7 @@ class SendEmailJob extends Job implements ShouldQueue
         
         if (!empty($errors)) {
             Log::error('SendEmailJob: Variable validation failed', [
-                'template_key' => $this->templateKey,
+                'template_key' => $logTemplateKey,
                 'errors' => $errors,
                 'correlation_id' => $correlationId,
             ]);
@@ -111,11 +112,12 @@ class SendEmailJob extends Job implements ShouldQueue
             EmailLog::create([
                 'to' => $this->recipient,
                 'subject' => 'Email validation failed',
-                'template_key' => $this->templateKey,
+                'template_key' => $logTemplateKey,
                 'correlation_id' => $correlationId,
                 'provider' => 'resend',
                 'user_id' => $this->userId,
                 'success' => false,
+                'status' => 'failed',
                 'error' => 'Variable validation failed: ' . implode(', ', $errors),
             ]);
 
@@ -137,14 +139,14 @@ class SendEmailJob extends Job implements ShouldQueue
             }
 
             Log::info('SendEmailJob: Email sent successfully', [
-                'template_key' => $this->templateKey,
+                'template_key' => $logTemplateKey,
                 'recipient' => $this->recipient,
                 'message_id' => $result->messageId,
                 'correlation_id' => $correlationId,
             ]);
         } catch (\Exception $e) {
             Log::error('SendEmailJob: Failed to send email', [
-                'template_key' => $this->templateKey,
+                'template_key' => $logTemplateKey,
                 'recipient' => $this->recipient,
                 'error' => $e->getMessage(),
                 'correlation_id' => $correlationId,
@@ -159,22 +161,26 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        $logTemplateKey = str_replace('.', '_', $this->templateKey);
+        $correlationId = $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString();
+
         Log::error('SendEmailJob: Job failed permanently', [
-            'template_key' => $this->templateKey,
+            'template_key' => $logTemplateKey,
             'recipient' => $this->recipient,
             'error' => $exception->getMessage(),
-            'correlation_id' => $this->correlationId,
+            'correlation_id' => $correlationId,
         ]);
 
         // Log the failed attempt
         EmailLog::create([
             'to' => $this->recipient,
             'subject' => 'Email job failed',
-            'template_key' => $this->templateKey,
-            'correlation_id' => $this->correlationId ?? \Illuminate\Support\Str::uuid()->toString(),
+            'template_key' => $logTemplateKey,
+            'correlation_id' => $correlationId,
             'provider' => 'resend',
             'user_id' => $this->userId,
             'success' => false,
+            'status' => 'failed',
             'error' => $exception->getMessage(),
         ]);
     }

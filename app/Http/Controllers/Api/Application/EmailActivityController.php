@@ -37,7 +37,16 @@ class EmailActivityController extends ApplicationApiController
         }
 
         if ($request->filled('template_key')) {
-            $query->where('template_key', $request->input('template_key'));
+            $templateKey = (string) $request->input('template_key');
+            $normalizedTemplateKey = str_replace('.', '_', $templateKey);
+
+            $query->where(function ($q) use ($templateKey, $normalizedTemplateKey) {
+                $q->where('template_key', $templateKey);
+
+                if ($normalizedTemplateKey !== $templateKey) {
+                    $q->orWhere('template_key', $normalizedTemplateKey);
+                }
+            });
         }
 
         if ($request->filled('recipient')) {
