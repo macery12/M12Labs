@@ -40,35 +40,8 @@ class EmailTypeRegistry
     ];
 
     /**
-     * Get the template variables allowlist.
-     * Returns the array of allowed variables for each template.
-     */
-    private static function getTemplateVariablesArray(): array
-    {
-        return [
-            'auth_account_created' => ['userName', 'userEmail', 'loginUrl'],
-            'auth_account_locked' => ['userName', 'reason', 'suspendedAt', 'supportUrl'],
-            'auth_account_unsuspended' => ['userName', 'unsuspendedAt'],
-            'auth_password_reset' => ['userName', 'resetUrl', 'expiresIn'],
-            'auth_password_changed' => ['userName', 'changedAt', 'ipAddress'],
-            'auth_new_login' => ['userName', 'ipAddress', 'userAgent', 'location', 'loginTime'],
-            'auth_2fa_enabled' => ['userName', 'enabledAt'],
-            'auth_2fa_disabled' => ['userName', 'disabledAt', 'ipAddress'],
-            'server_created' => ['userName', 'serverName', 'serverId', 'serverUrl', 'nodeLocation'],
-            'server_suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
-            'server_unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
-            'server_expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
-            'billing_payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle'],
-            'billing_payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
-            'billing_server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'renewalDate', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],
-        ];
-    }
-
-    /**
      * Define allowed variables for each template.
      * This is a security allowlist - only these variables can be passed to templates.
-     * 
-     * @deprecated Use getTemplateVariablesArray() instead for better OPcache compatibility
      */
     private const TEMPLATE_VARIABLES = [
         'auth_account_created' => ['userName', 'userEmail', 'loginUrl'],
@@ -90,11 +63,20 @@ class EmailTypeRegistry
 
     /**
      * Get template key for an event.
+     * Uses instanceof to handle proxied events correctly.
      */
     public static function getTemplateKey(object $event): ?string
     {
-        $eventClass = get_class($event);
-        return self::EVENT_TO_TEMPLATE[$eventClass] ?? null;
+        // Use instanceof instead of get_class() to handle proxied/queued events
+        // Laravel often wraps events in proxies (e.g., PasswordResetRequested_Proxy)
+        // which would fail exact class name matching
+        foreach (self::EVENT_TO_TEMPLATE as $class => $template) {
+            if ($event instanceof $class) {
+                return $template;
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -110,26 +92,8 @@ class EmailTypeRegistry
         // Normalize to underscore format (dots to underscores)
         $normalizedKey = str_replace('.', '_', $templateKey);
         
-        // Get the template variables array (using method instead of constant for OPcache compatibility)
-        $templateVariables = self::getTemplateVariablesArray();
-        
-        // Debug logging to diagnose the issue
-        \Illuminate\Support\Facades\Log::debug('EmailTypeRegistry::getAllowedVariables called', [
-            'original_key' => $templateKey,
-            'normalized_key' => $normalizedKey,
-            'has_key_in_array' => isset($templateVariables[$normalizedKey]),
-            'array_keys' => array_keys($templateVariables),
-        ]);
-        
-        $result = $templateVariables[$normalizedKey] ?? [];
-        
-        \Illuminate\Support\Facades\Log::debug('EmailTypeRegistry::getAllowedVariables result', [
-            'template_key' => $normalizedKey,
-            'result' => $result,
-            'result_count' => count($result),
-        ]);
-        
-        return $result;
+        // Use the constant directly (issue was in getTemplateKey, not here)
+        return self::TEMPLATE_VARIABLES[$normalizedKey] ?? [];
     }
 
     /**
