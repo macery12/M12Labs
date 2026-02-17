@@ -13,6 +13,7 @@ import tw from 'twin.macro';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRedo, faTimes, faClock, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 const Table = styled.table`
     ${tw`w-full table-auto`}
@@ -26,8 +27,9 @@ const Td = styled.td`
     ${tw`px-4 py-3 text-sm border-b border-neutral-700`}
 `;
 
-const StatCard = styled.div`
-    ${tw`bg-neutral-800 rounded-lg p-4 border border-neutral-700`}
+const StatCard = styled.div<{ $background: string }>`
+    ${tw`rounded-lg p-4 border border-neutral-700`}
+    background-color: ${({ $background }) => $background};
 `;
 
 export default () => {
@@ -36,6 +38,7 @@ export default () => {
     const [data, setData] = useState<DeferredQueueResponse | null>(null);
     const [actionInProgress, setActionInProgress] = useState<Record<number, string>>({});
     const { addFlash } = useFlash();
+    const { colors } = useStoreState(state => state.theme.data!);
 
     useEffect(() => {
         loadQueue();
@@ -131,7 +134,10 @@ export default () => {
 
     if (!data) {
         return (
-            <div className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'>
+            <div
+                className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'
+                style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
+            >
                 <p className='text-neutral-400 text-lg'>Failed to load deferred email queue</p>
             </div>
         );
@@ -149,7 +155,7 @@ export default () => {
 
             {/* Stats */}
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
-                <StatCard>
+                <StatCard $background={colors.secondary}>
                     <div className='flex items-center justify-between'>
                         <div>
                             <p className='text-sm text-neutral-400'>Total Queued</p>
@@ -159,7 +165,7 @@ export default () => {
                     </div>
                 </StatCard>
 
-                <StatCard>
+                <StatCard $background={colors.secondary}>
                     <div className='flex items-center justify-between'>
                         <div>
                             <p className='text-sm text-neutral-400'>Due Now</p>
@@ -169,7 +175,7 @@ export default () => {
                     </div>
                 </StatCard>
 
-                <StatCard>
+                <StatCard $background={colors.secondary}>
                     <div className='flex items-center justify-between'>
                         <div>
                             <p className='text-sm text-neutral-400'>Next Send</p>
@@ -186,7 +192,10 @@ export default () => {
 
             {/* Queue Table */}
             {data.deferred.data.length > 0 ? (
-                <div className='bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden'>
+                <div
+                    className='bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden'
+                    style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
+                >
                     <div className='overflow-x-auto'>
                         <Table>
                             <thead>
@@ -284,7 +293,10 @@ export default () => {
                     </div>
                 </div>
             ) : (
-                <div className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'>
+                <div
+                    className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'
+                    style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
+                >
                     <p className='text-neutral-400 text-lg'>No deferred emails in queue</p>
                     <p className='text-gray-500 text-sm mt-2'>All emails are being delivered normally</p>
                 </div>
