@@ -280,7 +280,7 @@ const FloatingWindowFrame = ({
                 width: win.width,
                 height: win.height,
                 zIndex: win.zIndex,
-                backgroundColor: secondary,
+                backgroundColor: background,
                 borderColor: win.serverId !== currentServerId ? undefined : undefined,
             }}
             onMouseDown={() => onFocus(win.id)}
@@ -297,11 +297,7 @@ const FloatingWindowFrame = ({
                 onDragPointerMove={onDragPointerMove}
                 onDragPointerUp={onDragPointerUp}
             />
-            <div
-                className={'h-[calc(100%-2.5rem)] overflow-auto'}
-                style={{ backgroundColor: background }}
-                onClickCapture={onWindowContentClickCapture}
-            >
+            <div className={'h-[calc(100%-2.5rem)] overflow-auto'} onClickCapture={onWindowContentClickCapture}>
                 {showFileEditor ? (
                     <FloatingFileEditor serverUuid={win.serverUuid} filename={floatingFilePath || ''} />
                 ) : (
@@ -345,7 +341,9 @@ const FloatingWindowToolbar = ({
     onDragPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }) => {
     const showExternalServerMessage = sourceServerId !== currentServerId;
-    const { secondary: _secondary, headers: _headers } = useStoreState(state => state.theme.data!.colors);
+    const { secondary: _secondary, headers: _headers, background: _background } = useStoreState(
+        state => state.theme.data!.colors,
+    );
 
     return (
         <div>
@@ -394,7 +392,7 @@ const FloatingWindowToolbar = ({
                 </div>
             </div>
             {showExternalServerMessage && (
-                <div className={'border-b px-3 py-1 text-xs text-neutral-300'} style={{ backgroundColor: _secondary }}>
+                <div className={'border-b px-3 py-1 text-xs text-neutral-300'} style={{ backgroundColor: _background }}>
                     This window belongs to server {sourceServerName || sourceServerId}.
                 </div>
             )}
@@ -412,28 +410,6 @@ export default ({ windows, currentServerId, onClose, onFocus, onMove, onResize, 
 
     return (
         <div className={'pointer-events-none fixed inset-0 z-50'}>
-            <style>{`
-                .floating-window-theme .cm-editor,
-                .floating-window-theme .cm-scroller,
-                .floating-window-theme .cm-content,
-                .floating-window-theme .cm-gutters,
-                .floating-window-theme .cm-line {
-                    background-color: ${background} !important;
-                    background-image: none !important;
-                }
-
-                .floating-window-theme .cm-activeLine,
-                .floating-window-theme .cm-activeLineGutter,
-                .floating-window-theme .cm-selectionBackground,
-                .floating-window-theme .cm-focused .cm-selectionBackground {
-                    background-color: ${secondary} !important;
-                }
-
-                .floating-window-theme [style*="background-color"] {
-                    /* keep inline styles consistent with theme */
-                    background-color: ${secondary} !important;
-                }
-            `}</style>
             {orderedWindows.map(win => (
                 <Fragment key={win.id}>
                     <div className={'pointer-events-auto'}>

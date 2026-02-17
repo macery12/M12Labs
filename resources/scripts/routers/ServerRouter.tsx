@@ -145,6 +145,10 @@ function ServerRouter() {
         setFloatingWindows(prev => prev.map(win => (win.id === id ? { ...win, width, height } : win)));
     };
 
+    const navigateFloatingWindow = (id: string, routePath: string) => {
+        setFloatingWindows(prev => prev.map(win => (win.id === id ? { ...win, routePath } : win)));
+    };
+
     // Check if admin has bypassed the conflict screen
     const isConflictBypassed =
         rootAdmin && server?.uuid && sessionStorage.getItem(`admin_bypass_conflict_${server.uuid}`) === 'true';
@@ -325,6 +329,7 @@ function ServerRouter() {
                             onFocus={focusFloatingWindow}
                             onMove={moveFloatingWindow}
                             onResize={resizeFloatingWindow}
+                            onNavigate={navigateFloatingWindow}
                             serverRoutes={routes.server}
                         />
                         {inConflictState &&
