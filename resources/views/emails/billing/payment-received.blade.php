@@ -1,13 +1,12 @@
 @extends('emails.layout')
-@include('emails.partials.styles')
 
 @section('content')
     @include('emails.partials.header', [
         'title' => $isRenewal ? 'Payment Received - Server Renewal' : 'Payment Received',
         'subtitle' => 'Thanks for your payment. Your services remain active.'
     ])
-    <p style="{{ $paragraphStyle }}">Hello {{ $userName }},</p>
-    <p style="{{ $paragraphStyle }}">We've successfully received your payment{{ $isRenewal ? ' for your server renewal' : '' }}. Your services will continue without interruption.</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Hello {{ $userName }},</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">We've successfully received your payment{{ $isRenewal ? ' for your server renewal' : '' }}. Your services will continue without interruption.</p>
     @component('emails.partials.panel', ['title' => 'Payment details'])
         @php
             $discountLabel = $couponCode ? "Discount ({$couponCode})" : 'Discount';
@@ -28,5 +27,5 @@
         'url' => url('/billing'),
         'text' => 'View Billing History'
     ])
-    <p style="{{ $paragraphStyle }}">If you have any questions about this payment, please contact our support team.</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">If you have any questions about this payment, please contact our support team.</p>
 @endsection

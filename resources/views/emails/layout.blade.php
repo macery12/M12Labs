@@ -5,20 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $subject ?? config('app.name') }}</title>
 </head>
-@include('emails.partials.styles')
-<body style="margin:0; padding:0; background-color:{{ $backgroundColor }}; font-family: {{ $fontFamily }}; color: {{ $brandDark }};">
-    @if(!empty($preheaderText))
-        <div style="display:none; max-height:0px; overflow:hidden; font-size:1px; line-height:1px; color:{{ $backgroundColor }}; opacity:0;">
-            {{ $preheaderText }}
+<body style="margin:0; padding:0; background-color:#f3f4f6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#111827;">
+    @if(!empty(trim($preheader ?? '')))
+        <div style="display:none; max-height:0px; overflow:hidden; font-size:1px; line-height:1px; color:#f3f4f6; opacity:0;">
+            {{ trim($preheader ?? '') }}
         </div>
     @endif
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: {{ $backgroundColor }}; width: 100%; border-spacing:0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; width: 100%; border-spacing:0;">
         <tr>
             <td align="center" style="padding: 24px;">
                 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; width:100%; border-spacing:0;">
                     <tr>
                         <td style="padding: 0 0 12px;">
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: {{ $cardBackground }}; border:1px solid {{ $borderColor }}; border-radius: 12px; overflow:hidden; width:100%; border-spacing:0;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border:1px solid #e5e7eb; border-radius: 12px; overflow:hidden; width:100%; border-spacing:0;">
                                 <tr>
                                     <td style="padding: 32px 32px 0;">
                                         @yield('content')

@@ -1,13 +1,12 @@
 @extends('emails.layout')
-@include('emails.partials.styles')
 
 @section('content')
     @include('emails.partials.header', [
         'title' => 'Server Renewal Notice',
         'subtitle' => 'Your server is approaching its renewal date.'
     ])
-    <p style="{{ $paragraphStyle }}">Hello {{ $userName }},</p>
-    <p style="{{ $paragraphStyle }}">Your server <strong>{{ $serverName }}</strong> is approaching its renewal date and requires your attention.</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Hello {{ $userName }},</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Your server <strong>{{ $serverName }}</strong> is approaching its renewal date and requires your attention.</p>
     @component('emails.partials.panel', ['title' => 'Renewal details'])
         @include('emails.partials.key_value_table', [
             'rows' => [
@@ -18,10 +17,10 @@
             ]
         ])
     @endcomponent
-    <p style="{{ $paragraphStyle }}">If payment is not received by the suspension time, your server will be automatically suspended. Renew now to avoid interruption.</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">If payment is not received by the suspension time, your server will be automatically suspended. Renew now to avoid interruption.</p>
     @include('emails.partials.button', [
         'url' => $renewalUrl,
         'text' => 'Renew Server Now'
     ])
-    <p style="{{ $paragraphStyle }}">Consider enabling auto-renewal in your server billing settings for uninterrupted service.</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Consider enabling auto-renewal in your server billing settings for uninterrupted service.</p>
 @endsection

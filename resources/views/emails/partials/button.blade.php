@@ -1,8 +1,6 @@
 @props(['url', 'text' => 'View', 'color' => null, 'align' => 'center', 'showFallback' => true])
 @php
-    $brandPrimary = $brandPrimary ?? '#4F46E5';
-    $mutedStyle = $mutedStyle ?? "margin:8px 0 0; color:#6B7280; font-size:13px; line-height:1.5;";
-    $buttonColor = $color ?? $brandPrimary;
+    $buttonColor = $color ?? '#4F46E5';
 @endphp
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-spacing:0; margin: 8px 0;">
     <tr>
@@ -20,8 +18,8 @@
     </tr>
 </table>
 @if($showFallback)
-    <p style="{{ $mutedStyle }}; word-break: break-word; margin-top:8px;">
+    <p style="margin:8px 0 0; color:#6B7280; font-size:13px; line-height:1.5; word-break: break-word; margin-top:8px;">
         If the button doesn’t work, copy and paste this link:<br>
-        <a href="{{ $url }}" style="color: {{ $brandPrimary }}; text-decoration: underline; word-break: break-word;">{{ $url }}</a>
+        <a href="{{ $url }}" style="color:#4F46E5; text-decoration: underline; word-break: break-word;">{{ $url }}</a>
     </p>
 @endif
