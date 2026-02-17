@@ -2,7 +2,6 @@
     $appName = config('app.name');
     $currentYear = date('Y');
     $supportEmail = config('mail.from.address') ?? 'support@example.com';
-    $supportUrl = $supportUrl ?? (config('app.url') ? rtrim(config('app.url'), '/') . '/support' : null);
 @endphp
 @include('emails.partials.divider')
 <p style="margin:0 0 16px; color:#111827; font-size:14px; line-height:1.6;">
