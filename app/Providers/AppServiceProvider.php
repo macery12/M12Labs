@@ -8,6 +8,7 @@ use Everest\Models\User;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Cashier;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -52,6 +53,30 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         Carbon::serializeUsing(fn ($carbon) => $carbon->utc()->toIso8601ZuluString());
+
+        // Provide default styling variables to all email views to prevent undefined variable errors.
+        View::composer('emails.*', function ($view) {
+            $defaults = [
+                'brandPrimary' => '#4F46E5',
+                'brandDark' => '#111827',
+                'brandMuted' => '#6B7280',
+                'backgroundColor' => '#f3f4f6',
+                'cardBackground' => '#ffffff',
+                'borderColor' => '#e5e7eb',
+                'fontFamily' => "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif",
+                'headingStyle' => "margin:0 0 12px; font-size:22px; line-height:1.3; color:#111827; font-weight:700;",
+                'paragraphStyle' => "margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;",
+                'mutedStyle' => "margin:8px 0 0; color:#6B7280; font-size:13px; line-height:1.5;",
+            ];
+
+            $data = $view->getData();
+            foreach ($defaults as $key => $value) {
+                if (!array_key_exists($key, $data) || $data[$key] === null) {
+                    // For styles that are computed using other variables, allow partials to recompute when null.
+                    $view->with($key, $value);
+                }
+            }
+        });
     }
 
     /**
