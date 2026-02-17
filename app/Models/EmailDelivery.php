@@ -28,6 +28,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class EmailDelivery extends Model
 {
+    public const STATUS_QUEUED = 'queued';
+    public const STATUS_SENDING = 'sending';
+    public const STATUS_SENT = 'sent';
+    public const STATUS_DEFERRED = 'deferred';
+
     /**
      * The table associated with the model.
      */

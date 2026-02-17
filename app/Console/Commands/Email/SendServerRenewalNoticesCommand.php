@@ -12,6 +12,8 @@ use Ramsey\Uuid\Uuid;
 
 class SendServerRenewalNoticesCommand extends Command
 {
+    private const CORRELATION_SEED = 'renewal-notice:server-%d-days-%d';
+
     /**
      * The name and signature of the console command.
      */
@@ -45,8 +47,19 @@ class SendServerRenewalNoticesCommand extends Command
         $servers = Server::whereNotNull('renewal_date')
             ->whereBetween('renewal_date', [$renewalStart, $renewalEnd])
             ->where(function ($query) {
+                $blocked = [
+                    Server::STATUS_SUSPENDED,
+                    Server::STATUS_INSTALLING,
+                    Server::STATUS_INSTALL_FAILED,
+                    Server::STATUS_REINSTALL_FAILED,
+                    Server::STATUS_RESTORING_BACKUP,
+                ];
+
                 $query->whereNull('status')
-                    ->orWhere('status', '!=', Server::STATUS_SUSPENDED);
+                    ->orWhere(function ($inner) use ($blocked) {
+                        $inner->whereNotNull('status')
+                            ->whereNotIn('status', $blocked);
+                    });
             })
             ->with(['user', 'node'])
             ->get();
@@ -58,6 +71,14 @@ class SendServerRenewalNoticesCommand extends Command
 
         $this->info("Found {$servers->count()} server(s) with renewal in {$daysAhead} day(s)");
 
+        // Precompute correlation IDs and cache existing deliveries for deduplication in a single query
+        $correlationIds = [];
+        foreach ($servers as $server) {
+            $correlationIds[$server->id] = $this->buildCorrelationId($server, $daysAhead);
+        }
+
+        $existingCorrelationIds = $this->getExistingCorrelationIds(array_values($correlationIds));
+
         $sentCount = 0;
         $skippedCount = 0;
 
@@ -68,10 +89,10 @@ class SendServerRenewalNoticesCommand extends Command
                 continue;
             }
 
-            $daysUntilRenewal = $now->diffInDays($server->renewal_date, false);
-            $correlationId = $this->buildCorrelationId($server, $daysAhead);
+            $daysUntilRenewal = $daysAhead;
+            $correlationId = $correlationIds[$server->id];
 
-            if ($this->noticeAlreadySent($correlationId)) {
+            if (isset($existingCorrelationIds[$correlationId])) {
                 $this->line("Skipping server {$server->id}: renewal notice for {$daysAhead} day(s) already sent or pending");
                 $skippedCount++;
                 continue;
@@ -83,7 +104,7 @@ class SendServerRenewalNoticesCommand extends Command
             }
 
             try {
-                $this->sendRenewalNotice($server, $daysUntilRenewal, $correlationId);
+                $this->sendRenewalNotice($server, $daysAhead, $correlationId, $daysUntilRenewal);
                 $sentCount++;
                 $this->info("✓ Sent renewal notice for server: {$server->name} (ID: {$server->id})");
             } catch (\Exception $e) {
@@ -112,7 +133,7 @@ class SendServerRenewalNoticesCommand extends Command
     /**
      * Send renewal notice for a server.
      */
-    private function sendRenewalNotice(Server $server, int $daysUntilRenewal, string $correlationId): void
+    private function sendRenewalNotice(Server $server, int $targetDaysAhead, string $correlationId, int $daysUntilRenewal): void
     {
         $currency = config('modules.billing.currency.code', 'USD');
         
@@ -145,6 +166,7 @@ class SendServerRenewalNoticesCommand extends Command
             'user_id' => $server->user_id,
             'renewal_date' => $server->renewal_date->toDateTimeString(),
             'days_until_renewal' => $daysUntilRenewal,
+            'notice_stage_days' => $targetDaysAhead,
             'billing_days' => $billingDays,
         ]);
     }
@@ -152,31 +174,38 @@ class SendServerRenewalNoticesCommand extends Command
     /**
      * Build a deterministic correlation ID for a server/day combination.
      */
-    private function buildCorrelationId(Server $server, int $daysUntilRenewal): string
+    private function buildCorrelationId(Server $server, int $targetDaysAhead): string
     {
         // Keep correlation IDs stable per server and day-distance to avoid duplicate sends in a window
-        $seed = "server-{$server->id}-renewal-{$daysUntilRenewal}";
+        $seed = sprintf(self::CORRELATION_SEED, $server->id, $targetDaysAhead);
 
         return Uuid::uuid5(Uuid::NAMESPACE_URL, $seed)->toString();
     }
 
     /**
-     * Check if a renewal notice for this correlation has already been sent or queued.
+     * Fetch existing correlation IDs in bulk to avoid N+1 queries.
      */
-    private function noticeAlreadySent(string $correlationId): bool
+    private function getExistingCorrelationIds(array $correlationIds): array
     {
         try {
-            return EmailDelivery::where('correlation_id', $correlationId)
-                ->whereIn('status', ['queued', 'sending', 'sent', 'deferred'])
-                ->exists();
+            $existing = EmailDelivery::whereIn('correlation_id', $correlationIds)
+                ->whereIn('status', [
+                    EmailDelivery::STATUS_QUEUED,
+                    EmailDelivery::STATUS_SENDING,
+                    EmailDelivery::STATUS_SENT,
+                    EmailDelivery::STATUS_DEFERRED,
+                ])
+                ->pluck('correlation_id')
+                ->all();
+
+            return array_flip($existing);
         } catch (\Throwable $e) {
             // If logging tables are missing, avoid blocking email sending
             Log::warning('Skipping renewal notice deduplication check; email_deliveries table unavailable', [
-                'correlation_id' => $correlationId,
                 'error' => $e->getMessage(),
             ]);
 
-            return false;
+            return [];
         }
     }
 }
