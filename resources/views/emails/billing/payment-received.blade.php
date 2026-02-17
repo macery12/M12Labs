@@ -15,7 +15,7 @@
             'rows' => [
                 'Amount' => $currency . ' ' . $amount,
                 'Original Amount' => ($originalAmount && $discountAmount) ? $currency . ' ' . $originalAmount : null,
-                $discountLabel => ($originalAmount && $discountAmount) ? '-'.$currency . ' ' . $discountAmount : null,
+                $discountLabel => ($originalAmount && $discountAmount) ? '-' . $currency . ' ' . $discountAmount : null,
                 'Payment Method' => $paymentMethod,
                 'Billing Cycle' => $billingCycle ?: null,
                 'Transaction Date' => $transactionDate,

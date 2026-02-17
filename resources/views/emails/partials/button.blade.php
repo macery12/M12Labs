@@ -2,7 +2,7 @@
 @php
     $buttonColor = $color ?? $brandPrimary;
 @endphp
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-spacing:0; margin: 8px 0 8px;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-spacing:0; margin: 8px 0;">
     <tr>
         <td align="{{ $align }}">
             <table role="presentation" cellpadding="0" cellspacing="0" style="border-spacing:0;">
