@@ -4,6 +4,7 @@ namespace Everest\Http\Requests\Api\Client\Account;
 
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Hashing\Hasher;
+use Illuminate\Validation\Rules\Password;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Exceptions\Http\Base\InvalidPasswordProvidedException;
 
@@ -31,7 +32,16 @@ class UpdatePasswordRequest extends ClientApiRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', 'confirmed', 'min:8'],
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised(),
+            ],
         ];
     }
 }

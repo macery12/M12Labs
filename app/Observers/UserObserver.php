@@ -4,6 +4,7 @@ namespace Everest\Observers;
 
 use Everest\Events;
 use Everest\Models\User;
+use Illuminate\Support\Str;
 
 class UserObserver
 {
@@ -23,6 +24,12 @@ class UserObserver
     public function created(User $user): void
     {
         event(new Events\User\Created($user));
+        
+        // Dispatch email notification for account created
+        event(new Events\Email\AccountCreated(
+            user: $user,
+            correlationId: Str::uuid()->toString()
+        ));
     }
 
     /**

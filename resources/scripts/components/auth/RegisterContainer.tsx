@@ -3,16 +3,17 @@ import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import Turnstile from '@/components/elements/Turnstile';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import register, { checkUsernameAvailability } from '@/api/routes/auth/register';
 import { login } from '@/api/routes/auth/login';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import {
     faAt,
     faIdBadge,
@@ -28,18 +29,17 @@ interface Values {
     username: string;
     email: string;
     password: string;
-    confirm_password: string;
+    password_confirmation: string;
 }
 
 function RegisterContainer() {
-    const ref = useRef<Reaptcha>(null);
     const token = useRef('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
+    const { enabled: captchaEnabled, siteKey } = useStoreState(state => state.settings.data!.captcha);
 
     useEffect(() => {
         clearFlashes();
@@ -76,22 +76,9 @@ function RegisterContainer() {
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes();
 
-        // If there is no token in the state yet, request the token and then abort this submit request
-        // since it will be re-submitted when the recaptcha data is returned by the component.
-        if (recaptchaEnabled && !token) {
-            ref.current!.execute().catch(error => {
-                console.error(error);
-
-                setSubmitting(false);
-                clearAndAddHttpError({ error });
-            });
-
-            return;
-        }
-
-        register({ ...values, recaptchaData: token.current })
+        register({ ...values, 'cf-turnstile-response': token.current })
             .then(() => {
-                login({ ...values, recaptchaData: token.current }).then(() => {
+                login({ ...values, 'cf-turnstile-response': token.current }).then(() => {
                     // @ts-expect-error this is valid
                     window.location = '/';
                 });
@@ -100,7 +87,6 @@ function RegisterContainer() {
                 console.error(error);
 
                 token.current = '';
-                if (ref.current) ref.current.reset();
 
                 setSubmitting(false);
                 clearAndAddHttpError({ error });
@@ -110,15 +96,15 @@ function RegisterContainer() {
     return (
         <Formik
             onSubmit={onSubmit}
-            initialValues={{ username: '', email: '', password: '', confirm_password: '' }}
+            initialValues={{ username: '', email: '', password: '', password_confirmation: '' }}
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
                 email: string().email().required('You must provide a valid email.'),
                 password: string().required('Please enter your account password.'),
-                confirm_password: string().required('Please enter the password confirmation.'),
+                password_confirmation: string().required('Please enter the password confirmation.'),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm, setFieldValue }) => (
+            {({ isSubmitting, setFieldValue, values }) => (
                 <LoginFormContainer title={`Create an Account`}>
                     <div>
                         <Field
@@ -175,16 +161,33 @@ function RegisterContainer() {
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
                         />
+                        <PasswordStrengthIndicator password={values.password} />
                     </div>
                     <div css={tw`mt-6`}>
                         <Field
                             type={'password'}
                             label={'Confirm Password'}
                             icon={faUnlockKeyhole}
-                            name={'confirm_password'}
+                            name={'password_confirmation'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
                         />
+                        {values.password && values.password_confirmation && (
+                            <p
+                                css={[
+                                    tw`text-xs mt-1`,
+                                    values.password === values.password_confirmation
+                                        ? tw`text-green-500`
+                                        : tw`text-red-500`,
+                                ]}
+                            >
+                                {values.password === values.password_confirmation ? (
+                                    <>✓ Passwords match</>
+                                ) : (
+                                    <>✗ Passwords do not match</>
+                                )}
+                            </p>
+                        )}
                     </div>
                     <div css={tw`mt-6`}>
                         <Button
@@ -192,25 +195,23 @@ function RegisterContainer() {
                             loading={isSubmitting}
                             className={'w-full'}
                             size={Button.Sizes.Large}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || (captchaEnabled && !token.current)}
                         >
                             Register
                         </Button>
                     </div>
-                    {recaptchaEnabled && (
-                        <Reaptcha
-                            ref={ref}
-                            size={'invisible'}
-                            sitekey={siteKey || '_invalid_key'}
-                            onVerify={response => {
-                                token.current = response;
-                                submitForm();
-                            }}
-                            onExpire={() => {
-                                setSubmitting(false);
-                                token.current = '';
-                            }}
-                        />
+                    {captchaEnabled && siteKey && (
+                        <div css={tw`mt-4 flex justify-center`}>
+                            <Turnstile
+                                siteKey={siteKey}
+                                onVerify={response => {
+                                    token.current = response;
+                                }}
+                                onExpire={() => {
+                                    token.current = '';
+                                }}
+                            />
+                        </div>
                     )}
                     <div css={tw`mt-6 text-center`}>
                         <Link

@@ -130,7 +130,7 @@ export default function UserForm({ title, initialValues, children, onSubmit, uui
                                 autoComplete={'new-password'}
                                 /* TODO: Change description depending on if user is being created or updated. */
                                 description={
-                                    'Leave empty to email the user a link where they will be required to set a password.'
+                                    'Leave empty to allow the user to set their own password upon first login.'
                                 }
                             />
                         </FieldRow>

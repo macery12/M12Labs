@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\View\View;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserCreationService;
+use Everest\Http\Requests\Auth\RegisterRequest;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
@@ -90,33 +91,24 @@ class LoginController extends AbstractLoginController
     /**
      * Handle a user registration request.
      */
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
         if ($this->hasTooManyLoginAttempts($request)) {
             $this->fireLockoutEvent($request);
             $this->sendLockoutResponse($request);
         }
 
-        $email = $request->input('email');
-        $username = $request->input('username');
-        $password = $request->input('password');
-        $passwordConfirm = $request->input('confirm_password');
+        $user = $this->createAccount($request->validated());
 
-        if (User::where('email', $email)->exists()) {
-            throw new DisplayException('This email is already in use.');
-        }
-
-        if ($password !== $passwordConfirm) {
-            throw new DisplayException('The passwords entered do not match.');
-        }
-
-        $this->createAccount(['email' => $email, 'username' => $username, 'password' => $password]);
-
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        // Automatically log in the user after successful registration
+        return $this->sendLoginResponse($user, $request);
     }
 
     /**
      * Check if a username is available.
+     * 
+     * SECURITY: This endpoint can be used for account enumeration.
+     * Consider rate limiting or removing it if not essential.
      */
     public function checkUsername(Request $request): JsonResponse
     {
@@ -125,6 +117,9 @@ class LoginController extends AbstractLoginController
         if (!$username) {
             return response()->json(['available' => false, 'message' => 'Username is required'], 400);
         }
+
+        // Add small delay to prevent timing attacks
+        usleep(random_int(50000, 150000)); // 50-150ms random delay
 
         $exists = User::where('username', $username)->exists();
 

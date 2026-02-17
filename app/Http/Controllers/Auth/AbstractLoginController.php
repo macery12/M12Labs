@@ -53,6 +53,9 @@ abstract class AbstractLoginController extends Controller
     /**
      * Get the failed login response instance.
      *
+     * SECURITY: Uses a generic error message to prevent account enumeration.
+     * The same message is returned whether the username or password is incorrect.
+     *
      * @return never
      *
      * @throws DisplayException
@@ -60,14 +63,19 @@ abstract class AbstractLoginController extends Controller
     protected function sendFailedLoginResponse(Request $request, Authenticatable $user = null, string $message = null)
     {
         $this->incrementLoginAttempts($request);
-        $this->fireFailedLoginEvent($user, [
-            $this->getField($request->input('user')) => $request->input('user'),
-        ]);
+        
+        // Fire failed login event if user was found
+        if ($user) {
+            $this->fireFailedLoginEvent($user, [
+                $this->getField($request->input('user')) => $request->input('user'),
+            ]);
+        }
 
         if ($request->route()->named('auth.login-checkpoint')) {
             throw new DisplayException($message ?? trans('auth.two_factor.checkpoint_failed'));
         }
 
+        // Generic error message - don't reveal if user exists or password is wrong
         throw new DisplayException(trans('auth.failed'));
     }
 

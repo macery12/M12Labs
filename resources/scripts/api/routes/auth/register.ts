@@ -4,8 +4,7 @@ export interface LoginData {
     username: string;
     email: string;
     password: string;
-    confirm_password: string;
-    recaptchaData?: string | null;
+    password_confirmation: string;
 }
 
 export interface UsernameCheckResponse {
@@ -21,7 +20,7 @@ export const checkUsernameAvailability = (username: string): Promise<UsernameChe
     });
 };
 
-export default ({ username, email, password, confirm_password, recaptchaData }: LoginData): Promise<void> => {
+export default ({ username, email, password, password_confirmation, ...rest }: LoginData & Record<string, any>): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>
@@ -29,8 +28,8 @@ export default ({ username, email, password, confirm_password, recaptchaData }: 
                     username,
                     email,
                     password,
-                    confirm_password,
-                    'g-recaptcha-response': recaptchaData,
+                    password_confirmation,
+                    ...rest,
                 }),
             )
             .then(() => resolve())

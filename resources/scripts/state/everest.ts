@@ -117,15 +117,13 @@ export interface EverestSettings {
         enabled: boolean;
         url: boolean;
     };
-    extensions: {
-        enabled: boolean;
-        available: {
-            [key: string]: {
-                name: string;
-                description: string;
-                icon: string;
-                version: string;
-            };
+    email: {
+        resend: {
+            enabled: boolean;
+            api_key: boolean;
+            from_email: string;
+            from_name: string;
+            reply_to: string;
         };
     };
 }
