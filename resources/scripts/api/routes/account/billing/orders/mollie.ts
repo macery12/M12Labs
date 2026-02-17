@@ -46,6 +46,7 @@ export const updateMolliePayment = ({
     couponId,
     eggId,
     name,
+    domainPayload,
 }: {
     id: number;
     paymentId: string;
@@ -56,6 +57,13 @@ export const updateMolliePayment = ({
     couponId?: number;
     eggId?: number;
     name: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        port: number;
+        protocol: 'tcp' | 'udp' | 'both';
+        ssl_enabled?: boolean;
+    }>;
 }): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/client/billing/products/${id}/mollie/payment`, {
@@ -67,6 +75,7 @@ export const updateMolliePayment = ({
             coupon_id: couponId,
             egg_id: eggId,
             name,
+            domain_payload: domainPayload,
         })
             .then(() => resolve())
             .catch(reject);

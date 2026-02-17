@@ -85,6 +85,7 @@ class MollieCheckoutController extends ClientApiController
             'node_id' => null,
             'server_id' => $isRenewal ? $serverId : null,
             'variables' => [],
+            'domain_payload' => [],
         ];
 
         // Store the token mapping in an order record (pending state)
@@ -145,6 +146,7 @@ class MollieCheckoutController extends ClientApiController
         $orderType = $this->getOrderType($request);
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $variables = $request->input('variables', []);
+        $domainPayload = $request->input('domain_payload', []);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
 
         // Find the existing pending order and update it
@@ -161,6 +163,7 @@ class MollieCheckoutController extends ClientApiController
             'type' => $orderType,
             'coupon_id' => $couponId,
             'variables' => $variables,
+            'domain_payload' => is_array($domainPayload) ? $domainPayload : [],
         ]);
 
         return $this->returnNoContent();

@@ -55,6 +55,7 @@ export const updatePayPalOrder = ({
     couponId,
     eggId,
     name,
+    domainPayload,
 }: {
     id: number;
     orderId: string;
@@ -65,6 +66,13 @@ export const updatePayPalOrder = ({
     couponId?: number;
     eggId?: number;
     name: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        port: number;
+        protocol: 'tcp' | 'udp' | 'both';
+        ssl_enabled?: boolean;
+    }>;
 }): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/client/billing/products/${id}/paypal/order`, {
@@ -76,6 +84,7 @@ export const updatePayPalOrder = ({
             coupon_id: couponId,
             egg_id: eggId,
             name,
+            domain_payload: domainPayload,
         })
             .then(() => resolve())
             .catch(reject);

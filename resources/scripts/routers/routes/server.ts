@@ -17,6 +17,7 @@ const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingC
 const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
 const ModpacksContainer = lazy(() => import('@server/modpacks/ModpacksContainer'));
 const ExtensionsRouter = lazy(() => import('@server/extensions/ExtensionsRouter'));
+const CustomDomainsContainer = lazy(() => import('@server/domains/CustomDomainsContainer'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -75,6 +76,12 @@ const server: ServerRouteDefinition[] = [
         permission: 'allocation.*',
         name: 'Network',
         icon: Icon.WifiIcon,
+        category: 'configuration',
+    }),
+    route('custom-domains/*', CustomDomainsContainer, {
+        permission: 'allocation.*',
+        name: 'Custom Domains',
+        icon: Icon.GlobeIcon,
         category: 'configuration',
     }),
     route('startup/*', StartupContainer, {

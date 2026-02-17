@@ -26,4 +26,11 @@ export interface UpdateStripeIntent {
     egg_id?: number;
     name?: string;
     billing_days?: number;
+    domain_payload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        port: number;
+        protocol: 'tcp' | 'udp' | 'both';
+        ssl_enabled?: boolean;
+    }>;
 }

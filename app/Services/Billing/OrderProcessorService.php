@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\CouponUsage;
+use Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob;
+use Everest\Services\CustomDomains\CustomDomainProvisioningService;
 
 /**
  * Unified order processing service for billing operations.
@@ -27,6 +29,7 @@ class OrderProcessorService
         private CreateOrderService $orderService,
         private CreateServerService $serverCreationService,
         private ServerRenewalService $renewalService,
+        private CustomDomainProvisioningService $customDomainProvisioning,
     ) {
     }
 
@@ -45,6 +48,7 @@ class OrderProcessorService
      * @param string|null $paymentIntentId The Stripe payment intent ID (for paid orders)
      * @param string|null $serverName The custom server name (optional)
      * @param int $billingDays The billing cycle days (defaults to 30)
+    * @param array $domainPayload Custom domain payload collected during checkout
      *
      * @return array{server: Server, order: Order}
      */
@@ -58,7 +62,8 @@ class OrderProcessorService
         array $variables = [],
         ?string $paymentIntentId = null,
         ?string $serverName = null,
-        int $billingDays = 30
+        int $billingDays = 30,
+        array $domainPayload = []
     ): array {
         // Create the order record
         $order = $this->orderService->create(
@@ -69,7 +74,10 @@ class OrderProcessorService
             Order::TYPE_NEW,
             $couponId,
             $eggId,
-            ['billing_days' => $billingDays]
+            [
+                'billing_days' => $billingDays,
+                'domain_payload' => $domainPayload,
+            ]
         );
 
         // Create the server
@@ -81,6 +89,9 @@ class OrderProcessorService
             $variables,
             $serverName
         );
+
+        $this->customDomainProvisioning->syncFromOrder($server, $order);
+        ProvisionServerCustomDomainsJob::dispatch($server->id);
 
         // Record coupon usage if applicable
         if ($couponId) {

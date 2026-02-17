@@ -92,6 +92,13 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::get('/', [Application\Billing\OrderController::class, 'index']);
         });
 
+        Route::group(['prefix' => '/custom-domains'], function () {
+            Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
+            Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
+            Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
+            Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
+        });
+
         Route::group(['prefix' => '/coupons'], function () {
             Route::get('/', [Application\Billing\CouponController::class, 'index']);
             Route::post('/', [Application\Billing\CouponController::class, 'store']);
@@ -128,6 +135,24 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         // Get suggested multiplier ranges
         Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Domains Module Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/custom-domains
+    |
+    */
+    Route::group(['prefix' => '/custom-domains'], function () {
+        Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
+        Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
+        Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
+        Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
+
+        Route::get('/settings', [Application\CustomDomains\SettingsController::class, 'index']);
+        Route::put('/settings', [Application\CustomDomains\SettingsController::class, 'update']);
     });
 
     /*

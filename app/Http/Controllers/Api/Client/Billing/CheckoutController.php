@@ -92,6 +92,7 @@ class CheckoutController extends ClientApiController
 
         // Process the order
         $variables = $request->input('variables', []);
+        $domainPayload = $request->input('domain_payload', []);
         $result = $this->processorService->createServerOrder(
             $request,
             $user,
@@ -102,7 +103,8 @@ class CheckoutController extends ClientApiController
             $variables,
             null, // No payment intent ID for free orders
             $serverName,
-            $billingDays
+            $billingDays,
+            is_array($domainPayload) ? $domainPayload : []
         );
 
         return $this->fractal->item($result['server'])
@@ -334,6 +336,8 @@ class CheckoutController extends ClientApiController
 
             $variables = $request->input('variables') ?? [];
             $metadata['variables'] = !empty($variables) ? json_encode($variables) : '';
+            $domainPayload = $request->input('domain_payload') ?? [];
+            $metadata['domain_payload'] = !empty($domainPayload) ? json_encode($domainPayload) : '';
 
             $intent->metadata = $metadata;
             $intent->save();
@@ -350,6 +354,7 @@ class CheckoutController extends ClientApiController
                 [
                     'billing_days' => $billingDays,
                     'server_id' => $request->input('server_id') ? (int) $request->input('server_id') : null,
+                    'domain_payload' => is_array($domainPayload) ? $domainPayload : [],
                 ]
             );
 

@@ -84,6 +84,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
     Route::prefix('/billing')->group(function () {
         Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
         Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
+        Route::get('/custom-domains/options', [Client\Billing\CustomDomainOptionsController::class, 'index']);
 
         Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
         Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
@@ -217,6 +218,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'update']);
             Route::post('/allocations/{allocation}/primary', [Client\Servers\NetworkAllocationController::class, 'setPrimary']);
             Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
+        });
+
+        Route::group(['prefix' => '/custom-domains'], function () {
+            Route::get('/', [Client\Servers\CustomDomainController::class, 'index']);
+            Route::post('/', [Client\Servers\CustomDomainController::class, 'store']);
+            Route::post('/sync', [Client\Servers\CustomDomainController::class, 'sync']);
+            Route::delete('/{customDomain:id}', [Client\Servers\CustomDomainController::class, 'destroy']);
         });
 
         Route::group(['prefix' => '/users'], function () {

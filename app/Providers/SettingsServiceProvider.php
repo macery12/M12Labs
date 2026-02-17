@@ -97,6 +97,9 @@ class SettingsServiceProvider extends ServiceProvider
 
         // Extensions module settings
         'modules:extensions:enabled',
+
+        // Custom domains module settings
+        'modules:custom_domains:cloudflare:token',
     ];
 
     /**
