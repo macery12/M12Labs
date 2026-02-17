@@ -1,4 +1,5 @@
 @extends('emails.layout')
+@include('emails.partials.styles')
 
 @section('content')
     @include('emails.partials.header', [
