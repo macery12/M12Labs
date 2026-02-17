@@ -9,10 +9,12 @@ import useStatus from '@/plugins/useStatus';
 import { getSettings, updateSettings, ResendSettings } from '@/api/routes/admin/email';
 import { Button } from '@/elements/button';
 import debounce from 'debounce';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
+    const { secondary } = useStoreState((state) => state.theme.data!.colors);
     
     // Settings loaded from API (not everest state)
     const [settings, setSettings] = useState<ResendSettings | null>(null);
@@ -171,7 +173,10 @@ export default () => {
         <AdminBox title={'Resend Email Settings'} icon={faEnvelope} status={status}>
             <div className={'grid grid-cols-1 gap-6'}>
                 {/* Enable/Disable Toggle - Instant Save */}
-                <div className={'rounded-lg border border-neutral-700 bg-neutral-900/70 p-4'}>
+                <div
+                    className={'rounded-lg border border-neutral-700 p-4'}
+                    style={{ backgroundColor: secondary }}
+                >
                     <div className={'flex flex-col gap-3 md:flex-row md:items-center md:justify-between'}>
                         <div className={'flex items-center gap-3'}>
                             <span
@@ -200,7 +205,10 @@ export default () => {
                 </div>
 
                 {/* API Key - Auto-Save */}
-                <div className={'space-y-2 rounded-lg border border-neutral-700 bg-neutral-900/40 p-4'}>
+                <div
+                    className={'space-y-2 rounded-lg border border-neutral-700 p-4'}
+                    style={{ backgroundColor: secondary }}
+                >
                     <Label>
                         API Key
                         {settings?.api_key && (
@@ -267,25 +275,24 @@ export default () => {
                         onChange={(e) => setFromEmail(e.target.value)}
                         placeholder={'noreply@yourdomain.com'}
                     />
-                    <p className={'mt-2 text-sm text-yellow-400'}>
-                        ⚠️ <strong>Important:</strong> The domain of this email must be verified in your Resend
-                        account at{' '}
-                        <a
-                            href="https://resend.com/domains"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={'text-blue-400 hover:text-blue-300'}
-                        >
-                            resend.com/domains
-                        </a>{' '}
-                        or emails will fail with "domain is invalid" error. For example, if your email is
-                        "noreply@example.com", you must verify the domain "example.com" in Resend.
-                    </p>
-                    <p className={'mt-2 text-sm text-amber-300'}>
-                        🚫 Addresses starting with <code>noreply@</code> are frequently filtered into spam. Use a
-                        monitored inbox like <code>support@</code> or <code>hello@</code> for better deliverability and
-                        trust.
-                    </p>
+                    <div className={'mt-3 space-y-2 rounded-md border border-amber-500/40 bg-amber-900/30 p-3 text-sm'}>
+                        <div className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Important:</strong> Verify this domain in Resend{' '}
+                            <a
+                                href="https://resend.com/domains"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={'text-blue-300 hover:text-blue-200 underline'}
+                            >
+                                resend.com/domains
+                            </a>{' '}
+                            or sends will fail with “domain is invalid”.
+                        </div>
+                        <div className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Tip:</strong> Avoid <code>noreply@</code>; use a
+                            monitored inbox like <code>support@</code> or <code>hello@</code> to reduce spam filtering.
+                        </div>
+                    </div>
                 </div>
 
                 {/* From Name - Manual Save */}

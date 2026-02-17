@@ -10,6 +10,7 @@ import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import Spinner from '@/elements/Spinner';
 import Label from '@/elements/Label';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const [loading, setLoading] = useState(true);
@@ -17,6 +18,7 @@ export default () => {
     const [categories, setCategories] = useState<Record<string, EmailNotificationSetting[]>>({});
     const [toggling, setToggling] = useState<Record<string, boolean>>({});
     const { clearFlashes, addFlash } = useFlash();
+    const { secondary } = useStoreState((state) => state.theme.data!.colors);
 
     useEffect(() => {
         loadSettings();
@@ -112,11 +114,14 @@ export default () => {
     return (
         <div className='space-y-6'>
             {/* Global Toggle */}
-            <div className='border-b border-neutral-700 pb-4'>
+            <div
+                className='border border-neutral-700 rounded-lg p-4'
+                style={{ backgroundColor: secondary }}
+            >
                 <div className='flex items-center justify-between'>
                     <div>
                         <h3 className='text-lg font-medium'>Global Email Notifications</h3>
-                        <p className='text-sm text-neutral-400 mt-1'>
+                        <p className='text-sm text-neutral-300 mt-1'>
                             Master switch to enable or disable all email notifications
                         </p>
                     </div>
@@ -147,7 +152,8 @@ export default () => {
                             return (
                                 <div
                                     key={setting.id}
-                                    className='flex items-center justify-between p-4 bg-neutral-800 rounded-lg'
+                                    className='flex items-center justify-between rounded-lg border border-neutral-700 p-4'
+                                    style={{ backgroundColor: secondary }}
                                 >
                                     <div className='flex-1'>
                                         <div className='flex items-center gap-3'>
@@ -159,9 +165,9 @@ export default () => {
                                             )}
                                         </div>
                                         {setting.description && (
-                                            <p className='text-sm text-neutral-400 mt-1'>{setting.description}</p>
+                                            <p className='text-sm text-neutral-300 mt-1'>{setting.description}</p>
                                         )}
-                                        <p className='text-xs text-neutral-500 mt-1 font-mono'>
+                                        <p className='text-xs text-neutral-400 mt-1 font-mono'>
                                             {setting.template_key}
                                         </p>
                                     </div>
