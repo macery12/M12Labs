@@ -2,8 +2,10 @@
 
 namespace Everest\Tests\Integration\Api\Application\Users;
 
+use Everest\Events\ActivityLogged;
 use Everest\Models\User;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Event;
 use Everest\Transformers\Api\Application\UserTransformer;
 use Everest\Transformers\Api\Application\ServerTransformer;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
@@ -217,6 +219,31 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
             'object' => 'user',
             'attributes' => (new UserTransformer())->transform($user),
         ]);
+    }
+
+    public function testPasswordIsNotLoggedWhenUpdatingUser()
+    {
+        $user = User::factory()->create();
+
+        $response = $this->patchJson('/api/application/users/' . $user->id, [
+            'username' => 'new.username',
+            'email' => 'new@example.com',
+            'password' => 'SuperSecret123!',
+        ]);
+
+        $response->assertStatus(Response::HTTP_OK);
+
+        Event::assertDispatched(ActivityLogged::class, function (ActivityLogged $event) {
+            if ($event->model->event !== 'admin:users:update') {
+                return false;
+            }
+
+            $newData = $event->model->properties->get('new_data');
+
+            return is_array($newData)
+                && !array_key_exists('password', $newData)
+                && !array_key_exists('password_confirmation', $newData);
+        });
     }
 
     /**
