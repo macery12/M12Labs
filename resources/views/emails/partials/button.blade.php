@@ -18,7 +18,7 @@
     </tr>
 </table>
 @if($showFallback)
-    <p style="{{ $mutedStyle }} word-break: break-word; margin-top:8px;">
+    <p style="{{ $mutedStyle }}; word-break: break-word; margin-top:8px;">
         If the button doesn’t work, copy and paste this link:<br>
         <a href="{{ $url }}" style="color: {{ $brandPrimary }}; text-decoration: underline; word-break: break-word;">{{ $url }}</a>
     </p>

@@ -14,9 +14,9 @@
                     {{ $appName }}
                 </div>
             @endif
-            <h1 style="{{ $headingStyle }} margin-top:12px;">{{ $title }}</h1>
+            <h1 style="{{ $headingStyle }}; margin-top:12px;">{{ $title }}</h1>
             @if($subtitle)
-                <p style="{{ $mutedStyle }} margin:0;">{{ $subtitle }}</p>
+                <p style="{{ $mutedStyle }}; margin:0;">{{ $subtitle }}</p>
             @endif
         </td>
     </tr>
