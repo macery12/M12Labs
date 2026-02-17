@@ -23,6 +23,7 @@ export default () => {
 
             <SubNavigation>
                 <SubNavigationLink to='/admin/email' name='Settings' base />
+                <SubNavigationLink to='/admin/email/notifications' name='Notifications' />
                 <SubNavigationLink to='/admin/email/activity' name='Activity Log' />
                 <SubNavigationLink to='/admin/email/queue' name='Deferred Queue' />
             </SubNavigation>
@@ -36,14 +37,6 @@ export default () => {
                                 <ResendSettings />
                             </ContentBox>
 
-                            <ContentBox
-                                title={'Email Notification Settings'}
-                                showFlashes={'email:notifications'}
-                                css={'mt-8'}
-                            >
-                                <NotificationSettings />
-                            </ContentBox>
-
                             <ContentBox title={'Test Email'} showFlashes={'email:test'} css={'mt-8'}>
                                 <SendTestEmail />
                             </ContentBox>
@@ -52,6 +45,14 @@ export default () => {
                                 <SendCustomEmail />
                             </ContentBox>
                         </>
+                    }
+                />
+                <Route
+                    path='/notifications'
+                    element={
+                        <ContentBox title={'Email Notification Settings'} showFlashes={'email:notifications'}>
+                            <NotificationSettings />
+                        </ContentBox>
                     }
                 />
                 <Route

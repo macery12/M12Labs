@@ -107,7 +107,7 @@ export default () => {
         billing: 'Billing & Payments',
     };
 
-    const GlobalToggleButton = globalEnabled ? Button.Danger : Button.Success;
+    const GlobalToggleButton = globalEnabled ? Button.Success : Button.Danger;
 
     return (
         <div className='space-y-6'>
@@ -142,7 +142,7 @@ export default () => {
 
                     <div className='space-y-3'>
                         {settings.map((setting) => {
-                            const ItemToggle = setting.enabled ? Button.Danger : Button.Success;
+                            const ItemToggle = setting.enabled ? Button.Success : Button.Danger;
 
                             return (
                                 <div
