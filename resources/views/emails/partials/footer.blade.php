@@ -3,6 +3,9 @@
     $currentYear = date('Y');
     $supportEmail = config('mail.from.address') ?? 'support@example.com';
     $supportUrl = $supportUrl ?? (config('app.url') ? rtrim(config('app.url'), '/') . '/support' : null);
+    $brandPrimary = $brandPrimary ?? '#4F46E5';
+    $paragraphStyle = $paragraphStyle ?? "margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;";
+    $mutedStyle = $mutedStyle ?? "margin:8px 0 0; color:#6B7280; font-size:13px; line-height:1.5;";
 @endphp
 @include('emails.partials.divider')
 <p style="{{ $paragraphStyle }}; margin:0; font-size:14px;">

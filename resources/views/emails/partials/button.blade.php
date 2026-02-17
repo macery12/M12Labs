@@ -1,5 +1,7 @@
 @props(['url', 'text' => 'View', 'color' => null, 'align' => 'center', 'showFallback' => true])
 @php
+    $brandPrimary = $brandPrimary ?? '#4F46E5';
+    $mutedStyle = $mutedStyle ?? "margin:8px 0 0; color:#6B7280; font-size:13px; line-height:1.5;";
     $buttonColor = $color ?? $brandPrimary;
 @endphp
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-spacing:0; margin: 8px 0;">

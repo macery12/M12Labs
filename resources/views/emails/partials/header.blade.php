@@ -3,6 +3,9 @@
     $logoUrl = $logoUrl ?? null;
     $title = $title ?? $appName;
     $subtitle = $subtitle ?? null;
+    $brandPrimary = $brandPrimary ?? '#4F46E5';
+    $headingStyle = $headingStyle ?? "margin:0 0 12px; font-size:22px; line-height:1.3; color:#111827; font-weight:700;";
+    $mutedStyle = $mutedStyle ?? "margin:8px 0 0; color:#6B7280; font-size:13px; line-height:1.5;";
 @endphp
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-spacing:0; margin:0 0 24px;">
     <tr>
