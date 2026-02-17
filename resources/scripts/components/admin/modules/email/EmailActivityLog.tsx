@@ -9,6 +9,8 @@ import {
 import useFlash from '@/plugins/useFlash';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
+import Input from '@/elements/Input';
+import Select from '@/elements/Select';
 import tw from 'twin.macro';
 import styled from 'styled-components';
 import EmailLogDetailModal from './EmailLogDetailModal';
@@ -22,6 +24,7 @@ import {
     faClock,
     faBan,
 } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 const Table = styled.table`
     ${tw`w-full table-auto`}
@@ -43,20 +46,13 @@ const StatusBadge = styled.span<{ success: boolean }>`
     }
 `;
 
-const FilterContainer = styled.div`
-    ${tw`mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-700`}
+const FilterContainer = styled.div<{ $background: string }>`
+    ${tw`mb-6 p-4 rounded-lg border border-neutral-700`}
+    background-color: ${({ $background }) => $background};
 `;
 
 const FilterGrid = styled.div`
     ${tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4`}
-`;
-
-const Select = styled.select`
-    ${tw`w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded text-sm text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-`;
-
-const Input = styled.input`
-    ${tw`w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded text-sm text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
 `;
 
 const getStatusIcon = (success: boolean) => {
@@ -73,6 +69,7 @@ export default () => {
     const [recipientInput, setRecipientInput] = useState(searchParams.get('recipient') || '');
     const { addFlash } = useFlash();
     const recipientDebounceRef = useRef<NodeJS.Timeout | null>(null);
+    const { colors } = useStoreState(state => state.theme.data!);
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -212,7 +209,7 @@ export default () => {
             </div>
 
             {showFilters && (
-                <FilterContainer>
+                <FilterContainer $background={colors.secondary}>
                     <div className='flex items-center justify-between mb-4'>
                         <h3 className='text-lg font-semibold'>Filters</h3>
                         <Button onClick={clearFilters} variant='text' size='sm'>
@@ -291,7 +288,7 @@ export default () => {
 
                         <div className='flex items-end'>
                             <label className='flex items-center text-sm'>
-                                <input
+                                <Input
                                     type='checkbox'
                                     checked={filters.only_failures}
                                     onChange={(e) => updateFilter('only_failures', e.target.checked)}
@@ -310,7 +307,10 @@ export default () => {
                 </div>
             ) : logs && logs.data.length > 0 ? (
                 <>
-                    <div className='bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden'>
+                    <div
+                        className='bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden'
+                        style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
+                    >
                         <div className='overflow-x-auto'>
                             <Table>
                                 <thead>
@@ -401,7 +401,10 @@ export default () => {
                     )}
                 </>
             ) : (
-                <div className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'>
+                <div
+                    className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'
+                    style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
+                >
                     <p className='text-gray-400 text-lg'>No email logs found</p>
                     <p className='text-gray-500 text-sm mt-2'>Try adjusting your filters</p>
                 </div>
