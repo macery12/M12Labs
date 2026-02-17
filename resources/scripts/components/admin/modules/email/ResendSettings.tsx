@@ -9,10 +9,12 @@ import useStatus from '@/plugins/useStatus';
 import { getSettings, updateSettings, ResendSettings } from '@/api/routes/admin/email';
 import { Button } from '@/elements/button';
 import debounce from 'debounce';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
+    const { secondary } = useStoreState((state) => state.theme.data!.colors);
     
     // Settings loaded from API (not everest state)
     const [settings, setSettings] = useState<ResendSettings | null>(null);
@@ -163,31 +165,50 @@ export default () => {
         );
     }
 
+    const StatusToggleButton = enabled ? Button.Success : Button.Danger;
+
+    const toggleHint = 'Saves instantly when toggled';
+
     return (
         <AdminBox title={'Resend Email Settings'} icon={faEnvelope} status={status}>
             <div className={'grid grid-cols-1 gap-6'}>
                 {/* Enable/Disable Toggle - Instant Save */}
-                <div>
-                    <Label>Status</Label>
-                    <div className={'flex items-center gap-4'}>
-                        <Button
-                            onClick={toggleEnabled}
-                            disabled={savingEnabled}
-                            className={enabled ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
-                        >
-                            {savingEnabled && (
-                                <FontAwesomeIcon icon={faSpinner} className={'fa-spin mr-2'} />
-                            )}
-                            {savingEnabled ? 'Saving...' : enabled ? 'Enabled' : 'Disabled'}
-                        </Button>
-                        <p className={'text-sm text-gray-400'}>
-                            {enabled ? 'Email system is active' : 'Email system is inactive'} - saves instantly
-                        </p>
+                <div
+                    className={'rounded-lg border border-neutral-700 p-4'}
+                    style={{ backgroundColor: secondary }}
+                >
+                    <div className={'flex flex-col gap-3 md:flex-row md:items-center md:justify-between'}>
+                        <div className={'flex items-center gap-3'}>
+                            <span
+                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold ${
+                                    enabled
+                                        ? 'border-green-500/60 bg-green-950 text-green-100'
+                                        : 'border-red-500/60 bg-red-950 text-red-100'
+                                }`}
+                            >
+                                <span
+                                    className={`h-2 w-2 rounded-full ${
+                                        enabled ? 'bg-green-400' : 'bg-red-400'
+                                    }`}
+                                />
+                                {enabled ? 'Email delivery is enabled' : 'Email delivery is disabled'}
+                            </span>
+                            <span className={'hidden text-sm text-gray-400 md:inline'}>{toggleHint}</span>
+                        </div>
+                        <div className={'flex items-center gap-2'}>
+                            <StatusToggleButton onClick={toggleEnabled} disabled={savingEnabled} loading={savingEnabled}>
+                                {enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}
+                            </StatusToggleButton>
+                        </div>
                     </div>
+                    <p className={'mt-2 text-xs text-gray-400 md:hidden'}>{toggleHint}</p>
                 </div>
 
                 {/* API Key - Auto-Save */}
-                <div>
+                <div
+                    className={'space-y-2 rounded-lg border border-neutral-700 p-4'}
+                    style={{ backgroundColor: secondary }}
+                >
                     <Label>
                         API Key
                         {settings?.api_key && (
@@ -216,13 +237,13 @@ export default () => {
                         }
                     />
                     {settings?.api_key && (
-                        <p className={'mt-2 text-sm text-green-400'}>
+                        <p className={'mt-1 text-sm text-green-400'}>
                             <FontAwesomeIcon icon={faCheckCircle} className={'mr-1'} />
                             API key is configured
                         </p>
                     )}
-                    <p className={'mt-2 text-sm text-gray-400'}>
-                        Auto-saves after 1 second - Get your API key from{' '}
+                    <p className={'text-sm text-gray-400'}>
+                        Auto-saves after 1 second — get your API key from{' '}
                         <a
                             href="https://resend.com/api-keys"
                             target="_blank"
@@ -232,7 +253,7 @@ export default () => {
                             resend.com/api-keys
                         </a>
                     </p>
-                    <p className={'mt-2 text-sm text-yellow-400'}>
+                    <p className={'text-sm text-yellow-400'}>
                         🔒 API keys are encrypted in transit via HTTPS and stored securely in the database
                     </p>
                 </div>
@@ -254,20 +275,24 @@ export default () => {
                         onChange={(e) => setFromEmail(e.target.value)}
                         placeholder={'noreply@yourdomain.com'}
                     />
-                    <p className={'mt-2 text-sm text-yellow-400'}>
-                        ⚠️ <strong>Important:</strong> The domain of this email must be verified in your Resend
-                        account at{' '}
-                        <a
-                            href="https://resend.com/domains"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={'text-blue-400 hover:text-blue-300'}
-                        >
-                            resend.com/domains
-                        </a>{' '}
-                        or emails will fail with "domain is invalid" error. For example, if your email is
-                        "noreply@example.com", you must verify the domain "example.com" in Resend.
-                    </p>
+                    <div className={'mt-3 space-y-2 rounded-md border border-amber-500/40 bg-amber-900/30 p-3 text-sm'}>
+                        <div className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Important:</strong> Verify this domain in Resend{' '}
+                            <a
+                                href="https://resend.com/domains"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={'text-blue-300 hover:text-blue-200 underline'}
+                            >
+                                resend.com/domains
+                            </a>{' '}
+                            or sends will fail with “domain is invalid”.
+                        </div>
+                        <div className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Tip:</strong> Avoid <code>noreply@</code>; use a
+                            monitored inbox like <code>support@</code> or <code>hello@</code> to reduce spam filtering.
+                        </div>
+                    </div>
                 </div>
 
                 {/* From Name - Manual Save */}

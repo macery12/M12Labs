@@ -10,6 +10,7 @@ import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import Spinner from '@/elements/Spinner';
 import Label from '@/elements/Label';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
     const [loading, setLoading] = useState(true);
@@ -17,6 +18,7 @@ export default () => {
     const [categories, setCategories] = useState<Record<string, EmailNotificationSetting[]>>({});
     const [toggling, setToggling] = useState<Record<string, boolean>>({});
     const { clearFlashes, addFlash } = useFlash();
+    const { secondary } = useStoreState((state) => state.theme.data!.colors);
 
     useEffect(() => {
         loadSettings();
@@ -107,29 +109,32 @@ export default () => {
         billing: 'Billing & Payments',
     };
 
+    const GlobalToggleButton = globalEnabled ? Button.Success : Button.Danger;
+
     return (
         <div className='space-y-6'>
             {/* Global Toggle */}
-            <div className='border-b border-neutral-700 pb-4'>
+            <div
+                className='border border-neutral-700 rounded-lg p-4'
+                style={{ backgroundColor: secondary }}
+            >
                 <div className='flex items-center justify-between'>
                     <div>
                         <h3 className='text-lg font-medium'>Global Email Notifications</h3>
-                        <p className='text-sm text-neutral-400 mt-1'>
+                        <p className='text-sm text-neutral-300 mt-1'>
                             Master switch to enable or disable all email notifications
                         </p>
                     </div>
-                    <Button
+                    <GlobalToggleButton
                         onClick={() => {
                             if (!toggling.global) {
                                 toggleGlobal();
                             }
                         }}
-                        className={`px-4 py-2 ${
-                            globalEnabled ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                        } ${toggling.global ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`px-4 py-2 ${toggling.global ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {toggling.global ? <Spinner size='small' /> : globalEnabled ? 'Enabled' : 'Disabled'}
-                    </Button>
+                    </GlobalToggleButton>
                 </div>
             </div>
 
@@ -141,52 +146,55 @@ export default () => {
                     </h3>
 
                     <div className='space-y-3'>
-                        {settings.map((setting) => (
-                            <div
-                                key={setting.id}
-                                className='flex items-center justify-between p-4 bg-neutral-800 rounded-lg'
-                            >
-                                <div className='flex-1'>
-                                    <div className='flex items-center gap-3'>
-                                        <Label>{setting.name}</Label>
-                                        {setting.rate_limit_exempt && (
-                                            <span className='px-2 py-1 text-xs bg-blue-600 text-white rounded'>
-                                                Rate Limit Exempt
-                                            </span>
-                                        )}
-                                    </div>
-                                    {setting.description && (
-                                        <p className='text-sm text-neutral-400 mt-1'>{setting.description}</p>
-                                    )}
-                                    <p className='text-xs text-neutral-500 mt-1 font-mono'>{setting.template_key}</p>
-                                </div>
+                        {settings.map((setting) => {
+                            const ItemToggle = setting.enabled ? Button.Success : Button.Danger;
 
-                                <Button
-                                    onClick={() => {
-                                        if (!toggling[setting.template_key] && globalEnabled) {
-                                            toggleSetting(setting);
-                                        }
-                                    }}
-                                    className={`ml-4 px-4 py-2 ${
-                                        setting.enabled
-                                            ? 'bg-green-600 hover:bg-green-700'
-                                            : 'bg-red-600 hover:bg-red-700'
-                                    } ${
-                                        toggling[setting.template_key] || !globalEnabled
-                                            ? 'opacity-50 cursor-not-allowed'
-                                            : ''
-                                    }`}
+                            return (
+                                <div
+                                    key={setting.id}
+                                    className='flex items-center justify-between rounded-lg border border-neutral-700 p-4'
+                                    style={{ backgroundColor: secondary }}
                                 >
-                                    {toggling[setting.template_key] ? (
-                                        <Spinner size='small' />
-                                    ) : setting.enabled ? (
-                                        'Enabled'
-                                    ) : (
-                                        'Disabled'
-                                    )}
-                                </Button>
-                            </div>
-                        ))}
+                                    <div className='flex-1'>
+                                        <div className='flex items-center gap-3'>
+                                            <Label>{setting.name}</Label>
+                                            {setting.rate_limit_exempt && (
+                                                <span className='px-2 py-1 text-xs bg-blue-600 text-white rounded'>
+                                                    Rate Limit Exempt
+                                                </span>
+                                            )}
+                                        </div>
+                                        {setting.description && (
+                                            <p className='text-sm text-neutral-300 mt-1'>{setting.description}</p>
+                                        )}
+                                        <p className='text-xs text-neutral-400 mt-1 font-mono'>
+                                            {setting.template_key}
+                                        </p>
+                                    </div>
+
+                                    <ItemToggle
+                                        onClick={() => {
+                                            if (!toggling[setting.template_key] && globalEnabled) {
+                                                toggleSetting(setting);
+                                            }
+                                        }}
+                                        className={`ml-4 px-4 py-2 ${
+                                            toggling[setting.template_key] || !globalEnabled
+                                                ? 'opacity-50 cursor-not-allowed'
+                                                : ''
+                                        }`}
+                                    >
+                                        {toggling[setting.template_key] ? (
+                                            <Spinner size='small' />
+                                        ) : setting.enabled ? (
+                                            'Enabled'
+                                        ) : (
+                                            'Disabled'
+                                        )}
+                                    </ItemToggle>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             ))}
