@@ -1,21 +1,20 @@
 @extends('emails.layout')
 
 @section('content')
-    <div class="header">
-        <h1>Welcome!</h1>
-    </div>
-    <div class="content">
-        <p>Hello {{ $userName }},</p>
-        <p>Your account has been successfully created!</p>
-        <p><strong>Email:</strong> {{ $email }}</p>
-        <p>You can now log in to your account using the button below:</p>
-        <p style="text-align: center;">
-            <a href="{{ $loginUrl }}" class="button">Log In</a>
-        </p>
-        <p>Thank you for joining us!</p>
-    </div>
-    <div class="footer">
-        <p>If you're having trouble clicking the "Log In" button, copy and paste the URL below into your web browser:</p>
-        <p>{{ $loginUrl }}</p>
-    </div>
+    @include('emails.partials.header', [
+        'title' => 'Welcome!',
+        'subtitle' => 'Your account is ready to use.'
+    ])
+    <p style="{{ $paragraphStyle }}">Hello {{ $userName }},</p>
+    <p style="{{ $paragraphStyle }}">Your account has been successfully created.</p>
+    @component('emails.partials.panel', ['title' => 'Account details'])
+        @include('emails.partials.key_value_table', [
+            'rows' => [
+                'Email' => $email,
+            ]
+        ])
+    @endcomponent
+    <p style="{{ $paragraphStyle }}">You can now log in to your account using the button below.</p>
+    @include('emails.partials.button', ['url' => $loginUrl, 'text' => 'Log In'])
+    <p style="{{ $paragraphStyle }}">Thank you for joining us!</p>
 @endsection

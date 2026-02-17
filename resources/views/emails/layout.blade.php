@@ -3,61 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $subject ?? 'Email' }}</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background-color: #4F46E5;
-            color: #ffffff;
-            padding: 30px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .content {
-            padding: 30px;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #4F46E5;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 6px;
-            margin: 20px 0;
-        }
-        .button:hover {
-            background-color: #4338CA;
-        }
-        .footer {
-            background-color: #f9fafb;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #6b7280;
-        }
-    </style>
+    <title>{{ $subject ?? config('app.name') }}</title>
 </head>
-<body>
-    <div class="container">
-        @yield('content')
-    </div>
+@php
+    $brandPrimary = $brandPrimary ?? '#4F46E5';
+    $brandDark = $brandDark ?? '#111827';
+    $brandMuted = $brandMuted ?? '#6B7280';
+    $backgroundColor = $backgroundColor ?? '#f3f4f6';
+    $cardBackground = $cardBackground ?? '#ffffff';
+    $borderColor = $borderColor ?? '#e5e7eb';
+    $fontFamily = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
+    $headingStyle = "margin:0 0 12px; font-size:22px; line-height:1.3; color:$brandDark; font-weight:700;";
+    $paragraphStyle = "margin:0 0 16px; color:$brandDark; font-size:15px; line-height:1.6;";
+    $mutedStyle = "margin:8px 0 0; color:$brandMuted; font-size:13px; line-height:1.5;";
+    $preheaderText = trim($preheader ?? '');
+@endphp
+<body style="margin:0; padding:0; background-color:{{ $backgroundColor }}; font-family: {{ $fontFamily }}; color: {{ $brandDark }};">
+    @if(!empty($preheaderText))
+        <div style="display:none; max-height:0px; overflow:hidden; font-size:1px; line-height:1px; color:{{ $backgroundColor }}; opacity:0;">
+            {{ $preheaderText }}
+        </div>
+    @endif
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: {{ $backgroundColor }}; width: 100%; border-spacing:0;">
+        <tr>
+            <td align="center" style="padding: 24px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; width:100%; border-spacing:0;">
+                    <tr>
+                        <td style="padding: 0 0 12px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: {{ $cardBackground }}; border:1px solid {{ $borderColor }}; border-radius: 12px; overflow:hidden; width:100%; border-spacing:0;">
+                                <tr>
+                                    <td style="padding: 32px 32px 0;">
+                                        @yield('content')
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 32px 32px;">
+                                        @include('emails.partials.footer')
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
