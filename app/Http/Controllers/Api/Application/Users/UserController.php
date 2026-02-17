@@ -28,6 +28,12 @@ use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
 class UserController extends ApplicationApiController
 {
+    private const SENSITIVE_UPDATE_FIELDS = [
+        'password',
+        'password_confirmation',
+        'current_password',
+    ];
+
     /**
      * UserController constructor.
      */
@@ -121,11 +127,9 @@ class UserController extends ApplicationApiController
         $this->updateService->setUserLevel(User::USER_LEVEL_ADMIN);
         $user = $this->updateService->handle($user, $request->validated());
 
-        $newData = collect($request->all())->except([
-            'password',
-            'password_confirmation',
-            'current_password',
-        ])->toArray();
+        $newData = collect($request->all())
+            ->except(self::SENSITIVE_UPDATE_FIELDS)
+            ->toArray();
 
         Activity::event('admin:users:update')
             ->property('user', $user)

@@ -223,12 +223,15 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
 
     public function testPasswordIsNotLoggedWhenUpdatingUser()
     {
+        Event::fake(ActivityLogged::class);
         $user = User::factory()->create();
 
         $response = $this->patchJson('/api/application/users/' . $user->id, [
             'username' => 'new.username',
             'email' => 'new@example.com',
             'password' => 'SuperSecret123!',
+            'password_confirmation' => 'SuperSecret123!',
+            'current_password' => 'OldSecret123!',
         ]);
 
         $response->assertStatus(Response::HTTP_OK);
@@ -242,7 +245,8 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
 
             return is_array($newData)
                 && !array_key_exists('password', $newData)
-                && !array_key_exists('password_confirmation', $newData);
+                && !array_key_exists('password_confirmation', $newData)
+                && !array_key_exists('current_password', $newData);
         });
     }
 
