@@ -5,9 +5,9 @@ namespace Everest\Console;
 use Everest\Models\ActivityLog;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
-use Everest\Console\Commands\AutoUpdateCommand;
 use Everest\Console\Commands\Billing\CleanupOrdersCommand;
 use Everest\Console\Commands\Billing\ExpireCouponsCommand;
+use Everest\Console\Commands\Email\ProcessDeferredEmailsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
 use Everest\Console\Commands\Billing\SuspendBillableServersCommand;
@@ -46,15 +46,21 @@ class Kernel extends ConsoleKernel
             $schedule->command(PruneCommand::class, ['--model' => [ActivityLog::class]])->daily();
         }
 
-        if (config('app.auto_update')) {
-            $schedule->command(AutoUpdateCommand::class)->daily();
-        }
-
         if (config('modules.billing.enabled')) {
             $schedule->command(CleanupOrdersCommand::class)->daily();
             $schedule->command(SuspendBillableServersCommand::class)->daily();
             $schedule->command(CalculateOrderThreatIndexCommand::class)->everyFiveMinutes();
             $schedule->command(ExpireCouponsCommand::class)->twiceDaily(1, 13); // Run at 1:00 AM and 1:00 PM
+        }
+
+        // Process deferred emails every 5 minutes
+        $schedule->command(ProcessDeferredEmailsCommand::class)->everyFiveMinutes();
+
+        // Send server renewal notices (run daily - checks for servers expiring in 7, 3, and 1 day)
+        if (config('modules.billing.enabled')) {
+            $schedule->command('email:send-renewal-notices', ['--days' => 7])->dailyAt('09:00'); // 7 days notice
+            $schedule->command('email:send-renewal-notices', ['--days' => 3])->dailyAt('09:15'); // 3 days notice
+            $schedule->command('email:send-renewal-notices', ['--days' => 1])->dailyAt('09:30'); // 1 day notice
         }
     }
 }

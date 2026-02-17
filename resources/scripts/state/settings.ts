@@ -8,14 +8,10 @@ export interface SiteSettings {
     mode: PanelMode;
     debug: boolean;
     locale: string;
-    translations?: {
-        activity?: Record<string, unknown>;
-    };
-    auto_update: boolean;
     indicators: boolean;
     speed_dial: boolean;
     setup: boolean;
-    recaptcha: {
+    captcha: {
         enabled: boolean;
         siteKey: string;
     };

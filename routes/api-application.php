@@ -175,6 +175,44 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Email Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/email
+    |
+    */
+    Route::group(['prefix' => '/email'], function () {
+        Route::get('/settings', [Application\EmailController::class, 'getSettings']);
+        Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
+        Route::post('/test', [Application\EmailController::class, 'sendTest']);
+        Route::post('/send', [Application\EmailController::class, 'sendCustom']);
+        
+        // Email notification settings
+        Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
+        Route::put('/notifications/global', [Application\EmailController::class, 'updateGlobalToggle']);
+        Route::put('/notifications/{id}', [Application\EmailController::class, 'updateNotificationSetting']);
+        
+        // Email quota management
+        Route::get('/quotas', [Application\EmailController::class, 'getQuotaInfo']);
+        Route::get('/quotas/user/{userId}', [Application\EmailController::class, 'getUserQuota']);
+        Route::put('/quotas/user/{userId}', [Application\EmailController::class, 'updateUserQuota']);
+        
+        // Email activity logs
+        Route::get('/logs', [Application\EmailActivityController::class, 'index']);
+        Route::get('/logs/stats', [Application\EmailActivityController::class, 'getStats']);
+        Route::get('/logs/templates', [Application\EmailActivityController::class, 'getTemplateKeys']);
+        Route::get('/logs/{id}', [Application\EmailActivityController::class, 'show']);
+        Route::get('/logs/{id}/debug-bundle', [Application\EmailActivityController::class, 'debugBundle']);
+        Route::post('/logs/{id}/resend', [Application\EmailActivityController::class, 'resend']);
+        
+        // Deferred email queue
+        Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);
+        Route::post('/deferred/{id}/send-now', [Application\EmailActivityController::class, 'sendDeferredNow']);
+        Route::delete('/deferred/{id}', [Application\EmailActivityController::class, 'cancelDeferred']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | API Controller Routes
     |--------------------------------------------------------------------------
     |

@@ -40,6 +40,7 @@ class ModsController extends ApplicationApiController
         }
 
         // Clear config cache to ensure new settings are loaded
+        // SECURITY: Command name is hardcoded - never use dynamic command names with Artisan::call()
         \Artisan::call('config:clear');
 
         Activity::event('admin:mods:update')
@@ -72,6 +73,7 @@ class ModsController extends ApplicationApiController
         Setting::forget('settings::modules:mods:curseforge_api_key');
 
         // Clear config cache to ensure key removal is reflected
+        // SECURITY: Command name is hardcoded - never use dynamic command names with Artisan::call()
         \Artisan::call('config:clear');
 
         Activity::event('admin:mods:reset-key')

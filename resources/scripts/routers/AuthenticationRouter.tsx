@@ -1,7 +1,7 @@
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import LoginContainer from '@/components/auth/LoginContainer';
 import ForgotPasswordContainer from '@/components/auth/ForgotPasswordContainer';
-import ResetPasswordContainer from '@/components/auth/ResetPasswordContainer';
+import ResetPasswordWithTokenContainer from '@/components/auth/ResetPasswordWithTokenContainer';
 import LoginCheckpointContainer from '@/components/auth/LoginCheckpointContainer';
 import DiscordRegistrationContainer from '@/components/auth/DiscordRegistrationContainer';
 import { NotFound } from '@/elements/ScreenBlock';
@@ -28,7 +28,7 @@ export default () => {
                     {registration && <Route path={'register'} element={<RegisterContainer />} />}
                     <Route path="discord/register" element={<DiscordRegistrationContainer />} />
                     <Route path="password" element={<ForgotPasswordContainer />} />
-                    <Route path="password/reset/:token" element={<ResetPasswordContainer />} />
+                    <Route path="password/reset/:token" element={<ResetPasswordWithTokenContainer />} />
                     <Route path="*" element={<NotFound onBack={() => navigate('/auth/login')} />} />
                 </Routes>
             </div>

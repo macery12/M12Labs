@@ -24,6 +24,15 @@ class ServerObserver
     public function created(Server $server): void
     {
         event(new Events\Server\Created($server));
+
+        // Dispatch email notification event
+        if ($server->user) {
+            event(new Events\Email\ServerCreatedEmail(
+                server: $server,
+                user: $server->user,
+                correlationId: \Illuminate\Support\Str::uuid()->toString()
+            ));
+        }
     }
 
     /**

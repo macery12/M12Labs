@@ -64,6 +64,10 @@
             }
         </style>
 
+        @if(!empty($siteConfiguration['captcha']['enabled']) && !empty($siteConfiguration['captcha']['siteKey']))
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
+        @endif
+
         @yield('assets')
 
         @include('layouts.scripts')

@@ -6,7 +6,7 @@ import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import { GeneralSettings, updateGeneralSettings } from '@/api/routes/admin/settings';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import { faPaintBrush, faPlusCircle, faRecycle, faShapes, faImage, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faPaintBrush, faPlusCircle, faShapes, faImage, faEye } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import { useEffect } from 'react';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -50,7 +50,6 @@ export default () => {
                 name: settings.name,
                 logo: settings.logo,
                 indicators: settings.indicators,
-                auto_update: settings.auto_update,
                 speed_dial: settings.speed_dial,
                 activity: {
                     enabled: {
@@ -75,23 +74,6 @@ export default () => {
                         <p className={'mt-1.5 text-xs text-gray-400'}>
                             Configure the logo of this Panel to suit your needs.
                         </p>
-                    </AdminBox>
-                    <AdminBox title={'Automatic Updates'} icon={faRecycle}>
-                        <div>
-                            <div className={'inline-flex'}>
-                                <Label className={'mt-1 mr-2'}>Allow Automatic Updates?</Label>
-                                <Field
-                                    id={'auto_update'}
-                                    name={'auto_update'}
-                                    type={'checkbox'}
-                                    defaultChecked={settings.auto_update}
-                                />
-                            </div>
-                            <p className={'mt-1.5 text-xs text-gray-400'}>
-                                If enabled, Jexactyl will automatically update in order to keep your system secure and
-                                introduce new features.
-                            </p>
-                        </div>
                     </AdminBox>
                     <AdminBox title={'Admin Indicators'} icon={faShapes}>
                         <div>

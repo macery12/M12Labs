@@ -28,6 +28,10 @@ class EverestComposer
                     'force2fa' => boolval(config('modules.auth.security.force2fa', false)),
                     'attempts' => config('modules.auth.security.attempts', 3),
                 ],
+                'captcha' => [
+                    'provider' => Setting::get('settings::modules:auth:captcha:provider', 'disabled'),
+                    'site_key' => Setting::get('settings::modules:auth:captcha:site_key', ''),
+                ],
                 'modules' => [
                     'discord' => [
                         'enabled' => boolval(config('modules.auth.discord.enabled', false)),

@@ -26,10 +26,13 @@ class DeleteUserCommand extends Command
         $search = $this->option('user') ?? $this->ask(trans('command/messages.user.search_users'));
         Assert::notEmpty($search, 'Search term should be an email address, got: %s.');
 
+        // Escape LIKE wildcards to prevent SQL injection through wildcard characters
+        $escapedSearch = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search);
+
         $results = User::query()
-            ->where('id', 'LIKE', "$search%")
-            ->orWhere('username', 'LIKE', "$search%")
-            ->orWhere('email', 'LIKE', "$search%")
+            ->where('id', 'LIKE', "$escapedSearch%")
+            ->orWhere('username', 'LIKE', "$escapedSearch%")
+            ->orWhere('email', 'LIKE', "$escapedSearch%")
             ->get();
 
         if (count($results) < 1) {

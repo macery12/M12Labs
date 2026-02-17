@@ -15,8 +15,7 @@ class SettingsServiceProvider extends ServiceProvider
     protected array $keys = [
         // Jexactyl-specific keys
         'app:name', 'app:logo', 'app:mode', 'app:setup', 'app:locale',
-        'app:speed_dial', 'app:indicators', 'app:auto_update',
-        'recaptcha:enabled', 'recaptcha:secret_key', 'recaptcha:website_key',
+        'app:speed_dial', 'app:indicators',
         'pterodactyl:guzzle:timeout', 'pterodactyl:guzzle:connect_timeout',
         'pterodactyl:console:count', 'pterodactyl:console:frequency',
         'pterodactyl:auth:2fa_required',

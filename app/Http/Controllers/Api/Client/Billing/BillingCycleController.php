@@ -39,7 +39,9 @@ class BillingCycleController extends ClientApiController
                     $product,
                     (int) $couponId,
                     $request->input('type', 'new'),
-                    $cycle['days']
+                    $cycle['days'],
+                    null, // node ID not needed for preview
+                    $request->user()->id
                 );
 
                 $cycle['price_with_coupon'] = $priceInfo['finalPrice'];

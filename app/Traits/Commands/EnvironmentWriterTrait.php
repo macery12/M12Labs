@@ -35,12 +35,14 @@ trait EnvironmentWriterTrait
         $saveContents = file_get_contents($path);
         collect($values)->each(function ($value, $key) use (&$saveContents) {
             $key = strtoupper($key);
+            // Escape the key for use in regex to prevent ReDoS and regex injection
+            $escapedKey = preg_quote($key, '/');
             $saveValue = sprintf('%s=%s', $key, $this->escapeEnvironmentValue($value));
 
-            if (preg_match_all('/^' . $key . '=(.*)$/m', $saveContents) < 1) {
+            if (preg_match_all('/^' . $escapedKey . '=(.*)$/m', $saveContents) < 1) {
                 $saveContents = $saveContents . PHP_EOL . $saveValue;
             } else {
-                $saveContents = preg_replace('/^' . $key . '=(.*)$/m', $saveValue, $saveContents);
+                $saveContents = preg_replace('/^' . $escapedKey . '=(.*)$/m', $saveValue, $saveContents);
             }
         });
 

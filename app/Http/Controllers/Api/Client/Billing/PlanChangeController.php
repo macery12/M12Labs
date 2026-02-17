@@ -101,17 +101,17 @@ class PlanChangeController extends ClientApiController
     public function changePlan(GetServerRequest $request, Server $server, int $productId): JsonResponse
     {
         $newProduct = Product::findOrFail($productId);
-        
+
         // Validate and get billing_days from request
         $validated = $request->validate([
             'billing_days' => 'nullable|integer|min:1|max:365',
         ]);
-        
+
         $billingDays = $validated['billing_days'] ?? null;
-        
+
         try {
             $updatedServer = $this->planChangeService->changePlan($server, $newProduct, false, $billingDays);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Plan changed successfully.',

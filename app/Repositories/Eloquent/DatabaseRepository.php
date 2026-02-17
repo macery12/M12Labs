@@ -70,7 +70,9 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
      */
     public function createDatabase(string $database): bool
     {
-        return $this->run(sprintf('CREATE DATABASE IF NOT EXISTS `%s`', $database));
+        $escapedDatabase = $this->escapeIdentifier($database);
+
+        return $this->run(sprintf('CREATE DATABASE IF NOT EXISTS `%s`', $escapedDatabase));
     }
 
     /**
@@ -78,15 +80,23 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
      */
     public function createUser(string $username, string $remote, string $password, ?int $max_connections): bool
     {
-        $args = [$username, $remote, $password];
-        $command = 'CREATE USER `%s`@`%s` IDENTIFIED BY \'%s\'';
+        $connection = $this->database->connection($this->getConnection());
+        $pdo = $connection->getPdo();
+
+        // Use PDO quote for password (includes quotes)
+        $escapedPassword = $pdo->quote($password);
+
+        // Escape backtick-wrapped identifiers
+        $escapedUsername = $this->escapeIdentifier($username);
+        $escapedRemote = $this->escapeIdentifier($remote);
+
+        $command = sprintf('CREATE USER `%s`@`%s` IDENTIFIED BY %s', $escapedUsername, $escapedRemote, $escapedPassword);
 
         if (!empty($max_connections)) {
-            $args[] = $max_connections;
-            $command .= ' WITH MAX_USER_CONNECTIONS %s';
+            $command .= ' WITH MAX_USER_CONNECTIONS ' . (int) $max_connections;
         }
 
-        return $this->run(sprintf($command, ...$args));
+        return $this->run($command);
     }
 
     /**
@@ -94,11 +104,15 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
      */
     public function assignUserToDatabase(string $database, string $username, string $remote): bool
     {
+        $escapedDatabase = $this->escapeIdentifier($database);
+        $escapedUsername = $this->escapeIdentifier($username);
+        $escapedRemote = $this->escapeIdentifier($remote);
+
         return $this->run(sprintf(
             'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, REFERENCES, INDEX, LOCK TABLES, CREATE ROUTINE, ALTER ROUTINE, EXECUTE, CREATE TEMPORARY TABLES, CREATE VIEW, SHOW VIEW, EVENT, TRIGGER ON `%s`.* TO `%s`@`%s`',
-            $database,
-            $username,
-            $remote
+            $escapedDatabase,
+            $escapedUsername,
+            $escapedRemote
         ));
     }
 
@@ -115,7 +129,9 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
      */
     public function dropDatabase(string $database): bool
     {
-        return $this->run(sprintf('DROP DATABASE IF EXISTS `%s`', $database));
+        $escapedDatabase = $this->escapeIdentifier($database);
+
+        return $this->run(sprintf('DROP DATABASE IF EXISTS `%s`', $escapedDatabase));
     }
 
     /**
@@ -123,7 +139,10 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
      */
     public function dropUser(string $username, string $remote): bool
     {
-        return $this->run(sprintf('DROP USER IF EXISTS `%s`@`%s`', $username, $remote));
+        $escapedUsername = $this->escapeIdentifier($username);
+        $escapedRemote = $this->escapeIdentifier($remote);
+
+        return $this->run(sprintf('DROP USER IF EXISTS `%s`@`%s`', $escapedUsername, $escapedRemote));
     }
 
     /**
@@ -132,5 +151,15 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
     private function run(string $statement): bool
     {
         return $this->database->connection($this->getConnection())->statement($statement);
+    }
+
+    /**
+     * Escape special characters in database identifiers (table names, column names, etc.)
+     * to prevent SQL injection when using backtick-wrapped identifiers.
+     */
+    private function escapeIdentifier(string $identifier): string
+    {
+        // Escape backticks and backslashes
+        return str_replace(['\\', '`'], ['\\\\', '\\`'], $identifier);
     }
 }
