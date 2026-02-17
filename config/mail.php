@@ -12,4 +12,20 @@ return [
     |
     */
     'log_debug' => env('EMAIL_LOG_DEBUG', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown Mail Settings
+    |--------------------------------------------------------------------------
+    |
+    | Register the default markdown mail view paths so Blade components like
+    | "mail::message" can be resolved when rendering email templates.
+    |
+    */
+    'markdown' => [
+        'theme' => 'default',
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
 ];
