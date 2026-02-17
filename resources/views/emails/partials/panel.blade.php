@@ -5,9 +5,9 @@
     <tr>
         <td style="background-color:#f9fafb; border:1px solid {{ $borderColor }}; border-radius:10px; padding:16px 18px;">
             @if($panelTitle)
-                <p style="{{ $headingStyle }} font-size:18px; margin-bottom:10px;">{{ $panelTitle }}</p>
+                <p style="{{ $headingStyle }}; font-size:18px; margin-bottom:10px;">{{ $panelTitle }}</p>
             @endif
-            <div style="{{ $paragraphStyle }} margin:0;">
+            <div style="{{ $paragraphStyle }}; margin:0;">
                 {{ $slot }}
             </div>
         </td>
