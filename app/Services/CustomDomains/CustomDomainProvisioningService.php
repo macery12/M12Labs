@@ -3,11 +3,11 @@
 namespace Everest\Services\CustomDomains;
 
 use Exception;
-use Everest\Models\Order;
 use Everest\Models\Server;
 use Everest\Models\Allocation;
 use Everest\Models\CustomDomain;
 use Everest\Models\ServerCustomDomain;
+use Everest\Models\Billing\Order;
 use Everest\Models\CustomDomainDnsLog;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Support\Facades\DB;
@@ -55,11 +55,17 @@ class CustomDomainProvisioningService
             return;
         }
 
-        DB::transaction(function () use ($server, $payload) {
+        $server->loadMissing('allocation');
+        $resolvedPort = (int) ($server->allocation?->port ?? 0);
+        if ($resolvedPort < 1) {
+            throw new DisplayException('Custom domain mappings can only be created after the server allocation is ready.');
+        }
+
+        DB::transaction(function () use ($server, $payload, $resolvedPort) {
             foreach ($payload as $entry) {
                 $domainId = (int) ($entry['domain_id'] ?? 0);
                 $subdomain = strtolower(trim((string) ($entry['subdomain'] ?? '')));
-                $port = (int) ($entry['port'] ?? $server->allocation->port);
+                $port = $resolvedPort;
                 $protocol = 'both';
                 $requestedRecordType = isset($entry['record_type']) ? strtolower(trim((string) $entry['record_type'])) : null;
                 $recordType = $this->resolveRecordTypeForServer($server, $requestedRecordType);
@@ -327,21 +333,14 @@ class CustomDomainProvisioningService
 
     public function getDnsModeForServer(Server $server): string
     {
-        $labels = $this->serverLabels($server);
+        return $this->resolveDnsModeFromLabels($this->serverLabels($server));
+    }
 
-        foreach (self::RUST_HINTS as $hint) {
-            if (str_contains($labels, $hint)) {
-                return 'rust';
-            }
-        }
+    public function getDnsModeForEgg(?string $eggName, ?string $nestName = null): string
+    {
+        $labels = strtolower(trim(($eggName ?? '') . ' ' . ($nestName ?? '')));
 
-        foreach (self::MINECRAFT_SERVICE_TAG_MAP as $needle => $_) {
-            if (str_contains($labels, $needle)) {
-                return 'minecraft';
-            }
-        }
-
-        return 'generic';
+        return $this->resolveDnsModeFromLabels($labels);
     }
 
     public function isSrvSupportedForServer(Server $server): bool
@@ -367,7 +366,16 @@ class CustomDomainProvisioningService
 
     public function getDnsRecommendationForServer(Server $server): array
     {
-        $mode = $this->getDnsModeForServer($server);
+        return $this->getDnsRecommendationForMode($this->getDnsModeForServer($server));
+    }
+
+    public function getDnsRecommendationForEgg(?string $eggName, ?string $nestName = null): array
+    {
+        return $this->getDnsRecommendationForMode($this->getDnsModeForEgg($eggName, $nestName));
+    }
+
+    private function getDnsRecommendationForMode(string $mode): array
+    {
 
         if ($mode === 'minecraft') {
             return [
@@ -402,6 +410,23 @@ class CustomDomainProvisioningService
             'notice' => 'CNAME is the only supported option for this game profile.',
             'connection_hint' => 'Use the mapped domain with :port when connecting.',
         ];
+    }
+
+    private function resolveDnsModeFromLabels(string $labels): string
+    {
+        foreach (self::RUST_HINTS as $hint) {
+            if (str_contains($labels, $hint)) {
+                return 'rust';
+            }
+        }
+
+        foreach (self::MINECRAFT_SERVICE_TAG_MAP as $needle => $_) {
+            if (str_contains($labels, $needle)) {
+                return 'minecraft';
+            }
+        }
+
+        return 'generic';
     }
 
     private function supportsServer(CustomDomain $domain, Server $server): bool

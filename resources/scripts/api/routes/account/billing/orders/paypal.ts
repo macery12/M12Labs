@@ -69,8 +69,7 @@ export const updatePayPalOrder = ({
     domainPayload?: Array<{
         domain_id: number;
         subdomain: string;
-        port: number;
-        protocol: 'tcp' | 'udp' | 'both';
+        record_type?: 'srv' | 'cname';
     }>;
 }): Promise<void> => {
     return new Promise((resolve, reject) => {

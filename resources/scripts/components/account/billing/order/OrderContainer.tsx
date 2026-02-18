@@ -32,7 +32,7 @@ import {
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
-import { getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
+import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
 import Input from '@/elements/Input';
 import Select from '@/elements/Select';
 import classNames from 'classnames';
@@ -62,22 +62,24 @@ export default () => {
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
-    const [customDomainOptions, setCustomDomainOptions] = useState<
-        Array<{ id: number; domain: string; wildcard_enabled: boolean }>
-    >([]);
+    const [customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
     const [domainMappings, setDomainMappings] = useState<
         Array<{
             domain_id: number;
             domain: string;
             subdomain: string;
-            port: number;
-            protocol: 'tcp' | 'udp' | 'both';
+            record_type: 'srv' | 'cname';
         }>
     >([]);
     const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
     const [mappingSubdomain, setMappingSubdomain] = useState<string>('');
-    const [mappingPort, setMappingPort] = useState<number>(25565);
-    const [mappingProtocol, setMappingProtocol] = useState<'tcp' | 'udp' | 'both'>('both');
+    const [mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
+    const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
+
+    const selectedDomainOption = customDomainOptions.find(option => option.id === selectedDomainId);
+    const effectiveRecordType: 'srv' | 'cname' = selectedDomainOption?.allow_record_type_selection
+        ? mappingRecordType
+        : (selectedDomainOption?.forced_record_type ?? selectedDomainOption?.recommended_record_type ?? 'cname');
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -232,8 +234,7 @@ export default () => {
         domainMappings.map(mapping => ({
             domain_id: mapping.domain_id,
             subdomain: mapping.subdomain,
-            port: mapping.port,
-            protocol: mapping.protocol,
+            record_type: mapping.record_type,
         }));
 
     const addDomainMapping = () => {
@@ -247,8 +248,7 @@ export default () => {
                 domain_id: selected.id,
                 domain: selected.domain,
                 subdomain: mappingSubdomain.trim().toLowerCase(),
-                port: mappingPort,
-                protocol: mappingProtocol,
+                record_type: effectiveRecordType,
             }),
         );
 
@@ -307,13 +307,19 @@ export default () => {
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
                 setNodes(nodesData);
+<<<<<<< Updated upstream
                 setSelectedNode(Number(nodesData[0]?.id) ?? 0);
+=======
+                const firstNodeId = Number(nodesData.at(0)?.id ?? 0);
+                setSelectedNode(Number.isInteger(firstNodeId) && firstNodeId > 0 ? firstNodeId : 0);
+>>>>>>> Stashed changes
 
-                const domainsData = await getAvailableCustomDomains();
+                const domainsData = await getAvailableCustomDomains(allowedEggs[0]);
                 setCustomDomainOptions(domainsData);
                 const firstDomain = domainsData[0];
                 if (firstDomain) {
                     setSelectedDomainId(firstDomain.id);
+                    setMappingRecordType(firstDomain.recommended_record_type);
                 }
 
                 if (productData.price !== 0) {
@@ -357,6 +363,31 @@ export default () => {
             .then(data => setEggs(data))
             .catch(error => console.error(error));
     }, [product, selectedEggId]);
+
+    useEffect(() => {
+        if (!selectedEggId) {
+            return;
+        }
+
+        getAvailableCustomDomains(selectedEggId)
+            .then(domains => {
+                setCustomDomainOptions(domains);
+
+                const currentlySelected = domains.find(option => option.id === selectedDomainId);
+                const nextSelected = currentlySelected ?? domains[0];
+
+                if (nextSelected) {
+                    if (!currentlySelected) {
+                        setSelectedDomainId(nextSelected.id);
+                    }
+
+                    setMappingRecordType(nextSelected.recommended_record_type);
+                } else {
+                    setSelectedDomainId(0);
+                }
+            })
+            .catch(error => console.error(error));
+    }, [selectedEggId]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
@@ -596,14 +627,46 @@ export default () => {
                                 >
                                     <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Custom Domain Mapping</h3>
                                     <p className={'mb-4 text-sm text-gray-400'}>
-                                        Optionally map one or more subdomains to server ports during provisioning.
+                                        Optionally map one or more subdomains after server provisioning.
                                     </p>
 
+                                    {selectedDomainOption && (
+                                        <div className={'mb-4 rounded border border-gray-700 p-3 text-sm'}>
+                                            <div className={'font-semibold text-gray-200'}>
+                                                {!selectedDomainOption.allow_record_type_selection
+                                                    && selectedDomainOption.forced_record_type === 'cname'
+                                                    ? 'CNAME Only'
+                                                    : (selectedDomainOption.recommended_record_type === 'srv'
+                                                        ? 'SRV Recommended'
+                                                        : 'CNAME Recommended')}
+                                            </div>
+                                            <div className={'text-gray-300'}>{selectedDomainOption.recommendation_notice}</div>
+                                            <div className={'mt-1 text-xs text-gray-400'}>
+                                                {selectedDomainOption.connection_hint}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className={'grid grid-cols-1 gap-3 md:grid-cols-6'}>
+                                        <div className={'md:col-span-3'}>
+                                            <Input
+                                                value={mappingSubdomain}
+                                                onChange={e => setMappingSubdomain(e.currentTarget.value.toLowerCase())}
+                                                placeholder={'subdomain'}
+                                            />
+                                        </div>
                                         <div className={'md:col-span-2'}>
                                             <Select
                                                 value={selectedDomainId}
-                                                onChange={e => setSelectedDomainId(Number(e.currentTarget.value))}
+                                                onChange={e => {
+                                                    const selected = customDomainOptions.find(
+                                                        option => option.id === Number(e.currentTarget.value),
+                                                    );
+                                                    setSelectedDomainId(Number(e.currentTarget.value));
+                                                    if (selected) {
+                                                        setMappingRecordType(selected.recommended_record_type);
+                                                    }
+                                                }}
                                             >
                                                 {customDomainOptions.map(option => (
                                                     <option key={option.id} value={option.id}>
@@ -612,32 +675,26 @@ export default () => {
                                                 ))}
                                             </Select>
                                         </div>
-                                        <div className={'md:col-span-2'}>
-                                            <Input
-                                                value={mappingSubdomain}
-                                                onChange={e => setMappingSubdomain(e.currentTarget.value.toLowerCase())}
-                                                placeholder={'subdomain'}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Input
-                                                type={'number'}
-                                                min={1}
-                                                max={65535}
-                                                value={mappingPort}
-                                                onChange={e => setMappingPort(Number(e.currentTarget.value))}
-                                            />
-                                        </div>
                                         <div>
                                             <Select
-                                                value={mappingProtocol}
-                                                onChange={e =>
-                                                    setMappingProtocol(e.currentTarget.value as 'tcp' | 'udp' | 'both')
-                                                }
+                                                value={effectiveRecordType}
+                                                disabled={!selectedDomainOption?.allow_record_type_selection}
+                                                onChange={e => setMappingRecordType(e.currentTarget.value as 'srv' | 'cname')}
                                             >
-                                                <option value={'both'}>Both</option>
-                                                <option value={'tcp'}>TCP</option>
-                                                <option value={'udp'}>UDP</option>
+                                                <option value={'cname'}>
+                                                    {selectedDomainOption?.dns_mode === 'minecraft'
+                                                        ? 'CNAME (supported)'
+                                                        : selectedDomainOption?.dns_mode === 'rust'
+                                                            ? 'CNAME (recommended)'
+                                                            : 'CNAME (only supported option)'}
+                                                </option>
+                                                {selectedDomainOption?.allow_record_type_selection && (
+                                                    <option value={'srv'}>
+                                                        {selectedDomainOption.dns_mode === 'minecraft'
+                                                            ? 'SRV (recommended)'
+                                                            : 'SRV (not recommended)'}
+                                                    </option>
+                                                )}
                                             </Select>
                                         </div>
                                     </div>
@@ -662,12 +719,11 @@ export default () => {
 
                                         {domainMappings.map((mapping, index) => (
                                             <div
-                                                key={`${mapping.domain_id}_${mapping.subdomain}_${mapping.port}_${index}`}
+                                                key={`${mapping.domain_id}_${mapping.subdomain}_${mapping.record_type}_${index}`}
                                                 className={'flex items-center justify-between rounded border border-gray-700 p-3'}
                                             >
                                                 <div className={'text-sm text-gray-300'}>
-                                                    {mapping.subdomain}.{mapping.domain} • {mapping.port} •{' '}
-                                                    {mapping.protocol.toUpperCase()}
+                                                    {mapping.subdomain}.{mapping.domain} • {mapping.record_type.toUpperCase()}
                                                 </div>
                                                 <Button.Text
                                                     type={'button'}

@@ -21,8 +21,7 @@ export const processUnpaidOrder = (
     domain_payload?: Array<{
         domain_id: number;
         subdomain: string;
-        port: number;
-        protocol: 'tcp' | 'udp' | 'both';
+        record_type?: 'srv' | 'cname';
     }>,
 ): Promise<Server> => {
     return new Promise((resolve, reject) => {
