@@ -76,7 +76,6 @@ export default () => {
     const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
     const [mappingSubdomain, setMappingSubdomain] = useState<string>('');
     const [mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
-    const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
 
     const selectedDomainOption = customDomainOptions.find(option => option.id === selectedDomainId);
     const effectiveRecordType: 'srv' | 'cname' = selectedDomainOption?.allow_record_type_selection
@@ -309,7 +308,7 @@ export default () => {
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
                 setNodes(nodesData);
-                const firstNodeId = nodesData.length > 0 ? Number(nodesData[0].id) : 0;
+                const firstNodeId = Number(nodesData.at(0)?.id ?? 0);
                 setSelectedNode(Number.isInteger(firstNodeId) && firstNodeId > 0 ? firstNodeId : 0);
                 setSelectedNode(Number(nodesData[0]?.id) ?? 0);
 
