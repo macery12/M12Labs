@@ -37,6 +37,8 @@ interface ExtendedWindow extends Window {
         admin_role_name: string;
         admin_role_id?: number;
         state: string;
+        email_verified?: boolean;
+        email_verified_at?: string | null;
         updated_at: string;
         created_at: string;
     };
@@ -57,6 +59,8 @@ function App() {
             admin_role_id: PterodactylUser.admin_role_id,
             state: PterodactylUser.state,
             useTotp: PterodactylUser.use_totp,
+            emailVerified: Boolean(PterodactylUser.email_verified),
+            emailVerifiedAt: PterodactylUser.email_verified_at ? new Date(PterodactylUser.email_verified_at) : undefined,
             createdAt: new Date(PterodactylUser.created_at),
             updatedAt: new Date(PterodactylUser.updated_at),
         });

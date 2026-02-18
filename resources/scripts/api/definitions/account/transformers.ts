@@ -51,6 +51,7 @@ export default class Transformers {
             email: attributes.email,
             image: attributes.image,
             twoFactorEnabled: attributes['2fa_enabled'],
+            emailVerified: attributes.email_verified ?? false,
             permissions: attributes.permissions || [],
             createdAt: new Date(attributes.created_at),
             can(permission): boolean {
