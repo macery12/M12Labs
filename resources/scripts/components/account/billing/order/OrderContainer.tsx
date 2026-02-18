@@ -59,8 +59,8 @@ export default () => {
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
-    const couponId = useMemo(() => couponData?.coupon.id, [couponData]);
-    const couponTotal = useMemo(() => couponData?.total, [couponData]);
+    const couponId = couponData?.coupon.id;
+    const couponTotal = couponData?.total;
     const stripeAvailable = billing.processors?.stripe?.available;
 
     // Wizard step state
