@@ -301,16 +301,16 @@ export default () => {
             return;
         }
 
-        let cancelled = false;
+        let isCancelled = false;
 
         const loadStripeResources = async () => {
             try {
                 const intentData = await getStripeIntent(Number(params.id), couponId);
-                if (cancelled) return;
+                if (isCancelled) return;
                 setIntent({ id: intentData.id, secret: intentData.secret });
 
                 const stripePublicKey = await getStripeKey(Number(params.id));
-                if (cancelled) return;
+                if (isCancelled) return;
                 const stripeInstance = await loadStripe(stripePublicKey.key);
                 setStripe(stripeInstance);
             } catch (error) {
@@ -321,7 +321,7 @@ export default () => {
         loadStripeResources();
 
         return () => {
-            cancelled = true;
+            isCancelled = true;
         };
     }, [currentStep, couponId, couponTotal, product, stripeAvailable, params.id, paymentStep]);
 
