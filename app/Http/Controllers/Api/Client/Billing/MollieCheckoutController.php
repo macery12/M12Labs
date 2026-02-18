@@ -134,6 +134,7 @@ class MollieCheckoutController extends ClientApiController
         $nodeId = (int) $request->input('node_id');
         // Only validate node deployment for new purchases, not renewals
         if (!$isRenewal) {
+            $this->validationService->validateNodeSelectionForProduct($nodeId, $product);
             $this->validationService->validateNodeDeployment($nodeId, false);
         }
 
