@@ -94,6 +94,7 @@ class Kernel extends HttpKernel
         'csrf' => VerifyCsrfToken::class,
         'throttle' => ThrottleRequests::class,
         'verified.email' => \Everest\Http\Middleware\EnsureEmailIsVerified::class,
+        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'can' => Authorize::class,
         'bindings' => SubstituteBindings::class,
         'captcha' => VerifyTurnstile::class,

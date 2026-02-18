@@ -90,16 +90,7 @@ class EmailTypeRegistry
      */
     public static function getAllowedVariables(string $templateKey): array
     {
-        if (isset(self::TEMPLATE_VARIABLES[$templateKey])) {
-            return self::TEMPLATE_VARIABLES[$templateKey];
-        }
-
-        // Explicit fallback for email verification to prevent validation failures if config cache is stale.
-        if ($templateKey === 'auth.email_verification') {
-            return ['userName', 'verificationUrl', 'expiresIn'];
-        }
-
-        return [];
+        return self::TEMPLATE_VARIABLES[$templateKey] ?? [];
     }
 
     /**
