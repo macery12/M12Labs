@@ -38,6 +38,7 @@ export default () => {
     const params = useParams<'id'>();
 
     const vars = useRef(new Map<string, string>()).current;
+    const isCanceledRef = useRef(false);
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
 
@@ -59,8 +60,8 @@ export default () => {
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
-    const couponId = couponData?.coupon.id;
-    const couponTotal = couponData?.total;
+    const couponId = useMemo(() => couponData?.coupon.id, [couponData?.coupon?.id]);
+    const couponTotal = useMemo(() => couponData?.total, [couponData?.total]);
     const stripeAvailable = billing.processors?.stripe?.available;
 
     // Wizard step state
@@ -302,18 +303,18 @@ export default () => {
             return;
         }
 
-        let isCanceled = false;
+        isCanceledRef.current = false;
 
         const loadStripeResources = async () => {
             try {
                 const intentData = await getStripeIntent(Number(params.id), couponId);
-                if (isCanceled) return;
+                if (isCanceledRef.current) return;
                 setIntent({ id: intentData.id, secret: intentData.secret });
 
                 const stripePublicKey = await getStripeKey(Number(params.id));
-                if (isCanceled) return;
+                if (isCanceledRef.current) return;
                 const stripeInstance = await loadStripe(stripePublicKey.key);
-                if (isCanceled) return;
+                if (isCanceledRef.current) return;
                 setStripe(stripeInstance);
             } catch (error) {
                 console.error('Error initializing Stripe:', error);
@@ -323,7 +324,7 @@ export default () => {
         loadStripeResources();
 
         return () => {
-            isCanceled = true;
+            isCanceledRef.current = true;
         };
     }, [currentStep, couponId, couponTotal, product, stripeAvailable, params.id, paymentStep]);
 
