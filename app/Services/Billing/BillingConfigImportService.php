@@ -72,6 +72,7 @@ class BillingConfigImportService
                         'backup_limit' => (int) $product['backup_limit'],
                         'database_limit' => (int) $product['database_limit'],
                         'allocation_limit' => (int) $product['allocation_limit'],
+                        'subdomain_limit' => array_key_exists('subdomain_limit', $product) ? (is_null($product['subdomain_limit']) ? null : (int) $product['subdomain_limit']) : null,
                         'category_uuid' => $category_id, // Correctly assign the new category ID
                         'stripe_id' => null, // deprecated
                     ]);

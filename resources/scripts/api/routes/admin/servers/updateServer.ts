@@ -21,6 +21,7 @@ export interface Values {
         backups: number;
         databases: number;
         subusers: number;
+        subdomains: number | null;
     };
 
     renewalDate?: Date | null | undefined;
@@ -56,6 +57,7 @@ export default (id: number, server: Partial<Values>, include: string[] = []): Pr
                     backups: server.featureLimits?.backups,
                     databases: server.featureLimits?.databases,
                     subusers: server.featureLimits?.subusers,
+                    subdomains: server.featureLimits?.subdomains,
                 },
 
                 renewal_date:

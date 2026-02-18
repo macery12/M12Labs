@@ -127,6 +127,7 @@ class PlanChangeController extends ClientApiController
                         'database' => $updatedServer->database_limit,
                         'backup' => $updatedServer->backup_limit,
                         'allocation' => $updatedServer->allocation_limit,
+                            'subdomain' => $updatedServer->subdomain_limit ?? $updatedServer->product?->subdomain_limit,
                     ],
                 ],
             ]);

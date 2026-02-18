@@ -29,6 +29,7 @@ export interface PlanChangeResponse {
             database: number;
             backup: number;
             allocation: number;
+            subdomain?: number | null;
         };
     };
 }

@@ -12,6 +12,7 @@ import {
     faDatabase,
     faEthernet,
     faExclamationTriangle,
+    faGlobe,
     faHdd,
     faMemory,
     faMicrochip,
@@ -189,6 +190,16 @@ export default () => {
                                                         <>
                                                             {product.limits.allocation} network port
                                                             {product.limits.allocation > 1 && 's'}
+                                                        </>
+                                                    }
+                                                />
+                                                <LimitBox
+                                                    icon={faGlobe}
+                                                    limit={
+                                                        <>
+                                                            {product.limits.subdomain === null
+                                                                ? 'Unlimited subdomains'
+                                                                : `${product.limits.subdomain} subdomain${product.limits.subdomain === 1 ? '' : 's'}`}
                                                         </>
                                                     }
                                                 />

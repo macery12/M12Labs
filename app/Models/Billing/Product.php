@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $backup_limit
  * @property int $database_limit
  * @property int $allocation_limit
+ * @property int|null $subdomain_limit
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -45,7 +46,7 @@ class Product extends Model
         'uuid', 'category_uuid',
         'name', 'icon', 'price', 'base_price', 'description',
         'cpu_limit', 'memory_limit', 'disk_limit',
-        'backup_limit', 'database_limit', 'allocation_limit',
+        'backup_limit', 'database_limit', 'allocation_limit', 'subdomain_limit',
     ];
 
     /**
@@ -60,6 +61,7 @@ class Product extends Model
         'backup_limit' => 'integer',
         'database_limit' => 'integer',
         'allocation_limit' => 'integer',
+        'subdomain_limit' => 'integer',
     ];
 
     public static array $validationRules = [
@@ -78,6 +80,7 @@ class Product extends Model
         'backup_limit' => 'required|integer',
         'database_limit' => 'required|integer',
         'allocation_limit' => 'required|integer',
+        'subdomain_limit' => 'nullable|integer|min:0',
     ];
 
     /**

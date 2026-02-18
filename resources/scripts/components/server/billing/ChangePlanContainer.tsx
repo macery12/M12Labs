@@ -215,6 +215,11 @@ export default () => {
                                                 <span>{plan.limits.disk} MB Disk</span>
                                                 <span>{plan.limits.database} DB</span>
                                                 <span>{plan.limits.backup} Backups</span>
+                                                <span>
+                                                    {plan.limits.subdomain === null || plan.limits.subdomain === undefined
+                                                        ? 'Unlimited Subdomains'
+                                                        : `${plan.limits.subdomain} Subdomains`}
+                                                </span>
                                             </div>
                                         </div>
                                         <Button onClick={() => handlePlanSelect(plan)} disabled={changing} size="sm">

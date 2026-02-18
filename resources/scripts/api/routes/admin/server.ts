@@ -50,6 +50,7 @@ export interface Server extends Model {
         allocations: number;
         backups: number;
         subusers: number;
+        subdomains: number | null;
     };
     container: {
         startup: string | null;

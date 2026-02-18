@@ -43,6 +43,7 @@ class ProductTransformer extends Transformer
                 'backup' => $model->backup_limit,
                 'database' => $model->database_limit,
                 'allocation' => $model->allocation_limit,
+                'subdomain' => $model->subdomain_limit,
             ],
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,

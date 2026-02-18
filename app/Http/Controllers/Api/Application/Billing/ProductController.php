@@ -75,6 +75,7 @@ class ProductController extends ApplicationApiController
                 'backup_limit' => $request['limits']['backup'],
                 'database_limit' => $request['limits']['database'],
                 'allocation_limit' => $request['limits']['allocation'],
+                'subdomain_limit' => $request['limits']['subdomain'] ?? 1,
             ]);
 
             // Create default billing cycles if provided
@@ -115,6 +116,7 @@ class ProductController extends ApplicationApiController
                 'backup_limit' => $request['limits']['backup'],
                 'database_limit' => $request['limits']['database'],
                 'allocation_limit' => $request['limits']['allocation'],
+                'subdomain_limit' => $request['limits']['subdomain'] ?? 1,
             ]);
 
             // Update billing cycles if provided

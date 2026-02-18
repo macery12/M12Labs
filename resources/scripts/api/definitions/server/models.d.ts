@@ -40,6 +40,7 @@ interface Server {
         allocations: number;
         backups: number;
         subusers: number;
+        subdomains: number | null;
     };
     isTransferring: boolean;
     variables: EggVariable[];

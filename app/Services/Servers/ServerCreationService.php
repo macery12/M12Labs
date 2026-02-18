@@ -165,6 +165,7 @@ class ServerCreationService
             'allocation_limit' => Arr::get($data, 'allocation_limit') ?? 0,
             'backup_limit' => Arr::get($data, 'backup_limit') ?? 0,
             'subuser_limit' => Arr::get($data, 'subuser_limit') ?? 0,
+            'subdomain_limit' => Arr::get($data, 'subdomain_limit', 1),
         ]);
 
         return $model;

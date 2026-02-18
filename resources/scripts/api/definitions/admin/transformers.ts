@@ -204,6 +204,7 @@ export default class Transformers {
             backup: attributes.limits.backup,
             database: attributes.limits.database,
             allocation: attributes.limits.allocation,
+            subdomain: attributes.limits.subdomain ?? null,
         },
 
         createdAt: new Date(attributes.created_at),

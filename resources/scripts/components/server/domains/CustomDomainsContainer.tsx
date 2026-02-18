@@ -34,6 +34,7 @@ const CustomDomainsContainer = () => {
     const { colors } = useStoreState(state => state.theme.data!);
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const allocations = ServerContext.useStoreState(state => state.server.data!.allocations);
+    const subdomainLimit = ServerContext.useStoreState(state => state.server.data!.featureLimits.subdomains);
     const defaultAllocation = ServerContext.useStoreState(state =>
         state.server.data!.allocations.find(a => a.isDefault),
     );
@@ -79,6 +80,9 @@ const CustomDomainsContainer = () => {
         ? recordType
         : (selectedDomain?.forced_record_type ?? selectedDomain?.recommended_record_type ?? 'cname');
     const supportsSrv = effectiveRecordType === 'srv';
+    const currentSubdomainCount = data?.length ?? 0;
+    const hasUnlimitedSubdomains = subdomainLimit === null || subdomainLimit === undefined;
+    const isSubdomainLimitReached = !hasUnlimitedSubdomains && currentSubdomainCount >= subdomainLimit;
     const allocationPorts = useMemo(
         () => Array.from(new Set(allocations.map(allocation => allocation.port))),
         [allocations],
@@ -99,6 +103,17 @@ const CustomDomainsContainer = () => {
 
     const onCreate = () => {
         clearFlashes();
+
+        if (isSubdomainLimitReached) {
+            addFlash({
+                type: 'error',
+                key: 'server:custom-domains',
+                message: `Subdomain limit reached (${currentSubdomainCount}/${subdomainLimit}).`,
+            });
+
+            return;
+        }
+
         setLoading(true);
 
         createServerCustomDomain(uuid, {
@@ -266,12 +281,17 @@ const CustomDomainsContainer = () => {
                                     </Select>
                                 </div>
                             </div>
+                            <div css={tw`mb-3 text-sm text-neutral-300`}>
+                                {hasUnlimitedSubdomains
+                                    ? `${currentSubdomainCount} (Unlimited)`
+                                    : `${currentSubdomainCount} / ${subdomainLimit}`}
+                            </div>
                             <div css={tw`flex items-center justify-end`}>
                                 <div css={tw`space-x-2`}>
                                     <Button color={'secondary'} onClick={onSync}>
                                         Sync DNS
                                     </Button>
-                                    <Button color={'primary'} disabled={loading || !domainId || !subdomain} onClick={onCreate}>
+                                    <Button color={'primary'} disabled={loading || !domainId || !subdomain || isSubdomainLimitReached} onClick={onCreate}>
                                         Add Mapping
                                     </Button>
                                 </div>

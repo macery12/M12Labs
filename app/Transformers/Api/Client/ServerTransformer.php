@@ -99,6 +99,7 @@ class ServerTransformer extends Transformer
                 'allocations' => $server->allocation_limit,
                 'backups' => $server->backup_limit,
                 'subusers' => $server->subuser_limit,
+                'subdomains' => $server->subdomain_limit ?? $server->product?->subdomain_limit,
             ],
             'status' => $server->status,
             'renewal_date' => $server->renewal_date,

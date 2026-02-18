@@ -47,6 +47,7 @@ use Everest\Exceptions\Http\Server\ServerStateConflictException;
  * @property int|null $database_limit
  * @property int $backup_limit
  * @property int $subuser_limit
+ * @property int|null $subdomain_limit
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $installed_at
@@ -179,6 +180,7 @@ class Server extends Model
         'allocation_limit' => 'sometimes|nullable|integer|min:0',
         'backup_limit' => 'present|nullable|integer|min:0',
         'subuser_limit' => 'nullable|integer|min:-1',
+        'subdomain_limit' => 'nullable|integer|min:0',
     ];
 
     /**
@@ -238,6 +240,7 @@ class Server extends Model
         'allocation_limit' => 'integer',
         'backup_limit' => 'integer',
         'subuser_limit' => 'integer',
+        'subdomain_limit' => 'integer',
         'mods_enabled' => 'boolean',
         self::CREATED_AT => 'datetime',
         self::UPDATED_AT => 'datetime',

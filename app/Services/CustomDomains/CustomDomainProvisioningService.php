@@ -88,6 +88,8 @@ class CustomDomainProvisioningService
                 $allocation = $server->allocations()->where('port', $port)->first();
                 $fullDomain = $subdomain . '.' . $domain->domain;
 
+                $this->assertServerSubdomainLimitNotReached($server, $fullDomain, $port, $protocol);
+
                 $this->assertSubdomainAvailable($domain, $fullDomain);
 
                 $existing = ServerCustomDomain::query()
@@ -305,6 +307,44 @@ class CustomDomainProvisioningService
             throw $exception;
         } catch (\Throwable $exception) {
             throw new DisplayException('Unable to verify subdomain availability right now.');
+        }
+    }
+
+    private function resolveEffectiveSubdomainLimit(Server $server): ?int
+    {
+        if (!is_null($server->subdomain_limit)) {
+            return max(0, (int) $server->subdomain_limit);
+        }
+
+        $server->loadMissing('product');
+        if (!is_null($server->product?->subdomain_limit)) {
+            return max(0, (int) $server->product->subdomain_limit);
+        }
+
+        return null;
+    }
+
+    private function assertServerSubdomainLimitNotReached(Server $server, string $fullDomain, int $port, string $protocol): void
+    {
+        $limit = $this->resolveEffectiveSubdomainLimit($server);
+        if (is_null($limit)) {
+            return;
+        }
+
+        $existingForTarget = ServerCustomDomain::query()
+            ->where('server_id', $server->id)
+            ->where('full_domain', $fullDomain)
+            ->where('port', $port)
+            ->where('protocol', $protocol)
+            ->exists();
+
+        if ($existingForTarget) {
+            return;
+        }
+
+        $currentCount = $server->customDomains()->count();
+        if ($currentCount >= $limit) {
+            throw new DisplayException("Subdomain limit reached for this server ({$currentCount}/{$limit}).");
         }
     }
 

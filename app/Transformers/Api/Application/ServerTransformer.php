@@ -74,6 +74,7 @@ class ServerTransformer extends Transformer
                 'backups' => $model->backup_limit,
                 'databases' => $model->database_limit,
                 'subusers' => $model->subuser_limit,
+                'subdomains' => $model->subdomain_limit ?? $model->product?->subdomain_limit,
             ],
             'owner_id' => $model->owner_id,
             'node_id' => $model->node_id,

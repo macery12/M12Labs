@@ -23,6 +23,7 @@ export interface CreateServerRequest {
         backups: number;
         databases: number;
         subusers: number;
+        subdomains: number | null;
     };
 
     allocation: {
@@ -64,6 +65,7 @@ export default (r: CreateServerRequest, include: string[] = []): Promise<Server>
                     backups: r.featureLimits.backups,
                     databases: r.featureLimits.databases,
                     subusers: r.featureLimits.subusers,
+                    subdomains: r.featureLimits.subdomains,
                 },
 
                 allocation: {
