@@ -294,6 +294,7 @@ export default () => {
         const finalTotal = couponTotal ?? product?.price || 0;
         if (finalTotal === 0) {
             setIntent(null);
+            setStripe(null);
             return;
         }
 
@@ -312,6 +313,7 @@ export default () => {
                 const stripePublicKey = await getStripeKey(Number(params.id));
                 if (isCanceled) return;
                 const stripeInstance = await loadStripe(stripePublicKey.key);
+                if (isCanceled) return;
                 setStripe(stripeInstance);
             } catch (error) {
                 console.error('Error initializing Stripe:', error);
