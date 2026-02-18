@@ -61,6 +61,7 @@ export default () => {
 
     const couponId = couponData?.coupon.id;
     const couponTotal = couponData?.total;
+    const stripeAvailable = billing.processors?.stripe?.available;
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -291,8 +292,6 @@ export default () => {
     useEffect(() => {
         const atPaymentStep = currentStep === paymentStep;
         const finalTotal = couponTotal ?? product?.price || 0;
-        const stripeAvailable = billing.processors?.stripe?.available;
-
         if (finalTotal === 0) {
             setIntent(null);
             return;
@@ -324,7 +323,7 @@ export default () => {
         return () => {
             cancelled = true;
         };
-    }, [currentStep, couponId, couponTotal, product, billing.processors?.stripe?.available, params.id, paymentStep]);
+    }, [currentStep, couponId, couponTotal, product, stripeAvailable, params.id, paymentStep]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
