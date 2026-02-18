@@ -59,6 +59,9 @@ export default () => {
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
+    const couponId = couponData?.coupon.id;
+    const couponTotal = couponData?.total;
+
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -88,7 +91,12 @@ export default () => {
         return steps;
     };
 
-    const paymentStep = useMemo(() => getTotalSteps() + 1, [availableEggs, eggs]);
+    const paymentStep = useMemo(() => {
+        let steps = 3;
+        if (availableEggs.length > 1) steps++;
+        if (eggs && eggs.some(v => v.isEditable)) steps++;
+        return steps + 1;
+    }, [availableEggs, eggs]);
 
     // Navigate to next step
     const goToNextStep = () => {
@@ -281,7 +289,7 @@ export default () => {
 
     useEffect(() => {
         const atPaymentStep = currentStep === paymentStep;
-        const finalTotal = couponData ? couponData.total : product?.price || 0;
+        const finalTotal = couponTotal ?? product?.price || 0;
         const stripeAvailable = billing.processors?.stripe?.available;
 
         if (finalTotal === 0) {
@@ -297,7 +305,7 @@ export default () => {
 
         const loadStripeResources = async () => {
             try {
-                const intentData = await getStripeIntent(Number(params.id), couponData?.coupon.id);
+                const intentData = await getStripeIntent(Number(params.id), couponId);
                 if (cancelled) return;
                 setIntent({ id: intentData.id, secret: intentData.secret });
 
@@ -315,7 +323,7 @@ export default () => {
         return () => {
             cancelled = true;
         };
-    }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available, params.id, paymentStep]);
+    }, [currentStep, couponId, couponTotal, product?.id, billing.processors?.stripe?.available, params.id, paymentStep]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
