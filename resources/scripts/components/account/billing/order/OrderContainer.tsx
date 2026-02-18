@@ -59,8 +59,8 @@ export default () => {
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
-    const couponId = couponData?.coupon.id;
-    const couponTotal = couponData?.total;
+    const couponId = useMemo(() => couponData?.coupon.id, [couponData]);
+    const couponTotal = useMemo(() => couponData?.total, [couponData]);
     const stripeAvailable = billing.processors?.stripe?.available;
 
     // Wizard step state
@@ -301,16 +301,16 @@ export default () => {
             return;
         }
 
-        let isCancelled = false;
+        let isCanceled = false;
 
         const loadStripeResources = async () => {
             try {
                 const intentData = await getStripeIntent(Number(params.id), couponId);
-                if (isCancelled) return;
+                if (isCanceled) return;
                 setIntent({ id: intentData.id, secret: intentData.secret });
 
                 const stripePublicKey = await getStripeKey(Number(params.id));
-                if (isCancelled) return;
+                if (isCanceled) return;
                 const stripeInstance = await loadStripe(stripePublicKey.key);
                 setStripe(stripeInstance);
             } catch (error) {
@@ -321,7 +321,7 @@ export default () => {
         loadStripeResources();
 
         return () => {
-            isCancelled = true;
+            isCanceled = true;
         };
     }, [currentStep, couponId, couponTotal, product, stripeAvailable, params.id, paymentStep]);
 
