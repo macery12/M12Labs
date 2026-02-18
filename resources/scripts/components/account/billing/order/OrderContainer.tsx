@@ -1,5 +1,5 @@
 import Spinner from '@/elements/Spinner';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
@@ -87,6 +87,8 @@ export default () => {
         if (eggs && eggs.some(v => v.isEditable)) steps++; // Add variables step if editable vars exist
         return steps;
     };
+
+    const paymentStep = useMemo(() => getTotalSteps() + 1, [availableEggs, eggs]);
 
     // Navigate to next step
     const goToNextStep = () => {
@@ -278,8 +280,6 @@ export default () => {
     }, [product, selectedEggId]);
 
     useEffect(() => {
-        // Payment step is always the last step (review + 1)
-        const paymentStep = getTotalSteps() + 1;
         const atPaymentStep = currentStep === paymentStep;
         const finalTotal = couponData ? couponData.total : product?.price || 0;
         const stripeAvailable = billing.processors?.stripe?.available;
@@ -315,10 +315,7 @@ export default () => {
         return () => {
             cancelled = true;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- getTotalSteps is derived from multiple dynamic values
-        // and is re-created every render; relying on currentStep/paymentStep captures the transition into the payment
-        // screen without re-running on every render of the wizard
-    }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available, params.id]);
+    }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available, params.id, paymentStep]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
