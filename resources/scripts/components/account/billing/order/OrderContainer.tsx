@@ -314,8 +314,8 @@ export default () => {
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps -- getTotalSteps depends on dynamic wizard steps; we only
-        // need to trigger when payment step is entered or coupon/product data changes to avoid unnecessary reloads
-    }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available]);
+        // need to trigger when entering the payment step or when coupon/product/context identifiers change
+    }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available, params.id]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
