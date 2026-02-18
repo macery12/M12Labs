@@ -1,32 +1,25 @@
-@component('mail::message')
-# Payment Failed{{ $isRenewal ? ' - Server Renewal' : '' }}
+@extends('emails.layout')
 
-Hello {{ $userName }},
-
-We were unable to process your recent payment attempt{{ $isRenewal ? ' for your server renewal' : '' }}.
-
-**Payment Details:**
-- Amount: {{ $currency }} {{ $amount }}
-@if($paymentMethod !== 'Unknown')
-- Payment Method: {{ $paymentMethod }}
-@endif
-@if($invoiceId !== 'N/A')
-- Invoice ID: {{ $invoiceId }}
-@endif
-- Reason: {{ $reason }}
-
-**What happens next?**
-
-To avoid service interruption{{ $isRenewal ? ' and potential server suspension' : '' }}, please update your payment information and try again as soon as possible.
-
-@component('mail::button', ['url' => $retryUrl])
-Update Payment Method
-@endcomponent
-
-**Need help?**
-
-If you're experiencing issues with payment, our support team is here to help. Contact us for assistance.
-
-Thanks,<br>
-{{ config('app.name') }}
-@endcomponent
+@section('content')
+    @include('emails.partials.header', [
+        'title' => $isRenewal ? 'Payment Failed - Server Renewal' : 'Payment Failed',
+        'subtitle' => 'We were unable to process your recent payment.'
+    ])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Hello {{ $userName }},</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">We couldn’t process your recent payment{{ $isRenewal ? ' for your server renewal' : '' }}. Please update your payment information to avoid service interruption.</p>
+    @component('emails.partials.panel', ['title' => 'Payment attempt'])
+        @include('emails.partials.key_value_table', [
+            'rows' => [
+                'Amount' => $currency . ' ' . $amount,
+                'Payment Method' => $paymentMethod !== 'Unknown' ? $paymentMethod : null,
+                'Invoice ID' => $invoiceId !== 'N/A' ? $invoiceId : null,
+                'Reason' => $reason,
+            ]
+        ])
+    @endcomponent
+    @include('emails.partials.button', [
+        'url' => $retryUrl,
+        'text' => 'Update Payment Method'
+    ])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">To avoid service interruption{{ $isRenewal ? ' and potential server suspension' : '' }}, please retry the payment as soon as possible. If you continue to experience issues, contact support for assistance.</p>
+@endsection

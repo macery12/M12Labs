@@ -1,21 +1,25 @@
 @extends('emails.layout')
 
 @section('content')
-    <div class="header">
-        <h1>New Login Detected</h1>
-    </div>
-    <div class="content">
-        <p>Hello {{ $userName }},</p>
-        <p>We detected a new login to your account.</p>
-        <p><strong>Time:</strong> {{ $loginTime }}</p>
-        <p><strong>IP Address:</strong> {{ $ipAddress }}</p>
-        <p><strong>Device:</strong> {{ $userAgent }}</p>
-        @if(isset($location) && $location !== 'Unknown')
-            <p><strong>Location:</strong> {{ $location }}</p>
-        @endif
-        <p>If this was you, you can safely ignore this email. If you don't recognize this login, please secure your account immediately.</p>
-    </div>
-    <div class="footer">
-        <p>This is an automated security notification.</p>
-    </div>
+    @include('emails.partials.header', [
+        'title' => 'New Login Detected',
+        'subtitle' => 'A new sign-in was recorded on your account.'
+    ])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Hello {{ $userName }},</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">We detected a new login to your account. Review the details below.</p>
+    @component('emails.partials.panel', ['title' => 'Login details'])
+        @include('emails.partials.key_value_table', [
+            'rows' => [
+                'Time' => $loginTime,
+                'IP Address' => $ipAddress,
+                'Device' => $userAgent,
+                'Location' => (isset($location) && $location !== 'Unknown') ? $location : null,
+            ]
+        ])
+    @endcomponent
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">If this was you, no further action is needed. If you don’t recognize this activity, secure your account immediately.</p>
+    @include('emails.partials.button', [
+        'url' => url('/auth/login'),
+        'text' => 'Secure Your Account'
+    ])
 @endsection

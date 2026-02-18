@@ -1,20 +1,12 @@
 @extends('emails.layout')
 
 @section('content')
-    <div class="header">
-        <h1>Reset Your Password</h1>
-    </div>
-    <div class="content">
-        <p>Hello {{ $userName }},</p>
-        <p>You are receiving this email because we received a password reset request for your account.</p>
-        <p style="text-align: center;">
-            <a href="{{ $resetUrl }}" class="button">Reset Password</a>
-        </p>
-        <p>If you did not request a password reset, no further action is required.</p>
-        <p>This password reset link will expire in 60 minutes.</p>
-    </div>
-    <div class="footer">
-        <p>If you're having trouble clicking the "Reset Password" button, copy and paste the URL below into your web browser:</p>
-        <p>{{ $resetUrl }}</p>
-    </div>
+    @include('emails.partials.header', [
+        'title' => 'Reset Your Password',
+        'subtitle' => 'Use the link below to choose a new password.'
+    ])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Hello {{ $userName }},</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">We received a password reset request for your account. Click the button below to proceed.</p>
+    @include('emails.partials.button', ['url' => $resetUrl, 'text' => 'Reset Password'])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">This password reset link will expire in 60 minutes. If you did not request a password reset, no further action is required.</p>
 @endsection

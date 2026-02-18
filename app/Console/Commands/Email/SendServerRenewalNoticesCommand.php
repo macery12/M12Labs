@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Everest\Events\Email\ServerRenewalNotice;
 use Ramsey\Uuid\Uuid;
+use Everest\Models\Billing\Product;
 
 class SendServerRenewalNoticesCommand extends Command
 {
@@ -138,7 +139,12 @@ class SendServerRenewalNoticesCommand extends Command
         $currency = config('modules.billing.currency.code', 'USD');
         
         // Get renewal amount from server's billing amount or default to 0
-        $renewalAmount = $server->billing_amount ?? 0;
+        $renewalAmount = $server->billing_amount;
+        if ($renewalAmount === null && $server->billing_product_id) {
+            $product = Product::find($server->billing_product_id);
+            $renewalAmount = $product?->price ?? 0;
+        }
+        $renewalAmount = $renewalAmount ?? 0;
 
         // Get billing cycle (days) - defaults to 30 if not set
         $billingDays = $server->billing_days ?? 30;

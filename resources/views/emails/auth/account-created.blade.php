@@ -1,19 +1,19 @@
 @extends('emails.layout')
 
 @section('content')
-    <div class="header">
-        <h1>Welcome to Your Account!</h1>
-    </div>
-    <div class="content">
-        <p>Hello {{ $userName }},</p>
-        <p>Welcome! Your account has been successfully created.</p>
-        <p>You can now log in to your account and start using our services.</p>
-        <p style="text-align: center;">
-            <a href="{{ $loginUrl }}" class="button">Go to Login</a>
-        </p>
-        <p>If you have any questions, feel free to reach out to our support team.</p>
-    </div>
-    <div class="footer">
-        <p>This email was sent because an account was created with this email address.</p>
-    </div>
+    @include('emails.partials.header', [
+        'title' => 'Welcome to your new account!',
+        'subtitle' => 'We’re excited to have you on board.'
+    ])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Hello {{ $userName }},</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Your account has been successfully created. You can now log in and start using our services.</p>
+    @component('emails.partials.panel', ['title' => 'Account details'])
+        @include('emails.partials.key_value_table', [
+            'rows' => [
+                'Email' => $userEmail ?? null,
+            ]
+        ])
+    @endcomponent
+    @include('emails.partials.button', ['url' => $loginUrl, 'text' => 'Go to Login'])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">If you have any questions, feel free to reach out to our support team.</p>
 @endsection

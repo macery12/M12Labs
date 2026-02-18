@@ -1,19 +1,15 @@
 @extends('emails.layout')
 
 @section('content')
-    <div class="header">
-        <h1>Two-Factor Authentication Code</h1>
-    </div>
-    <div class="content">
-        <p>Hello {{ $userName }},</p>
-        <p>Your two-factor authentication code is:</p>
-        <p style="text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 30px 0;">
-            {{ $code }}
-        </p>
-        <p>This code will expire in 10 minutes.</p>
-        <p>If you did not request this code, please contact support immediately.</p>
-    </div>
-    <div class="footer">
-        <p>For your security, never share this code with anyone.</p>
-    </div>
+    @include('emails.partials.header', [
+        'title' => 'Two-Factor Authentication Code',
+        'subtitle' => 'Use this code to complete your sign-in.'
+    ])
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Hello {{ $userName }},</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">Your two-factor authentication code is:</p>
+    @component('emails.partials.panel')
+        <p style="margin:0 0 12px; font-size:28px; line-height:1.3; color:#111827; font-weight:700; letter-spacing: 8px; text-align:center; margin:0;">{{ $code }}</p>
+    @endcomponent
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">This code will expire in 10 minutes. If you did not request this code, please contact support immediately.</p>
+    <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">For your security, never share this code with anyone.</p>
 @endsection

@@ -3,61 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $subject ?? 'Email' }}</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background-color: #4F46E5;
-            color: #ffffff;
-            padding: 30px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .content {
-            padding: 30px;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #4F46E5;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 6px;
-            margin: 20px 0;
-        }
-        .button:hover {
-            background-color: #4338CA;
-        }
-        .footer {
-            background-color: #f9fafb;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #6b7280;
-        }
-    </style>
+    <title>{{ $subject ?? config('app.name') }}</title>
 </head>
-<body>
-    <div class="container">
-        @yield('content')
-    </div>
+<body style="margin:0; padding:0; background-color:#f3f4f6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#111827;">
+    @if(!empty(trim($preheader ?? '')))
+        <div style="display:none; max-height:0px; overflow:hidden; font-size:1px; line-height:1px; color:#f3f4f6; opacity:0;">
+            {{ trim($preheader ?? '') }}
+        </div>
+    @endif
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; width: 100%; border-spacing:0;">
+        <tr>
+            <td align="center" style="padding: 24px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; width:100%; border-spacing:0;">
+                    <tr>
+                        <td style="padding: 0 0 12px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border:1px solid #e5e7eb; border-radius: 12px; overflow:hidden; width:100%; border-spacing:0;">
+                                <tr>
+                                    <td style="padding: 32px 32px 0;">
+                                        @yield('content')
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 32px 32px;">
+                                        @include('emails.partials.footer')
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

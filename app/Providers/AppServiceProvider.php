@@ -52,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         Carbon::serializeUsing(fn ($carbon) => $carbon->utc()->toIso8601ZuluString());
+
     }
 
     /**
