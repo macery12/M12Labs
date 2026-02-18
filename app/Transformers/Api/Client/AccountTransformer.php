@@ -26,6 +26,8 @@ class AccountTransformer extends Transformer
             'username' => $model->username,
             'email' => $model->email,
             'language' => $model->language,
+            'email_verified' => $model->hasVerifiedEmail(),
+            'email_verified_at' => $model->email_verified_at,
         ];
     }
 }

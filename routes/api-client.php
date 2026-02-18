@@ -45,6 +45,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::put('/email', [Client\AccountController::class, 'updateEmail'])->name('api:client.account.update-email');
         Route::put('/password', [Client\AccountController::class, 'updatePassword'])->name('api:client.account.update-password');
+        Route::post('/email/verification', [Client\EmailVerificationController::class, 'send'])
+            ->name('api:client.account.email-verification')
+            ->middleware('throttle:email-verification');
 
         Route::get('/activity', Client\ActivityLogController::class)->name('api:client.account.activity');
 
@@ -58,7 +61,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/remove', [Client\SSHKeyController::class, 'delete']);
         });
 
-        Route::prefix('/tickets')->group(function () {
+        Route::prefix('/tickets')->middleware('verified.email')->group(function () {
             Route::get('/', [Client\TicketController::class, 'index']);
             Route::post('/', [Client\TicketController::class, 'store']);
 
@@ -81,7 +84,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::post('/setup', [Client\AccountController::class, 'setup']);
     });
 
-    Route::prefix('/billing')->group(function () {
+    Route::prefix('/billing')->middleware('verified.email')->group(function () {
         Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
         Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
 
@@ -122,7 +125,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
     });
 
-    Route::prefix('/donations')->group(function () {
+    Route::prefix('/donations')->middleware('verified.email')->group(function () {
         Route::get('/', [Client\DonationController::class, 'index']);
         Route::get('/key', [Client\DonationController::class, 'getStripeKey']);
         Route::post('/intent', [Client\DonationController::class, 'createIntent']);
