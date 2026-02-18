@@ -24,6 +24,10 @@ class CustomDomainController extends ClientApiController
     public function index(GetCustomDomainsRequest $request, Server $server): JsonResponse
     {
         $records = $server->customDomains()->with('customDomain')->orderByDesc('id')->get()->map(function ($row) {
+            $dnsRecords = (array) ($row->dns_records ?? []);
+            $hasSrv = collect($dnsRecords)->contains(fn ($record) => ($record['kind'] ?? null) === 'srv');
+            $hostType = collect($dnsRecords)->firstWhere('kind', 'host')['type'] ?? null;
+
             return [
                 'id' => $row->id,
                 'domain_id' => $row->custom_domain_id,
@@ -32,8 +36,9 @@ class CustomDomainController extends ClientApiController
                 'full_domain' => $row->full_domain,
                 'port' => $row->port,
                 'protocol' => $row->protocol,
-                'ssl_enabled' => $row->ssl_enabled,
-                'ssl_status' => $row->ssl_status,
+                'service_tag' => $row->service_tag,
+                'record_type' => $hasSrv ? 'srv' : 'cname',
+                'host_record_type' => $hostType,
                 'status' => $row->status,
                 'last_error' => $row->last_error,
                 'last_synced_at' => $row->last_synced_at,
@@ -49,13 +54,16 @@ class CustomDomainController extends ClientApiController
         $subdomain = strtolower((string) $request->input('subdomain'));
         $port = (int) $request->input('port');
         $protocol = (string) $request->input('protocol', 'both');
+        $recordType = $request->filled('record_type') ? strtolower((string) $request->input('record_type')) : null;
+        $serviceTag = $request->filled('service_tag') ? strtolower((string) $request->input('service_tag')) : null;
 
         $this->service->createFromPayload($server, [[
             'domain_id' => $domainId,
             'subdomain' => $subdomain,
             'port' => $port,
             'protocol' => $protocol,
-            'ssl_enabled' => (bool) $request->boolean('ssl_enabled'),
+            'record_type' => $recordType,
+            'service_tag' => $serviceTag,
         ]]);
 
         $mapping = $server->customDomains()
@@ -73,6 +81,32 @@ class CustomDomainController extends ClientApiController
         }
 
         return response()->json([], JsonResponse::HTTP_CREATED);
+    }
+
+    public function options(GetCustomDomainsRequest $request, Server $server): JsonResponse
+    {
+        $recommendation = $this->service->getDnsRecommendationForServer($server);
+
+        $domains = collect($this->service->getAvailableDomains($server))->map(function ($domain) use ($server) {
+            return [
+                'id' => $domain->id,
+                'domain' => $domain->domain,
+                'wildcard_enabled' => $domain->wildcard_enabled,
+                'default_service_tag' => $this->service->resolveSuggestedServiceTag($server, $domain),
+            ];
+        })->map(function (array $domain) use ($recommendation) {
+            return array_merge($domain, [
+                'recommended_record_type' => $recommendation['recommended_record_type'],
+                'srv_supported' => $recommendation['srv_supported'],
+                'allow_record_type_selection' => $recommendation['allow_record_type_selection'],
+                'forced_record_type' => $recommendation['forced_record_type'],
+                'dns_mode' => $recommendation['mode'],
+                'recommendation_notice' => $recommendation['notice'],
+                'connection_hint' => $recommendation['connection_hint'],
+            ]);
+        })->values();
+
+        return response()->json(['data' => $domains]);
     }
 
     public function destroy(DeleteCustomDomainRequest $request, Server $server, ServerCustomDomain $customDomain): JsonResponse

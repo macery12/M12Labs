@@ -72,14 +72,12 @@ export default () => {
             subdomain: string;
             port: number;
             protocol: 'tcp' | 'udp' | 'both';
-            ssl_enabled: boolean;
         }>
     >([]);
     const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
     const [mappingSubdomain, setMappingSubdomain] = useState<string>('');
     const [mappingPort, setMappingPort] = useState<number>(25565);
     const [mappingProtocol, setMappingProtocol] = useState<'tcp' | 'udp' | 'both'>('both');
-    const [mappingSslEnabled, setMappingSslEnabled] = useState<boolean>(false);
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -236,7 +234,6 @@ export default () => {
             subdomain: mapping.subdomain,
             port: mapping.port,
             protocol: mapping.protocol,
-            ssl_enabled: mapping.ssl_enabled,
         }));
 
     const addDomainMapping = () => {
@@ -252,7 +249,6 @@ export default () => {
                 subdomain: mappingSubdomain.trim().toLowerCase(),
                 port: mappingPort,
                 protocol: mappingProtocol,
-                ssl_enabled: mappingSslEnabled,
             }),
         );
 
@@ -646,16 +642,7 @@ export default () => {
                                         </div>
                                     </div>
 
-                                    <div className={'mt-3 flex items-center justify-between'}>
-                                        <label className={'flex items-center text-sm text-gray-300'}>
-                                            <AdminCheckbox
-                                                name={'domain_ssl'}
-                                                checked={mappingSslEnabled}
-                                                onChange={() => setMappingSslEnabled(!mappingSslEnabled)}
-                                            />
-                                            <span className={'ml-2'}>Request SSL certificate</span>
-                                        </label>
-
+                                    <div className={'mt-3 flex items-center justify-end'}>
                                         <Button.Text
                                             type={'button'}
                                             variant={Button.Variants.Secondary}
@@ -680,8 +667,7 @@ export default () => {
                                             >
                                                 <div className={'text-sm text-gray-300'}>
                                                     {mapping.subdomain}.{mapping.domain} • {mapping.port} •{' '}
-                                                    {mapping.protocol.toUpperCase()} • SSL:{' '}
-                                                    {mapping.ssl_enabled ? 'enabled' : 'disabled'}
+                                                    {mapping.protocol.toUpperCase()}
                                                 </div>
                                                 <Button.Text
                                                     type={'button'}

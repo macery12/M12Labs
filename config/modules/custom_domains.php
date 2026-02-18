@@ -12,10 +12,4 @@ return [
     ],
 
     'cleanup_on_delete' => (bool) env('CUSTOM_DOMAINS_CLEANUP_ON_DELETE', true),
-
-    'ssl' => [
-        'enabled' => (bool) env('CUSTOM_DOMAINS_SSL_ENABLED', false),
-        'command' => env('CUSTOM_DOMAINS_SSL_COMMAND', ''),
-        'timeout' => (int) env('CUSTOM_DOMAINS_SSL_TIMEOUT', 120),
-    ],
 ];

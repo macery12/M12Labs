@@ -9,6 +9,7 @@
     },
     "scripts": {
         "build": "vite build",
+        "postbuild": "bash ./scripts/reload-dev-services.sh",
         "clean": "rimraf public/build",
         "coverage": "vitest run --coverage",
         "dev": "vite",

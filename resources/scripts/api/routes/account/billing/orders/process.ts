@@ -23,7 +23,6 @@ export const processUnpaidOrder = (
         subdomain: string;
         port: number;
         protocol: 'tcp' | 'udp' | 'both';
-        ssl_enabled?: boolean;
     }>,
 ): Promise<Server> => {
     return new Promise((resolve, reject) => {

@@ -20,7 +20,6 @@ interface Props {
         subdomain: string;
         port: number;
         protocol: 'tcp' | 'udp' | 'both';
-        ssl_enabled?: boolean;
     }>;
 }
 

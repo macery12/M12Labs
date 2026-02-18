@@ -17,7 +17,6 @@ class ServerCustomDomain extends Model
         'allocation_id' => 'integer',
         'custom_domain_id' => 'integer',
         'port' => 'integer',
-        'ssl_enabled' => 'boolean',
         'dns_records' => 'array',
         'last_synced_at' => 'datetime',
     ];
@@ -30,7 +29,8 @@ class ServerCustomDomain extends Model
         'full_domain' => ['required', 'string', 'max:191', 'regex:/^(?!-)[A-Za-z0-9*.-]+$/'],
         'port' => 'required|integer|min:1|max:65535',
         'protocol' => 'required|in:tcp,udp,both',
-        'ssl_enabled' => 'boolean',
+        'record_type' => 'nullable|in:srv,cname',
+        'service_tag' => ['nullable', 'string', 'max:100', 'regex:/^(_?[a-z0-9][a-z0-9-]*|_[a-z0-9][a-z0-9-]*\._(?:tcp|udp)?|_[a-z0-9][a-z0-9-]*\._)$/i'],
     ];
 
     public function getRouteKeyName(): string

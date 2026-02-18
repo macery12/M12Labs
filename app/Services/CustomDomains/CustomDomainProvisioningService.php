@@ -5,7 +5,6 @@ namespace Everest\Services\CustomDomains;
 use Exception;
 use Everest\Models\Order;
 use Everest\Models\Server;
-use Everest\Models\Setting;
 use Everest\Models\Allocation;
 use Everest\Models\CustomDomain;
 use Everest\Models\ServerCustomDomain;
@@ -15,15 +14,39 @@ use Illuminate\Support\Facades\DB;
 
 class CustomDomainProvisioningService
 {
-    public function __construct(
-        private CloudflareDnsService $cloudflare,
-        private SslProvisioningService $sslProvisioning,
-    ) {
+    private const MINECRAFT_SERVICE_TAG_MAP = [
+        'minecraft' => '_minecraft._',
+        'velocity' => '_minecraft._',
+        'bungeecord' => '_minecraft._',
+        'bedrock' => '_minecraft._',
+    ];
+
+    private const RUST_HINTS = [
+        'rust',
+    ];
+
+    private const WEB_INTERFACE_HINTS = [
+        'web',
+        'nginx',
+        'apache',
+        'http',
+        'dashboard',
+        'panel',
+    ];
+
+    public function __construct(private CloudflareDnsService $cloudflare)
+    {
     }
 
-    public function getAvailableDomains(): array
+    public function getAvailableDomains(?Server $server = null): array
     {
-        return CustomDomain::query()->where('enabled', true)->orderBy('domain')->get()->all();
+        $domains = CustomDomain::query()->where('enabled', true)->orderBy('domain')->get();
+
+        if (!$server) {
+            return $domains->all();
+        }
+
+        return $domains->filter(fn (CustomDomain $domain) => $this->supportsServer($domain, $server))->values()->all();
     }
 
     public function createFromPayload(Server $server, array $payload): void
@@ -38,9 +61,22 @@ class CustomDomainProvisioningService
                 $subdomain = strtolower(trim((string) ($entry['subdomain'] ?? '')));
                 $port = (int) ($entry['port'] ?? $server->allocation->port);
                 $protocol = 'both';
-                $sslEnabled = (bool) ($entry['ssl_enabled'] ?? false);
+                $requestedRecordType = isset($entry['record_type']) ? strtolower(trim((string) $entry['record_type'])) : null;
+                $recordType = $this->resolveRecordTypeForServer($server, $requestedRecordType);
+                $serviceTag = isset($entry['service_tag']) ? trim((string) $entry['service_tag']) : null;
+                $serviceTag = $this->normalizeServiceTagPrefix($serviceTag);
+
+                if ($recordType !== 'srv') {
+                    $serviceTag = null;
+                } elseif ($serviceTag === null && $this->getDnsModeForServer($server) === 'rust') {
+                    $serviceTag = '_rust._';
+                }
 
                 $domain = CustomDomain::query()->where('enabled', true)->findOrFail($domainId);
+                if (!$this->supportsServer($domain, $server)) {
+                    throw new DisplayException('The selected custom domain is not available for this server type.');
+                }
+
                 $this->validateSubdomain($subdomain, $domain);
 
                 $allocation = $server->allocations()->where('port', $port)->first();
@@ -67,8 +103,8 @@ class CustomDomainProvisioningService
                         'allocation_id' => $allocation?->id,
                         'custom_domain_id' => $domain->id,
                         'subdomain' => $subdomain,
-                        'ssl_enabled' => $sslEnabled,
-                        'ssl_status' => $sslEnabled ? 'pending' : 'disabled',
+                        'record_type' => $recordType,
+                        'service_tag' => $serviceTag,
                         'status' => 'pending',
                         'last_error' => null,
                     ]
@@ -89,11 +125,16 @@ class CustomDomainProvisioningService
     public function provision(ServerCustomDomain $mapping): void
     {
         try {
-            $mapping->loadMissing(['customDomain', 'server.node', 'allocation']);
+            $mapping->loadMissing(['customDomain.apiKey', 'server.node', 'server.egg', 'server.nest', 'allocation']);
+
+            $token = trim((string) ($mapping->customDomain->apiKey?->token ?? ''));
+            if ($token === '') {
+                throw new DisplayException('No API key is configured for this custom domain.');
+            }
 
             $zoneId = $mapping->customDomain->cloudflare_zone_id;
             if (empty($zoneId)) {
-                $zone = $this->cloudflare->getZoneByName($mapping->customDomain->domain);
+                $zone = $this->cloudflare->getZoneByName($mapping->customDomain->domain, $token);
                 if (!$zone) {
                     throw new Exception('Cloudflare zone could not be resolved for domain: ' . $mapping->customDomain->domain);
                 }
@@ -102,20 +143,33 @@ class CustomDomainProvisioningService
                 $mapping->customDomain->forceFill(['cloudflare_zone_id' => $zoneId])->save();
             }
 
-            $target = $this->resolveTarget($mapping);
+            $recordType = $this->resolveRecordTypeForServer($mapping->server, $mapping->record_type);
+            $useSrv = $recordType === 'srv';
+
+            $target = $useSrv
+                ? $this->resolveTarget($mapping)
+                : $this->resolveSrvTargetHostname($mapping);
             $records = [];
 
-            $hostRecord = $this->cloudflare->createOrUpdateAOrCnameRecord($zoneId, $mapping->full_domain, $target);
+            $existingRecords = (array) ($mapping->dns_records ?? []);
+
+            $hostRecord = $this->cloudflare->createOrUpdateAOrCnameRecord(
+                $zoneId,
+                $mapping->full_domain,
+                $target,
+                $token,
+                $useSrv ? null : 'CNAME'
+            );
             $records[] = [
                 'kind' => 'host',
                 'id' => $hostRecord['id'] ?? null,
                 'type' => $hostRecord['type'] ?? null,
             ];
 
-            $service = Setting::get('settings::modules:custom_domains:service', 'minecraft');
+            $service = $this->resolveServiceTag($mapping);
             $protocols = ['tcp', 'udp'];
 
-            if ($mapping->subdomain !== '*') {
+            if ($useSrv && $mapping->subdomain !== '*' && $service !== null) {
                 $srvTarget = $this->resolveSrvTargetHostname($mapping);
 
                 foreach ($protocols as $proto) {
@@ -125,7 +179,8 @@ class CustomDomainProvisioningService
                         $service,
                         $proto,
                         $mapping->port,
-                        $srvTarget
+                        $srvTarget,
+                        $token
                     );
 
                     $records[] = [
@@ -137,21 +192,24 @@ class CustomDomainProvisioningService
                 }
             }
 
-            $sslStatus = $mapping->ssl_enabled ? 'pending' : 'disabled';
-            if ($mapping->ssl_enabled) {
+            $recordIdsToKeep = array_filter(array_map(fn (array $record) => $record['id'] ?? null, $records));
+            foreach ($existingRecords as $existingRecord) {
+                $recordId = $existingRecord['id'] ?? null;
+                if (!$recordId || in_array($recordId, $recordIdsToKeep, true)) {
+                    continue;
+                }
+
                 try {
-                    $this->sslProvisioning->requestCertificate($mapping->full_domain);
-                    $sslStatus = 'issued';
+                    $this->cloudflare->deleteRecord($zoneId, (string) $recordId, $token);
                 } catch (\Throwable $exception) {
-                    $sslStatus = 'failed';
-                    $this->writeLog($mapping, 'ssl', 'failed', ['error' => $exception->getMessage()], $exception->getMessage());
+                    $this->writeLog($mapping, 'delete', 'failed', ['record_id' => $recordId], $exception->getMessage());
                 }
             }
 
             $mapping->forceFill([
+                'record_type' => $recordType,
                 'dns_records' => $records,
                 'status' => 'active',
-                'ssl_status' => $sslStatus,
                 'last_error' => null,
                 'last_synced_at' => now(),
             ])->save();
@@ -170,10 +228,11 @@ class CustomDomainProvisioningService
 
     public function cleanup(ServerCustomDomain $mapping): void
     {
-        $mapping->loadMissing('customDomain');
+        $mapping->loadMissing('customDomain.apiKey');
         $zoneId = $mapping->customDomain->cloudflare_zone_id;
+        $token = trim((string) ($mapping->customDomain->apiKey?->token ?? ''));
 
-        if (!$zoneId) {
+        if (!$zoneId || $token === '') {
             return;
         }
 
@@ -185,7 +244,7 @@ class CustomDomainProvisioningService
             }
 
             try {
-                $this->cloudflare->deleteRecord($zoneId, $recordId);
+                $this->cloudflare->deleteRecord($zoneId, $recordId, $token);
             } catch (\Throwable $exception) {
                 $this->writeLog($mapping, 'delete', 'failed', ['record_id' => $recordId], $exception->getMessage());
             }
@@ -203,6 +262,197 @@ class CustomDomainProvisioningService
         if ($subdomain === '*' && !$domain->wildcard_enabled) {
             throw new DisplayException('Wildcard subdomains are disabled for ' . $domain->domain);
         }
+    }
+
+    public function resolveSuggestedServiceTag(Server $server, ?CustomDomain $domain = null): ?string
+    {
+        if (!$this->isSrvSupportedForServer($server)) {
+            return null;
+        }
+
+        if ($domain) {
+            $eggTags = (array) ($domain->egg_service_tags ?? []);
+            $eggIdKey = (string) (int) ($server->egg_id ?? 0);
+
+            if ($eggIdKey !== '0' && array_key_exists($eggIdKey, $eggTags) && is_string($eggTags[$eggIdKey])) {
+                return $this->normalizeServiceTagPrefix($eggTags[$eggIdKey]);
+            }
+
+            if ($domain->service_tag) {
+                return $this->normalizeServiceTagPrefix((string) $domain->service_tag);
+            }
+        }
+
+        $labels = strtolower(trim(($server->egg?->name ?? '') . ' ' . ($server->nest?->name ?? '')));
+        if ($labels === '') {
+            return null;
+        }
+
+        foreach (self::WEB_INTERFACE_HINTS as $hint) {
+            if (str_contains($labels, $hint)) {
+                return null;
+            }
+        }
+
+        foreach (self::MINECRAFT_SERVICE_TAG_MAP as $needle => $tag) {
+            if (str_contains($labels, $needle)) {
+                return $this->normalizeServiceTagPrefix($tag);
+            }
+        }
+
+        return null;
+    }
+
+    public function getDefaultServiceTagForEgg(?string $eggName, ?string $nestName = null): ?string
+    {
+        $labels = strtolower(trim(($eggName ?? '') . ' ' . ($nestName ?? '')));
+        if ($labels === '') {
+            return null;
+        }
+
+        foreach (self::WEB_INTERFACE_HINTS as $hint) {
+            if (str_contains($labels, $hint)) {
+                return null;
+            }
+        }
+
+        foreach (self::MINECRAFT_SERVICE_TAG_MAP as $needle => $tag) {
+            if (str_contains($labels, $needle)) {
+                return $this->normalizeServiceTagPrefix($tag);
+            }
+        }
+
+        return null;
+    }
+
+    public function getDnsModeForServer(Server $server): string
+    {
+        $labels = $this->serverLabels($server);
+
+        foreach (self::RUST_HINTS as $hint) {
+            if (str_contains($labels, $hint)) {
+                return 'rust';
+            }
+        }
+
+        foreach (self::MINECRAFT_SERVICE_TAG_MAP as $needle => $_) {
+            if (str_contains($labels, $needle)) {
+                return 'minecraft';
+            }
+        }
+
+        return 'generic';
+    }
+
+    public function isSrvSupportedForServer(Server $server): bool
+    {
+        return in_array($this->getDnsModeForServer($server), ['minecraft', 'rust'], true);
+    }
+
+    public function resolveRecordTypeForServer(Server $server, ?string $requestedRecordType = null): string
+    {
+        $mode = $this->getDnsModeForServer($server);
+        $requested = strtolower(trim((string) $requestedRecordType));
+
+        if ($mode === 'minecraft') {
+            return $requested === 'cname' ? 'cname' : 'srv';
+        }
+
+        if ($mode === 'rust') {
+            return $requested === 'srv' ? 'srv' : 'cname';
+        }
+
+        return 'cname';
+    }
+
+    public function getDnsRecommendationForServer(Server $server): array
+    {
+        $mode = $this->getDnsModeForServer($server);
+
+        if ($mode === 'minecraft') {
+            return [
+                'mode' => 'minecraft',
+                'recommended_record_type' => 'srv',
+                'srv_supported' => true,
+                'allow_record_type_selection' => true,
+                'forced_record_type' => null,
+                'notice' => 'SRV is recommended for Minecraft-family servers. CNAME is also supported.',
+                'connection_hint' => 'Use SRV for best compatibility (usually no :port), or CNAME if you prefer connecting with :port.',
+            ];
+        }
+
+        if ($mode === 'rust') {
+            return [
+                'mode' => 'rust',
+                'recommended_record_type' => 'cname',
+                'srv_supported' => true,
+                'allow_record_type_selection' => true,
+                'forced_record_type' => null,
+                'notice' => 'CNAME is recommended for Rust. SRV is available but not recommended.',
+                'connection_hint' => 'Best option: CNAME with :port (example: play.example.com:28015).',
+            ];
+        }
+
+        return [
+            'mode' => 'generic',
+            'recommended_record_type' => 'cname',
+            'srv_supported' => false,
+            'allow_record_type_selection' => false,
+            'forced_record_type' => 'cname',
+            'notice' => 'CNAME is the only supported option for this game profile.',
+            'connection_hint' => 'Use the mapped domain with :port when connecting.',
+        ];
+    }
+
+    private function supportsServer(CustomDomain $domain, Server $server): bool
+    {
+        $allowedNests = array_values(array_filter((array) ($domain->allowed_nest_ids ?? []), fn ($id) => is_numeric($id)));
+        $allowedEggs = array_values(array_filter((array) ($domain->allowed_egg_ids ?? []), fn ($id) => is_numeric($id)));
+
+        $nestAllowed = empty($allowedNests) || in_array((int) $server->nest_id, array_map('intval', $allowedNests), true);
+        $eggAllowed = empty($allowedEggs) || in_array((int) $server->egg_id, array_map('intval', $allowedEggs), true);
+
+        return $nestAllowed && $eggAllowed;
+    }
+
+    private function resolveServiceTag(ServerCustomDomain $mapping): ?string
+    {
+        if ($this->resolveRecordTypeForServer($mapping->server, $mapping->record_type) !== 'srv') {
+            return null;
+        }
+
+        $customTag = $this->normalizeServiceTagPrefix((string) ($mapping->service_tag ?? ''));
+        if ($customTag !== null) {
+            return $customTag;
+        }
+
+        if ($this->getDnsModeForServer($mapping->server) === 'rust') {
+            return '_rust._';
+        }
+
+        return $this->resolveSuggestedServiceTag($mapping->server, $mapping->customDomain);
+    }
+
+    private function normalizeServiceTagPrefix(?string $serviceTag): ?string
+    {
+        $value = strtolower(trim((string) $serviceTag));
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^_([a-z0-9][a-z0-9-]*)\._(?:tcp|udp)$/', $value, $matches) === 1) {
+            return '_' . $matches[1] . '._';
+        }
+
+        if (preg_match('/^_([a-z0-9][a-z0-9-]*)\._$/', $value, $matches) === 1) {
+            return '_' . $matches[1] . '._';
+        }
+
+        if (preg_match('/^_?([a-z0-9][a-z0-9-]*)$/', $value, $matches) === 1) {
+            return '_' . $matches[1] . '._';
+        }
+
+        throw new DisplayException('Invalid service tag. Use format like _minecraft._');
     }
 
     private function resolveTarget(ServerCustomDomain $mapping): string
@@ -268,5 +518,10 @@ class CustomDomainProvisioningService
             'payload' => $payload,
             'message' => $message,
         ]);
+    }
+
+    private function serverLabels(Server $server): string
+    {
+        return strtolower(trim(($server->egg?->name ?? '') . ' ' . ($server->nest?->name ?? '')));
     }
 }

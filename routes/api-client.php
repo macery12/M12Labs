@@ -222,6 +222,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::group(['prefix' => '/custom-domains'], function () {
             Route::get('/', [Client\Servers\CustomDomainController::class, 'index']);
+            Route::get('/options', [Client\Servers\CustomDomainController::class, 'options']);
             Route::post('/', [Client\Servers\CustomDomainController::class, 'store']);
             Route::post('/sync', [Client\Servers\CustomDomainController::class, 'sync']);
             Route::delete('/{customDomain:id}', [Client\Servers\CustomDomainController::class, 'destroy']);

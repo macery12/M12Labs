@@ -7,10 +7,11 @@ import { Button } from '@/elements/button';
 import useFlash, { useFlashKey } from '@/plugins/useFlash';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { ServerContext } from '@/state/server';
-import { getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
+import { useStoreState } from '@/state/hooks';
 import {
     createServerCustomDomain,
     deleteServerCustomDomain,
+    getServerCustomDomainOptions,
     getServerCustomDomains,
     syncServerCustomDomains,
 } from '@/api/routes/server/customDomains';
@@ -19,9 +20,18 @@ interface DomainOption {
     id: number;
     domain: string;
     wildcard_enabled: boolean;
+    default_service_tag: string | null;
+    recommended_record_type: 'srv' | 'cname';
+    srv_supported: boolean;
+    allow_record_type_selection: boolean;
+    forced_record_type: 'srv' | 'cname' | null;
+    dns_mode: 'minecraft' | 'rust' | 'generic';
+    recommendation_notice: string;
+    connection_hint: string;
 }
 
 const CustomDomainsContainer = () => {
+    const { colors } = useStoreState(state => state.theme.data!);
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const allocations = ServerContext.useStoreState(state => state.server.data!.allocations);
     const defaultAllocation = ServerContext.useStoreState(state =>
@@ -37,19 +47,22 @@ const CustomDomainsContainer = () => {
     const [subdomain, setSubdomain] = useState<string>('');
     const [port, setPort] = useState<number>(defaultAllocation?.port || allocations[0]?.port || 25565);
     const [protocol, setProtocol] = useState<'tcp' | 'udp' | 'both'>('both');
-    const [sslEnabled, setSslEnabled] = useState<boolean>(false);
+    const [recordType, setRecordType] = useState<'srv' | 'cname'>('cname');
+    const [serviceTag, setServiceTag] = useState<string>('');
 
     const { data, error, mutate } = getServerCustomDomains();
 
     useEffect(() => {
         clearFlashes();
 
-        getAvailableCustomDomains()
+        getServerCustomDomainOptions(uuid)
             .then(domains => {
                 setOptions(domains);
                 const firstDomain = domains[0];
                 if (firstDomain) {
                     setDomainId(firstDomain.id);
+                    setRecordType(firstDomain.recommended_record_type);
+                    setServiceTag(firstDomain.default_service_tag ?? '');
                 }
             })
             .catch(error => clearAndAddHttpError(error));
@@ -62,6 +75,10 @@ const CustomDomainsContainer = () => {
     }, [error]);
 
     const selectedDomain = useMemo(() => options.find(item => item.id === domainId), [options, domainId]);
+    const effectiveRecordType: 'srv' | 'cname' = selectedDomain?.allow_record_type_selection
+        ? recordType
+        : (selectedDomain?.forced_record_type ?? selectedDomain?.recommended_record_type ?? 'cname');
+    const supportsSrv = effectiveRecordType === 'srv';
     const allocationPorts = useMemo(
         () => Array.from(new Set(allocations.map(allocation => allocation.port))),
         [allocations],
@@ -89,7 +106,8 @@ const CustomDomainsContainer = () => {
             subdomain,
             port,
             protocol,
-            ssl_enabled: sslEnabled,
+            record_type: effectiveRecordType,
+            service_tag: supportsSrv ? (serviceTag.trim() || undefined) : undefined,
         })
             .then(() => {
                 addFlash({
@@ -130,7 +148,7 @@ const CustomDomainsContainer = () => {
     return (
         <PageContentBlock
             title={'Custom Domains'}
-            description={'Manage per-port subdomains, SRV mappings, and SSL status for this server.'}
+            description={'Manage custom domains and DNS mappings for this server.'}
             showFlashKey={'server:custom-domains'}
             header
         >
@@ -138,6 +156,21 @@ const CustomDomainsContainer = () => {
                 <Spinner centered size={'large'} />
             ) : (
                 <>
+                    {selectedDomain && (
+                        <div
+                            css={tw`mb-6 rounded border p-4 text-sm`}
+                            style={{ borderColor: `${colors.primary}40`, backgroundColor: colors.secondary }}
+                        >
+                            <div css={tw`mb-1 font-semibold text-neutral-100`}>
+                                {!selectedDomain.allow_record_type_selection && selectedDomain.forced_record_type === 'cname'
+                                    ? 'CNAME Only'
+                                    : (selectedDomain.recommended_record_type === 'srv' ? 'SRV Recommended' : 'CNAME Recommended')}
+                            </div>
+                            <div css={tw`text-neutral-300`}>{selectedDomain.recommendation_notice}</div>
+                            <div css={tw`mt-1 text-xs text-neutral-400`}>{selectedDomain.connection_hint}</div>
+                        </div>
+                    )}
+
                     <div css={tw`mb-6 grid grid-cols-1 gap-3 md:grid-cols-6`}>
                         <div css={tw`md:col-span-2`}>
                             <Input
@@ -147,14 +180,62 @@ const CustomDomainsContainer = () => {
                             />
                         </div>
                         <div css={tw`md:col-span-2`}>
-                            <Select value={domainId} onChange={e => setDomainId(Number(e.currentTarget.value))}>
+                            <Select
+                                value={domainId}
+                                onChange={e => {
+                                    const selected = options.find(option => option.id === Number(e.currentTarget.value));
+                                    setDomainId(Number(e.currentTarget.value));
+                                    setRecordType(selected?.recommended_record_type ?? 'cname');
+                                    setServiceTag(selected?.default_service_tag ?? '');
+                                }}
+                            >
                                 {options.map(option => (
                                     <option key={option.id} value={option.id}>
                                         {option.domain}
                                     </option>
                                 ))}
                             </Select>
+                            <div css={tw`mt-2 text-xs text-neutral-400`}>
+                                {effectiveRecordType === 'srv'
+                                    ? (selectedDomain?.default_service_tag
+                                        ? `Default SRV tag: ${selectedDomain.default_service_tag}`
+                                        : 'Default SRV tag: none (set one manually if needed)')
+                                    : (selectedDomain?.dns_mode === 'rust'
+                                        ? 'CNAME selected (recommended). Connect using :port.'
+                                        : 'CNAME is the only supported option for this game profile. Connect using :port.')}
+                            </div>
                         </div>
+                        <div>
+                            <Select
+                                value={effectiveRecordType}
+                                disabled={!selectedDomain?.allow_record_type_selection}
+                                onChange={e => setRecordType(e.currentTarget.value as 'srv' | 'cname')}
+                            >
+                                <option value={'cname'}>
+                                    {selectedDomain?.dns_mode === 'minecraft'
+                                        ? 'CNAME (supported)'
+                                        : selectedDomain?.dns_mode === 'rust'
+                                            ? 'CNAME (recommended)'
+                                            : 'CNAME (only supported option)'}
+                                </option>
+                                {selectedDomain?.allow_record_type_selection && (
+                                    <option value={'srv'}>
+                                        {selectedDomain.dns_mode === 'minecraft'
+                                            ? 'SRV (recommended)'
+                                            : 'SRV (not recommended)'}
+                                    </option>
+                                )}
+                            </Select>
+                        </div>
+                        {supportsSrv ? (
+                            <div>
+                                <Input
+                                    value={serviceTag}
+                                    onChange={e => setServiceTag(e.currentTarget.value.toLowerCase())}
+                                    placeholder={'Service tag (optional, e.g. _minecraft._)'}
+                                />
+                            </div>
+                        ) : <div />}
                         <div>
                             <Select value={port} onChange={e => setPort(Number(e.currentTarget.value))}>
                                 {allocationPorts.map(allocationPort => (
@@ -173,17 +254,7 @@ const CustomDomainsContainer = () => {
                         </div>
                     </div>
 
-                    <div css={tw`mb-6 flex items-center justify-between`}>
-                        <label css={tw`flex items-center text-sm text-neutral-300`}>
-                            <Input
-                                type={'checkbox'}
-                                checked={sslEnabled}
-                                onChange={e => setSslEnabled(e.currentTarget.checked)}
-                                css={tw`mr-2`}
-                            />
-                            Request SSL certificate
-                        </label>
-
+                    <div css={tw`mb-6 flex items-center justify-end`}>
                         <div css={tw`space-x-2`}>
                             <Button color={'secondary'} onClick={onSync}>
                                 Sync DNS
@@ -196,7 +267,10 @@ const CustomDomainsContainer = () => {
 
                     <div css={tw`space-y-2`}>
                         {data.length < 1 && (
-                            <div css={tw`rounded border border-neutral-600 bg-neutral-800 p-4 text-sm text-neutral-300`}>
+                            <div
+                                css={tw`rounded border p-4 text-sm text-neutral-300`}
+                                style={{ borderColor: `${colors.primary}40`, backgroundColor: colors.secondary }}
+                            >
                                 No custom domains configured for this server yet.
                             </div>
                         )}
@@ -204,12 +278,15 @@ const CustomDomainsContainer = () => {
                         {data.map(row => (
                             <div
                                 key={row.id}
-                                css={tw`flex flex-col gap-2 rounded border border-neutral-600 bg-neutral-800 p-4 md:flex-row md:items-center md:justify-between`}
+                                css={tw`flex flex-col gap-2 rounded border p-4 md:flex-row md:items-center md:justify-between`}
+                                style={{ borderColor: `${colors.primary}40`, backgroundColor: colors.secondary }}
                             >
                                 <div>
                                     <div css={tw`text-sm font-semibold text-neutral-100`}>{row.full_domain}</div>
                                     <div css={tw`text-xs text-neutral-300`}>
-                                        Port {row.port} • {row.protocol.toUpperCase()} • SSL: {row.ssl_status}
+                                        Port {row.port} • {row.protocol.toUpperCase()} • {row.record_type === 'srv'
+                                            ? `SRV service: ${row.service_tag || 'auto'}`
+                                            : 'CNAME mapping (connect using :port)'}
                                     </div>
                                     <div css={tw`text-xs text-neutral-400`}>Status: {row.status}</div>
                                     {row.last_error && <div css={tw`text-xs text-red-400`}>{row.last_error}</div>}

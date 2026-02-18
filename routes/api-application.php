@@ -151,6 +151,12 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
         Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
 
+        Route::get('/options', [Application\Billing\CustomDomainController::class, 'options']);
+        Route::get('/api-keys', [Application\Billing\CustomDomainController::class, 'apiKeys']);
+        Route::post('/api-keys', [Application\Billing\CustomDomainController::class, 'storeApiKey']);
+        Route::patch('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'updateApiKey']);
+        Route::delete('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'deleteApiKey']);
+
         Route::get('/settings', [Application\CustomDomains\SettingsController::class, 'index']);
         Route::put('/settings', [Application\CustomDomains\SettingsController::class, 'update']);
     });

@@ -62,7 +62,6 @@ export const updateMolliePayment = ({
         subdomain: string;
         port: number;
         protocol: 'tcp' | 'udp' | 'both';
-        ssl_enabled?: boolean;
     }>;
 }): Promise<void> => {
     return new Promise((resolve, reject) => {
