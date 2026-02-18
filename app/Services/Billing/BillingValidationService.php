@@ -25,8 +25,34 @@ class BillingValidationService
      *
      * @param DaemonServerRepository $daemonRepository Repository for interacting with Wings daemon
      */
-    public function __construct(private DaemonServerRepository $daemonRepository)
+    public function __construct(
+        private DaemonServerRepository $daemonRepository,
+        private NodeAvailabilityService $nodeAvailabilityService,
+    )
     {
+    }
+
+    /**
+     * Validate node selection for a product before checkout processing.
+     *
+     * @throws DisplayException
+     */
+    public function validateNodeSelectionForProduct(?int $nodeId, Product $product): void
+    {
+        $availableNodes = $this->nodeAvailabilityService->getAvailableNodesForProduct($product);
+
+        if ($availableNodes->isEmpty()) {
+            throw new DisplayException('No nodes are available for this product. Please contact support.');
+        }
+
+        if (empty($nodeId)) {
+            throw new DisplayException('Please select a node to continue.');
+        }
+
+        $availableNodeIds = $availableNodes->pluck('id')->map(static fn ($id) => (int) $id)->all();
+        if (!in_array((int) $nodeId, $availableNodeIds, true)) {
+            throw new DisplayException('The selected node is not available for this product.');
+        }
     }
 
     /**

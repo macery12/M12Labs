@@ -74,6 +74,7 @@ class CheckoutController extends ClientApiController
 
         // Validate node deployment
         $nodeId = (int) $request->input('node');
+        $this->validationService->validateNodeSelectionForProduct($nodeId, $product);
         $this->validationService->validateNodeDeployment($nodeId, true);
 
         // Calculate price with coupon for new purchase (including node multiplier)
@@ -284,6 +285,7 @@ class CheckoutController extends ClientApiController
 
             // Only validate node deployment for new purchases, not renewals
             if (!$isRenewal) {
+                $this->validationService->validateNodeSelectionForProduct($nodeId, $product);
                 $this->validationService->validateNodeDeployment($nodeId, false);
             } else {
                 // For renewals, get the server object

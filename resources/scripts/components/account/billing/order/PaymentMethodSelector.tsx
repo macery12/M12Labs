@@ -29,26 +29,39 @@ export default (props: Props) => {
     const { colors } = useStoreState(state => state.theme.data!);
     const billing = useStoreState(state => state.everest.data!.billing);
 
-    // Determine available payment methods
-    const availableProcessors: PaymentMethod[] = [];
+    const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
+        {
+            method: 'stripe',
+            available: billing.processors?.stripe?.available ?? false,
+        },
+        {
+            method: 'mollie',
+            available: billing.processors?.mollie?.available ?? false,
+        },
+        {
+            method: 'paypal',
+            available: billing.processors?.paypal?.available ?? false,
+        },
+    ].filter(processor => {
+        if (processor.method === 'stripe') {
+            return billing.processors?.stripe?.enabled;
+        }
 
-    if (billing.processors?.stripe?.available) {
-        availableProcessors.push('stripe');
-    }
+        if (processor.method === 'mollie') {
+            return billing.processors?.mollie?.enabled;
+        }
 
-    if (billing.processors?.mollie?.available) {
-        availableProcessors.push('mollie');
-    }
+        return billing.processors?.paypal?.enabled;
+    });
 
-    if (billing.processors?.paypal?.available) {
-        availableProcessors.push('paypal');
-    }
+    const availableProcessors = configuredProcessors
+        .filter(processor => processor.available)
+        .map(processor => processor.method);
 
-    // Default to first available processor
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(availableProcessors[0] || 'stripe');
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | undefined>(availableProcessors[0]);
+    const showSelection = configuredProcessors.length > 1;
 
-    // If only one processor is available, don't show selection UI
-    const showSelection = availableProcessors.length > 1;
+    const getProcessor = (method: PaymentMethod) => configuredProcessors.find(processor => processor.method === method);
 
     // If no processors are available, show error message
     if (availableProcessors.length === 0) {
@@ -58,10 +71,7 @@ export default (props: Props) => {
                     <FontAwesomeIcon icon={faExclamationTriangle} className={'mt-0.5 h-5 w-5'} />
                     <div>
                         <p className={'font-semibold'}>No Payment Methods Available</p>
-                        <p className={'mt-1 text-sm'}>
-                            No payment integrations are currently enabled. Please contact an administrator or create a
-                            support ticket to enable payment processing for this product.
-                        </p>
+                        <p className={'mt-1 text-sm'}>Payment system has not been setup correctly.</p>
                     </div>
                 </div>
             </Alert>
@@ -84,13 +94,16 @@ export default (props: Props) => {
                 <div className={'mb-6'}>
                     <h4 className={'mb-3 text-sm font-semibold text-gray-200'}>Select Payment Method</h4>
                     <div className={'grid gap-3 sm:grid-cols-2'}>
-                        {availableProcessors.includes('stripe') && (
+                        {getProcessor('stripe') && (
                             <button
                                 type={'button'}
+                                disabled={!getProcessor('stripe')?.available}
                                 onClick={() => setSelectedMethod('stripe')}
                                 className={classNames(
                                     'relative flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
-                                    'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2',
+                                    getProcessor('stripe')?.available
+                                        ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                        : 'cursor-not-allowed opacity-50',
                                     selectedMethod === 'stripe'
                                         ? 'border-primary bg-opacity-20'
                                         : 'border-gray-600 bg-transparent',
@@ -128,17 +141,23 @@ export default (props: Props) => {
                                     <p className={'mt-0.5 text-xs text-gray-400'}>
                                         Card, PayPal{billing.link ? ', Link' : ''}
                                     </p>
+                                    {!getProcessor('stripe')?.available && (
+                                        <p className={'mt-1 text-xs text-yellow-400'}>Unavailable</p>
+                                    )}
                                 </div>
                             </button>
                         )}
 
-                        {availableProcessors.includes('mollie') && (
+                        {getProcessor('mollie') && (
                             <button
                                 type={'button'}
+                                disabled={!getProcessor('mollie')?.available}
                                 onClick={() => setSelectedMethod('mollie')}
                                 className={classNames(
                                     'relative flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
-                                    'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2',
+                                    getProcessor('mollie')?.available
+                                        ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                        : 'cursor-not-allowed opacity-50',
                                     selectedMethod === 'mollie'
                                         ? 'border-primary bg-opacity-20'
                                         : 'border-gray-600 bg-transparent',
@@ -174,17 +193,23 @@ export default (props: Props) => {
                                         )}
                                     </div>
                                     <p className={'mt-0.5 text-xs text-gray-400'}>Card, iDEAL, and more</p>
+                                    {!getProcessor('mollie')?.available && (
+                                        <p className={'mt-1 text-xs text-yellow-400'}>Unavailable</p>
+                                    )}
                                 </div>
                             </button>
                         )}
 
-                        {availableProcessors.includes('paypal') && (
+                        {getProcessor('paypal') && (
                             <button
                                 type={'button'}
+                                disabled={!getProcessor('paypal')?.available}
                                 onClick={() => setSelectedMethod('paypal')}
                                 className={classNames(
                                     'relative flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
-                                    'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2',
+                                    getProcessor('paypal')?.available
+                                        ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                        : 'cursor-not-allowed opacity-50',
                                     selectedMethod === 'paypal'
                                         ? 'border-primary bg-opacity-20'
                                         : 'border-gray-600 bg-transparent',
@@ -220,6 +245,9 @@ export default (props: Props) => {
                                         )}
                                     </div>
                                     <p className={'mt-0.5 text-xs text-gray-400'}>PayPal account or card</p>
+                                    {!getProcessor('paypal')?.available && (
+                                        <p className={'mt-1 text-xs text-yellow-400'}>Unavailable</p>
+                                    )}
                                 </div>
                             </button>
                         )}

@@ -59,6 +59,8 @@ export default () => {
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
+    const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
+
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -110,7 +112,7 @@ export default () => {
     const isStepValid = (step: number) => {
         switch (step) {
             case 1: // Node selection
-                return selectedNode !== 0;
+                return hasValidSelectedNode;
             case 2: // Egg selection (if applicable)
                 if (availableEggs.length <= 1) return true;
                 return selectedEggId !== undefined;
@@ -270,7 +272,8 @@ export default () => {
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
                 setNodes(nodesData);
-                setSelectedNode(Number(nodesData[0]?.id) ?? 0);
+                const firstNodeId = nodesData.length > 0 ? Number(nodesData[0].id) : 0;
+                setSelectedNode(Number.isInteger(firstNodeId) && firstNodeId > 0 ? firstNodeId : 0);
 
                 if (productData.price !== 0) {
                     // Check which processors are available and fetch resources accordingly
@@ -353,7 +356,7 @@ export default () => {
                         </div>
                         {(!nodes || nodes.length < 1) && (
                             <Alert type={'danger'}>
-                                There are no nodes available for deployment. Please contact an administrator.
+                                No nodes are available for this product. Please contact support.
                             </Alert>
                         )}
                         <div className={'grid gap-4 sm:grid-cols-2'}>

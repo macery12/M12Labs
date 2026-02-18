@@ -44,11 +44,21 @@ export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const { colors } = useStoreState(state => state.theme.data!);
 
+    const availablePaymentMethods = [
+        settings.processors?.stripe?.available,
+        settings.processors?.mollie?.available,
+        settings.processors?.paypal?.available,
+    ].filter(Boolean).length;
+
     useEffect(() => {
         (async function () {
             await getCategories().then(data => {
                 setCategories(data);
-                setCategory(Number(data[0]!.id));
+                if (data.length > 0) {
+                    setCategory(Number(data[0]!.id));
+                } else {
+                    setProducts([]);
+                }
             });
         })();
     }, []);
@@ -61,27 +71,8 @@ export default () => {
         });
     }, [category]);
 
-    if (settings.processor === 'mollie') {
-        // Check if Mollie is configured
-        if (!settings.mollie?.api_key) {
-            return (
-                <Alert type={'danger'}>
-                    Due to a configuration error, the store is currently unavailable. Please try again later, or refresh
-                    the page.
-                </Alert>
-            );
-        }
-    } else {
-        // Check if Stripe is configured (default)
-        if (!settings.keys.publishable) {
-            return (
-                <Alert type={'danger'}>
-                    Due to a configuration error, the store is currently unavailable. Please try again later, or refresh
-                    the page.
-                </Alert>
-            );
-        }
-    }
+    const hasPaidProducts = !!products?.some(product => Number(product.price) > 0);
+    const paidProductsBlocked = hasPaidProducts && availablePaymentMethods < 1;
 
     return (
         <PageContentBlock title={'Available Products'}>
@@ -95,10 +86,10 @@ export default () => {
             <div className={'grid gap-4 lg:grid-cols-4 lg:gap-12'}>
                 <div className={'border-r-4 border-gray-500'}>
                     <p className={'mb-8 mt-4 text-2xl font-bold text-gray-300'}>Categories</p>
-                    {(!categories || categories.length < 1) && (
+                    {categories && categories.length < 1 && (
                         <div className={'my-4 font-semibold text-gray-400'}>
                             <FontAwesomeIcon icon={faExclamationTriangle} className={'mr-2 h-5 w-5 text-yellow-400'} />
-                            No categories found.
+                            There are currently no products available.
                         </div>
                     )}
                     {categories?.map(cat => (
@@ -126,13 +117,18 @@ export default () => {
                         <Spinner centered />
                     ) : (
                         <>
+                            {paidProductsBlocked && (
+                                <Alert type={'warning'} className={'mb-4'}>
+                                    Payment system has not been setup correctly.
+                                </Alert>
+                            )}
                             {products?.length < 1 && (
                                 <div className={'my-4 font-semibold text-gray-400'}>
                                     <FontAwesomeIcon
                                         icon={faExclamationTriangle}
                                         className={'mr-2 h-5 w-5 text-yellow-400'}
                                     />
-                                    No products could be found in this category.
+                                    There are currently no products available.
                                 </div>
                             )}
                             <div className={'grid grid-cols-1 gap-4 xl:grid-cols-3'}>
@@ -198,11 +194,17 @@ export default () => {
                                                 />
                                             </div>
                                             <div className={'mt-6 text-center'}>
-                                                <Link to={`/account/billing/order/${product.id}`}>
-                                                    <Button size={Button.Sizes.Large} className={'w-full'}>
+                                                {Number(product.price) > 0 && paidProductsBlocked ? (
+                                                    <Button size={Button.Sizes.Large} className={'w-full'} disabled>
                                                         Configure
                                                     </Button>
-                                                </Link>
+                                                ) : (
+                                                    <Link to={`/account/billing/order/${product.id}`}>
+                                                        <Button size={Button.Sizes.Large} className={'w-full'}>
+                                                            Configure
+                                                        </Button>
+                                                    </Link>
+                                                )}
                                             </div>
                                         </div>
                                     </ContentBox>

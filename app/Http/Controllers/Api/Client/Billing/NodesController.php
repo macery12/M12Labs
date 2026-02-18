@@ -2,17 +2,16 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
-use Everest\Models\Node;
-use Illuminate\Http\Request;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\BillingException;
+use Illuminate\Http\Request;
+use Everest\Services\Billing\NodeAvailabilityService;
 use Everest\Transformers\Api\Client\NodeTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
-use Everest\Repositories\Wings\DaemonConfigurationRepository;
 
 class NodesController extends ClientApiController
 {
-    public function __construct(private DaemonConfigurationRepository $repository)
+    public function __construct(private NodeAvailabilityService $nodeAvailabilityService)
     {
         parent::__construct();
     }
@@ -23,36 +22,14 @@ class NodesController extends ClientApiController
     public function index(Request $request, Product $product): array
     {
         $free = (float) $product->price === 0.00;
+        $availableNodes = $this->nodeAvailabilityService->getAvailableNodesForProduct($product);
 
-        $nodes = Node::where($free ? 'deployable_free' : 'deployable', true)->get();
-
-        if ($nodes->isEmpty() && !$free) {
+        if ($availableNodes->isEmpty() && !$free) {
             BillingException::create([
                 'title' => 'No deployable nodes found',
                 'exception_type' => BillingException::TYPE_DEPLOYMENT,
                 'description' => 'Ensure at least one node has the "deployable" box checked',
             ]);
-
-            return $this->fractal->collection(collect())
-                ->transformWith(NodeTransformer::class)
-                ->toArray();
-        }
-
-        $availableNodes = collect();
-
-        foreach ($nodes as $node) {
-            $hasFreeAllocation = $node->allocations()->whereNull('server_id')->exists();
-            if (!$hasFreeAllocation) {
-                continue;
-            }
-
-            try {
-                $this->repository->setNode($node)->getSystemInformation();
-            } catch (\Throwable $e) {
-                continue;
-            }
-
-            $availableNodes->push($node);
         }
 
         if ($availableNodes->isEmpty()) {
