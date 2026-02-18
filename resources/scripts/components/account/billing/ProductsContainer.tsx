@@ -18,7 +18,6 @@ import {
     faShoppingBag,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
-import { Alert } from '@/elements/alert';
 import { getProducts } from '@/api/routes/account/billing/products';
 import { getCategories } from '@/api/routes/account/billing/categories';
 import { Category, Product } from '@definitions/account/billing';
@@ -60,28 +59,6 @@ export default () => {
             setProducts(data);
         });
     }, [category]);
-
-    if (settings.processor === 'mollie') {
-        // Check if Mollie is configured
-        if (!settings.mollie?.api_key) {
-            return (
-                <Alert type={'danger'}>
-                    Due to a configuration error, the store is currently unavailable. Please try again later, or refresh
-                    the page.
-                </Alert>
-            );
-        }
-    } else {
-        // Check if Stripe is configured (default)
-        if (!settings.keys.publishable) {
-            return (
-                <Alert type={'danger'}>
-                    Due to a configuration error, the store is currently unavailable. Please try again later, or refresh
-                    the page.
-                </Alert>
-            );
-        }
-    }
 
     return (
         <PageContentBlock title={'Available Products'}>

@@ -206,21 +206,7 @@ export default () => {
 
     const handleCouponApplied = (data: ValidateCouponResponse | null) => {
         setCouponData(data);
-
-        // Only regenerate intent if the final total is not zero and using Stripe
-        if (product && product.price !== 0 && billing.processors?.stripe?.available) {
-            const finalTotal = data ? data.total : product.price;
-
-            // If coupon makes it free, don't fetch intent
-            if (finalTotal === 0) {
-                setIntent(null);
-            } else {
-                // Regenerate intent with new amount for paid products
-                getStripeIntent(Number(params.id), data?.coupon.id)
-                    .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
-                    .catch(error => console.error('Error updating payment intent:', error));
-            }
-        }
+        setIntent(null);
     };
 
     const createFree = () => {
@@ -272,29 +258,6 @@ export default () => {
                 setNodes(nodesData);
                 setSelectedNode(Number(nodesData[0]?.id) ?? 0);
 
-                if (productData.price !== 0) {
-                    // Check which processors are available and fetch resources accordingly
-                    const stripeAvailable = billing.processors?.stripe?.available ?? false;
-
-                    // Fetch Stripe resources if Stripe is available
-                    if (stripeAvailable) {
-                        try {
-                            // Fetch payment intent
-                            const intentData = await getStripeIntent(Number(params.id));
-                            setIntent({ id: intentData.id, secret: intentData.secret });
-
-                            // Fetch Stripe public key and initialize Stripe
-                            const stripePublicKey = await getStripeKey(Number(params.id));
-                            const stripeInstance = await loadStripe(stripePublicKey.key);
-                            setStripe(stripeInstance);
-                        } catch (error) {
-                            console.error('Error initializing Stripe:', error);
-                        }
-                    }
-
-                    // Mollie doesn't need pre-initialization like Stripe
-                    // Payment is created when user clicks the button
-                }
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -313,6 +276,44 @@ export default () => {
             .then(data => setEggs(data))
             .catch(error => console.error(error));
     }, [product, selectedEggId]);
+
+    useEffect(() => {
+        const atPaymentStep = currentStep === getTotalSteps() + 1;
+        const finalTotal = couponData ? couponData.total : product?.price || 0;
+        const stripeAvailable = billing.processors?.stripe?.available;
+
+        if (finalTotal === 0) {
+            setIntent(null);
+        }
+
+        if (!atPaymentStep || !stripeAvailable || !product || finalTotal === 0) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadStripeResources = async () => {
+            try {
+                const intentData = await getStripeIntent(Number(params.id), couponData?.coupon.id);
+                if (cancelled) return;
+                setIntent({ id: intentData.id, secret: intentData.secret });
+
+                const stripePublicKey = await getStripeKey(Number(params.id));
+                if (cancelled) return;
+                const stripeInstance = await loadStripe(stripePublicKey.key);
+                setStripe(stripeInstance);
+            } catch (error) {
+                console.error('Error initializing Stripe:', error);
+            }
+        };
+
+        loadStripeResources();
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available]);
 
     // Auto-generate server name when selections change
     useEffect(() => {

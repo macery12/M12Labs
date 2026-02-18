@@ -27,10 +27,12 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
     const billing = useStoreState(state => state.everest.data!.billing);
     const { colors } = useStoreState(state => state.theme.data!);
 
+    const stripeAvailable = billing.processors?.stripe?.available;
+
     // Determine available payment methods
     const availableProcessors: PaymentMethod[] = [];
 
-    if (billing.processors?.stripe?.available) {
+    if (stripeAvailable) {
         availableProcessors.push('stripe');
     }
 
@@ -43,7 +45,9 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
     }
 
     // Default to first available processor, or undefined if none available
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | undefined>(availableProcessors[0]);
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | undefined>(
+        availableProcessors.length === 1 ? availableProcessors[0] : undefined,
+    );
 
     // If only one processor is available, don't show selection UI
     const showSelection = availableProcessors.length > 1;
@@ -51,22 +55,22 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
     useEffect(() => {
         const fetchData = async () => {
             // Only fetch Stripe data if Stripe is available and selected
-            if (id && availableProcessors.includes('stripe')) {
-                try {
-                    const intentData = await getStripeIntent(id, couponId);
-                    setIntent({ id: intentData.id, secret: intentData.secret });
+            if (!id || !stripeAvailable || selectedMethod !== 'stripe') return;
 
-                    const stripePublicKey = await getStripeKey(id);
-                    const stripeInstance = await loadStripe(stripePublicKey.key);
-                    setStripe(stripeInstance);
-                } catch (error) {
-                    console.error('Error fetching Stripe data:', error);
-                }
+            try {
+                const intentData = await getStripeIntent(id, couponId);
+                setIntent({ id: intentData.id, secret: intentData.secret });
+
+                const stripePublicKey = await getStripeKey(id);
+                const stripeInstance = await loadStripe(stripePublicKey.key);
+                setStripe(stripeInstance);
+            } catch (error) {
+                console.error('Error fetching Stripe data:', error);
             }
         };
 
         fetchData();
-    }, [id, couponId]);
+    }, [id, couponId, selectedMethod, stripeAvailable]);
 
     if (!id) return <Spinner size={'large'} centered />;
 
