@@ -278,7 +278,9 @@ export default () => {
     }, [product, selectedEggId]);
 
     useEffect(() => {
-        const atPaymentStep = currentStep === getTotalSteps() + 1;
+        // Payment step is always the last step (review + 1)
+        const paymentStep = getTotalSteps() + 1;
+        const atPaymentStep = currentStep === paymentStep;
         const finalTotal = couponData ? couponData.total : product?.price || 0;
         const stripeAvailable = billing.processors?.stripe?.available;
 
@@ -313,8 +315,9 @@ export default () => {
         return () => {
             cancelled = true;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- getTotalSteps depends on dynamic wizard steps; we only
-        // need to trigger when entering the payment step or when coupon/product/context identifiers change
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- getTotalSteps is derived from multiple dynamic values
+        // and is re-created every render; relying on currentStep/paymentStep captures the transition into the payment
+        // screen without re-running on every render of the wizard
     }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available, params.id]);
 
     // Auto-generate server name when selections change
