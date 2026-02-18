@@ -28,7 +28,7 @@ export default ({ node, selected, setSelected, basePrice, billingDays }: Props) 
         <div
             onClick={() => setSelected(Number(node.id))}
             className={classNames(
-                'relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:scale-[1.02]',
+                'relative cursor-pointer rounded-lg border-2 p-4 transition-all',
                 isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
             style={isSelected ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` } : {}}

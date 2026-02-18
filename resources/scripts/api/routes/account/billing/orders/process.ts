@@ -18,6 +18,11 @@ export const processUnpaidOrder = (
     coupon_id?: number,
     egg_id?: number,
     name?: string,
+    domain_payload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        record_type?: 'srv' | 'cname';
+    }>,
 ): Promise<Server> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/process/free`, {
@@ -29,6 +34,7 @@ export const processUnpaidOrder = (
             coupon_id,
             egg_id,
             name,
+            domain_payload,
         })
             .then(({ data }) => resolve(data))
             .catch(reject);

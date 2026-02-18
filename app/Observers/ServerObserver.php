@@ -4,6 +4,7 @@ namespace Everest\Observers;
 
 use Everest\Events;
 use Everest\Models\Server;
+use Everest\Jobs\CustomDomains\CleanupServerCustomDomainsJob;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 
 class ServerObserver
@@ -49,6 +50,10 @@ class ServerObserver
     public function deleted(Server $server): void
     {
         event(new Events\Server\Deleted($server));
+
+        if (config('modules.custom_domains.cleanup_on_delete', true)) {
+            CleanupServerCustomDomainsJob::dispatch($server->id);
+        }
     }
 
     /**

@@ -3,6 +3,7 @@ import { type SubuserPermission } from '@/state/server/subusers';
 import { ServerStatus } from '@/api/routes/server';
 
 interface Server {
+    serverOwner?: boolean;
     id: string;
     internalId: number | string;
     uuid: string;
@@ -30,6 +31,7 @@ interface Server {
     eggFeatures: string[];
     modsEnabled: boolean;
     modpacksSupported: boolean;
+    extensionsEnabled: boolean;
     billingProductId?: number;
     billingDays?: number;
     renewalDate?: Date | undefined;

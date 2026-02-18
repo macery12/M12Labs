@@ -84,6 +84,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
     Route::prefix('/billing')->group(function () {
         Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
         Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
+        Route::get('/custom-domains/options', [Client\Billing\CustomDomainOptionsController::class, 'index']);
 
         Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
         Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
@@ -219,6 +220,14 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
         });
 
+        Route::group(['prefix' => '/custom-domains'], function () {
+            Route::get('/', [Client\Servers\CustomDomainController::class, 'index']);
+            Route::get('/options', [Client\Servers\CustomDomainController::class, 'options']);
+            Route::post('/', [Client\Servers\CustomDomainController::class, 'store']);
+            Route::post('/sync', [Client\Servers\CustomDomainController::class, 'sync']);
+            Route::delete('/{customDomain:id}', [Client\Servers\CustomDomainController::class, 'destroy']);
+        });
+
         Route::group(['prefix' => '/users'], function () {
             Route::get('/', [Client\Servers\SubuserController::class, 'index']);
             Route::post('/', [Client\Servers\SubuserController::class, 'store']);
@@ -253,6 +262,24 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/plans', [Client\Billing\PlanChangeController::class, 'getAvailablePlans']);
             Route::get('/plans/{product}/validate', [Client\Billing\PlanChangeController::class, 'validatePlanChange']);
             Route::post('/plans/{product}/change', [Client\Billing\PlanChangeController::class, 'changePlan']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Extensions Routes
+        |--------------------------------------------------------------------------
+        */
+        Route::group(['prefix' => '/extensions'], function () {
+            // List enabled extensions for this server
+            Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
+
+            // Extension-specific routes (must come before the wildcard route)
+            foreach (glob(__DIR__ . '/extensions/client/*.php') as $extensionRoutes) {
+                require $extensionRoutes;
+            }
+
+            // Extension check route (must come AFTER specific extension routes)
+            Route::get('/{extensionId}', [Client\Extensions\ExtensionsController::class, 'check']);
         });
     });
 });

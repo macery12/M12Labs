@@ -136,6 +136,38 @@ class EverestComposer
                     'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
                 ],
             ],
+            'extensions' => [
+                'enabled' => boolval(config('modules.extensions.enabled', false)),
+                'available' => $this->getAvailableExtensions(),
+            ],
         ]);
+    }
+
+    /**
+     * Get the list of available extensions with their enabled status.
+     */
+    private function getAvailableExtensions(): array
+    {
+        $extensions = config('modules.extensions.available', []);
+        
+        if (!is_array($extensions)) {
+            return [];
+        }
+        
+        $availableExtensions = [];
+
+        foreach ($extensions as $id => $extension) {
+            if (!is_array($extension)) {
+                continue;
+            }
+            $availableExtensions[$id] = [
+                'name' => $extension['name'] ?? $id,
+                'description' => $extension['description'] ?? '',
+                'icon' => $extension['icon'] ?? 'puzzle',
+                'version' => $extension['version'] ?? '1.0.0',
+            ];
+        }
+
+        return $availableExtensions;
     }
 }

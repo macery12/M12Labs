@@ -3,6 +3,7 @@ import * as Models from '@definitions/server/models.d';
 
 export default class Transformers {
     static toServer = ({ attributes: data }: FractalResponseData): Models.Server => ({
+        serverOwner: data.server_owner,
         id: data.identifier,
         internalId: data.internal_id,
         groupId: data.group_id,
@@ -23,6 +24,7 @@ export default class Transformers {
         eggFeatures: data.egg_features || [],
         modsEnabled: data.mods_enabled || false,
         modpacksSupported: data.modpacks_supported || false,
+        extensionsEnabled: data.extensions_enabled || false,
         billingProductId: data.billing_product_id,
         billingDays: data.billing_days,
         renewalDate: data.renewal_date ? new Date(data.renewal_date) : undefined,
@@ -55,7 +57,10 @@ export default class Transformers {
         databaseHostId: attributes.database_host_id,
         connectionString: `${attributes.host.address}:${attributes.host.port}`,
         allowConnectionsFrom: attributes.connections_from,
-        password: attributes.relationships?.password?.attributes?.password,
+        password:
+            attributes.relationships?.password && 'attributes' in attributes.relationships.password
+                ? (attributes.relationships.password as FractalResponseData).attributes.password
+                : undefined,
     });
 
     static toSubuser = (data: FractalResponseData): Models.Subuser => ({

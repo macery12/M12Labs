@@ -9,6 +9,7 @@ use Everest\Models\Server;
 use Everest\Models\Subuser;
 use Everest\Models\Database;
 use Everest\Models\Schedule;
+use Everest\Models\ServerCustomDomain;
 use Illuminate\Http\Request;
 use Everest\Models\Allocation;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +53,7 @@ class ResourceBelongsToServer
                 case Database::class:
                 case Schedule::class:
                 case Subuser::class:
+                case ServerCustomDomain::class:
                     if ($model->server_id !== $server->id) {
                         throw $exception;
                     }

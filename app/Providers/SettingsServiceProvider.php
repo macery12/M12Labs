@@ -94,6 +94,12 @@ class SettingsServiceProvider extends ServiceProvider
         // Mods module settings
         'modules:mods:enabled',
         'modules:mods:curseforge_api_key',
+
+        // Extensions module settings
+        'modules:extensions:enabled',
+
+        // Custom domains module settings
+        'modules:custom_domains:cloudflare:token',
     ];
 
     /**

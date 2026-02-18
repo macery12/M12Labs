@@ -9,6 +9,7 @@
     },
     "scripts": {
         "build": "vite build",
+        "postbuild": "bash ./scripts/reload-dev-services.sh",
         "clean": "rimraf public/build",
         "coverage": "vitest run --coverage",
         "dev": "vite",
@@ -130,6 +131,7 @@
         "prettier": "2.8.4",
         "prettier-plugin-tailwindcss": "0.2.3",
         "rimraf": "3.0.2",
+        "source-map-explorer": "^2.5.3",
         "tailwindcss": "3.2.7",
         "ts-essentials": "9.3.0",
         "twin.macro": "2.8.2",

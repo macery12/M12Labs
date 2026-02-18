@@ -32,6 +32,9 @@ import {
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
+import Input from '@/elements/Input';
+import Select from '@/elements/Select';
 import classNames from 'classnames';
 
 export default () => {
@@ -60,6 +63,25 @@ export default () => {
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
+
+    const [customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
+    const [domainMappings, setDomainMappings] = useState<
+        Array<{
+            domain_id: number;
+            domain: string;
+            subdomain: string;
+            record_type: 'srv' | 'cname';
+        }>
+    >([]);
+    const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
+    const [mappingSubdomain, setMappingSubdomain] = useState<string>('');
+    const [mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
+    const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
+
+    const selectedDomainOption = customDomainOptions.find(option => option.id === selectedDomainId);
+    const effectiveRecordType: 'srv' | 'cname' = selectedDomainOption?.allow_record_type_selection
+        ? mappingRecordType
+        : (selectedDomainOption?.forced_record_type ?? selectedDomainOption?.recommended_record_type ?? 'cname');
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -125,21 +147,6 @@ export default () => {
             default:
                 return false;
         }
-    };
-
-    // Get step title
-    const getStepTitle = (step: number) => {
-        const stepMap: { [key: number]: string } = {};
-        let stepNum = 1;
-
-        stepMap[stepNum++] = 'Select Location';
-        if (availableEggs.length > 1) stepMap[stepNum++] = 'Select Server Type';
-        stepMap[stepNum++] = 'Select Billing Cycle';
-        if (eggs && eggs.some(v => v.isEditable)) stepMap[stepNum++] = 'Configure Server';
-        stepMap[stepNum++] = 'Review & Confirm';
-        stepMap[stepNum++] = 'Payment';
-
-        return stepMap[step] || '';
     };
 
     // Get the current price based on selected billing cycle
@@ -225,6 +232,35 @@ export default () => {
         }
     };
 
+    const getDomainPayload = () =>
+        domainMappings.map(mapping => ({
+            domain_id: mapping.domain_id,
+            subdomain: mapping.subdomain,
+            record_type: mapping.record_type,
+        }));
+
+    const addDomainMapping = () => {
+        const selected = customDomainOptions.find(domain => domain.id === selectedDomainId);
+        if (!selected || !mappingSubdomain.trim()) {
+            return;
+        }
+
+        setDomainMappings(current =>
+            current.concat({
+                domain_id: selected.id,
+                domain: selected.domain,
+                subdomain: mappingSubdomain.trim().toLowerCase(),
+                record_type: effectiveRecordType,
+            }),
+        );
+
+        setMappingSubdomain('');
+    };
+
+    const removeDomainMapping = (index: number) => {
+        setDomainMappings(current => current.filter((_, idx) => idx !== index));
+    };
+
     const createFree = () => {
         if (product && serverName.trim()) {
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
@@ -237,6 +273,7 @@ export default () => {
                 couponData?.coupon.id,
                 selectedEggId,
                 serverName.trim(),
+                getDomainPayload(),
             )
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
@@ -274,7 +311,16 @@ export default () => {
                 setNodes(nodesData);
                 const firstNodeId = nodesData.length > 0 ? Number(nodesData[0].id) : 0;
                 setSelectedNode(Number.isInteger(firstNodeId) && firstNodeId > 0 ? firstNodeId : 0);
+                setSelectedNode(Number(nodesData[0]?.id) ?? 0);
 
+                const domainsData = await getAvailableCustomDomains(allowedEggs[0]);
+                setCustomDomainOptions(domainsData);
+                const firstDomain = domainsData[0];
+                if (firstDomain) {
+                    setSelectedDomainId(firstDomain.id);
+                    setMappingRecordType(firstDomain.recommended_record_type);
+                }
+                  
                 if (productData.price !== 0) {
                     // Check which processors are available and fetch resources accordingly
                     const stripeAvailable = billing.processors?.stripe?.available ?? false;
@@ -316,6 +362,31 @@ export default () => {
             .then(data => setEggs(data))
             .catch(error => console.error(error));
     }, [product, selectedEggId]);
+
+    useEffect(() => {
+        if (!selectedEggId) {
+            return;
+        }
+
+        getAvailableCustomDomains(selectedEggId)
+            .then(domains => {
+                setCustomDomainOptions(domains);
+
+                const currentlySelected = domains.find(option => option.id === selectedDomainId);
+                const nextSelected = currentlySelected ?? domains[0];
+
+                if (nextSelected) {
+                    if (!currentlySelected) {
+                        setSelectedDomainId(nextSelected.id);
+                    }
+
+                    setMappingRecordType(nextSelected.recommended_record_type);
+                } else {
+                    setSelectedDomainId(0);
+                }
+            })
+            .catch(error => console.error(error));
+    }, [selectedEggId]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
@@ -547,6 +618,125 @@ export default () => {
                                 </div>
                             </div>
 
+                            {/* Custom Domain Mapping */}
+                            {customDomainOptions.length > 0 && (
+                                <div
+                                    className={'rounded-lg border p-6'}
+                                    style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                                >
+                                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Custom Domain Mapping</h3>
+                                    <p className={'mb-4 text-sm text-gray-400'}>
+                                        Optionally map one or more subdomains after server provisioning.
+                                    </p>
+
+                                    {selectedDomainOption && (
+                                        <div className={'mb-4 rounded border border-gray-700 p-3 text-sm'}>
+                                            <div className={'font-semibold text-gray-200'}>
+                                                {!selectedDomainOption.allow_record_type_selection
+                                                    && selectedDomainOption.forced_record_type === 'cname'
+                                                    ? 'CNAME Only'
+                                                    : (selectedDomainOption.recommended_record_type === 'srv'
+                                                        ? 'SRV Recommended'
+                                                        : 'CNAME Recommended')}
+                                            </div>
+                                            <div className={'text-gray-300'}>{selectedDomainOption.recommendation_notice}</div>
+                                            <div className={'mt-1 text-xs text-gray-400'}>
+                                                {selectedDomainOption.connection_hint}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className={'grid grid-cols-1 gap-3 md:grid-cols-6'}>
+                                        <div className={'md:col-span-3'}>
+                                            <Input
+                                                value={mappingSubdomain}
+                                                onChange={e => setMappingSubdomain(e.currentTarget.value.toLowerCase())}
+                                                placeholder={'subdomain'}
+                                            />
+                                        </div>
+                                        <div className={'md:col-span-2'}>
+                                            <Select
+                                                value={selectedDomainId}
+                                                onChange={e => {
+                                                    const selected = customDomainOptions.find(
+                                                        option => option.id === Number(e.currentTarget.value),
+                                                    );
+                                                    setSelectedDomainId(Number(e.currentTarget.value));
+                                                    if (selected) {
+                                                        setMappingRecordType(selected.recommended_record_type);
+                                                    }
+                                                }}
+                                            >
+                                                {customDomainOptions.map(option => (
+                                                    <option key={option.id} value={option.id}>
+                                                        {option.domain}
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Select
+                                                value={effectiveRecordType}
+                                                disabled={!selectedDomainOption?.allow_record_type_selection}
+                                                onChange={e => setMappingRecordType(e.currentTarget.value as 'srv' | 'cname')}
+                                            >
+                                                <option value={'cname'}>
+                                                    {selectedDomainOption?.dns_mode === 'minecraft'
+                                                        ? 'CNAME (supported)'
+                                                        : selectedDomainOption?.dns_mode === 'rust'
+                                                            ? 'CNAME (recommended)'
+                                                            : 'CNAME (only supported option)'}
+                                                </option>
+                                                {selectedDomainOption?.allow_record_type_selection && (
+                                                    <option value={'srv'}>
+                                                        {selectedDomainOption.dns_mode === 'minecraft'
+                                                            ? 'SRV (recommended)'
+                                                            : 'SRV (not recommended)'}
+                                                    </option>
+                                                )}
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className={'mt-3 flex items-center justify-end'}>
+                                        <Button.Text
+                                            type={'button'}
+                                            variant={Button.Variants.Secondary}
+                                            disabled={!mappingSubdomain.trim() || !selectedDomainId}
+                                            onClick={addDomainMapping}
+                                        >
+                                            Add Mapping
+                                        </Button.Text>
+                                    </div>
+
+                                    <div className={'mt-4 space-y-2'}>
+                                        {domainMappings.length < 1 && (
+                                            <div className={'rounded border border-gray-700 p-3 text-sm text-gray-400'}>
+                                                No custom domain mappings added.
+                                            </div>
+                                        )}
+
+                                        {domainMappings.map((mapping, index) => (
+                                            <div
+                                                key={`${mapping.domain_id}_${mapping.subdomain}_${mapping.record_type}_${index}`}
+                                                className={'flex items-center justify-between rounded border border-gray-700 p-3'}
+                                            >
+                                                <div className={'text-sm text-gray-300'}>
+                                                    {mapping.subdomain}.{mapping.domain} • {mapping.record_type.toUpperCase()}
+                                                </div>
+                                                <Button.Text
+                                                    type={'button'}
+                                                    variant={Button.Variants.Secondary}
+                                                    onClick={() => removeDomainMapping(index)}
+                                                >
+                                                    Remove
+                                                </Button.Text>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Legal Agreements */}
                             <div
                                 className={'rounded-lg border p-6'}
@@ -644,6 +834,7 @@ export default () => {
                                         couponId={couponData?.coupon.id}
                                         selectedEggId={selectedEggId}
                                         serverName={serverName}
+                                        domainPayload={getDomainPayload()}
                                     />
                                 )}
                             </div>

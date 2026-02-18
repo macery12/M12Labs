@@ -13,6 +13,11 @@ interface Props {
     couponId?: number;
     selectedEggId?: number;
     serverName: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        record_type?: 'srv' | 'cname';
+    }>;
 }
 
 export default (data: Props) => {
@@ -61,6 +66,7 @@ export default (data: Props) => {
                 couponId: data.couponId,
                 eggId: data.selectedEggId,
                 name: data.serverName,
+                domainPayload: data.domainPayload,
             });
             console.log('[PayPal] Order updated successfully');
 
