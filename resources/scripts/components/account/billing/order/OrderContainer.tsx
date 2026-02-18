@@ -216,6 +216,7 @@ export default () => {
 
     const handleCouponApplied = (data: ValidateCouponResponse | null) => {
         setCouponData(data);
+        // Payment intent regeneration is handled when entering the payment step
         setIntent(null);
     };
 
@@ -323,7 +324,7 @@ export default () => {
         return () => {
             cancelled = true;
         };
-    }, [currentStep, couponId, couponTotal, product?.id, billing.processors?.stripe?.available, params.id, paymentStep]);
+    }, [currentStep, couponId, couponTotal, product, billing.processors?.stripe?.available, params.id, paymentStep]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
