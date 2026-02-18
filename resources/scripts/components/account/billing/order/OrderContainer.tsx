@@ -284,9 +284,10 @@ export default () => {
 
         if (finalTotal === 0) {
             setIntent(null);
+            return;
         }
 
-        if (!atPaymentStep || !stripeAvailable || !product || finalTotal === 0) {
+        if (!atPaymentStep || !stripeAvailable || !product) {
             return;
         }
 
@@ -312,7 +313,8 @@ export default () => {
         return () => {
             cancelled = true;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- getTotalSteps depends on dynamic wizard steps; we only
+        // need to trigger when payment step is entered or coupon/product data changes to avoid unnecessary reloads
     }, [currentStep, couponData, product?.id, billing.processors?.stripe?.available]);
 
     // Auto-generate server name when selections change
