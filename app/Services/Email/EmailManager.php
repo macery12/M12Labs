@@ -39,7 +39,7 @@ class EmailManager
         // Get from settings
         $from = Setting::get('settings::modules:email:resend:from_email');
         $fromName = Setting::get('settings::modules:email:resend:from_name');
-        $replyTo = Setting::get('settings::modules:email:resend:reply_to');
+        $replyTo = Setting::get('settings::modules:email:resend:reply_to') ?: config('mail.from.address');
 
         // Validate required from_email is configured
         if (empty($from)) {
