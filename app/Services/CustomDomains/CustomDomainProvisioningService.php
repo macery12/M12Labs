@@ -88,6 +88,8 @@ class CustomDomainProvisioningService
                 $allocation = $server->allocations()->where('port', $port)->first();
                 $fullDomain = $subdomain . '.' . $domain->domain;
 
+                $this->assertSubdomainAvailable($domain, $fullDomain);
+
                 $existing = ServerCustomDomain::query()
                     ->where('full_domain', $fullDomain)
                     ->where('port', $port)
@@ -132,6 +134,10 @@ class CustomDomainProvisioningService
     {
         try {
             $mapping->loadMissing(['customDomain.apiKey', 'server.node', 'server.egg', 'server.nest', 'allocation']);
+
+            if ($mapping->subdomain === '*') {
+                throw new DisplayException('Wildcard subdomains are not supported.');
+            }
 
             $token = trim((string) ($mapping->customDomain->apiKey?->token ?? ''));
             if ($token === '') {
@@ -261,12 +267,44 @@ class CustomDomainProvisioningService
 
     private function validateSubdomain(string $subdomain, CustomDomain $domain): void
     {
-        if (!preg_match('/^(\*|[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)$/i', $subdomain)) {
-            throw new DisplayException('Invalid subdomain value: ' . $subdomain);
+        if ($subdomain === '*') {
+            throw new DisplayException('Wildcard subdomains are not supported.');
         }
 
-        if ($subdomain === '*' && !$domain->wildcard_enabled) {
-            throw new DisplayException('Wildcard subdomains are disabled for ' . $domain->domain);
+        if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i', $subdomain)) {
+            throw new DisplayException('Invalid subdomain value: ' . $subdomain);
+        }
+    }
+
+    private function assertSubdomainAvailable(CustomDomain $domain, string $fullDomain): void
+    {
+        $existingMapping = ServerCustomDomain::query()->where('full_domain', $fullDomain)->exists();
+        if ($existingMapping) {
+            throw new DisplayException('This subdomain is unavailable.');
+        }
+
+        $domain->loadMissing('apiKey');
+        $token = trim((string) ($domain->apiKey?->token ?? ''));
+
+        try {
+            $zoneId = (string) ($domain->cloudflare_zone_id ?? '');
+            if ($zoneId === '') {
+                $zone = $this->cloudflare->getZoneByName($domain->domain, $token !== '' ? $token : null);
+                $zoneId = (string) ($zone['id'] ?? '');
+            }
+
+            if ($zoneId === '') {
+                throw new DisplayException('Unable to verify subdomain availability right now.');
+            }
+
+            $dnsRecords = $this->cloudflare->getRecordsByName($zoneId, $fullDomain, $token !== '' ? $token : null);
+            if (!empty($dnsRecords)) {
+                throw new DisplayException('This subdomain is unavailable.');
+            }
+        } catch (DisplayException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new DisplayException('Unable to verify subdomain availability right now.');
         }
     }
 

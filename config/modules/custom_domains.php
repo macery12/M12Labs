@@ -12,4 +12,15 @@ return [
     ],
 
     'cleanup_on_delete' => (bool) env('CUSTOM_DOMAINS_CLEANUP_ON_DELETE', true),
+
+    'security' => [
+        'allow_wildcard' => (bool) env('CUSTOM_DOMAINS_ALLOW_WILDCARD', false),
+        'max_wildcards_per_user' => (int) env('CUSTOM_DOMAINS_MAX_WILDCARDS_PER_USER', 1),
+    ],
+
+    'rate_limits' => [
+        'create_per_minute' => (int) env('CUSTOM_DOMAINS_RATE_LIMIT_CREATE_PER_MINUTE', 10),
+        'sync_per_minute' => (int) env('CUSTOM_DOMAINS_RATE_LIMIT_SYNC_PER_MINUTE', 5),
+        'billing_options_per_minute' => (int) env('CUSTOM_DOMAINS_RATE_LIMIT_BILLING_OPTIONS_PER_MINUTE', 20),
+    ],
 ];

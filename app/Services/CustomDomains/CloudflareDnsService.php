@@ -144,6 +144,14 @@ class CloudflareDnsService
     /**
      * @return array<int, array<string, mixed>>
      */
+    public function getRecordsByName(string $zoneId, string $name, ?string $tokenOverride = null): array
+    {
+        return $this->findRecordsByName($zoneId, $name, $tokenOverride);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function findRecordsByName(string $zoneId, string $name, ?string $tokenOverride = null): array
     {
         try {

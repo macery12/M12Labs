@@ -61,6 +61,15 @@ export interface CustomDomainTargetOptions {
     }>;
 }
 
+export interface CustomDomainSettings {
+    cloudflare_token: string;
+    allow_wildcard: boolean;
+    max_wildcards_per_user: number;
+    rate_limit_create_per_minute: number;
+    rate_limit_sync_per_minute: number;
+    rate_limit_billing_options_per_minute: number;
+}
+
 export const getCustomDomains = async (): Promise<AdminCustomDomain[]> => {
     const { data } = await http.get('/api/application/custom-domains');
 
@@ -119,4 +128,14 @@ export const getCustomDomainTargetOptions = async (): Promise<CustomDomainTarget
     const { data } = await http.get('/api/application/custom-domains/options');
 
     return data.data;
+};
+
+export const getCustomDomainSettings = async (): Promise<CustomDomainSettings> => {
+    const { data } = await http.get('/api/application/custom-domains/settings');
+
+    return data.data;
+};
+
+export const updateCustomDomainSettings = async (payload: Partial<CustomDomainSettings>): Promise<void> => {
+    await http.put('/api/application/custom-domains/settings', payload);
 };
