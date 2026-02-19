@@ -3,7 +3,7 @@ import { action, Action } from 'easy-peasy';
 export type AlertType = 'success' | 'warning' | 'danger' | 'info';
 export type AlertPosition = 'notification' | 'top-center' | 'slide-out' | 'center';
 
-export type VerificationArea = 'billing' | 'orders' | 'donate' | 'credentials';
+export type VerificationArea = 'billing' | 'orders' | 'donate' | 'credentials' | 'tickets';
 export type VerificationRule = { can_view: boolean; can_interact: boolean };
 export type VerificationRules = Record<VerificationArea, VerificationRule>;
 

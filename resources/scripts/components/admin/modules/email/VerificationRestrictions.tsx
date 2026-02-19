@@ -12,7 +12,7 @@ import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
 
-const areas: VerificationArea[] = ['billing', 'orders', 'donate', 'credentials'];
+const areas: VerificationArea[] = ['billing', 'orders', 'donate', 'credentials', 'tickets'];
 
 const cloneRules = (rules: VerificationRules) => JSON.parse(JSON.stringify(rules)) as VerificationRules;
 

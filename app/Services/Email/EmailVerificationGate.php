@@ -19,6 +19,10 @@ class EmailVerificationGate
             'can_view' => true,
             'can_interact' => false,
         ],
+        'tickets' => [
+            'can_view' => false,
+            'can_interact' => false,
+        ],
         'orders' => [
             'can_view' => true,
             'can_interact' => false,

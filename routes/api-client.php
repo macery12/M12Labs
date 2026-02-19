@@ -46,10 +46,8 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         });
 
         Route::put('/email', [Client\AccountController::class, 'updateEmail'])
-            ->middleware('verified.interact:credentials')
             ->name('api:client.account.update-email');
         Route::put('/password', [Client\AccountController::class, 'updatePassword'])
-            ->middleware('verified.interact:credentials')
             ->name('api:client.account.update-password');
         Route::post('/email/verification', [Client\EmailVerificationController::class, 'send'])
             ->name('api:client.account.email-verification')
@@ -69,13 +67,17 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/remove', [Client\SSHKeyController::class, 'delete'])->middleware('verified.interact:credentials');
         });
 
-        Route::prefix('/tickets')->middleware('verified.email')->group(function () {
-            Route::get('/', [Client\TicketController::class, 'index']);
-            Route::post('/', [Client\TicketController::class, 'store']);
+        Route::prefix('/tickets')->group(function () {
+            Route::middleware('verified.view:tickets')->group(function () {
+                Route::get('/', [Client\TicketController::class, 'index']);
+                Route::get('/{ticket:id}', [Client\TicketController::class, 'view']);
+            });
 
-            Route::get('/{ticket:id}', [Client\TicketController::class, 'view']);
-            Route::delete('/{ticket:id}', [Client\TicketController::class, 'delete']);
-            Route::post('/{ticket:id}/messages', [Client\TicketController::class, 'message']);
+            Route::middleware('verified.interact:tickets')->group(function () {
+                Route::post('/', [Client\TicketController::class, 'store']);
+                Route::delete('/{ticket:id}', [Client\TicketController::class, 'delete']);
+                Route::post('/{ticket:id}/messages', [Client\TicketController::class, 'message']);
+            });
         });
 
         Route::prefix('/modpacks')->group(function () {

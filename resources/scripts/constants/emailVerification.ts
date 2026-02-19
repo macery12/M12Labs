@@ -10,6 +10,7 @@ export const EMAIL_VERIFICATION_AREA_LABELS: Record<VerificationArea, string> = 
     orders: 'Orders',
     donate: 'Donate',
     credentials: 'Credentials',
+    tickets: 'Tickets',
 };
 
 export const DEFAULT_EMAIL_VERIFICATION_RULES: VerificationRules = {
@@ -28,6 +29,10 @@ export const DEFAULT_EMAIL_VERIFICATION_RULES: VerificationRules = {
     credentials: {
         can_view: true,
         can_interact: true,
+    },
+    tickets: {
+        can_view: false,
+        can_interact: false,
     },
 };
 
@@ -61,6 +66,7 @@ export const getAreaForPath = (path: string): VerificationArea | null => {
     if (path.startsWith('billing/')) return 'billing';
     if (path.startsWith('donations')) return 'donate';
     if (path.startsWith('credentials')) return 'credentials';
+    if (path.startsWith('tickets')) return 'tickets';
 
     return null;
 };
