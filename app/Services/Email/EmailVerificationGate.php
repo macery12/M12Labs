@@ -11,6 +11,8 @@ use Illuminate\Http\Response;
 class EmailVerificationGate
 {
     public const SETTINGS_KEY = 'settings::modules:email:verification_rules';
+    public const ERROR_CODE = 'EMAIL_NOT_VERIFIED';
+    public const ERROR_MESSAGE = 'Verify your email to continue.';
 
     public const DEFAULT_RULES = [
         'billing' => [
@@ -72,8 +74,8 @@ class EmailVerificationGate
     public function denyResponse(?Request $request = null): Response|\Illuminate\Http\RedirectResponse
     {
         $payload = [
-            'code' => 'EMAIL_NOT_VERIFIED',
-            'message' => 'Verify your email to continue.',
+            'code' => self::ERROR_CODE,
+            'message' => self::ERROR_MESSAGE,
         ];
 
         $request = $request ?? request();
