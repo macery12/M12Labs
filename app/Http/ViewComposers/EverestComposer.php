@@ -113,6 +113,12 @@ class EverestComposer
                 'content' => config('modules.alert.content'),
                 'uuid' => config('modules.alert.uuid'),
             ],
+            'email' => [
+                'enabled' => $this->emailEnabled(),
+                'resend' => [
+                    'enabled' => $this->emailEnabled(),
+                ],
+            ],
             'ai' => [
                 'enabled' => boolval(config('modules.ai.enabled', false)),
                 'key' => !empty(config('modules.ai.key')),
@@ -137,5 +143,18 @@ class EverestComposer
                 ],
             ],
         ]);
+    }
+
+    private function emailEnabled(): bool
+    {
+        $raw = Setting::get('settings::modules:email:resend:enabled', config('modules.email.enabled', false));
+
+        if (is_bool($raw)) {
+            return $raw;
+        }
+
+        $value = strtolower((string) $raw);
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

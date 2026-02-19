@@ -32,7 +32,9 @@ const Container = styled.div`
 export default () => {
     const { state } = useLocation();
     const user = useStoreState(s => s.user.data!);
-    const emailEnabled = useStoreState(s => Boolean(s.everest.data?.email?.resend?.enabled ?? s.everest.data?.email?.resend));
+    const emailEnabled = useStoreState(
+        s => Boolean(s.everest.data?.email?.enabled ?? s.everest.data?.email?.resend?.enabled ?? s.everest.data?.email?.resend),
+    );
 
     return (
         <PageContentBlock title="Account Overview" header description={'Update your email, password, or setup 2-FA.'}>

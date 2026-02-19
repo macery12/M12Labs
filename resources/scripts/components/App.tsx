@@ -25,7 +25,7 @@ const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
 interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
     ThemeConfiguration?: SiteTheme;
-    EverestConfiguration?: EverestSettings;
+    EverestConfiguration?: EverestSettings & { email?: { enabled?: boolean } };
     PterodactylUser?: {
         uuid: string;
         username: string;
@@ -74,8 +74,8 @@ function App() {
         store.getActions().theme.setTheme(ThemeConfiguration!);
     }
 
-    if (!store.getState().everest.data) {
-        store.getActions().everest.setEverest(EverestConfiguration!);
+    if (!store.getState().everest.data && EverestConfiguration) {
+        store.getActions().everest.setEverest(EverestConfiguration);
     }
 
     if (PterodactylUser?.state === 'suspended') {
