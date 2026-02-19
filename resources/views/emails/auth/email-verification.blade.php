@@ -14,9 +14,6 @@
     <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">
         This verification link will expire in {{ $expiresIn ?? '60 minutes' }}.
     </p>
-    <p style="margin:0 0 16px; color:#111827; font-size:13px; line-height:1.6; word-break: break-all;">
-        {{ $verificationUrl }}
-    </p>
     <p style="margin:0 0 16px; color:#6b7280; font-size:13px; line-height:1.6;">
         If you did not create an account with us, you can safely ignore this email.
     </p>
