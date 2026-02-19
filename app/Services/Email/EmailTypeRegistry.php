@@ -5,6 +5,7 @@ namespace Everest\Services\Email;
 use Everest\Events\Email\AccountCreated;
 use Everest\Events\Email\AccountLocked;
 use Everest\Events\Email\AccountUnsuspended;
+use Everest\Events\Email\EmailVerificationRequested;
 use Everest\Events\Email\PasswordResetRequested;
 use Everest\Events\Email\PasswordChanged;
 use Everest\Events\Email\NewLoginDetected;
@@ -28,6 +29,7 @@ class EmailTypeRegistry
         AccountCreated::class => 'auth.account_created',
         AccountLocked::class => 'auth.account_locked',
         AccountUnsuspended::class => 'auth.account_unsuspended',
+        EmailVerificationRequested::class => 'auth.email_verification',
         PasswordResetRequested::class => 'auth.password_reset',
         PasswordChanged::class => 'auth.password_changed',
         NewLoginDetected::class => 'auth.new_login',
@@ -50,6 +52,7 @@ class EmailTypeRegistry
         'auth.account_created' => ['userName', 'userEmail', 'loginUrl'],
         'auth.account_locked' => ['userName', 'reason', 'suspendedAt', 'supportUrl'],
         'auth.account_unsuspended' => ['userName', 'unsuspendedAt'],
+        'auth.email_verification' => ['userName', 'verificationUrl', 'expiresIn'],
         'auth.password_reset' => ['userName', 'resetUrl', 'expiresIn'],
         'auth.password_changed' => ['userName', 'changedAt', 'ipAddress'],
         'auth.new_login' => ['userName', 'ipAddress', 'userAgent', 'location', 'loginTime'],
@@ -148,6 +151,13 @@ class EmailTypeRegistry
             $data = [
                 'userName' => $event->user->name ?? $event->user->username,
                 'unsuspendedAt' => now()->format('F j, Y g:i A'),
+            ];
+        } elseif ($event instanceof EmailVerificationRequested) {
+            /** @var EmailVerificationRequested $event */
+            $data = [
+                'userName' => $event->user->name ?? $event->user->username,
+                'verificationUrl' => $event->verificationUrl,
+                'expiresIn' => '60 minutes',
             ];
         } elseif ($event instanceof PasswordResetRequested) {
             /** @var PasswordResetRequested $event */

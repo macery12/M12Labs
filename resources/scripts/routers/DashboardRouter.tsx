@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, type MouseEvent } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { NotFound } from '@/elements/ScreenBlock';
 import Spinner from '@/elements/Spinner';
@@ -14,6 +14,14 @@ import { getLinks } from '@/api/getLinks';
 import http from '@/api/http';
 import NavigationBar from '@/elements/NavigationBar';
 import DashboardContainer from '@account/DashboardContainer';
+import EmailVerificationGate from '@account/EmailVerificationGate';
+import useFlash from '@/plugins/useFlash';
+import { useEmailVerification } from '@/hooks/useEmailVerification';
+import { Dialog } from '@/elements/dialog';
+import {
+    EMAIL_VERIFICATION_ALERT_MESSAGE,
+    EMAIL_VERIFICATION_RESTRICTED_ROUTES,
+} from '@/constants/emailVerification';
 
 function DashboardRouter() {
     const user = useStoreState(s => s.user.data!);
@@ -22,6 +30,22 @@ function DashboardRouter() {
     const [links, setLinks] = useState<CustomLink[] | null>();
     const flags = useStoreState(state => state.everest.data!);
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
+    const { addFlash, clearFlashes } = useFlash();
+    const emailEnabled = useStoreState(
+        state =>
+            Boolean(
+                state.everest.data?.email?.enabled ??
+                    state.everest.data?.email?.resend?.enabled ??
+                    state.everest.data?.email?.resend,
+            ),
+    );
+    const verification = useEmailVerification(emailEnabled) || {};
+    const {
+        resend = () => {},
+        isCoolingDown = false,
+        resendLabel = 'Resend verification email',
+    } = verification as ReturnType<typeof useEmailVerification>;
+    const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
     useEffect(() => {
         getLinks().then(setLinks).catch();
@@ -34,6 +58,23 @@ function DashboardRouter() {
         });
     };
 
+    const isRestrictedRoute = (path: string) =>
+        emailEnabled && EMAIL_VERIFICATION_RESTRICTED_ROUTES.some(p => path.startsWith(p));
+
+    const handleRestrictedClick = (path: string, e: MouseEvent<HTMLAnchorElement>) => {
+        if (!user.emailVerified && isRestrictedRoute(path)) {
+            e.preventDefault();
+            clearFlashes('account:verification');
+            addFlash({
+                key: 'account:verification',
+                type: 'warning',
+                title: 'Verify your email to continue',
+                message: EMAIL_VERIFICATION_ALERT_MESSAGE,
+            });
+            setShowVerifyPrompt(true);
+        }
+    };
+
     return (
         <div className={'flex h-screen'}>
             {' '}
@@ -41,15 +82,16 @@ function DashboardRouter() {
                 <MobileSidebar.Home />
                 {routes.account
                     .filter(route => route.name && (!route.condition || route.condition(flags)))
-                    .map(route => (
-                        <MobileSidebar.Link
-                            key={route.route}
-                            icon={route.icon ?? PuzzleIcon}
-                            text={route.name}
-                            linkTo={route.path !== '' ? `/account/${route.path}` : ''}
-                            end={route.end}
-                        />
-                    ))}
+                        .map(route => (
+                            <MobileSidebar.Link
+                                key={route.route}
+                                icon={route.icon ?? PuzzleIcon}
+                                text={route.name}
+                                linkTo={route.path !== '' ? `/account/${route.path}` : ''}
+                                end={route.end}
+                                onClick={e => handleRestrictedClick(route.path, e)}
+                            />
+                        ))}
                 {(user.rootAdmin || user.admin_role_id) && (
                     <MobileSidebar.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
                 )}
@@ -79,7 +121,12 @@ function DashboardRouter() {
                     {routes.account
                         .filter(route => route.name && (!route.condition || route.condition(flags)))
                         .map(route => (
-                            <NavLink to={`/account/${route.path}`} key={route.path} end={route.end}>
+                            <NavLink
+                                to={`/account/${route.path}`}
+                                key={route.path}
+                                end={route.end}
+                                onClick={e => handleRestrictedClick(route.path, e)}
+                            >
                                 <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
                                 <span>{route.name}</span>
                             </NavLink>
@@ -130,16 +177,50 @@ function DashboardRouter() {
                         <Route path="" element={<DashboardContainer />} />
                         {routes.account
                             .filter(route => !route.condition || route.condition(flags))
-                            .map(({ route, component: Component }) => (
+                            .map(({ route, component: Component, path }) => (
                                 <Route
                                     key={route}
                                     path={`/account/${route}`.replace(/\/$/, '')}
-                                    element={<Component />}
+                                    element={
+                                        isRestrictedRoute(path) ? (
+                                            <EmailVerificationGate>
+                                                <Component />
+                                            </EmailVerificationGate>
+                                        ) : (
+                                            <Component />
+                                        )
+                                    }
                                 />
                             ))}
                         <Route path="*" element={<NotFound />} />
                     </Routes>
                 </Suspense>
+                <Dialog.Confirm
+                    open={showVerifyPrompt}
+                    title={'Verify your email to continue'}
+                    onClose={() => setShowVerifyPrompt(false)}
+                    onConfirmed={() => setShowVerifyPrompt(false)}
+                >
+                    <p className={'mb-4'}>{EMAIL_VERIFICATION_ALERT_MESSAGE}</p>
+                    <div className={'flex flex-wrap gap-2'}>
+                        <button
+                            className={'rounded bg-primary-500 px-3 py-2 text-white disabled:opacity-50'}
+                            disabled={isCoolingDown}
+                            onClick={() => {
+                                void resend();
+                                setShowVerifyPrompt(false);
+                            }}
+                        >
+                            {resendLabel}
+                        </button>
+                        <button
+                            className={'rounded bg-gray-700 px-3 py-2 text-white'}
+                            onClick={() => setShowVerifyPrompt(false)}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </Dialog.Confirm>
             </div>
         </div>
     );

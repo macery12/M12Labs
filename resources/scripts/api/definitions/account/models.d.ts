@@ -7,6 +7,7 @@ interface User extends Model {
     email: string;
     image: string;
     twoFactorEnabled: boolean;
+    emailVerified: boolean;
     createdAt: Date;
     permissions: SubuserPermission[];
     can(permission: SubuserPermission): boolean;

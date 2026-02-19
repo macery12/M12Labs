@@ -118,5 +118,11 @@ class RouteServiceProvider extends ServiceProvider
 
             return Limit::perMinutes(5, 20)->by($email !== '' ? $email : $request->ip());
         });
+
+        RateLimiter::for('email-verification', function (Request $request) {
+            $key = optional($request->user())->id ?: $request->ip();
+
+            return Limit::perMinute(1)->by($key);
+        });
     }
 }

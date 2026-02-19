@@ -1,4 +1,4 @@
-import { ElementType, ReactNode, useState } from 'react';
+import { ElementType, ReactNode, useState, type MouseEvent } from 'react';
 import { NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useStoreState } from '@/state/hooks';
@@ -18,11 +18,13 @@ const Link = ({
     text,
     linkTo,
     end,
+    onClick,
 }: {
     icon: ElementType;
     text?: string;
     linkTo: string;
     end?: boolean;
+    onClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
 }) => {
     const [active, setActive] = useState<boolean>(false);
     const { colors } = useStoreState(s => s.theme.data!);
@@ -37,6 +39,7 @@ const Link = ({
                 }`
             }
             style={{ color: active ? colors.primary : '' }}
+            onClick={onClick}
         >
             {Icon && <Icon className={'mr-2 h-4 w-4'} />}
             {text}

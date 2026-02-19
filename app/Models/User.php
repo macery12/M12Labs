@@ -38,6 +38,7 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  * @property bool $use_totp
  * @property string|null $totp_secret
  * @property \Illuminate\Support\Carbon|null $totp_authenticated_at
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property bool $gravatar
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -143,6 +144,7 @@ class User extends Model implements
         'use_totp' => 'boolean',
         'gravatar' => 'boolean',
         'totp_authenticated_at' => 'datetime',
+        'email_verified_at' => 'datetime',
     ];
 
     /**
@@ -199,7 +201,7 @@ class User extends Model implements
      */
     public function toReactObject(): array
     {
-        return Collection::make($this->append(['avatar_url', 'admin_role_name'])->toArray())
+        return Collection::make($this->append(['avatar_url', 'admin_role_name', 'email_verified'])->toArray())
             ->except(['id', 'external_id', 'admin_role'])
             ->toArray();
     }
@@ -231,6 +233,29 @@ class User extends Model implements
         return Attribute::make(
             get: fn () => md5(strtolower($this->email)),
         );
+    }
+
+    public function emailVerified(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => !is_null($this->email_verified_at),
+        );
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return !is_null($this->email_verified_at);
+    }
+
+    public function markEmailAsVerified(): bool
+    {
+        if ($this->hasVerifiedEmail()) {
+            return false;
+        }
+
+        $this->forceFill(['email_verified_at' => now()])->save();
+
+        return true;
     }
 
     public function isSuspended(): bool

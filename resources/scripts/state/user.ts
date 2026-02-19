@@ -12,6 +12,8 @@ export interface UserData {
     roleName: string;
     admin_role_id?: number;
     state: string;
+    emailVerified: boolean;
+    emailVerifiedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

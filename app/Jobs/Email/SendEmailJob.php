@@ -183,6 +183,7 @@ class SendEmailJob extends Job implements ShouldQueue
             'auth.account_created' => 'Welcome to ' . config('app.name'),
             'auth.account_locked' => 'Your Account Has Been Locked',
             'auth.account_unsuspended' => 'Your Account Has Been Reactivated',
+            'auth.email_verification' => 'Verify Your Email Address',
             'auth.password_reset' => 'Reset Your Password',
             'auth.password_changed' => 'Your Password Has Been Changed',
             'auth.new_login' => 'New Login Detected',
