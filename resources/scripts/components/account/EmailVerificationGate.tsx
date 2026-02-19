@@ -18,7 +18,13 @@ type Props = {
 const EmailVerificationGate = ({ children }: Props) => {
     const user = useStoreState(state => state.user.data!);
     const emailEnabled = useStoreState(state => !!state.everest.data?.email.resend.enabled);
-    const { resend, isCoolingDown, resendLabel, refreshUser } = useEmailVerification(emailEnabled);
+    const verification = useEmailVerification(emailEnabled) || {};
+    const {
+        resend = () => {},
+        isCoolingDown = false,
+        resendLabel = 'Resend verification email',
+        refreshUser = () => {},
+    } = verification as ReturnType<typeof useEmailVerification>;
 
     if (!emailEnabled || user.emailVerified) {
         return <>{children}</>;
