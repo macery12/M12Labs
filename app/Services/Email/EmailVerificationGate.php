@@ -5,8 +5,10 @@ namespace Everest\Services\Email;
 use Everest\Models\Setting;
 use Everest\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\RedirectResponse;
 
 class EmailVerificationGate
 {
@@ -75,7 +77,7 @@ class EmailVerificationGate
         }
     }
 
-    public function denyResponse(?Request $request = null): Response|\Illuminate\Http\RedirectResponse
+    public function denyResponse(?Request $request = null): Response|RedirectResponse|JsonResponse
     {
         $payload = [
             'code' => self::ERROR_CODE,
