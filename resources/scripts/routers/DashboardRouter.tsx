@@ -44,7 +44,6 @@ function DashboardRouter() {
         resend = () => {},
         isCoolingDown = false,
         resendLabel = 'Resend verification email',
-        refreshUser = () => {},
     } = verification as ReturnType<typeof useEmailVerification>;
     const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
@@ -216,9 +215,9 @@ function DashboardRouter() {
                         </button>
                         <button
                             className={'rounded bg-gray-700 px-3 py-2 text-white'}
-                            onClick={() => void refreshUser()}
+                            onClick={() => setShowVerifyPrompt(false)}
                         >
-                            I already verified
+                            Close
                         </button>
                     </div>
                 </Dialog.Confirm>

@@ -30,7 +30,6 @@ const EmailVerificationGate = ({ children }: Props) => {
         resend = () => {},
         isCoolingDown = false,
         resendLabel = 'Resend verification email',
-        refreshUser = () => {},
     } = verification as ReturnType<typeof useEmailVerification>;
 
     if (!emailEnabled || user.emailVerified) {
@@ -53,9 +52,6 @@ const EmailVerificationGate = ({ children }: Props) => {
                         <Button size={Button.Sizes.Small} disabled={isCoolingDown} onClick={() => void resend()}>
                             {resendLabel}
                         </Button>
-                        <Button.Text size={Button.Sizes.Small} onClick={() => void refreshUser()}>
-                            I already verified
-                        </Button.Text>
                     </div>
                 </div>
             </Alert>
