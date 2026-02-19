@@ -8,18 +8,20 @@ const STORAGE_KEY = 'emailVerificationCooldown';
 // Cooldown aligns with backend throttle (RouteServiceProvider::configureRateLimiting -> 'email-verification'): 1 request per minute.
 const COOLDOWN_MS = 60 * 1000;
 
+const fallback = () => ({
+    resend: () => {},
+    cooldown: 0,
+    isCoolingDown: false,
+    resetCooldown: () => {},
+    resendLabel: 'Resend verification email',
+    refreshUser: () => {},
+});
+
 export const useEmailVerification = (enabled = true) => {
-    if (!enabled) {
-        const noop = () => {};
-        return {
-            resend: noop,
-            cooldown: 0,
-            isCoolingDown: false,
-            resetCooldown: noop,
-            resendLabel: 'Resend verification email',
-            refreshUser: noop,
-        };
-    }
+    try {
+        if (!enabled) {
+            return fallback();
+        }
 
     const { addFlash, clearAndAddHttpError, clearFlashes } = useFlash();
     const { updateUserData } = useStoreActions(actions => actions.user);
@@ -98,4 +100,8 @@ export const useEmailVerification = (enabled = true) => {
         resendLabel,
         refreshUser,
     };
+    } catch (e) {
+        console.error('useEmailVerification failed, using safe fallback', e);
+        return fallback();
+    }
 };
