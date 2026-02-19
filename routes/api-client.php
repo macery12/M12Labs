@@ -37,28 +37,36 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
     Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
         Route::prefix('/')->withoutMiddleware(RequireTwoFactorAuthentication::class)->group(function () {
-            Route::get('/', [Client\AccountController::class, 'index'])->name('api:client.account');
-            Route::get('/two-factor', [Client\TwoFactorController::class, 'index']);
-            Route::post('/two-factor', [Client\TwoFactorController::class, 'store']);
-            Route::post('/two-factor/disable', [Client\TwoFactorController::class, 'delete']);
+            Route::get('/', [Client\AccountController::class, 'index'])
+                ->middleware('verified.view:credentials')
+                ->name('api:client.account');
+            Route::get('/two-factor', [Client\TwoFactorController::class, 'index'])->middleware('verified.view:credentials');
+            Route::post('/two-factor', [Client\TwoFactorController::class, 'store'])->middleware('verified.interact:credentials');
+            Route::post('/two-factor/disable', [Client\TwoFactorController::class, 'delete'])->middleware('verified.interact:credentials');
         });
 
-        Route::put('/email', [Client\AccountController::class, 'updateEmail'])->name('api:client.account.update-email');
-        Route::put('/password', [Client\AccountController::class, 'updatePassword'])->name('api:client.account.update-password');
+        Route::put('/email', [Client\AccountController::class, 'updateEmail'])
+            ->middleware('verified.interact:credentials')
+            ->name('api:client.account.update-email');
+        Route::put('/password', [Client\AccountController::class, 'updatePassword'])
+            ->middleware('verified.interact:credentials')
+            ->name('api:client.account.update-password');
         Route::post('/email/verification', [Client\EmailVerificationController::class, 'send'])
             ->name('api:client.account.email-verification')
             ->middleware('throttle:email-verification');
 
-        Route::get('/activity', Client\ActivityLogController::class)->name('api:client.account.activity');
+        Route::get('/activity', Client\ActivityLogController::class)
+            ->middleware('verified.view:credentials')
+            ->name('api:client.account.activity');
 
-        Route::get('/api-keys', [Client\ApiKeyController::class, 'index']);
-        Route::post('/api-keys', [Client\ApiKeyController::class, 'store']);
-        Route::delete('/api-keys/{identifier}', [Client\ApiKeyController::class, 'delete']);
+        Route::get('/api-keys', [Client\ApiKeyController::class, 'index'])->middleware('verified.view:credentials');
+        Route::post('/api-keys', [Client\ApiKeyController::class, 'store'])->middleware('verified.interact:credentials');
+        Route::delete('/api-keys/{identifier}', [Client\ApiKeyController::class, 'delete'])->middleware('verified.interact:credentials');
 
         Route::prefix('/ssh-keys')->group(function () {
-            Route::get('/', [Client\SSHKeyController::class, 'index']);
-            Route::post('/', [Client\SSHKeyController::class, 'store']);
-            Route::post('/remove', [Client\SSHKeyController::class, 'delete']);
+            Route::get('/', [Client\SSHKeyController::class, 'index'])->middleware('verified.view:credentials');
+            Route::post('/', [Client\SSHKeyController::class, 'store'])->middleware('verified.interact:credentials');
+            Route::post('/remove', [Client\SSHKeyController::class, 'delete'])->middleware('verified.interact:credentials');
         });
 
         Route::prefix('/tickets')->middleware('verified.email')->group(function () {
@@ -84,52 +92,58 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::post('/setup', [Client\AccountController::class, 'setup']);
     });
 
-    Route::prefix('/billing')->middleware('verified.email')->group(function () {
-        Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
-        Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
+    Route::prefix('/billing')->group(function () {
+        Route::middleware('verified.view:billing')->group(function () {
+            Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
+            Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
 
-        Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
-        Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
-        Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
-        Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
+            Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
+            Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
+            Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
+            Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
+            Route::get('/products/{id}/billing-cycles', [Client\Billing\BillingCycleController::class, 'index']);
+        });
 
-        // Unified checkout controller for both free and paid products
-        Route::get('/products/{id}/key', [Client\Billing\CheckoutController::class, 'getStripeKey']);
+        Route::middleware(['verified.view:billing', 'verified.interact:billing'])->group(function () {
+            // Unified checkout controller for both free and paid products
+            Route::get('/products/{id}/key', [Client\Billing\CheckoutController::class, 'getStripeKey']);
 
-        Route::post('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'createIntent']);
-        Route::put('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'updateIntent']);
+            Route::post('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'createIntent']);
+            Route::put('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'updateIntent']);
 
-        // Mollie payment routes (webhook route is defined outside this group)
-        Route::post('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'createPayment']);
-        Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
-        Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
-        Route::get('/mollie/token/{token}', [Client\Billing\MollieCheckoutController::class, 'getPaymentFromToken']);
+            // Mollie payment routes (webhook route is defined outside this group)
+            Route::post('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'createPayment']);
+            Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
+            Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
+            Route::get('/mollie/token/{token}', [Client\Billing\MollieCheckoutController::class, 'getPaymentFromToken']);
 
-        // PayPal payment routes
-        Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);
-        Route::put('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'updateOrder']);
-        Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
-        Route::get('/paypal/status', [Client\Billing\PayPalCheckoutController::class, 'checkOrderStatus']);
-        Route::get('/paypal/token/{token}', [Client\Billing\PayPalCheckoutController::class, 'getOrderFromToken']);
+            // PayPal payment routes
+            Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);
+            Route::put('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'updateOrder']);
+            Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
+            Route::get('/paypal/status', [Client\Billing\PayPalCheckoutController::class, 'checkOrderStatus']);
+            Route::get('/paypal/token/{token}', [Client\Billing\PayPalCheckoutController::class, 'getOrderFromToken']);
 
-        Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
+            Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
 
-        // Billing cycle routes for clients
-        Route::get('/products/{id}/billing-cycles', [Client\Billing\BillingCycleController::class, 'index']);
+            Route::post('/process', [Client\Billing\CheckoutController::class, 'processPaid'])->name('api:client.billing.process');
+            Route::post('/process/free', [Client\Billing\CheckoutController::class, 'processFree']);
+            Route::post('/renew/free', [Client\Billing\CheckoutController::class, 'renewFree']);
+        });
 
-        Route::post('/process', [Client\Billing\CheckoutController::class, 'processPaid'])->name('api:client.billing.process');
-        Route::post('/process/free', [Client\Billing\CheckoutController::class, 'processFree']);
-        Route::post('/renew/free', [Client\Billing\CheckoutController::class, 'renewFree']);
-
-        Route::get('/orders', [Client\Billing\OrderController::class, 'index']);
-        Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
+        Route::middleware('verified.view:orders')->group(function () {
+            Route::get('/orders', [Client\Billing\OrderController::class, 'index']);
+            Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
+        });
     });
 
-    Route::prefix('/donations')->middleware('verified.email')->group(function () {
+    Route::prefix('/donations')->middleware('verified.view:donate')->group(function () {
         Route::get('/', [Client\DonationController::class, 'index']);
-        Route::get('/key', [Client\DonationController::class, 'getStripeKey']);
-        Route::post('/intent', [Client\DonationController::class, 'createIntent']);
-        Route::post('/complete', [Client\DonationController::class, 'complete']);
+        Route::middleware('verified.interact:donate')->group(function () {
+            Route::get('/key', [Client\DonationController::class, 'getStripeKey']);
+            Route::post('/intent', [Client\DonationController::class, 'createIntent']);
+            Route::post('/complete', [Client\DonationController::class, 'complete']);
+        });
     });
 
     /*

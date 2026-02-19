@@ -3,12 +3,16 @@
 namespace Everest\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Everest\Models\Setting;
+use Everest\Services\Email\EmailVerificationGate;
+use Illuminate\Http\Request;
 
 class EnsureEmailIsVerified
 {
+    public function __construct(private EmailVerificationGate $gate)
+    {
+    }
+
     /**
      * Ensure the authenticated user's email is verified.
      */
@@ -24,16 +28,7 @@ class EnsureEmailIsVerified
             return $next($request);
         }
 
-        $payload = [
-            'code' => 'EMAIL_NOT_VERIFIED',
-            'message' => 'Please verify your email address to access this feature.',
-        ];
-
-        if ($request->expectsJson() || $request->is('api/*')) {
-            return response()->json($payload, Response::HTTP_FORBIDDEN);
-        }
-
-        return redirect()->to('/account')->with('warning', $payload['message']);
+        return $this->gate->denyResponse($request);
     }
 
     private function emailSendingEnabled(): bool

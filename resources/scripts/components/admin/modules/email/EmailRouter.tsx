@@ -10,6 +10,7 @@ import ResendSettings from '@/components/admin/modules/email/ResendSettings';
 import NotificationSettings from '@/components/admin/modules/email/NotificationSettings';
 import SendTestEmail from '@/components/admin/modules/email/SendTestEmail';
 import SendCustomEmail from '@/components/admin/modules/email/SendCustomEmail';
+import VerificationRestrictions from '@/components/admin/modules/email/VerificationRestrictions';
 
 export default () => {
     return (
@@ -20,12 +21,14 @@ export default () => {
             <FlashMessageRender byKey={'email:notifications'} />
             <FlashMessageRender byKey={'email:activity'} />
             <FlashMessageRender byKey={'email:deferred'} />
+            <FlashMessageRender byKey={'email:verification'} />
 
             <SubNavigation>
                 <SubNavigationLink to='/admin/email' name='Settings' base />
                 <SubNavigationLink to='/admin/email/notifications' name='Notifications' />
                 <SubNavigationLink to='/admin/email/activity' name='Activity Log' />
                 <SubNavigationLink to='/admin/email/queue' name='Deferred Queue' />
+                <SubNavigationLink to='/admin/email/verification' name='Verification Restrictions' />
             </SubNavigation>
 
             <Routes>
@@ -68,6 +71,14 @@ export default () => {
                     element={
                         <ContentBox title={'Deferred Email Queue'} showFlashes={'email:deferred'}>
                             <DeferredQueueViewer />
+                        </ContentBox>
+                    }
+                />
+                <Route
+                    path='/verification'
+                    element={
+                        <ContentBox title={'Verification Restrictions'} showFlashes={'email:verification'}>
+                            <VerificationRestrictions />
                         </ContentBox>
                     }
                 />

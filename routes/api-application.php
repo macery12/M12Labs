@@ -184,6 +184,8 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/email'], function () {
         Route::get('/settings', [Application\EmailController::class, 'getSettings']);
         Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
+        Route::get('/verification-rules', [Application\EmailController::class, 'getVerificationRules']);
+        Route::put('/verification-rules', [Application\EmailController::class, 'updateVerificationRules']);
         Route::post('/test', [Application\EmailController::class, 'sendTest']);
         Route::post('/send', [Application\EmailController::class, 'sendCustom']);
         
