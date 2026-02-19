@@ -31,7 +31,9 @@ function DashboardRouter() {
     const flags = useStoreState(state => state.everest.data!);
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
     const { addFlash, clearFlashes } = useFlash();
-    const emailEnabled = useStoreState(state => !!state.everest.data?.email?.resend?.enabled);
+    const emailEnabled = useStoreState(
+        state => Boolean(state.everest.data?.email?.resend?.enabled ?? state.everest.data?.email?.resend),
+    );
     const verification = useEmailVerification(emailEnabled) || {};
     const {
         resend = () => {},
