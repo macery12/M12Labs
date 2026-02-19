@@ -25,7 +25,6 @@ import { type ServerGroup } from '@definitions/server';
 import ServerGroupDialog, { VisibleDialog } from '@account/groups/ServerGroupDialog';
 import ActivityLogContainer from './activity/ActivityLogContainer';
 import classNames from 'classnames';
-import EmailVerificationNotice from '@account/EmailVerificationNotice';
 
 export default () => {
     const { search } = useLocation();
@@ -76,7 +75,6 @@ export default () => {
 
     return (
         <PageContentBlock title={`Welcome to ${name}`} header description={`Signed in as ${user.email}`}>
-            <EmailVerificationNotice className={'mb-4'} />
             <DashboardAlert />
             {open && <ServerGroupDialog open={open} setOpen={setOpen} groups={groups} setGroups={setGroups} />}
             <FlashMessageRender className={'my-4'} byKey={'dashboard'} />

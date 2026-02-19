@@ -31,7 +31,8 @@ function DashboardRouter() {
     const flags = useStoreState(state => state.everest.data!);
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
     const { addFlash, clearFlashes } = useFlash();
-    const { resend, isCoolingDown, resendLabel, refreshUser } = useEmailVerification();
+    const emailEnabled = useStoreState(state => !!state.everest.data?.email.resend.enabled);
+    const { resend, isCoolingDown, resendLabel, refreshUser } = useEmailVerification(emailEnabled);
     const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
     useEffect(() => {
@@ -45,7 +46,8 @@ function DashboardRouter() {
         });
     };
 
-    const isRestrictedRoute = (path: string) => EMAIL_VERIFICATION_RESTRICTED_ROUTES.some(p => path.startsWith(p));
+    const isRestrictedRoute = (path: string) =>
+        emailEnabled && EMAIL_VERIFICATION_RESTRICTED_ROUTES.some(p => path.startsWith(p));
 
     const handleRestrictedClick = (path: string, e: MouseEvent<HTMLAnchorElement>) => {
         if (!user.emailVerified && isRestrictedRoute(path)) {

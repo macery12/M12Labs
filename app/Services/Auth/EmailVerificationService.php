@@ -6,6 +6,7 @@ use Everest\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
 use Everest\Events\Email\EmailVerificationRequested;
+use Everest\Models\Setting;
 
 class EmailVerificationService
 {
@@ -13,6 +14,10 @@ class EmailVerificationService
 
     public function send(User $user): void
     {
+        if (!$this->emailSendingEnabled()) {
+            return;
+        }
+
         if ($user->hasVerifiedEmail()) {
             return;
         }
@@ -31,5 +36,12 @@ class EmailVerificationService
             verificationUrl: $verificationUrl,
             correlationId: Str::uuid()->toString(),
         ));
+    }
+
+    private function emailSendingEnabled(): bool
+    {
+        $value = strtolower((string) Setting::get('settings::modules:email:resend:enabled', '0'));
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

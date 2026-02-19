@@ -395,7 +395,9 @@ class EmailManager
      */
     private function isEnabled(): bool
     {
-        return Setting::get('settings::modules:email:resend:enabled', false) === 'true';
+        $value = strtolower((string) Setting::get('settings::modules:email:resend:enabled', '0'));
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 
     /**

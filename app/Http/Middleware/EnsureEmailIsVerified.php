@@ -5,6 +5,7 @@ namespace Everest\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Everest\Models\Setting;
 
 class EnsureEmailIsVerified
 {
@@ -13,6 +14,10 @@ class EnsureEmailIsVerified
      */
     public function handle(Request $request, Closure $next)
     {
+        if (!$this->emailSendingEnabled()) {
+            return $next($request);
+        }
+
         $user = $request->user();
 
         if ($user && $user->hasVerifiedEmail()) {
@@ -29,5 +34,12 @@ class EnsureEmailIsVerified
         }
 
         return redirect()->to('/account')->with('warning', $payload['message']);
+    }
+
+    private function emailSendingEnabled(): bool
+    {
+        $value = strtolower((string) Setting::get('settings::modules:email:resend:enabled', '0'));
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

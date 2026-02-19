@@ -8,7 +8,19 @@ const STORAGE_KEY = 'emailVerificationCooldown';
 // Cooldown aligns with backend throttle (RouteServiceProvider::configureRateLimiting -> 'email-verification'): 1 request per minute.
 const COOLDOWN_MS = 60 * 1000;
 
-export const useEmailVerification = () => {
+export const useEmailVerification = (enabled = true) => {
+    if (!enabled) {
+        const noop = () => {};
+        return {
+            resend: noop,
+            cooldown: 0,
+            isCoolingDown: false,
+            resetCooldown: noop,
+            resendLabel: 'Resend verification email',
+            refreshUser: noop,
+        };
+    }
+
     const { addFlash, clearAndAddHttpError, clearFlashes } = useFlash();
     const { updateUserData } = useStoreActions(actions => actions.user);
     const storedCooldown = localStorage.getItem(STORAGE_KEY);

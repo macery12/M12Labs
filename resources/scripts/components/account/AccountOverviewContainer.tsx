@@ -10,6 +10,8 @@ import MessageBox from '@/elements/MessageBox';
 import { useLocation } from 'react-router-dom';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import EmailVerificationNotice from '@account/EmailVerificationNotice';
+import Pill from '@/elements/Pill';
+import { useStoreState } from '@/state/hooks';
 
 const Container = styled.div`
     ${tw`flex flex-wrap`};
@@ -29,11 +31,13 @@ const Container = styled.div`
 
 export default () => {
     const { state } = useLocation();
+    const user = useStoreState(s => s.user.data!);
+    const emailEnabled = useStoreState(s => !!s.everest.data?.email.resend.enabled);
 
     return (
         <PageContentBlock title="Account Overview" header description={'Update your email, password, or setup 2-FA.'}>
             <ScopedAlert scope="account" position="top-center" />
-            <EmailVerificationNotice />
+            {emailEnabled && <EmailVerificationNotice />}
             {state?.twoFactorRedirect && (
                 <MessageBox title="2-Factor Required" type="error">
                     Your account must have two-factor authentication enabled in order to continue.
@@ -45,7 +49,19 @@ export default () => {
                     <UpdatePasswordForm />
                 </ContentBox>
 
-                <ContentBox css={tw`mt-8 sm:mt-0 sm:ml-8`} title="Update Email Address" showFlashes="account:email">
+                <ContentBox
+                    css={tw`mt-8 sm:mt-0 sm:ml-8`}
+                    title={`Update Email Address ${
+                        emailEnabled ? '' : '(email sending disabled)'
+                    }`}
+                    showFlashes="account:email"
+                >
+                    <div className="mb-4 flex items-center justify-between">
+                        <span className="text-sm text-gray-300">Status</span>
+                        <Pill type={user.emailVerified ? 'success' : 'warn'}>
+                            {user.emailVerified ? 'Verified' : 'Not Verified'}
+                        </Pill>
+                    </div>
                     <UpdateEmailAddressForm />
                 </ContentBox>
 
