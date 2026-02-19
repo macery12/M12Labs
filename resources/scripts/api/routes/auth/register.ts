@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { type AuthResponse } from '@definitions/auth';
 
 export interface LoginData {
     username: string;
@@ -20,7 +21,7 @@ export const checkUsernameAvailability = (username: string): Promise<UsernameChe
     });
 };
 
-export default ({ username, email, password, password_confirmation, ...rest }: LoginData & Record<string, any>): Promise<void> => {
+export default ({ username, email, password, password_confirmation, ...rest }: LoginData & Record<string, any>): Promise<AuthResponse> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>
@@ -32,7 +33,17 @@ export default ({ username, email, password, password_confirmation, ...rest }: L
                     ...rest,
                 }),
             )
-            .then(() => resolve())
+            .then(response => {
+                if (!(response.data instanceof Object)) {
+                    return reject(new Error('An error occurred while processing the registration request.'));
+                }
+
+                return resolve({
+                    complete: response.data.data.complete,
+                    intended: response.data.data.intended || undefined,
+                    confirmationToken: response.data.data.confirmation_token || undefined,
+                });
+            })
             .catch(reject);
     });
 };

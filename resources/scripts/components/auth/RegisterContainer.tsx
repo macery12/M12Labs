@@ -12,7 +12,7 @@ import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import register, { checkUsernameAvailability } from '@/api/routes/auth/register';
-import { login } from '@/api/routes/auth/login';
+import { useNavigate } from 'react-router-dom';
 import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import {
     faAt,
@@ -34,6 +34,7 @@ interface Values {
 
 function RegisterContainer() {
     const token = useRef('');
+    const navigate = useNavigate();
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -77,11 +78,14 @@ function RegisterContainer() {
         clearFlashes();
 
         register({ ...values, 'cf-turnstile-response': token.current })
-            .then(() => {
-                login({ ...values, 'cf-turnstile-response': token.current }).then(() => {
+            .then(response => {
+                if (response.complete) {
                     // @ts-expect-error this is valid
-                    window.location = '/';
-                });
+                    window.location = response.intended || '/';
+                    return;
+                }
+
+                navigate('/auth/login/checkpoint', { state: { token: response.confirmationToken } });
             })
             .catch(error => {
                 console.error(error);
