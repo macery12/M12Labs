@@ -1,0 +1,39 @@
+<?php
+
+namespace Everest\OpenApi\Extensions;
+
+use Dedoc\Scramble\Extensions\OperationExtension;
+use Dedoc\Scramble\Support\Generator\Operation;
+use Dedoc\Scramble\Support\Generator\Response;
+use Dedoc\Scramble\Support\RouteInfo;
+use Everest\Http\Middleware\AdminAuthenticate;
+use Everest\Http\Middleware\RequireTwoFactorAuthentication;
+use Illuminate\Support\Str;
+
+class AuthResponsesExtension extends OperationExtension
+{
+    public function handle(Operation $operation, RouteInfo $routeInfo)
+    {
+        $middlewares = collect($routeInfo->route->gatherMiddleware());
+        $existingCodes = collect($operation->responses ?? [])->pluck('code')->filter()->all();
+
+        $requiresAuth = $middlewares->contains(function ($middleware) {
+            if (is_string($middleware)) {
+                return Str::contains($middleware, ['auth:', 'auth.', 'sanctum', 'client-api', 'application-api']);
+            }
+
+            return false;
+        });
+
+        if ($requiresAuth && !in_array(401, $existingCodes)) {
+            $operation->addResponse(Response::make(401)->description('Unauthenticated'));
+        }
+
+        $requiresAdmin = $middlewares->contains(AdminAuthenticate::class);
+        $requiresTwoFactor = $middlewares->contains(RequireTwoFactorAuthentication::class);
+
+        if (($requiresAdmin || $requiresTwoFactor || $requiresAuth) && !in_array(403, $existingCodes)) {
+            $operation->addResponse(Response::make(403)->description('Forbidden'));
+        }
+    }
+}

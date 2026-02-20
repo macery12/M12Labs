@@ -6,6 +6,7 @@ use Everest\Models\Database;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Everest\Http\Middleware\TrimStrings;
+use Everest\Http\Middleware\ApiDocsAccess;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Everest\Http\Middleware\AdminAuthenticate;
@@ -57,6 +58,10 @@ class RouteServiceProvider extends ServiceProvider
                     ->scopeBindings()
                     ->group(base_path('routes/api-client.php'));
             });
+
+            Route::middleware($this->apiDocsMiddleware())
+                ->prefix('/api')
+                ->group(base_path('routes/api-docs.php'));
 
             Route::middleware('daemon')
                 ->prefix('/api/remote')
@@ -124,5 +129,21 @@ class RouteServiceProvider extends ServiceProvider
 
             return Limit::perMinute(1)->by($key);
         });
+    }
+
+    private function apiDocsMiddleware(): array
+    {
+        $middleware = [
+            'web',
+            'auth.session',
+            ApiDocsAccess::class,
+        ];
+
+        if (config('api-docs.admin_only')) {
+            $middleware[] = RequireTwoFactorAuthentication::class;
+            $middleware[] = AdminAuthenticate::class;
+        }
+
+        return $middleware;
     }
 }

@@ -10,6 +10,7 @@ const OverviewContainer = lazy(() => import('@/components/admin/general/overview
 const SettingsRouter = lazy(() => import('@/components/admin/general/settings/SettingsRouter'));
 const ActivityContainer = lazy(() => import('@/components/admin/general/ActivityContainer'));
 const ApplicationApiRouter = lazy(() => import('@/components/admin/general/api/ApplicationApiRouter'));
+const ApiDocsContainer = lazy(() => import('@/components/admin/developers/ApiDocsContainer'));
 
 const AuthContainer = lazy(() => import('@/components/admin/modules/auth/AuthContainer'));
 const BillingRouter = lazy(() => import('@/components/admin/modules/billing/BillingRouter'));
@@ -54,6 +55,16 @@ const admin: AdminRouteDefinition[] = [
         condition: flags => flags.activityEnabled,
     }),
     route('api/*', ApplicationApiRouter, { name: 'API', icon: Icon.CodeIcon, category: 'general', advanced: true }),
+
+    /**
+     * Admin - Developer Routes
+     */
+    route('developers/api-docs', ApiDocsContainer, {
+        name: 'API Docs',
+        icon: Icon.BookOpenIcon,
+        category: 'developers',
+        advanced: true,
+    }),
 
     /**
      * Admin - Module Routes
