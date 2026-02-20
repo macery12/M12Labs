@@ -5,7 +5,7 @@ use Everest\Http\Controllers\Api\Application;
 use Everest\Http\Middleware\Activity\AdminSubject;
 
 Route::middleware([AdminSubject::class])->group(function () {
-    Route::get('/permissions', [Application\ApplicationApiController::class, 'adminPermissions']);
+    Route::get('/permissions', Application\PermissionsController::class);
 
     Route::get('/overview/version', [Application\OverviewController::class, 'version']);
     Route::get('/overview/metrics', [Application\OverviewController::class, 'metrics']);
