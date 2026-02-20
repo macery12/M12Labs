@@ -8,6 +8,7 @@ use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Everest\Models;
 use Everest\Models\User;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Cashier;
 use Illuminate\Support\Facades\URL;
@@ -55,6 +56,10 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         Carbon::serializeUsing(fn ($carbon) => $carbon->utc()->toIso8601ZuluString());
+
+        if (class_exists(\Dedoc\Scramble\ScrambleServiceProvider::class) && is_dir(base_path('vendor/dedoc/scramble/resources/views'))) {
+            View::addNamespace('scramble', base_path('vendor/dedoc/scramble/resources/views'));
+        }
 
         if (class_exists(Scramble::class)) {
             Scramble::routes(function ($route) {
