@@ -3,8 +3,9 @@
 return [
     /*
      * Gate whether runtime API documentation is available.
+     * Enabled by default in non-production environments.
      */
-    'enabled' => env('API_DOCS_ENABLED', false),
+    'enabled' => env('API_DOCS_ENABLED', env('APP_ENV') !== 'production'),
 
     /*
      * If true, requests must come from an authenticated admin user.
