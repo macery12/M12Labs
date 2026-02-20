@@ -5,6 +5,8 @@ namespace Everest\OpenApi\Extensions;
 use Dedoc\Scramble\Extensions\OperationExtension;
 use Dedoc\Scramble\Support\Generator\Operation;
 use Dedoc\Scramble\Support\Generator\Response;
+use Dedoc\Scramble\Support\Generator\Schema;
+use Dedoc\Scramble\Support\Generator\Types as OpenApiTypes;
 use Dedoc\Scramble\Support\RouteInfo;
 use Everest\Http\Middleware\AdminAuthenticate;
 use Everest\Http\Middleware\RequireTwoFactorAuthentication;
@@ -26,14 +28,27 @@ class AuthResponsesExtension extends OperationExtension
         });
 
         if ($requiresAuth && !in_array(401, $existingCodes)) {
-            $operation->addResponse(Response::make(401)->description('Unauthenticated'));
+            $operation->addResponse($this->jsonMessageResponse(401, 'Unauthenticated'));
         }
 
         $requiresAdmin = $middlewares->contains(AdminAuthenticate::class);
         $requiresTwoFactor = $middlewares->contains(RequireTwoFactorAuthentication::class);
 
         if (($requiresAdmin || $requiresTwoFactor || $requiresAuth) && !in_array(403, $existingCodes)) {
-            $operation->addResponse(Response::make(403)->description('Forbidden'));
+            $operation->addResponse($this->jsonMessageResponse(403, 'Forbidden'));
         }
+    }
+
+    private function jsonMessageResponse(int $code, string $message): Response
+    {
+        $schema = Schema::fromType(
+            (new OpenApiTypes\ObjectType())
+                ->addProperty('message', (new OpenApiTypes\StringType())->setDescription($message))
+                ->setRequired(['message'])
+        );
+
+        return Response::make($code)
+            ->description($message)
+            ->setContent('application/json', $schema);
     }
 }
