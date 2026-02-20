@@ -21,7 +21,7 @@ function AdminRouter() {
 
     const activityEnabled: boolean = settings.activity.enabled.admin;
 
-    const categories = ['general', 'modules', 'appearance', 'management', 'services'] as const;
+    const categories = ['general', 'modules', 'appearance', 'management', 'services', 'developers'] as const;
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_admin_${user.uuid}`, false);
 
     return (

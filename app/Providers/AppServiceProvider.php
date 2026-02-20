@@ -3,8 +3,12 @@
 namespace Everest\Providers;
 
 use Carbon\Carbon;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Everest\Models;
 use Everest\Models\User;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Cashier;
 use Illuminate\Support\Facades\URL;
@@ -53,6 +57,38 @@ class AppServiceProvider extends ServiceProvider
 
         Carbon::serializeUsing(fn ($carbon) => $carbon->utc()->toIso8601ZuluString());
 
+        if (class_exists(\Dedoc\Scramble\ScrambleServiceProvider::class) && is_dir(base_path('vendor/dedoc/scramble/resources/views'))) {
+            View::addNamespace('scramble', base_path('vendor/dedoc/scramble/resources/views'));
+        }
+
+        if (class_exists(Scramble::class)) {
+            Scramble::routes(function ($route) {
+                $uri = trim($route->uri, '/');
+
+                if (!Str::startsWith($uri, config('scramble.api_path', 'api'))) {
+                    return false;
+                }
+
+                if (Str::startsWith($uri, ['api/docs', 'api/openapi.json', 'docs/api', 'docs/api.json'])) {
+                    return false;
+                }
+
+                if (!config('api-docs.include_remote_routes', false) && Str::startsWith($uri, 'api/remote')) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            Scramble::extendOpenApi(function (OpenApi $openApi) {
+                $openApi->secure(
+                    SecurityScheme::http('bearer', 'Token')
+                        ->as('BearerToken')
+                        ->setDescription('Use Bearer {token} with API keys or admin sessions.')
+                        ->default()
+                );
+            });
+        }
     }
 
     /**
