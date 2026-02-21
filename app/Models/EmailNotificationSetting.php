@@ -40,14 +40,7 @@ class EmailNotificationSetting extends Model
     {
         // Check global kill switch
         $rawGlobal = Setting::get('settings::modules:email:notifications:global_enabled');
-        if (is_null($rawGlobal)) {
-            $globalEnabled = true;
-        } elseif (is_bool($rawGlobal)) {
-            $globalEnabled = $rawGlobal;
-        } else {
-            $normalized = strtolower(trim((string) $rawGlobal));
-            $globalEnabled = $normalized === '' || in_array($normalized, ['1', 'true', 'yes', 'on'], true);
-        }
+        $globalEnabled = static::toBool($rawGlobal, true);
 
         if (!$globalEnabled) {
             \Log::info('EmailNotificationSetting: disabled by global toggle', [
@@ -60,7 +53,7 @@ class EmailNotificationSetting extends Model
         $setting = static::where('template_key', $templateKey)->first();
 
         // Default to enabled when there is no per-template record yet (e.g., missing seed/migration)
-        $enabled = $setting ? (bool) $setting->enabled : true;
+        $enabled = $setting ? static::toBool($setting->enabled, true) : true;
 
         if (!$enabled) {
             \Log::info('EmailNotificationSetting: template disabled', [
@@ -72,6 +65,32 @@ class EmailNotificationSetting extends Model
         }
 
         return $enabled;
+    }
+
+    /**
+     * Normalize database-stored truthy/falsey values.
+     */
+    private static function toBool(mixed $value, bool $default = false): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_null($value)) {
+            return $default;
+        }
+
+        if (is_int($value)) {
+            return $value === 1;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+
+        if ($normalized === '') {
+            return $default;
+        }
+
+        return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
     }
 
     /**
