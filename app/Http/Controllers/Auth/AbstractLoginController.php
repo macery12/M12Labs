@@ -17,12 +17,14 @@ use Everest\Http\Controllers\Controller;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Everest\Services\Users\UserCreationService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Everest\Services\Auth\UserSessionService;
 
 abstract class AbstractLoginController extends Controller
 {
     use AuthenticatesUsers;
 
     protected AuthManager $auth;
+    protected UserSessionService $sessionService;
 
     /**
      * Lockout time for failed login requests.
@@ -48,6 +50,7 @@ abstract class AbstractLoginController extends Controller
         $this->maxLoginAttempts = (int) config('modules.auth.security.attempts');
         $this->auth = Container::getInstance()->make(AuthManager::class);
         $this->creation = Container::getInstance()->make(UserCreationService::class);
+        $this->sessionService = Container::getInstance()->make(UserSessionService::class);
     }
 
     /**
@@ -91,15 +94,38 @@ abstract class AbstractLoginController extends Controller
 
         $this->auth->guard()->login($user, true);
 
+        $deviceId = $request->cookie(UserSessionService::DEVICE_COOKIE);
+        $shouldSetCookie = $deviceId === null;
+
+        $this->sessionService->recordLogin($user, $request->session()->getId(), $deviceId);
+
         Event::dispatch(new DirectLogin($user, true));
 
-        return new JsonResponse([
+        $response = new JsonResponse([
             'data' => [
                 'complete' => true,
                 'intended' => $this->redirectPath(),
                 'user' => $user->toReactObject(),
             ],
         ]);
+
+        if ($shouldSetCookie && $deviceId) {
+            $response->cookie(
+                cookie(
+                    UserSessionService::DEVICE_COOKIE,
+                    $deviceId,
+                    60 * 24 * 180,
+                    config('session.path', '/'),
+                    config('session.domain'),
+                    config('session.secure'),
+                    true,
+                    false,
+                    config('session.same_site')
+                )
+            );
+        }
+
+        return $response;
     }
 
     /**

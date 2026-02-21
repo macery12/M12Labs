@@ -128,4 +128,22 @@ class LoginController extends AbstractLoginController
             'message' => $exists ? 'This username is already taken' : 'Username is available',
         ]);
     }
+
+    /**
+     * Log the user out of the application.
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        if ($request->user()) {
+            app(\Everest\Services\Auth\UserSessionService::class)
+                ->revokeBySessionId($request->user(), $request->session()->getId(), false);
+        }
+
+        $this->guard()->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+    }
 }

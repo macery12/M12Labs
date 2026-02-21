@@ -308,6 +308,11 @@ class User extends Model implements
         return $this->hasMany(Ticket::class);
     }
 
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(UserSession::class);
+    }
+
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);

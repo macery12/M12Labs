@@ -29,6 +29,18 @@ interface ApiKey extends Model {
     lastUsedAt: Date | null;
 }
 
+interface AccountSession extends Model {
+    id: number;
+    deviceName: string;
+    ipAddress: string | null;
+    location: string | null;
+    userAgent: string | null;
+    createdAt: Date;
+    lastActivityAt: Date | null;
+    revokedAt: Date | null;
+    isCurrent: boolean;
+}
+
 interface Ticket extends Model {
     id: number;
     title: string;

@@ -60,6 +60,7 @@ class Kernel extends HttpKernel
             VerifyCsrfToken::class,
             SubstituteBindings::class,
             LanguageMiddleware::class,
+            \Everest\Http\Middleware\UpdateUserSessionActivity::class,
         ],
         'api' => [
             EnsureStatefulRequests::class,
@@ -68,6 +69,7 @@ class Kernel extends HttpKernel
             TrackAPIKey::class,
             RequireTwoFactorAuthentication::class,
             AuthenticateIPAccess::class,
+            \Everest\Http\Middleware\UpdateUserSessionActivity::class,
         ],
         'application-api' => [
             SubstituteBindings::class,
