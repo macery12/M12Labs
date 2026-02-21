@@ -224,6 +224,13 @@ class EmailManager
         // Get subject from template key
         $subject = $this->getSubjectForTemplate($templateKey);
 
+        Log::info('EmailManager: rendering template', [
+            'template_key' => $templateKey,
+            'view_path' => $viewPath,
+            'correlation_id' => $correlationId,
+            'data_keys' => array_keys($data),
+        ]);
+
         // Render HTML content from template
         try {
             $html = View::make($viewPath, $data)->render();
