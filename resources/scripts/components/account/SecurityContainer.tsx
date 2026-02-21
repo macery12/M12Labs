@@ -10,6 +10,7 @@ import { Button } from '@/elements/button';
 import { useFlashKey } from '@/plugins/useFlash';
 import { getAccountSessions, revokeAccountSession, revokeAllAccountSessions } from '@/api/routes/account';
 import { AccountSession } from '@definitions/account';
+import classNames from 'classnames';
 
 const statusForSession = (session: AccountSession) => {
     if (session.revokedAt) return { label: 'Revoked', type: 'danger' as const };
@@ -76,56 +77,131 @@ export default () => {
                 ) : data.length === 0 ? (
                     <p css={tw`text-sm text-gray-300`}>No sessions found for this account.</p>
                 ) : (
-                    <div css={tw`overflow-x-auto`}>
-                        <table css={tw`min-w-full text-sm`}>
-                            <thead>
-                                <tr css={tw`text-left text-gray-400 uppercase tracking-wider`}>
-                                    <th css={tw`py-2`}>Device</th>
-                                    <th css={tw`py-2`}>IP</th>
-                                    <th css={tw`py-2`}>Location</th>
-                                    <th css={tw`py-2`}>First seen</th>
-                                    <th css={tw`py-2`}>Last active</th>
-                                    <th css={tw`py-2`}>Status</th>
-                                    <th css={tw`py-2 text-right`}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.map(session => {
-                                    const status = statusForSession(session);
+                    <>
+                        <div css={tw`hidden md:block overflow-x-auto`}>
+                            <table css={tw`min-w-full text-sm table-fixed`} className="logged-devices-table">
+                                <colgroup>
+                                    <col style={{ width: '44%' }} />
+                                    <col style={{ width: '12%' }} />
+                                    <col style={{ width: '10%' }} />
+                                    <col style={{ width: '10%' }} />
+                                    <col style={{ width: '10%' }} />
+                                    <col style={{ width: '7%' }} />
+                                    <col style={{ width: '7%' }} />
+                                </colgroup>
+                                <thead>
+                                    <tr css={tw`text-left text-gray-400 tracking-wide`}>
+                                        <th css={tw`py-3 px-4`}>Device</th>
+                                        <th css={tw`py-3 px-4`}>IP</th>
+                                        <th css={tw`py-3 px-4`}>Location</th>
+                                        <th css={tw`py-3 px-4`}>First seen</th>
+                                        <th css={tw`py-3 px-4`}>Last active</th>
+                                        <th css={tw`py-3 px-4`}>Status</th>
+                                        <th css={tw`py-3 px-4 text-right`}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.map(session => {
+                                        const status = statusForSession(session);
 
-                                    return (
-                                        <tr key={session.id} css={tw`border-t border-gray-700`}>
-                                            <td css={tw`py-3`}>
-                                                <div css={tw`font-medium text-white`}>{session.deviceName}</div>
-                                                <div css={tw`text-xs text-gray-400 truncate max-w-xs`}>{session.userAgent}</div>
-                                            </td>
-                                            <td css={tw`py-3 text-gray-200`}>{session.ipAddress || 'Unknown'}</td>
-                                            <td css={tw`py-3 text-gray-200`}>{session.location || 'Unknown'}</td>
-                                            <td css={tw`py-3 text-gray-200`}>{formatDate(session.createdAt)}</td>
-                                            <td css={tw`py-3 text-gray-200`}>{formatDate(session.lastActivityAt)}</td>
-                                            <td css={tw`py-3`}>
-                                                <Pill type={status.type}>{status.label}</Pill>
-                                            </td>
-                                            <td css={tw`py-3 text-right`}>
-                                                <Button.Text
-                                                    size={Button.Sizes.Small}
-                                                    className={
-                                                        session.revokedAt || session.isCurrent
-                                                            ? undefined
-                                                            : 'text-red-400 hover:text-red-300'
-                                                    }
-                                                    onClick={() => void handleRevoke(session.id)}
-                                                    disabled={session.isCurrent || !!session.revokedAt}
-                                                >
-                                                    {session.revokedAt ? 'Revoked' : session.isCurrent ? 'Current' : 'Log out'}
-                                                </Button.Text>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                        return (
+                                            <tr
+                                                key={session.id}
+                                                css={tw`border-t border-gray-800 hover:bg-white/5 transition-colors`}
+                                            >
+                                                <td css={tw`py-4 px-4 align-top`}>
+                                                    <div css={tw`font-semibold text-white truncate`}>{session.deviceName}</div>
+                                                    <div
+                                                        css={tw`text-xs text-gray-400 mt-1 leading-snug`}
+                                                        className="line-clamp-2"
+                                                        title={session.userAgent || undefined}
+                                                    >
+                                                        {session.userAgent || 'Unknown user agent'}
+                                                    </div>
+                                                </td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{session.ipAddress || 'Unknown'}</td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{session.location || 'Unknown'}</td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{formatDate(session.createdAt)}</td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{formatDate(session.lastActivityAt)}</td>
+                                                <td css={tw`py-4 px-4 align-top`}>
+                                                    <Pill type={status.type}>{status.label}</Pill>
+                                                </td>
+                                                <td css={tw`py-4 px-4 text-right align-top`}>
+                                                    <Button.Text
+                                                        size={Button.Sizes.Small}
+                                                        className={classNames(
+                                                            session.revokedAt || session.isCurrent
+                                                                ? undefined
+                                                                : 'text-red-400 hover:text-red-300',
+                                                        )}
+                                                        onClick={() => void handleRevoke(session.id)}
+                                                        disabled={session.isCurrent || !!session.revokedAt}
+                                                    >
+                                                        {session.revokedAt ? 'Revoked' : session.isCurrent ? 'Current' : 'Log out'}
+                                                    </Button.Text>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile layout */}
+                        <div css={tw`space-y-4 md:hidden`}>
+                            {data.map(session => {
+                                const status = statusForSession(session);
+
+                                return (
+                                    <div
+                                        key={session.id}
+                                        css={tw`rounded-lg border border-gray-800 bg-black/40 p-4 space-y-3`}
+                                    >
+                                        <div>
+                                            <div css={tw`font-semibold text-white`}>{session.deviceName}</div>
+                                            <div
+                                                css={tw`text-xs text-gray-400 mt-1 leading-snug line-clamp-2`}
+                                                title={session.userAgent || undefined}
+                                            >
+                                                {session.userAgent || 'Unknown user agent'}
+                                            </div>
+                                        </div>
+                                        <div css={tw`flex flex-wrap gap-3 text-sm text-gray-200`}>
+                                            <span>
+                                                <span css={tw`text-gray-400`}>IP:</span> {session.ipAddress || 'Unknown'}
+                                            </span>
+                                            <span>
+                                                <span css={tw`text-gray-400`}>Location:</span> {session.location || 'Unknown'}
+                                            </span>
+                                        </div>
+                                        <div css={tw`text-sm text-gray-200 flex flex-wrap gap-3`}>
+                                            <span>
+                                                <span css={tw`text-gray-400`}>First:</span> {formatDate(session.createdAt)}
+                                            </span>
+                                            <span>
+                                                <span css={tw`text-gray-400`}>Last:</span> {formatDate(session.lastActivityAt)}
+                                            </span>
+                                        </div>
+                                        <div css={tw`flex items-center justify-between`}>
+                                            <Pill type={status.type}>{status.label}</Pill>
+                                            <Button.Text
+                                                size={Button.Sizes.Small}
+                                                className={classNames(
+                                                    session.revokedAt || session.isCurrent
+                                                        ? undefined
+                                                        : 'text-red-400 hover:text-red-300',
+                                                )}
+                                                onClick={() => void handleRevoke(session.id)}
+                                                disabled={session.isCurrent || !!session.revokedAt}
+                                            >
+                                                {session.revokedAt ? 'Revoked' : session.isCurrent ? 'Current' : 'Log out'}
+                                            </Button.Text>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
                 )}
             </ContentBox>
         </PageContentBlock>
