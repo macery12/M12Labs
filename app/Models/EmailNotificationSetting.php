@@ -50,13 +50,28 @@ class EmailNotificationSetting extends Model
         }
 
         if (!$globalEnabled) {
+            \Log::info('EmailNotificationSetting: disabled by global toggle', [
+                'template_key' => $templateKey,
+                'global_enabled_raw' => $rawGlobal,
+            ]);
             return false;
         }
         
         $setting = static::where('template_key', $templateKey)->first();
 
         // Default to enabled when there is no per-template record yet (e.g., missing seed/migration)
-        return $setting ? (bool) $setting->enabled : true;
+        $enabled = $setting ? (bool) $setting->enabled : true;
+
+        if (!$enabled) {
+            \Log::info('EmailNotificationSetting: template disabled', [
+                'template_key' => $templateKey,
+                'global_enabled_raw' => $rawGlobal,
+                'setting_id' => $setting?->id,
+                'setting_enabled' => $setting?->enabled,
+            ]);
+        }
+
+        return $enabled;
     }
 
     /**
