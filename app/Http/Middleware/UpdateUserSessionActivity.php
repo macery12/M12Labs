@@ -7,6 +7,7 @@ use Everest\Services\Auth\UserSessionService;
 use Everest\Models\UserSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session as SessionFacade;
 
 class UpdateUserSessionActivity
 {
@@ -23,7 +24,30 @@ class UpdateUserSessionActivity
                 ->where('session_id', $sessionId)
                 ->first();
 
-            if ($sessionRecord && $sessionRecord->revoked_at) {
+            if (!$sessionRecord) {
+                $payload = SessionFacade::getHandler()->read($sessionId);
+                Log::warning('UpdateUserSessionActivity: no user_session record found for active session', [
+                    'user_id' => $request->user()->id,
+                    'session_id' => $sessionId,
+                    'has_payload' => !empty($payload),
+                ]);
+
+                // If there is no DB record for this session, invalidate to avoid stale access.
+                auth()->guard()->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return $request->expectsJson()
+                    ? response()->json([
+                        'errors' => [[
+                            'code' => 'SESSION_MISSING',
+                            'detail' => 'This session is no longer valid.',
+                        ]],
+                    ], 401)
+                    : redirect()->guest(route('auth.login'));
+            }
+
+            if ($sessionRecord->revoked_at) {
                 Log::info('UpdateUserSessionActivity: blocked revoked session', [
                     'user_id' => $request->user()->id,
                     'session_id' => $sessionId,
