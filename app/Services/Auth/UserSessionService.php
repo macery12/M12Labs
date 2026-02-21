@@ -101,6 +101,9 @@ class UserSessionService
      */
     public function updateActivity(User $user, string $sessionId): void
     {
+        // Ensure a row exists for this session (handles cache resets/pruned rows) without sending notifications.
+        $this->ensureSessionExists($user, $sessionId);
+
         $updated = UserSession::query()
             ->where('user_id', $user->id)
             ->where('session_id', $sessionId)
@@ -215,6 +218,75 @@ class UserSessionService
     protected function userAgent(): string
     {
         return (string) ($this->request->userAgent() ?: 'Unknown device');
+    }
+
+    protected function currentDeviceId(): string
+    {
+        return (string) ($this->request->cookie(self::DEVICE_COOKIE) ?: $this->fallbackDeviceId());
+    }
+
+    protected function fallbackDeviceId(): string
+    {
+        $ipKey = $this->ip();
+        if (filter_var($ipKey, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ipKey);
+            $ipKey = implode('.', array_slice($parts, 0, 3));
+        } elseif (filter_var($ipKey, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $ipKey = substr($ipKey, 0, 19);
+        }
+
+        return hash('sha256', implode('|', [strtolower($this->userAgent()), $ipKey]));
+    }
+
+    /**
+     * Ensure a session record exists, re-associating to existing fingerprint if possible without notifying.
+     */
+    protected function ensureSessionExists(User $user, string $sessionId): UserSession
+    {
+        $existingSession = UserSession::query()
+            ->where('user_id', $user->id)
+            ->where('session_id', $sessionId)
+            ->first();
+
+        if ($existingSession) {
+            return $existingSession;
+        }
+
+        $deviceId = $this->currentDeviceId();
+        $fingerprint = $this->fingerprint($deviceId);
+        $now = CarbonImmutable::now();
+
+        $fingerprintSession = UserSession::query()
+            ->where('user_id', $user->id)
+            ->where('device_fingerprint', $fingerprint)
+            ->orderByDesc('last_activity_at')
+            ->first();
+
+        $session = UserSession::query()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'session_id' => $sessionId,
+            ],
+            [
+                'device_fingerprint' => $fingerprint,
+                'device_name' => $this->deviceName(),
+                'user_agent' => $this->userAgent(),
+                'ip_address' => $this->ip(),
+                'location' => $this->location(),
+                'last_activity_at' => $now,
+                'revoked_at' => null,
+                'last_notified_at' => $fingerprintSession?->last_notified_at,
+            ]
+        );
+
+        Log::info('UserSessionService: ensured session exists', [
+            'user_id' => $user->id,
+            'session_id' => $sessionId,
+            'fingerprint' => $fingerprint,
+            'copied_last_notified_at' => $fingerprintSession?->last_notified_at,
+        ]);
+
+        return $session;
     }
 
     protected function ip(): string
