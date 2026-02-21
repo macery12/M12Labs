@@ -10,8 +10,10 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailVerificationGate;
 use Everest\Exceptions\Service\Email\ResendException;
 use Everest\Http\Requests\Api\Application\Email\UpdateResendSettingsRequest;
+use Everest\Http\Requests\Api\Application\Email\UpdateVerificationRulesRequest;
 use Everest\Http\Requests\Api\Application\Email\SendCustomEmailRequest;
 use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
 
@@ -20,7 +22,7 @@ class EmailController extends ApplicationApiController
     /**
      * EmailController constructor.
      */
-    public function __construct(private EmailManager $emailManager)
+    public function __construct(private EmailManager $emailManager, private EmailVerificationGate $verificationGate)
     {
         parent::__construct();
     }
@@ -37,6 +39,23 @@ class EmailController extends ApplicationApiController
             'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
             'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
         ]);
+    }
+
+    public function getVerificationRules(): JsonResponse
+    {
+        return response()->json($this->verificationGate->getRules());
+    }
+
+    public function updateVerificationRules(UpdateVerificationRulesRequest $request): JsonResponse
+    {
+        $rules = $this->verificationGate->saveRules($request->normalizedRules());
+
+        Activity::event('admin:email:verification-rules:update')
+            ->property('rules', $rules)
+            ->description('Email verification rules were updated')
+            ->log();
+
+        return response()->json($rules);
     }
 
     /**

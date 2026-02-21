@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { EMAIL_VERIFICATION_ERROR_CODE } from '@/constants/emailVerification';
 
 const http: AxiosInstance = axios.create({
     withCredentials: true,
@@ -37,6 +38,14 @@ export function httpErrorToHuman(error: any): string {
         // Errors from wings directory, mostly just for file uploads.
         if (data.error && typeof data.error === 'string') {
             return data.error;
+        }
+
+        if (data.code === EMAIL_VERIFICATION_ERROR_CODE && typeof data.message === 'string') {
+            return data.message;
+        }
+
+        if (typeof data.message === 'string') {
+            return data.message;
         }
     }
 

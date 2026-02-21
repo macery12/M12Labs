@@ -5,11 +5,13 @@ namespace Everest\Http\ViewComposers;
 use Illuminate\View\View;
 use Everest\Models\Setting;
 use Everest\Services\Billing\PaymentProcessorConfigService;
+use Everest\Services\Email\EmailVerificationGate;
 
 class EverestComposer
 {
     public function __construct(
-        private PaymentProcessorConfigService $processorConfigService
+        private PaymentProcessorConfigService $processorConfigService,
+        private EmailVerificationGate $emailVerificationGate
     ) {
     }
 
@@ -118,6 +120,7 @@ class EverestComposer
                 'resend' => [
                     'enabled' => $this->emailEnabled(),
                 ],
+                'verification_rules' => $this->emailVerificationGate->getRules(),
             ],
             'ai' => [
                 'enabled' => boolval(config('modules.ai.enabled', false)),

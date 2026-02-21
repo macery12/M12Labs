@@ -20,7 +20,10 @@ import { useEmailVerification } from '@/hooks/useEmailVerification';
 import { Dialog } from '@/elements/dialog';
 import {
     EMAIL_VERIFICATION_ALERT_MESSAGE,
-    EMAIL_VERIFICATION_RESTRICTED_ROUTES,
+    EMAIL_VERIFICATION_ALERT_TITLE,
+    EMAIL_VERIFICATION_AREA_LABELS,
+    getAreaForPath,
+    normalizeVerificationRules,
 } from '@/constants/emailVerification';
 
 function DashboardRouter() {
@@ -39,11 +42,13 @@ function DashboardRouter() {
                     state.everest.data?.email?.resend,
             ),
     );
+    const verificationRules = normalizeVerificationRules(useStoreState(state => state.everest.data?.email?.verification_rules));
     const verification = useEmailVerification(emailEnabled) || {};
     const {
         resend = () => {},
         isCoolingDown = false,
         resendLabel = 'Resend verification email',
+        refreshUser = () => {},
     } = verification as ReturnType<typeof useEmailVerification>;
     const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
@@ -58,18 +63,32 @@ function DashboardRouter() {
         });
     };
 
-    const isRestrictedRoute = (path: string) =>
-        emailEnabled && EMAIL_VERIFICATION_RESTRICTED_ROUTES.some(p => path.startsWith(p));
+    const isRestrictedRoute = (path: string) => {
+        const area = getAreaForPath(path);
+
+        if (!area) {
+            return false;
+        }
+
+        const rule = verificationRules[area];
+
+        return emailEnabled && !user.emailVerified && rule && !rule.can_view;
+    };
 
     const handleRestrictedClick = (path: string, e: MouseEvent<HTMLAnchorElement>) => {
-        if (!user.emailVerified && isRestrictedRoute(path)) {
+        const area = getAreaForPath(path);
+        if (!area || user.emailVerified || !emailEnabled) {
+            return;
+        }
+
+        if (isRestrictedRoute(path)) {
             e.preventDefault();
             clearFlashes('account:verification');
             addFlash({
                 key: 'account:verification',
                 type: 'warning',
-                title: 'Verify your email to continue',
-                message: EMAIL_VERIFICATION_ALERT_MESSAGE,
+                title: EMAIL_VERIFICATION_ALERT_TITLE,
+                message: `${EMAIL_VERIFICATION_ALERT_MESSAGE} (${EMAIL_VERIFICATION_AREA_LABELS[area]})`,
             });
             setShowVerifyPrompt(true);
         }
@@ -182,13 +201,20 @@ function DashboardRouter() {
                                     key={route}
                                     path={`/account/${route}`.replace(/\/$/, '')}
                                     element={
-                                        isRestrictedRoute(path) ? (
-                                            <EmailVerificationGate>
-                                                <Component />
-                                            </EmailVerificationGate>
-                                        ) : (
-                                            <Component />
-                                        )
+                                        (() => {
+                                            const area = getAreaForPath(path);
+                                            const blocked = area ? isRestrictedRoute(path) : false;
+
+                                            if (blocked && area) {
+                                                return (
+                                                    <EmailVerificationGate area={area}>
+                                                        <Component />
+                                                    </EmailVerificationGate>
+                                                );
+                                            }
+
+                                            return <Component />;
+                                        })()
                                     }
                                 />
                             ))}
@@ -197,14 +223,15 @@ function DashboardRouter() {
                 </Suspense>
                 <Dialog.Confirm
                     open={showVerifyPrompt}
-                    title={'Verify your email to continue'}
+                    title={EMAIL_VERIFICATION_ALERT_TITLE}
                     onClose={() => setShowVerifyPrompt(false)}
                     onConfirmed={() => setShowVerifyPrompt(false)}
+                    buttonType="success"
                 >
                     <p className={'mb-4'}>{EMAIL_VERIFICATION_ALERT_MESSAGE}</p>
                     <div className={'flex flex-wrap gap-2'}>
                         <button
-                            className={'rounded bg-primary-500 px-3 py-2 text-white disabled:opacity-50'}
+                            className={'rounded bg-green-600 px-3 py-2 text-white disabled:opacity-50 hover:bg-green-500 transition-colors'}
                             disabled={isCoolingDown}
                             onClick={() => {
                                 void resend();
@@ -215,9 +242,11 @@ function DashboardRouter() {
                         </button>
                         <button
                             className={'rounded bg-gray-700 px-3 py-2 text-white'}
-                            onClick={() => setShowVerifyPrompt(false)}
+                            onClick={() => {
+                                window.location.reload();
+                            }}
                         >
-                            Close
+                            I already verified
                         </button>
                     </div>
                 </Dialog.Confirm>
