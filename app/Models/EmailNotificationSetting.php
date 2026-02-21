@@ -38,10 +38,8 @@ class EmailNotificationSetting extends Model
      */
     public static function isEnabled(string $templateKey): bool
     {
-        // Always refresh global toggle from DB to avoid stale static cache in SettingsRepository for long-lived workers.
-        Setting::forget('settings::modules:email:notifications:global_enabled');
         // Check global kill switch
-        $rawGlobal = Setting::get('settings::modules:email:notifications:global_enabled');
+        $rawGlobal = static::getSettingFresh('settings::modules:email:notifications:global_enabled', null);
         $globalEnabled = static::toBool($rawGlobal, true);
 
         if (!$globalEnabled) {
@@ -67,6 +65,16 @@ class EmailNotificationSetting extends Model
         }
 
         return $enabled;
+    }
+
+    /**
+     * Fetch setting directly from the database to avoid stale in-process cache.
+     */
+    private static function getSettingFresh(string $key, mixed $default = null): mixed
+    {
+        $value = Setting::query()->where('key', $key)->value('value');
+
+        return $value !== null ? $value : $default;
     }
 
     /**
