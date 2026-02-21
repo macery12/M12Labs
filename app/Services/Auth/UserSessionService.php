@@ -102,7 +102,10 @@ class UserSessionService
     public function updateActivity(User $user, string $sessionId): void
     {
         // Ensure a row exists for this session (handles cache resets/pruned rows) without sending notifications.
-        $this->ensureSessionExists($user, $sessionId);
+        $session = $this->ensureSessionExists($user, $sessionId);
+        if (!$session) {
+            return;
+        }
 
         $updated = UserSession::query()
             ->where('user_id', $user->id)
@@ -139,6 +142,14 @@ class UserSessionService
 
         if ($destroy) {
             SessionFacade::getHandler()->destroy($session->session_id);
+            if (session()->getId() === $session->session_id) {
+                $guard = auth()->guard();
+                if (method_exists($guard, 'logout')) {
+                    $guard->logout();
+                }
+                session()->invalidate();
+                session()->regenerateToken();
+            }
         }
 
         Log::info('UserSessionService: session revoked', [
@@ -241,7 +252,7 @@ class UserSessionService
     /**
      * Ensure a session record exists, re-associating to existing fingerprint if possible without notifying.
      */
-    protected function ensureSessionExists(User $user, string $sessionId): UserSession
+    protected function ensureSessionExists(User $user, string $sessionId): ?UserSession
     {
         $existingSession = UserSession::query()
             ->where('user_id', $user->id)
@@ -250,6 +261,16 @@ class UserSessionService
 
         if ($existingSession) {
             return $existingSession;
+        }
+
+        // If the backing session payload is missing (likely destroyed), do not recreate.
+        $payload = SessionFacade::getHandler()->read($sessionId);
+        if (empty($payload)) {
+            Log::info('UserSessionService: payload missing, skipping session recreation', [
+                'user_id' => $user->id,
+                'session_id' => $sessionId,
+            ]);
+            return null;
         }
 
         $deviceId = $this->currentDeviceId();
