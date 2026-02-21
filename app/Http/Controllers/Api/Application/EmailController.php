@@ -170,7 +170,14 @@ class EmailController extends ApplicationApiController
             ->get()
             ->groupBy('category');
 
-        $globalEnabled = Setting::get('settings::modules:email:notifications:global_enabled', 'true') === 'true';
+        $rawGlobal = Setting::get('settings::modules:email:notifications:global_enabled');
+        $globalEnabled = true;
+        if (is_bool($rawGlobal)) {
+            $globalEnabled = $rawGlobal;
+        } elseif (!is_null($rawGlobal)) {
+            $normalized = strtolower(trim((string) $rawGlobal));
+            $globalEnabled = $normalized === '' || in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+        }
 
         return response()->json([
             'global_enabled' => $globalEnabled,
