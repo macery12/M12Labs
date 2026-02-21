@@ -230,7 +230,7 @@ function DashboardRouter() {
                     <p className={'mb-4'}>{EMAIL_VERIFICATION_ALERT_MESSAGE}</p>
                     <div className={'flex flex-wrap gap-2'}>
                         <button
-                            className={'rounded bg-primary-500 px-3 py-2 text-white disabled:opacity-50'}
+                            className={'rounded bg-green-600 px-3 py-2 text-white disabled:opacity-50 hover:bg-green-500 transition-colors'}
                             disabled={isCoolingDown}
                             onClick={() => {
                                 void resend();
@@ -242,8 +242,7 @@ function DashboardRouter() {
                         <button
                             className={'rounded bg-gray-700 px-3 py-2 text-white'}
                             onClick={() => {
-                                void refreshUser();
-                                setShowVerifyPrompt(false);
+                                window.location.reload();
                             }}
                         >
                             I already verified
