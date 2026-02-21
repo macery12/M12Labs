@@ -395,6 +395,8 @@ class EmailManager
      */
     private function isEnabled(): bool
     {
+        // Refresh cached value for long-lived workers.
+        \Everest\Models\Setting::forget('settings::modules:email:resend:enabled');
         $raw = Setting::get('settings::modules:email:resend:enabled', false);
 
         if (is_bool($raw)) {
