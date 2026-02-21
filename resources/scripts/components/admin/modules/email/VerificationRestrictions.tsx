@@ -18,7 +18,7 @@ const cloneRules = (rules: VerificationRules) => JSON.parse(JSON.stringify(rules
 
 const VerificationRestrictions = () => {
     const { clearAndAddHttpError, clearFlashes, addFlash } = useFlash();
-    const { secondary } = useStoreState(state => state.theme.data!.colors);
+    const { background } = useStoreState(state => state.theme.data!.colors);
     const [rules, setRules] = useState<VerificationRules>(() => cloneRules(DEFAULT_EMAIL_VERIFICATION_RULES));
     const [initialRules, setInitialRules] = useState<VerificationRules>(() => cloneRules(DEFAULT_EMAIL_VERIFICATION_RULES));
     const [loading, setLoading] = useState(true);
@@ -114,7 +114,7 @@ const VerificationRestrictions = () => {
                     <div
                         key={area}
                         className="space-y-3 rounded-lg border border-neutral-700 p-4"
-                        style={{ backgroundColor: secondary }}
+                        style={{ backgroundColor: background }}
                     >
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center justify-between">
@@ -133,7 +133,7 @@ const VerificationRestrictions = () => {
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <label
                                 className="flex items-center gap-3 text-sm text-neutral-100 rounded-md border border-neutral-700 px-3 py-2 hover:border-neutral-500 transition-colors cursor-pointer"
-                                style={{ backgroundColor: secondary }}
+                                style={{ backgroundColor: background }}
                             >
                                 <input
                                     type="checkbox"
@@ -146,7 +146,7 @@ const VerificationRestrictions = () => {
 
                             <label
                                 className="flex items-center gap-3 text-sm text-neutral-100 rounded-md border border-neutral-700 px-3 py-2 hover:border-neutral-500 transition-colors cursor-pointer"
-                                style={{ backgroundColor: secondary }}
+                                style={{ backgroundColor: background }}
                             >
                                 <input
                                     type="checkbox"
