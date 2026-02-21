@@ -26,34 +26,21 @@ class UpdateUserSessionActivity
 
             if (!$sessionRecord) {
                 $payload = SessionFacade::getHandler()->read($sessionId);
-                Log::warning('UpdateUserSessionActivity: no user_session record found for active session', [
+                Log::warning('UpdateUserSessionActivity: no user_session record found for active session (skipping logout)', [
                     'user_id' => $request->user()->id,
                     'session_id' => $sessionId,
                     'has_payload' => !empty($payload),
                 ]);
-
-                // If there is no DB record for this session, invalidate to avoid stale access.
-                auth()->guard()->logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return $request->expectsJson()
-                    ? response()->json([
-                        'errors' => [[
-                            'code' => 'SESSION_MISSING',
-                            'detail' => 'This session is no longer valid.',
-                        ]],
-                    ], 401)
-                    : redirect()->guest(route('auth.login'));
-            }
-
-            if ($sessionRecord->revoked_at) {
+            } elseif ($sessionRecord->revoked_at) {
                 Log::info('UpdateUserSessionActivity: blocked revoked session', [
                     'user_id' => $request->user()->id,
                     'session_id' => $sessionId,
                 ]);
 
-                auth()->guard()->logout();
+                $guard = auth()->guard();
+                if (method_exists($guard, 'logout')) {
+                    $guard->logout();
+                }
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 

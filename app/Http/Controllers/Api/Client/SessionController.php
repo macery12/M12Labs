@@ -23,6 +23,7 @@ class SessionController extends ClientApiController
     public function index(ClientApiRequest $request): array
     {
         $sessions = $request->user()->sessions()
+            ->whereNull('revoked_at')
             ->orderByDesc('last_activity_at')
             ->orderByDesc('created_at')
             ->get();
