@@ -224,13 +224,6 @@ class EmailManager
         // Get subject from template key
         $subject = $this->getSubjectForTemplate($templateKey);
 
-        Log::info('EmailManager: rendering template', [
-            'template_key' => $templateKey,
-            'view_path' => $viewPath,
-            'correlation_id' => $correlationId,
-            'data_keys' => array_keys($data),
-        ]);
-
         // Render HTML content from template
         try {
             $html = View::make($viewPath, $data)->render();
@@ -402,11 +395,7 @@ class EmailManager
      */
     private function isEnabled(): bool
     {
-        // Fetch directly from DB to avoid stale in-process cache.
-        $raw = Setting::query()
-            ->where('key', 'settings::modules:email:resend:enabled')
-            ->value('value');
-        $raw = $raw ?? false;
+        $raw = Setting::get('settings::modules:email:resend:enabled', false);
 
         if (is_bool($raw)) {
             return $raw;

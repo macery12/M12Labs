@@ -39,87 +39,14 @@ class EmailNotificationSetting extends Model
     public static function isEnabled(string $templateKey): bool
     {
         // Check global kill switch
-        $rawGlobal = static::getSettingFresh('settings::modules:email:notifications:global_enabled', null);
-        $globalEnabled = static::toBool($rawGlobal, true);
-
-        if (!$globalEnabled) {
-            \Log::info('EmailNotificationSetting: disabled by global toggle', [
-                'template_key' => $templateKey,
-                'global_enabled_raw' => $rawGlobal,
-            ]);
+        $globalEnabled = strtolower((string) Setting::get('settings::modules:email:notifications:global_enabled', '1'));
+        if (!in_array($globalEnabled, ['1', 'true', 'yes', 'on'], true)) {
             return false;
         }
         
         $setting = static::where('template_key', $templateKey)->first();
-
-        // Default to enabled when there is no per-template record yet (e.g., missing seed/migration)
-        $enabled = $setting ? static::toBool($setting->enabled, true) : true;
-
-        if (!$enabled) {
-            \Log::info('EmailNotificationSetting: template disabled', [
-                'template_key' => $templateKey,
-                'global_enabled_raw' => $rawGlobal,
-                'setting_id' => $setting?->id,
-                'setting_enabled' => $setting?->enabled,
-            ]);
-        }
-
-        return $enabled;
-    }
-
-    /**
-     * Debug helper to capture the state used for enablement checks.
-     */
-    public static function debugState(string $templateKey): array
-    {
-        $rawGlobal = static::getSettingFresh('settings::modules:email:notifications:global_enabled', null);
-        $globalEnabled = static::toBool($rawGlobal, true);
-        $setting = static::where('template_key', $templateKey)->first();
-
-        return [
-            'template_key' => $templateKey,
-            'raw_global' => $rawGlobal,
-            'global_enabled' => $globalEnabled,
-            'setting_id' => $setting?->id,
-            'setting_enabled_raw' => $setting?->enabled,
-            'setting_enabled' => $setting ? static::toBool($setting->enabled, true) : true,
-        ];
-    }
-
-    /**
-     * Fetch setting directly from the database to avoid stale in-process cache.
-     */
-    private static function getSettingFresh(string $key, mixed $default = null): mixed
-    {
-        $value = Setting::query()->where('key', $key)->value('value');
-
-        return $value !== null ? $value : $default;
-    }
-
-    /**
-     * Normalize database-stored truthy/falsey values.
-     */
-    private static function toBool(mixed $value, bool $default = false): bool
-    {
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if (is_null($value)) {
-            return $default;
-        }
-
-        if (is_int($value)) {
-            return $value === 1;
-        }
-
-        $normalized = strtolower(trim((string) $value));
-
-        if ($normalized === '') {
-            return $default;
-        }
-
-        return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+        
+        return $setting ? $setting->enabled : false;
     }
 
     /**
