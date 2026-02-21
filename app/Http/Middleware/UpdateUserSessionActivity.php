@@ -5,6 +5,7 @@ namespace Everest\Http\Middleware;
 use Closure;
 use Everest\Services\Auth\UserSessionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class UpdateUserSessionActivity
 {
@@ -20,6 +21,11 @@ class UpdateUserSessionActivity
             /** @var UserSessionService $service */
             $service = app(UserSessionService::class);
             $service->updateActivity($request->user(), $sessionId);
+            Log::debug('UpdateUserSessionActivity: updated activity', [
+                'user_id' => $request->user()->id,
+                'session_id' => $sessionId,
+                'path' => $request->path(),
+            ]);
         }
 
         return $response;

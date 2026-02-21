@@ -8,6 +8,7 @@ use Everest\Services\Auth\UserSessionService;
 use Everest\Transformers\Api\Client\UserSessionTransformer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class SessionController extends ClientApiController
 {
@@ -25,6 +26,11 @@ class SessionController extends ClientApiController
             ->orderByDesc('last_activity_at')
             ->orderByDesc('created_at')
             ->get();
+
+        Log::info('SessionController@index returning sessions', [
+            'user_id' => $request->user()->id,
+            'count' => $sessions->count(),
+        ]);
 
         return $this->fractal->collection($sessions)
             ->transformWith(UserSessionTransformer::class)

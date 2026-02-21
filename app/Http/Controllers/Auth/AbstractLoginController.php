@@ -18,6 +18,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Everest\Services\Users\UserCreationService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Everest\Services\Auth\UserSessionService;
+use Illuminate\Support\Facades\Log;
 
 abstract class AbstractLoginController extends Controller
 {
@@ -98,6 +99,12 @@ abstract class AbstractLoginController extends Controller
         $shouldSetCookie = $deviceId === null;
 
         $this->sessionService->recordLogin($user, $request->session()->getId(), $deviceId);
+        Log::info('AbstractLoginController: login response generated', [
+            'user_id' => $user->id,
+            'session_id' => $request->session()->getId(),
+            'device_id' => $deviceId,
+            'set_cookie' => $shouldSetCookie,
+        ]);
 
         Event::dispatch(new DirectLogin($user, true));
 

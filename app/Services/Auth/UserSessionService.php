@@ -8,6 +8,7 @@ use Everest\Models\User;
 use Everest\Models\UserSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session as SessionFacade;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class UserSessionService
@@ -26,6 +27,14 @@ class UserSessionService
         $deviceId = $deviceId ?: Str::uuid()->toString();
         $fingerprint = $this->fingerprint($deviceId);
         $now = CarbonImmutable::now();
+        Log::info('UserSessionService: recordLogin start', [
+            'user_id' => $user->id,
+            'session_id' => $sessionId,
+            'device_id' => $deviceId,
+            'fingerprint' => $fingerprint,
+            'ip' => $this->ip(),
+            'user_agent' => $this->userAgent(),
+        ]);
 
         $existingForFingerprint = UserSession::query()
             ->where('user_id', $user->id)
@@ -68,7 +77,21 @@ class UserSessionService
                 $now,
                 $this->location()
             ));
+            Log::info('UserSessionService: new login notification dispatched', [
+                'user_id' => $user->id,
+                'session_id' => $sessionId,
+                'device_id' => $deviceId,
+                'correlation_id' => $correlationId,
+            ]);
         }
+
+        Log::info('UserSessionService: recordLogin stored', [
+            'user_id' => $user->id,
+            'session_db_id' => $session->id,
+            'created_at' => $session->created_at,
+            'last_activity_at' => $session->last_activity_at,
+            'revoked_at' => $session->revoked_at,
+        ]);
 
         return $session;
     }
@@ -78,7 +101,7 @@ class UserSessionService
      */
     public function updateActivity(User $user, string $sessionId): void
     {
-        UserSession::query()
+        $updated = UserSession::query()
             ->where('user_id', $user->id)
             ->where('session_id', $sessionId)
             ->update([
@@ -86,6 +109,13 @@ class UserSessionService
                 'ip_address' => $this->ip(),
                 'user_agent' => $this->userAgent(),
             ]);
+
+        if (!$updated) {
+            Log::warning('UserSessionService: updateActivity found no session', [
+                'user_id' => $user->id,
+                'session_id' => $sessionId,
+            ]);
+        }
     }
 
     /**
@@ -94,6 +124,11 @@ class UserSessionService
     public function revokeSession(User $user, UserSession $session, bool $destroy = true): void
     {
         if ($session->user_id !== $user->id) {
+            Log::warning('UserSessionService: revokeSession blocked for mismatched user', [
+                'user_id' => $user->id,
+                'session_user_id' => $session->user_id,
+                'session_id' => $session->id,
+            ]);
             return;
         }
 
@@ -102,6 +137,12 @@ class UserSessionService
         if ($destroy) {
             SessionFacade::getHandler()->destroy($session->session_id);
         }
+
+        Log::info('UserSessionService: session revoked', [
+            'user_id' => $user->id,
+            'session_db_id' => $session->id,
+            'destroyed' => $destroy,
+        ]);
     }
 
     /**
@@ -132,6 +173,12 @@ class UserSessionService
         foreach ($sessions as $session) {
             $this->revokeSession($user, $session);
         }
+
+        Log::info('UserSessionService: revokeAll complete', [
+            'user_id' => $user->id,
+            'count' => $sessions->count(),
+            'except_session' => $exceptSessionId,
+        ]);
     }
 
     /**
