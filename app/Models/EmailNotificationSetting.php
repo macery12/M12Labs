@@ -68,6 +68,25 @@ class EmailNotificationSetting extends Model
     }
 
     /**
+     * Debug helper to capture the state used for enablement checks.
+     */
+    public static function debugState(string $templateKey): array
+    {
+        $rawGlobal = static::getSettingFresh('settings::modules:email:notifications:global_enabled', null);
+        $globalEnabled = static::toBool($rawGlobal, true);
+        $setting = static::where('template_key', $templateKey)->first();
+
+        return [
+            'template_key' => $templateKey,
+            'raw_global' => $rawGlobal,
+            'global_enabled' => $globalEnabled,
+            'setting_id' => $setting?->id,
+            'setting_enabled_raw' => $setting?->enabled,
+            'setting_enabled' => $setting ? static::toBool($setting->enabled, true) : true,
+        ];
+    }
+
+    /**
      * Fetch setting directly from the database to avoid stale in-process cache.
      */
     private static function getSettingFresh(string $key, mixed $default = null): mixed

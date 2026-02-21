@@ -77,10 +77,12 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Check if this email type is enabled
-        if (!EmailNotificationSetting::isEnabled($this->templateKey)) {
+        $enableState = EmailNotificationSetting::debugState($this->templateKey);
+        if (!$enableState['global_enabled'] || !$enableState['setting_enabled']) {
             Log::info('SendEmailJob: Email type disabled', [
                 'template_key' => $this->templateKey,
                 'correlation_id' => $this->correlationId,
+                'enable_state' => $enableState,
             ]);
             
             $tracker->markSkipped($delivery, "Email type '{$this->templateKey}' is disabled");
