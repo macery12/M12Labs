@@ -16,11 +16,12 @@ class UpdateUserSessionActivity
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->user() && $request->hasSession()) {
+        $user = $request->user();
+        if ($user && $request->hasSession()) {
             $sessionId = $request->session()->getId();
 
             $sessionRecord = UserSession::query()
-                ->where('user_id', $request->user()->id)
+                ->where('user_id', $user->id)
                 ->where('session_id', $sessionId)
                 ->first();
 
@@ -35,7 +36,7 @@ class UpdateUserSessionActivity
                     $request->session()->invalidate();
                     $request->session()->regenerateToken();
                     Log::info('UpdateUserSessionActivity: payload missing, logging out session', [
-                        'user_id' => $request->user()->id,
+                        'user_id' => $user->id,
                         'session_id' => $sessionId,
                     ]);
                     return $request->expectsJson()
@@ -49,13 +50,13 @@ class UpdateUserSessionActivity
                 }
 
                 Log::warning('UpdateUserSessionActivity: no user_session record found for active session (retaining)', [
-                    'user_id' => $request->user()->id,
+                    'user_id' => $user->id,
                     'session_id' => $sessionId,
                     'has_payload' => $hasPayload,
                 ]);
             } elseif ($sessionRecord->revoked_at) {
                 Log::info('UpdateUserSessionActivity: blocked revoked session', [
-                    'user_id' => $request->user()->id,
+                    'user_id' => $user->id,
                     'session_id' => $sessionId,
                 ]);
 
@@ -81,7 +82,8 @@ class UpdateUserSessionActivity
 
         $response = $next($request);
 
-        if ($request->user() && $request->hasSession()) {
+        $user = $request->user();
+        if ($user && $request->hasSession()) {
             $sessionId = $request->session()->getId();
             /** @var UserSessionService $service */
             $service = app(UserSessionService::class);

@@ -110,14 +110,13 @@ export default () => {
                                                 css={tw`border-t border-gray-800 hover:bg-white/5 transition-colors`}
                                             >
                                                 <td css={tw`py-4 px-4 align-top`}>
-                                                    <div css={tw`font-semibold text-white truncate`}>{session.deviceName}</div>
-                                                    <div
-                                                        css={tw`text-xs text-gray-400 mt-1 leading-snug`}
-                                                        className="line-clamp-2"
-                                                        title={session.userAgent || undefined}
-                                                    >
-                                                        {session.userAgent || 'Unknown user agent'}
-                                                    </div>
+                                            <div css={tw`font-semibold text-white truncate max-w-full`}>{session.deviceName}</div>
+                                            <div
+                                                css={tw`text-xs text-gray-400 mt-1 leading-snug line-clamp-2 max-w-full break-words`}
+                                                title={session.userAgent || undefined}
+                                            >
+                                                {session.userAgent || 'Unknown user agent'}
+                                            </div>
                                                 </td>
                                                 <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{session.ipAddress || 'Unknown'}</td>
                                                 <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{session.location || 'Unknown'}</td>
