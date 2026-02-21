@@ -22,7 +22,7 @@ class UserSessionService
     /**
     * Record or update a user session on login and trigger notification if needed.
     */
-    public function recordLogin(User $user, string $sessionId, string &$deviceId): UserSession
+    public function recordLogin(User $user, string $sessionId, ?string &$deviceId): UserSession
     {
         $deviceId = $deviceId ?: Str::uuid()->toString();
         $fingerprint = $this->fingerprint($deviceId);
