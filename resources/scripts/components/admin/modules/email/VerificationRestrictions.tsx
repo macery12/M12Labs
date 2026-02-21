@@ -131,7 +131,10 @@ const VerificationRestrictions = () => {
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            <label className="flex items-center gap-3 text-sm text-neutral-100 rounded-md border border-neutral-700 bg-neutral-800/70 px-3 py-2 hover:border-neutral-500 transition-colors cursor-pointer">
+                            <label
+                                className="flex items-center gap-3 text-sm text-neutral-100 rounded-md border border-neutral-700 px-3 py-2 hover:border-neutral-500 transition-colors cursor-pointer"
+                                style={{ backgroundColor: secondary }}
+                            >
                                 <input
                                     type="checkbox"
                                     className="h-5 w-5 rounded border-2 border-neutral-500 bg-neutral-900 text-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -141,7 +144,10 @@ const VerificationRestrictions = () => {
                                 <span>Allow unverified users to view</span>
                             </label>
 
-                            <label className="flex items-center gap-3 text-sm text-neutral-100 rounded-md border border-neutral-700 bg-neutral-800/70 px-3 py-2 hover:border-neutral-500 transition-colors cursor-pointer">
+                            <label
+                                className="flex items-center gap-3 text-sm text-neutral-100 rounded-md border border-neutral-700 px-3 py-2 hover:border-neutral-500 transition-colors cursor-pointer"
+                                style={{ backgroundColor: secondary }}
+                            >
                                 <input
                                     type="checkbox"
                                     className="h-5 w-5 rounded border-2 border-neutral-500 bg-neutral-900 text-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none"

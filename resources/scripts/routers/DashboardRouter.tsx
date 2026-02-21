@@ -226,6 +226,7 @@ function DashboardRouter() {
                     title={EMAIL_VERIFICATION_ALERT_TITLE}
                     onClose={() => setShowVerifyPrompt(false)}
                     onConfirmed={() => setShowVerifyPrompt(false)}
+                    buttonType="success"
                 >
                     <p className={'mb-4'}>{EMAIL_VERIFICATION_ALERT_MESSAGE}</p>
                     <div className={'flex flex-wrap gap-2'}>
@@ -246,12 +247,6 @@ function DashboardRouter() {
                             }}
                         >
                             I already verified
-                        </button>
-                        <button
-                            className={'rounded bg-gray-700 px-3 py-2 text-white'}
-                            onClick={() => setShowVerifyPrompt(false)}
-                        >
-                            Close
                         </button>
                     </div>
                 </Dialog.Confirm>
