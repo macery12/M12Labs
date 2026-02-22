@@ -23,13 +23,13 @@ return new class extends Migration
                 $table->string('plan')->default('free');
                 $table->integer('monthly_limit')->default(3000);
                 $table->integer('daily_limit')->nullable()->default(100);
-                // Legacy counters intentionally remain alongside consolidated naming
+                // Legacy counters intentionally remain alongside consolidated naming (month/day_* are canonical; monthly_/daily_ slated for removal after backfill)
                 $table->integer('monthly_sent')->default(0);
                 $table->integer('daily_sent')->default(0);
                 $table->integer('day_sent_count')->default(0);
                 $table->integer('month_sent_count')->default(0);
                 $table->integer('monthly_overage')->default(0);
-                $table->integer('overage_count')->default(0); // consolidated alias for monthly_overage
+                $table->integer('overage_count')->default(0); // overage_count is canonical; monthly_overage kept for legacy reads
                 $table->date('month_reset_at')->default($today);
                 $table->date('day_reset_at')->default($today);
                 $table->string('period_month', 7)->nullable();

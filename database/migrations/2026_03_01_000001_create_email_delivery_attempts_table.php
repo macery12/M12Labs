@@ -19,6 +19,7 @@ return new class extends Migration
                 $table->unsignedInteger('attempt_number');
                 $table->string('provider')->nullable();
                 $table->string('status'); // attempt lifecycle only (sending, sent, failed) distinct from delivery status values
+                // response_code is the provider HTTP code; status_code retained for legacy trackers
                 $table->unsignedInteger('response_code')->nullable();
                 $table->unsignedInteger('status_code')->nullable();
                 $table->string('provider_message_id')->nullable();
