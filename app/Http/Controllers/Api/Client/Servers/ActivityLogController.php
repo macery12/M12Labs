@@ -49,6 +49,10 @@ class ActivityLogController extends ClientApiController
             ])
             ->defaultSort('-timestamp')
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->where(function (Builder $builder) {
+                $builder->where('activity_logs.is_admin', false)
+                    ->orWhereNull('activity_logs.is_admin');
+            })
             ->when(config('activity.hide_admin_activity'), function (Builder $builder) use ($server) {
                 $this->applyAdminActivityFilter($builder, $server);
             })
@@ -69,6 +73,10 @@ class ActivityLogController extends ClientApiController
 
         $query = $server->activity()
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->where(function (Builder $builder) {
+                $builder->where('activity_logs.is_admin', false)
+                    ->orWhereNull('activity_logs.is_admin');
+            })
             ->whereNotNull('actor_id');
 
         // Apply the same admin activity filter if configured
@@ -100,7 +108,11 @@ class ActivityLogController extends ClientApiController
         $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
 
         $query = $server->activity()
-            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS);
+            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->where(function (Builder $builder) {
+                $builder->where('activity_logs.is_admin', false)
+                    ->orWhereNull('activity_logs.is_admin');
+            });
 
         // Apply the same admin activity filter if configured
         if (config('activity.hide_admin_activity')) {
