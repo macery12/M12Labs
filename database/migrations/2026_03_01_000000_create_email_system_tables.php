@@ -239,7 +239,7 @@ return new class extends Migration
                 $table->json('raw_response')->nullable();
                 $table->text('response_payload')->nullable();
                 $table->json('request_payload')->nullable();
-                $table->timestamp('started_at');
+                $table->timestamp('started_at')->nullable();
                 $table->timestamp('finished_at')->nullable();
                 $table->unsignedInteger('duration_ms')->nullable();
                 $table->boolean('success')->default(false);
@@ -393,7 +393,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('tenant_id')->nullable();
                 $table->string('template_key')->unique();
                 $table->boolean('enabled')->default(true);
-                $table->string('category')->index();
+                $table->string('category')->default('general')->index();
                 $table->string('name');
                 $table->text('description')->nullable();
                 $table->boolean('rate_limit_exempt')->default(false);
@@ -409,7 +409,7 @@ return new class extends Migration
                 }
 
                 if (!Schema::hasColumn('email_notification_settings', 'template_key')) {
-                    $table->string('template_key')->unique()->after('tenant_id');
+                    $table->string('template_key')->after('tenant_id');
                 }
 
                 if (!Schema::hasColumn('email_notification_settings', 'enabled')) {
@@ -446,9 +446,17 @@ return new class extends Migration
             }
 
             if (!$this->indexExists('email_notification_settings', 'email_notification_settings_template_key_unique') && Schema::hasColumn('email_notification_settings', 'template_key')) {
-                Schema::table('email_notification_settings', function (Blueprint $table) {
-                    $table->unique('template_key');
-                });
+                $hasDuplicates = DB::table('email_notification_settings')
+                    ->select('template_key', DB::raw('COUNT(*) as total'))
+                    ->groupBy('template_key')
+                    ->havingRaw('COUNT(*) > 1')
+                    ->exists();
+
+                if (!$hasDuplicates) {
+                    Schema::table('email_notification_settings', function (Blueprint $table) {
+                        $table->unique('template_key');
+                    });
+                }
             }
         }
 
