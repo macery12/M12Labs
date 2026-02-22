@@ -26,6 +26,7 @@ interface Values {
 
 function ForgotPasswordContainer() {
     const token = useRef('');
+    const [captchaToken, setCaptchaToken] = useState('');
     const [resetMethod, setResetMethod] = useState<'email' | 'recovery_code'>('email');
 
     const { clearFlashes, addFlash } = useFlash();
@@ -63,6 +64,7 @@ function ForgotPasswordContainer() {
             })
             .then(() => {
                 token.current = '';
+                setCaptchaToken('');
                 setSubmitting(false);
             });
     };
@@ -124,7 +126,7 @@ function ForgotPasswordContainer() {
                             type={'submit'}
                             className={'w-full'}
                             size={Button.Sizes.Large}
-                            disabled={isSubmitting || (captchaEnabled && !token.current)}
+                            disabled={isSubmitting || (captchaEnabled && !captchaToken)}
                         >
                             {resetMethod === 'email' ? 'Send Reset Link' : 'Reset Password'}
                         </Button>
@@ -135,9 +137,11 @@ function ForgotPasswordContainer() {
                                 siteKey={siteKey}
                                 onVerify={response => {
                                     token.current = response;
+                                    setCaptchaToken(response);
                                 }}
                                 onExpire={() => {
                                     token.current = '';
+                                    setCaptchaToken('');
                                 }}
                             />
                         </div>

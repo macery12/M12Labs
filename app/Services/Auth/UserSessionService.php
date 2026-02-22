@@ -27,15 +27,6 @@ class UserSessionService
         $deviceId = $deviceId ?: Str::uuid()->toString();
         $fingerprint = $this->fingerprint($deviceId);
         $now = CarbonImmutable::now();
-        Log::info('UserSessionService: recordLogin start', [
-            'user_id' => $user->id,
-            'session_id' => $sessionId,
-            'device_id' => $deviceId,
-            'fingerprint' => $fingerprint,
-            'ip' => $this->ip(),
-            'user_agent' => $this->userAgent(),
-        ]);
-
         $existingForFingerprint = UserSession::query()
             ->where('user_id', $user->id)
             ->where('device_fingerprint', $fingerprint)
@@ -77,21 +68,7 @@ class UserSessionService
                 $now,
                 $this->location()
             ));
-            Log::info('UserSessionService: new login notification dispatched', [
-                'user_id' => $user->id,
-                'session_id' => $sessionId,
-                'device_id' => $deviceId,
-                'correlation_id' => $correlationId,
-            ]);
         }
-
-        Log::info('UserSessionService: recordLogin stored', [
-            'user_id' => $user->id,
-            'session_db_id' => $session->id,
-            'created_at' => $session->created_at,
-            'last_activity_at' => $session->last_activity_at,
-            'revoked_at' => $session->revoked_at,
-        ]);
 
         return $session;
     }
@@ -283,10 +260,6 @@ class UserSessionService
 
         // If the backing session payload is missing (likely destroyed), do not recreate.
         if (empty($payload)) {
-            Log::info('UserSessionService: payload missing, skipping session recreation', [
-                'user_id' => $user->id,
-                'session_id' => $sessionId,
-            ]);
             return null;
         }
 
@@ -313,13 +286,6 @@ class UserSessionService
                 'last_notified_at' => $fingerprintSession?->last_notified_at,
             ]
         );
-
-        Log::info('UserSessionService: ensured session exists', [
-            'user_id' => $user->id,
-            'session_id' => $sessionId,
-            'fingerprint' => $fingerprint,
-            'copied_last_notified_at' => $fingerprintSession?->last_notified_at,
-        ]);
 
         return $session;
     }
