@@ -231,6 +231,7 @@ return new class extends Migration
                 $table->unsignedInteger('attempt_number');
                 $table->string('provider')->nullable();
                 $table->string('status'); // attempt lifecycle only (sending, sent, failed) distinct from delivery status values
+                // Paired fields below intentionally keep legacy logging data alongside consolidated names
                 // Maintain both provider-facing and legacy HTTP status fields for compatibility
                 $table->unsignedInteger('response_code')->nullable();
                 $table->unsignedInteger('status_code')->nullable();
@@ -479,7 +480,7 @@ return new class extends Migration
                 $table->string('plan')->default('free');
                 $table->integer('monthly_limit')->default(3000);
                 $table->integer('daily_limit')->nullable()->default(100);
-                // Legacy counters kept alongside consolidated naming for compatibility
+                // Legacy counters intentionally remain alongside consolidated naming to avoid breaking existing services
                 $table->integer('monthly_sent')->default(0);
                 $table->integer('daily_sent')->default(0);
                 $table->integer('day_sent_count')->default(0);
