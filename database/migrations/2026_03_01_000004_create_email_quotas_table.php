@@ -24,7 +24,7 @@ return new class extends Migration
                 $table->integer('monthly_limit')->default(3000);
                 $table->integer('daily_limit')->nullable()->default(100);
                 // Legacy counters intentionally remain alongside consolidated naming (month/day_* are canonical;
-                // monthly_/daily_ slated for removal after backfill) // TODO: remove legacy columns after data migration
+                // monthly_/daily_ (monthly_sent, daily_sent, monthly_overage) slated for removal after data backfill)
                 $table->integer('monthly_sent')->default(0);
                 $table->integer('daily_sent')->default(0);
                 $table->integer('day_sent_count')->default(0);
@@ -98,6 +98,7 @@ return new class extends Migration
         if (!$this->indexExists('email_quotas', 'email_quotas_period_month_index') && Schema::hasColumn('email_quotas', 'period_month')) {
             Schema::table('email_quotas', fn (Blueprint $table) => $table->index('period_month'));
         }
+        // Defensive in case legacy tables were created without the unique constraint
         if (!$this->indexExists('email_quotas', 'email_quotas_user_id_unique') && Schema::hasColumn('email_quotas', 'user_id')) {
             Schema::table('email_quotas', fn (Blueprint $table) => $table->unique('user_id'));
         }

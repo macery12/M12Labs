@@ -71,7 +71,7 @@ return new class extends Migration
             }
         }
 
-        $this->seedDefaults();
+        $this->seedDefaultNotificationSettings();
     }
 
     public function down(): void
@@ -79,7 +79,7 @@ return new class extends Migration
         Schema::dropIfExists('email_notification_settings');
     }
 
-    private function seedDefaults(): void
+    private function seedDefaultNotificationSettings(): void
     {
         if (!Schema::hasTable('email_notification_settings')) {
             return;
