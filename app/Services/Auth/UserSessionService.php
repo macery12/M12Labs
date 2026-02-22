@@ -268,7 +268,7 @@ class UserSessionService
         $now = CarbonImmutable::now();
 
         if ($existingSession) {
-            // Keep session_id stable and refresh metadata.
+            // Keep session_id stable and refresh metadata, but do NOT un-revoke.
             $existingSession->forceFill([
                 'session_id' => $sessionId,
                 'device_fingerprint' => $fingerprint,
@@ -277,7 +277,6 @@ class UserSessionService
                 'ip_address' => $this->ip(),
                 'location' => $this->location(),
                 'last_activity_at' => $now,
-                'revoked_at' => null,
             ])->save();
             return $existingSession;
         }
@@ -309,7 +308,8 @@ class UserSessionService
                 'ip_address' => $this->ip(),
                 'location' => $this->location(),
                 'last_activity_at' => $now,
-                'revoked_at' => null,
+                // Preserve revoked status for this fingerprint to honor revocations.
+                'revoked_at' => $fingerprintSession?->revoked_at,
                 'last_notified_at' => $fingerprintSession?->last_notified_at,
             ]
         );
