@@ -26,7 +26,7 @@ return new class extends Migration
                 $table->string('recipient_email')->nullable();
                 $table->unsignedBigInteger('user_id')->nullable();
                 $table->string('subject');
-                $table->string('status')->default('queued'); // queued, sent, failed, deferred, blocked, skipped (validated in application layer via delivery status constants)
+                $table->string('status')->default('queued'); // queued, sent, failed, deferred, blocked, skipped (validated in application layer, see EmailDelivery status constants)
                 $table->string('provider')->nullable()->default('resend');
                 $table->string('provider_message_id')->nullable();
                 $table->json('metadata')->nullable();
