@@ -18,7 +18,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('delivery_id');
                 $table->unsignedInteger('attempt_number');
                 $table->string('provider')->nullable();
-                $table->string('status'); // attempt lifecycle only (sending, sent, failed) distinct from delivery status values (see EmailDeliveryTracker usage)
+                $table->string('status'); // attempt lifecycle only (sending, sent, failed) distinct from delivery status values (see EmailDeliveryTracker usage; deliveries use queued/sent/failed/deferred/blocked/skipped)
                 // response_code is the provider HTTP code; status_code retained for legacy trackers (older EmailDeliveryTracker logs)
                 $table->unsignedInteger('response_code')->nullable();
                 $table->unsignedInteger('status_code')->nullable();

@@ -20,7 +20,7 @@ return new class extends Migration
             Schema::create('email_deliveries', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('tenant_id')->nullable();
-                $table->uuid('correlation_id')->unique();
+                $table->uuid('correlation_id')->nullable()->unique();
                 $table->string('template_key')->nullable();
                 $table->string('recipient');
                 $table->string('recipient_email')->nullable();
