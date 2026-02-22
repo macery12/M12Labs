@@ -45,10 +45,10 @@ class UserSessionService
         $session = UserSession::query()->updateOrCreate(
             [
                 'user_id' => $user->id,
-                'session_id' => $sessionId,
+                'device_fingerprint' => $fingerprint,
             ],
             [
-                'device_fingerprint' => $fingerprint,
+                'session_id' => $sessionId,
                 'device_name' => $this->deviceName(),
                 'user_agent' => $this->userAgent(),
                 'ip_address' => $this->ip(),
@@ -256,15 +256,33 @@ class UserSessionService
     {
         $existingSession = UserSession::query()
             ->where('user_id', $user->id)
-            ->where('session_id', $sessionId)
+            ->where(function ($q) use ($sessionId) {
+                $q->where('session_id', $sessionId);
+            })
             ->first();
 
+        $payload = SessionFacade::getHandler()->read($sessionId);
+
+        $deviceId = $this->currentDeviceId();
+        $fingerprint = $this->fingerprint($deviceId);
+        $now = CarbonImmutable::now();
+
         if ($existingSession) {
+            // Keep session_id stable and refresh metadata.
+            $existingSession->forceFill([
+                'session_id' => $sessionId,
+                'device_fingerprint' => $fingerprint,
+                'device_name' => $this->deviceName(),
+                'user_agent' => $this->userAgent(),
+                'ip_address' => $this->ip(),
+                'location' => $this->location(),
+                'last_activity_at' => $now,
+                'revoked_at' => null,
+            ])->save();
             return $existingSession;
         }
 
         // If the backing session payload is missing (likely destroyed), do not recreate.
-        $payload = SessionFacade::getHandler()->read($sessionId);
         if (empty($payload)) {
             Log::info('UserSessionService: payload missing, skipping session recreation', [
                 'user_id' => $user->id,
@@ -272,10 +290,6 @@ class UserSessionService
             ]);
             return null;
         }
-
-        $deviceId = $this->currentDeviceId();
-        $fingerprint = $this->fingerprint($deviceId);
-        $now = CarbonImmutable::now();
 
         $fingerprintSession = UserSession::query()
             ->where('user_id', $user->id)
@@ -286,10 +300,10 @@ class UserSessionService
         $session = UserSession::query()->updateOrCreate(
             [
                 'user_id' => $user->id,
-                'session_id' => $sessionId,
+                'device_fingerprint' => $fingerprint,
             ],
             [
-                'device_fingerprint' => $fingerprint,
+                'session_id' => $sessionId,
                 'device_name' => $this->deviceName(),
                 'user_agent' => $this->userAgent(),
                 'ip_address' => $this->ip(),
