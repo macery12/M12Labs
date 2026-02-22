@@ -1,4 +1,3 @@
-```php
 <?php
 
 namespace Everest\Http\Controllers\Api\Client\Servers;
