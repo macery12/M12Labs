@@ -49,9 +49,7 @@ class ActivityLogController extends ClientApiController
             ])
             ->defaultSort('-timestamp')
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
-            ->where(function (Builder $builder) {
-                $this->applyNonAdminFilter($builder);
-            })
+            ->where('activity_logs.is_admin', 0)
             ->when(config('activity.hide_admin_activity'), function (Builder $builder) use ($server) {
                 $this->applyAdminActivityFilter($builder, $server);
             })
@@ -72,9 +70,7 @@ class ActivityLogController extends ClientApiController
 
         $query = $server->activity()
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
-            ->where(function (Builder $builder) {
-                $this->applyNonAdminFilter($builder);
-            })
+            ->where('activity_logs.is_admin', 0)
             ->whereNotNull('actor_id');
 
         // Apply the same admin activity filter if configured
@@ -107,9 +103,7 @@ class ActivityLogController extends ClientApiController
 
         $query = $server->activity()
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
-            ->where(function (Builder $builder) {
-                $this->applyNonAdminFilter($builder);
-            });
+            ->where('activity_logs.is_admin', 0);
 
         // Apply the same admin activity filter if configured
         if (config('activity.hide_admin_activity')) {
@@ -147,16 +141,5 @@ class ActivityLogController extends ClientApiController
                     ->orWhere('users.root_admin', 0)
                     ->orWhereIn('users.id', $subusers);
             });
-    }
-
-    /**
-     * Applies the base filter that removes admin activity log entries from server results.
-     */
-    private function applyNonAdminFilter(Builder $builder): void
-    {
-        $builder->where(function (Builder $query) {
-            $query->where('activity_logs.is_admin', false)
-                ->orWhereNull('activity_logs.is_admin');
-        });
     }
 }
