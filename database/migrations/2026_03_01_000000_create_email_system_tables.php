@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Schema;
  * Consolidated and defensive email migration.
  * Replaces prior experimental email migrations by creating the final
  * email delivery, attempt, quota, notification, and deferred email tables
- * while safely handling existing/legacy structures.
+ * while safely handling existing/legacy structures. Also adds defensive
+ * email verification columns to the users table when missing.
  */
 return new class extends Migration
 {
@@ -65,7 +66,7 @@ return new class extends Migration
                 $table->string('recipient_email')->nullable();
                 $table->unsignedBigInteger('user_id')->nullable();
                 $table->string('subject');
-                $table->string('status')->default('queued'); // queued, sent, failed, deferred, blocked, skipped
+                $table->string('status')->default('queued'); // queued, sent, failed, deferred, blocked, skipped (validated in application layer)
                 $table->string('provider')->nullable()->default('resend');
                 $table->string('provider_message_id')->nullable();
                 $table->json('metadata')->nullable();
@@ -140,7 +141,7 @@ return new class extends Migration
             }
 
             if (!Schema::hasColumn('email_deliveries', 'attempts')) {
-                $table->unsignedInteger('attempts')->default(0)->after('status');
+                $table->unsignedInteger('attempts')->default(0)->after('metadata');
             }
 
             if (!Schema::hasColumn('email_deliveries', 'last_attempt_at')) {
@@ -229,7 +230,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('delivery_id');
                 $table->unsignedInteger('attempt_number');
                 $table->string('provider')->nullable();
-                $table->string('status'); // sending, sent, failed
+                $table->string('status'); // attempt lifecycle: sending, sent, failed
                 $table->unsignedInteger('response_code')->nullable();
                 $table->unsignedInteger('status_code')->nullable();
                 $table->string('provider_message_id')->nullable();
@@ -416,7 +417,7 @@ return new class extends Migration
                 }
 
                 if (!Schema::hasColumn('email_notification_settings', 'category')) {
-                    $table->string('category')->nullable()->after('enabled');
+                    $table->string('category')->default('general')->after('enabled');
                 }
 
                 if (!Schema::hasColumn('email_notification_settings', 'name')) {
@@ -456,31 +457,34 @@ return new class extends Migration
 
     private function ensureEmailQuotasTable(): void
     {
+        $today = now()->toDateString();
+
         if (!Schema::hasTable('email_quotas')) {
-            Schema::create('email_quotas', function (Blueprint $table) {
+            Schema::create('email_quotas', function (Blueprint $table) use ($today) {
                 $table->id();
                 $table->unsignedBigInteger('tenant_id')->nullable();
+                // One quota row per user (optionally scoped by tenant_id)
                 $table->unsignedBigInteger('user_id')->unique();
                 $table->string('plan')->default('free');
                 $table->integer('monthly_limit')->default(3000);
                 $table->integer('daily_limit')->nullable()->default(100);
                 $table->integer('monthly_sent')->default(0);
                 $table->integer('daily_sent')->default(0);
-                $table->integer('monthly_overage')->default(0);
-                $table->date('month_reset_at')->default(DB::raw('CURDATE()'));
-                $table->date('day_reset_at')->default(DB::raw('CURDATE()'));
-                $table->timestamps();
-
-                $table->string('period_month', 7)->nullable()->index();
-                $table->integer('overage_count')->default(0);
                 $table->integer('day_sent_count')->default(0);
                 $table->integer('month_sent_count')->default(0);
+                $table->integer('monthly_overage')->default(0);
+                $table->integer('overage_count')->default(0);
+                $table->date('month_reset_at')->default($today);
+                $table->date('day_reset_at')->default($today);
+                $table->string('period_month', 7)->nullable();
+                $table->timestamps();
 
                 $table->index('user_id');
                 $table->index(['user_id', 'plan']);
                 $table->index('month_reset_at');
                 $table->index('day_reset_at');
                 $table->index('tenant_id');
+                $table->index('period_month');
             });
 
             return;
