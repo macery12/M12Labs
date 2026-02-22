@@ -231,11 +231,14 @@ return new class extends Migration
                 $table->unsignedInteger('attempt_number');
                 $table->string('provider')->nullable();
                 $table->string('status'); // attempt lifecycle only (sending, sent, failed) distinct from delivery status values
+                // Maintain both provider-facing and legacy HTTP status fields for compatibility
                 $table->unsignedInteger('response_code')->nullable();
                 $table->unsignedInteger('status_code')->nullable();
                 $table->string('provider_message_id')->nullable();
+                // error_message stores provider/user-friendly messages; error retains legacy tracker detail
                 $table->text('error_message')->nullable();
                 $table->text('error')->nullable();
+                // raw_response captures structured payload; response_payload retains legacy text blob
                 $table->json('raw_response')->nullable();
                 $table->text('response_payload')->nullable();
                 $table->json('request_payload')->nullable();
@@ -476,12 +479,13 @@ return new class extends Migration
                 $table->string('plan')->default('free');
                 $table->integer('monthly_limit')->default(3000);
                 $table->integer('daily_limit')->nullable()->default(100);
+                // Legacy counters kept alongside consolidated naming for compatibility
                 $table->integer('monthly_sent')->default(0);
                 $table->integer('daily_sent')->default(0);
                 $table->integer('day_sent_count')->default(0);
                 $table->integer('month_sent_count')->default(0);
                 $table->integer('monthly_overage')->default(0);
-                $table->integer('overage_count')->default(0);
+                $table->integer('overage_count')->default(0); // consolidated alias for monthly_overage
                 $table->date('month_reset_at')->default($today);
                 $table->date('day_reset_at')->default($today);
                 $table->string('period_month', 7)->nullable();
