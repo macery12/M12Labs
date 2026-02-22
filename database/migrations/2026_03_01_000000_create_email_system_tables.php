@@ -230,7 +230,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('delivery_id');
                 $table->unsignedInteger('attempt_number');
                 $table->string('provider')->nullable();
-                $table->string('status'); // attempt lifecycle: sending, sent, failed
+                $table->string('status'); // attempt lifecycle only (sending, sent, failed) distinct from delivery status values
                 $table->unsignedInteger('response_code')->nullable();
                 $table->unsignedInteger('status_code')->nullable();
                 $table->string('provider_message_id')->nullable();
@@ -463,7 +463,7 @@ return new class extends Migration
             Schema::create('email_quotas', function (Blueprint $table) use ($today) {
                 $table->id();
                 $table->unsignedBigInteger('tenant_id')->nullable();
-                // One quota row per user (optionally scoped by tenant_id)
+                // One quota row per user; tenant_id is available for future scoping
                 $table->unsignedBigInteger('user_id')->unique();
                 $table->string('plan')->default('free');
                 $table->integer('monthly_limit')->default(3000);
