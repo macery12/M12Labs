@@ -10,6 +10,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Facades\DB;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Transformers\Api\Client\ActivityLogTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -20,7 +21,7 @@ class ActivityLogController extends ClientApiController
     {
         $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
 
-        $activity = QueryBuilder::for($server->activity())
+        $activity = QueryBuilder::for($this->serverScopedQuery($server))
             ->with('actor')
             ->allowedSorts(['timestamp'])
             ->allowedFilters([
@@ -45,15 +46,6 @@ class ActivityLogController extends ClientApiController
                 }),
             ])
             ->defaultSort('-timestamp')
-            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
-            ->where(function (Builder $q) use ($server) {
-                $q->whereJsonContains('properties->server->id', $server->id)
-                  ->orWhereJsonContains('properties->server->uuid', $server->uuid);
-            })
-            ->where('activity_logs.is_admin', 0)
-            ->when(config('activity.hide_admin_activity'), function (Builder $builder) use ($server) {
-                $this->applyAdminActivityFilter($builder, $server);
-            })
             ->paginate(min($request->query('per_page', 25), 100))
             ->appends($request->query());
 
@@ -66,18 +58,8 @@ class ActivityLogController extends ClientApiController
     {
         $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
 
-        $query = $server->activity()
-            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
-            ->where(function (Builder $q) use ($server) {
-                $q->whereJsonContains('properties->server->id', $server->id)
-                  ->orWhereJsonContains('properties->server->uuid', $server->uuid);
-            })
-            ->where('activity_logs.is_admin', 0)
+        $query = $this->serverScopedQuery($server)
             ->whereNotNull('actor_id');
-
-        if (config('activity.hide_admin_activity')) {
-            $this->applyAdminActivityFilter($query, $server);
-        }
 
         $users = $query
             ->join('users as u', 'activity_logs.actor_id', '=', 'u.id')
@@ -99,17 +81,7 @@ class ActivityLogController extends ClientApiController
     {
         $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
 
-        $query = $server->activity()
-            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
-            ->where(function (Builder $q) use ($server) {
-                $q->whereJsonContains('properties->server->id', $server->id)
-                  ->orWhereJsonContains('properties->server->uuid', $server->uuid);
-            })
-            ->where('activity_logs.is_admin', 0);
-
-        if (config('activity.hide_admin_activity')) {
-            $this->applyAdminActivityFilter($query, $server);
-        }
+        $query = $this->serverScopedQuery($server);
 
         $events = $query
             ->select('activity_logs.event')
@@ -137,5 +109,34 @@ class ActivityLogController extends ClientApiController
                     ->orWhereIn('users.id', $subusers);
             });
     }
-}
 
+    /**
+     * Base query for server activity that prefers server_id but falls back to subjects and legacy JSON.
+     */
+    private function serverScopedQuery(Server $server): Builder
+    {
+        $builder = ActivityLog::query()
+            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->where('activity_logs.is_admin', 0)
+            ->where(function (Builder $query) use ($server) {
+                $query->where('activity_logs.server_id', $server->id)
+                    ->orWhereExists(function ($sub) use ($server) {
+                        $sub->select(DB::raw(1))
+                            ->from('activity_log_subjects as als')
+                            ->whereColumn('als.activity_log_id', 'activity_logs.id')
+                            ->where('als.subject_type', (new Server())->getMorphClass())
+                            ->where('als.subject_id', $server->id);
+                    })
+                    ->orWhere(function (Builder $json) use ($server) {
+                        $json->whereJsonContains('activity_logs.properties->server->id', $server->id)
+                            ->orWhereJsonContains('activity_logs.properties->server->uuid', $server->uuid);
+                    });
+            });
+
+        if (config('activity.hide_admin_activity')) {
+            $this->applyAdminActivityFilter($builder, $server);
+        }
+
+        return $builder;
+    }
+}

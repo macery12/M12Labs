@@ -98,6 +98,7 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
             'ip' => '127.0.0.1',
             'actor_id' => $user->id,
             'actor_type' => $user->getMorphClass(),
+            'server_id' => $server->id,
             'is_admin' => false,
             'timestamp' => now(),
         ]);
@@ -107,6 +108,7 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
             'ip' => '127.0.0.1',
             'actor_id' => $user->id,
             'actor_type' => $user->getMorphClass(),
+            'server_id' => $server->id,
             'is_admin' => true,
             'timestamp' => now(),
         ]);
@@ -155,6 +157,7 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
             $table->text('description')->nullable();
             $table->string('actor_type')->nullable();
             $table->unsignedInteger('actor_id')->nullable();
+            $table->unsignedInteger('server_id')->nullable();
             $table->unsignedInteger('api_key_id')->nullable();
             $table->boolean('is_admin')->default(false);
             $table->json('properties')->nullable();
