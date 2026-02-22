@@ -138,4 +138,4 @@ class ActivityLogController extends ClientApiController
             });
     }
 }
-```
+
