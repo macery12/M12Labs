@@ -1,3 +1,4 @@
+```php
 <?php
 
 namespace Everest\Http\Controllers\Api\Client\Servers;
@@ -16,9 +17,6 @@ use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class ActivityLogController extends ClientApiController
 {
-    /**
-     * Returns the activity logs for a server.
-     */
     public function __invoke(ClientApiRequest $request, Server $server): array
     {
         $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
@@ -49,6 +47,10 @@ class ActivityLogController extends ClientApiController
             ])
             ->defaultSort('-timestamp')
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->where(function (Builder $q) use ($server) {
+                $q->whereJsonContains('properties->server->id', $server->id)
+                  ->orWhereJsonContains('properties->server->uuid', $server->uuid);
+            })
             ->where('activity_logs.is_admin', 0)
             ->when(config('activity.hide_admin_activity'), function (Builder $builder) use ($server) {
                 $this->applyAdminActivityFilter($builder, $server);
@@ -61,19 +63,19 @@ class ActivityLogController extends ClientApiController
             ->toArray();
     }
 
-    /**
-     * Returns all unique users who have activity logs for this server.
-     */
     public function users(ClientApiRequest $request, Server $server): array
     {
         $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
 
         $query = $server->activity()
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->where(function (Builder $q) use ($server) {
+                $q->whereJsonContains('properties->server->id', $server->id)
+                  ->orWhereJsonContains('properties->server->uuid', $server->uuid);
+            })
             ->where('activity_logs.is_admin', 0)
             ->whereNotNull('actor_id');
 
-        // Apply the same admin activity filter if configured
         if (config('activity.hide_admin_activity')) {
             $this->applyAdminActivityFilter($query, $server);
         }
@@ -94,18 +96,18 @@ class ActivityLogController extends ClientApiController
         return ['data' => $users];
     }
 
-    /**
-     * Returns all unique event types for this server.
-     */
     public function events(ClientApiRequest $request, Server $server): array
     {
         $this->authorize(Permission::ACTION_ACTIVITY_READ, $server);
 
         $query = $server->activity()
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
+            ->where(function (Builder $q) use ($server) {
+                $q->whereJsonContains('properties->server->id', $server->id)
+                  ->orWhereJsonContains('properties->server->uuid', $server->uuid);
+            })
             ->where('activity_logs.is_admin', 0);
 
-        // Apply the same admin activity filter if configured
         if (config('activity.hide_admin_activity')) {
             $this->applyAdminActivityFilter($query, $server);
         }
@@ -121,14 +123,8 @@ class ActivityLogController extends ClientApiController
         return ['data' => $events];
     }
 
-    /**
-     * Apply the admin activity filter to hide admin users from activity logs
-     * unless they are the server owner or a subuser.
-     */
     private function applyAdminActivityFilter(Builder $builder, Server $server): void
     {
-        // We could do this with a query and a lot of joins, but that gets pretty
-        // painful so for now we'll execute a simpler query.
         $subusers = $server->subusers()->pluck('user_id')->merge($server->owner_id);
 
         $builder->select('activity_logs.*')
@@ -143,3 +139,4 @@ class ActivityLogController extends ClientApiController
             });
     }
 }
+```
