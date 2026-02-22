@@ -18,7 +18,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('delivery_id');
                 $table->unsignedInteger('attempt_number');
                 $table->string('provider')->nullable();
-                $table->string('status'); // attempt lifecycle: sending, sent, failed
+                $table->string('status'); // attempt lifecycle only (sending, sent, failed) distinct from delivery status values
                 $table->unsignedInteger('response_code')->nullable();
                 $table->unsignedInteger('status_code')->nullable();
                 $table->string('provider_message_id')->nullable();
