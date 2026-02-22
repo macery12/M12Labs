@@ -37,3 +37,4 @@ const setupAccount = (values: { username: string; password: string }): Promise<v
 };
 
 export { updateAccountPassword, updateAccountEmail, setupAccount };
+export * from './sessions';

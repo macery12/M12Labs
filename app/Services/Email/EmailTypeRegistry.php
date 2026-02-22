@@ -179,8 +179,8 @@ class EmailTypeRegistry
                 'userName' => $event->user->name ?? $event->user->username,
                 'ipAddress' => $event->ipAddress,
                 'userAgent' => $event->userAgent,
-                'location' => 'Unknown', // Could integrate with IP geolocation service
-                'loginTime' => now()->format('F j, Y g:i A'),
+                'location' => $event->location ?? 'Unknown', // Could integrate with IP geolocation service
+                'loginTime' => $event->loginAt->setTimezone(config('app.timezone'))->format('F j, Y g:i A T'),
             ];
         } elseif ($event instanceof TwoFactorEnabled) {
             /** @var TwoFactorEnabled $event */

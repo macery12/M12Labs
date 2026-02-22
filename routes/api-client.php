@@ -57,6 +57,18 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             ->middleware('verified.view:credentials')
             ->name('api:client.account.activity');
 
+        Route::prefix('/sessions')->group(function () {
+            Route::get('/', [Client\SessionController::class, 'index'])
+                ->middleware('verified.view:credentials')
+                ->name('api:client.account.sessions');
+            Route::post('/{session}/revoke', [Client\SessionController::class, 'revoke'])
+                ->middleware('verified.interact:credentials')
+                ->name('api:client.account.sessions.revoke');
+            Route::post('/revoke-all', [Client\SessionController::class, 'revokeAll'])
+                ->middleware('verified.interact:credentials')
+                ->name('api:client.account.sessions.revoke-all');
+        });
+
         Route::get('/api-keys', [Client\ApiKeyController::class, 'index'])->middleware('verified.view:credentials');
         Route::post('/api-keys', [Client\ApiKeyController::class, 'store'])->middleware('verified.interact:credentials');
         Route::delete('/api-keys/{identifier}', [Client\ApiKeyController::class, 'delete'])->middleware('verified.interact:credentials');

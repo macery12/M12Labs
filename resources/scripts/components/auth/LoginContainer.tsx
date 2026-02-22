@@ -1,7 +1,7 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
@@ -24,6 +24,7 @@ interface Values {
 
 function LoginContainer() {
     const token = useRef('');
+    const [captchaToken, setCaptchaToken] = useState('');
 
     const appName = useStoreState(state => state.settings.data!.name);
     const modules = useStoreState(state => state.everest.data!.auth.modules);
@@ -64,6 +65,7 @@ function LoginContainer() {
                 console.error(error);
 
                 token.current = '';
+                setCaptchaToken('');
 
                 setSubmitting(false);
                 clearAndAddHttpError({ error });
@@ -114,7 +116,7 @@ function LoginContainer() {
                             loading={isSubmitting}
                             className={'w-full'}
                             size={Button.Sizes.Large}
-                            disabled={isSubmitting || (captchaEnabled && !token.current)}
+                            disabled={isSubmitting || (captchaEnabled && !captchaToken)}
                         >
                             Login
                         </Button>
@@ -125,9 +127,11 @@ function LoginContainer() {
                                 siteKey={siteKey}
                                 onVerify={response => {
                                     token.current = response;
+                                    setCaptchaToken(response);
                                 }}
                                 onExpire={() => {
                                     token.current = '';
+                                    setCaptchaToken('');
                                 }}
                             />
                         </div>
