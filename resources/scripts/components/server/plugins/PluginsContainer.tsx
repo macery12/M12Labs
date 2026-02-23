@@ -110,9 +110,10 @@ export default function PluginsContainer() {
         const providerChanged = !providers[activeProvider]?.available;
         if (providerChanged) {
             const next = pickFirstAvailableProvider();
+            const nextResource = pickFirstAvailableResource(next);
             setActiveProvider(next);
-            setActiveResource(pickFirstAvailableResource(next));
-            setSearchParams({ provider: next, resource: pickFirstAvailableResource(next) });
+            setActiveResource(nextResource);
+            setSearchParams({ provider: next, resource: nextResource });
             return;
         }
 
@@ -128,9 +129,7 @@ export default function PluginsContainer() {
         activeProvider,
         activeResource,
         hasAvailableProvider,
-        providers.modrinth.available,
-        providers.curseforge.available,
-        providers.spiget.available,
+        providers,
         resourceOptions,
         setSearchParams,
     ]);

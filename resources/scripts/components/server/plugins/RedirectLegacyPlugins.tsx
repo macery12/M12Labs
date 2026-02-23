@@ -4,7 +4,8 @@ const RedirectLegacyPlugins = () => {
     const location = useLocation();
     const isModpacks = location.pathname.includes('/modpacks');
 
-    const basePath = location.pathname.replace(/\/(mods|modpacks)(\/.*)?$/i, '/plugins');
+    const match = location.pathname.match(/^(.*)\/(mods|modpacks)(?:\/.*)?$/i);
+    const basePath = match ? `${match[1]}/plugins` : '/plugins';
 
     if (isModpacks) {
         return <Navigate to={`${basePath}?provider=curseforge&resource=modpacks`} replace />;
