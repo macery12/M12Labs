@@ -20,6 +20,7 @@ class CurseForgeService
     private int $max429BeforeLockout = 50; // Lock out after 50 consecutive 429s
     private int $lockoutDurationSeconds = 86400; // 24 hours lockout
     private int $backoffDurationSeconds = 30; // Short-term backoff after 429s
+    private int $maxIndex = 10000; // CurseForge API index upper bound
 
     /**
      * CurseForgeService constructor.
@@ -124,6 +125,15 @@ class CurseForgeService
     private function reset429Counter(): void
     {
         Cache::forget('curseforge_429_counter');
+    }
+
+    private function clampIndex(int $index): int
+    {
+        if ($index < 0) {
+            return 0;
+        }
+
+        return min($index, $this->maxIndex);
     }
 
     /**
@@ -379,7 +389,7 @@ class CurseForgeService
             'sortOrder' => $params['sortOrder'] ?? null,
             'gameVersion' => $params['gameVersion'] ?? null,
             'modLoaderType' => $params['modLoaderType'] ?? null,
-            'index' => $params['index'] ?? 0,
+            'index' => $this->clampIndex($params['index'] ?? 0),
         ], function ($value) {
             return $value !== null;
         }));
@@ -419,7 +429,7 @@ class CurseForgeService
             'gameVersion' => $params['gameVersion'] ?? null,
             'modLoaderType' => $params['modLoaderType'] ?? null,
             'pageSize' => min($params['pageSize'] ?? 20, config('modules.mods.max_page_size', 50)),
-            'index' => $params['index'] ?? 0,
+            'index' => $this->clampIndex($params['index'] ?? 0),
         ], function ($value) {
             return $value !== null;
         });
@@ -508,7 +518,7 @@ class CurseForgeService
             'searchFilter' => $params['searchFilter'] ?? null,
             'sortField' => $params['sortField'] ?? null,
             'sortOrder' => $params['sortOrder'] ?? null,
-            'index' => $params['index'] ?? 0,
+            'index' => $this->clampIndex($params['index'] ?? 0),
         ], function ($value) {
             // Filter out null and empty strings to prevent AND-filter conflicts
             return $value !== null && $value !== '';
