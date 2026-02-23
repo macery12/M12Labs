@@ -52,3 +52,13 @@ if (!function_exists('isTestDomain')) {
         return in_array($domain, $testDomains, true);
     }
 }
+
+if (!function_exists('is_test_domain')) {
+    /**
+     * snake_case alias for isTestDomain to match helper naming conventions.
+     */
+    function is_test_domain(string $email): bool
+    {
+        return isTestDomain($email);
+    }
+}

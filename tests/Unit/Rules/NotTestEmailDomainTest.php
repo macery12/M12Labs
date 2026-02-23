@@ -31,8 +31,8 @@ class NotTestEmailDomainTest extends TestCase
     {
         config(['email.test_domains' => ['example.com', 'test.com']]);
 
-        $this->assertTrue(isTestDomain('name@example.com'));
-        $this->assertFalse(isTestDomain('name@domain.com'));
+        $this->assertTrue(is_test_domain('name@example.com'));
+        $this->assertFalse(is_test_domain('name@domain.com'));
     }
 
     public function testMessage(): void

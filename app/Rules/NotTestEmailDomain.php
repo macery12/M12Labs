@@ -14,7 +14,7 @@ class NotTestEmailDomain implements Rule
      */
     public function passes($attribute, $value): bool
     {
-        return !isTestDomain((string) $value);
+        return !is_test_domain((string) $value);
     }
 
     /**
