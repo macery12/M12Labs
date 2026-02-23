@@ -36,11 +36,11 @@ if (!function_exists('object_get_strict')) {
     }
 }
 
-if (!function_exists('isTestDomain')) {
+if (!function_exists('is_test_domain')) {
     /**
      * Determine if the given email belongs to a configured test domain.
      */
-    function isTestDomain(string $email): bool
+    function is_test_domain(string $email): bool
     {
         if (!str_contains($email, '@')) {
             return false;
@@ -53,12 +53,12 @@ if (!function_exists('isTestDomain')) {
     }
 }
 
-if (!function_exists('is_test_domain')) {
+if (!function_exists('isTestDomain')) {
     /**
-     * snake_case alias for isTestDomain to match helper naming conventions.
+     * CamelCase alias kept for backwards compatibility and requirements.
      */
-    function is_test_domain(string $email): bool
+    function isTestDomain(string $email): bool
     {
-        return isTestDomain($email);
+        return is_test_domain($email);
     }
 }

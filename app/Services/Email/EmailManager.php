@@ -122,6 +122,10 @@ class EmailManager
     ): EmailResult {
         $tracker = app(EmailDeliveryTracker::class);
 
+        if ($result = $this->shouldSkipRecipient($recipient, $tracker, $delivery)) {
+            return $result;
+        }
+
         // If no delivery provided, create one (for direct calls outside job system)
         if (!$delivery) {
             $subject = $this->getSubjectForTemplate($templateKey);
@@ -161,10 +165,6 @@ class EmailManager
                     'provider' => 'resend',
                 ]);
             }
-        }
-
-        if ($result = $this->shouldSkipRecipient($recipient, $tracker, $delivery)) {
-            return $result;
         }
 
         // Check if Resend is enabled
@@ -461,7 +461,7 @@ class EmailManager
             return EmailResult::success('skipped_invalid_recipient');
         }
 
-        if (isTestDomain($recipient)) {
+        if (is_test_domain($recipient)) {
             if ($tracker && $delivery) {
                 try {
                     $tracker->markSkipped($delivery, 'Recipient email uses test domain');
