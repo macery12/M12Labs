@@ -5,7 +5,7 @@ import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faAngleLeft, faAngleRight, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 
 const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';
@@ -102,9 +102,12 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
     }
 
     const handlePageClick = (pageNumber: number) => {
-        const newIndex = (pageNumber - 1) * pagination.pageSize;
+        const safePage = Math.min(Math.max(pageNumber, 1), totalPages);
+        const newIndex = (safePage - 1) * pagination.pageSize;
         onPageChange(newIndex);
     };
+
+    const movePage = (delta: number) => handlePageClick(currentPage + delta);
 
     return (
         <div css={tw`mt-6`}>
@@ -169,15 +172,22 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
 
                 {totalPages > 1 && (
                     <div css={tw`my-6 flex justify-center`}>
-                        {!isFirstPage && pages[0] > 1 && (
-                            <PaginationButton.Text
-                                size={Button.Sizes.Small}
-                                onClick={() => handlePageClick(1)}
-                                className={'mx-1'}
-                            >
-                                <FontAwesomeIcon icon={faAngleDoubleLeft} />
-                            </PaginationButton.Text>
-                        )}
+                        <PaginationButton.Text
+                            size={Button.Sizes.Small}
+                            className={'mx-1'}
+                            onClick={() => movePage(-10)}
+                            disabled={isFirstPage}
+                        >
+                            <FontAwesomeIcon icon={faAngleDoubleLeft} />
+                        </PaginationButton.Text>
+                        <PaginationButton.Text
+                            size={Button.Sizes.Small}
+                            className={'mx-1'}
+                            onClick={() => movePage(-1)}
+                            disabled={isFirstPage}
+                        >
+                            <FontAwesomeIcon icon={faAngleLeft} />
+                        </PaginationButton.Text>
                         {pages.map(i => (
                             <PaginationButton.Text
                                 size={Button.Sizes.Small}
@@ -189,15 +199,22 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                                 {i}
                             </PaginationButton.Text>
                         ))}
-                        {!isLastPage && pages[pages.length - 1] < totalPages && (
-                            <PaginationButton.Text
-                                size={Button.Sizes.Small}
-                                onClick={() => handlePageClick(totalPages)}
-                                className={'mx-1'}
-                            >
-                                <FontAwesomeIcon icon={faAngleDoubleRight} />
-                            </PaginationButton.Text>
-                        )}
+                        <PaginationButton.Text
+                            size={Button.Sizes.Small}
+                            className={'mx-1'}
+                            onClick={() => movePage(1)}
+                            disabled={isLastPage}
+                        >
+                            <FontAwesomeIcon icon={faAngleRight} />
+                        </PaginationButton.Text>
+                        <PaginationButton.Text
+                            size={Button.Sizes.Small}
+                            onClick={() => movePage(10)}
+                            className={'mx-1'}
+                            disabled={isLastPage}
+                        >
+                            <FontAwesomeIcon icon={faAngleDoubleRight} />
+                        </PaginationButton.Text>
                     </div>
                 )}
 
