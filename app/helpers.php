@@ -55,7 +55,7 @@ if (!function_exists('is_test_domain')) {
 
 if (!function_exists('isTestDomain')) {
     /**
-     * CamelCase alias kept for backwards compatibility and requirements.
+     * CamelCase alias provided to satisfy consumers expecting this naming style.
      */
     function isTestDomain(string $email): bool
     {

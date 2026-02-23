@@ -458,7 +458,7 @@ class EmailManager
                 }
             }
 
-            return EmailResult::success('skipped_invalid_recipient');
+            return EmailResult::skipped('skipped_invalid_recipient');
         }
 
         if (is_test_domain($recipient)) {
@@ -470,7 +470,7 @@ class EmailManager
                 }
             }
 
-            return EmailResult::success('skipped_test_domain');
+            return EmailResult::skipped('skipped_test_domain');
         }
 
         return null;

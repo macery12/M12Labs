@@ -25,6 +25,17 @@ class EmailResult
     }
 
     /**
+     * Create a skipped result for invalid or test-domain recipients.
+     */
+    public static function skipped(string $reason): self
+    {
+        return new self(
+            success: true,
+            messageId: $reason
+        );
+    }
+
+    /**
      * Create a failed result.
      */
     public static function failure(string $error, ?int $statusCode = null): self
