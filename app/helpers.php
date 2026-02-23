@@ -62,3 +62,13 @@ if (!function_exists('isTestDomain')) {
         return is_test_domain($email);
     }
 }
+
+if (!function_exists('is_valid_email_syntax')) {
+    /**
+     * Check if the given email has a valid format without DNS lookups.
+     */
+    function is_valid_email_syntax(string $email): bool
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+    }
+}

@@ -449,7 +449,7 @@ class EmailManager
         ?EmailDeliveryTracker $tracker = null,
         ?EmailDelivery $delivery = null
     ): ?EmailResult {
-        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        if (!is_valid_email_syntax($recipient)) {
             if ($tracker && $delivery) {
                 try {
                     $tracker->markSkipped($delivery, 'Invalid recipient email format');

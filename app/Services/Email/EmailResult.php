@@ -9,7 +9,8 @@ class EmailResult
         public ?string $messageId = null,
         public ?string $error = null,
         public ?int $statusCode = null,
-        public ?string $status = null
+        public ?string $status = null,
+        public ?string $reason = null
     ) {
     }
 
@@ -33,8 +34,8 @@ class EmailResult
     {
         return new self(
             success: true,
-            error: $reason,
-            status: 'skipped'
+            status: 'skipped',
+            reason: $reason
         );
     }
 
