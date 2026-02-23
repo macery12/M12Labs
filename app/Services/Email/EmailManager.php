@@ -120,11 +120,11 @@ class EmailManager
         ?EmailDelivery $delivery = null,
         int $attemptNumber = 1
     ): EmailResult {
-        $tracker = app(EmailDeliveryTracker::class);
-
-        if ($result = $this->shouldSkipRecipient($recipient, $tracker, $delivery)) {
+        if ($result = $this->shouldSkipRecipient($recipient)) {
             return $result;
         }
+
+        $tracker = app(EmailDeliveryTracker::class);
 
         // If no delivery provided, create one (for direct calls outside job system)
         if (!$delivery) {
@@ -444,39 +444,17 @@ class EmailManager
     /**
      * Determine if a recipient should be skipped due to invalid format or test domain.
      */
-    private function shouldSkipRecipient(
-        string $recipient,
-        ?EmailDeliveryTracker $tracker = null,
-        ?EmailDelivery $delivery = null
-    ): ?EmailResult {
+    private function shouldSkipRecipient(string $recipient): ?EmailResult
+    {
         if (!is_valid_email_syntax($recipient)) {
-            $this->markDeliverySkipped($tracker, $delivery, 'Invalid recipient email format');
-            return EmailResult::skipped('invalid_recipient');
+            return EmailResult::skipped('blocked_invalid_recipient');
         }
 
         if (is_test_domain($recipient)) {
-            $this->markDeliverySkipped($tracker, $delivery, 'Recipient email uses test domain');
-            return EmailResult::skipped('test_domain');
+            return EmailResult::skipped('blocked_invalid_recipient');
         }
 
         return null;
     }
 
-    /**
-     * Safely mark a delivery as skipped if tracking is available.
-     */
-    private function markDeliverySkipped(
-        ?EmailDeliveryTracker $tracker,
-        ?EmailDelivery $delivery,
-        string $reason
-    ): void {
-        if ($tracker && $delivery) {
-            try {
-                $tracker->markSkipped($delivery, $reason);
-            } catch (\Exception $e) {
-                // Tracking failures are intentionally silent to avoid altering logging behavior
-                // while still allowing the send flow to continue
-            }
-        }
-    }
 }

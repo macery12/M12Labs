@@ -47,7 +47,7 @@ if (!function_exists('is_test_domain')) {
         }
 
         $domain = Str::lower(Str::afterLast($email, '@'));
-        $testDomains = array_map('strtolower', config('email.test_domains', []));
+        $testDomains = array_map('strtolower', config('email.domain_blacklist', []));
 
         return in_array($domain, $testDomains, true);
     }

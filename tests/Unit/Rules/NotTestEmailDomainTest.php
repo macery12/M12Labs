@@ -9,7 +9,7 @@ class NotTestEmailDomainTest extends TestCase
 {
     public function testFailsForConfiguredTestDomains(): void
     {
-        config(['email.test_domains' => ['example.com', 'test.com', 'website.com']]);
+        config(['email.domain_blacklist' => ['example.com', 'test.com', 'website.com']]);
 
         $rule = new NotTestEmailDomain();
 
@@ -20,7 +20,7 @@ class NotTestEmailDomainTest extends TestCase
 
     public function testPassesForNonTestDomains(): void
     {
-        config(['email.test_domains' => ['example.com', 'test.com', 'website.com']]);
+        config(['email.domain_blacklist' => ['example.com', 'test.com', 'website.com']]);
 
         $rule = new NotTestEmailDomain();
 
@@ -30,7 +30,7 @@ class NotTestEmailDomainTest extends TestCase
 
     public function testHelperDetectsTestDomain(): void
     {
-        config(['email.test_domains' => ['example.com', 'test.com', 'website.com']]);
+        config(['email.domain_blacklist' => ['example.com', 'test.com', 'website.com']]);
 
         $this->assertTrue(is_test_domain('name@example.com'));
         $this->assertTrue(is_test_domain('name@website.com'));

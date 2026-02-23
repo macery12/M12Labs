@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'test_domains' => [
-        'example.com',
+    'domain_blacklist' => [
         'test.com',
         'website.com',
+        'example.com',
     ],
 ];
