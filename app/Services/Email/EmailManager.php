@@ -451,12 +451,12 @@ class EmailManager
     ): ?EmailResult {
         if (!is_valid_email_syntax($recipient)) {
             $this->markDeliverySkipped($tracker, $delivery, 'Invalid recipient email format');
-            return EmailResult::skipped('skipped_invalid_recipient');
+            return EmailResult::skipped('invalid_recipient');
         }
 
         if (is_test_domain($recipient)) {
             $this->markDeliverySkipped($tracker, $delivery, 'Recipient email uses test domain');
-            return EmailResult::skipped('skipped_test_domain');
+            return EmailResult::skipped('test_domain');
         }
 
         return null;
@@ -474,7 +474,7 @@ class EmailManager
             try {
                 $tracker->markSkipped($delivery, $reason);
             } catch (\Exception $e) {
-                // Skip tracking failures to avoid blocking send flow
+                // Tracking failures are intentionally silent to avoid altering logging behavior while still allowing send flow to continue
             }
         }
     }
