@@ -8,7 +8,9 @@ class EmailResult
         public bool $success,
         public ?string $messageId = null,
         public ?string $error = null,
-        public ?int $statusCode = null
+        public ?int $statusCode = null,
+        public ?string $status = null,
+        public ?string $reason = null
     ) {
     }
 
@@ -20,8 +22,29 @@ class EmailResult
         return new self(
             success: true,
             messageId: $messageId,
-            statusCode: $statusCode
+            statusCode: $statusCode,
+            status: 'sent'
         );
+    }
+
+    /**
+     * Create a skipped result for invalid or test-domain recipients.
+     */
+    public static function skipped(string $reason): self
+    {
+        return new self(
+            success: false,
+            status: 'skipped',
+            reason: $reason
+        );
+    }
+
+    /**
+     * Create a blocked result (subset of skipped).
+     */
+    public static function blocked(string $reason = 'blocked_recipient'): self
+    {
+        return self::skipped($reason);
     }
 
     /**
@@ -32,7 +55,8 @@ class EmailResult
         return new self(
             success: false,
             error: $error,
-            statusCode: $statusCode
+            statusCode: $statusCode,
+            status: 'failed'
         );
     }
 }
