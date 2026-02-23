@@ -9,17 +9,18 @@ class NotTestEmailDomainTest extends TestCase
 {
     public function testFailsForConfiguredTestDomains(): void
     {
-        config(['email.test_domains' => ['example.com', 'test.com']]);
+        config(['email.test_domains' => ['example.com', 'test.com', 'website.com']]);
 
         $rule = new NotTestEmailDomain();
 
         $this->assertFalse($rule->passes('email', 'user@example.com'));
         $this->assertFalse($rule->passes('email', 'user@TEST.com'));
+        $this->assertFalse($rule->passes('email', 'user@website.com'));
     }
 
     public function testPassesForNonTestDomains(): void
     {
-        config(['email.test_domains' => ['example.com', 'test.com']]);
+        config(['email.test_domains' => ['example.com', 'test.com', 'website.com']]);
 
         $rule = new NotTestEmailDomain();
 
@@ -29,9 +30,10 @@ class NotTestEmailDomainTest extends TestCase
 
     public function testHelperDetectsTestDomain(): void
     {
-        config(['email.test_domains' => ['example.com', 'test.com']]);
+        config(['email.test_domains' => ['example.com', 'test.com', 'website.com']]);
 
         $this->assertTrue(is_test_domain('name@example.com'));
+        $this->assertTrue(is_test_domain('name@website.com'));
         $this->assertFalse(is_test_domain('name@domain.com'));
     }
 
