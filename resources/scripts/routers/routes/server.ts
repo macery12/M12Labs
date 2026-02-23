@@ -42,7 +42,6 @@ const server: ServerRouteDefinition[] = [
         name: 'Plugins',
         icon: Icon.PuzzleIcon,
         category: 'data',
-        condition: server => server.modsEnabled,
     }),
     route('mods/*', LegacyRedirects, {
         permission: 'file.create',

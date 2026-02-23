@@ -67,7 +67,7 @@ export default function PluginsContainer() {
 
     const pickFirstAvailableProvider = useCallback(
         (): Provider => providerOrder.find(p => providers[p].available) ?? providerOrder[0],
-        [providers.modrinth.available, providers.curseforge.available, providers.spiget.available],
+        [providers],
     );
 
     const initialProviderParam = searchParams.get('provider') as Provider | null;
@@ -137,10 +137,8 @@ export default function PluginsContainer() {
         activeProvider,
         activeResource,
         hasAvailableProvider,
-        providers.modrinth.available,
-        providers.curseforge.available,
-        providers.spiget.available,
-        resourceOptions.spiget[0]?.enabled,
+        providers,
+        resourceOptions,
         pickFirstAvailableProvider,
         pickFirstAvailableResource,
         setSearchParams,
