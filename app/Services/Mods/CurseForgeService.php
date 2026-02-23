@@ -20,7 +20,7 @@ class CurseForgeService
     private int $max429BeforeLockout = 50; // Lock out after 50 consecutive 429s
     private int $lockoutDurationSeconds = 86400; // 24 hours lockout
     private int $backoffDurationSeconds = 30; // Short-term backoff after 429s
-    private int $maxIndex = 9999; // CurseForge API index upper bound
+    private int $maxIndex = 9950; // CurseForge API index upper bound
 
     /**
      * CurseForgeService constructor.
