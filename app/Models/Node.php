@@ -40,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property bool|null $deployable
  * @property bool|null $deployable_free
  * @property int $servers_count
+ * @property string|null $price_multiplier_description
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property Allocation[]|Collection $allocations
@@ -93,6 +94,7 @@ class Node extends Model
         'deployable' => 'boolean',
         'deployable_free' => 'boolean',
         'price_multiplier' => 'float',
+        'price_multiplier_description' => 'string',
     ];
 
     /**
@@ -104,7 +106,7 @@ class Node extends Model
         'fqdn', 'scheme', 'behind_proxy',
         'memory', 'memory_overallocate', 'disk',
         'disk_overallocate', 'upload_size', 'daemon_base',
-        'description', 'maintenance_mode', 'deployable', 'deployable_free', 'price_multiplier',
+        'description', 'maintenance_mode', 'deployable', 'deployable_free', 'price_multiplier', 'price_multiplier_description',
     ];
 
     public static array $validationRules = [
@@ -128,6 +130,7 @@ class Node extends Model
         'upload_size' => 'int|between:1,1024',
         'deployable' => 'nullable|boolean',
         'deployable_free' => 'nullable|boolean',
+        'price_multiplier_description' => 'nullable|string|max:500',
     ];
 
     /**

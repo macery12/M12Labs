@@ -37,6 +37,9 @@ export default ({ node, selected, setSelected, basePrice, billingDays }: Props) 
                 <ServerIcon className={'h-8 w-8'} style={{ color: colors.primary }} />
                 <div className={'flex-1'}>
                     <p className={'font-semibold text-gray-200'}>{node.name}</p>
+                    {node.priceMultiplierDescription && (
+                        <p className={'mt-1 text-xs text-gray-400'}>{node.priceMultiplierDescription}</p>
+                    )}
                     {showPricing && (
                         <div className={'mt-1'}>
                             <p className={'text-sm font-medium text-gray-300'}>

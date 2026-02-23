@@ -4,6 +4,7 @@ export interface NodePricing {
     id: number;
     name: string;
     price_multiplier: number;
+    price_multiplier_description?: string | null;
     deployable: boolean;
     deployable_free: boolean;
 }
@@ -11,6 +12,7 @@ export interface NodePricing {
 export interface NodePricingUpdate {
     id: number;
     price_multiplier: number;
+    price_multiplier_description?: string | null;
 }
 
 export const getNodePricing = (): Promise<NodePricing[]> => {
@@ -21,10 +23,15 @@ export const getNodePricing = (): Promise<NodePricing[]> => {
     });
 };
 
-export const updateNodePricing = (id: number, priceMultiplier: number): Promise<NodePricing> => {
+export const updateNodePricing = (
+    id: number,
+    priceMultiplier: number,
+    priceMultiplierDescription?: string | null,
+): Promise<NodePricing> => {
     return new Promise((resolve, reject) => {
         http.patch(`/api/application/billing/node-pricing/${id}`, {
             price_multiplier: priceMultiplier,
+            price_multiplier_description: priceMultiplierDescription,
         })
             .then(({ data }) => resolve(data.data))
             .catch(reject);
