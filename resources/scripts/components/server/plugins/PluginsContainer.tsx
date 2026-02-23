@@ -26,6 +26,11 @@ const NotConfigured = ({ label, reason }: { label: string; reason?: string }) =>
 );
 
 const providerOrder: Provider[] = ['modrinth', 'curseforge', 'spiget'];
+const providerLabels: Record<Provider, string> = {
+    modrinth: 'Modrinth',
+    curseforge: 'CurseForge',
+    spiget: 'Spiget',
+};
 
 export default function PluginsContainer() {
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
@@ -81,8 +86,11 @@ export default function PluginsContainer() {
         spiget: [{ id: 'plugins', label: 'Plugins', enabled: providers.spiget.available }],
     };
 
-    const pickFirstAvailableResource = (provider: Provider): Resource =>
-        resourceOptions[provider].find(r => r.enabled)?.id ?? resourceOptions[provider][0]!.id;
+    const pickFirstAvailableResource = (provider: Provider): Resource => {
+        const options = resourceOptions[provider];
+        const firstEnabled = options.find(r => r.enabled)?.id;
+        return firstEnabled ?? options[0]?.id ?? 'mods';
+    };
 
     const [activeResource, setActiveResource] = useState<Resource>(
         initialResourceParam && resourceOptions[activeProvider].some(r => r.id === initialResourceParam)
@@ -130,7 +138,7 @@ export default function PluginsContainer() {
             return <NotConfigured label={'Plugins'} reason={'No providers are configured for this server.'} />;
         }
         if (!providers[activeProvider].available) {
-            return <NotConfigured label={activeProvider[0].toUpperCase() + activeProvider.slice(1)} reason={providers[activeProvider].reason} />;
+            return <NotConfigured label={providerLabels[activeProvider]} reason={providers[activeProvider].reason} />;
         }
 
         if (activeProvider === 'modrinth') {
@@ -179,9 +187,7 @@ export default function PluginsContainer() {
                             onClick={() => state.available && handleProviderChange(provider)}
                             type="button"
                         >
-                            {provider === 'modrinth' && 'Modrinth'}
-                            {provider === 'curseforge' && 'CurseForge'}
-                            {provider === 'spiget' && 'Spiget'}
+                            {providerLabels[provider]}
                             {!state.available && ' (Not configured)'}
                         </button>
                     );
