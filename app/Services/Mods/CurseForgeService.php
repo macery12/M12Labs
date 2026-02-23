@@ -19,6 +19,7 @@ class CurseForgeService
     private float $requestDelaySeconds = 1.5; // Simple 1-2 second delay between requests (avg 1.5)
     private int $max429BeforeLockout = 50; // Lock out after 50 consecutive 429s
     private int $lockoutDurationSeconds = 86400; // 24 hours lockout
+    private int $backoffDurationSeconds = 30; // Short-term backoff after 429s
 
     /**
      * CurseForgeService constructor.
@@ -81,7 +82,7 @@ class CurseForgeService
         // Short-term backoff (e.g., after recent 429s) to avoid hammering the provider.
         if ($backoffUntil && time() < $backoffUntil) {
             $waitSeconds = max(1, $backoffUntil - time());
-            sleep($waitSeconds);
+            throw new ModsServiceException("CurseForge is backing off due to rate limits. Try again in {$waitSeconds} seconds.");
         }
 
         if ($lockoutUntil && time() < $lockoutUntil) {
@@ -114,8 +115,7 @@ class CurseForgeService
         }
 
         // Apply a short-term backoff so subsequent UI requests do not immediately retry after 429s.
-        $backoffSeconds = 30;
-        Cache::put('curseforge_backoff_until', time() + $backoffSeconds, $backoffSeconds);
+        Cache::put('curseforge_backoff_until', time() + $this->backoffDurationSeconds, $this->backoffDurationSeconds);
     }
 
     /**
@@ -325,32 +325,36 @@ class CurseForgeService
 
         // Coalesce concurrent requests for the same cache key to reduce provider hits.
         $lock = Cache::lock("curseforge_cache_lock_{$cacheKey}", 5);
-        return $lock->block(5, function () use ($cacheKey, $ttl, $requestCallback) {
-            $cached = Cache::get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-
-            $data = $requestCallback();
-
-            // Only cache if data size is reasonable (< 1MB when serialized)
-            $serialized = serialize($data);
-            $sizeInBytes = strlen($serialized);
-            $maxCacheSize = 1048576; // 1MB limit
-
-            if ($sizeInBytes < $maxCacheSize) {
-                try {
-                    Cache::put($cacheKey, $data, $ttl);
-                } catch (\Exception $e) {
-                    // If caching fails due to memory, log but continue
-                    Log::warning("Failed to cache CurseForge response (size: {$sizeInBytes} bytes): " . $e->getMessage());
+        try {
+            return $lock->block(5, function () use ($cacheKey, $ttl, $requestCallback) {
+                $cached = Cache::get($cacheKey);
+                if ($cached !== null) {
+                    return $cached;
                 }
-            } else {
-                Log::info("Skipping cache for large response (size: {$sizeInBytes} bytes, key: {$cacheKey})");
-            }
 
-            return $data;
-        });
+                $data = $requestCallback();
+
+                // Only cache if data size is reasonable (< 1MB when serialized)
+                $serialized = serialize($data);
+                $sizeInBytes = strlen($serialized);
+                $maxCacheSize = 1048576; // 1MB limit
+
+                if ($sizeInBytes < $maxCacheSize) {
+                    try {
+                        Cache::put($cacheKey, $data, $ttl);
+                    } catch (\Exception $e) {
+                        // If caching fails due to memory, log but continue
+                        Log::warning("Failed to cache CurseForge response (size: {$sizeInBytes} bytes): " . $e->getMessage());
+                    }
+                } else {
+                    Log::info("Skipping cache for large response (size: {$sizeInBytes} bytes, key: {$cacheKey})");
+                }
+
+                return $data;
+            });
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            throw new ModsServiceException('CurseForge request throttled due to high load. Please retry shortly.');
+        }
     }
 
     /**
