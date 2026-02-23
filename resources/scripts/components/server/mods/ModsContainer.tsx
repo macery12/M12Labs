@@ -24,8 +24,9 @@ export default ({ sourceOverride }: Props) => {
     const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
     const spigetEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
     const defaultSource = useStoreState(state => state.everest.data?.mods?.default_source ?? 'modrinth');
-    const resolvedDefaultSource = (['curseforge', 'spiget'].includes(defaultSource)
-        ? defaultSource
+    const validSources: ModSource[] = ['modrinth', 'curseforge', 'spiget'];
+    const resolvedDefaultSource = (validSources.includes(defaultSource as ModSource)
+        ? (defaultSource as ModSource)
         : 'modrinth') as ModSource;
     const { addError } = useFlash();
 

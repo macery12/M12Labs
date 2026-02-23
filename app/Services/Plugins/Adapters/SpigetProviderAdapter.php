@@ -55,7 +55,7 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
         }
 
         return [
-            'url' => $matched['downloadUrl'] ?? $this->spigetService->getDownloadUrl($projectId, $versionId),
+            'url' => $matched['downloadUrl'] ?? $this->spigetService->getDownloadUrl($projectId, $versionId)['url'],
             'fileName' => $matched['fileName'] ?? 'plugin_' . $versionId . '.jar',
             'fileSize' => $matched['fileLength'] ?? null,
         ];

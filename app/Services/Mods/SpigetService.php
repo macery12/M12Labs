@@ -15,6 +15,7 @@ class SpigetService
         'project' => 600,
         'versions' => 300,
     ];
+    private const GAME_ID_MINECRAFT = 432;
 
     public function __construct()
     {
@@ -38,7 +39,7 @@ class SpigetService
 
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($query, $page, $pageSize) {
             $path = $query ? '/search/resources/' . urlencode($query) : '/resources';
-            $response = $this->request('GET', $path, [
+            $response = $this->request($path, [
                 'page' => $page,
                 'size' => $pageSize,
                 'sort' => '-downloads',
@@ -52,7 +53,7 @@ class SpigetService
             }, $response);
 
             $resultCount = count($data);
-            $totalCount = $resultCount + ($page * $pageSize);
+            $totalCount = ($page * $pageSize) + $resultCount;
 
             return [
                 'data' => $data,
@@ -76,7 +77,7 @@ class SpigetService
         $cacheKey = "spiget_mod_{$modId}";
 
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['project'], function () use ($modId) {
-            $resource = $this->request('GET', "/resources/{$modId}", [
+            $resource = $this->request("/resources/{$modId}", [
                 'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon',
             ]);
 
@@ -100,7 +101,7 @@ class SpigetService
         $cacheKey = sprintf('spiget_versions_%s_%s_%s', $modId, $page, $pageSize);
 
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['versions'], function () use ($modId, $page, $pageSize) {
-            $versions = $this->request('GET', "/resources/{$modId}/versions", [
+            $versions = $this->request("/resources/{$modId}/versions", [
                 'page' => $page,
                 'size' => $pageSize,
                 'sort' => '-releaseDate',
@@ -111,7 +112,7 @@ class SpigetService
             }, $versions);
 
             $resultCount = count($files);
-            $totalCount = $resultCount + ($page * $pageSize);
+            $totalCount = ($page * $pageSize) + $resultCount;
 
             return [
                 'data' => $files,
@@ -126,13 +127,19 @@ class SpigetService
     }
 
     /**
-     * Get download URL for a version.
+     * Get download details for a version.
+     *
+     * @return array{url: string, fileName: string|null, fileSize: int|null}
      *
      * @throws ModsServiceException
      */
-    public function getDownloadUrl(string|int $modId, string|int $versionId): string
+    public function getDownloadUrl(string|int $modId, string|int $versionId): array
     {
-        return $this->endpoint . "/resources/{$modId}/versions/{$versionId}/download";
+        return [
+            'url' => $this->endpoint . "/resources/{$modId}/versions/{$versionId}/download",
+            'fileName' => null,
+            'fileSize' => null,
+        ];
     }
 
     /**
@@ -176,7 +183,7 @@ class SpigetService
 
         return [
             'id' => $resource['id'],
-            'gameId' => 432,
+            'gameId' => self::GAME_ID_MINECRAFT,
             'name' => $resource['name'] ?? 'Unknown Plugin',
             'slug' => (string) ($resource['id'] ?? ''),
             'links' => [
@@ -245,7 +252,7 @@ class SpigetService
 
         return [
             'id' => $version['id'],
-            'gameId' => 432,
+            'gameId' => self::GAME_ID_MINECRAFT,
             'modId' => (int) $modId,
             'isAvailable' => true,
             'displayName' => $version['name'] ?? 'Unknown',
@@ -256,7 +263,7 @@ class SpigetService
             'fileDate' => isset($version['releaseDate']) ? date('c', (int) $version['releaseDate']) : '',
             'fileLength' => $version['size'] ?? 0,
             'downloadCount' => $version['downloads'] ?? 0,
-            'downloadUrl' => $this->getDownloadUrl($modId, $version['id']),
+            'downloadUrl' => $this->getDownloadUrl($modId, $version['id'])['url'],
             'gameVersions' => [],
             'sortableGameVersions' => [],
             'dependencies' => [],
@@ -282,7 +289,7 @@ class SpigetService
         foreach ($authorIds as $authorId) {
             $cacheKey = "spiget_author_{$authorId}";
             $authors[$authorId] = Cache::remember($cacheKey, 3600, function () use ($authorId) {
-                $author = $this->request('GET', "/authors/{$authorId}", [
+                $author = $this->request("/authors/{$authorId}", [
                     'fields' => 'id,name',
                 ]);
 
@@ -308,14 +315,15 @@ class SpigetService
      *
      * @throws ModsServiceException
      */
-    private function request(string $method, string $path, array $params = []): array
+    private function request(string $path, array $params = []): array
     {
         $url = $this->endpoint . $path;
 
         $response = Http::timeout(15)->get($url, $params);
 
         if (!$response->successful()) {
-            throw new ModsServiceException('Failed to communicate with Spiget API.');
+            $status = $response->status();
+            throw new ModsServiceException('Failed to communicate with Spiget API. HTTP status: ' . $status);
         }
 
         $decoded = $response->json();

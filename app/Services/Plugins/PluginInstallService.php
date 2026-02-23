@@ -20,6 +20,8 @@ class PluginInstallService
         'mod' => ['jar', 'zip'],
         'plugin' => ['jar'],
     ];
+    private const DEFAULT_MAX_PLUGIN_SIZE = 104857600; // 100MB
+    private const DEFAULT_MAX_MOD_SIZE = 157286400; // 150MB
 
     public function __construct(
         CurseForgeProviderAdapter $curseForgeProviderAdapter,
@@ -79,7 +81,6 @@ class PluginInstallService
             $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
 
             if (!$response->successful()) {
-                @unlink($tempPath);
                 throw new ModsServiceException('Failed to download file from provider.');
             }
 
@@ -98,15 +99,14 @@ class PluginInstallService
             $content = file_get_contents($tempPath);
             $this->fileRepository->setServer($server)->putContent($targetPath, $content);
         } catch (\Exception $e) {
+            Log::error('PluginInstallService download error: ' . $e->getMessage());
+            throw $e instanceof ModsServiceException ? $e : new ModsServiceException('An unexpected error occurred while downloading the file.');
+        } finally {
             if (is_resource($fileHandle)) {
                 fclose($fileHandle);
             }
             @unlink($tempPath);
-            Log::error('PluginInstallService download error: ' . $e->getMessage());
-            throw $e instanceof ModsServiceException ? $e : new ModsServiceException('An unexpected error occurred while downloading the file.');
         }
-
-        @unlink($tempPath);
 
         return [
             'success' => true,
@@ -166,16 +166,24 @@ class PluginInstallService
         $spigetEnabled = (bool) Setting::get('settings::modules:mods:spiget_enabled', config('modules.mods.spiget_enabled', false));
         $curseforgeKey = Setting::get('settings::modules:mods:curseforge_api_key', config('modules.mods.curseforge_api_key'));
 
-        if (!$modsEnabled && $provider !== 'spiget') {
+        if ($provider === 'spiget') {
+            if (!$modsEnabled) {
+                throw new ModsServiceException('Mods module is not enabled.');
+            }
+
+            if (!$spigetEnabled) {
+                throw new ModsServiceException('Spiget provider is not enabled.');
+            }
+
+            return;
+        }
+
+        if (!$modsEnabled) {
             throw new ModsServiceException('Mods module is not enabled.');
         }
 
         if ($provider === 'curseforge' && empty($curseforgeKey)) {
             throw new ModsServiceException('CurseForge is not configured.');
-        }
-
-        if ($provider === 'spiget' && !$spigetEnabled) {
-            throw new ModsServiceException('Spiget provider is not enabled.');
         }
     }
 
@@ -209,11 +217,14 @@ class PluginInstallService
         }
     }
 
+    /**
+     * Determine the maximum allowed download size (in bytes) for the provided install type.
+     */
     private function getMaxSizeForType(string $type): ?int
     {
         return match ($type) {
-            'plugin' => (int) config('modules.mods.max_plugin_size', 104857600),
-            default => (int) config('modules.mods.max_mod_size', 157286400),
+            'plugin' => (int) config('modules.mods.max_plugin_size', self::DEFAULT_MAX_PLUGIN_SIZE),
+            default => (int) config('modules.mods.max_mod_size', self::DEFAULT_MAX_MOD_SIZE),
         };
     }
 }
