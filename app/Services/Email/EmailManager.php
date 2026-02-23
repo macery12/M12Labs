@@ -474,7 +474,8 @@ class EmailManager
             try {
                 $tracker->markSkipped($delivery, $reason);
             } catch (\Exception $e) {
-                // Tracking failures are intentionally silent to avoid altering logging behavior while still allowing send flow to continue
+                // Tracking failures are intentionally silent to avoid altering logging behavior
+                // while still allowing the send flow to continue
             }
         }
     }
