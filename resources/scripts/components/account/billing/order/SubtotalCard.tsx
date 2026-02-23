@@ -86,6 +86,11 @@ export default ({
                         <span className={'text-gray-400'}>Location</span>
                         <div className={'flex flex-col items-end'}>
                             <span className={'text-gray-200 font-medium'}>{selectedNodeData.name}</span>
+                            {selectedNodeData.priceMultiplierDescription && (
+                                <span className={'text-xs text-gray-500 text-right'}>
+                                    {selectedNodeData.priceMultiplierDescription}
+                                </span>
+                            )}
                             {hasNodePremium && (
                                 <span className={'text-xs text-red-400'}>+{formatPrice(nodePriceDifference)}</span>
                             )}

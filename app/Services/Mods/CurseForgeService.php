@@ -19,6 +19,8 @@ class CurseForgeService
     private float $requestDelaySeconds = 1.5; // Simple 1-2 second delay between requests (avg 1.5)
     private int $max429BeforeLockout = 50; // Lock out after 50 consecutive 429s
     private int $lockoutDurationSeconds = 86400; // 24 hours lockout
+    private int $backoffDurationSeconds = 30; // Short-term backoff after 429s
+    private int $maxIndex = 9950; // CurseForge API index upper bound
 
     /**
      * CurseForgeService constructor.
@@ -76,6 +78,13 @@ class CurseForgeService
     {
         $lockoutKey = 'curseforge_lockout_until';
         $lockoutUntil = Cache::get($lockoutKey);
+        $backoffUntil = Cache::get('curseforge_backoff_until');
+
+        // Short-term backoff (e.g., after recent 429s) to avoid hammering the provider.
+        if ($backoffUntil && time() < $backoffUntil) {
+            $waitSeconds = max(1, $backoffUntil - time());
+            throw new ModsServiceException("CurseForge is backing off due to rate limits. Try again in {$waitSeconds} seconds.");
+        }
 
         if ($lockoutUntil && time() < $lockoutUntil) {
             $remainingSeconds = $lockoutUntil - time();
@@ -105,6 +114,9 @@ class CurseForgeService
 
             Log::error("CurseForge API locked out for 24 hours after {$count} consecutive 429 errors");
         }
+
+        // Apply a short-term backoff so subsequent UI requests do not immediately retry after 429s.
+        Cache::put('curseforge_backoff_until', time() + $this->backoffDurationSeconds, $this->backoffDurationSeconds);
     }
 
     /**
@@ -113,6 +125,15 @@ class CurseForgeService
     private function reset429Counter(): void
     {
         Cache::forget('curseforge_429_counter');
+    }
+
+    private function clampIndex(int $index): int
+    {
+        if ($index < 0) {
+            return 0;
+        }
+
+        return min($index, $this->maxIndex);
     }
 
     /**
@@ -312,32 +333,38 @@ class CurseForgeService
             return $requestCallback();
         }
 
-        // Check if cached data exists
-        $cached = Cache::get($cacheKey);
-        if ($cached !== null) {
-            return $cached;
+        // Coalesce concurrent requests for the same cache key to reduce provider hits.
+        $lock = Cache::lock("curseforge_cache_lock_{$cacheKey}", 5);
+        try {
+            return $lock->block(5, function () use ($cacheKey, $ttl, $requestCallback) {
+                $cached = Cache::get($cacheKey);
+                if ($cached !== null) {
+                    return $cached;
+                }
+
+                $data = $requestCallback();
+
+                // Only cache if data size is reasonable (< 1MB when serialized)
+                $serialized = serialize($data);
+                $sizeInBytes = strlen($serialized);
+                $maxCacheSize = 1048576; // 1MB limit
+
+                if ($sizeInBytes < $maxCacheSize) {
+                    try {
+                        Cache::put($cacheKey, $data, $ttl);
+                    } catch (\Exception $e) {
+                        // If caching fails due to memory, log but continue
+                        Log::warning("Failed to cache CurseForge response (size: {$sizeInBytes} bytes): " . $e->getMessage());
+                    }
+                } else {
+                    Log::info("Skipping cache for large response (size: {$sizeInBytes} bytes, key: {$cacheKey})");
+                }
+
+                return $data;
+            });
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            throw new ModsServiceException('CurseForge request throttled due to high load. Please retry shortly.');
         }
-
-        // Execute the request
-        $data = $requestCallback();
-
-        // Only cache if data size is reasonable (< 1MB when serialized)
-        $serialized = serialize($data);
-        $sizeInBytes = strlen($serialized);
-        $maxCacheSize = 1048576; // 1MB limit
-
-        if ($sizeInBytes < $maxCacheSize) {
-            try {
-                Cache::put($cacheKey, $data, $ttl);
-            } catch (\Exception $e) {
-                // If caching fails due to memory, log but continue
-                Log::warning("Failed to cache CurseForge response (size: {$sizeInBytes} bytes): " . $e->getMessage());
-            }
-        } else {
-            Log::info("Skipping cache for large response (size: {$sizeInBytes} bytes, key: {$cacheKey})");
-        }
-
-        return $data;
     }
 
     /**
@@ -362,7 +389,7 @@ class CurseForgeService
             'sortOrder' => $params['sortOrder'] ?? null,
             'gameVersion' => $params['gameVersion'] ?? null,
             'modLoaderType' => $params['modLoaderType'] ?? null,
-            'index' => $params['index'] ?? 0,
+            'index' => $this->clampIndex($params['index'] ?? 0),
         ], function ($value) {
             return $value !== null;
         }));
@@ -402,7 +429,7 @@ class CurseForgeService
             'gameVersion' => $params['gameVersion'] ?? null,
             'modLoaderType' => $params['modLoaderType'] ?? null,
             'pageSize' => min($params['pageSize'] ?? 20, config('modules.mods.max_page_size', 50)),
-            'index' => $params['index'] ?? 0,
+            'index' => $this->clampIndex($params['index'] ?? 0),
         ], function ($value) {
             return $value !== null;
         });
@@ -491,7 +518,7 @@ class CurseForgeService
             'searchFilter' => $params['searchFilter'] ?? null,
             'sortField' => $params['sortField'] ?? null,
             'sortOrder' => $params['sortOrder'] ?? null,
-            'index' => $params['index'] ?? 0,
+            'index' => $this->clampIndex($params['index'] ?? 0),
         ], function ($value) {
             // Filter out null and empty strings to prevent AND-filter conflicts
             return $value !== null && $value !== '';

@@ -58,6 +58,28 @@ class SendEmailJob extends Job implements ShouldQueue
             'attempt' => $this->attempts(),
         ]);
 
+        // Hard block invalid or blacklisted recipients before any processing
+        if (is_blocked_email_recipient($this->recipient)) {
+            $delivery = $tracker->startDelivery(
+                correlationId: $this->correlationId,
+                recipient: $this->recipient,
+                subject: $this->getSubjectForTemplate($this->templateKey),
+                templateKey: $this->templateKey,
+                userId: $this->userId,
+                tags: $this->buildTags()
+            );
+
+            $tracker->markSkipped($delivery, 'Blocked recipient email');
+
+            Log::warning('SendEmailJob: Blocked recipient email, skipping send', [
+                'template_key' => $this->templateKey,
+                'recipient' => $this->recipient,
+                'correlation_id' => $this->correlationId,
+            ]);
+
+            return;
+        }
+
         // Get subject for the email
         $subject = $this->getSubjectForTemplate($this->templateKey);
 
