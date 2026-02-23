@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import tw from 'twin.macro';
 import PageContentBlock from '@/elements/PageContentBlock';
@@ -14,7 +14,7 @@ interface ProviderState {
     reason?: string;
 }
 
-const ComingSoon = ({ message }: { message: string }) => (
+const PlaceholderMessage = ({ message }: { message: string }) => (
     <div css={tw`py-12 text-center text-neutral-300`}>{message}</div>
 );
 
@@ -33,10 +33,13 @@ const providerLabels: Record<Provider, string> = {
 };
 
 export default function PluginsContainer() {
-    const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
-    const curseforgeConfigured = !!useStoreState(state => state.everest.data?.mods?.curseforge_api_key);
+    const modProviderConfig = useStoreState(state => state.everest.data?.mods);
+    const pluginsProviderConfig = useStoreState(state => state.everest.data?.plugins);
+
+    const globalModsEnabled = modProviderConfig?.enabled ?? false;
+    const curseforgeConfigured = !!modProviderConfig?.curseforge_api_key;
     // Spiget configuration is not yet implemented; treat as disabled unless future settings populate it.
-    const spigetEnabled = !!useStoreState(state => state.everest.data?.plugins?.spiget?.enabled);
+    const spigetEnabled = !!pluginsProviderConfig?.spiget?.enabled;
 
     const providers: Record<Provider, ProviderState> = useMemo(
         () => ({
@@ -62,8 +65,10 @@ export default function PluginsContainer() {
 
     const hasAvailableProvider = providerOrder.some(p => providers[p].available);
 
-    const pickFirstAvailableProvider = (): Provider =>
-        providerOrder.find(p => providers[p].available) ?? providerOrder[0];
+    const pickFirstAvailableProvider = useCallback(
+        (): Provider => providerOrder.find(p => providers[p].available) ?? providerOrder[0],
+        [providers],
+    );
 
     const initialProviderParam = searchParams.get('provider') as Provider | null;
     const initialResourceParam = searchParams.get('resource') as Resource | null;
@@ -90,11 +95,14 @@ export default function PluginsContainer() {
             : pickFirstAvailableProvider(),
     );
 
-    const pickFirstAvailableResource = (provider: Provider): Resource => {
-        const options = resourceOptions[provider];
-        const firstEnabled = options.find(r => r.enabled)?.id;
-        return firstEnabled ?? options[0]?.id ?? 'mods';
-    };
+    const pickFirstAvailableResource = useCallback(
+        (provider: Provider): Resource => {
+            const options = resourceOptions[provider];
+            const firstEnabled = options.find(r => r.enabled)?.id;
+            return firstEnabled ?? options[0]?.id ?? 'mods';
+        },
+        [resourceOptions],
+    );
 
     const [activeResource, setActiveResource] = useState<Resource>(
         initialResourceParam && resourceOptions[activeProvider].some(r => r.id === initialResourceParam)
@@ -131,6 +139,8 @@ export default function PluginsContainer() {
         hasAvailableProvider,
         providers,
         resourceOptions,
+        pickFirstAvailableProvider,
+        pickFirstAvailableResource,
         setSearchParams,
     ]);
 
@@ -155,7 +165,7 @@ export default function PluginsContainer() {
 
         if (activeProvider === 'modrinth') {
             if (activeResource === 'mods') return <ModsContainer sourceOverride="modrinth" />;
-            return <ComingSoon message={'Modrinth modpacks are coming soon.'} />;
+            return <PlaceholderMessage message={'Modrinth modpacks are coming soon.'} />;
         }
 
         if (activeProvider === 'curseforge') {
@@ -168,7 +178,7 @@ export default function PluginsContainer() {
                 return <NotConfigured label={'Spiget'} reason={providers.spiget.reason} />;
             }
             if (activeResource === 'plugins') {
-                return <ComingSoon message={'Spiget plugins will be available once configured.'} />;
+                return <PlaceholderMessage message={'Spiget plugins will be available once configured.'} />;
             }
         }
 
