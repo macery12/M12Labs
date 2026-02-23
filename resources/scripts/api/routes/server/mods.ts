@@ -8,7 +8,7 @@ export interface ModSearchParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: string;
+    source?: 'modrinth' | 'curseforge' | 'spiget';
 }
 
 export interface ModFileParams {
@@ -16,7 +16,7 @@ export interface ModFileParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: string;
+    source?: 'modrinth' | 'curseforge' | 'spiget';
 }
 
 export interface CurseForgeAuthor {

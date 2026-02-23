@@ -37,8 +37,7 @@ export default function PluginsContainer() {
 
     const globalModsEnabled = modProviderConfig?.enabled ?? false;
     const curseforgeConfigured = !!modProviderConfig?.curseforge_api_key;
-    // Spiget configuration is not yet implemented; keep disabled until configuration is added.
-    const spigetEnabled = false;
+    const spigetEnabled = !!modProviderConfig?.spiget_enabled && globalModsEnabled;
 
     const providers: Record<Provider, ProviderState> = useMemo(
         () => ({
@@ -54,7 +53,9 @@ export default function PluginsContainer() {
             },
             spiget: {
                 available: spigetEnabled,
-                reason: spigetEnabled ? undefined : 'Spiget integration is not configured yet.',
+                reason: spigetEnabled
+                    ? undefined
+                    : 'Spiget integration is disabled or not configured for this server.',
             },
         }),
         [globalModsEnabled, curseforgeConfigured, spigetEnabled],
@@ -174,7 +175,7 @@ export default function PluginsContainer() {
 
         if (activeProvider === 'spiget') {
             if (activeResource === 'plugins') {
-                return <PlaceholderMessage message={'Spiget plugins will be available once configured.'} />;
+                return <ModsContainer sourceOverride="spiget" />;
             }
         }
 

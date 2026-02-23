@@ -11,7 +11,7 @@ import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
 
-type ModSource = 'modrinth' | 'curseforge';
+type ModSource = 'modrinth' | 'curseforge' | 'spiget';
 
 interface Props {
     sourceOverride?: ModSource;
@@ -22,8 +22,11 @@ export default ({ sourceOverride }: Props) => {
     const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
+    const spigetEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
     const defaultSource = useStoreState(state => state.everest.data?.mods?.default_source ?? 'modrinth');
-    const resolvedDefaultSource = (defaultSource === 'curseforge' ? 'curseforge' : 'modrinth') as ModSource;
+    const resolvedDefaultSource = (['curseforge', 'spiget'].includes(defaultSource)
+        ? defaultSource
+        : 'modrinth') as ModSource;
     const { addError } = useFlash();
 
     const [loading, setLoading] = useState(false);
@@ -139,30 +142,34 @@ export default ({ sourceOverride }: Props) => {
     }
 
     return (
-        <PageContentBlock
-            title={'Mods Browser'}
-            header
-            description={`Browse and install Minecraft mods from ${
-                activeSource === 'modrinth' ? 'Modrinth' : 'CurseForge'
-            }.`}
-            showFlashKey={'mods'}
-        >
-            {/* Source Tabs */}
-            {!sourceOverride && (
-                <div css={tw`flex gap-2 mb-6 border-b border-neutral-700`}>
-                    <button
-                        css={[
-                            tw`px-4 py-2 font-medium transition-colors`,
-                            activeSource === 'modrinth'
+            <PageContentBlock
+                title={'Mods Browser'}
+                header
+                description={`Browse and install Minecraft mods from ${
+                    activeSource === 'modrinth'
+                        ? 'Modrinth'
+                        : activeSource === 'curseforge'
+                        ? 'CurseForge'
+                        : 'Spiget'
+                }.`}
+                showFlashKey={'mods'}
+            >
+                {/* Source Tabs */}
+                {!sourceOverride && (
+                    <div css={tw`flex gap-2 mb-6 border-b border-neutral-700`}>
+                        <button
+                            css={[
+                                tw`px-4 py-2 font-medium transition-colors`,
+                                activeSource === 'modrinth'
                                 ? tw`text-blue-400 border-b-2 border-blue-400`
                                 : tw`text-neutral-400 hover:text-neutral-300`,
                         ]}
                         onClick={() => handleSourceChange('modrinth')}
-                    >
-                        Modrinth
-                    </button>
-                    {curseforgeConfigured && (
-                        <button
+                        >
+                            Modrinth
+                        </button>
+                        {curseforgeConfigured && (
+                            <button
                             css={[
                                 tw`px-4 py-2 font-medium transition-colors`,
                                 activeSource === 'curseforge'
@@ -170,12 +177,25 @@ export default ({ sourceOverride }: Props) => {
                                     : tw`text-neutral-400 hover:text-neutral-300`,
                             ]}
                             onClick={() => handleSourceChange('curseforge')}
-                        >
-                            CurseForge
-                        </button>
-                    )}
-                </div>
-            )}
+                            >
+                                CurseForge
+                            </button>
+                        )}
+                        {spigetEnabled && (
+                            <button
+                                css={[
+                                    tw`px-4 py-2 font-medium transition-colors`,
+                                    activeSource === 'spiget'
+                                        ? tw`text-blue-400 border-b-2 border-blue-400`
+                                        : tw`text-neutral-400 hover:text-neutral-300`,
+                                ]}
+                                onClick={() => handleSourceChange('spiget')}
+                            >
+                                Spiget
+                            </button>
+                        )}
+                    </div>
+                )}
 
             <ModSearch onSearch={handleSearch} initialParams={searchParams} source={activeSource} />
 
