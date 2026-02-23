@@ -19,6 +19,10 @@ class EmailManager
      */
     public function send(BaseEmail $email, string $recipient): EmailResult
     {
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL) || isTestDomain($recipient)) {
+            return EmailResult::success('skipped_invalid_recipient');
+        }
+
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
@@ -157,6 +161,24 @@ class EmailManager
                     'provider' => 'resend',
                 ]);
             }
+        }
+
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            try {
+                $tracker->markSkipped($delivery, 'Invalid recipient email format');
+            } catch (\Exception $e) {
+                // Skip tracking failures to avoid blocking send flow
+            }
+            return EmailResult::success('skipped_invalid_recipient');
+        }
+
+        if (isTestDomain($recipient)) {
+            try {
+                $tracker->markSkipped($delivery, 'Recipient email uses test domain');
+            } catch (\Exception $e) {
+                // Skip tracking failures to avoid blocking send flow
+            }
+            return EmailResult::success('skipped_test_domain');
         }
 
         // Check if Resend is enabled

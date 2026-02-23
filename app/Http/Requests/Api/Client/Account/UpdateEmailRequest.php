@@ -7,6 +7,7 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Hashing\Hasher;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Exceptions\Http\Base\InvalidPasswordProvidedException;
+use Everest\Rules\NotTestEmailDomain;
 
 class UpdateEmailRequest extends ClientApiRequest
 {
@@ -34,6 +35,13 @@ class UpdateEmailRequest extends ClientApiRequest
     {
         $rules = User::getRulesForUpdate($this->user());
 
-        return ['email' => $rules['email']];
+        return ['email' => array_merge($rules['email'], [new NotTestEmailDomain()])];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'email.email' => 'Enter a valid email address.',
+        ];
     }
 }

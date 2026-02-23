@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Str;
+
 if (!function_exists('is_digit')) {
     /**
      * Deal with normal (and irritating) PHP behavior to determine if
@@ -31,5 +33,22 @@ if (!function_exists('object_get_strict')) {
         }
 
         return $object;
+    }
+}
+
+if (!function_exists('isTestDomain')) {
+    /**
+     * Determine if the given email belongs to a configured test domain.
+     */
+    function isTestDomain(string $email): bool
+    {
+        if (!str_contains($email, '@')) {
+            return false;
+        }
+
+        $domain = Str::lower(Str::afterLast($email, '@'));
+        $testDomains = array_map('strtolower', config('email.test_domains', []));
+
+        return in_array($domain, $testDomains, true);
     }
 }
