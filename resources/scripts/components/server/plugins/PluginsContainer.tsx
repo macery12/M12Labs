@@ -68,23 +68,27 @@ export default function PluginsContainer() {
     const initialProviderParam = searchParams.get('provider') as Provider | null;
     const initialResourceParam = searchParams.get('resource') as Resource | null;
 
+    const resourceOptions: Record<Provider, Array<{ id: Resource; label: string; enabled: boolean; comingSoon?: boolean }>> =
+        useMemo(
+            () => ({
+                modrinth: [
+                    { id: 'mods', label: 'Mods', enabled: true },
+                    { id: 'modpacks', label: 'Modpacks', enabled: false, comingSoon: true },
+                ],
+                curseforge: [
+                    { id: 'mods', label: 'Mods', enabled: true },
+                    { id: 'modpacks', label: 'Modpacks', enabled: true },
+                ],
+                spiget: [{ id: 'plugins', label: 'Plugins', enabled: providers.spiget.available }],
+            }),
+            [providers.spiget.available],
+        );
+
     const [activeProvider, setActiveProvider] = useState<Provider>(
         initialProviderParam && providers[initialProviderParam]
             ? initialProviderParam
             : pickFirstAvailableProvider(),
     );
-
-    const resourceOptions: Record<Provider, Array<{ id: Resource; label: string; enabled: boolean; comingSoon?: boolean }>> = {
-        modrinth: [
-            { id: 'mods', label: 'Mods', enabled: true },
-            { id: 'modpacks', label: 'Modpacks', enabled: false, comingSoon: true },
-        ],
-        curseforge: [
-            { id: 'mods', label: 'Mods', enabled: true },
-            { id: 'modpacks', label: 'Modpacks', enabled: true },
-        ],
-        spiget: [{ id: 'plugins', label: 'Plugins', enabled: providers.spiget.available }],
-    };
 
     const pickFirstAvailableResource = (provider: Provider): Resource => {
         const options = resourceOptions[provider];
@@ -120,7 +124,16 @@ export default function PluginsContainer() {
         }
 
         setSearchParams({ provider: activeProvider, resource: activeResource });
-    }, [activeProvider, activeResource, providers, setSearchParams, hasAvailableProvider]);
+    }, [
+        activeProvider,
+        activeResource,
+        hasAvailableProvider,
+        providers.modrinth.available,
+        providers.curseforge.available,
+        providers.spiget.available,
+        resourceOptions,
+        setSearchParams,
+    ]);
 
     const handleProviderChange = (provider: Provider) => {
         if (provider === activeProvider) return;
