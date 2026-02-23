@@ -34,12 +34,11 @@ const providerLabels: Record<Provider, string> = {
 
 export default function PluginsContainer() {
     const modProviderConfig = useStoreState(state => state.everest.data?.mods);
-    const pluginsProviderConfig = useStoreState(state => state.everest.data?.plugins);
 
     const globalModsEnabled = modProviderConfig?.enabled ?? false;
     const curseforgeConfigured = !!modProviderConfig?.curseforge_api_key;
-    // Spiget configuration is not yet implemented; treat as disabled unless future settings populate it.
-    const spigetEnabled = !!pluginsProviderConfig?.spiget?.enabled;
+    // Spiget configuration is not yet implemented; keep disabled until configuration is added.
+    const spigetEnabled = false;
 
     const providers: Record<Provider, ProviderState> = useMemo(
         () => ({
@@ -84,7 +83,7 @@ export default function PluginsContainer() {
                     { id: 'mods', label: 'Mods', enabled: true },
                     { id: 'modpacks', label: 'Modpacks', enabled: true },
                 ],
-                spiget: [{ id: 'plugins', label: 'Plugins', enabled: providers.spiget.available }],
+                spiget: [{ id: 'plugins', label: 'Plugins', enabled: true }],
             }),
             [providers.spiget.available],
         );
@@ -174,9 +173,6 @@ export default function PluginsContainer() {
         }
 
         if (activeProvider === 'spiget') {
-            if (!providers.spiget.available) {
-                return <NotConfigured label={'Spiget'} reason={providers.spiget.reason} />;
-            }
             if (activeResource === 'plugins') {
                 return <PlaceholderMessage message={'Spiget plugins will be available once configured.'} />;
             }
