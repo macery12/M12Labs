@@ -46,9 +46,11 @@ const server: ServerRouteDefinition[] = [
     }),
     route('mods/*', LegacyRedirects, {
         permission: 'file.create',
+        name: undefined,
     }),
     route('modpacks/*', LegacyRedirects, {
         permission: 'file.create',
+        name: undefined,
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',

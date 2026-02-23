@@ -4,7 +4,7 @@ const RedirectLegacyPlugins = () => {
     const location = useLocation();
     const isModpacks = location.pathname.includes('/modpacks');
 
-    const match = location.pathname.match(/^(.*)\/(mods|modpacks)(?:\/.*)?$/i);
+    const match = location.pathname.match(/^(.*)\/(mods|modpacks)(?:\/.*)?$/);
     const basePath = match ? `${match[1]}/plugins` : '/plugins';
 
     if (isModpacks) {

@@ -157,7 +157,7 @@ export default function PluginsContainer() {
 
     const renderContent = () => {
         if (!hasAvailableProvider) {
-            return <NotConfigured label={'Plugins'} reason={'No providers are configured for this server.'} />;
+            return <NotConfigured label={'Add-ons'} reason={'No providers are configured for this server.'} />;
         }
         if (!providers[activeProvider].available) {
             return <NotConfigured label={providerLabels[activeProvider]} reason={providers[activeProvider].reason} />;
@@ -187,7 +187,7 @@ export default function PluginsContainer() {
 
     return (
         <PageContentBlock
-            title={'Plugins'}
+            title={'Plugins & Mods'}
             description={'Browse providers and install mods, modpacks, or plugins from a unified experience.'}
             showFlashKey={'plugins'}
             header
