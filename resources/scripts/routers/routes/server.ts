@@ -14,8 +14,8 @@ const NetworkContainer = lazy(() => import('@server/network/NetworkContainer'));
 const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
-const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
-const ModpacksContainer = lazy(() => import('@server/modpacks/ModpacksContainer'));
+const PluginsContainer = lazy(() => import('@server/plugins/PluginsContainer'));
+const LegacyRedirects = lazy(() => import('@server/plugins/RedirectLegacyPlugins'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -37,16 +37,21 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.DatabaseIcon,
         category: 'data',
     }),
-    route('mods/*', ModsContainer, {
+    route('plugins/*', PluginsContainer, {
         permission: 'file.create',
-        name: 'Mods',
+        name: 'Plugins',
+        icon: Icon.PuzzleIcon,
+        category: 'data',
+        condition: server => server.modsEnabled,
+    }),
+    route('mods/*', LegacyRedirects, {
+        permission: 'file.create',
         icon: Icon.CubeIcon,
         category: 'data',
         condition: server => server.modsEnabled,
     }),
-    route('modpacks/*', ModpacksContainer, {
+    route('modpacks/*', LegacyRedirects, {
         permission: 'file.create',
-        name: 'Modpacks',
         icon: Icon.CollectionIcon,
         category: 'data',
         condition: server => server.modsEnabled,
