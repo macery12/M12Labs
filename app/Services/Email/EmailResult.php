@@ -8,7 +8,8 @@ class EmailResult
         public bool $success,
         public ?string $messageId = null,
         public ?string $error = null,
-        public ?int $statusCode = null
+        public ?int $statusCode = null,
+        public ?string $status = null
     ) {
     }
 
@@ -20,7 +21,8 @@ class EmailResult
         return new self(
             success: true,
             messageId: $messageId,
-            statusCode: $statusCode
+            statusCode: $statusCode,
+            status: 'sent'
         );
     }
 
@@ -31,7 +33,8 @@ class EmailResult
     {
         return new self(
             success: true,
-            messageId: $reason
+            error: $reason,
+            status: 'skipped'
         );
     }
 
@@ -43,7 +46,8 @@ class EmailResult
         return new self(
             success: false,
             error: $error,
-            statusCode: $statusCode
+            statusCode: $statusCode,
+            status: 'failed'
         );
     }
 }
