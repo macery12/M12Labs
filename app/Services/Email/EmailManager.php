@@ -449,15 +449,7 @@ class EmailManager
         ?EmailDeliveryTracker $tracker = null,
         ?EmailDelivery $delivery = null
     ): ?EmailResult {
-        $blocked = false;
-
-        if (!is_valid_email_syntax($recipient)) {
-            $blocked = true;
-        } elseif (is_test_domain($recipient)) {
-            $blocked = true;
-        }
-
-        if ($blocked) {
+        if (is_blocked_email_recipient($recipient)) {
             if ($tracker && $delivery) {
                 try {
                     $tracker->markSkipped($delivery, 'Blocked recipient email');
@@ -466,7 +458,7 @@ class EmailManager
                 }
             }
 
-            return EmailResult::skipped('blocked_invalid_recipient');
+            return EmailResult::blocked('blocked_invalid_recipient');
         }
 
         return null;

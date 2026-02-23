@@ -72,3 +72,17 @@ if (!function_exists('is_valid_email_syntax')) {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 }
+
+if (!function_exists('is_blocked_email_recipient')) {
+    /**
+     * Determine if an email recipient should be blocked from outbound sends.
+     */
+    function is_blocked_email_recipient(string $email): bool
+    {
+        if (!is_valid_email_syntax($email)) {
+            return true;
+        }
+
+        return is_test_domain($email);
+    }
+}

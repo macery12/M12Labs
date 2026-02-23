@@ -33,10 +33,18 @@ class EmailResult
     public static function skipped(string $reason): self
     {
         return new self(
-            success: true,
+            success: false,
             status: 'skipped',
             reason: $reason
         );
+    }
+
+    /**
+     * Create a blocked result (subset of skipped).
+     */
+    public static function blocked(string $reason = 'blocked_recipient'): self
+    {
+        return self::skipped($reason);
     }
 
     /**
