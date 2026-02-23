@@ -129,6 +129,38 @@ class RouteServiceProvider extends ServiceProvider
 
             return Limit::perMinute(1)->by($key);
         });
+
+        RateLimiter::for('mods.browse', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(120)->by($key)->response(function () {
+                return response()->json([
+                    'errors' => [
+                        [
+                            'code' => 'ThrottleRequestsException',
+                            'status' => '429',
+                            'detail' => 'Too many mod requests. Please wait a few seconds and try again.',
+                        ],
+                    ],
+                ], 429);
+            });
+        });
+
+        RateLimiter::for('mods.meta', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(240)->by($key)->response(function () {
+                return response()->json([
+                    'errors' => [
+                        [
+                            'code' => 'ThrottleRequestsException',
+                            'status' => '429',
+                            'detail' => 'Too many metadata requests. Please try again shortly.',
+                        ],
+                    ],
+                ], 429);
+            });
+        });
     }
 
     private function apiDocsMiddleware(): array
