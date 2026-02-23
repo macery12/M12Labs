@@ -16,7 +16,7 @@ class NodePricingController extends ApplicationApiController
      */
     public function index(): JsonResponse
     {
-        $nodes = Node::select('id', 'name', 'price_multiplier', 'deployable', 'deployable_free')
+        $nodes = Node::select('id', 'name', 'price_multiplier', 'price_multiplier_description', 'deployable', 'deployable_free')
             ->orderBy('name')
             ->get();
 
@@ -26,6 +26,7 @@ class NodePricingController extends ApplicationApiController
                     'id' => $node->id,
                     'name' => $node->name,
                     'price_multiplier' => $node->price_multiplier ?? 1.0,
+                    'price_multiplier_description' => $node->price_multiplier_description,
                     'deployable' => $node->deployable,
                     'deployable_free' => $node->deployable_free,
                 ];
@@ -42,6 +43,7 @@ class NodePricingController extends ApplicationApiController
 
         // Validate multiplier
         $multiplier = $request->input('price_multiplier');
+        $description = $this->normalizeDescription($request->input('price_multiplier_description'));
 
         if ($multiplier === null) {
             throw new DisplayException('Price multiplier is required.');
@@ -55,6 +57,7 @@ class NodePricingController extends ApplicationApiController
 
         $oldMultiplier = $node->price_multiplier;
         $node->price_multiplier = $multiplier;
+        $node->price_multiplier_description = $description;
         $node->save();
 
         Activity::event('admin:billing:node-pricing:update')
@@ -70,6 +73,7 @@ class NodePricingController extends ApplicationApiController
                 'id' => $node->id,
                 'name' => $node->name,
                 'price_multiplier' => $node->price_multiplier,
+                'price_multiplier_description' => $node->price_multiplier_description,
             ],
         ]);
     }
@@ -98,13 +102,18 @@ class NodePricingController extends ApplicationApiController
             }
 
             $multiplier = (float) $update['price_multiplier'];
+            $description = array_key_exists('price_multiplier_description', $update)
+                ? $this->normalizeDescription($update['price_multiplier_description'])
+                : $node->price_multiplier_description;
 
             if ($multiplier < 0.0 || $multiplier > 5.0) {
                 throw new DisplayException("Price multiplier for node '{$node->name}' must be between 0.00 and 5.00.");
             }
 
             $oldMultiplier = $node->price_multiplier;
+            $oldDescription = $node->price_multiplier_description;
             $node->price_multiplier = $multiplier;
+            $node->price_multiplier_description = $description;
             $node->save();
 
             $updatedNodes[] = [
@@ -112,6 +121,8 @@ class NodePricingController extends ApplicationApiController
                 'name' => $node->name,
                 'old_multiplier' => $oldMultiplier,
                 'new_multiplier' => $multiplier,
+                'old_description' => $oldDescription,
+                'new_description' => $description,
             ];
         }
 
@@ -147,6 +158,7 @@ class NodePricingController extends ApplicationApiController
                 'id' => $node->id,
                 'name' => $node->name,
                 'price_multiplier' => $node->price_multiplier,
+                'price_multiplier_description' => $node->price_multiplier_description,
             ],
         ]);
     }
@@ -177,5 +189,31 @@ class NodePricingController extends ApplicationApiController
                 'reset_count' => $resetCount,
             ],
         ]);
+    }
+
+    /**
+     * Normalize and validate the provided price multiplier description.
+     */
+    protected function normalizeDescription(mixed $description): ?string
+    {
+        if ($description === null) {
+            return null;
+        }
+
+        if (!is_string($description)) {
+            throw new DisplayException('Price description must be a string.');
+        }
+
+        $trimmed = trim($description);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (strlen($trimmed) > 500) {
+            throw new DisplayException('Price description must be 500 characters or fewer.');
+        }
+
+        return $trimmed;
     }
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import { faMapMarkerAlt, faUndo, faRedo, faSave } from '@fortawesome/free-solid-svg-icons';
-import Input from '@/elements/Input';
+import Input, { Textarea } from '@/elements/Input';
 import useFlash from '@/plugins/useFlash';
 import { Alert } from '@/elements/alert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,6 +16,7 @@ import {
 } from '@/api/routes/admin/billing/nodePricing';
 
 const MAX_MULTIPLIER = 25;
+const MAX_DESCRIPTION_LENGTH = 500;
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
@@ -52,6 +53,7 @@ export default () => {
 
     // Store as STRING so users can type decimals like "1." without it collapsing to "1"
     const [localMultipliers, setLocalMultipliers] = useState<Record<number, string>>({});
+    const [localDescriptions, setLocalDescriptions] = useState<Record<number, string>>({});
 
     useEffect(() => {
         void loadNodePricing();
@@ -65,10 +67,13 @@ export default () => {
             setNodes(data);
 
             const multipliers: Record<number, string> = {};
+            const descriptions: Record<number, string> = {};
             data.forEach(node => {
                 multipliers[node.id] = formatMultiplier(Number(node.price_multiplier));
+                descriptions[node.id] = node.price_multiplier_description || '';
             });
             setLocalMultipliers(multipliers);
+            setLocalDescriptions(descriptions);
         } catch (error) {
             console.error('Failed to load node pricing:', error);
             addFlash({
@@ -97,6 +102,11 @@ export default () => {
         setLocalMultipliers(prev => ({ ...prev, [nodeId]: value }));
     };
 
+    const handleDescriptionChange = (nodeId: number, value: string) => {
+        if (value.length > MAX_DESCRIPTION_LENGTH) return;
+        setLocalDescriptions(prev => ({ ...prev, [nodeId]: value }));
+    };
+
     const handleMultiplierBlur = (nodeId: number, fallback: number) => {
         const raw = localMultipliers[nodeId] ?? '';
         const parsed = parseMultiplierOrNull(raw);
@@ -111,13 +121,21 @@ export default () => {
         setLocalMultipliers(prev => ({ ...prev, [nodeId]: formatMultiplier(clamped) }));
     };
 
+    const normalizeDescription = (value: string | null | undefined): string | null => {
+        if (!value) return null;
+        const trimmed = value.trim();
+        return trimmed.length === 0 ? null : trimmed;
+    };
+
     const validateBeforeSave = (): { ok: boolean; message?: string } => {
         const invalid: string[] = [];
         const outOfRange: string[] = [];
+        const tooLong: string[] = [];
 
         for (const node of nodes) {
             const raw = localMultipliers[node.id] ?? '';
             const parsed = parseMultiplierOrNull(raw);
+            const description = localDescriptions[node.id] ?? node.price_multiplier_description ?? '';
 
             if (parsed === null) {
                 invalid.push(node.name);
@@ -126,6 +144,10 @@ export default () => {
 
             if (parsed < 0 || parsed > MAX_MULTIPLIER) {
                 outOfRange.push(node.name);
+            }
+
+            if (description.length > MAX_DESCRIPTION_LENGTH) {
+                tooLong.push(node.name);
             }
         }
 
@@ -140,6 +162,13 @@ export default () => {
             return {
                 ok: false,
                 message: `Multiplier must be between 0 and ${MAX_MULTIPLIER} for: ${outOfRange.join(', ')}`,
+            };
+        }
+
+        if (tooLong.length) {
+            return {
+                ok: false,
+                message: `Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer for: ${tooLong.join(', ')}`,
             };
         }
 
@@ -166,18 +195,31 @@ export default () => {
                 .map(node => {
                     const raw = localMultipliers[node.id] ?? formatMultiplier(node.price_multiplier);
                     const parsed = parseMultiplierOrNull(raw);
+                    const rawDescription = localDescriptions[node.id] ?? node.price_multiplier_description ?? '';
 
                     // parsed should never be null here due to validateBeforeSave, but safe anyway
                     const clamped = parsed === null ? node.price_multiplier : clamp(parsed, 0, MAX_MULTIPLIER);
+                    const description = normalizeDescription(rawDescription);
+                    const originalDescription = normalizeDescription(node.price_multiplier_description ?? '');
 
                     return {
                         id: node.id,
                         price_multiplier: clamped,
+                        price_multiplier_description: description,
                         original: node.price_multiplier,
+                        originalDescription,
                     };
                 })
-                .filter(u => u.price_multiplier !== u.original)
-                .map(({ id, price_multiplier }) => ({ id, price_multiplier }));
+                .filter(
+                    u =>
+                        u.price_multiplier !== u.original ||
+                        u.price_multiplier_description !== u.originalDescription,
+                )
+                .map(({ id, price_multiplier, price_multiplier_description }) => ({
+                    id,
+                    price_multiplier,
+                    price_multiplier_description,
+                }));
 
             if (updates.length === 0) {
                 addFlash({
@@ -264,13 +306,18 @@ export default () => {
     };
 
     const hasChanges = nodes.some(node => {
-        const raw = localMultipliers[node.id];
-        if (raw === undefined) return false;
+        const raw = localMultipliers[node.id] ?? formatMultiplier(node.price_multiplier);
 
         const parsed = parseMultiplierOrNull(raw);
         if (parsed === null) return true; // counts as unsaved/invalid change
 
-        return parsed !== node.price_multiplier;
+        const rawDescription = localDescriptions[node.id];
+        const normalizedDescription = normalizeDescription(
+            rawDescription ?? node.price_multiplier_description ?? '',
+        );
+        const originalDescription = normalizeDescription(node.price_multiplier_description ?? '');
+
+        return parsed !== node.price_multiplier || normalizedDescription !== originalDescription;
     });
 
     if (loading) {
@@ -296,6 +343,7 @@ export default () => {
                 selected node&apos;s multiplier. Allowed range: <strong>0.00</strong> to{' '}
                 <strong>{MAX_MULTIPLIER.toFixed(2)}</strong>.
             </p>
+            <p className={'mb-2 text-xs text-neutral-400'}>Descriptions appear on the checkout location selector.</p>
 
             <div css={tw`overflow-x-auto mb-4`}>
                 <table css={tw`w-full border-collapse`}>
@@ -304,6 +352,9 @@ export default () => {
                             <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>Node</th>
                             <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>Pricing Multiplier</th>
                             <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold`}>Effect on Price</th>
+                            <th css={tw`text-left py-3 px-4 text-neutral-300 font-semibold w-1/3`}>
+                                Description (shown to customers)
+                            </th>
                             <th css={tw`text-right py-3 px-4 text-neutral-300 font-semibold`}>Actions</th>
                         </tr>
                     </thead>
@@ -316,8 +367,14 @@ export default () => {
                             const isInvalid = !isEmpty && parsed === null;
                             const isOutOfRange = parsed !== null && (parsed < 0 || parsed > MAX_MULTIPLIER);
 
+                            const descriptionValue =
+                                localDescriptions[node.id] ?? node.price_multiplier_description ?? '';
                             const multiplierForDisplay = parsed === null ? node.price_multiplier : parsed;
-                            const hasChanged = parsed === null ? true : parsed !== node.price_multiplier;
+                            const hasDescriptionChanged =
+                                normalizeDescription(descriptionValue) !==
+                                normalizeDescription(node.price_multiplier_description ?? '');
+                            const hasChanged =
+                                parsed === null ? true : parsed !== node.price_multiplier || hasDescriptionChanged;
 
                             return (
                                 <tr
@@ -374,6 +431,23 @@ export default () => {
                                         >
                                             {formatMultiplierDisplay(multiplierForDisplay)}
                                         </span>
+                                    </td>
+
+                                    <td css={tw`py-3 px-4`}>
+                                        <Textarea
+                                            rows={3}
+                                            value={descriptionValue}
+                                            onChange={e => handleDescriptionChange(node.id, e.target.value)}
+                                            maxLength={MAX_DESCRIPTION_LENGTH}
+                                            disabled={saving}
+                                            placeholder="Higher power costs at this location."
+                                        />
+                                        <div css={tw`text-xs text-neutral-500 mt-1 flex justify-between`}>
+                                            <span>This appears on the checkout location selector.</span>
+                                            <span>
+                                                {descriptionValue.length}/{MAX_DESCRIPTION_LENGTH}
+                                            </span>
+                                        </div>
                                     </td>
 
                                     <td css={tw`py-3 px-4 text-right`}>
