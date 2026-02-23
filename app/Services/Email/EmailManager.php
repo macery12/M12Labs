@@ -120,10 +120,6 @@ class EmailManager
         ?EmailDelivery $delivery = null,
         int $attemptNumber = 1
     ): EmailResult {
-        if ($result = $this->shouldSkipRecipient($recipient)) {
-            return $result;
-        }
-
         $tracker = app(EmailDeliveryTracker::class);
 
         // If no delivery provided, create one (for direct calls outside job system)
@@ -165,6 +161,10 @@ class EmailManager
                     'provider' => 'resend',
                 ]);
             }
+        }
+
+        if ($result = $this->shouldSkipRecipient($recipient, $tracker, $delivery)) {
+            return $result;
         }
 
         // Check if Resend is enabled
@@ -444,13 +444,28 @@ class EmailManager
     /**
      * Determine if a recipient should be skipped due to invalid format or test domain.
      */
-    private function shouldSkipRecipient(string $recipient): ?EmailResult
-    {
+    private function shouldSkipRecipient(
+        string $recipient,
+        ?EmailDeliveryTracker $tracker = null,
+        ?EmailDelivery $delivery = null
+    ): ?EmailResult {
+        $blocked = false;
+
         if (!is_valid_email_syntax($recipient)) {
-            return EmailResult::skipped('blocked_invalid_recipient');
+            $blocked = true;
+        } elseif (is_test_domain($recipient)) {
+            $blocked = true;
         }
 
-        if (is_test_domain($recipient)) {
+        if ($blocked) {
+            if ($tracker && $delivery) {
+                try {
+                    $tracker->markSkipped($delivery, 'Blocked recipient email');
+                } catch (\Exception $e) {
+                    // Continue even if tracking fails
+                }
+            }
+
             return EmailResult::skipped('blocked_invalid_recipient');
         }
 
