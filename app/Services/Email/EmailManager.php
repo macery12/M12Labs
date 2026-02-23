@@ -450,29 +450,32 @@ class EmailManager
         ?EmailDelivery $delivery = null
     ): ?EmailResult {
         if (!is_valid_email_syntax($recipient)) {
-            if ($tracker && $delivery) {
-                try {
-                    $tracker->markSkipped($delivery, 'Invalid recipient email format');
-                } catch (\Exception $e) {
-                    // Skip tracking failures to avoid blocking send flow
-                }
-            }
-
+            $this->markDeliverySkipped($tracker, $delivery, 'Invalid recipient email format');
             return EmailResult::skipped('skipped_invalid_recipient');
         }
 
         if (is_test_domain($recipient)) {
-            if ($tracker && $delivery) {
-                try {
-                    $tracker->markSkipped($delivery, 'Recipient email uses test domain');
-                } catch (\Exception $e) {
-                    // Skip tracking failures to avoid blocking send flow
-                }
-            }
-
+            $this->markDeliverySkipped($tracker, $delivery, 'Recipient email uses test domain');
             return EmailResult::skipped('skipped_test_domain');
         }
 
         return null;
+    }
+
+    /**
+     * Safely mark a delivery as skipped if tracking is available.
+     */
+    private function markDeliverySkipped(
+        ?EmailDeliveryTracker $tracker,
+        ?EmailDelivery $delivery,
+        string $reason
+    ): void {
+        if ($tracker && $delivery) {
+            try {
+                $tracker->markSkipped($delivery, $reason);
+            } catch (\Exception $e) {
+                // Skip tracking failures to avoid blocking send flow
+            }
+        }
     }
 }

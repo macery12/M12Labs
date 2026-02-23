@@ -35,7 +35,12 @@ class UpdateEmailRequest extends ClientApiRequest
     {
         $rules = User::getRulesForUpdate($this->user());
 
-        return ['email' => array_merge((array) $rules['email'], [new NotTestEmailDomain()])];
+        $emailRules = $rules['email'];
+        if (is_string($emailRules)) {
+            $emailRules = explode('|', $emailRules);
+        }
+
+        return ['email' => array_merge($emailRules, [new NotTestEmailDomain()])];
     }
 
     public function messages(): array
