@@ -119,7 +119,9 @@ export const CpuGraphModule = () => {
 
     return (
         <ChartBlock title={'CPU'}>
-            <Line {...cpu.props} />
+            <div className={'h-full'}>
+                <Line {...cpu.props} />
+            </div>
         </ChartBlock>
     );
 };
@@ -140,7 +142,9 @@ export const MemoryGraphModule = () => {
 
     return (
         <ChartBlock title={'Memory'}>
-            <Line {...memory.props} />
+            <div className={'h-full'}>
+                <Line {...memory.props} />
+            </div>
         </ChartBlock>
     );
 };
@@ -202,7 +206,9 @@ export const NetworkGraphModule = () => {
                 </>
             }
         >
-            <Line {...network.props} />
+            <div className={'h-full'}>
+                <Line {...network.props} />
+            </div>
         </ChartBlock>
     );
 };

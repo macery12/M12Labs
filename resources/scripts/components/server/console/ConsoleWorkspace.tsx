@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import { DotsVerticalIcon, EyeIcon, EyeOffIcon, PencilAltIcon, PlusIcon, RefreshIcon, SaveIcon } from '@heroicons/react/outline';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
+import { Dialog } from '@/elements/dialog';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 import { ServerContext } from '@/state/server';
@@ -43,10 +44,10 @@ const defaultLayout: ConsoleWorkspaceLayout = {
         { id: 'cpuSummary', x: 4, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
         { id: 'memorySummary', x: 6, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
         { id: 'diskSummary', x: 8, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
-        { id: 'console', x: 0, y: 2, w: 9, h: 12, minW: 6, minH: 3 },
-        { id: 'cpuGraph', x: 9, y: 2, w: 3, h: 4, minW: 3, minH: 2 },
-        { id: 'memoryGraph', x: 9, y: 6, w: 3, h: 4, minW: 3, minH: 2 },
-        { id: 'networkGraph', x: 9, y: 10, w: 3, h: 4, minW: 3, minH: 2 },
+        { id: 'console', x: 0, y: 2, w: 9, h: 14, minW: 6, minH: 6 },
+        { id: 'cpuGraph', x: 9, y: 2, w: 3, h: 6, minW: 3, minH: 3 },
+        { id: 'memoryGraph', x: 9, y: 8, w: 3, h: 6, minW: 3, minH: 3 },
+        { id: 'networkGraph', x: 9, y: 14, w: 3, h: 6, minW: 3, minH: 3 },
     ],
 };
 
@@ -96,7 +97,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'Console',
         description: 'Interactive server console.',
         minW: 6,
-        minH: 3,
+        minH: 6,
         component: null,
     },
     {
@@ -104,7 +105,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'CPU Graph',
         description: 'Historical CPU usage graph.',
         minW: 3,
-        minH: 2,
+        minH: 3,
         component: <CpuGraphModule />,
     },
     {
@@ -112,7 +113,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'Memory Graph',
         description: 'Historical memory usage graph.',
         minW: 3,
-        minH: 2,
+        minH: 3,
         component: <MemoryGraphModule />,
     },
     {
@@ -120,7 +121,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'Network Graph',
         description: 'Historical network usage graph.',
         minW: 3,
-        minH: 2,
+        minH: 3,
         component: <NetworkGraphModule />,
     },
 ];
@@ -138,11 +139,28 @@ const ensureLayoutHasModule = (layout: WorkspaceLayoutState, id: ConsoleWorkspac
 
 const normalizeLayout = (layout?: ConsoleWorkspaceLayout): WorkspaceLayoutState => {
     const base = layout ?? defaultLayout;
-
-    return modules.reduce((current, mod) => ensureLayoutHasModule(current, mod.id), {
+    const ensured = modules.reduce((current, mod) => ensureLayoutHasModule(current, mod.id), {
         version: base.version || defaultLayout.version,
         hidden: base.hidden || [],
         layout: base.layout || [],
+    });
+
+    return { ...ensured, layout: compactToTop(ensured.layout.map(l => ({ ...l, i: l.id })) as Layout[], GRID_COLS.lg).map(l => ({ ...l, id: l.i as ConsoleWorkspaceModuleId })) };
+};
+
+const compactToTop = (grid: Layout[], cols: number): Layout[] => {
+    const heights = Array(cols).fill(0);
+    const sorted = [...grid].sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
+    return sorted.map(item => {
+        const width = Math.min(item.w, cols);
+        const startX = Math.min(Math.max(item.x, 0), cols - width);
+        const maxY = Math.max(...heights.slice(startX, startX + width));
+        const nextY = Number.isFinite(maxY) ? maxY : 0;
+        const next = { ...item, x: startX, w: width, y: Math.max(0, nextY) };
+        for (let x = startX; x < startX + width; x++) {
+            heights[x] = next.y + item.h;
+        }
+        return next;
     });
 };
 
@@ -184,11 +202,12 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
 
     const dirty = useMemo(() => JSON.stringify(layout) !== JSON.stringify(initial), [layout, initial]);
 
-    const handleLayoutChange = (grid: Layout[]) => {
+    const applyNormalized = (grid: Layout[]) => {
+        const compacted = compactToTop(grid, GRID_COLS.lg);
         setLayout(current => ({
             ...current,
             layout: current.layout.map(item => {
-                const next = grid.find(l => l.i === item.id);
+                const next = compacted.find(l => l.i === item.id);
                 return next
                     ? {
                           ...item,
@@ -273,6 +292,17 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
     const gridStyles = useMemo(
         () => ({
             backgroundColor: theme?.colors?.black ?? '#0b1220',
+            borderColor: theme?.colors?.borders,
+        }),
+        [theme],
+    );
+
+    const moduleStyles = useMemo(
+        () => ({
+            backgroundColor: theme?.colors?.secondary,
+            borderColor: theme?.colors?.borders,
+            headerBg: theme?.colors?.headers,
+            text: theme?.colors?.text,
         }),
         [theme],
     );
@@ -306,7 +336,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                     <Spinner />
                 </div>
             ) : (
-                <div className={styles.gridWrapper} style={gridStyles}>
+                <div className={classNames(styles.gridWrapper, 'border')} style={gridStyles}>
                     <ResponsiveGridLayout
                         className={'layout'}
                         isDraggable={editMode}
@@ -318,8 +348,10 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                         margin={[12, 12]}
                         containerPadding={[0, 0]}
                         layouts={layouts}
-                        onLayoutChange={handleLayoutChange}
-                        compactType={null}
+                        onLayoutChange={applyNormalized}
+                        onDragStop={applyNormalized}
+                        onResizeStop={applyNormalized}
+                        compactType={'vertical'}
                         isBounded
                     >
                         {renderedModules.map(item => {
@@ -332,11 +364,18 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                                 );
 
                             return (
-                                <div key={item.id} className={classNames(styles.module, editMode && styles.editable)}>
+                                <div
+                                    key={item.id}
+                                    className={classNames(styles.module, editMode && styles.editable)}
+                                    style={{ backgroundColor: moduleStyles.backgroundColor, borderColor: moduleStyles.borderColor, color: moduleStyles.text }}
+                                >
                                     {editMode && (
-                                        <div className={styles.moduleHeader}>
+                                        <div
+                                            className={styles.moduleHeader}
+                                            style={{ backgroundColor: moduleStyles.headerBg, borderBottom: `1px solid ${moduleStyles.borderColor}` }}
+                                        >
                                             <div className={classNames(styles.workspaceHandle, 'flex cursor-move items-center gap-2')}>
-                                                <DotsVerticalIcon className={'h-4 w-4 text-slate-300'} />
+                                                <DotsVerticalIcon className={'h-4 w-4 text-slate-200'} />
                                                 <p className={'text-sm font-semibold text-slate-100'}>{module.title}</p>
                                             </div>
                                             <button
@@ -349,7 +388,9 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                                             </button>
                                         </div>
                                     )}
-                                    <div className={styles.moduleBody}>{content}</div>
+                                    <div className={styles.moduleBody}>
+                                        <div className={'flex h-full flex-col min-h-0'}>{content}</div>
+                                    </div>
                                 </div>
                             );
                         })}
@@ -357,34 +398,25 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                 </div>
             )}
 
-            {editMode && drawerOpen && (
-                <div className={styles.drawer}>
-                    <div className={styles.drawerHeader}>
-                        <div className={'flex items-center gap-2'}>
-                            <PlusIcon className={'h-5 w-5'} />
-                            <p className={'font-semibold'}>Add modules</p>
-                        </div>
-                        <button className={styles.hideButton} onClick={() => setDrawerOpen(false)}>
-                            Close
-                        </button>
-                    </div>
+            {editMode && (
+                <Dialog open={drawerOpen} onClose={() => setDrawerOpen(false)} title={'Add modules'}>
                     <div className={'space-y-3'}>
                         {modules
                             .filter(mod => layout.hidden.includes(mod.id))
                             .map(mod => (
-                                <div key={mod.id} className={styles.drawerItem}>
+                                <div key={mod.id} className={'flex items-center justify-between rounded-md border border-slate-700/60 bg-slate-900/60 p-3'}>
                                     <div>
                                         <p className={'font-semibold'}>{mod.title}</p>
                                         <p className={'text-sm text-slate-300'}>{mod.description}</p>
                                     </div>
-                                    <Button onClick={() => addModule(mod.id)} icon={EyeIcon}>
+                                    <Button onClick={() => { addModule(mod.id); setDrawerOpen(false); }} icon={EyeIcon}>
                                         Show
                                     </Button>
                                 </div>
                             ))}
                         {!layout.hidden.length && <p className={'text-sm text-slate-300'}>No hidden modules.</p>}
                     </div>
-                </div>
+                </Dialog>
             )}
         </ConsoleStatsProvider>
     );
