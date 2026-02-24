@@ -44,10 +44,10 @@ const defaultLayout: ConsoleWorkspaceLayout = {
         { id: 'cpuSummary', x: 4, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
         { id: 'memorySummary', x: 6, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
         { id: 'diskSummary', x: 8, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
-        { id: 'console', x: 0, y: 2, w: 9, h: 14, minW: 6, minH: 6 },
-        { id: 'cpuGraph', x: 9, y: 2, w: 3, h: 8, minW: 3, minH: 3 },
-        { id: 'memoryGraph', x: 9, y: 10, w: 3, h: 8, minW: 3, minH: 3 },
-        { id: 'networkGraph', x: 9, y: 18, w: 3, h: 8, minW: 3, minH: 3 },
+        { id: 'console', x: 0, y: 2, w: 9, h: 12, minW: 6, minH: 3 },
+        { id: 'cpuGraph', x: 9, y: 2, w: 3, h: 4, minW: 3, minH: 2 },
+        { id: 'memoryGraph', x: 9, y: 6, w: 3, h: 4, minW: 3, minH: 2 },
+        { id: 'networkGraph', x: 9, y: 10, w: 3, h: 4, minW: 3, minH: 2 },
     ],
 };
 
@@ -97,7 +97,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'Console',
         description: 'Interactive server console.',
         minW: 6,
-        minH: 6,
+        minH: 3,
         component: null,
     },
     {
@@ -105,7 +105,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'CPU Graph',
         description: 'Historical CPU usage graph.',
         minW: 3,
-        minH: 3,
+        minH: 2,
         component: <CpuGraphModule />,
     },
     {
@@ -113,7 +113,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'Memory Graph',
         description: 'Historical memory usage graph.',
         minW: 3,
-        minH: 3,
+        minH: 2,
         component: <MemoryGraphModule />,
     },
     {
@@ -121,7 +121,7 @@ const modules: WorkspaceModuleDefinition[] = [
         title: 'Network Graph',
         description: 'Historical network usage graph.',
         minW: 3,
-        minH: 3,
+        minH: 2,
         component: <NetworkGraphModule />,
     },
 ];
@@ -294,19 +294,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
 
     const gridStyles = useMemo(
         () => ({
-            backgroundColor: 'transparent',
-            borderColor: theme?.colors?.borders,
-        }),
-        [theme],
-    );
-
-    const moduleStyles = useMemo(
-        () => ({
-            backgroundColor: theme?.colors?.secondary,
-            borderColor: theme?.colors?.borders,
-            headerBg: theme?.colors?.headers,
-            text: theme?.colors?.text,
-            outline: theme?.colors?.secondary,
+            backgroundColor: theme?.colors?.black ?? '#0b1220',
         }),
         [theme],
     );
@@ -362,22 +350,17 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                             const module = moduleMap[item.id];
                             const content =
                                 item.id === 'console' ? (
-                                    <Console expand={expand} setExpand={setExpand} />
+                                    <div className={'flex h-full flex-col'}>
+                                        <Console expand={expand} setExpand={setExpand} />
+                                    </div>
                                 ) : (
                                     module.component
                                 );
 
                             return (
-                                <div
-                                    key={item.id}
-                                    className={classNames(styles.module, editMode && styles.editable)}
-                                    style={{ backgroundColor: moduleStyles.backgroundColor, borderColor: moduleStyles.borderColor, color: moduleStyles.text }}
-                                >
+                                <div key={item.id} className={classNames(styles.module, editMode && styles.editable)}>
                                     {editMode && (
-                                        <div
-                                            className={styles.moduleHeader}
-                                            style={{ backgroundColor: moduleStyles.headerBg, borderBottom: `1px solid ${moduleStyles.borderColor}` }}
-                                        >
+                                        <div className={styles.moduleHeader}>
                                             <div className={classNames(styles.workspaceHandle, 'flex cursor-move items-center gap-2')}>
                                                 <DotsVerticalIcon className={'h-4 w-4 text-slate-200'} />
                                                 <p className={'text-sm font-semibold text-slate-100'}>{module.title}</p>
