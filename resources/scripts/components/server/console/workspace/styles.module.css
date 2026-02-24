@@ -1,0 +1,39 @@
+.gridWrapper {
+    @apply rounded-lg bg-black/40 p-2;
+}
+
+.module {
+    @apply relative h-full w-full overflow-hidden rounded-lg bg-black/60 shadow-lg;
+}
+
+.moduleHeader {
+    @apply flex items-center justify-between border-b border-slate-700 bg-black/40 px-3 py-2;
+}
+
+.workspaceHandle {
+    @apply cursor-move;
+}
+
+.moduleBody {
+    @apply h-full w-full p-2 sm:p-3;
+}
+
+.hideButton {
+    @apply rounded bg-slate-800 p-1 text-slate-200 transition hover:bg-slate-700;
+}
+
+.editable {
+    @apply border border-dashed border-slate-600;
+}
+
+.drawer {
+    @apply fixed bottom-4 right-4 z-50 w-80 rounded-lg border border-slate-700 bg-slate-900 p-4 shadow-2xl;
+}
+
+.drawerHeader {
+    @apply mb-3 flex items-center justify-between;
+}
+
+.drawerItem {
+    @apply flex items-center justify-between rounded-lg border border-slate-800 bg-black/40 p-3;
+}

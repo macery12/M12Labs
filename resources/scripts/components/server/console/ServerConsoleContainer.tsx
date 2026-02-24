@@ -1,16 +1,13 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import isEqual from 'react-fast-compare';
 import { Alert } from '@/elements/alert';
 import Can from '@/elements/Can';
+import { Button } from '@/elements/button';
 import Spinner from '@/elements/Spinner';
-import Console from '@server/console/Console';
 import PowerButtons from '@server/console/PowerButtons';
-import ServerDetailsBlock from '@server/console/ServerDetailsBlock';
-import StatGraphs from '@server/console/StatGraphs';
 import Features from '@feature/Features';
 import { ServerContext, ServerStatus } from '@/state/server';
 import classNames from 'classnames';
-import { usePersistedState } from '@/plugins/usePersistedState';
 import { useStoreState } from '@/state/hooks';
 import Pill from '@/elements/Pill';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,6 +15,8 @@ import { faCircle, faDownload, faSpinner } from '@fortawesome/free-solid-svg-ico
 import EditServerDialog from './EditServerDialog';
 import PageContentBlock from '@/elements/PageContentBlock';
 import ScopedAlert from '@account/ScopedAlert';
+import ConsoleWorkspace from '@server/console/ConsoleWorkspace';
+import { PencilAltIcon } from '@heroicons/react/outline';
 
 export type PowerAction = 'start' | 'stop' | 'restart' | 'kill';
 
@@ -33,12 +32,10 @@ function statusToColor(status: ServerStatus): string {
 }
 
 function ServerConsoleContainer() {
-    const user = useStoreState(state => state.user.data!);
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const name = ServerContext.useStoreState(state => state.server.data!.name);
     const description = ServerContext.useStoreState(state => state.server.data!.description);
     const isInstalling = ServerContext.useStoreState(state => state.server.isInstalling);
-    const [expand, setExpand] = usePersistedState<boolean>(`console_expand_${user.uuid}`, false);
     const isTransferring = ServerContext.useStoreState(state => state.server.data!.isTransferring);
     const eggFeatures = ServerContext.useStoreState(state => state.server.data!.eggFeatures, isEqual);
     const isNodeUnderMaintenance = ServerContext.useStoreState(state => state.server.data!.isNodeUnderMaintenance);
@@ -46,6 +43,7 @@ function ServerConsoleContainer() {
     const renewalDate = ServerContext.useStoreState(state => state.server.data!.renewalDate);
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
     const settings = useStoreState(state => state.everest.data!.billing);
+    const [editMode, setEditMode] = useState(false);
 
     // Get configurable renewal settings
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
@@ -113,29 +111,18 @@ function ServerConsoleContainer() {
                     </div>
                     <p className={'text-sm line-clamp-2'}>{description ?? uuid}</p>
                 </div>
-                <div className={'my-auto'}>
+                <div className={'my-auto flex flex-wrap justify-end gap-2'}>
+                    <Button.Dark onClick={() => setEditMode(s => !s)} icon={PencilAltIcon}>
+                        {editMode ? 'Done Editing' : 'Edit layout'}
+                    </Button.Dark>
                     <Can action={['control.start', 'control.stop', 'control.restart']} matchAny>
                         <PowerButtons className={' flex space-x-2 sm:justify-center'} />
                     </Can>
                 </div>
             </div>
-            {!expand && <ServerDetailsBlock className={'order-last col-span-4 lg:order-none lg:col-span-1'} />}
-            <div className={'mb-4 grid grid-cols-4 gap-2 sm:gap-4'}>
-                <div className={classNames('col-span-4 flex', !expand && 'lg:col-span-3')}>
-                    <Spinner.Suspense>
-                        <Console expand={expand} setExpand={setExpand} />
-                    </Spinner.Suspense>
-                </div>
-                {!expand && (
-                    <div className={'col-span-4 my-auto lg:col-span-1'}>
-                        <div className={'grid grid-cols-1 gap-2'}>
-                            <Spinner.Suspense>
-                                <StatGraphs />
-                            </Spinner.Suspense>
-                        </div>
-                    </div>
-                )}
-            </div>
+            <Spinner.Suspense>
+                <ConsoleWorkspace editMode={editMode} onToggleEdit={() => setEditMode(s => !s)} />
+            </Spinner.Suspense>
             <Features enabled={eggFeatures} />
         </PageContentBlock>
     );

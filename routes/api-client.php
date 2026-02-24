@@ -8,6 +8,7 @@ use Everest\Http\Middleware\Activity\AccountSubject;
 use Everest\Http\Middleware\RequireTwoFactorAuthentication;
 use Everest\Http\Middleware\Api\Client\Server\ResourceBelongsToServer;
 use Everest\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
+use Everest\Http\Controllers\Api\Client\Servers\WorkspaceLayoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -182,6 +183,12 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/activity', Client\Servers\ActivityLogController::class)->name('api:client:server.activity');
         Route::get('/activity/users', [Client\Servers\ActivityLogController::class, 'users']);
         Route::get('/activity/events', [Client\Servers\ActivityLogController::class, 'events']);
+
+        Route::prefix('/workspace')->group(function () {
+            Route::get('/console-layout', [WorkspaceLayoutController::class, 'show']);
+            Route::put('/console-layout', [WorkspaceLayoutController::class, 'update']);
+            Route::post('/console-layout/reset', [WorkspaceLayoutController::class, 'reset']);
+        });
 
         Route::post('/command', [Client\Servers\CommandController::class, 'index']);
         Route::post('/power', [Client\Servers\PowerController::class, 'index']);

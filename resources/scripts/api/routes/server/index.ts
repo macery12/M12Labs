@@ -1,6 +1,11 @@
 import http from '@/api/http';
 import { Server, ServerStats, Transformers } from '@definitions/server';
 import { PowerAction } from '@server/console/ServerConsoleContainer';
+import {
+    resetConsoleWorkspaceLayout,
+    saveConsoleWorkspaceLayout,
+    useConsoleWorkspaceLayout,
+} from '@/api/routes/server/workspace';
 
 export type ServerStatus =
     | 'installing'
@@ -67,4 +72,13 @@ const getServerResourceUsage = (server: string): Promise<ServerStats> => {
     });
 };
 
-export { getServer, sendPowerAction, reinstallServer, renameServer, getServerResourceUsage };
+export {
+    getServer,
+    sendPowerAction,
+    reinstallServer,
+    renameServer,
+    getServerResourceUsage,
+    useConsoleWorkspaceLayout,
+    saveConsoleWorkspaceLayout,
+    resetConsoleWorkspaceLayout,
+};

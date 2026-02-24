@@ -163,3 +163,30 @@ interface Task extends Model {
     createdAt: Date;
     updatedAt: Date;
 }
+
+type ConsoleWorkspaceModuleId =
+    | 'address'
+    | 'uptime'
+    | 'cpuSummary'
+    | 'memorySummary'
+    | 'diskSummary'
+    | 'console'
+    | 'cpuGraph'
+    | 'memoryGraph'
+    | 'networkGraph';
+
+interface ConsoleWorkspaceLayoutItem {
+    id: ConsoleWorkspaceModuleId;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    minW?: number;
+    minH?: number;
+}
+
+interface ConsoleWorkspaceLayout {
+    version: number;
+    hidden: ConsoleWorkspaceModuleId[];
+    layout: ConsoleWorkspaceLayoutItem[];
+}
