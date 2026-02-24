@@ -167,6 +167,28 @@ export default ({ expand, setExpand }: Props) => {
         }
     }, [terminal, connected]);
 
+    useEffect(() => {
+        if (terminal.element) {
+            fitAddon.fit();
+        }
+    }, [terminal, expand]);
+
+    useEffect(() => {
+        const container = ref.current?.parentElement;
+        if (!container) {
+            return;
+        }
+
+        const observer = new ResizeObserver(() => {
+            if (terminal.element) {
+                fitAddon.fit();
+            }
+        });
+
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [terminal]);
+
     useEventListener(
         'resize',
         debounce(() => {

@@ -39,15 +39,15 @@ const defaultLayout: ConsoleWorkspaceLayout = {
     version: 1,
     hidden: [],
     layout: [
-        { id: 'address', x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
-        { id: 'uptime', x: 2, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
-        { id: 'cpuSummary', x: 4, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
-        { id: 'memorySummary', x: 6, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
-        { id: 'diskSummary', x: 8, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
-        { id: 'console', x: 0, y: 2, w: 9, h: 12, minW: 6, minH: 3 },
-        { id: 'cpuGraph', x: 9, y: 2, w: 3, h: 4, minW: 3, minH: 2 },
-        { id: 'memoryGraph', x: 9, y: 6, w: 3, h: 4, minW: 3, minH: 2 },
-        { id: 'networkGraph', x: 9, y: 10, w: 3, h: 4, minW: 3, minH: 2 },
+        { id: 'address', i: 'address', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 1 },
+        { id: 'uptime', i: 'uptime', x: 2, y: 0, w: 2, h: 3, minW: 2, minH: 1 },
+        { id: 'cpuSummary', i: 'cpuSummary', x: 4, y: 0, w: 2, h: 3, minW: 2, minH: 1 },
+        { id: 'memorySummary', i: 'memorySummary', x: 4, y: 3, w: 2, h: 3, minW: 2, minH: 1 },
+        { id: 'diskSummary', i: 'diskSummary', x: 4, y: 6, w: 2, h: 3, minW: 2, minH: 1 },
+        { id: 'console', i: 'console', x: 0, y: 9, w: 6, h: 20, minW: 6, minH: 3 },
+        { id: 'cpuGraph', i: 'cpuGraph', x: 3, y: 29, w: 3, h: 6, minW: 3, minH: 2 },
+        { id: 'memoryGraph', i: 'memoryGraph', x: 3, y: 35, w: 3, h: 6, minW: 3, minH: 2 },
+        { id: 'networkGraph', i: 'networkGraph', x: 3, y: 41, w: 3, h: 6, minW: 3, minH: 2 },
     ],
 };
 
@@ -126,26 +126,32 @@ const modules: WorkspaceModuleDefinition[] = [
     },
 ];
 
-const ensureLayoutHasModule = (layout: WorkspaceLayoutState, id: ConsoleWorkspaceModuleId): WorkspaceLayoutState => {
-    const exists = layout.layout.find(item => item.id === id);
-    if (exists) {
-        return layout;
-    }
-
-    const fallback = defaultLayout.layout.find(item => item.id === id)!;
-
-    return { ...layout, layout: [...layout.layout, fallback] };
-};
-
 const normalizeLayout = (layout?: ConsoleWorkspaceLayout): WorkspaceLayoutState => {
     const base = layout ?? defaultLayout;
-    const ensured = modules.reduce((current, mod) => ensureLayoutHasModule(current, mod.id), {
-        version: base.version || defaultLayout.version,
-        hidden: base.hidden || [],
-        layout: base.layout || [],
+    const normalizedLayout = (base.layout || []).map(item => {
+        const id = (item as any).id ?? (item as any).i;
+        return { ...item, id, i: id };
     });
 
-    return { ...ensured, layout: compactToTop(ensured.layout.map(l => ({ ...l, i: l.id })) as Layout[], GRID_COLS.lg).map(l => ({ ...l, id: l.i as ConsoleWorkspaceModuleId })) };
+    const ensured = modules.reduce<WorkspaceLayoutState>(
+        (current, mod) => {
+            const exists = current.layout.find(item => item.id === mod.id);
+            return exists ? current : { ...current, layout: [...current.layout, defaultLayout.layout.find(l => l.id === mod.id)!] };
+        },
+        {
+            version: base.version || defaultLayout.version,
+            hidden: base.hidden ?? [],
+            layout: normalizedLayout,
+        },
+    );
+
+    return {
+        ...ensured,
+        layout: compactToTop(
+            ensured.layout.map(l => ({ ...l, i: l.id })) as Layout[],
+            GRID_COLS.lg,
+        ).map(l => ({ ...l, id: l.i as ConsoleWorkspaceModuleId })),
+    };
 };
 
 const compactToTop = (grid: Layout[], cols: number): Layout[] => {

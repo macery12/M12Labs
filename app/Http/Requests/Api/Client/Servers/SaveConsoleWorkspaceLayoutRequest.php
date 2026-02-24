@@ -22,10 +22,11 @@ class SaveConsoleWorkspaceLayoutRequest extends ClientApiRequest
     {
         return [
             'version' => 'required|integer|min:1',
-            'hidden' => 'required|array',
+            'hidden' => 'nullable|array',
             'hidden.*' => 'string',
             'layout' => 'required|array',
-            'layout.*.id' => 'required|string',
+            'layout.*.id' => 'nullable|string',
+            'layout.*.i' => 'nullable|string',
             'layout.*.x' => 'required|integer',
             'layout.*.y' => 'required|integer',
             'layout.*.w' => 'required|integer|min:1',

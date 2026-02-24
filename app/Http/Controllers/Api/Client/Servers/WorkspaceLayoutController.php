@@ -21,7 +21,7 @@ class WorkspaceLayoutController extends ClientApiController
     {
         $layout = $this->getLayout($server);
 
-        return response()->json($layout ?? $this->layoutService->default());
+        return response()->json($layout ? $this->layoutService->normalize($layout) : $this->layoutService->default());
     }
 
     public function update(SaveConsoleWorkspaceLayoutRequest $request, Server $server): JsonResponse
