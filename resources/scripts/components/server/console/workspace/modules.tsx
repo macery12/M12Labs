@@ -181,8 +181,8 @@ export const NetworkGraphModule = () => {
     }, [status]);
 
     useEffect(() => {
-        const nextIn = previous.current.tx < 0 ? 0 : Math.max(0, stats.tx - previous.current.tx);
-        const nextOut = previous.current.rx < 0 ? 0 : Math.max(0, stats.rx - previous.current.rx);
+        const nextIn = previous.current.rx < 0 ? 0 : Math.max(0, stats.rx - previous.current.rx);
+        const nextOut = previous.current.tx < 0 ? 0 : Math.max(0, stats.tx - previous.current.tx);
 
         network.push([nextIn, nextOut]);
         previous.current = { tx: stats.tx, rx: stats.rx };

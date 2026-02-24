@@ -97,7 +97,7 @@ const modules: WorkspaceModuleDefinition[] = [
         description: 'Interactive server console.',
         minW: 6,
         minH: 3,
-        component: null as unknown as JSX.Element,
+        component: null,
     },
     {
         id: 'cpuGraph',
