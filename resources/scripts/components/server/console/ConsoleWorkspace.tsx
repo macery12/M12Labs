@@ -31,7 +31,7 @@ import 'react-resizable/css/styles.css';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-const GRID_COLS: ResponsiveProps['cols'] = { lg: 12, md: 12, sm: 6, xs: 1, xxs: 1 };
+const GRID_COLS: ResponsiveProps['cols'] = { lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 };
 const ROW_HEIGHT = 36;
 const FLASH_KEY = 'console:share';
 
@@ -145,29 +145,7 @@ const normalizeLayout = (layout?: ConsoleWorkspaceLayout): WorkspaceLayoutState 
         },
     );
 
-    return {
-        ...ensured,
-        layout: compactToTop(
-            ensured.layout.map(l => ({ ...l, i: l.id })) as Layout[],
-            GRID_COLS.lg,
-        ).map(l => ({ ...l, id: l.i as ConsoleWorkspaceModuleId })),
-    };
-};
-
-const compactToTop = (grid: Layout[], cols: number): Layout[] => {
-    const heights = Array(cols).fill(0);
-    const sorted = [...grid].sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
-    return sorted.map(item => {
-        const width = Math.min(item.w, cols);
-        const startX = Math.min(Math.max(item.x, 0), cols - width);
-        const maxY = Math.max(...heights.slice(startX, startX + width));
-        const nextY = Number.isFinite(maxY) ? maxY : 0;
-        const next = { ...item, x: startX, w: width, y: Math.max(0, nextY) };
-        for (let x = startX; x < startX + width; x++) {
-            heights[x] = next.y + item.h;
-        }
-        return next;
-    });
+    return ensured;
 };
 
 const moduleMap = modules.reduce(
@@ -209,12 +187,11 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
     const dirty = useMemo(() => JSON.stringify(layout) !== JSON.stringify(initial), [layout, initial]);
 
     const applyNormalized = (grid: Layout[]) => {
-        const compacted = compactToTop(grid, GRID_COLS.lg);
         setLayout(current => ({
             ...current,
             hidden: current.hidden ?? [],
             layout: current.layout.map(item => {
-                const next = compacted.find(l => l.i === item.id);
+                const next = grid.find(l => l.i === item.id);
                 return next
                     ? {
                           ...item,
@@ -271,6 +248,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
 
     const activeModules = layout.layout.filter(item => !layout.hidden.includes(item.id));
     const renderedModules = expand && !editMode ? activeModules.filter(item => item.id === 'console') : activeModules;
+    const collapsed = useMemo(() => renderedModules.length > 0 && renderedModules.every(item => item.x === 0), [renderedModules]);
     const mappedLayout = useMemo(
         () =>
             renderedModules.map(item => ({
@@ -281,6 +259,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                 h: item.h,
                 minW: moduleMap[item.id].minW ?? item.minW,
                 minH: moduleMap[item.id].minH ?? item.minH,
+                static: false,
             })),
         [renderedModules],
     );
@@ -306,6 +285,11 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
     );
 
     const dragHandle = editMode ? `.${styles.workspaceHandle}` : undefined;
+
+    useEffect(() => {
+        if (!collapsed) return;
+        setLayout(normalizeLayout());
+    }, [collapsed]);
 
     return (
         <ConsoleStatsProvider>
@@ -349,7 +333,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                         onLayoutChange={applyNormalized}
                         onDragStop={applyNormalized}
                         onResizeStop={applyNormalized}
-                        compactType={'vertical'}
+                        compactType={null}
                         isBounded
                     >
                         {renderedModules.map(item => {
