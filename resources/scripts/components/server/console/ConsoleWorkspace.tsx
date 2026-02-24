@@ -45,9 +45,9 @@ const defaultLayout: ConsoleWorkspaceLayout = {
         { id: 'memorySummary', x: 6, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
         { id: 'diskSummary', x: 8, y: 0, w: 2, h: 2, minW: 2, minH: 1 },
         { id: 'console', x: 0, y: 2, w: 9, h: 14, minW: 6, minH: 6 },
-        { id: 'cpuGraph', x: 9, y: 2, w: 3, h: 6, minW: 3, minH: 3 },
-        { id: 'memoryGraph', x: 9, y: 8, w: 3, h: 6, minW: 3, minH: 3 },
-        { id: 'networkGraph', x: 9, y: 14, w: 3, h: 6, minW: 3, minH: 3 },
+        { id: 'cpuGraph', x: 9, y: 2, w: 3, h: 8, minW: 3, minH: 3 },
+        { id: 'memoryGraph', x: 9, y: 10, w: 3, h: 8, minW: 3, minH: 3 },
+        { id: 'networkGraph', x: 9, y: 18, w: 3, h: 8, minW: 3, minH: 3 },
     ],
 };
 
@@ -206,6 +206,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
         const compacted = compactToTop(grid, GRID_COLS.lg);
         setLayout(current => ({
             ...current,
+            hidden: current.hidden ?? [],
             layout: current.layout.map(item => {
                 const next = compacted.find(l => l.i === item.id);
                 return next
@@ -249,7 +250,9 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
         clearFlashes(FLASH_KEY);
         setSaving(true);
         try {
-            const next = await saveConsoleWorkspaceLayout(uuid, layout);
+            const payload = normalizeLayout({ ...layout, hidden: layout.hidden ?? [] });
+            const next = await saveConsoleWorkspaceLayout(uuid, payload);
+            setLayout(payload);
             setInitial(normalizeLayout(next));
             addFlash({ key: FLASH_KEY, type: 'success', message: 'Layout saved.' });
             mutate(next, false);
@@ -291,7 +294,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
 
     const gridStyles = useMemo(
         () => ({
-            backgroundColor: theme?.colors?.black ?? '#0b1220',
+            backgroundColor: 'transparent',
             borderColor: theme?.colors?.borders,
         }),
         [theme],
@@ -303,6 +306,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
             borderColor: theme?.colors?.borders,
             headerBg: theme?.colors?.headers,
             text: theme?.colors?.text,
+            outline: theme?.colors?.secondary,
         }),
         [theme],
     );
@@ -336,7 +340,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                     <Spinner />
                 </div>
             ) : (
-                <div className={classNames(styles.gridWrapper, 'border')} style={gridStyles}>
+                <div className={styles.gridWrapper} style={gridStyles}>
                     <ResponsiveGridLayout
                         className={'layout'}
                         isDraggable={editMode}
