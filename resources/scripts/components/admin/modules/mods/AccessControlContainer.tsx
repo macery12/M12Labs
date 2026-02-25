@@ -3,7 +3,6 @@ import AdminBox from '@/elements/AdminBox';
 import Spinner from '@/elements/Spinner';
 import { Alert } from '@/elements/alert';
 import { Button } from '@/elements/button';
-import Checkbox from '@/elements/Checkbox';
 import { getProviderRules, updateProviderRules, ProviderRulesResponse } from '@/api/routes/admin/plugins/providers';
 import { useFlashKey } from '@/plugins/useFlash';
 
@@ -106,7 +105,11 @@ export default function AccessControlContainer() {
                     <AdminBox key={provider.key} title={provider.label}>
                         <div className={'flex flex-col gap-4'}>
                             <label className={'flex items-center gap-2'}>
-                                <Checkbox name={`${provider.key}-enabled`} checked={rule.enabled_global} onChange={() => toggleEnabled(provider.key)} />
+                                <input
+                                    type="checkbox"
+                                    checked={rule.enabled_global}
+                                    onChange={() => toggleEnabled(provider.key)}
+                                />
                                 <span>Enabled (global)</span>
                             </label>
                             <div className={'grid gap-4 lg:grid-cols-2'}>
@@ -115,8 +118,8 @@ export default function AccessControlContainer() {
                                     <div className={'grid grid-cols-2 gap-2'}>
                                         {data.nests.map(nest => (
                                             <label key={nest.id} className={'flex items-center gap-2'}>
-                                                <Checkbox
-                                                    name={`nest-${nest.id}-${provider.key}`}
+                                                <input
+                                                    type="checkbox"
                                                     checked={(rule.allowed_nest_ids ?? []).includes(nest.id)}
                                                     onChange={() => toggleNest(provider.key, nest.id)}
                                                 />
@@ -130,8 +133,8 @@ export default function AccessControlContainer() {
                                     <div className={'grid grid-cols-2 gap-2'}>
                                         {data.nests.flatMap(nest => nest.eggs ?? []).map(egg => (
                                             <label key={egg.id} className={'flex items-center gap-2'}>
-                                                <Checkbox
-                                                    name={`egg-${egg.id}-${provider.key}`}
+                                                <input
+                                                    type="checkbox"
                                                     checked={(rule.allowed_egg_ids ?? []).includes(egg.id)}
                                                     onChange={() => toggleEgg(provider.key, egg.id)}
                                                 />
