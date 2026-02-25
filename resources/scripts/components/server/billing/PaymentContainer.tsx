@@ -1,6 +1,6 @@
 import Spinner from '@/elements/Spinner';
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { Stripe } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
 import PaymentForm from './PaymentForm';
 import MolliePaymentForm from './MolliePaymentForm';
@@ -15,6 +15,7 @@ import { faCreditCard, faCheck, faExclamationTriangle } from '@fortawesome/free-
 import { faPaypal } from '@fortawesome/free-brands-svg-icons';
 import { Alert } from '@/elements/alert';
 import FlashMessageRender from '@/elements/FlashMessageRender';
+import { loadStripeOnce } from '@/lib/stripe';
 
 type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
 
@@ -73,7 +74,7 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
                     setIntent({ id: intentData.id, secret: intentData.secret });
 
                     const stripePublicKey = await getStripeKey(id);
-                    const stripeInstance = await loadStripe(stripePublicKey.key);
+                    const stripeInstance = await loadStripeOnce(stripePublicKey.key);
                     setStripe(stripeInstance);
                 } catch (error) {
                     console.error('Error fetching Stripe data:', error);
