@@ -98,6 +98,35 @@ class ModsController extends ClientApiController
         return null;
     }
 
+    public function providerAccess(Server $server): JsonResponse
+    {
+        $providers = [
+            'modrinth.mods',
+            'curseforge',
+            'spiget.plugins',
+        ];
+
+        $result = [];
+        foreach ($providers as $providerKey) {
+            if (!$server->mods_enabled) {
+                $result[$providerKey] = [
+                    'allowed' => false,
+                    'reason' => 'Plugins module is disabled for this server.',
+                ];
+                continue;
+            }
+
+            $result[$providerKey] = [
+                'allowed' => $this->providerGate->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id),
+                'reason' => "Disabled by administrator for this server's egg/nest.",
+            ];
+        }
+
+        return response()->json([
+            'providers' => $result,
+        ]);
+    }
+
     /**
      * Search for mods in the selected database.
      *

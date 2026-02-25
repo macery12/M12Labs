@@ -9,6 +9,7 @@ import EnableMods from '@admin/modules/mods/EnableMods';
 import OverviewContainer from '@admin/modules/mods/OverviewContainer';
 import SettingsContainer from './SettingsContainer';
 import ServersContainer from './ServersContainer';
+import AccessControlContainer from './AccessControlContainer';
 
 export default () => {
     const settings = useStoreState(state => state.everest.data!.mods);
@@ -16,36 +17,40 @@ export default () => {
     if (!settings.enabled) return <EnableMods />;
 
     return (
-        <AdminContentBlock title={'Mods'}>
-            <FlashMessageRender byKey={'admin:mods'} className={'mb-4'} />
-            <FlashMessageRender byKey={'mods:servers'} className={'mb-4'} />
+        <AdminContentBlock title={'Plugins'}>
+            <FlashMessageRender byKey={'admin:plugins'} className={'mb-4'} />
+            <FlashMessageRender byKey={'plugins:servers'} className={'mb-4'} />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
-                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Mods</h2>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Plugins</h2>
                     <p
                         className={
                             'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
-                        Integrate CurseForge for Minecraft mod management.
+                        Integrate Modrinth, CurseForge, and Spiget for add-ons, mods, and plugins.
                     </p>
                 </div>
             </div>
             <SubNavigation>
-                <SubNavigationLink to={'/admin/mods'} name={'Overview'} base>
+                <SubNavigationLink to={'/admin/plugins'} name={'Overview'} base>
                     <DatabaseIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/mods/servers'} name={'Servers'}>
+                <SubNavigationLink to={'/admin/plugins/servers'} name={'Servers'}>
                     <ServerIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/mods/settings'} name={'Settings'}>
+                <SubNavigationLink to={'/admin/plugins/settings'} name={'Settings'}>
                     <CogIcon />
+                </SubNavigationLink>
+                <SubNavigationLink to={'/admin/plugins/access-control'} name={'Access Control'}>
+                    <ServerIcon />
                 </SubNavigationLink>
             </SubNavigation>
             <Routes>
                 <Route path={'/'} element={<OverviewContainer />} />
                 <Route path={'/servers'} element={<ServersContainer />} />
                 <Route path={'/settings'} element={<SettingsContainer />} />
+                <Route path={'/access-control'} element={<AccessControlContainer />} />
 
                 <Route path={'/*'} element={<NotFound />} />
             </Routes>

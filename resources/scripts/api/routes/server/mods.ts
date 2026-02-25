@@ -161,6 +161,13 @@ export interface ModFilesResponse {
     };
 }
 
+export interface ProviderAccessResponse {
+    providers: Record<string, { allowed: boolean }>;
+}
+
+export const getProviderAccess = (uuid: string): Promise<ProviderAccessResponse> =>
+    http.get(`/api/client/servers/${uuid}/mods/providers`).then(r => r.data);
+
 export interface MinecraftVersion {
     id: number;
     gameVersionId: number;

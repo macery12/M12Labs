@@ -145,16 +145,26 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Mods Controller Routes
+    | Plugins Controller Routes
     |--------------------------------------------------------------------------
     |
-    | Endpoint: /api/application/mods
+    | Endpoint: /api/application/plugins
     |
     */
+    Route::group(['prefix' => '/plugins'], function () {
+        Route::put('/settings', [Application\PluginsController::class, 'update']);
+        Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
+        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
+
+        Route::get('/providers', [Application\PluginProviderRulesController::class, 'index']);
+        Route::put('/providers', [Application\PluginProviderRulesController::class, 'update']);
+    });
+
+    // Legacy mods routes (backwards compatibility)
     Route::group(['prefix' => '/mods'], function () {
-        Route::put('/settings', [Application\ModsController::class, 'update']);
-        Route::get('/analytics', [Application\ModsController::class, 'analytics']);
-        Route::delete('/key', [Application\ModsController::class, 'resetKey']);
+        Route::put('/settings', [Application\PluginsController::class, 'update']);
+        Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
+        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
     });
 
     /*
