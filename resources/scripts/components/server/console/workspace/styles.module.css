@@ -27,5 +27,5 @@
 }
 
 .editable {
-    @apply ring-1 ring-dashed ring-slate-600;
+    @apply border border-dashed border-slate-600;
 }
