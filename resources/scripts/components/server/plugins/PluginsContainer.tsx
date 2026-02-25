@@ -6,6 +6,7 @@ import { useStoreState } from '@/state/hooks';
 import ModsContainer from '@server/mods/ModsContainer';
 import ModpacksContainer from '@server/modpacks/ModpacksContainer';
 import { getProviderAccess, ProviderAccessResponse } from '@/api/routes/server/mods';
+import Spinner from '@/elements/Spinner';
 
 type Provider = 'modrinth' | 'curseforge' | 'spiget';
 type Resource = 'mods' | 'modpacks' | 'plugins';

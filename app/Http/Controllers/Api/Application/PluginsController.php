@@ -75,7 +75,7 @@ class PluginsController extends ApplicationApiController
                     'denied_by_policy' => 0,
                 ],
                 'spiget' => [
-                    'enabled' => (bool) Setting::get('settings::modules:mods:spiget_enabled', false),
+                    'enabled' => true,
                     'rate_limit' => null,
                     'denied_by_policy' => 0,
                 ],
