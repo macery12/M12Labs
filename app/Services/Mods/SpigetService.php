@@ -433,12 +433,23 @@ class SpigetService
                 'sort' => 'name',
             ]);
 
-            return array_map(function ($category) {
-                return [
+            $unique = [];
+            foreach ($categories as $category) {
+                $name = $category['name'] ?? '';
+                $key = mb_strtolower(trim($name));
+                if ($key === '') {
+                    continue;
+                }
+                if (array_key_exists($key, $unique)) {
+                    continue;
+                }
+                $unique[$key] = [
                     'id' => $category['id'] ?? 0,
-                    'name' => $category['name'] ?? '',
+                    'name' => $name,
                 ];
-            }, $categories);
+            }
+
+            return array_values($unique);
         });
     }
 
