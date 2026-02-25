@@ -213,10 +213,8 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                         ))}
                     </Select>
                 </div>
-            </div>
 
-            {source === 'spiget' && (
-                <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6`}>
+                {source === 'spiget' && (
                     <div>
                         <Label>Category</Label>
                         <Select value={categoryId} onChange={e => setCategoryId(e.target.value)}>
@@ -228,8 +226,8 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                             ))}
                         </Select>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             <div css={tw`flex gap-2`}>
                 <Button type={'submit'}>Search</Button>
