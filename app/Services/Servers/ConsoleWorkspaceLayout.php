@@ -19,9 +19,9 @@ class ConsoleWorkspaceLayout
             ['id' => 'memorySummary', 'i' => 'memorySummary', 'x' => 8, 'y' => 0, 'w' => 2, 'h' => 3, 'minW' => 2, 'minH' => 1],
             ['id' => 'diskSummary', 'i' => 'diskSummary', 'x' => 10, 'y' => 0, 'w' => 2, 'h' => 3, 'minW' => 2, 'minH' => 1],
             ['id' => 'console', 'i' => 'console', 'x' => 0, 'y' => 3, 'w' => 9, 'h' => 18, 'minW' => 6, 'minH' => 6],
-            ['id' => 'cpuGraph', 'i' => 'cpuGraph', 'x' => 9, 'y' => 3, 'w' => 3, 'h' => 6, 'minW' => 3, 'minH' => 2],
-            ['id' => 'memoryGraph', 'i' => 'memoryGraph', 'x' => 9, 'y' => 9, 'w' => 3, 'h' => 6, 'minW' => 3, 'minH' => 2],
-            ['id' => 'networkGraph', 'i' => 'networkGraph', 'x' => 9, 'y' => 15, 'w' => 3, 'h' => 6, 'minW' => 3, 'minH' => 2],
+            ['id' => 'cpuGraph', 'i' => 'cpuGraph', 'x' => 9, 'y' => 3, 'w' => 3, 'h' => 8, 'minW' => 3, 'minH' => 2],
+            ['id' => 'memoryGraph', 'i' => 'memoryGraph', 'x' => 9, 'y' => 11, 'w' => 3, 'h' => 8, 'minW' => 3, 'minH' => 2],
+            ['id' => 'networkGraph', 'i' => 'networkGraph', 'x' => 9, 'y' => 19, 'w' => 3, 'h' => 8, 'minW' => 3, 'minH' => 2],
         ],
     ];
 

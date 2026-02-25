@@ -45,9 +45,9 @@ const defaultLayout: ConsoleWorkspaceLayout = {
         { id: 'memorySummary', i: 'memorySummary', x: 8, y: 0, w: 2, h: 3, minW: 2, minH: 1 },
         { id: 'diskSummary', i: 'diskSummary', x: 10, y: 0, w: 2, h: 3, minW: 2, minH: 1 },
         { id: 'console', i: 'console', x: 0, y: 3, w: 9, h: 18, minW: 6, minH: 6 },
-        { id: 'cpuGraph', i: 'cpuGraph', x: 9, y: 3, w: 3, h: 6, minW: 3, minH: 2 },
-        { id: 'memoryGraph', i: 'memoryGraph', x: 9, y: 9, w: 3, h: 6, minW: 3, minH: 2 },
-        { id: 'networkGraph', i: 'networkGraph', x: 9, y: 15, w: 3, h: 6, minW: 3, minH: 2 },
+        { id: 'cpuGraph', i: 'cpuGraph', x: 9, y: 3, w: 3, h: 8, minW: 3, minH: 2 },
+        { id: 'memoryGraph', i: 'memoryGraph', x: 9, y: 11, w: 3, h: 8, minW: 3, minH: 2 },
+        { id: 'networkGraph', i: 'networkGraph', x: 9, y: 19, w: 3, h: 8, minW: 3, minH: 2 },
     ],
 };
 
@@ -126,6 +126,22 @@ const modules: WorkspaceModuleDefinition[] = [
     },
 ];
 
+const compactToTop = (grid: Layout[], cols: number): Layout[] => {
+    const heights = Array(cols).fill(0);
+    const sorted = [...grid].sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
+    return sorted.map(item => {
+        const width = Math.min(item.w, cols);
+        const startX = Math.min(Math.max(item.x, 0), cols - width);
+        const maxY = Math.max(...heights.slice(startX, startX + width));
+        const nextY = Number.isFinite(maxY) ? maxY : 0;
+        const next = { ...item, x: startX, w: width, y: Math.max(0, nextY) };
+        for (let x = startX; x < startX + width; x++) {
+            heights[x] = next.y + item.h;
+        }
+        return next;
+    });
+};
+
 const normalizeLayout = (layout?: ConsoleWorkspaceLayout): WorkspaceLayoutState => {
     const base = layout ?? defaultLayout;
     const normalizedLayout = (base.layout || []).map(item => {
@@ -145,7 +161,13 @@ const normalizeLayout = (layout?: ConsoleWorkspaceLayout): WorkspaceLayoutState 
         },
     );
 
-    return ensured;
+    return {
+        ...ensured,
+        layout: compactToTop(
+            ensured.layout.map(l => ({ ...l, i: l.id })) as Layout[],
+            GRID_COLS.lg,
+        ).map(l => ({ ...l, id: l.i as ConsoleWorkspaceModuleId })),
+    };
 };
 
 const moduleMap = modules.reduce(
@@ -187,11 +209,12 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
     const dirty = useMemo(() => JSON.stringify(layout) !== JSON.stringify(initial), [layout, initial]);
 
     const applyNormalized = (grid: Layout[]) => {
+        const compacted = compactToTop(grid, GRID_COLS.lg);
         setLayout(current => ({
             ...current,
             hidden: current.hidden ?? [],
             layout: current.layout.map(item => {
-                const next = grid.find(l => l.i === item.id);
+                const next = compacted.find(l => l.i === item.id);
                 return next
                     ? {
                           ...item,
@@ -330,10 +353,9 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                         margin={[12, 12]}
                         containerPadding={[0, 0]}
                         layouts={layouts}
-                        onLayoutChange={applyNormalized}
                         onDragStop={applyNormalized}
                         onResizeStop={applyNormalized}
-                        compactType={null}
+                        compactType={'vertical'}
                         isBounded
                     >
                         {renderedModules.map(item => {
@@ -365,9 +387,7 @@ const ConsoleWorkspace = ({ editMode, onToggleEdit }: Props) => {
                                             </button>
                                         </div>
                                     )}
-                                    <div className={styles.moduleBody}>
-                                        <div className={'flex h-full flex-col min-h-0'}>{content}</div>
-                                    </div>
+                                    <div className={styles.moduleContent}>{content}</div>
                                 </div>
                             );
                         })}
