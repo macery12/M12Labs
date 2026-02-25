@@ -1,5 +1,5 @@
 import Spinner from '@/elements/Spinner';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
@@ -37,8 +37,6 @@ import { loadStripeOnce } from '@/lib/stripe';
 
 export default () => {
     const params = useParams<'id'>();
-
-    const vars = useRef(new Map<string, string>()).current;
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
 
@@ -54,6 +52,8 @@ export default () => {
     const [eggs, setEggs] = useState<EggVariable[] | undefined>();
     const [selectedEggId, setSelectedEggId] = useState<number | undefined>();
     const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
+
+    const vars = useMemo(() => new Map<string, string>(), [params.id, selectedEggId]);
 
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [serverName, setServerName] = useState<string>('');
