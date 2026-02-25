@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import Spinner from '@/elements/Spinner';
 import { Alert } from '@/elements/alert';
-import Button from '@/elements/Button';
+import { Button } from '@/elements/button';
 import Checkbox from '@/components/elements/Checkbox';
 import { getProviderRules, updateProviderRules, ProviderRulesResponse } from '@/api/routes/admin/plugins/providers';
 import { useFlashKey } from '@/plugins/useFlash';
