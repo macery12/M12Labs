@@ -161,7 +161,7 @@ class UserController extends ApplicationApiController
             throw new \Exception('You cannot suspend an administrator.');
         }
 
-        $user->update(['state' => $user->isSuspended() ? '' : 'suspended']);
+        $user->update(['state' => $user->isSuspended() ? 'active' : 'suspended']);
 
         Activity::event('admin:users:suspend')
             ->property('user', $user)
