@@ -37,7 +37,7 @@ export default function PluginsContainer() {
     const modProviderConfig = useStoreState(state => state.everest?.data?.mods);
     const uuid = useStoreState(state => state.server?.data?.uuid);
     const [access, setAccess] = useState<ProviderAccessResponse | null>(null);
-    const [loadingAccess, setLoadingAccess] = useState(false);
+    const [loadingAccess, setLoadingAccess] = useState(true);
 
     useEffect(() => {
         if (!uuid) return;
@@ -49,8 +49,6 @@ export default function PluginsContainer() {
 
     const globalModsEnabled = modProviderConfig?.enabled ?? false;
     const curseforgeConfigured = !!modProviderConfig?.curseforge_api_key;
-    const spigetEnabled = !!modProviderConfig?.spiget_enabled && globalModsEnabled;
-
     const providers: Record<Provider, ProviderState> = useMemo(() => {
         const allowed = access?.providers ?? {};
         return {
@@ -69,13 +67,13 @@ export default function PluginsContainer() {
                     : 'Provider disabled for this nest/egg.',
             },
             spiget: {
-                available: spigetEnabled && allowed['spiget.plugins']?.allowed === true,
-                reason: spigetEnabled
+                available: globalModsEnabled && allowed['spiget.plugins']?.allowed === true,
+                reason: globalModsEnabled
                     ? 'Provider disabled for this nest/egg.'
-                    : 'Spiget integration is disabled or not configured for this server.',
+                    : 'Plugins module is disabled by the administrator.',
             },
         };
-    }, [access, globalModsEnabled, curseforgeConfigured, spigetEnabled]);
+    }, [access, globalModsEnabled, curseforgeConfigured]);
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -89,21 +87,23 @@ export default function PluginsContainer() {
     const initialProviderParam = searchParams.get('provider') as Provider | null;
     const initialResourceParam = searchParams.get('resource') as Resource | null;
 
-    const resourceOptions: Record<Provider, Array<{ id: Resource; label: string; enabled: boolean; comingSoon?: boolean }>> =
-        useMemo(
-            () => ({
-                modrinth: [
-                    { id: 'mods', label: 'Mods', enabled: true },
-                    { id: 'modpacks', label: 'Modpacks', enabled: false, comingSoon: true },
-                ],
-                curseforge: [
-                    { id: 'mods', label: 'Mods', enabled: true },
-                    { id: 'modpacks', label: 'Modpacks', enabled: true },
-                ],
-                spiget: [{ id: 'plugins', label: 'Plugins', enabled: true }],
-            }),
-            [providers.spiget.available],
-        );
+    const resourceOptions: Record<
+        Provider,
+        Array<{ id: Resource; label: string; enabled: boolean; comingSoon?: boolean }>
+    > = useMemo(
+        () => ({
+            modrinth: [
+                { id: 'mods', label: 'Mods', enabled: true },
+                { id: 'modpacks', label: 'Modpacks', enabled: false, comingSoon: true },
+            ],
+            curseforge: [
+                { id: 'mods', label: 'Mods', enabled: true },
+                { id: 'modpacks', label: 'Modpacks', enabled: true },
+            ],
+            spiget: [{ id: 'plugins', label: 'Plugins', enabled: true }],
+        }),
+        [],
+    );
 
     const [activeProvider, setActiveProvider] = useState<Provider>(
         initialProviderParam && providers[initialProviderParam]
@@ -172,7 +172,11 @@ export default function PluginsContainer() {
     };
 
     const renderContent = () => {
-    if (!hasAvailableProvider || loadingAccess) {
+    if (loadingAccess) {
+        return <Spinner size={'large'} centered />;
+    }
+
+    if (!hasAvailableProvider) {
         return <NotConfigured label={'Add-ons'} reason={'No providers are configured for this server.'} />;
     }
         if (!providers[activeProvider].available) {
