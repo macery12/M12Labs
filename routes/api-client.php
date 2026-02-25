@@ -213,12 +213,12 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::group(['prefix' => '/mods'], function () {
             Route::get('/search', [Client\Servers\ModsController::class, 'search'])->middleware(['throttle:mods.browse']);
+            Route::get('/providers', [Client\Servers\ModsController::class, 'providerAccess']);
             Route::get('/{modId}', [Client\Servers\ModsController::class, 'getMod'])->middleware(['throttle:mods.browse']);
             Route::get('/{modId}/files', [Client\Servers\ModsController::class, 'getModFiles'])->middleware(['throttle:mods.browse']);
             Route::post('/{modId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadMod'])->middleware(['throttle:5,1']);
             Route::get('/minecraft/versions', [Client\Servers\ModsController::class, 'getMinecraftVersions'])->middleware(['throttle:mods.meta']);
             Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:mods.meta']);
-            Route::get('/providers', [Client\Servers\ModsController::class, 'providerAccess']);
         });
 
         Route::group(['prefix' => '/modpacks'], function () {
