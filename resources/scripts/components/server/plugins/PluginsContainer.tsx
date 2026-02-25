@@ -34,8 +34,8 @@ const providerLabels: Record<Provider, string> = {
 };
 
 export default function PluginsContainer() {
-    const modProviderConfig = useStoreState(state => state.everest.data?.mods);
-    const uuid = useStoreState(state => state.server.data?.uuid);
+    const modProviderConfig = useStoreState(state => state.everest?.data?.mods);
+    const uuid = useStoreState(state => state.server?.data?.uuid);
     const [access, setAccess] = useState<ProviderAccessResponse | null>(null);
     const [loadingAccess, setLoadingAccess] = useState(false);
 
