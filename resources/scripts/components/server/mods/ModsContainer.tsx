@@ -51,6 +51,9 @@ export default ({ sourceOverride }: Props) => {
         pageSize: 20,
         index: 0,
         source: sourceOverride ?? activeSource,
+        minRating: undefined,
+        platform: undefined,
+        categoryId: undefined,
     });
 
     useEffect(() => {
@@ -66,6 +69,9 @@ export default ({ sourceOverride }: Props) => {
             pageSize: 20,
             index: 0,
             source: sourceOverride,
+            minRating: undefined,
+            platform: undefined,
+            categoryId: undefined,
         });
         setFiltersMeta(null);
     }, [sourceOverride]);
@@ -116,6 +122,9 @@ export default ({ sourceOverride }: Props) => {
             gameVersion: undefined,
             modLoaderType: undefined,
             sortField: source === 'spiget' ? 'downloads' : '2',
+            minRating: undefined,
+            platform: undefined,
+            categoryId: undefined,
         });
         setFiltersMeta(null);
     };

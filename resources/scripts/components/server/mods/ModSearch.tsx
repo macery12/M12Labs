@@ -17,6 +17,7 @@ interface Props {
         options?: {
             categories?: Array<{ id: number; name: string }>;
             sortBy?: Array<{ id: string; label: string }>;
+            minRating?: Array<{ id: number | null; label: string }>;
         };
         unsupported?: Record<string, string>;
     };
@@ -40,6 +41,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
     const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
     const [categoryId, setCategoryId] = useState<string>('');
+    const [minRating, setMinRating] = useState<string>(initialParams.minRating?.toString() ?? '');
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
     const [modLoaders, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
@@ -108,11 +110,13 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                 pageSize: 20,
                 index: 0,
                 categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
+                minRating: minRating ? parseFloat(minRating) : undefined,
+                platform: undefined,
             });
         }, 400);
 
         return () => clearTimeout(timer);
-    }, [searchFilter, sortField, categoryId, source]);
+    }, [searchFilter, sortField, categoryId, minRating, source]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -123,6 +127,8 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
             gameVersion: source === 'spiget' ? undefined : gameVersion || undefined,
             modLoaderType: source === 'spiget' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
+            minRating: source === 'spiget' && minRating ? parseFloat(minRating) : undefined,
+            platform: source === 'spiget' ? undefined : undefined,
             pageSize: 20,
             index: 0,
         });
@@ -134,6 +140,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
         setGameVersion('');
         setModLoaderType('');
         setCategoryId('');
+        setMinRating('');
         onSearch({
             sortField: source === 'spiget' ? 'downloads' : '2',
             sortOrder: 'desc',
@@ -149,8 +156,18 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
 
     const categories = filtersMeta?.options?.categories || [];
     const unsupported = filtersMeta?.unsupported || {};
+    const minRatingOptions =
+        source === 'spiget' && filtersMeta?.options?.minRating?.length
+            ? filtersMeta.options.minRating
+            : [
+                  { id: null, label: 'Any Rating' },
+                  { id: 4.5, label: '4.5+' },
+                  { id: 4.0, label: '4.0+' },
+                  { id: 3.5, label: '3.5+' },
+                  { id: 3.0, label: '3.0+' },
+              ];
     const showMinecraftVersion = source !== 'spiget';
-    const showModLoader = source !== 'spiget';
+    const showModLoader = false; // replaced by Platform
 
     return (
         <form onSubmit={handleSubmit}>
@@ -179,33 +196,23 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                     </div>
                 ) : (
                     <div>
-                        <Label>Minecraft Version</Label>
-                        <div css={tw`text-xs text-neutral-500 mt-2`}>
-                            {unsupported?.minecraftVersion || 'Not available for Spigot plugins.'}
-                        </div>
-                    </div>
-                )}
-
-                {showModLoader ? (
-                    <div>
-                        <Label>Mod Loader</Label>
-                        <Select value={modLoaderType} onChange={e => setModLoaderType(e.target.value)}>
-                            <option value="">All Loaders</option>
-                            {modLoaders.map(loader => (
-                                <option key={loader.id} value={loader.id}>
-                                    {loader.name}
+                        <Label>Minimum Rating</Label>
+                        <Select value={minRating} onChange={e => setMinRating(e.target.value)}>
+                            {minRatingOptions.map(option => (
+                                <option key={option.label} value={option.id ?? ''}>
+                                    {option.label}
                                 </option>
                             ))}
                         </Select>
                     </div>
-                ) : (
-                    <div>
-                        <Label>Mod Loader</Label>
-                        <div css={tw`text-xs text-neutral-500 mt-2`}>
-                            {unsupported?.modLoader || 'Not applicable for Spigot plugins.'}
-                        </div>
-                    </div>
                 )}
+
+                <div>
+                    <Label>Platform</Label>
+                    <div css={tw`text-xs text-neutral-500 mt-2`}>
+                        {unsupported?.platform || 'All plugins are Spigot-compatible.'}
+                    </div>
+                </div>
 
                 <div>
                     <Label>Sort By</Label>

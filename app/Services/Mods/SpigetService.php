@@ -34,13 +34,24 @@ class SpigetService
         $query = $params['searchFilter'] ?? '';
         $categoryId = $params['categoryId'] ?? null;
         $sort = $this->mapSortField($params['sortField'] ?? null);
+        $minRating = $params['minRating'] ?? null;
+        $platform = $params['platform'] ?? null;
         $pageSize = (int) ($params['pageSize'] ?? $this->defaultPageSize);
         $index = (int) ($params['index'] ?? 0);
         $page = $pageSize > 0 ? (int) floor($index / $pageSize) : 0;
 
-        $cacheKey = sprintf('spiget_search_%s_%s_%s_%s_%s', md5($query), $page, $pageSize, $sort, (string) $categoryId);
+        $cacheKey = sprintf(
+            'spiget_search_%s_%s_%s_%s_%s_%s',
+            md5($query),
+            $page,
+            $pageSize,
+            $sort,
+            (string) $categoryId,
+            (string) $minRating,
+            (string) $platform
+        );
 
-        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($query, $categoryId, $page, $pageSize, $sort) {
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($query, $categoryId, $page, $pageSize, $sort, $minRating) {
             $path = $this->resolveListPath($query, $categoryId);
             $response = $this->request($path, [
                 'page' => $page,
@@ -52,6 +63,13 @@ class SpigetService
             $data = array_map(function ($item) {
                 return $this->transformResourceToCommonFormat($item, []);
             }, $response);
+
+            if (!is_null($minRating)) {
+                $data = array_values(array_filter($data, function ($item) use ($minRating) {
+                    $rating = $item['rating']['average'] ?? null;
+                    return $rating === null ? false : $rating >= (float) $minRating;
+                }));
+            }
 
             $resultCount = count($data);
             $totalCount = ($page * $pageSize) + $resultCount;
@@ -185,14 +203,17 @@ class SpigetService
                 'search' => true,
                 'category' => true,
                 'sort' => array_keys($this->sortFieldMap()),
+                'minRating' => true,
             ],
             'unsupported' => [
                 'minecraftVersion' => 'Spiget does not provide reliable per-version filtering.',
                 'modLoader' => 'Not applicable for Spigot plugins.',
+                'platform' => 'All plugins are Spigot-compatible.',
             ],
             'options' => [
                 'categories' => $this->getCategories(),
                 'sortBy' => $this->getSortOptions(),
+                'minRating' => $this->getMinRatingOptions(),
             ],
         ];
     }
@@ -276,6 +297,7 @@ class SpigetService
             'dateReleased' => isset($resource['releaseDate']) ? date('c', (int) $resource['releaseDate']) : '',
             'allowModDistribution' => true,
             'gamePopularityRank' => 0,
+            'rating' => $resource['rating'] ?? ['average' => 0, 'count' => 0],
         ];
     }
 
@@ -388,6 +410,17 @@ class SpigetService
             ['id' => 'updated', 'label' => 'Recently Updated'],
             ['id' => 'newest', 'label' => 'Newest'],
             ['id' => 'name', 'label' => 'Name (A–Z)'],
+        ];
+    }
+
+    private function getMinRatingOptions(): array
+    {
+        return [
+            ['id' => null, 'label' => 'Any Rating'],
+            ['id' => 4.5, 'label' => '4.5+'],
+            ['id' => 4.0, 'label' => '4.0+'],
+            ['id' => 3.5, 'label' => '3.5+'],
+            ['id' => 3.0, 'label' => '3.0+'],
         ];
     }
 

@@ -10,6 +10,8 @@ export interface ModSearchParams {
     index?: number;
     source?: 'modrinth' | 'curseforge' | 'spiget';
     categoryId?: number;
+    minRating?: number;
+    platform?: string;
 }
 
 export interface ModFileParams {
@@ -133,12 +135,14 @@ export interface ModSearchResponse {
             search?: boolean;
             category?: boolean;
             sort?: string[];
+            minRating?: boolean;
             [key: string]: unknown;
         };
         unsupported?: Record<string, string>;
         options?: {
             categories?: Array<{ id: number; name: string }>;
             sortBy?: Array<{ id: string; label: string }>;
+            minRating?: Array<{ id: number | null; label: string }>;
         };
     };
     provider?: string;

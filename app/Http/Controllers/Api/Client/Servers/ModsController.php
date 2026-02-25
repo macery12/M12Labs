@@ -78,6 +78,8 @@ class ModsController extends ClientApiController
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
             'categoryId' => $request->input('categoryId'),
+            'minRating' => $request->input('minRating'),
+            'platform' => $request->input('platform'),
         ], function ($value) {
             return $value !== null;
         });
