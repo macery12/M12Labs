@@ -173,7 +173,7 @@ class User extends Model implements
         'password' => 'sometimes|nullable|string',
         'root_admin' => 'boolean',
         'language' => 'string',
-        'state' => 'sometimes|nullable|string|in:active,suspended',
+        'state' => 'sometimes|string|in:active,suspended',
         'use_totp' => 'boolean',
         'admin_role_id' => 'nullable|exists:admin_roles,id',
         'totp_secret' => 'nullable|string',
@@ -199,17 +199,32 @@ class User extends Model implements
      */
     public function toReactObject(): array
     {
-        return [
-            'uuid' => $this->uuid,
-            'username' => $this->username,
-            'email' => $this->email,
-            'language' => $this->language,
-            'avatar_url' => $this->avatar_url,
-            'admin_role_name' => $this->admin_role_name,
-            'root_admin' => (bool) $this->root_admin,
-            'use_totp' => (bool) $this->use_totp,
-            'state' => $this->state,
-        ];
+        // Restore original behavior: build collection from array, append computed attrs,
+        // and exclude internal fields. This avoids triggering attribute accessors
+        // unexpectedly and keeps previous structure.
+        return Collection::make($this->append(['avatar_url', 'admin_role_name'])->toArray())
+            ->except(['id', 'external_id', 'admin_role'])
+            ->toArray();
+    }
+
+    /**
+     * Accessor for state attribute.
+     */
+    public function getStateAttribute($value)
+    {
+        return $value;
+    }
+
+    /**
+     * Mutator for state attribute: coerce any unexpected value to 'active'.
+     */
+    public function setStateAttribute($value)
+    {
+        if (!in_array($value, ['active', 'suspended'], true)) {
+            $value = 'active';
+        }
+
+        $this->attributes['state'] = $value;
     }
 
     /**
