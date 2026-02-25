@@ -33,7 +33,7 @@ import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orde
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import classNames from 'classnames';
-import { loadStripeOnce, unloadStripe } from '@/lib/stripe';
+import { loadStripeOnce } from '@/lib/stripe';
 
 export default () => {
     const params = useParams<'id'>();
@@ -305,12 +305,6 @@ export default () => {
         };
 
         fetchData();
-
-        return () => {
-            setStripe(null);
-            setIntent(null);
-            unloadStripe();
-        };
     }, [params.id]);
 
     useEffect(() => {
