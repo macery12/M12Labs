@@ -61,3 +61,19 @@ export const loadStripeOnce = async (publishableKey: string): Promise<Stripe | n
 
     return cachedStripePromise;
 };
+
+export const unloadStripe = () => {
+    cachedPublishableKey = null;
+    cachedStripePromise = null;
+
+    if (typeof window === 'undefined') return;
+
+    const stripeScript = document.querySelector<HTMLScriptElement>('script[src^="https://js.stripe.com"]');
+    if (stripeScript?.parentNode) {
+        stripeScript.parentNode.removeChild(stripeScript);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    delete (window as StripeWindow).Stripe;
+};

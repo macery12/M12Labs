@@ -18,7 +18,7 @@ import TitledGreyBox from '@/elements/TitledGreyBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faDollarSign, faInfoCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
-import { loadStripeOnce } from '@/lib/stripe';
+import { loadStripeOnce, unloadStripe } from '@/lib/stripe';
 
 interface FormValues {
     amount: string;
@@ -76,6 +76,14 @@ export default () => {
             },
         },
     };
+
+    React.useEffect(
+        () => () => {
+            setStripePromise(null);
+            unloadStripe();
+        },
+        [],
+    );
 
     return (
         <PageContentBlock title={'Support Us'}>

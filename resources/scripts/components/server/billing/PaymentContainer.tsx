@@ -15,7 +15,7 @@ import { faCreditCard, faCheck, faExclamationTriangle } from '@fortawesome/free-
 import { faPaypal } from '@fortawesome/free-brands-svg-icons';
 import { Alert } from '@/elements/alert';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { loadStripeOnce } from '@/lib/stripe';
+import { loadStripeOnce, unloadStripe } from '@/lib/stripe';
 
 type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
 
@@ -83,6 +83,12 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
         };
 
         fetchData();
+
+        return () => {
+            setStripe(null);
+            setIntent(null);
+            unloadStripe();
+        };
     }, [id, couponId]);
 
     if (!id) return <Spinner size={'large'} centered />;
