@@ -35,7 +35,6 @@ class SpigetService
         $categoryId = $params['categoryId'] ?? null;
         $sort = $this->mapSortField($params['sortField'] ?? null);
         $minRating = $params['minRating'] ?? null;
-        $platform = $params['platform'] ?? null;
         $pageSize = (int) ($params['pageSize'] ?? $this->defaultPageSize);
         $index = (int) ($params['index'] ?? 0);
         $page = $pageSize > 0 ? (int) floor($index / $pageSize) : 0;
@@ -47,8 +46,7 @@ class SpigetService
             $pageSize,
             $sort,
             (string) $categoryId,
-            (string) $minRating,
-            (string) $platform
+            (string) $minRating
         );
 
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($query, $categoryId, $page, $pageSize, $sort, $minRating) {
@@ -206,9 +204,8 @@ class SpigetService
                 'minRating' => true,
             ],
             'unsupported' => [
-                'minecraftVersion' => 'Spiget does not provide reliable per-version filtering.',
-                'modLoader' => 'Not applicable for Spigot plugins.',
-                'platform' => 'All plugins are Spigot-compatible.',
+            'minecraftVersion' => 'Spiget does not provide reliable per-version filtering.',
+            'modLoader' => 'Not applicable for Spigot plugins.',
             ],
             'options' => [
                 'categories' => $this->getCategories(),

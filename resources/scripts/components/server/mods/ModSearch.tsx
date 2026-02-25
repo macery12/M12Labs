@@ -111,7 +111,6 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                 index: 0,
                 categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
                 minRating: minRating ? parseFloat(minRating) : undefined,
-                platform: undefined,
             });
         }, 400);
 
@@ -128,7 +127,6 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
             modLoaderType: source === 'spiget' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
             minRating: source === 'spiget' && minRating ? parseFloat(minRating) : undefined,
-            platform: source === 'spiget' ? undefined : undefined,
             pageSize: 20,
             index: 0,
         });
@@ -155,7 +153,6 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
             : DEFAULT_SORT_OPTIONS;
 
     const categories = filtersMeta?.options?.categories || [];
-    const unsupported = filtersMeta?.unsupported || {};
     const minRatingOptions =
         source === 'spiget' && filtersMeta?.options?.minRating?.length
             ? filtersMeta.options.minRating
@@ -167,7 +164,6 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                   { id: 3.0, label: '3.0+' },
               ];
     const showMinecraftVersion = source !== 'spiget';
-    const showModLoader = false; // replaced by Platform
 
     return (
         <form onSubmit={handleSubmit}>
@@ -206,13 +202,6 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                         </Select>
                     </div>
                 )}
-
-                <div>
-                    <Label>Platform</Label>
-                    <div css={tw`text-xs text-neutral-500 mt-2`}>
-                        {unsupported?.platform || 'All plugins are Spigot-compatible.'}
-                    </div>
-                </div>
 
                 <div>
                     <Label>Sort By</Label>

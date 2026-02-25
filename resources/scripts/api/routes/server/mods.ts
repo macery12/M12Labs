@@ -11,7 +11,6 @@ export interface ModSearchParams {
     source?: 'modrinth' | 'curseforge' | 'spiget';
     categoryId?: number;
     minRating?: number;
-    platform?: string;
 }
 
 export interface ModFileParams {
