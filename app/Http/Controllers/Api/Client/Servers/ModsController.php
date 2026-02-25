@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\SpigetService;
+use Everest\Services\Plugins\PluginProviderGate;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
@@ -30,7 +31,8 @@ class ModsController extends ClientApiController
         private ModrinthService $modrinthService,
         private SpigetService $spigetService,
         private PluginInstallService $pluginInstallService,
-        private DaemonFileRepository $fileRepository
+        private DaemonFileRepository $fileRepository,
+        private PluginProviderGate $providerGate
     ) {
         parent::__construct();
     }
@@ -54,16 +56,57 @@ class ModsController extends ClientApiController
     }
 
     /**
+     * Determine provider key based on source and resource.
+     */
+    private function resolveProviderKey(?string $source, string $resource = 'mods'): string
+    {
+        if ($source === 'curseforge') {
+            return 'curseforge';
+        }
+
+        if ($source === 'spiget') {
+            return 'spiget.plugins';
+        }
+
+        if ($source === 'modrinth' && $resource === 'mods') {
+            return 'modrinth.mods';
+        }
+
+        return 'modrinth.mods';
+    }
+
+    private function denyResponse(): JsonResponse
+    {
+        return response()->json([
+            'error' => 'Provider disabled',
+            'reason' => "This provider is not enabled for this server (egg/nest policy).",
+        ], 403);
+    }
+
+    private function checkProviderAllowed(Server $server, ?string $source, string $resource = 'mods'): ?JsonResponse
+    {
+        if (!$server->mods_enabled) {
+            return $this->denyResponse();
+        }
+
+        $providerKey = $this->resolveProviderKey($source, $resource);
+
+        if (!$this->providerGate->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id)) {
+            return $this->denyResponse();
+        }
+
+        return null;
+    }
+
+    /**
      * Search for mods in the selected database.
      *
      * @throws ModsServiceException
      */
     public function search(SearchModsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -101,10 +144,8 @@ class ModsController extends ClientApiController
      */
     public function getMod(GetModRequest $request, Server $server, string $modId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -128,10 +169,8 @@ class ModsController extends ClientApiController
      */
     public function getModFiles(GetModFilesRequest $request, Server $server, string $modId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -164,10 +203,8 @@ class ModsController extends ClientApiController
      */
     public function downloadMod(DownloadModRequest $request, Server $server, string $modId, string $fileId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+            return $response;
         }
 
         try {
@@ -196,10 +233,8 @@ class ModsController extends ClientApiController
      */
     public function getMinecraftVersions(GetMinecraftVersionsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -223,10 +258,8 @@ class ModsController extends ClientApiController
      */
     public function getModLoaderTypes(GetMinecraftVersionsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -250,10 +283,8 @@ class ModsController extends ClientApiController
      */
     public function searchModpacks(SearchModsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         // Only accept valid modpack search parameters
@@ -286,10 +317,8 @@ class ModsController extends ClientApiController
      */
     public function getModpack(GetModRequest $request, Server $server, int $modpackId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         try {
@@ -310,10 +339,8 @@ class ModsController extends ClientApiController
      */
     public function getModpackFiles(GetModFilesRequest $request, Server $server, int $modpackId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         $params = array_filter([
@@ -343,10 +370,8 @@ class ModsController extends ClientApiController
      */
     public function downloadModpack(DownloadModRequest $request, Server $server, int $modpackId, int $fileId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         // Extend PHP execution time for large modpack downloads (10 minutes)
