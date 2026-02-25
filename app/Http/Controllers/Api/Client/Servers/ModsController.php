@@ -3,12 +3,15 @@
 namespace Everest\Http\Controllers\Api\Client\Servers;
 
 use Everest\Models\Server;
+use Everest\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
+use Everest\Services\Mods\SpigetService;
 use Everest\Repositories\Wings\DaemonFileRepository;
+use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetModRequest;
@@ -25,6 +28,8 @@ class ModsController extends ClientApiController
     public function __construct(
         private CurseForgeService $curseForgeService,
         private ModrinthService $modrinthService,
+        private SpigetService $spigetService,
+        private PluginInstallService $pluginInstallService,
         private DaemonFileRepository $fileRepository
     ) {
         parent::__construct();
@@ -33,12 +38,16 @@ class ModsController extends ClientApiController
     /**
      * Get the mod service based on the request source parameter.
      */
-    private function getModService(string $source = null): CurseForgeService|ModrinthService
+    private function getModService(string $source = null): CurseForgeService|ModrinthService|SpigetService
     {
-        $source = $source ?? config('modules.mods.default_source', 'modrinth');
+        $source = $source ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
 
         if ($source === 'curseforge') {
             return $this->curseForgeService;
+        }
+
+        if ($source === 'spiget') {
+            return $this->spigetService;
         }
 
         return $this->modrinthService;
@@ -68,6 +77,8 @@ class ModsController extends ClientApiController
             'modLoaderType' => $request->input('modLoaderType'),
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
+            'categoryId' => $request->input('categoryId'),
+            'minRating' => $request->input('minRating'),
         ], function ($value) {
             return $value !== null;
         });
@@ -159,87 +170,12 @@ class ModsController extends ClientApiController
             ], 403);
         }
 
-        $source = $request->input('source');
-        $modService = $this->getModService($source);
-
         try {
-            // Get download URL based on source
-            if ($source === 'curseforge') {
-                $modFile = $this->curseForgeService->getModFile((int) $modId, (int) $fileId);
+            $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
+            $type = $source === 'spiget' ? 'plugin' : 'mod';
+            $result = $this->pluginInstallService->installFromProvider($server, $source, $type, $modId, $fileId);
 
-                if (!isset($modFile['data'])) {
-                    throw new ModsServiceException('Failed to retrieve mod file details.');
-                }
-
-                $fileData = $modFile['data'];
-                $fileName = $fileData['fileName'] ?? 'mod.jar';
-                $downloadUrl = $this->curseForgeService->getModFileDownloadUrl((int) $modId, (int) $fileId);
-            } else {
-                // Modrinth
-                $downloadUrl = $this->modrinthService->getDownloadUrl($fileId);
-
-                // Extract filename from URL or use a default
-                $urlParts = explode('/', $downloadUrl);
-                $fileName = end($urlParts);
-
-                if (empty($fileName) || !str_contains($fileName, '.')) {
-                    $fileName = 'mod_' . $fileId . '.jar';
-                }
-            }
-
-            // Create /mods folder if it doesn't exist
-            try {
-                $this->fileRepository->setServer($server)->createDirectory('mods', '/');
-            } catch (\Exception $e) {
-                // Folder might already exist, that's fine
-                Log::info('Mods folder creation skipped: ' . $e->getMessage());
-            }
-
-            // Download the mod file using streaming to avoid memory issues
-            $tempPath = storage_path('app/temp/mod_' . uniqid() . '.jar');
-            $tempDir = dirname($tempPath);
-
-            if (!is_dir($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
-
-            $fileHandle = fopen($tempPath, 'w');
-            if (!$fileHandle) {
-                throw new ModsServiceException('Failed to create temporary file for mod download.');
-            }
-
-            try {
-                $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
-                // Note: sink() automatically closes the file handle, so we don't call fclose() here
-
-                if (!$response->successful()) {
-                    @unlink($tempPath);
-                    throw new ModsServiceException('Failed to download mod file from CurseForge.');
-                }
-
-                // Read and upload to server's /mods folder
-                $modContent = file_get_contents($tempPath);
-                $this->fileRepository->setServer($server)->putContent("/mods/{$fileName}", $modContent);
-
-                // Clean up temp file
-                @unlink($tempPath);
-            } catch (\Exception $e) {
-                // Only close if still a valid resource (sink may not have been called yet)
-                if (is_resource($fileHandle)) {
-                    fclose($fileHandle);
-                }
-                @unlink($tempPath);
-                throw $e;
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Mod downloaded and uploaded successfully.',
-                'file' => [
-                    'name' => $fileName,
-                    'path' => "/mods/{$fileName}",
-                ],
-            ]);
+            return response()->json($result);
         } catch (ModsServiceException $e) {
             return response()->json([
                 'error' => $e->getMessage(),

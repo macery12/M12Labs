@@ -8,7 +8,9 @@ export interface ModSearchParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: string;
+    source?: 'modrinth' | 'curseforge' | 'spiget';
+    categoryId?: number;
+    minRating?: number;
 }
 
 export interface ModFileParams {
@@ -16,7 +18,7 @@ export interface ModFileParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: string;
+    source?: 'modrinth' | 'curseforge' | 'spiget';
 }
 
 export interface CurseForgeAuthor {
@@ -127,6 +129,22 @@ export interface ModSearchResponse {
         resultCount: number;
         totalCount: number;
     };
+    filters?: {
+        supported?: {
+            search?: boolean;
+            category?: boolean;
+            sort?: string[];
+            minRating?: boolean;
+            [key: string]: unknown;
+        };
+        unsupported?: Record<string, string>;
+        options?: {
+            categories?: Array<{ id: number; name: string }>;
+            sortBy?: Array<{ id: string; label: string }>;
+            minRating?: Array<{ id: number | null; label: string }>;
+        };
+    };
+    provider?: string;
 }
 
 export interface ModResponse {

@@ -51,6 +51,19 @@ return [
     'modrinth_api_url' => env('MODRINTH_API_URL', 'https://api.modrinth.com/v2'),
 
     /*
+     * Spiget API endpoint and toggle.
+     */
+    'spiget_api_url' => env('SPIGET_API_URL', 'https://api.spiget.org/v2'),
+    'spiget_enabled' => env('SPIGET_ENABLED', false),
+
+    /*
+     * Maximum download sizes (in bytes).
+     */
+    'max_mod_size' => env('MODS_MAX_MOD_SIZE', 157286400), // 150MB default
+    'max_plugin_size' => env('PLUGINS_MAX_SIZE', 104857600), // 100MB default
+    'max_modpack_size' => env('MODPACK_MAX_SIZE', 524288000), // 500MB default
+
+    /*
      * Default page size for mod listings
      */
     'default_page_size' => env('MODS_DEFAULT_PAGE_SIZE', 20),
