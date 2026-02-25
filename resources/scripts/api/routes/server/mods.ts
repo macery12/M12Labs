@@ -9,6 +9,7 @@ export interface ModSearchParams {
     pageSize?: number;
     index?: number;
     source?: 'modrinth' | 'curseforge' | 'spiget';
+    categoryId?: number;
 }
 
 export interface ModFileParams {
@@ -127,6 +128,20 @@ export interface ModSearchResponse {
         resultCount: number;
         totalCount: number;
     };
+    filters?: {
+        supported?: {
+            search?: boolean;
+            category?: boolean;
+            sort?: string[];
+            [key: string]: unknown;
+        };
+        unsupported?: Record<string, string>;
+        options?: {
+            categories?: Array<{ id: number; name: string }>;
+            sortBy?: Array<{ id: string; label: string }>;
+        };
+    };
+    provider?: string;
 }
 
 export interface ModResponse {

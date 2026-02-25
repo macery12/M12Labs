@@ -13,9 +13,16 @@ interface Props {
     onSearch: (params: ModSearchParams) => void;
     initialParams: ModSearchParams;
     source: string;
+    filtersMeta?: {
+        options?: {
+            categories?: Array<{ id: number; name: string }>;
+            sortBy?: Array<{ id: string; label: string }>;
+        };
+        unsupported?: Record<string, string>;
+    };
 }
 
-const SORT_OPTIONS = [
+const DEFAULT_SORT_OPTIONS = [
     { value: '1', label: 'Featured' },
     { value: '2', label: 'Popularity' },
     { value: '3', label: 'Last Updated' },
@@ -24,19 +31,26 @@ const SORT_OPTIONS = [
     { value: '6', label: 'Total Downloads' },
 ];
 
-export default ({ onSearch, initialParams, source }: Props) => {
+export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
-    const [sortField, setSortField] = useState(initialParams.sortField || '2');
+    const [sortField, setSortField] = useState(initialParams.sortField || (source === 'spiget' ? 'downloads' : '2'));
     const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
+    const [categoryId, setCategoryId] = useState<string>('');
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
     const [modLoaders, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
 
     useEffect(() => {
+        if (source === 'spiget') {
+            setMinecraftVersions([]);
+            setModLoaders([]);
+            return;
+        }
+
         getMinecraftVersions(uuid, source)
             .then(response => {
                 const versions = response.data
@@ -84,14 +98,31 @@ export default ({ onSearch, initialParams, source }: Props) => {
             });
     }, [uuid, source]);
 
+    useEffect(() => {
+        if (source !== 'spiget') return;
+        const timer = setTimeout(() => {
+            onSearch({
+                searchFilter: searchFilter || undefined,
+                sortField,
+                sortOrder: 'desc',
+                pageSize: 20,
+                index: 0,
+                categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
+            });
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [searchFilter, sortField, categoryId, source]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSearch({
             searchFilter: searchFilter || undefined,
             sortField,
             sortOrder: 'desc',
-            gameVersion: gameVersion || undefined,
-            modLoaderType: modLoaderType ? parseInt(modLoaderType, 10) : undefined,
+            gameVersion: source === 'spiget' ? undefined : gameVersion || undefined,
+            modLoaderType: source === 'spiget' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
+            categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
             pageSize: 20,
             index: 0,
         });
@@ -99,16 +130,27 @@ export default ({ onSearch, initialParams, source }: Props) => {
 
     const handleClear = () => {
         setSearchFilter('');
-        setSortField('2');
+        setSortField(source === 'spiget' ? 'downloads' : '2');
         setGameVersion('');
         setModLoaderType('');
+        setCategoryId('');
         onSearch({
-            sortField: '2',
+            sortField: source === 'spiget' ? 'downloads' : '2',
             sortOrder: 'desc',
             pageSize: 20,
             index: 0,
         });
     };
+
+    const sortOptions =
+        source === 'spiget' && filtersMeta?.options?.sortBy?.length
+            ? filtersMeta.options.sortBy.map(option => ({ value: option.id, label: option.label }))
+            : DEFAULT_SORT_OPTIONS;
+
+    const categories = filtersMeta?.options?.categories || [];
+    const unsupported = filtersMeta?.unsupported || {};
+    const showMinecraftVersion = source !== 'spiget';
+    const showModLoader = source !== 'spiget';
 
     return (
         <form onSubmit={handleSubmit}>
@@ -123,34 +165,52 @@ export default ({ onSearch, initialParams, source }: Props) => {
                     />
                 </div>
 
-                <div>
-                    <Label>Minecraft Version</Label>
-                    <Select value={gameVersion} onChange={e => setGameVersion(e.target.value)}>
-                        <option value="">All Versions</option>
-                        {minecraftVersions.map(version => (
-                            <option key={version} value={version}>
-                                {version}
-                            </option>
-                        ))}
-                    </Select>
-                </div>
+                {showMinecraftVersion ? (
+                    <div>
+                        <Label>Minecraft Version</Label>
+                        <Select value={gameVersion} onChange={e => setGameVersion(e.target.value)}>
+                            <option value="">All Versions</option>
+                            {minecraftVersions.map(version => (
+                                <option key={version} value={version}>
+                                    {version}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                ) : (
+                    <div>
+                        <Label>Minecraft Version</Label>
+                        <div css={tw`text-xs text-neutral-500 mt-2`}>
+                            {unsupported?.minecraftVersion || 'Not available for Spigot plugins.'}
+                        </div>
+                    </div>
+                )}
 
-                <div>
-                    <Label>Mod Loader</Label>
-                    <Select value={modLoaderType} onChange={e => setModLoaderType(e.target.value)}>
-                        <option value="">All Loaders</option>
-                        {modLoaders.map(loader => (
-                            <option key={loader.id} value={loader.id}>
-                                {loader.name}
-                            </option>
-                        ))}
-                    </Select>
-                </div>
+                {showModLoader ? (
+                    <div>
+                        <Label>Mod Loader</Label>
+                        <Select value={modLoaderType} onChange={e => setModLoaderType(e.target.value)}>
+                            <option value="">All Loaders</option>
+                            {modLoaders.map(loader => (
+                                <option key={loader.id} value={loader.id}>
+                                    {loader.name}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                ) : (
+                    <div>
+                        <Label>Mod Loader</Label>
+                        <div css={tw`text-xs text-neutral-500 mt-2`}>
+                            {unsupported?.modLoader || 'Not applicable for Spigot plugins.'}
+                        </div>
+                    </div>
+                )}
 
                 <div>
                     <Label>Sort By</Label>
                     <Select value={sortField} onChange={e => setSortField(e.target.value)}>
-                        {SORT_OPTIONS.map(option => (
+                        {sortOptions.map(option => (
                             <option key={option.value} value={option.value}>
                                 {option.label}
                             </option>
@@ -158,6 +218,22 @@ export default ({ onSearch, initialParams, source }: Props) => {
                     </Select>
                 </div>
             </div>
+
+            {source === 'spiget' && (
+                <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6`}>
+                    <div>
+                        <Label>Category</Label>
+                        <Select value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+                            <option value="">All Categories</option>
+                            {categories.map(category => (
+                                <option key={category.id} value={category.id}>
+                                    {category.name}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                </div>
+            )}
 
             <div css={tw`flex gap-2`}>
                 <Button type={'submit'}>Search</Button>

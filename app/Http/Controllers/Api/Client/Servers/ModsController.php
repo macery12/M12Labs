@@ -77,6 +77,7 @@ class ModsController extends ClientApiController
             'modLoaderType' => $request->input('modLoaderType'),
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
+            'categoryId' => $request->input('categoryId'),
         ], function ($value) {
             return $value !== null;
         });

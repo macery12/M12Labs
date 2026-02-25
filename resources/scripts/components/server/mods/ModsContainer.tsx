@@ -40,10 +40,11 @@ export default ({ sourceOverride }: Props) => {
         resultCount: 0,
         totalCount: 0,
     });
+    const [filtersMeta, setFiltersMeta] = useState<any>(null);
 
     const [searchParams, setSearchParams] = useState<ModSearchParams>({
         searchFilter: '',
-        sortField: '2',
+        sortField: (sourceOverride ?? activeSource) === 'spiget' ? 'downloads' : '2',
         sortOrder: 'desc',
         gameVersion: undefined,
         modLoaderType: undefined,
@@ -58,7 +59,7 @@ export default ({ sourceOverride }: Props) => {
         setSelectedMod(null);
         setSearchParams({
             searchFilter: '',
-            sortField: '2',
+            sortField: sourceOverride === 'spiget' ? 'downloads' : '2',
             sortOrder: 'desc',
             gameVersion: undefined,
             modLoaderType: undefined,
@@ -66,6 +67,7 @@ export default ({ sourceOverride }: Props) => {
             index: 0,
             source: sourceOverride,
         });
+        setFiltersMeta(null);
     }, [sourceOverride]);
 
     useEffect(() => {
@@ -76,6 +78,9 @@ export default ({ sourceOverride }: Props) => {
             .then(response => {
                 setMods(response.data);
                 setPagination(response.pagination);
+                if ((response as any).filters) {
+                    setFiltersMeta((response as any).filters);
+                }
             })
             .catch(error => {
                 console.error(error);
@@ -110,7 +115,9 @@ export default ({ sourceOverride }: Props) => {
             searchFilter: '',
             gameVersion: undefined,
             modLoaderType: undefined,
+            sortField: source === 'spiget' ? 'downloads' : '2',
         });
+        setFiltersMeta(null);
     };
 
     if (!globalModsEnabled) {
@@ -198,7 +205,12 @@ export default ({ sourceOverride }: Props) => {
                     </div>
                 )}
 
-            <ModSearch onSearch={handleSearch} initialParams={searchParams} source={activeSource} />
+            <ModSearch
+                onSearch={handleSearch}
+                initialParams={searchParams}
+                source={activeSource}
+                filtersMeta={filtersMeta}
+            />
 
             {loading && !mods.length ? (
                 <div css={tw`mt-8`}>

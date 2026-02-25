@@ -11,9 +11,10 @@ class SpigetService
     private string $endpoint;
     private int $defaultPageSize;
     private array $cacheTtl = [
-        'search' => 300,
-        'project' => 600,
-        'versions' => 300,
+        'search' => 300,   // 5 minutes
+        'project' => 1800, // 30 minutes
+        'versions' => 600, // 10 minutes
+        'categories' => 3600, // 60 minutes
     ];
     private const GAME_ID_MINECRAFT = 432;
 
@@ -31,31 +32,31 @@ class SpigetService
     public function searchMods(array $params = []): array
     {
         $query = $params['searchFilter'] ?? '';
+        $categoryId = $params['categoryId'] ?? null;
+        $sort = $this->mapSortField($params['sortField'] ?? null);
         $pageSize = (int) ($params['pageSize'] ?? $this->defaultPageSize);
         $index = (int) ($params['index'] ?? 0);
         $page = $pageSize > 0 ? (int) floor($index / $pageSize) : 0;
 
-        $cacheKey = sprintf('spiget_search_%s_%s_%s', md5($query), $page, $pageSize);
+        $cacheKey = sprintf('spiget_search_%s_%s_%s_%s_%s', md5($query), $page, $pageSize, $sort, (string) $categoryId);
 
-        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($query, $page, $pageSize) {
-            $path = $query ? '/search/resources/' . urlencode($query) : '/resources';
+        return $this->makeCachedRequest($cacheKey, $this->cacheTtl['search'], function () use ($query, $categoryId, $page, $pageSize, $sort) {
+            $path = $this->resolveListPath($query, $categoryId);
             $response = $this->request($path, [
                 'page' => $page,
                 'size' => $pageSize,
-                'sort' => '-downloads',
-                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon',
+                'sort' => $sort,
+                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon,category',
             ]);
 
-            $authors = $this->hydrateAuthors($response);
-
-            $data = array_map(function ($item) use ($authors) {
-                return $this->transformResourceToCommonFormat($item, $authors);
+            $data = array_map(function ($item) {
+                return $this->transformResourceToCommonFormat($item, []);
             }, $response);
 
             $resultCount = count($data);
             $totalCount = ($page * $pageSize) + $resultCount;
 
-            return [
+            $payload = [
                 'data' => $data,
                 'pagination' => [
                     'index' => $page * $pageSize,
@@ -64,6 +65,9 @@ class SpigetService
                     'totalCount' => $totalCount,
                 ],
             ];
+            $payload['filters'] = $this->getFiltersMetadata();
+
+            return $payload;
         });
     }
 
@@ -78,7 +82,7 @@ class SpigetService
 
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['project'], function () use ($modId) {
             $resource = $this->request("/resources/{$modId}", [
-                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon',
+                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon,category',
             ]);
 
             $authors = $this->hydrateAuthors([$resource]);
@@ -172,12 +176,34 @@ class SpigetService
     }
 
     /**
+     * Filters metadata describing supported/unsupported options.
+     */
+    public function getFiltersMetadata(): array
+    {
+        return [
+            'supported' => [
+                'search' => true,
+                'category' => true,
+                'sort' => array_keys($this->sortFieldMap()),
+            ],
+            'unsupported' => [
+                'minecraftVersion' => 'Spiget does not provide reliable per-version filtering.',
+                'modLoader' => 'Not applicable for Spigot plugins.',
+            ],
+            'options' => [
+                'categories' => $this->getCategories(),
+                'sortBy' => $this->getSortOptions(),
+            ],
+        ];
+    }
+
+    /**
      * Transform a Spiget resource into the common mod representation used by the UI.
      */
     private function transformResourceToCommonFormat(array $resource, array $authors): array
     {
         $authorId = $resource['author']['id'] ?? null;
-        $authorName = $authorId && isset($authors[$authorId]) ? $authors[$authorId] : 'Unknown';
+        $authorName = $resource['author']['name'] ?? ($authorId && isset($authors[$authorId]) ? $authors[$authorId] : 'Unknown');
         $testedVersions = $resource['testedVersions'] ?? [];
         $latestVersionName = $resource['version']['id'] ?? null;
 
@@ -196,8 +222,15 @@ class SpigetService
             'status' => 4,
             'downloadCount' => $resource['downloads'] ?? 0,
             'isFeatured' => false,
-            'primaryCategoryId' => 0,
-            'categories' => [],
+            'primaryCategoryId' => $resource['category']['id'] ?? 0,
+            'categories' => isset($resource['category'])
+                ? [
+                    [
+                        'id' => $resource['category']['id'] ?? 0,
+                        'name' => $resource['category']['name'] ?? '',
+                    ],
+                ]
+                : [],
             'classId' => 0,
             'authors' => [
                 [
@@ -311,6 +344,75 @@ class SpigetService
     }
 
     /**
+     * Resolve list path based on search and category.
+     */
+    private function resolveListPath(string $query, string|int|null $categoryId): string
+    {
+        if ($categoryId) {
+            return "/categories/{$categoryId}/resources";
+        }
+
+        if ($query) {
+            return '/search/resources/' . urlencode($query);
+        }
+
+        return '/resources';
+    }
+
+    /**
+     * Map UI sort field to Spiget sort parameter.
+     */
+    private function mapSortField(?string $sortField): string
+    {
+        $map = $this->sortFieldMap();
+
+        return $map[$sortField] ?? '-downloads';
+    }
+
+    private function sortFieldMap(): array
+    {
+        return [
+            'downloads' => '-downloads',
+            'rating' => '-rating',
+            'updated' => '-updateDate',
+            'newest' => '-releaseDate',
+            'name' => 'name',
+        ];
+    }
+
+    private function getSortOptions(): array
+    {
+        return [
+            ['id' => 'downloads', 'label' => 'Downloads'],
+            ['id' => 'rating', 'label' => 'Rating'],
+            ['id' => 'updated', 'label' => 'Recently Updated'],
+            ['id' => 'newest', 'label' => 'Newest'],
+            ['id' => 'name', 'label' => 'Name (A–Z)'],
+        ];
+    }
+
+    /**
+     * Fetch categories with caching.
+     */
+    private function getCategories(): array
+    {
+        return $this->makeCachedRequest('spiget_categories', $this->cacheTtl['categories'], function () {
+            $categories = $this->request('/categories', [
+                'page' => 0,
+                'size' => 200,
+                'sort' => 'name',
+            ]);
+
+            return array_map(function ($category) {
+                return [
+                    'id' => $category['id'] ?? 0,
+                    'name' => $category['name'] ?? '',
+                ];
+            }, $categories);
+        });
+    }
+
+    /**
      * Perform an HTTP request to the Spiget API.
      *
      * @throws ModsServiceException
@@ -319,7 +421,10 @@ class SpigetService
     {
         $url = $this->endpoint . $path;
 
-        $response = Http::timeout(15)->get($url, $params);
+        $response = Http::retry(2, 200, throw: false)
+            ->timeout(10)
+            ->connectTimeout(5)
+            ->get($url, $params);
 
         if (!$response->successful()) {
             $status = $response->status();
