@@ -163,20 +163,7 @@ class PluginInstallService
     private function validateProviderEnabled(string $provider): void
     {
         $modsEnabled = (bool) Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false));
-        $spigetEnabled = (bool) Setting::get('settings::modules:mods:spiget_enabled', config('modules.mods.spiget_enabled', false));
         $curseforgeKey = Setting::get('settings::modules:mods:curseforge_api_key', config('modules.mods.curseforge_api_key'));
-
-        if ($provider === 'spiget') {
-            if (!$modsEnabled) {
-                throw new ModsServiceException('Mods module is not enabled.');
-            }
-
-            if (!$spigetEnabled) {
-                throw new ModsServiceException('Spiget provider is not enabled.');
-            }
-
-            return;
-        }
 
         if (!$modsEnabled) {
             throw new ModsServiceException('Mods module is not enabled.');
@@ -198,22 +185,12 @@ class PluginInstallService
             throw new ModsServiceException('Unable to determine server egg for plugin installs.');
         }
 
-        $allowedNames = ['spigot', 'paper', 'purpur'];
-        $eggName = strtolower($egg->name ?? '');
-        $matchesAllowed = collect($allowedNames)->contains(function ($allowed) use ($eggName) {
-            return str_contains($eggName, $allowed);
-        });
-
         /** @var Product|null $product */
         $product = $server->product()->with('category')->first();
         $allowedEggs = $product?->category?->getAllowedEggs() ?? [];
 
         if (!empty($allowedEggs) && !in_array($egg->id, $allowedEggs)) {
             throw new ModsServiceException('Plugins can only be installed on permitted eggs for this server.');
-        }
-
-        if (!$matchesAllowed) {
-            throw new ModsServiceException('Plugins can only be installed on Spigot, Paper, or Purpur eggs.');
         }
     }
 
