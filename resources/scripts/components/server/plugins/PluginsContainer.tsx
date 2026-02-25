@@ -7,6 +7,7 @@ import ModsContainer from '@server/mods/ModsContainer';
 import ModpacksContainer from '@server/modpacks/ModpacksContainer';
 import { getProviderAccess, ProviderAccessResponse } from '@/api/routes/server/mods';
 import Spinner from '@/elements/Spinner';
+import { ServerContext } from '@/state/server';
 
 type Provider = 'modrinth' | 'curseforge' | 'spiget';
 type Resource = 'mods' | 'modpacks' | 'plugins';
@@ -36,12 +37,17 @@ const providerLabels: Record<Provider, string> = {
 
 export default function PluginsContainer() {
     const modProviderConfig = useStoreState(state => state.everest?.data?.mods);
-    const uuid = useStoreState(state => state.server?.data?.uuid);
+    const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
+    const uuid = serverUuid ?? useStoreState(state => state.server?.data?.uuid);
     const [access, setAccess] = useState<ProviderAccessResponse | null>(null);
     const [loadingAccess, setLoadingAccess] = useState(true);
 
     useEffect(() => {
-        if (!uuid) return;
+        if (!uuid) {
+            setAccess({ providers: {} });
+            setLoadingAccess(false);
+            return;
+        }
         setLoadingAccess(true);
         getProviderAccess(uuid)
             .then(setAccess)
