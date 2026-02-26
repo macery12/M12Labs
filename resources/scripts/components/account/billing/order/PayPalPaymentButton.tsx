@@ -66,8 +66,8 @@ export default (data: Props) => {
 
             // Redirect to PayPal approval page
             // After approval, PayPal will redirect back to return_url with token parameter
-            console.log('[PayPal] Redirecting to approval URL:', order.approval_url);
-            window.location.href = order.approval_url;
+            console.log('[PayPal] Redirecting via backend to approval URL:', order.id);
+            window.location.href = `/api/client/billing/paypal/orders/${order.id}/redirect`;
         } catch (error) {
             console.error('[PayPal] Error during checkout:', error);
             clearAndAddHttpError({ key: 'store:order', error });

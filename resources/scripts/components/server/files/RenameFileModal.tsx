@@ -8,6 +8,7 @@ import tw from 'twin.macro';
 import { Button } from '@/elements/button';
 import useFileManagerSwr from '@/plugins/useFileManagerSwr';
 import useFlash from '@/plugins/useFlash';
+import { useMemo } from 'react';
 
 interface FormikValues {
     name: string;
@@ -22,8 +23,35 @@ const RenameFileModal = ({ files, useMoveTerminology, ...props }: OwnProps) => {
     const directory = ServerContext.useStoreState(state => state.files.directory);
     const setSelectedFiles = ServerContext.useStoreActions(actions => actions.files.setSelectedFiles);
 
-    const submit = ({ name }: FormikValues, { setSubmitting }: FormikHelpers<FormikValues>) => {
+    const validateName = useMemo(
+        () => (value: string) => {
+            const trimmed = value?.trim() ?? '';
+
+            if (!trimmed) return 'A name is required.';
+            if (trimmed.startsWith('/') || trimmed.startsWith('\\')) return 'Paths cannot start with a slash.';
+            if (/^[A-Za-z]:/.test(trimmed)) return 'Drive letters are not allowed.';
+            if (trimmed.includes('\0')) return 'Invalid characters in name.';
+            if (trimmed.split('/').some(seg => seg === '..' || seg === '.')) return 'Path traversal is not allowed.';
+            if (!useMoveTerminology && trimmed.includes('/')) return 'Nested paths are not allowed here.';
+
+            const segments = trimmed.split('/');
+            const segmentPattern = /^[A-Za-z0-9._ -]+$/;
+            if (segments.some(seg => !segmentPattern.test(seg))) return 'Name contains invalid characters.';
+
+            return undefined;
+        },
+        [useMoveTerminology],
+    );
+
+    const submit = ({ name }: FormikValues, { setSubmitting, setErrors }: FormikHelpers<FormikValues>) => {
         clearFlashes('files');
+
+        const validationError = validateName(name);
+        if (validationError) {
+            setErrors({ name: validationError });
+            setSubmitting(false);
+            return;
+        }
 
         const len = name.split('/').length;
         if (files.length === 1) {
@@ -55,7 +83,11 @@ const RenameFileModal = ({ files, useMoveTerminology, ...props }: OwnProps) => {
     };
 
     return (
-        <Formik onSubmit={submit} initialValues={{ name: files.length > 1 ? '' : files[0] || '' }}>
+        <Formik
+            onSubmit={submit}
+            initialValues={{ name: files.length > 1 ? '' : files[0] || '' }}
+            validate={({ name }) => ({ name: validateName(name) })}
+        >
             {({ isSubmitting, values }) => (
                 <Modal {...props} dismissable={!isSubmitting} showSpinnerOverlay={isSubmitting}>
                     <Form css={tw`m-0`}>

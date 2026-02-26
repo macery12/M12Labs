@@ -3,6 +3,7 @@
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
@@ -74,6 +75,7 @@ class MollieCheckoutController extends ClientApiController
             $couponId,
             $returnUrl
         );
+        $checkoutUrl = $this->validateRedirectUrl($payment->getCheckoutUrl(), ['mollie.com']);
 
         // For renewals, we have all the information upfront
         // For new orders, some fields will be set later via updatePayment
@@ -104,8 +106,23 @@ class MollieCheckoutController extends ClientApiController
         return response()->json([
             'id' => $payment->id,
             'token' => $token,
-            'checkout_url' => $payment->getCheckoutUrl(),
+            'checkout_url' => $checkoutUrl,
         ]);
+    }
+
+    /**
+     * Safely redirect the user to Mollie's hosted checkout after validating the URL.
+     */
+    public function redirectToCheckout(Request $request, string $paymentId): RedirectResponse
+    {
+        $order = Order::where('mollie_payment_id', $paymentId)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        $checkoutUrl = $this->mollieService->getCheckoutUrl($paymentId);
+        $safeUrl = $this->validateRedirectUrl($checkoutUrl, ['mollie.com']);
+
+        return redirect()->away($safeUrl);
     }
 
     /**
@@ -278,6 +295,31 @@ class MollieCheckoutController extends ClientApiController
         // Pass payment metadata for compatibility
         $metadata = $payment->metadata;
         $this->fulfillmentService->fulfillOrder($request, $order, $metadata);
+    }
+
+    private function validateRedirectUrl(string $url, array $allowedHosts): string
+    {
+        $parsed = parse_url($url);
+
+        if (!$parsed || ($parsed['scheme'] ?? '') !== 'https' || empty($parsed['host'])) {
+            throw new DisplayException('Invalid redirect URL.');
+        }
+
+        $host = strtolower($parsed['host']);
+        $isAllowed = false;
+        foreach ($allowedHosts as $allowed) {
+            $allowed = strtolower($allowed);
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+
+        if (!$isAllowed) {
+            throw new DisplayException('Unapproved redirect host.');
+        }
+
+        return $url;
     }
 
     /**

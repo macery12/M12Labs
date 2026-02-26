@@ -4,6 +4,7 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\RedirectResponse;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
@@ -104,12 +105,36 @@ class PayPalCheckoutController extends ClientApiController
 
         // Get approval URL for redirect
         $approvalUrl = $this->paypalService->getApprovalUrl($paypalOrder);
+        if ($approvalUrl) {
+            $approvalUrl = $this->validateRedirectUrl($approvalUrl, ['paypal.com']);
+        }
 
         return response()->json([
             'id' => $paypalOrder['id'],
             'token' => $token,
             'approval_url' => $approvalUrl,
         ]);
+    }
+
+    /**
+     * Safely redirect the user to PayPal after validating the approval URL.
+     */
+    public function redirectToApproval(Request $request, string $orderId): RedirectResponse
+    {
+        $order = Order::where('paypal_order_id', $orderId)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        $paypalOrder = $this->paypalService->getOrder($orderId);
+        $approvalUrl = $this->paypalService->getApprovalUrl($paypalOrder);
+
+        if (!$approvalUrl) {
+            throw new DisplayException('PayPal approval URL unavailable.');
+        }
+
+        $safeUrl = $this->validateRedirectUrl($approvalUrl, ['paypal.com']);
+
+        return redirect()->away($safeUrl);
     }
 
     /**
@@ -437,6 +462,31 @@ class PayPalCheckoutController extends ClientApiController
     {
         // Use centralized fulfillment service
         $this->fulfillmentService->fulfillOrder($request, $order);
+    }
+
+    private function validateRedirectUrl(string $url, array $allowedHosts): string
+    {
+        $parsed = parse_url($url);
+
+        if (!$parsed || ($parsed['scheme'] ?? '') !== 'https' || empty($parsed['host'])) {
+            throw new DisplayException('Invalid redirect URL.');
+        }
+
+        $host = strtolower($parsed['host']);
+        $isAllowed = false;
+        foreach ($allowedHosts as $allowed) {
+            $allowed = strtolower($allowed);
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+
+        if (!$isAllowed) {
+            throw new DisplayException('Unapproved redirect host.');
+        }
+
+        return $url;
     }
 
     /**
