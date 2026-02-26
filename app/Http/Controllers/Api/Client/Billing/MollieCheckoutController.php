@@ -18,9 +18,12 @@ use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
+use Everest\Traits\ValidatesRedirectUrl;
 
 class MollieCheckoutController extends ClientApiController
 {
+    use ValidatesRedirectUrl;
+
     public function __construct(
         private MolliePaymentService $mollieService,
         private BillingValidationService $validationService,
@@ -75,7 +78,11 @@ class MollieCheckoutController extends ClientApiController
             $couponId,
             $returnUrl
         );
-        $checkoutUrl = $this->validateRedirectUrl($payment->getCheckoutUrl(), ['mollie.com']);
+        $rawCheckoutUrl = $payment->getCheckoutUrl();
+        if (!$rawCheckoutUrl) {
+            throw new DisplayException('Mollie checkout URL unavailable.');
+        }
+        $checkoutUrl = $this->validateRedirectUrl($rawCheckoutUrl, ['mollie.com']);
 
         // For renewals, we have all the information upfront
         // For new orders, some fields will be set later via updatePayment
@@ -115,11 +122,15 @@ class MollieCheckoutController extends ClientApiController
      */
     public function redirectToCheckout(Request $request, string $paymentId): RedirectResponse
     {
+        // Authorization guard: ensure the payment belongs to the current user before redirecting.
         $order = Order::where('mollie_payment_id', $paymentId)
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
         $checkoutUrl = $this->mollieService->getCheckoutUrl($paymentId);
+        if (!$checkoutUrl) {
+            throw new DisplayException('Mollie checkout URL unavailable.');
+        }
         $safeUrl = $this->validateRedirectUrl($checkoutUrl, ['mollie.com']);
 
         return redirect()->away($safeUrl);
@@ -295,31 +306,6 @@ class MollieCheckoutController extends ClientApiController
         // Pass payment metadata for compatibility
         $metadata = $payment->metadata;
         $this->fulfillmentService->fulfillOrder($request, $order, $metadata);
-    }
-
-    private function validateRedirectUrl(string $url, array $allowedHosts): string
-    {
-        $parsed = parse_url($url);
-
-        if (!$parsed || ($parsed['scheme'] ?? '') !== 'https' || empty($parsed['host'])) {
-            throw new DisplayException('Invalid redirect URL.');
-        }
-
-        $host = strtolower($parsed['host']);
-        $isAllowed = false;
-        foreach ($allowedHosts as $allowed) {
-            $allowed = strtolower($allowed);
-            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
-                $isAllowed = true;
-                break;
-            }
-        }
-
-        if (!$isAllowed) {
-            throw new DisplayException('Unapproved redirect host.');
-        }
-
-        return $url;
     }
 
     /**

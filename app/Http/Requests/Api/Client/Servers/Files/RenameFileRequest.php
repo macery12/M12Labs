@@ -5,7 +5,6 @@ namespace Everest\Http\Requests\Api\Client\Servers\Files;
 use Everest\Models\Permission;
 use Everest\Contracts\Http\ClientPermissionsRequest;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
-use Illuminate\Support\Str;
 
 class RenameFileRequest extends ClientApiRequest implements ClientPermissionsRequest
 {
@@ -76,7 +75,7 @@ class RenameFileRequest extends ClientApiRequest implements ClientPermissionsReq
     private function normalizeRelativePath(string $path): string
     {
         $clean = str_replace('\\', '/', $path);
-        $clean = Str::of($clean)->replace("\0", '')->__toString();
+        $clean = str_replace("\0", '', $clean);
         $clean = ltrim($clean, '/');
 
         $collapsed = $this->collapseSegments($clean);
@@ -88,7 +87,7 @@ class RenameFileRequest extends ClientApiRequest implements ClientPermissionsReq
     {
         $clean = str_replace('\\', '/', $path);
 
-        if ($clean === '' || strpos($clean, "\0") !== false) {
+        if ($clean === '') {
             throw new \InvalidArgumentException('Invalid file name or path.');
         }
 
@@ -113,11 +112,15 @@ class RenameFileRequest extends ClientApiRequest implements ClientPermissionsReq
 
     private function collapseSegments(string $path): string
     {
-        $segments = array_filter(explode('/', $path), static fn ($seg) => $seg !== '');
+        if (str_contains($path, '//')) {
+            throw new \InvalidArgumentException('Name contains invalid characters.');
+        }
+
+        $segments = array_filter(explode('/', $path));
         $safeSegments = [];
 
         foreach ($segments as $segment) {
-            if ($segment === '.' || $segment === '..') {
+            if ($segment === '..') {
                 throw new \InvalidArgumentException('Path traversal is not allowed.');
             }
 

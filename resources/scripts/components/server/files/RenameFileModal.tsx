@@ -29,11 +29,14 @@ const RenameFileModal = ({ files, useMoveTerminology, ...props }: OwnProps) => {
 
             if (!trimmed) return 'A name is required.';
             if (trimmed.startsWith('/') || trimmed.startsWith('\\')) return 'Paths cannot start with a slash.';
-            if (/^[A-Za-z]:/.test(trimmed)) return 'Drive letters are not allowed.';
+            if (/^[A-Za-z]:/.test(trimmed) || trimmed.split('/').some(seg => /^[A-Za-z]:/.test(seg))) {
+                return 'Drive letters are not allowed.';
+            }
             if (trimmed.includes('\0')) return 'Invalid characters in name.';
-            if (trimmed.split('/').some(seg => seg === '..' || seg === '.')) return 'Path traversal is not allowed.';
+            if (trimmed.split('/').some(seg => seg === '..')) return 'Path traversal is not allowed.';
             if (!useMoveTerminology && trimmed.includes('/')) return 'Nested paths are not allowed here.';
 
+            // Mirrors backend validation in app/Http/Requests/Api/Client/Servers/Files/RenameFileRequest.php; keep in sync.
             const segments = trimmed.split('/');
             const segmentPattern = /^[A-Za-z0-9._ -]+$/;
             if (segments.some(seg => !segmentPattern.test(seg))) return 'Name contains invalid characters.';
@@ -43,15 +46,8 @@ const RenameFileModal = ({ files, useMoveTerminology, ...props }: OwnProps) => {
         [useMoveTerminology],
     );
 
-    const submit = ({ name }: FormikValues, { setSubmitting, setErrors }: FormikHelpers<FormikValues>) => {
+    const submit = ({ name }: FormikValues, { setSubmitting }: FormikHelpers<FormikValues>) => {
         clearFlashes('files');
-
-        const validationError = validateName(name);
-        if (validationError) {
-            setErrors({ name: validationError });
-            setSubmitting(false);
-            return;
-        }
 
         const len = name.split('/').length;
         if (files.length === 1) {
@@ -86,7 +82,10 @@ const RenameFileModal = ({ files, useMoveTerminology, ...props }: OwnProps) => {
         <Formik
             onSubmit={submit}
             initialValues={{ name: files.length > 1 ? '' : files[0] || '' }}
-            validate={({ name }) => ({ name: validateName(name) })}
+            validate={({ name }) => {
+                const error = validateName(name);
+                return error ? { name: error } : {};
+            }}
         >
             {({ isSubmitting, values }) => (
                 <Modal {...props} dismissable={!isSubmitting} showSpinnerOverlay={isSubmitting}>

@@ -19,9 +19,12 @@ use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
+use Everest\Traits\ValidatesRedirectUrl;
 
 class PayPalCheckoutController extends ClientApiController
 {
+    use ValidatesRedirectUrl;
+
     public function __construct(
         private PayPalPaymentService $paypalService,
         private BillingValidationService $validationService,
@@ -105,9 +108,10 @@ class PayPalCheckoutController extends ClientApiController
 
         // Get approval URL for redirect
         $approvalUrl = $this->paypalService->getApprovalUrl($paypalOrder);
-        if ($approvalUrl) {
-            $approvalUrl = $this->validateRedirectUrl($approvalUrl, ['paypal.com']);
+        if (!$approvalUrl) {
+            throw new DisplayException('PayPal approval URL unavailable.');
         }
+        $approvalUrl = $this->validateRedirectUrl($approvalUrl, ['paypal.com']);
 
         return response()->json([
             'id' => $paypalOrder['id'],
@@ -121,6 +125,7 @@ class PayPalCheckoutController extends ClientApiController
      */
     public function redirectToApproval(Request $request, string $orderId): RedirectResponse
     {
+        // Authorization guard: ensure the order belongs to the current user before redirecting.
         $order = Order::where('paypal_order_id', $orderId)
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
@@ -462,31 +467,6 @@ class PayPalCheckoutController extends ClientApiController
     {
         // Use centralized fulfillment service
         $this->fulfillmentService->fulfillOrder($request, $order);
-    }
-
-    private function validateRedirectUrl(string $url, array $allowedHosts): string
-    {
-        $parsed = parse_url($url);
-
-        if (!$parsed || ($parsed['scheme'] ?? '') !== 'https' || empty($parsed['host'])) {
-            throw new DisplayException('Invalid redirect URL.');
-        }
-
-        $host = strtolower($parsed['host']);
-        $isAllowed = false;
-        foreach ($allowedHosts as $allowed) {
-            $allowed = strtolower($allowed);
-            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
-                $isAllowed = true;
-                break;
-            }
-        }
-
-        if (!$isAllowed) {
-            throw new DisplayException('Unapproved redirect host.');
-        }
-
-        return $url;
     }
 
     /**

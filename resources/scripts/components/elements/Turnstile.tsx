@@ -12,8 +12,6 @@ interface TurnstileRenderOptions {
     callback: (token: string) => void;
     'error-callback'?: () => void;
     'expired-callback'?: () => void;
-    theme?: 'light' | 'dark' | 'auto';
-    size?: 'normal' | 'compact';
 }
 
 declare global {
@@ -30,7 +28,7 @@ declare global {
 export default function Turnstile({ siteKey, onVerify, onError, onExpire }: TurnstileProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetId = useRef<string | null>(null);
-    const [missingTurnstile, setMissingTurnstile] = useState(!window.turnstile);
+    const [missingTurnstile, setMissingTurnstile] = useState(false);
 
     // Store callbacks in refs to avoid re-rendering when they change
     const onVerifyRef = useRef(onVerify);
