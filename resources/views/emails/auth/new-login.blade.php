@@ -19,7 +19,10 @@
     @endcomponent
     <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">If this was you, no further action is needed. If you don’t recognize this activity, secure your account immediately.</p>
     @include('emails.partials.button', [
-        'url' => url('/auth/login'),
-        'text' => 'Secure Your Account'
+        'url' => url('/account'),
+        'text' => 'Review Account Security'
     ])
+    <p style="margin:12px 0 0; color:#111827; font-size:14px; line-height:1.6; text-align:center;">
+        Need to reset your password? <a href="{{ url('/auth/password') }}" style="color:#2563eb; text-decoration:underline;">Start a reset</a>.
+    </p>
 @endsection

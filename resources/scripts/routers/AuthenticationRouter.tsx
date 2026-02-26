@@ -1,4 +1,4 @@
-import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import LoginContainer from '@/components/auth/LoginContainer';
 import ForgotPasswordContainer from '@/components/auth/ForgotPasswordContainer';
 import ResetPasswordWithTokenContainer from '@/components/auth/ResetPasswordWithTokenContainer';
@@ -18,6 +18,11 @@ const Container = styled.div`
 export default () => {
     const navigate = useNavigate();
     const registration = useStoreState(state => state.everest.data!.auth.registration.enabled);
+    const isAuthenticated = useStoreState(state => !!state.user.data?.uuid);
+
+    if (isAuthenticated) {
+        return <Navigate to="/" replace />;
+    }
 
     return (
         <Container>

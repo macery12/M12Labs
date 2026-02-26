@@ -19,6 +19,10 @@ class EmailManager
      */
     public function send(BaseEmail $email, string $recipient): EmailResult
     {
+        if ($result = $this->shouldSkipRecipient($recipient)) {
+            return $result;
+        }
+
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
@@ -157,6 +161,10 @@ class EmailManager
                     'provider' => 'resend',
                 ]);
             }
+        }
+
+        if ($result = $this->shouldSkipRecipient($recipient, $tracker, $delivery)) {
+            return $result;
         }
 
         // Check if Resend is enabled
@@ -395,7 +403,15 @@ class EmailManager
      */
     private function isEnabled(): bool
     {
-        return Setting::get('settings::modules:email:resend:enabled', false) === 'true';
+        $raw = Setting::get('settings::modules:email:resend:enabled', false);
+
+        if (is_bool($raw)) {
+            return $raw;
+        }
+
+        $value = strtolower((string) $raw);
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 
     /**
@@ -424,4 +440,28 @@ class EmailManager
 
         return $subjects[$templateKey] ?? 'Notification';
     }
+
+    /**
+     * Determine if a recipient should be skipped due to invalid format or test domain.
+     */
+    private function shouldSkipRecipient(
+        string $recipient,
+        ?EmailDeliveryTracker $tracker = null,
+        ?EmailDelivery $delivery = null
+    ): ?EmailResult {
+        if (is_blocked_email_recipient($recipient)) {
+            if ($tracker && $delivery) {
+                try {
+                    $tracker->markSkipped($delivery, 'Blocked recipient email');
+                } catch (\Exception $e) {
+                    // Continue even if tracking fails
+                }
+            }
+
+            return EmailResult::blocked('blocked_invalid_recipient');
+        }
+
+        return null;
+    }
+
 }

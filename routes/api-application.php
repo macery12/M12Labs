@@ -5,7 +5,7 @@ use Everest\Http\Controllers\Api\Application;
 use Everest\Http\Middleware\Activity\AdminSubject;
 
 Route::middleware([AdminSubject::class])->group(function () {
-    Route::get('/permissions', [Application\ApplicationApiController::class, 'adminPermissions']);
+    Route::get('/permissions', Application\PermissionsController::class);
 
     Route::get('/overview/version', [Application\OverviewController::class, 'version']);
     Route::get('/overview/metrics', [Application\OverviewController::class, 'metrics']);
@@ -215,6 +215,8 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/email'], function () {
         Route::get('/settings', [Application\EmailController::class, 'getSettings']);
         Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
+        Route::get('/verification-rules', [Application\EmailController::class, 'getVerificationRules']);
+        Route::put('/verification-rules', [Application\EmailController::class, 'updateVerificationRules']);
         Route::post('/test', [Application\EmailController::class, 'sendTest']);
         Route::post('/send', [Application\EmailController::class, 'sendCustom']);
         

@@ -16,7 +16,7 @@ export interface ServerRouteDefinition extends RouteDefinition {
 }
 
 export interface AdminRouteDefinition extends RouteDefinition {
-    category?: 'general' | 'modules' | 'appearance' | 'management' | 'services';
+    category?: 'general' | 'modules' | 'appearance' | 'management' | 'services' | 'developers';
     advanced?: boolean;
 }
 

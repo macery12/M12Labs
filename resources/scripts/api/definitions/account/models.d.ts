@@ -7,6 +7,7 @@ interface User extends Model {
     email: string;
     image: string;
     twoFactorEnabled: boolean;
+    emailVerified: boolean;
     createdAt: Date;
     permissions: SubuserPermission[];
     can(permission: SubuserPermission): boolean;
@@ -26,6 +27,18 @@ interface ApiKey extends Model {
     allowedIps: string[];
     createdAt: Date | null;
     lastUsedAt: Date | null;
+}
+
+interface AccountSession extends Model {
+    id: number;
+    deviceName: string;
+    ipAddress: string | null;
+    location: string | null;
+    userAgent: string | null;
+    createdAt: Date;
+    lastActivityAt: Date | null;
+    revokedAt: Date | null;
+    isCurrent: boolean;
 }
 
 interface Ticket extends Model {

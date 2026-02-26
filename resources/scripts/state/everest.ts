@@ -3,6 +3,10 @@ import { action, Action } from 'easy-peasy';
 export type AlertType = 'success' | 'warning' | 'danger' | 'info';
 export type AlertPosition = 'notification' | 'top-center' | 'slide-out' | 'center';
 
+export type VerificationArea = 'billing' | 'orders' | 'donate' | 'credentials' | 'tickets';
+export type VerificationRule = { can_view: boolean; can_interact: boolean };
+export type VerificationRules = Record<VerificationArea, VerificationRule>;
+
 export interface EverestSettings {
     auth: {
         registration: {
@@ -112,19 +116,22 @@ export interface EverestSettings {
         enabled: boolean;
         curseforge_api_key: boolean | string;
         default_source?: string;
+        spiget_enabled?: boolean;
     };
     webhooks: {
         enabled: boolean;
         url: boolean;
     };
     email: {
+        enabled?: boolean;
         resend: {
-            enabled: boolean;
+            enabled?: boolean;
             api_key: boolean;
             from_email: string;
             from_name: string;
             reply_to: string;
-        };
+        } | boolean;
+        verification_rules?: VerificationRules;
     };
 }
 

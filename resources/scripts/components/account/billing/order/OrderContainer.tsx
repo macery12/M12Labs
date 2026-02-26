@@ -14,7 +14,7 @@ import { faExternalLinkAlt, faHdd, faMemory, faMicrochip } from '@fortawesome/fr
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
 import PaymentMethodSelector from './PaymentMethodSelector';
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { Stripe } from '@stripe/stripe-js';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -36,6 +36,7 @@ import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/a
 import Input from '@/elements/Input';
 import Select from '@/elements/Select';
 import classNames from 'classnames';
+import { loadStripeOnce } from '@/lib/stripe';
 
 export default () => {
     const params = useParams<'id'>();
@@ -333,7 +334,7 @@ export default () => {
 
                             // Fetch Stripe public key and initialize Stripe
                             const stripePublicKey = await getStripeKey(Number(params.id));
-                            const stripeInstance = await loadStripe(stripePublicKey.key);
+                            const stripeInstance = await loadStripeOnce(stripePublicKey.key);
                             setStripe(stripeInstance);
                         } catch (error) {
                             console.error('Error initializing Stripe:', error);

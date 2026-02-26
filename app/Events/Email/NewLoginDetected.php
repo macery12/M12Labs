@@ -17,7 +17,9 @@ class NewLoginDetected extends Event
         public User $user,
         public string $ipAddress,
         public string $userAgent,
-        public string $correlationId
+        public string $correlationId,
+        public \DateTimeInterface $loginAt,
+        public ?string $location = null
     ) {
     }
 }

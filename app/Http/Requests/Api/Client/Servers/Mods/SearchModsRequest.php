@@ -16,12 +16,14 @@ class SearchModsRequest extends ClientApiRequest
     {
         return [
             'searchFilter' => 'nullable|string|max:255',
-            'sortField' => 'nullable|string|in:1,2,3,4,5,6', // 1=Featured, 2=Popularity, 3=LastUpdated, 4=Name, 5=Author, 6=TotalDownloads
+            'sortField' => 'nullable|string|max:50', // Allow provider-specific sort keys
             'sortOrder' => 'nullable|string|in:asc,desc',
             'gameVersion' => 'nullable|string|max:50',
             'modLoaderType' => 'nullable|integer|min:0', // Mod loader IDs from CurseForge API
             'pageSize' => 'nullable|integer|min:1|max:50',
             'index' => 'nullable|integer|min:0',
+            'categoryId' => 'nullable|integer|min:0',
+            'minRating' => 'nullable|numeric|min:0|max:5',
         ];
     }
 }

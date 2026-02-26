@@ -29,6 +29,7 @@ class UserFactory extends Factory
             'language' => 'en',
             'root_admin' => false,
             'use_totp' => false,
+            'email_verified_at' => Carbon::now(),
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ];

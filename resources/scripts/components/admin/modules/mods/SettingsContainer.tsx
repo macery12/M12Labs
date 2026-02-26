@@ -20,6 +20,7 @@ const SettingsContainer = () => {
         const payload: ModsSettings = {
             enabled: values.enabled,
             default_source: values.default_source,
+            spiget_enabled: values.spiget_enabled,
         };
 
         // Only include API key if it was provided
@@ -70,6 +71,7 @@ const SettingsContainer = () => {
                 enabled: mods.enabled,
                 curseforge_api_key: typeof mods.curseforge_api_key === 'string' ? '' : '',
                 default_source: mods.default_source || 'modrinth',
+                spiget_enabled: mods.spiget_enabled ?? false,
             }}
         >
             {() => (
@@ -84,6 +86,18 @@ const SettingsContainer = () => {
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     When enabled, users can search for and install Minecraft mods through the panel.
                                 </p>
+                                <label className={'flex items-center mt-3'}>
+                                    <Field
+                                        id={'spiget_enabled'}
+                                        name={'spiget_enabled'}
+                                        type={'checkbox'}
+                                        className={'mr-2'}
+                                    />
+                                    <span>Enable Spiget (Spigot plugins)</span>
+                                </label>
+                                <p className={'mt-1.5 text-xs text-gray-400'}>
+                                    Allow users to browse and install Spigot/Paper/Purpur plugins via Spiget.
+                                </p>
                             </div>
                         </AdminBox>
 
@@ -93,6 +107,7 @@ const SettingsContainer = () => {
                                 <FormikField as={Select} id={'default_source'} name={'default_source'}>
                                     <option value="modrinth">Modrinth (No API Key Required)</option>
                                     <option value="curseforge">CurseForge (Requires API Key)</option>
+                                    <option value="spiget">Spiget (Spigot plugins)</option>
                                 </FormikField>
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     Select the default mod source. Modrinth is free and doesn&apos;t require an API key.

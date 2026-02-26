@@ -25,7 +25,7 @@ const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
 interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
     ThemeConfiguration?: SiteTheme;
-    EverestConfiguration?: EverestSettings;
+    EverestConfiguration?: EverestSettings & { email?: { enabled?: boolean } };
     PterodactylUser?: {
         uuid: string;
         username: string;
@@ -37,6 +37,8 @@ interface ExtendedWindow extends Window {
         admin_role_name: string;
         admin_role_id?: number;
         state: string;
+        email_verified?: boolean;
+        email_verified_at?: string | null;
         updated_at: string;
         created_at: string;
     };
@@ -57,6 +59,8 @@ function App() {
             admin_role_id: PterodactylUser.admin_role_id,
             state: PterodactylUser.state,
             useTotp: PterodactylUser.use_totp,
+            emailVerified: Boolean(PterodactylUser.email_verified),
+            emailVerifiedAt: PterodactylUser.email_verified_at ? new Date(PterodactylUser.email_verified_at) : undefined,
             createdAt: new Date(PterodactylUser.created_at),
             updatedAt: new Date(PterodactylUser.updated_at),
         });
@@ -70,8 +74,8 @@ function App() {
         store.getActions().theme.setTheme(ThemeConfiguration!);
     }
 
-    if (!store.getState().everest.data) {
-        store.getActions().everest.setEverest(EverestConfiguration!);
+    if (!store.getState().everest.data && EverestConfiguration) {
+        store.getActions().everest.setEverest(EverestConfiguration);
     }
 
     if (PterodactylUser?.state === 'suspended') {

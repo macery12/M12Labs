@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import tw from 'twin.macro';
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
+import { StripeElementsOptions } from '@stripe/stripe-js';
 import PageContentBlock from '@/elements/PageContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Button } from '@/elements/button';
@@ -18,6 +18,7 @@ import TitledGreyBox from '@/elements/TitledGreyBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faDollarSign, faInfoCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
+import { loadStripeOnce } from '@/lib/stripe';
 
 interface FormValues {
     amount: string;
@@ -48,7 +49,7 @@ export default () => {
 
         try {
             const { key } = await getStripeKey();
-            const stripe = await loadStripe(key);
+            const stripe = await loadStripeOnce(key);
             setStripePromise(stripe);
 
             const amount = parseFloat(values.amount);

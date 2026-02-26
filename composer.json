@@ -10,6 +10,7 @@
         "ext-posix": "*",
         "ext-zip": "*",
         "aws/aws-sdk-php": "~3.368.0",
+        "dedoc/scramble": "^0.8.6",
         "doctrine/dbal": "~3.6.0",
         "guzzlehttp/guzzle": "~7.9.0",
         "hashids/hashids": "~5.0.0",
@@ -48,7 +49,7 @@
         "nunomaduro/larastan": "~2.4.1",
         "phpstan/phpstan": "~1.10.1",
         "phpunit/phpunit": "~10.5.62",
-        "spatie/laravel-ignition": "~2.0.0"
+        "spatie/laravel-ignition": "^2.0"
     },
     "autoload": {
         "files": [

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, type MouseEvent } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { NotFound } from '@/elements/ScreenBlock';
 import Spinner from '@/elements/Spinner';
@@ -14,6 +14,17 @@ import { getLinks } from '@/api/getLinks';
 import http from '@/api/http';
 import NavigationBar from '@/elements/NavigationBar';
 import DashboardContainer from '@account/DashboardContainer';
+import EmailVerificationGate from '@account/EmailVerificationGate';
+import useFlash from '@/plugins/useFlash';
+import { useEmailVerification } from '@/hooks/useEmailVerification';
+import { Dialog } from '@/elements/dialog';
+import {
+    EMAIL_VERIFICATION_ALERT_MESSAGE,
+    EMAIL_VERIFICATION_ALERT_TITLE,
+    EMAIL_VERIFICATION_AREA_LABELS,
+    getAreaForPath,
+    normalizeVerificationRules,
+} from '@/constants/emailVerification';
 
 function DashboardRouter() {
     const user = useStoreState(s => s.user.data!);
@@ -22,6 +33,24 @@ function DashboardRouter() {
     const [links, setLinks] = useState<CustomLink[] | null>();
     const flags = useStoreState(state => state.everest.data!);
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
+    const { addFlash, clearFlashes } = useFlash();
+    const emailEnabled = useStoreState(
+        state =>
+            Boolean(
+                state.everest.data?.email?.enabled ??
+                    state.everest.data?.email?.resend?.enabled ??
+                    state.everest.data?.email?.resend,
+            ),
+    );
+    const verificationRules = normalizeVerificationRules(useStoreState(state => state.everest.data?.email?.verification_rules));
+    const verification = useEmailVerification(emailEnabled) || {};
+    const {
+        resend = () => {},
+        isCoolingDown = false,
+        resendLabel = 'Resend verification email',
+        refreshUser = () => {},
+    } = verification as ReturnType<typeof useEmailVerification>;
+    const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
     useEffect(() => {
         getLinks().then(setLinks).catch();
@@ -34,6 +63,37 @@ function DashboardRouter() {
         });
     };
 
+    const isRestrictedRoute = (path: string) => {
+        const area = getAreaForPath(path);
+
+        if (!area) {
+            return false;
+        }
+
+        const rule = verificationRules[area];
+
+        return emailEnabled && !user.emailVerified && rule && !rule.can_view;
+    };
+
+    const handleRestrictedClick = (path: string, e: MouseEvent<HTMLAnchorElement>) => {
+        const area = getAreaForPath(path);
+        if (!area || user.emailVerified || !emailEnabled) {
+            return;
+        }
+
+        if (isRestrictedRoute(path)) {
+            e.preventDefault();
+            clearFlashes('account:verification');
+            addFlash({
+                key: 'account:verification',
+                type: 'warning',
+                title: EMAIL_VERIFICATION_ALERT_TITLE,
+                message: `${EMAIL_VERIFICATION_ALERT_MESSAGE} (${EMAIL_VERIFICATION_AREA_LABELS[area]})`,
+            });
+            setShowVerifyPrompt(true);
+        }
+    };
+
     return (
         <div className={'flex h-screen'}>
             {' '}
@@ -41,15 +101,16 @@ function DashboardRouter() {
                 <MobileSidebar.Home />
                 {routes.account
                     .filter(route => route.name && (!route.condition || route.condition(flags)))
-                    .map(route => (
-                        <MobileSidebar.Link
-                            key={route.route}
-                            icon={route.icon ?? PuzzleIcon}
-                            text={route.name}
-                            linkTo={route.path !== '' ? `/account/${route.path}` : ''}
-                            end={route.end}
-                        />
-                    ))}
+                        .map(route => (
+                            <MobileSidebar.Link
+                                key={route.route}
+                                icon={route.icon ?? PuzzleIcon}
+                                text={route.name}
+                                linkTo={route.path !== '' ? `/account/${route.path}` : ''}
+                                end={route.end}
+                                onClick={e => handleRestrictedClick(route.path, e)}
+                            />
+                        ))}
                 {(user.rootAdmin || user.admin_role_id) && (
                     <MobileSidebar.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
                 )}
@@ -79,7 +140,12 @@ function DashboardRouter() {
                     {routes.account
                         .filter(route => route.name && (!route.condition || route.condition(flags)))
                         .map(route => (
-                            <NavLink to={`/account/${route.path}`} key={route.path} end={route.end}>
+                            <NavLink
+                                to={`/account/${route.path}`}
+                                key={route.path}
+                                end={route.end}
+                                onClick={e => handleRestrictedClick(route.path, e)}
+                            >
                                 <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
                                 <span>{route.name}</span>
                             </NavLink>
@@ -130,16 +196,60 @@ function DashboardRouter() {
                         <Route path="" element={<DashboardContainer />} />
                         {routes.account
                             .filter(route => !route.condition || route.condition(flags))
-                            .map(({ route, component: Component }) => (
+                            .map(({ route, component: Component, path }) => (
                                 <Route
                                     key={route}
                                     path={`/account/${route}`.replace(/\/$/, '')}
-                                    element={<Component />}
+                                    element={
+                                        (() => {
+                                            const area = getAreaForPath(path);
+                                            const blocked = area ? isRestrictedRoute(path) : false;
+
+                                            if (blocked && area) {
+                                                return (
+                                                    <EmailVerificationGate area={area}>
+                                                        <Component />
+                                                    </EmailVerificationGate>
+                                                );
+                                            }
+
+                                            return <Component />;
+                                        })()
+                                    }
                                 />
                             ))}
                         <Route path="*" element={<NotFound />} />
                     </Routes>
                 </Suspense>
+                <Dialog.Confirm
+                    open={showVerifyPrompt}
+                    title={EMAIL_VERIFICATION_ALERT_TITLE}
+                    onClose={() => setShowVerifyPrompt(false)}
+                    onConfirmed={() => setShowVerifyPrompt(false)}
+                    buttonType="success"
+                >
+                    <p className={'mb-4'}>{EMAIL_VERIFICATION_ALERT_MESSAGE}</p>
+                    <div className={'flex flex-wrap gap-2'}>
+                        <button
+                            className={'rounded bg-green-600 px-3 py-2 text-white disabled:opacity-50 hover:bg-green-500 transition-colors'}
+                            disabled={isCoolingDown}
+                            onClick={() => {
+                                void resend();
+                                setShowVerifyPrompt(false);
+                            }}
+                        >
+                            {resendLabel}
+                        </button>
+                        <button
+                            className={'rounded bg-gray-700 px-3 py-2 text-white'}
+                            onClick={() => {
+                                window.location.reload();
+                            }}
+                        >
+                            I already verified
+                        </button>
+                    </div>
+                </Dialog.Confirm>
             </div>
         </div>
     );

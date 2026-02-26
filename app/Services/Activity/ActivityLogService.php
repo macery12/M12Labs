@@ -101,6 +101,10 @@ class ActivityLogService
             }
 
             $this->subjects[] = $subject;
+
+            if ($subject instanceof Server) {
+                $this->getActivity()->server_id = $subject->getKey();
+            }
         }
 
         return $this;

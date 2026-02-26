@@ -13,4 +13,5 @@ return [
     */
     'attempts' => env('LOGIN_ATTEMPT_LIMIT', 3),
     'force2fa' => env('FORCE_TWO_FACTOR', false),
+    'login_notification_cooldown_hours' => env('NEW_LOGIN_EMAIL_COOLDOWN_HOURS', 24),
 ];

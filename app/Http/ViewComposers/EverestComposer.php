@@ -5,11 +5,13 @@ namespace Everest\Http\ViewComposers;
 use Illuminate\View\View;
 use Everest\Models\Setting;
 use Everest\Services\Billing\PaymentProcessorConfigService;
+use Everest\Services\Email\EmailVerificationGate;
 
 class EverestComposer
 {
     public function __construct(
-        private PaymentProcessorConfigService $processorConfigService
+        private PaymentProcessorConfigService $processorConfigService,
+        private EmailVerificationGate $emailVerificationGate
     ) {
     }
 
@@ -113,6 +115,13 @@ class EverestComposer
                 'content' => config('modules.alert.content'),
                 'uuid' => config('modules.alert.uuid'),
             ],
+            'email' => [
+                'enabled' => $this->emailEnabled(),
+                'resend' => [
+                    'enabled' => $this->emailEnabled(),
+                ],
+                'verification_rules' => $this->emailVerificationGate->getRules(),
+            ],
             'ai' => [
                 'enabled' => boolval(config('modules.ai.enabled', false)),
                 'key' => !empty(config('modules.ai.key')),
@@ -135,6 +144,7 @@ class EverestComposer
                     'requests_per_minute' => config('modules.mods.rate_limit.requests_per_minute', 30),
                     'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
                 ],
+                'spiget_enabled' => boolval(Setting::get('settings::modules:mods:spiget_enabled', config('modules.mods.spiget_enabled', false))),
             ],
             'extensions' => [
                 'enabled' => boolval(config('modules.extensions.enabled', false)),
@@ -169,5 +179,16 @@ class EverestComposer
         }
 
         return $availableExtensions;
+    private function emailEnabled(): bool
+    {
+        $raw = Setting::get('settings::modules:email:resend:enabled', config('modules.email.enabled', false));
+
+        if (is_bool($raw)) {
+            return $raw;
+        }
+
+        $value = strtolower((string) $raw);
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

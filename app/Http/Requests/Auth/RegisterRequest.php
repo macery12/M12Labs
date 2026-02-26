@@ -4,6 +4,7 @@ namespace Everest\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
+use Everest\Rules\NotTestEmailDomain;
 
 class RegisterRequest extends FormRequest
 {
@@ -15,7 +16,13 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email|max:255|unique:users,email',
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:users,email',
+                new NotTestEmailDomain(),
+            ],
             'username' => 'required|string|min:3|max:255|alpha_dash|unique:users,username',
             'password' => [
                 'required',
@@ -42,6 +49,7 @@ class RegisterRequest extends FormRequest
             'username.min' => 'Username must be at least 3 characters long.',
             'username.unique' => 'This username is already taken.',
             'email.unique' => 'This email is already registered.',
+            'email.email' => 'Enter a valid email address.',
         ];
     }
 }

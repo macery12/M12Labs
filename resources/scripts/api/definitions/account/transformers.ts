@@ -51,6 +51,7 @@ export default class Transformers {
             email: attributes.email,
             image: attributes.image,
             twoFactorEnabled: attributes['2fa_enabled'],
+            emailVerified: attributes.email_verified ?? false,
             permissions: attributes.permissions || [],
             createdAt: new Date(attributes.created_at),
             can(permission): boolean {
@@ -77,6 +78,18 @@ export default class Transformers {
             },
         };
     };
+
+    static toAccountSession = ({ attributes }: FractalResponseData): Models.AccountSession => ({
+        id: attributes.id,
+        deviceName: attributes.device_name,
+        ipAddress: attributes.ip_address,
+        location: attributes.location ?? null,
+        userAgent: attributes.user_agent,
+        createdAt: new Date(attributes.created_at),
+        lastActivityAt: attributes.last_activity_at ? new Date(attributes.last_activity_at) : null,
+        revokedAt: attributes.revoked_at ? new Date(attributes.revoked_at) : null,
+        isCurrent: Boolean(attributes.is_current),
+    });
 }
 
 export class MetaTransformers {}

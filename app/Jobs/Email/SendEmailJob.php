@@ -58,6 +58,28 @@ class SendEmailJob extends Job implements ShouldQueue
             'attempt' => $this->attempts(),
         ]);
 
+        // Hard block invalid or blacklisted recipients before any processing
+        if (is_blocked_email_recipient($this->recipient)) {
+            $delivery = $tracker->startDelivery(
+                correlationId: $this->correlationId,
+                recipient: $this->recipient,
+                subject: $this->getSubjectForTemplate($this->templateKey),
+                templateKey: $this->templateKey,
+                userId: $this->userId,
+                tags: $this->buildTags()
+            );
+
+            $tracker->markSkipped($delivery, 'Blocked recipient email');
+
+            Log::warning('SendEmailJob: Blocked recipient email, skipping send', [
+                'template_key' => $this->templateKey,
+                'recipient' => $this->recipient,
+                'correlation_id' => $this->correlationId,
+            ]);
+
+            return;
+        }
+
         // Get subject for the email
         $subject = $this->getSubjectForTemplate($this->templateKey);
 
@@ -183,6 +205,7 @@ class SendEmailJob extends Job implements ShouldQueue
             'auth.account_created' => 'Welcome to ' . config('app.name'),
             'auth.account_locked' => 'Your Account Has Been Locked',
             'auth.account_unsuspended' => 'Your Account Has Been Reactivated',
+            'auth.email_verification' => 'Verify Your Email Address',
             'auth.password_reset' => 'Reset Your Password',
             'auth.password_changed' => 'Your Password Has Been Changed',
             'auth.new_login' => 'New Login Detected',

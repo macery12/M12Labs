@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { type VerificationRules } from '@/state/everest';
 
 export interface ResendSettings {
     enabled: boolean;
@@ -44,6 +45,22 @@ export const getSettings = (): Promise<ResendSettings> => {
 export const updateSettings = (settings: ResendSettingsUpdate): Promise<ResendSettings> => {
     return new Promise((resolve, reject) => {
         http.put<ResendSettings>(`/api/application/email/settings`, settings)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const getVerificationRules = (): Promise<VerificationRules> => {
+    return new Promise((resolve, reject) => {
+        http.get<VerificationRules>(`/api/application/email/verification-rules`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const updateVerificationRules = (rules: VerificationRules): Promise<VerificationRules> => {
+    return new Promise((resolve, reject) => {
+        http.put<VerificationRules>(`/api/application/email/verification-rules`, rules)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -271,4 +288,3 @@ export const cancelDeferred = (id: number): Promise<{ success: boolean; message:
             .catch(reject);
     });
 };
-

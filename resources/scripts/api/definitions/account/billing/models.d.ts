@@ -63,6 +63,7 @@ interface Node extends Model {
     name: string;
     fqdn: string;
     priceMultiplier?: number;
+    priceMultiplierDescription?: string | null;
 }
 
 interface StripeIntent extends Model {
