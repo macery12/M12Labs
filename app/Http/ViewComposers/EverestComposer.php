@@ -179,6 +179,8 @@ class EverestComposer
         }
 
         return $availableExtensions;
+    }
+
     private function emailEnabled(): bool
     {
         $raw = Setting::get('settings::modules:email:resend:enabled', config('modules.email.enabled', false));
