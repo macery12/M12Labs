@@ -203,13 +203,14 @@ class PluginInstallService
                 $extension = strtolower($fileExt);
             }
             // Avoid using the filename when it would collapse to the same value as the version slug (bare version name).
-            if ($baseFromFile !== '' && $this->isFilenameDistinctFromVersion($baseFromFile, $versionSlug)) {
+            if (!empty($baseFromFile) && $this->isFilenameDistinctFromVersion($baseFromFile, $versionSlug)) {
                 $base = $baseFromFile;
             }
         }
 
         if (!$base) {
-            $versionSlug = $versionSlug ?? 'latest'; // requirement: fall back to latest when no version provided
+            // Product requirement: fall back to "latest" when no version name is available from the provider.
+            $versionSlug = $versionSlug ?? 'latest';
             $prefix = $type === 'plugin' ? 'spigot' : $type;
             $base = "{$prefix}-{$projectId}-{$versionSlug}";
         }
