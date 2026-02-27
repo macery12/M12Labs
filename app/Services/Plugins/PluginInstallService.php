@@ -203,6 +203,7 @@ class PluginInstallService
                 $extension = strtolower($fileExt);
             }
             $versionSlug = $versionName ? $this->slugify($versionName) : null;
+            // Avoid adopting the filename if it collapses to the same value as the version (which would reintroduce the bare version name).
             if ($baseFromFile && (!$versionSlug || $baseFromFile !== $versionSlug)) {
                 $base = $baseFromFile;
             }

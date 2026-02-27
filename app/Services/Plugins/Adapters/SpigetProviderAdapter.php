@@ -64,7 +64,10 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
             $version = $version['data'];
         }
 
-        $projectName = $project['name'] ?? ($project['title'] ?? ($project['slug'] ?? null));
+        $projectName = $project['name'] ?? ($project['title'] ?? null);
+        if (!$projectName && isset($project['slug'])) {
+            $projectName = $project['slug'];
+        }
         $versionName = $version['displayName'] ?? $version['name'] ?? null;
         if (!$versionName && isset($version['fileName'])) {
             $versionName = pathinfo((string) $version['fileName'], PATHINFO_FILENAME);
