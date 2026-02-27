@@ -6,7 +6,7 @@ import Spinner from '@/elements/Spinner';
 import ModsContainer from '@server/mods/ModsContainer';
 import ModpacksContainer from '@server/modpacks/ModpacksContainer';
 import ContentTypeTabPanel from '@server/plugins/ContentTypeTabPanel';
-import { ContentType, getPluginProviders, PluginProviderAccessResponse, ProviderKey } from '@/api/routes/server/plugins';
+import { ContentType, getPluginCapabilities, PluginCapabilityResponse, ProviderKey } from '@/api/routes/server/plugins';
 import { useStoreState } from '@/state/hooks';
 import { ServerContext } from '@/state/server';
 
@@ -36,7 +36,6 @@ const ComingSoon = ({ label }: { label: string }) => (
     <div css={tw`py-12 text-center text-neutral-300`}>{label} (coming soon)</div>
 );
 
-const providerOrder: ProviderKey[] = ['modrinth', 'curseforge', 'spiget'];
 const contentOrder: ContentTab[] = ['mods', 'modpacks', 'plugins', 'installed'];
 
 const resolveActive = <T,>(preferred: T | null, available: T[]): T | null =>
@@ -52,7 +51,7 @@ const ModsAndPluginsPage = () => {
     const uuid = serverUuid ?? uuidFallback;
 
     const [searchParams, setSearchParams] = useSearchParams();
-    const [providerAccess, setProviderAccess] = useState<PluginProviderAccessResponse | null>(null);
+    const [providerAccess, setProviderAccess] = useState<PluginCapabilityResponse | null>(null);
     const [loadingProviders, setLoadingProviders] = useState(true);
 
     const modsFeatureEnabled = (modSettings?.enabled ?? false) && serverModsEnabled;
@@ -60,13 +59,13 @@ const ModsAndPluginsPage = () => {
 
     useEffect(() => {
         if (!uuid) {
-            setProviderAccess({ mods: [], modpacks: [], plugins: [], installed: true });
+            setProviderAccess({ mods: [], modpacks: [], plugins: [] });
             setLoadingProviders(false);
             return;
         }
 
         setLoadingProviders(true);
-        getPluginProviders(uuid)
+        getPluginCapabilities(uuid)
             .then(setProviderAccess)
             .finally(() => setLoadingProviders(false));
     }, [uuid]);
@@ -89,25 +88,14 @@ const ModsAndPluginsPage = () => {
         };
     }, [modsFeatureEnabled, providerAccess, curseforgeConfigured]);
 
-    const hasProviderTabs =
-        providersByType.mods.length > 0 || providersByType.modpacks.length > 0 || providersByType.plugins.length > 0;
-
     const availableContentTypes = useMemo(() => {
-        if (!hasProviderTabs) {
-            return [] as ContentTab[];
-        }
-
-        return contentOrder.filter(type => {
-            if (type === 'installed') {
-                return providerAccess?.installed ?? true;
-            }
-
-            if (type === 'mods') return providersByType.mods.length > 0;
-            if (type === 'modpacks') return providersByType.modpacks.length > 0;
-            if (type === 'plugins') return providersByType.plugins.length > 0;
-            return false;
-        });
-    }, [providerAccess, providersByType, hasProviderTabs]);
+        const result: ContentTab[] = [];
+        if (providersByType.mods.length) result.push('mods');
+        if (providersByType.modpacks.length) result.push('modpacks');
+        if (providersByType.plugins.length) result.push('plugins');
+        result.push('installed');
+        return result;
+    }, [providersByType]);
 
     const initialType = (searchParams.get('type') as ContentTab | null) ?? null;
     const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? null;
@@ -123,7 +111,7 @@ const ModsAndPluginsPage = () => {
         resolveActive(initialType, availableContentTypes),
     );
     const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(() =>
-        resolveActive(initialProvider, providerOrder.filter(p => initialProviderPool.includes(p))),
+        resolveActive(initialProvider, initialProviderPool),
     );
 
     useEffect(() => {
@@ -158,13 +146,16 @@ const ModsAndPluginsPage = () => {
     }, []);
 
     const renderProviderTabs = (providers: ProviderKey[], current: ProviderKey | null) =>
-        providers.length ? (
-            <ContentTypeTabPanel
-                providers={providers}
-                activeProvider={current}
-                onChange={handleProviderChange}
-                providerLabels={providerLabels}
-            />
+        providers.length > 1 ? (
+            <div css={tw`mb-4`}>
+                <p css={tw`text-xs uppercase text-neutral-400 mb-2 tracking-wide`}>Available Sources</p>
+                <ContentTypeTabPanel
+                    providers={providers}
+                    activeProvider={current}
+                    onChange={handleProviderChange}
+                    providerLabels={providerLabels}
+                />
+            </div>
         ) : null;
 
     const renderContent = () => {
@@ -172,7 +163,7 @@ const ModsAndPluginsPage = () => {
             return <Spinner size={'large'} centered />;
         }
 
-        if (!modsFeatureEnabled || !availableContentTypes.length) {
+        if (!modsFeatureEnabled && activeType !== 'installed') {
             return <EmptyState />;
         }
 

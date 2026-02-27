@@ -14,15 +14,17 @@ const ContentTypeTabPanel = ({ providers, activeProvider, onChange, providerLabe
     const resolvedActive = activeProvider ?? providers[0];
 
     return (
-        <div css={tw`mb-6 flex gap-2 border-b border-neutral-700`}>
+        <div css={tw`flex gap-2 flex-wrap`}>
             {providers.map(provider => {
                 const active = provider === resolvedActive;
                 return (
                     <button
                         key={provider}
                         css={[
-                            tw`px-3 py-2 text-sm font-medium transition-colors rounded-t`,
-                            active ? tw`text-blue-300 border-b-2 border-blue-300` : tw`text-neutral-400 hover:text-neutral-200`,
+                            tw`px-3 py-1.5 text-sm font-medium transition-colors rounded-full border`,
+                            active
+                                ? tw`bg-blue-600 text-white border-blue-500`
+                                : tw`bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-neutral-100 hover:bg-neutral-700`,
                         ]}
                         onClick={() => onChange(provider)}
                         type="button"

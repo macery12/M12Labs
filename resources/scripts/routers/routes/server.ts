@@ -37,11 +37,15 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.DatabaseIcon,
         category: 'data',
     }),
-    route('plugins/*', ModsAndPluginsPage, {
+    route('marketplace/*', ModsAndPluginsPage, {
         permission: 'file.create',
-        name: 'Plugins',
+        name: 'Mods & Plugins',
         icon: Icon.PuzzleIcon,
         category: 'data',
+    }),
+    route('plugins/*', LegacyRedirects, {
+        permission: 'file.create',
+        name: undefined,
     }),
     route('mods/*', LegacyRedirects, {
         permission: 'file.create',

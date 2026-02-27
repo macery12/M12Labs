@@ -185,6 +185,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::group(['prefix' => '/plugins'], function () {
             Route::get('/providers', [Client\Servers\PluginProviderController::class, 'index']);
+            Route::get('/capabilities', [Client\Servers\PluginProviderController::class, 'capabilities']);
         });
 
         Route::post('/command', [Client\Servers\CommandController::class, 'index']);

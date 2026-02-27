@@ -3,12 +3,11 @@ import http from '@/api/http';
 export type ProviderKey = 'modrinth' | 'curseforge' | 'spiget';
 export type ContentType = 'mods' | 'modpacks' | 'plugins';
 
-export interface PluginProviderAccessResponse {
+export interface PluginCapabilityResponse {
     mods: ProviderKey[];
     modpacks: ProviderKey[];
     plugins: ProviderKey[];
-    installed: boolean;
 }
 
-export const getPluginProviders = (uuid: string): Promise<PluginProviderAccessResponse> =>
-    http.get(`/api/client/servers/${uuid}/plugins/providers`).then(r => r.data);
+export const getPluginCapabilities = (uuid: string): Promise<PluginCapabilityResponse> =>
+    http.get(`/api/client/servers/${uuid}/plugins/capabilities`).then(r => r.data);

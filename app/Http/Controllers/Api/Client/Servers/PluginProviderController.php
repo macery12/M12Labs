@@ -15,6 +15,22 @@ class PluginProviderController extends ClientApiController
         parent::__construct();
     }
 
+    public function capabilities(Server $server): JsonResponse
+    {
+        $modsEnabled = $server->mods_enabled
+            && (bool) Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false));
+
+        if (!$modsEnabled) {
+            return response()->json([
+                'mods' => [],
+                'modpacks' => [],
+                'plugins' => [],
+            ]);
+        }
+
+        return response()->json($this->providerAccessService->getAllowedProvidersForServer($server->egg_id, $server->nest_id));
+    }
+
     public function index(Server $server): JsonResponse
     {
         $modsEnabled = $server->mods_enabled
