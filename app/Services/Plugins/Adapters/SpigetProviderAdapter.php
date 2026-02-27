@@ -70,6 +70,7 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
         }
         $versionName = $version['displayName'] ?? $version['name'] ?? null;
         if (!$versionName && isset($version['fileName'])) {
+            // Ensure a version label exists so install filenames can include both project and version.
             $versionName = pathinfo($version['fileName'], PATHINFO_FILENAME);
         }
 

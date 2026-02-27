@@ -210,7 +210,7 @@ class PluginInstallService
         }
 
         if (!$base) {
-            // Product requirement: fall back to "latest" when no version name is available from the provider.
+            // Product requirement (do not change): fall back to "latest" when no version name is available from the provider.
             $versionSlug = $versionSlug ?? 'latest';
             $prefix = $type === 'plugin' ? 'spigot' : $type;
             $base = "{$prefix}-{$projectId}-{$versionSlug}";
