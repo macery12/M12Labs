@@ -148,6 +148,16 @@ const ModsAndPluginsPage = () => {
         setActiveProvider(provider);
     }, []);
 
+    const renderProviderTabs = (providers: ProviderKey[], current: ProviderKey | null) =>
+        providers.length ? (
+            <ContentTypeTabPanel
+                providers={providers}
+                activeProvider={current}
+                onChange={handleProviderChange}
+                providerLabels={providerLabels}
+            />
+        ) : null;
+
     const renderContent = () => {
         if (loadingProviders) {
             return <Spinner size={'large'} centered />;
@@ -173,12 +183,7 @@ const ModsAndPluginsPage = () => {
             if (!activeProvider) return null;
             return (
                 <>
-                        <ContentTypeTabPanel
-                            providers={providersByType.mods}
-                            activeProvider={activeProvider}
-                            onChange={handleProviderChange}
-                            providerLabels={providerLabels}
-                        />
+                    {renderProviderTabs(providersByType.mods, activeProvider)}
                     {activeProvider === 'modrinth' && <ModsContainer sourceOverride="modrinth" />}
                     {activeProvider === 'curseforge' && <ModsContainer sourceOverride="curseforge" />}
                     {activeProvider === 'spiget' && <ModsContainer sourceOverride="spiget" />}
@@ -190,12 +195,7 @@ const ModsAndPluginsPage = () => {
             const modpackProvider = resolveActive(activeProvider, providersByType.modpacks);
             return (
                 <>
-                        <ContentTypeTabPanel
-                            providers={providersByType.modpacks}
-                            activeProvider={modpackProvider}
-                            onChange={handleProviderChange}
-                            providerLabels={providerLabels}
-                        />
+                    {renderProviderTabs(providersByType.modpacks, modpackProvider)}
                     {modpackProvider === 'curseforge' ? (
                         <ModpacksContainer />
                     ) : (
@@ -209,12 +209,7 @@ const ModsAndPluginsPage = () => {
             const pluginProvider = resolveActive(activeProvider, providersByType.plugins);
             return (
                 <>
-                        <ContentTypeTabPanel
-                            providers={providersByType.plugins}
-                            activeProvider={pluginProvider}
-                            onChange={handleProviderChange}
-                            providerLabels={providerLabels}
-                        />
+                    {renderProviderTabs(providersByType.plugins, pluginProvider)}
                     {pluginProvider === 'spiget' ? (
                         <ModsContainer sourceOverride="spiget" />
                     ) : (

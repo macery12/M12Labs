@@ -4,6 +4,19 @@ namespace Everest\Services\Plugins;
 
 class ProviderAccessService
 {
+    private const PROVIDERS_BY_TYPE = [
+        'mods' => [
+            ['key' => 'modrinth.mods', 'name' => 'modrinth'],
+            ['key' => 'curseforge', 'name' => 'curseforge'],
+        ],
+        'modpacks' => [
+            ['key' => 'curseforge', 'name' => 'curseforge'],
+        ],
+        'plugins' => [
+            ['key' => 'spiget.plugins', 'name' => 'spiget'],
+        ],
+    ];
+
     public function __construct(private PluginProviderGate $providerGate)
     {
     }
@@ -15,26 +28,13 @@ class ProviderAccessService
 
     public function getAllowedProvidersForServer(int $eggId, int $nestId): array
     {
-        $providersByType = [
-            'mods' => [
-                ['key' => 'modrinth.mods', 'name' => 'modrinth'],
-                ['key' => 'curseforge', 'name' => 'curseforge'],
-            ],
-            'modpacks' => [
-                ['key' => 'curseforge', 'name' => 'curseforge'],
-            ],
-            'plugins' => [
-                ['key' => 'spiget.plugins', 'name' => 'spiget'],
-            ],
-        ];
-
         $allowed = [
             'mods' => [],
             'modpacks' => [],
             'plugins' => [],
         ];
 
-        foreach ($providersByType as $type => $providers) {
+        foreach (self::PROVIDERS_BY_TYPE as $type => $providers) {
             foreach ($providers as $provider) {
                 if ($this->isProviderAllowed($provider['key'], $nestId, $eggId)) {
                     $allowed[$type][] = $provider['name'];
