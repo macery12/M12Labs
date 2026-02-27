@@ -190,9 +190,9 @@ class PluginInstallService
     ): string {
         $extension = 'jar';
         $base = null;
+        $versionSlug = $versionName ? $this->slugify($versionName) : null;
         if ($projectName) {
             $projectSlug = $this->slugify($projectName);
-            $versionSlug = $versionName ? $this->slugify($versionName) : null;
             $base = $versionSlug ? "{$projectSlug}-{$versionSlug}" : $projectSlug;
         }
 
@@ -202,7 +202,6 @@ class PluginInstallService
             if ($fileExt) {
                 $extension = strtolower($fileExt);
             }
-            $versionSlug = $versionName ? $this->slugify($versionName) : null;
             // Avoid using the filename when it would collapse to the same value as the version slug (bare version name).
             if ($baseFromFile && $this->shouldUseFilenameAsBase($baseFromFile, $versionSlug)) {
                 $base = $baseFromFile;
@@ -210,7 +209,7 @@ class PluginInstallService
         }
 
         if (!$base) {
-            $versionSlug = $versionName ? $this->slugify($versionName) : 'latest';
+            $versionSlug = $versionSlug ?? 'latest';
             $prefix = $type === 'plugin' ? 'spigot' : $type;
             $base = "{$prefix}-{$projectId}-{$versionSlug}";
         }
@@ -241,7 +240,7 @@ class PluginInstallService
 
     private function shouldUseFilenameAsBase(string $baseFromFile, ?string $versionSlug): bool
     {
-        return $baseFromFile !== '' && ($versionSlug === null || $baseFromFile !== $versionSlug);
+        return $versionSlug === null || $baseFromFile !== $versionSlug;
     }
 
     private function validateExtension(string $extension, string $type): void
