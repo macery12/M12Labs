@@ -55,12 +55,12 @@ class SpigetService
                 'page' => $page,
                 'size' => $pageSize,
                 'sort' => $sort,
-                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon,category',
+                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon,category,premium,external,file,sourceCodeLink,donationLink',
             ]);
 
-            $data = array_map(function ($item) {
+            $data = array_values(array_filter(array_map(function ($item) {
                 return $this->transformResourceToCommonFormat($item, []);
-            }, $response);
+            }, $response), fn ($item) => !($item['isPremium'] ?? false)));
 
             if (!is_null($minRating)) {
                 $data = array_values(array_filter($data, function ($item) use ($minRating) {
@@ -98,12 +98,14 @@ class SpigetService
 
         return $this->makeCachedRequest($cacheKey, $this->cacheTtl['project'], function () use ($modId) {
             $resource = $this->request("/resources/{$modId}", [
-                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon,category',
+                'fields' => 'id,name,tag,downloads,rating,releaseDate,updateDate,testedVersions,version,author,icon,category,premium,external,file,description,documentation,sourceCodeLink,donationLink',
             ]);
 
             $authors = $this->hydrateAuthors([$resource]);
 
-            return $this->transformResourceToCommonFormat($resource, $authors);
+            $latestVersion = $this->safeRequest("/resources/{$modId}/versions/latest");
+
+            return $this->transformResourceToCommonFormat($resource, $authors, $latestVersion);
         });
     }
 
@@ -218,12 +220,16 @@ class SpigetService
     /**
      * Transform a Spiget resource into the common mod representation used by the UI.
      */
-    private function transformResourceToCommonFormat(array $resource, array $authors): array
+    private function transformResourceToCommonFormat(array $resource, array $authors, array $latestVersion = []): array
     {
         $authorId = $resource['author']['id'] ?? null;
         $authorName = $resource['author']['name'] ?? ($authorId && isset($authors[$authorId]) ? $authors[$authorId] : 'Unknown');
         $testedVersions = $resource['testedVersions'] ?? [];
         $latestVersionName = $resource['version']['id'] ?? null;
+        $isPremium = (bool) ($resource['premium'] ?? false);
+        $isExternal = (bool) ($resource['external'] ?? false);
+        $file = $resource['file'] ?? [];
+        $latest = $latestVersion ?: [];
 
         return [
             'id' => $resource['id'],
@@ -234,7 +240,7 @@ class SpigetService
                 'websiteUrl' => "https://www.spigotmc.org/resources/{$resource['id']}",
                 'wikiUrl' => '',
                 'issuesUrl' => '',
-                'sourceUrl' => '',
+                'sourceUrl' => $resource['sourceCodeLink'] ?? '',
             ],
             'summary' => $resource['tag'] ?? 'No description provided.',
             'status' => 4,
@@ -295,6 +301,26 @@ class SpigetService
             'allowModDistribution' => true,
             'gamePopularityRank' => 0,
             'rating' => $resource['rating'] ?? ['average' => 0, 'count' => 0],
+            'isPremium' => $isPremium,
+            'isExternal' => $isExternal,
+            'externalUrl' => $file['externalUrl'] ?? null,
+            'testedVersions' => $testedVersions,
+            'description' => $resource['description'] ?? null,
+            'documentation' => $resource['documentation'] ?? null,
+            'file' => [
+                'type' => $file['type'] ?? null,
+                'size' => $file['size'] ?? null,
+                'sizeUnit' => $file['sizeUnit'] ?? null,
+                'url' => $file['url'] ?? null,
+                'externalUrl' => $file['externalUrl'] ?? null,
+            ],
+            'latestVersion' => [
+                'id' => $latest['id'] ?? null,
+                'name' => $latest['name'] ?? null,
+                'releaseDate' => isset($latest['releaseDate']) ? date('c', (int) $latest['releaseDate']) : null,
+                'downloads' => $latest['downloads'] ?? null,
+                'rating' => $latest['rating'] ?? null,
+            ],
         ];
     }
 
@@ -375,7 +401,7 @@ class SpigetService
             return '/search/resources/' . urlencode($query);
         }
 
-        return '/resources';
+        return '/resources/free';
     }
 
     /**
@@ -392,7 +418,7 @@ class SpigetService
     {
         return [
             'downloads' => '-downloads',
-            'rating' => '-rating',
+            'rating' => '-rating.average',
             'updated' => '-updateDate',
             'newest' => '-releaseDate',
             'name' => 'name',
@@ -478,5 +504,14 @@ class SpigetService
         }
 
         return $decoded;
+    }
+
+    private function safeRequest(string $path, array $params = []): array
+    {
+        try {
+            return $this->request($path, $params);
+        } catch (ModsServiceException) {
+            return [];
+        }
     }
 }

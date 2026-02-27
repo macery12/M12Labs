@@ -119,6 +119,27 @@ export interface CurseForgeMod {
     dateReleased: string;
     allowModDistribution: boolean;
     gamePopularityRank: number;
+    rating?: { average?: number; count?: number };
+    isPremium?: boolean;
+    isExternal?: boolean;
+    externalUrl?: string | null;
+    testedVersions?: string[];
+    description?: string | null;
+    documentation?: string | null;
+    latestVersion?: {
+        id?: number | string;
+        name?: string;
+        releaseDate?: string;
+        downloads?: number;
+        rating?: { average?: number; count?: number };
+    } | null;
+    file?: {
+        type?: string | null;
+        size?: number | null;
+        sizeUnit?: string | null;
+        url?: string | null;
+        externalUrl?: string | null;
+    } | null;
 }
 
 export interface ModSearchResponse {

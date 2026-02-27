@@ -41,6 +41,15 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
      */
     public function getDownloadUrl(string|int $projectId, string|int $versionId): array
     {
+        $project = $this->spigetService->getMod($projectId);
+        if ($project['isPremium'] ?? false) {
+            throw new ModsServiceException('Premium resources cannot be downloaded via the panel.');
+        }
+
+        if ($project['isExternal'] ?? false) {
+            throw new ModsServiceException('External Spigot resources must be downloaded manually.');
+        }
+
         $files = $this->spigetService->getModFiles($projectId, [
             'index' => 0,
             'pageSize' => 100,

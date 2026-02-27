@@ -15,9 +15,10 @@ interface Props {
     fileId: number | string;
     fileName: string;
     source: string;
+    disabledReason?: string | null;
 }
 
-export default ({ modId, fileId, fileName, source }: Props) => {
+export default ({ modId, fileId, fileName, source, disabledReason }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addFlash, addError } = useFlash();
 
@@ -50,9 +51,9 @@ export default ({ modId, fileId, fileName, source }: Props) => {
             <Button
                 size={Button.Sizes.Small}
                 onClick={handleDownload}
-                disabled={downloading || downloaded}
+                disabled={downloading || downloaded || Boolean(disabledReason)}
                 css={[downloaded && tw`bg-green-600 hover:bg-green-700`, tw`min-w-[100px]`]}
-            >
+                >
                 {downloading ? (
                     <>
                         <Spinner size={'small'} css={tw`mr-2`} />
@@ -63,6 +64,8 @@ export default ({ modId, fileId, fileName, source }: Props) => {
                         <FontAwesomeIcon icon={faCheck} css={tw`mr-2`} />
                         Downloaded
                     </>
+                ) : disabledReason ? (
+                    disabledReason
                 ) : (
                     <>
                         <FontAwesomeIcon icon={faDownload} css={tw`mr-2`} />
