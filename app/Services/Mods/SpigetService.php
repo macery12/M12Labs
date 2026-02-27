@@ -522,7 +522,10 @@ class SpigetService
             ]);
 
             throw new ModsServiceException(
-                'Unable to load plugins from the Spigot provider. Please try again later.',
+                sprintf(
+                    'Unable to load data from the Spigot provider for "%s". Please try again later.',
+                    $path
+                ),
                 previous: $exception
             );
         }
