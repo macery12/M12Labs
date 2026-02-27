@@ -111,12 +111,13 @@ const ModsAndPluginsPage = () => {
 
     const initialType = (searchParams.get('type') as ContentTab | null) ?? null;
     const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? null;
+    const providerPools: Record<ContentType, ProviderKey[]> = {
+        mods: providersByType.mods,
+        modpacks: providersByType.modpacks,
+        plugins: providersByType.plugins,
+    };
     const initialProviderPool =
-        initialType === 'plugins'
-            ? providersByType.plugins
-            : initialType === 'modpacks'
-            ? providersByType.modpacks
-            : providersByType.mods;
+        initialType && initialType !== 'installed' ? providerPools[initialType] : providersByType.mods;
 
     const [activeType, setActiveType] = useState<ContentTab | null>(() =>
         resolveActive(initialType, availableContentTypes),
@@ -130,19 +131,27 @@ const ModsAndPluginsPage = () => {
         if (resolvedType !== activeType) {
             setActiveType(resolvedType);
         }
+    }, [activeType, availableContentTypes]);
 
-        const currentProviders = resolvedType && resolvedType !== 'installed' ? providersByType[resolvedType] ?? [] : [];
+    useEffect(() => {
+        if (!activeType) return;
+
+        if (activeType === 'installed') {
+            setActiveProvider(null);
+            setSearchParams({ type: activeType });
+            return;
+        }
+
+        const currentProviders = providersByType[activeType] ?? [];
         const resolvedProvider = resolveActive(activeProvider, currentProviders);
         if (resolvedProvider !== activeProvider) {
             setActiveProvider(resolvedProvider);
         }
 
-        if (resolvedType) {
-            const params: Record<string, string> = { type: resolvedType };
-            if (resolvedProvider) params.provider = resolvedProvider;
-            setSearchParams(params);
-        }
-    }, [availableContentTypes, providersByType, activeType, activeProvider, setSearchParams]);
+        const params: Record<string, string> = { type: activeType };
+        if (resolvedProvider) params.provider = resolvedProvider;
+        setSearchParams(params);
+    }, [activeType, activeProvider, providersByType, setSearchParams]);
 
     const handleProviderChange = useCallback((provider: ProviderKey) => {
         setActiveProvider(provider);

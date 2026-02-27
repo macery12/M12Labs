@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import tw from 'twin.macro';
 import { ProviderKey } from '@/api/routes/server/plugins';
 
@@ -13,12 +12,6 @@ const ContentTypeTabPanel = ({ providers, activeProvider, onChange, providerLabe
     if (!providers.length) return null;
 
     const resolvedActive = activeProvider ?? providers[0];
-
-    useEffect(() => {
-        if (resolvedActive && resolvedActive !== activeProvider) {
-            onChange(resolvedActive);
-        }
-    }, [resolvedActive, activeProvider, onChange]);
 
     return (
         <div css={tw`mb-6 flex gap-2 border-b border-neutral-700`}>
