@@ -73,7 +73,7 @@ const ModsAndPluginsPage = () => {
 
     const providersByType = useMemo<ProvidersByType>(() => {
         if (!modsFeatureEnabled || !providerAccess) {
-            return { mods: [] as ProviderKey[], modpacks: [] as ProviderKey[], plugins: [] as ProviderKey[] };
+            return { mods: [], modpacks: [], plugins: [] };
         }
 
         const filterByConfig = (providers: ProviderKey[]) =>
@@ -111,12 +111,18 @@ const ModsAndPluginsPage = () => {
 
     const initialType = (searchParams.get('type') as ContentTab | null) ?? null;
     const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? null;
+    const initialProviderPool =
+        initialType === 'plugins'
+            ? providersByType.plugins
+            : initialType === 'modpacks'
+            ? providersByType.modpacks
+            : providersByType.mods;
 
     const [activeType, setActiveType] = useState<ContentTab | null>(() =>
         resolveActive(initialType, availableContentTypes),
     );
     const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(() =>
-        resolveActive(initialProvider, providerOrder.filter(p => providersByType.mods.includes(p))),
+        resolveActive(initialProvider, providerOrder.filter(p => initialProviderPool.includes(p))),
     );
 
     useEffect(() => {
@@ -125,8 +131,7 @@ const ModsAndPluginsPage = () => {
             setActiveType(resolvedType);
         }
 
-        const currentProviders =
-            resolvedType && resolvedType !== 'installed' ? providersByType[resolvedType] ?? [] : providersByType.mods;
+        const currentProviders = resolvedType && resolvedType !== 'installed' ? providersByType[resolvedType] ?? [] : [];
         const resolvedProvider = resolveActive(activeProvider, currentProviders);
         if (resolvedProvider !== activeProvider) {
             setActiveProvider(resolvedProvider);
