@@ -5,6 +5,9 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import { useStoreState } from '@/state/hooks';
 import ModsContainer from '@server/mods/ModsContainer';
 import ModpacksContainer from '@server/modpacks/ModpacksContainer';
+import { getProviderAccess, ProviderAccessResponse } from '@/api/routes/server/mods';
+import Spinner from '@/elements/Spinner';
+import { ServerContext } from '@/state/server';
 
 type Provider = 'modrinth' | 'curseforge' | 'spiget';
 type Resource = 'mods' | 'modpacks' | 'plugins';
@@ -33,33 +36,51 @@ const providerLabels: Record<Provider, string> = {
 };
 
 export default function PluginsContainer() {
-    const modProviderConfig = useStoreState(state => state.everest.data?.mods);
+    const modProviderConfig = useStoreState(state => state.everest?.data?.mods);
+    const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
+    const uuid = serverUuid ?? useStoreState(state => state.server?.data?.uuid);
+    const [access, setAccess] = useState<ProviderAccessResponse | null>(null);
+    const [loadingAccess, setLoadingAccess] = useState(true);
+
+    useEffect(() => {
+        if (!uuid) {
+            setAccess({ providers: {} });
+            setLoadingAccess(false);
+            return;
+        }
+        setLoadingAccess(true);
+        getProviderAccess(uuid)
+            .then(setAccess)
+            .finally(() => setLoadingAccess(false));
+    }, [uuid]);
 
     const globalModsEnabled = modProviderConfig?.enabled ?? false;
     const curseforgeConfigured = !!modProviderConfig?.curseforge_api_key;
-    const spigetEnabled = !!modProviderConfig?.spiget_enabled && globalModsEnabled;
-
-    const providers: Record<Provider, ProviderState> = useMemo(
-        () => ({
+    const providers: Record<Provider, ProviderState> = useMemo(() => {
+        const allowed = access?.providers ?? {};
+        return {
             modrinth: {
-                available: globalModsEnabled,
-                reason: globalModsEnabled ? undefined : 'Mods module is disabled by the administrator.',
+                available: globalModsEnabled && allowed['modrinth.mods']?.allowed === true,
+                reason: globalModsEnabled
+                    ? 'Provider disabled for this nest/egg.'
+                    : 'Plugins module is disabled by the administrator.',
             },
             curseforge: {
-                available: globalModsEnabled && curseforgeConfigured,
+                available: globalModsEnabled && curseforgeConfigured && allowed['curseforge']?.allowed === true,
                 reason: !globalModsEnabled
-                    ? 'Mods module is disabled by the administrator.'
-                    : 'CurseForge API key is not configured.',
+                    ? 'Plugins module is disabled by the administrator.'
+                    : !curseforgeConfigured
+                    ? 'CurseForge API key is not configured.'
+                    : 'Provider disabled for this nest/egg.',
             },
             spiget: {
-                available: spigetEnabled,
-                reason: spigetEnabled
-                    ? undefined
-                    : 'Spiget integration is disabled or not configured for this server.',
+                available: globalModsEnabled && allowed['spiget.plugins']?.allowed === true,
+                reason: globalModsEnabled
+                    ? 'Provider disabled for this nest/egg.'
+                    : 'Plugins module is disabled by the administrator.',
             },
-        }),
-        [globalModsEnabled, curseforgeConfigured, spigetEnabled],
-    );
+        };
+    }, [access, globalModsEnabled, curseforgeConfigured]);
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -73,21 +94,23 @@ export default function PluginsContainer() {
     const initialProviderParam = searchParams.get('provider') as Provider | null;
     const initialResourceParam = searchParams.get('resource') as Resource | null;
 
-    const resourceOptions: Record<Provider, Array<{ id: Resource; label: string; enabled: boolean; comingSoon?: boolean }>> =
-        useMemo(
-            () => ({
-                modrinth: [
-                    { id: 'mods', label: 'Mods', enabled: true },
-                    { id: 'modpacks', label: 'Modpacks', enabled: false, comingSoon: true },
-                ],
-                curseforge: [
-                    { id: 'mods', label: 'Mods', enabled: true },
-                    { id: 'modpacks', label: 'Modpacks', enabled: true },
-                ],
-                spiget: [{ id: 'plugins', label: 'Plugins', enabled: true }],
-            }),
-            [providers.spiget.available],
-        );
+    const resourceOptions: Record<
+        Provider,
+        Array<{ id: Resource; label: string; enabled: boolean; comingSoon?: boolean }>
+    > = useMemo(
+        () => ({
+            modrinth: [
+                { id: 'mods', label: 'Mods', enabled: true },
+                { id: 'modpacks', label: 'Modpacks', enabled: false, comingSoon: true },
+            ],
+            curseforge: [
+                { id: 'mods', label: 'Mods', enabled: true },
+                { id: 'modpacks', label: 'Modpacks', enabled: true },
+            ],
+            spiget: [{ id: 'plugins', label: 'Plugins', enabled: true }],
+        }),
+        [],
+    );
 
     const [activeProvider, setActiveProvider] = useState<Provider>(
         initialProviderParam && providers[initialProviderParam]
@@ -156,9 +179,13 @@ export default function PluginsContainer() {
     };
 
     const renderContent = () => {
-        if (!hasAvailableProvider) {
-            return <NotConfigured label={'Add-ons'} reason={'No providers are configured for this server.'} />;
-        }
+    if (loadingAccess) {
+        return <Spinner size={'large'} centered />;
+    }
+
+    if (!hasAvailableProvider) {
+        return <NotConfigured label={'Add-ons'} reason={'No providers are configured for this server.'} />;
+    }
         if (!providers[activeProvider].available) {
             return <NotConfigured label={providerLabels[activeProvider]} reason={providers[activeProvider].reason} />;
         }

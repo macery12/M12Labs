@@ -144,7 +144,6 @@ class EverestComposer
                     'requests_per_minute' => config('modules.mods.rate_limit.requests_per_minute', 30),
                     'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
                 ],
-                'spiget_enabled' => boolval(Setting::get('settings::modules:mods:spiget_enabled', config('modules.mods.spiget_enabled', false))),
             ],
         ]);
     }

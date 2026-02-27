@@ -8,13 +8,13 @@ export default () => {
     const submit = () => {
         updateSettings({ enabled: !mods.enabled }).then(() => {
             // @ts-expect-error this is fine
-            window.location = '/admin/mods';
+            window.location = '/admin/plugins';
         });
     };
 
     return (
         <div className={'mr-4'} onClick={submit}>
-            {!mods.enabled ? <Button>Enable Mods</Button> : <Button.Danger>Disable Mods</Button.Danger>}
+            {!mods.enabled ? <Button>Enable Plugins</Button> : <Button.Danger>Disable Plugins</Button.Danger>}
         </div>
     );
 };
