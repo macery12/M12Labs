@@ -203,13 +203,13 @@ class PluginInstallService
                 $extension = strtolower($fileExt);
             }
             // Avoid using the filename when it would collapse to the same value as the version slug (bare version name).
-            if ($this->isFilenameDistinctFromVersion($baseFromFile, $versionSlug)) {
+            if ($baseFromFile !== '' && $this->isFilenameDistinctFromVersion($baseFromFile, $versionSlug)) {
                 $base = $baseFromFile;
             }
         }
 
         if (!$base) {
-            $versionSlug = $versionSlug ?? 'latest';
+            $versionSlug = $versionSlug ?? 'latest'; // requirement: fall back to latest when no version provided
             $prefix = $type === 'plugin' ? 'spigot' : $type;
             $base = "{$prefix}-{$projectId}-{$versionSlug}";
         }
@@ -240,7 +240,7 @@ class PluginInstallService
 
     private function isFilenameDistinctFromVersion(string $baseFromFile, ?string $versionSlug): bool
     {
-        return $baseFromFile !== '' && ($versionSlug === null || $baseFromFile !== $versionSlug);
+        return $versionSlug === null || $baseFromFile !== $versionSlug;
     }
 
     private function validateExtension(string $extension, string $type): void
