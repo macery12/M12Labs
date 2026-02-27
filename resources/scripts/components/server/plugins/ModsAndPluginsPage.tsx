@@ -120,8 +120,13 @@ const ModsAndPluginsPage = () => {
     const initialProviderPool =
         initialType && initialType !== 'installed' ? providerPools[initialType] : providersByType.mods;
 
+    const defaultType = useMemo(() => {
+        const primary = availableContentTypes.find(t => t !== 'installed');
+        return primary ?? availableContentTypes[0] ?? null;
+    }, [availableContentTypes]);
+
     const [activeType, setActiveType] = useState<ContentTab | null>(() =>
-        resolveActive(initialType, availableContentTypes),
+        resolveActive(initialType, availableContentTypes) ?? defaultType,
     );
     const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(() =>
         resolveActive(initialProvider, initialProviderPool),
@@ -129,10 +134,11 @@ const ModsAndPluginsPage = () => {
 
     useEffect(() => {
         const resolvedType = resolveActive(activeType, availableContentTypes);
-        if (resolvedType !== activeType) {
-            setActiveType(resolvedType);
+        const preferred = resolvedType ?? defaultType;
+        if (preferred !== activeType) {
+            setActiveType(preferred);
         }
-    }, [activeType, availableContentTypes]);
+    }, [activeType, availableContentTypes, defaultType]);
 
     useEffect(() => {
         if (!activeType) return;

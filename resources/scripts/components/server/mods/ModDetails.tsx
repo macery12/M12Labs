@@ -222,13 +222,6 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                                     Open Download Page
                                 </button>
                             )}
-                            <button
-                                css={tw`px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors text-sm`}
-                                onClick={() => window.open(`https://modrinth.com/mods?query=${encodeURIComponent(mod.name)}`, '_blank', 'noopener,noreferrer')}
-                                type="button"
-                            >
-                                Search on Modrinth
-                            </button>
                         </div>
                     </Section>
                 )}
@@ -318,20 +311,24 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                                     <FileItem key={file.id}>
                                         <FileInfo>
                                             <FileName>{file.displayName}</FileName>
-                                            <FileDetails>
-                                                <span css={getReleaseTypeColor(file.releaseType)}>
-                                                    {getReleaseTypeLabel(file.releaseType)}
-                                                </span>
-                                                {' • '}
-                                                <span>
-                                                    {file.gameVersions.slice(0, 3).join(', ')}
-                                                    {file.gameVersions.length > 3 && '...'}
-                                                </span>
-                                                {' • '}
-                                                <span>{new Date(file.fileDate).toLocaleDateString()}</span>
-                                                {' • '}
-                                                 {file.fileLength > 0 && <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>}
-                                            </FileDetails>
+                                             <FileDetails>
+                                                 <span css={getReleaseTypeColor(file.releaseType)}>
+                                                     {getReleaseTypeLabel(file.releaseType)}
+                                                 </span>
+                                                 {' • '}
+                                                 <span>
+                                                     {file.gameVersions.slice(0, 3).join(', ')}
+                                                     {file.gameVersions.length > 3 && '...'}
+                                                 </span>
+                                                 {' • '}
+                                                 <span>{new Date(file.fileDate).toLocaleDateString()}</span>
+                                                 {file.fileLength > 0 && (
+                                                     <>
+                                                         {' • '}
+                                                         <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
+                                                     </>
+                                                 )}
+                                             </FileDetails>
                                         </FileInfo>
                                         <ModDownloadButton
                                             modId={mod.id}

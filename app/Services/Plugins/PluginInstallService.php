@@ -195,8 +195,9 @@ class PluginInstallService
             $preferredName = $versionSlug ? "{$slug}-{$versionSlug}" : $slug;
         }
 
-        $base = $fileName ?: ($preferredName ?: ($type . '_' . $projectId . '_' . $versionId));
-        $base = preg_replace('/\.[^.]+$/', '', $base); // strip extension for sanitizing
+        // Prefer a derived name over the raw filename so we don't end up with just the version number.
+        $rawBase = $preferredName ?: $fileName ?: ($type . '_' . $projectId . '_' . $versionId);
+        $base = preg_replace('/\.[^.]+$/', '', $rawBase); // strip extension for sanitizing
         $base = $this->slugify($base);
 
         if (strlen($base) > 120) {
