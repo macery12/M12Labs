@@ -201,7 +201,7 @@ const ModsAndPluginsPage = () => {
         }
 
         if (activeType === 'modpacks') {
-            const modpackProvider = resolveActive(activeProvider, providersByType.modpacks);
+            const modpackProvider = activeProvider ?? providersByType.modpacks[0];
             return (
                 <>
                     {renderProviderTabs(providersByType.modpacks, modpackProvider)}
@@ -215,7 +215,7 @@ const ModsAndPluginsPage = () => {
         }
 
         if (activeType === 'plugins') {
-            const pluginProvider = resolveActive(activeProvider, providersByType.plugins);
+            const pluginProvider = activeProvider ?? providersByType.plugins[0];
             return (
                 <>
                     {renderProviderTabs(providersByType.plugins, pluginProvider)}
