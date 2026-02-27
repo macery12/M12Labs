@@ -203,7 +203,7 @@ class PluginInstallService
                 $extension = strtolower($fileExt);
             }
             // Avoid using the filename when it would collapse to the same value as the version slug (bare version name).
-            if ($baseFromFile && $this->shouldUseFilenameAsBase($baseFromFile, $versionSlug)) {
+            if ($this->shouldUseFilenameAsBase($baseFromFile, $versionSlug)) {
                 $base = $baseFromFile;
             }
         }
@@ -240,6 +240,10 @@ class PluginInstallService
 
     private function shouldUseFilenameAsBase(string $baseFromFile, ?string $versionSlug): bool
     {
+        if ($baseFromFile === '') {
+            return false;
+        }
+
         return $versionSlug === null || $baseFromFile !== $versionSlug;
     }
 
