@@ -22,6 +22,8 @@ class PluginInstallService
     ];
     private const DEFAULT_MAX_PLUGIN_SIZE = 104857600; // 100MB
     private const DEFAULT_MAX_MOD_SIZE = 157286400; // 150MB
+    private const BODY_PREVIEW_MAX_BYTES = 8192;
+    private const BODY_PREVIEW_READ_BYTES = 512;
 
     public function __construct(
         CurseForgeProviderAdapter $curseForgeProviderAdapter,
@@ -89,6 +91,18 @@ class PluginInstallService
                 ->get($downloadUrl);
 
             if (!$response->successful()) {
+                // Header present when Guzzle tracks redirects (see withOptions allow_redirects.track_redirects = true above).
+                $redirects = $this->normalizeRedirectHistory($response->header('X-Guzzle-Redirect-History'));
+                $redirectsSanitized = array_map(fn ($url) => $this->sanitizeUrlForLogging($url), $redirects);
+                $bodyPreview = $this->getResponsePreview($tempPath);
+                $sanitizedUrl = $this->sanitizeUrlForLogging($downloadUrl);
+                Log::warning('PluginInstallService: provider download failed', [
+                    'provider' => $providerKey,
+                    'url' => $sanitizedUrl,
+                    'status' => $response->status(),
+                    'redirects' => $redirectsSanitized,
+                    'body_preview' => $bodyPreview,
+                ]);
                 throw new ModsServiceException('Failed to download file from provider.');
             }
 
@@ -211,5 +225,63 @@ class PluginInstallService
             'plugin' => (int) config('modules.mods.max_plugin_size', self::DEFAULT_MAX_PLUGIN_SIZE),
             default => (int) config('modules.mods.max_mod_size', self::DEFAULT_MAX_MOD_SIZE),
         };
+    }
+
+    private function getResponsePreview(string $path): ?string
+    {
+        if (!is_file($path) || !is_readable($path)) {
+            return null;
+        }
+
+        $fileSize = filesize($path);
+        if ($fileSize === false) {
+            return null;
+        }
+
+        if ($fileSize > self::BODY_PREVIEW_MAX_BYTES) {
+            Log::info('PluginInstallService: skipping response preview due to size', ['path' => $path, 'bytes' => $fileSize]);
+
+            return null;
+        }
+
+        $content = @file_get_contents($path, false, null, 0, self::BODY_PREVIEW_READ_BYTES);
+
+        if ($content === false) {
+            Log::warning('PluginInstallService: unable to read response preview', ['path' => $path]);
+
+            return null;
+        }
+
+        // Treat responses containing control characters (excluding TAB \x09, LF \x0A, CR \x0D which are common in text) as non-text and skip logging content.
+        if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $content)) {
+            return '[non-text response omitted]';
+        }
+
+        return $content;
+    }
+
+    private function sanitizeUrlForLogging(string $url): string
+    {
+        $parsed = parse_url($url);
+
+        if ($parsed !== false && !empty($parsed['host'])) {
+            $scheme = $parsed['scheme'] ?? '[unknown-scheme]';
+
+            return $scheme . '://' . ($parsed['host'] ?? '') . ($parsed['path'] ?? '');
+        }
+
+        $parts = preg_split('/[?#]/', $url, 2);
+        $withoutQuery = is_array($parts) ? $parts[0] : '';
+
+        return $withoutQuery !== '' ? $withoutQuery : '[invalid-url]';
+    }
+
+    private function normalizeRedirectHistory(string|array|null $header): array
+    {
+        if (!$header) {
+            return [];
+        }
+
+        return is_array($header) ? $header : [$header];
     }
 }
