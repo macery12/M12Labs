@@ -9,7 +9,7 @@ import { useFlashKey } from '@/plugins/useFlash';
 const providers = [
     { key: 'modrinth.mods', label: 'Modrinth Mods' },
     { key: 'curseforge', label: 'CurseForge (Mods + Modpacks)' },
-    { key: 'spiget.plugins', label: 'Spiget Plugins' },
+    { key: 'spigot.plugins', label: 'Spigot Plugins' },
 ];
 
 export default function AccessControlContainer() {

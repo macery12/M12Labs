@@ -34,7 +34,7 @@ export default ({ modId, fileId, fileName, source }: Props) => {
                 addFlash({
                     key: 'mods',
                     type: 'success',
-                    message: `Successfully downloaded ${fileName} to /mods directory.`,
+                    message: `Successfully downloaded ${fileName} to ${source === 'spigot' ? '/plugins' : '/mods'} directory.`,
                 });
                 setTimeout(() => setDownloaded(false), 3000);
             })

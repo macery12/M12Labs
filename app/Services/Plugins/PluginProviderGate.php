@@ -14,6 +14,9 @@ class PluginProviderGate
     {
         /** @var PluginProviderRule|null $rule */
         $rule = PluginProviderRule::query()->where('provider_key', $providerKey)->first();
+        if (!$rule && $providerKey === 'spigot.plugins') {
+            $rule = PluginProviderRule::query()->where('provider_key', 'spiget.plugins')->first();
+        }
 
         if (!$rule || !$rule->enabled_global) {
             return false;

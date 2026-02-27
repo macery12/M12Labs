@@ -1,6 +1,6 @@
 import http from '@/api/http';
 
-export type ProviderKey = 'modrinth' | 'curseforge' | 'spiget';
+export type ProviderKey = 'modrinth' | 'curseforge' | 'spigot';
 export type ContentType = 'mods' | 'modpacks' | 'plugins';
 
 export interface PluginCapabilityResponse {

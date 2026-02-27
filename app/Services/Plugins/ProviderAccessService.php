@@ -13,7 +13,9 @@ class ProviderAccessService
             ['key' => 'curseforge', 'name' => 'curseforge'],
         ],
         'plugins' => [
-            ['key' => 'spiget.plugins', 'name' => 'spiget'],
+            ['key' => 'spigot.plugins', 'name' => 'spigot'],
+            // Legacy support for existing policy keys.
+            ['key' => 'spiget.plugins', 'name' => 'spigot'],
         ],
     ];
 
@@ -40,6 +42,10 @@ class ProviderAccessService
                     $allowed[$type][] = $provider['name'];
                 }
             }
+        }
+
+        foreach ($allowed as $type => $values) {
+            $allowed[$type] = array_values(array_unique($values));
         }
 
         return $allowed;

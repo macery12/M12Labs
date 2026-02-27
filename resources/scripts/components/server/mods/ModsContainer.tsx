@@ -11,7 +11,7 @@ import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
 
-type ModSource = 'modrinth' | 'curseforge' | 'spiget';
+type ModSource = 'modrinth' | 'curseforge' | 'spigot';
 
 interface Props {
     sourceOverride?: ModSource;
@@ -22,10 +22,12 @@ export default ({ sourceOverride }: Props) => {
     const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
+    const spigotEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
     const defaultSource = useStoreState(state => state.everest.data?.mods?.default_source ?? 'modrinth');
-    const validSources: ModSource[] = ['modrinth', 'curseforge', 'spiget'];
-    const resolvedDefaultSource = (validSources.includes(defaultSource as ModSource)
-        ? (defaultSource as ModSource)
+    const normalizedDefaultSource = defaultSource === 'spiget' ? 'spigot' : defaultSource;
+    const validSources: ModSource[] = ['modrinth', 'curseforge', 'spigot'];
+    const resolvedDefaultSource = (validSources.includes(normalizedDefaultSource as ModSource)
+        ? (normalizedDefaultSource as ModSource)
         : 'modrinth') as ModSource;
     const { addError } = useFlash();
 
@@ -43,7 +45,7 @@ export default ({ sourceOverride }: Props) => {
 
     const [searchParams, setSearchParams] = useState<ModSearchParams>({
         searchFilter: '',
-        sortField: (sourceOverride ?? activeSource) === 'spiget' ? 'downloads' : '2',
+        sortField: (sourceOverride ?? activeSource) === 'spigot' ? 'downloads' : '2',
         sortOrder: 'desc',
         gameVersion: undefined,
         modLoaderType: undefined,
@@ -61,7 +63,7 @@ export default ({ sourceOverride }: Props) => {
         setSelectedMod(null);
         setSearchParams({
             searchFilter: '',
-            sortField: sourceOverride === 'spiget' ? 'downloads' : '2',
+            sortField: sourceOverride === 'spigot' ? 'downloads' : '2',
             sortOrder: 'desc',
             gameVersion: undefined,
             modLoaderType: undefined,
@@ -120,7 +122,7 @@ export default ({ sourceOverride }: Props) => {
             searchFilter: '',
             gameVersion: undefined,
             modLoaderType: undefined,
-            sortField: source === 'spiget' ? 'downloads' : '2',
+            sortField: source === 'spigot' ? 'downloads' : '2',
             minRating: undefined,
             platform: undefined,
             categoryId: undefined,
@@ -166,7 +168,7 @@ export default ({ sourceOverride }: Props) => {
                         ? 'Modrinth'
                         : activeSource === 'curseforge'
                         ? 'CurseForge'
-                        : 'Spiget'
+                        : 'Spigot'
                 }.`}
                 showFlashKey={'mods'}
             >
@@ -197,17 +199,17 @@ export default ({ sourceOverride }: Props) => {
                                 CurseForge
                             </button>
                         )}
-                        {spigetEnabled && (
+                        {spigotEnabled && (
                             <button
                                 css={[
                                     tw`px-4 py-2 font-medium transition-colors`,
-                                    activeSource === 'spiget'
+                                    activeSource === 'spigot'
                                         ? tw`text-blue-400 border-b-2 border-blue-400`
                                         : tw`text-neutral-400 hover:text-neutral-300`,
                                 ]}
-                                onClick={() => handleSourceChange('spiget')}
+                                onClick={() => handleSourceChange('spigot')}
                             >
-                                Spiget
+                                Spigot
                             </button>
                         )}
                     </div>

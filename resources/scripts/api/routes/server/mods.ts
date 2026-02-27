@@ -8,7 +8,7 @@ export interface ModSearchParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: 'modrinth' | 'curseforge' | 'spiget';
+    source?: 'modrinth' | 'curseforge' | 'spigot';
     categoryId?: number;
     minRating?: number;
 }
@@ -18,7 +18,7 @@ export interface ModFileParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: 'modrinth' | 'curseforge' | 'spiget';
+    source?: 'modrinth' | 'curseforge' | 'spigot';
 }
 
 export interface CurseForgeAuthor {

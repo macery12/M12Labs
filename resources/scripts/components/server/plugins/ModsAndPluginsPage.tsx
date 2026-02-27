@@ -22,7 +22,7 @@ const contentLabels: Record<ContentTab, string> = {
 const providerLabels: Record<ProviderKey, string> = {
     modrinth: 'Modrinth',
     curseforge: 'CurseForge',
-    spiget: 'Spiget',
+    spigot: 'Spigot',
 };
 
 const EmptyState = () => (
@@ -186,7 +186,7 @@ const ModsAndPluginsPage = () => {
                     {renderProviderTabs(providersByType.mods, activeProvider)}
                     {activeProvider === 'modrinth' && <ModsContainer sourceOverride="modrinth" />}
                     {activeProvider === 'curseforge' && <ModsContainer sourceOverride="curseforge" />}
-                    {activeProvider === 'spiget' && <ModsContainer sourceOverride="spiget" />}
+                    {activeProvider === 'spigot' && <ModsContainer sourceOverride="spigot" />}
                 </>
             );
         }
@@ -210,8 +210,8 @@ const ModsAndPluginsPage = () => {
             return (
                 <>
                     {renderProviderTabs(providersByType.plugins, pluginProvider)}
-                    {pluginProvider === 'spiget' ? (
-                        <ModsContainer sourceOverride="spiget" />
+                    {pluginProvider === 'spigot' ? (
+                        <ModsContainer sourceOverride="spigot" />
                     ) : (
                         <ComingSoon label={'Plugins'} />
                     )}

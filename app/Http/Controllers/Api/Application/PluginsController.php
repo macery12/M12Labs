@@ -52,7 +52,7 @@ class PluginsController extends ApplicationApiController
                 'by_provider' => [
                     'modrinth' => 0,
                     'curseforge' => 0,
-                    'spiget' => 0,
+                    'spigot' => 0,
                 ],
                 'failures' => 0,
                 'retries' => 0,
@@ -74,7 +74,7 @@ class PluginsController extends ApplicationApiController
                     'rate_limit' => $curseForgeRateLimit,
                     'denied_by_policy' => 0,
                 ],
-                'spiget' => [
+                'spigot' => [
                     'enabled' => true,
                     'rate_limit' => null,
                     'denied_by_policy' => 0,

@@ -48,7 +48,7 @@ class ModsController extends ClientApiController
             return $this->curseForgeService;
         }
 
-        if ($source === 'spiget') {
+        if (in_array($source, ['spiget', 'spigot'], true)) {
             return $this->spigetService;
         }
 
@@ -64,8 +64,8 @@ class ModsController extends ClientApiController
             return 'curseforge';
         }
 
-        if ($source === 'spiget') {
-            return 'spiget.plugins';
+        if (in_array($source, ['spiget', 'spigot'], true)) {
+            return 'spigot.plugins';
         }
 
         if ($source === 'modrinth' && $resource === 'mods') {
@@ -103,7 +103,7 @@ class ModsController extends ClientApiController
         $providers = [
             'modrinth.mods',
             'curseforge',
-            'spiget.plugins',
+            'spigot.plugins',
         ];
 
         $result = [];
@@ -238,7 +238,7 @@ class ModsController extends ClientApiController
 
         try {
             $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
-            $type = $source === 'spiget' ? 'plugin' : 'mod';
+            $type = in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
             $result = $this->pluginInstallService->installFromProvider($server, $source, $type, $modId, $fileId);
 
             return response()->json($result);

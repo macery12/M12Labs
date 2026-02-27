@@ -33,6 +33,7 @@ class PluginInstallService
             'curseforge' => $curseForgeProviderAdapter,
             'modrinth' => $modrinthProviderAdapter,
             'spiget' => $spigetProviderAdapter,
+            'spigot' => $spigetProviderAdapter,
         ];
     }
 
@@ -78,7 +79,14 @@ class PluginInstallService
         }
 
         try {
-            $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
+            $response = Http::withHeaders([
+                'User-Agent' => config('app.name', 'M12Labs') . ' Marketplace Downloader',
+                'Accept' => '*/*',
+            ])
+                ->timeout(300)
+                ->sink($fileHandle)
+                ->withOptions(['allow_redirects' => ['track_redirects' => true]])
+                ->get($downloadUrl);
 
             if (!$response->successful()) {
                 throw new ModsServiceException('Failed to download file from provider.');
