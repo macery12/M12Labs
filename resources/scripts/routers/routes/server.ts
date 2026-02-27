@@ -15,7 +15,6 @@ const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
 const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
-const LegacyRedirects = lazy(() => import('@server/plugins/RedirectLegacyPlugins'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -42,18 +41,6 @@ const server: ServerRouteDefinition[] = [
         name: 'Mods & Plugins',
         icon: Icon.PuzzleIcon,
         category: 'data',
-    }),
-    route('plugins/*', LegacyRedirects, {
-        permission: 'file.create',
-        name: undefined,
-    }),
-    route('mods/*', LegacyRedirects, {
-        permission: 'file.create',
-        name: undefined,
-    }),
-    route('modpacks/*', LegacyRedirects, {
-        permission: 'file.create',
-        name: undefined,
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',

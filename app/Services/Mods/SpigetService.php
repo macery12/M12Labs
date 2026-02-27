@@ -4,6 +4,7 @@ namespace Everest\Services\Mods;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
 
 class SpigetService
@@ -511,8 +512,29 @@ class SpigetService
     {
         try {
             return $this->request($path, $params);
-        } catch (ModsServiceException) {
-            return [];
+        } catch (ModsServiceException $exception) {
+            Log::warning('Spiget request failed', [
+                'provider' => 'spiget',
+                'path' => $path,
+                'params' => $this->sanitizeParams($params),
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new ModsServiceException(
+                'Unable to load plugins from the Spigot provider. Please try again later.',
+                previous: $exception
+            );
         }
+    }
+
+    private function sanitizeParams(array $params): array
+    {
+        return array_map(function ($value) {
+            if (is_scalar($value) || $value === null) {
+                return $value;
+            }
+
+            return '[redacted]';
+        }, $params);
     }
 }
