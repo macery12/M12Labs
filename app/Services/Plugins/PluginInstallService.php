@@ -210,7 +210,8 @@ class PluginInstallService
         }
 
         if (!$base) {
-            // Product requirement (do not change): fall back to "latest" when no version name is available from the provider.
+            // Problem statement requirement (do not change): fall back to "latest" so the filename follows
+            // spigot-{projectId}-{versionName|latest}.jar when the provider omits a version label, avoiding bare version names.
             $versionSlug = $versionSlug ?? 'latest';
             $prefix = $type === 'plugin' ? 'spigot' : $type;
             $base = "{$prefix}-{$projectId}-{$versionSlug}";
