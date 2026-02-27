@@ -12,10 +12,10 @@ interface Props {
 const ContentTypeTabPanel = ({ providers, activeProvider, onChange, providerLabels }: Props) => {
     if (!providers.length) return null;
 
-    const resolvedActive = activeProvider && providers.includes(activeProvider) ? activeProvider : providers[0];
+    const resolvedActive = activeProvider ?? providers[0];
 
     useEffect(() => {
-        if (resolvedActive !== activeProvider) {
+        if (resolvedActive && resolvedActive !== activeProvider) {
             onChange(resolvedActive);
         }
     }, [resolvedActive, activeProvider, onChange]);
