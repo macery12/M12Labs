@@ -142,7 +142,7 @@ const ModsAndPluginsPage = () => {
             if (resolvedProvider) params.provider = resolvedProvider;
             setSearchParams(params);
         }
-    }, [availableContentTypes, providersByType, activeType, activeProvider, setSearchParams, resolveActive]);
+    }, [availableContentTypes, providersByType, activeType, activeProvider, setSearchParams]);
 
     const handleProviderChange = useCallback((provider: ProviderKey) => {
         setActiveProvider(provider);
