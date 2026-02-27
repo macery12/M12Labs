@@ -197,13 +197,14 @@ class PluginInstallService
         }
 
         if (!$base && $fileName) {
-            $baseFromFile = $this->slugify(pathinfo($fileName, PATHINFO_FILENAME));
-            $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
+            $baseFromFile = $this->slugify(pathinfo((string) $fileName, PATHINFO_FILENAME));
+            $fileExt = pathinfo((string) $fileName, PATHINFO_EXTENSION);
             if ($fileExt) {
                 $extension = strtolower($fileExt);
             }
             $versionSlug = $versionName ? $this->slugify($versionName) : null;
-            // Avoid adopting the filename if it collapses to the same value as the version (which would reintroduce the bare version name).
+            // If a version slug exists and matches the filename, skip using the filename to avoid reintroducing a bare version name.
+            // When no version slug is available, using the filename is still preferable over falling back to an id-based default.
             if ($baseFromFile && (!$versionSlug || $baseFromFile !== $versionSlug)) {
                 $base = $baseFromFile;
             }
