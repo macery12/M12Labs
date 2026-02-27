@@ -114,7 +114,7 @@ const ModsAndPluginsPage = () => {
     }, []);
 
     const initialType = (searchParams.get('type') as ContentTab | null) ?? (lastMarketplaceState?.type ?? null);
-    const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? lastMarketplaceState?.provider ?? null;
+    const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? lastMarketplaceState?.provider;
     const providerPools: Record<ContentType, ProviderKey[]> = {
         mods: providersByType.mods,
         modpacks: providersByType.modpacks,
