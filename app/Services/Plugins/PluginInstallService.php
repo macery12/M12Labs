@@ -196,9 +196,9 @@ class PluginInstallService
             $base = $versionSlug ? "{$projectSlug}-{$versionSlug}" : $projectSlug;
         }
 
-        if (!$base && $fileName) {
-            $baseFromFile = $this->slugify(pathinfo((string) $fileName, PATHINFO_FILENAME));
-            $fileExt = pathinfo((string) $fileName, PATHINFO_EXTENSION);
+        if (!$base && !empty($fileName)) {
+            $baseFromFile = $this->slugify(pathinfo($fileName, PATHINFO_FILENAME));
+            $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
             if ($fileExt) {
                 $extension = strtolower($fileExt);
             }
