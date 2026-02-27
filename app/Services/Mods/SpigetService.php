@@ -11,6 +11,7 @@ class SpigetService
 {
     private string $endpoint;
     private int $defaultPageSize;
+    private const REDACTED_VALUE = '[redacted]';
     private array $cacheTtl = [
         'search' => 300,   // 5 minutes
         'project' => 1800, // 30 minutes
@@ -534,7 +535,7 @@ class SpigetService
                 return $value;
             }
 
-            return '[redacted]';
+            return self::REDACTED_VALUE;
         }, $params);
     }
 }
