@@ -145,11 +145,11 @@ const ModsAndPluginsPage = () => {
     useEffect(() => {
         if (!activeType) return;
 
-         if (activeType === 'installed') {
-             setActiveProvider(null);
-             setSearchParams({ type: activeType });
-             return;
-         }
+        if (activeType === 'installed') {
+            setActiveProvider(null);
+            setSearchParams({ type: activeType });
+            return;
+        }
 
         const currentProviders = providersByType[activeType] ?? [];
         const resolvedProvider = resolveActive(activeProvider, currentProviders);
@@ -157,10 +157,10 @@ const ModsAndPluginsPage = () => {
             setActiveProvider(resolvedProvider);
         }
 
-         const params: Record<string, string> = { type: activeType };
-         if (resolvedProvider) params.provider = resolvedProvider;
-         setSearchParams(params);
-         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
+        const params: Record<string, string> = { type: activeType };
+        if (resolvedProvider) params.provider = resolvedProvider;
+        setSearchParams(params);
+        localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
     const handleProviderChange = useCallback((provider: ProviderKey) => {
