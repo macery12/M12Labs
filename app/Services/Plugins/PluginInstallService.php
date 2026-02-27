@@ -203,8 +203,8 @@ class PluginInstallService
                 $extension = strtolower($fileExt);
             }
             $versionSlug = $versionName ? $this->slugify($versionName) : null;
-            // Prefer the filename unless it matches the version slug (which would produce a bare version name); with no version slug, still use the filename.
-            if ($baseFromFile && ($versionSlug === null || $baseFromFile !== $versionSlug)) {
+            // Avoid using the filename when it would collapse to the same value as the version slug (bare version name).
+            if ($baseFromFile && $this->shouldUseFilenameAsBase($baseFromFile, $versionSlug)) {
                 $base = $baseFromFile;
             }
         }
@@ -237,6 +237,11 @@ class PluginInstallService
         $value = preg_replace('/[^a-z0-9._-]/', '', $value) ?? '';
         $value = preg_replace('/-{2,}/', '-', $value);
         return trim($value, '-');
+    }
+
+    private function shouldUseFilenameAsBase(string $baseFromFile, ?string $versionSlug): bool
+    {
+        return $baseFromFile !== '' && ($versionSlug === null || $baseFromFile !== $versionSlug);
     }
 
     private function validateExtension(string $extension, string $type): void
