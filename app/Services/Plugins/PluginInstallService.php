@@ -197,13 +197,14 @@ class PluginInstallService
         }
 
         if (!$base && !empty($fileName)) {
-            $baseFromFile = $this->slugify(pathinfo($fileName, PATHINFO_FILENAME));
-            $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
-            if ($fileExt) {
+            $fileParts = pathinfo($fileName);
+            $baseFromFile = $this->slugify($fileParts['filename'] ?? '');
+            $fileExt = $fileParts['extension'] ?? null;
+            if (!empty($fileExt)) {
                 $extension = strtolower($fileExt);
             }
             // Avoid using the filename when it would collapse to the same value as the version slug (bare version name).
-            if (!empty($baseFromFile) && $this->isFilenameDistinctFromVersion($baseFromFile, $versionSlug)) {
+            if (!empty($baseFromFile) && $this->shouldUseFilename($baseFromFile, $versionSlug)) {
                 $base = $baseFromFile;
             }
         }
@@ -239,7 +240,7 @@ class PluginInstallService
         return trim($value, '-');
     }
 
-    private function isFilenameDistinctFromVersion(string $baseFromFile, ?string $versionSlug): bool
+    private function shouldUseFilename(string $baseFromFile, ?string $versionSlug): bool
     {
         return $versionSlug === null || $baseFromFile !== $versionSlug;
     }
