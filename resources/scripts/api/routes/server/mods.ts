@@ -8,7 +8,7 @@ export interface ModSearchParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: 'modrinth' | 'curseforge' | 'spiget';
+    source?: 'modrinth' | 'curseforge' | 'spigot';
     categoryId?: number;
     minRating?: number;
 }
@@ -18,7 +18,7 @@ export interface ModFileParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: 'modrinth' | 'curseforge' | 'spiget';
+    source?: 'modrinth' | 'curseforge' | 'spigot';
 }
 
 export interface CurseForgeAuthor {
@@ -119,6 +119,27 @@ export interface CurseForgeMod {
     dateReleased: string;
     allowModDistribution: boolean;
     gamePopularityRank: number;
+    rating?: { average?: number; count?: number };
+    isPremium?: boolean;
+    isExternal?: boolean;
+    externalUrl?: string | null;
+    testedVersions?: string[];
+    description?: string | null;
+    documentation?: string | null;
+    latestVersion?: {
+        id?: number | string;
+        name?: string;
+        releaseDate?: string;
+        downloads?: number;
+        rating?: { average?: number; count?: number };
+    } | null;
+    file?: {
+        type?: string | null;
+        size?: number | null;
+        sizeUnit?: string | null;
+        url?: string | null;
+        externalUrl?: string | null;
+    } | null;
 }
 
 export interface ModSearchResponse {
@@ -212,15 +233,21 @@ export const getModFiles = (uuid: string, modId: number | string, params: ModFil
     });
 };
 
+export interface DownloadResponse {
+    success: boolean;
+    message: string;
+    file?: { name?: string; path?: string };
+}
+
 export const downloadMod = (
     uuid: string,
     modId: number | string,
     fileId: number | string,
     source?: string,
-): Promise<void> => {
+): Promise<DownloadResponse> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${uuid}/mods/${modId}/files/${fileId}/download`, { source })
-            .then(() => resolve())
+            .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };

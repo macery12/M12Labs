@@ -183,6 +183,11 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/activity/users', [Client\Servers\ActivityLogController::class, 'users']);
         Route::get('/activity/events', [Client\Servers\ActivityLogController::class, 'events']);
 
+        Route::group(['prefix' => '/plugins'], function () {
+            Route::get('/providers', [Client\Servers\PluginProviderController::class, 'index']);
+            Route::get('/capabilities', [Client\Servers\PluginProviderController::class, 'capabilities']);
+        });
+
         Route::post('/command', [Client\Servers\CommandController::class, 'index']);
         Route::post('/power', [Client\Servers\PowerController::class, 'index']);
         Route::post('/ai', [Client\Servers\AIController::class, 'index']);

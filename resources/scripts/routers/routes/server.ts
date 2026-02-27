@@ -14,8 +14,7 @@ const NetworkContainer = lazy(() => import('@server/network/NetworkContainer'));
 const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
-const PluginsContainer = lazy(() => import('@server/plugins/PluginsContainer'));
-const LegacyRedirects = lazy(() => import('@server/plugins/RedirectLegacyPlugins'));
+const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -37,19 +36,11 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.DatabaseIcon,
         category: 'data',
     }),
-    route('plugins/*', PluginsContainer, {
+    route('marketplace/*', ModsAndPluginsPage, {
         permission: 'file.create',
-        name: 'Plugins',
+        name: 'Mods & Plugins',
         icon: Icon.PuzzleIcon,
         category: 'data',
-    }),
-    route('mods/*', LegacyRedirects, {
-        permission: 'file.create',
-        name: undefined,
-    }),
-    route('modpacks/*', LegacyRedirects, {
-        permission: 'file.create',
-        name: undefined,
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',

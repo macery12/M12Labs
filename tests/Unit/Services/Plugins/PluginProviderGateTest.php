@@ -70,13 +70,13 @@ class PluginProviderGateTest extends TestCase
     public function testEggOverrideAllow(): void
     {
         PluginProviderRule::create([
-            'provider_key' => 'spiget.plugins',
+            'provider_key' => 'spigot.plugins',
             'enabled_global' => true,
             'allowed_nest_ids' => [],
             'allowed_egg_ids' => [42],
         ]);
 
-        $this->assertTrue($this->gate->isProviderAllowed('spiget.plugins', 9, 42));
-        $this->assertFalse($this->gate->isProviderAllowed('spiget.plugins', 9, 43));
+        $this->assertTrue($this->gate->isProviderAllowed('spigot.plugins', 9, 42));
+        $this->assertFalse($this->gate->isProviderAllowed('spigot.plugins', 9, 43));
     }
 }

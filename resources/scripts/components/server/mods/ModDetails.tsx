@@ -117,6 +117,23 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
     const [files, setFiles] = useState<CurseForgeFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAllFiles, setShowAllFiles] = useState(false);
+    const isPremium = mod.isPremium;
+    const isExternal = mod.isExternal;
+    const externalUrl = mod.externalUrl;
+
+    const decodeBase64ToText = (value?: string | null): string | null => {
+        if (!value) return null;
+        try {
+            const decoded = atob(value);
+            const doc = new DOMParser().parseFromString(decoded, 'text/html');
+            return doc.body.textContent || '';
+        } catch {
+            return null;
+        }
+    };
+
+    const descriptionText = decodeBase64ToText(mod.description);
+    const documentationText = decodeBase64ToText(mod.documentation);
 
     useEffect(() => {
         setLoading(true);
@@ -162,11 +179,112 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                             <span>{mod.downloadCount.toLocaleString()} downloads</span>
                             <span>•</span>
                             <span>Updated {new Date(mod.dateModified).toLocaleDateString()}</span>
+                            {mod.rating && (
+                                <>
+                                    <span>•</span>
+                                    <span>
+                                        Rating {mod.rating.average?.toFixed?.(2) ?? 'N/A'} ({mod.rating.count ?? 0})
+                                    </span>
+                                </>
+                            )}
+                            {isPremium && (
+                                <>
+                                    <span>•</span>
+                                    <span css={tw`text-red-400`}>Premium resource</span>
+                                </>
+                            )}
+                            {isExternal && (
+                                <>
+                                    <span>•</span>
+                                    <span css={tw`text-yellow-400`}>External download (manual)</span>
+                                </>
+                            )}
                         </ModStats>
                     </div>
                 </ModHeader>
 
                 <ModSummary>{mod.summary}</ModSummary>
+
+                {isExternal && (
+                    <Section>
+                        <SectionTitle>External Download</SectionTitle>
+                        <p css={tw`text-neutral-300 mb-3`}>
+                            This download is hosted externally and can’t be installed automatically from the panel. You
+                            can download it manually, or search for an alternative provider if available.
+                        </p>
+                        <div css={tw`flex gap-2 flex-wrap`}>
+                            {externalUrl && (
+                                <button
+                                    css={tw`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-sm`}
+                                    onClick={() => window.open(externalUrl, '_blank', 'noopener,noreferrer')}
+                                    type="button"
+                                >
+                                    Open Download Page
+                                </button>
+                            )}
+                        </div>
+                    </Section>
+                )}
+
+                {(descriptionText || documentationText || (mod.testedVersions && mod.testedVersions.length > 0)) && (
+                    <Section>
+                        <SectionTitle>Details</SectionTitle>
+                        {mod.testedVersions && mod.testedVersions.length > 0 && (
+                            <p css={tw`text-neutral-300 mb-2`}>
+                                Tested versions (provided by author, may be incomplete):{' '}
+                                <span css={tw`text-blue-300`}>{mod.testedVersions.join(', ')}</span>
+                            </p>
+                        )}
+                        {descriptionText && (
+                            <p css={tw`text-neutral-300 mb-2 whitespace-pre-line`}>{descriptionText}</p>
+                        )}
+                        {documentationText && (
+                            <p css={tw`text-neutral-400 text-sm whitespace-pre-line`}>{documentationText}</p>
+                        )}
+                    </Section>
+                )}
+
+                {mod.latestVersion && (mod.latestVersion.name || mod.latestVersion.releaseDate) && (
+                    <Section>
+                        <SectionTitle>Latest Version</SectionTitle>
+                        <p css={tw`text-neutral-300`}>
+                            {mod.latestVersion.name || 'Latest'} •{' '}
+                            {mod.latestVersion.releaseDate
+                                ? new Date(mod.latestVersion.releaseDate).toLocaleDateString()
+                                : 'Unknown date'}{' '}
+                            {mod.latestVersion.downloads !== undefined && `• ${mod.latestVersion.downloads} downloads`}
+                            {mod.latestVersion.rating?.average !== undefined &&
+                                ` • Rating ${mod.latestVersion.rating.average} (${mod.latestVersion.rating.count ?? 0})`}
+                        </p>
+                    </Section>
+                )}
+
+                {mod.file && (
+                    <Section>
+                        <SectionTitle>File Info</SectionTitle>
+                        <p css={tw`text-neutral-300`}>
+                            Type: {mod.file.type ?? 'Unknown'}
+                            {mod.file.size && mod.file.size > 0 && (
+                                <>
+                                    {' '}
+                                    • Size: {(mod.file.size / 1024 / 1024).toFixed(2)} MB{' '}
+                                    {mod.file.sizeUnit ? `(${mod.file.sizeUnit})` : ''}
+                                </>
+                            )}
+                        </p>
+                        {mod.file.externalUrl && (
+                            <a
+                                href={mod.file.externalUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                css={tw`text-blue-400 underline text-sm`}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                Open external download
+                            </a>
+                        )}
+                    </Section>
+                )}
 
                 <Section>
                     <SectionTitle>
@@ -193,26 +311,37 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                                     <FileItem key={file.id}>
                                         <FileInfo>
                                             <FileName>{file.displayName}</FileName>
-                                            <FileDetails>
-                                                <span css={getReleaseTypeColor(file.releaseType)}>
-                                                    {getReleaseTypeLabel(file.releaseType)}
-                                                </span>
-                                                {' • '}
-                                                <span>
-                                                    {file.gameVersions.slice(0, 3).join(', ')}
-                                                    {file.gameVersions.length > 3 && '...'}
-                                                </span>
-                                                {' • '}
-                                                <span>{new Date(file.fileDate).toLocaleDateString()}</span>
-                                                {' • '}
-                                                <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
-                                            </FileDetails>
+                                             <FileDetails>
+                                                 <span css={getReleaseTypeColor(file.releaseType)}>
+                                                     {getReleaseTypeLabel(file.releaseType)}
+                                                 </span>
+                                                 {' • '}
+                                                 <span>
+                                                     {file.gameVersions.slice(0, 3).join(', ')}
+                                                     {file.gameVersions.length > 3 && '...'}
+                                                 </span>
+                                                 {' • '}
+                                                 <span>{new Date(file.fileDate).toLocaleDateString()}</span>
+                                                 {file.fileLength > 0 && (
+                                                     <>
+                                                         {' • '}
+                                                         <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
+                                                     </>
+                                                 )}
+                                             </FileDetails>
                                         </FileInfo>
                                         <ModDownloadButton
                                             modId={mod.id}
                                             fileId={file.id}
                                             fileName={file.fileName}
                                             source={source}
+                                            disabledReason={
+                                                isPremium
+                                                    ? 'Premium (blocked)'
+                                                    : isExternal
+                                                    ? 'External only'
+                                                    : undefined
+                                            }
                                         />
                                     </FileItem>
                                 ))}

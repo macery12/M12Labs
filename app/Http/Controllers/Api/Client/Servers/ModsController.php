@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\SpigetService;
-use Everest\Services\Plugins\PluginProviderGate;
+use Everest\Services\Plugins\ProviderAccessService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
@@ -32,7 +32,7 @@ class ModsController extends ClientApiController
         private SpigetService $spigetService,
         private PluginInstallService $pluginInstallService,
         private DaemonFileRepository $fileRepository,
-        private PluginProviderGate $providerGate
+        private ProviderAccessService $providerAccessService
     ) {
         parent::__construct();
     }
@@ -48,7 +48,7 @@ class ModsController extends ClientApiController
             return $this->curseForgeService;
         }
 
-        if ($source === 'spiget') {
+        if (in_array($source, ['spiget', 'spigot'], true)) {
             return $this->spigetService;
         }
 
@@ -64,8 +64,8 @@ class ModsController extends ClientApiController
             return 'curseforge';
         }
 
-        if ($source === 'spiget') {
-            return 'spiget.plugins';
+        if (in_array($source, ['spiget', 'spigot'], true)) {
+            return 'spigot.plugins';
         }
 
         if ($source === 'modrinth' && $resource === 'mods') {
@@ -91,7 +91,7 @@ class ModsController extends ClientApiController
 
         $providerKey = $this->resolveProviderKey($source, $resource);
 
-        if (!$this->providerGate->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id)) {
+        if (!$this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id)) {
             return $this->denyResponse();
         }
 
@@ -103,7 +103,7 @@ class ModsController extends ClientApiController
         $providers = [
             'modrinth.mods',
             'curseforge',
-            'spiget.plugins',
+            'spigot.plugins',
         ];
 
         $result = [];
@@ -117,7 +117,7 @@ class ModsController extends ClientApiController
             }
 
             $result[$providerKey] = [
-                'allowed' => $this->providerGate->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id),
+                'allowed' => $this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id),
                 'reason' => "Disabled by administrator for this server's egg/nest.",
             ];
         }
@@ -238,7 +238,7 @@ class ModsController extends ClientApiController
 
         try {
             $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
-            $type = $source === 'spiget' ? 'plugin' : 'mod';
+            $type = in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
             $result = $this->pluginInstallService->installFromProvider($server, $source, $type, $modId, $fileId);
 
             return response()->json($result);

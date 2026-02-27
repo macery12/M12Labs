@@ -41,23 +41,45 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
      */
     public function getDownloadUrl(string|int $projectId, string|int $versionId): array
     {
+        $project = $this->spigetService->getMod($projectId);
+        if (isset($project['data'])) {
+            $project = $project['data'];
+        }
+        if ($project['isPremium'] ?? false) {
+            throw new ModsServiceException('Premium resources cannot be downloaded via the panel.');
+        }
+
+        if ($project['isExternal'] ?? false) {
+            throw new ModsServiceException('External Spigot resources must be downloaded manually.');
+        }
+
         $files = $this->spigetService->getModFiles($projectId, [
             'index' => 0,
-            'pageSize' => 100,
+            'pageSize' => 10,
         ]);
 
-        $matched = [];
-        foreach ($files['data'] ?? [] as $file) {
-            if ((int) ($file['id'] ?? 0) === (int) $versionId) {
-                $matched = $file;
-                break;
-            }
+        $versions = $files['data'] ?? $files ?? [];
+        $version = collect($versions)->firstWhere('id', (int) $versionId) ?? ($versions[0] ?? []);
+        if (isset($version['data'])) {
+            $version = $version['data'];
+        }
+
+        $projectName = $project['name'] ?? ($project['title'] ?? null);
+        if (!$projectName && isset($project['slug'])) {
+            $projectName = $project['slug'];
+        }
+        $versionName = $version['displayName'] ?? $version['name'] ?? null;
+        if (!$versionName && isset($version['fileName'])) {
+            // Extract filename (without extension) to use as the version label so install filenames include both project and version identifiers.
+            $versionName = pathinfo($version['fileName'], PATHINFO_FILENAME);
         }
 
         return [
-            'url' => $matched['downloadUrl'] ?? $this->spigetService->getDownloadUrl($projectId, $versionId)['url'],
-            'fileName' => $matched['fileName'] ?? 'plugin_' . $versionId . '.jar',
-            'fileSize' => $matched['fileLength'] ?? null,
+            'url' => $this->spigetService->getDownloadUrl($projectId, $versionId)['url'],
+            'fileName' => $version['fileName'] ?? 'plugin_' . $versionId . '.jar',
+            'fileSize' => $version['fileLength'] ?? ($version['size'] ?? null),
+            'projectName' => $projectName,
+            'versionName' => $versionName,
         ];
     }
 }

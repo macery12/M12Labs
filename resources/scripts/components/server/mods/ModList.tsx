@@ -149,6 +149,18 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                                         <ModAuthor title={mod.authors[0]?.name || 'Unknown'}>
                                             by {mod.authors[0]?.name || 'Unknown'}
                                         </ModAuthor>
+                                        <div css={tw`flex gap-2 mt-1`}>
+                                            {mod.isPremium && (
+                                                <span css={tw`text-[11px] px-2 py-0.5 bg-red-900/60 text-red-200 rounded`}>
+                                                    Premium
+                                                </span>
+                                            )}
+                                            {mod.isExternal && (
+                                                <span css={tw`text-[11px] px-2 py-0.5 bg-yellow-900/60 text-yellow-200 rounded`}>
+                                                    External
+                                                </span>
+                                            )}
+                                        </div>
                                     </ModInfo>
                                 </ModHeader>
                                 <ModStats>

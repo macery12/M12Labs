@@ -8,6 +8,7 @@ export interface FlashStore {
     addError: Action<FlashStore, { message: string; key?: string }>;
     clearAndAddHttpError: Action<FlashStore, { error?: Error | any | null; key?: string }>;
     clearFlashes: Action<FlashStore, string | void>;
+    removeFlash: Action<FlashStore, string>;
 }
 
 export interface FlashMessage {
@@ -22,7 +23,12 @@ const flashes: FlashStore = {
     items: [],
 
     addFlash: action((state, payload) => {
-        state.items.push(payload);
+        const id =
+            payload.id ??
+            (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`);
+        state.items.push({ ...payload, id });
     }),
 
     addError: action((state, payload) => {
@@ -48,6 +54,10 @@ const flashes: FlashStore = {
 
     clearFlashes: action((state, payload) => {
         state.items = payload ? state.items.filter(flashes => flashes.key !== payload) : [];
+    }),
+
+    removeFlash: action((state, id) => {
+        state.items = state.items.filter(flash => flash.id !== id);
     }),
 };
 

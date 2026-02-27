@@ -19,7 +19,7 @@ export interface RateLimitUsage {
 export interface ModsAnalytics {
     totals: {
         installs: number;
-        by_provider: { modrinth: number; curseforge: number; spiget: number };
+        by_provider: { modrinth: number; curseforge: number; spigot: number };
         failures: number;
         retries: number;
         bandwidth_bytes: number;

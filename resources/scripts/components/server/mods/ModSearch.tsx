@@ -37,7 +37,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
     const { addError } = useFlash();
 
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
-    const [sortField, setSortField] = useState(initialParams.sortField || (source === 'spiget' ? 'downloads' : '2'));
+    const [sortField, setSortField] = useState(initialParams.sortField || (source === 'spigot' ? 'downloads' : '2'));
     const [gameVersion, setGameVersion] = useState(initialParams.gameVersion || '');
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
     const [categoryId, setCategoryId] = useState<string>('');
@@ -47,7 +47,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
     const [modLoaders, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
 
     useEffect(() => {
-        if (source === 'spiget') {
+        if (source === 'spigot') {
             setMinecraftVersions([]);
             setModLoaders([]);
             return;
@@ -101,7 +101,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
     }, [uuid, source]);
 
     useEffect(() => {
-        if (source !== 'spiget') return;
+        if (source !== 'spigot') return;
         const timer = setTimeout(() => {
             onSearch({
                 searchFilter: searchFilter || undefined,
@@ -123,10 +123,10 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
             searchFilter: searchFilter || undefined,
             sortField,
             sortOrder: 'desc',
-            gameVersion: source === 'spiget' ? undefined : gameVersion || undefined,
-            modLoaderType: source === 'spiget' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
+            gameVersion: source === 'spigot' ? undefined : gameVersion || undefined,
+            modLoaderType: source === 'spigot' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
-            minRating: source === 'spiget' && minRating ? parseFloat(minRating) : undefined,
+            minRating: source === 'spigot' && minRating ? parseFloat(minRating) : undefined,
             pageSize: 20,
             index: 0,
         });
@@ -134,13 +134,13 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
 
     const handleClear = () => {
         setSearchFilter('');
-        setSortField(source === 'spiget' ? 'downloads' : '2');
+        setSortField(source === 'spigot' ? 'downloads' : '2');
         setGameVersion('');
         setModLoaderType('');
         setCategoryId('');
         setMinRating('');
         onSearch({
-            sortField: source === 'spiget' ? 'downloads' : '2',
+            sortField: source === 'spigot' ? 'downloads' : '2',
             sortOrder: 'desc',
             pageSize: 20,
             index: 0,
@@ -148,13 +148,13 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
     };
 
     const sortOptions =
-        source === 'spiget' && filtersMeta?.options?.sortBy?.length
+        source === 'spigot' && filtersMeta?.options?.sortBy?.length
             ? filtersMeta.options.sortBy.map(option => ({ value: option.id, label: option.label }))
             : DEFAULT_SORT_OPTIONS;
 
     const categories = filtersMeta?.options?.categories || [];
     const minRatingOptions =
-        source === 'spiget' && filtersMeta?.options?.minRating?.length
+        source === 'spigot' && filtersMeta?.options?.minRating?.length
             ? filtersMeta.options.minRating
             : [
                   { id: null, label: 'Any Rating' },
@@ -163,7 +163,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                   { id: 3.5, label: '3.5+' },
                   { id: 3.0, label: '3.0+' },
               ];
-    const showMinecraftVersion = source !== 'spiget';
+    const showMinecraftVersion = source !== 'spigot';
 
     return (
         <form onSubmit={handleSubmit}>
@@ -214,7 +214,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                     </Select>
                 </div>
 
-                {source === 'spiget' && (
+                {source === 'spigot' && (
                     <div>
                         <Label>Category</Label>
                         <Select value={categoryId} onChange={e => setCategoryId(e.target.value)}>

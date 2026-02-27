@@ -55,7 +55,7 @@ export default () => {
                         <AdminBox title={'Installs by provider'} icon={ChartSquareBarIcon}>
                             <p className={'text-sm text-neutral-300'}>Modrinth: {analytics.totals.by_provider.modrinth}</p>
                             <p className={'text-sm text-neutral-300'}>CurseForge: {analytics.totals.by_provider.curseforge}</p>
-                            <p className={'text-sm text-neutral-300'}>Spiget: {analytics.totals.by_provider.spiget}</p>
+                            <p className={'text-sm text-neutral-300'}>Spigot: {analytics.totals.by_provider.spigot}</p>
                         </AdminBox>
                         <AdminBox title={'Bandwidth'} icon={ChartSquareBarIcon}>
                             <p className={'text-lg font-bold'}>{analytics.totals.bandwidth_bytes} bytes</p>
