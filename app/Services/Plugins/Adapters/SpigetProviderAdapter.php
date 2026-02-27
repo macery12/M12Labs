@@ -42,6 +42,9 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
     public function getDownloadUrl(string|int $projectId, string|int $versionId): array
     {
         $project = $this->spigetService->getMod($projectId);
+        if (isset($project['data'])) {
+            $project = $project['data'];
+        }
         if ($project['isPremium'] ?? false) {
             throw new ModsServiceException('Premium resources cannot be downloaded via the panel.');
         }
@@ -55,14 +58,24 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
             'pageSize' => 10,
         ]);
 
-        $matched = collect($files['data'] ?? [])->firstWhere('id', (int) $versionId) ?? ($files['data'][0] ?? []);
+        $versions = $files['data'] ?? $files ?? [];
+        $version = collect($versions)->firstWhere('id', (int) $versionId) ?? ($versions[0] ?? []);
+        if (isset($version['data'])) {
+            $version = $version['data'];
+        }
+
+        $projectName = $project['name'] ?? ($project['title'] ?? ($project['slug'] ?? null));
+        $versionName = $version['displayName'] ?? $version['name'] ?? null;
+        if (!$versionName && isset($version['fileName'])) {
+            $versionName = pathinfo((string) $version['fileName'], PATHINFO_FILENAME);
+        }
 
         return [
             'url' => $this->spigetService->getDownloadUrl($projectId, $versionId)['url'],
-            'fileName' => $matched['fileName'] ?? 'plugin_' . $versionId . '.jar',
-            'fileSize' => $matched['fileLength'] ?? null,
-            'projectName' => $project['name'] ?? null,
-            'versionName' => $matched['displayName'] ?? $matched['fileName'] ?? null,
+            'fileName' => $version['fileName'] ?? 'plugin_' . $versionId . '.jar',
+            'fileSize' => $version['fileLength'] ?? ($version['size'] ?? null),
+            'projectName' => $projectName,
+            'versionName' => $versionName,
         ];
     }
 }

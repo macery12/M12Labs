@@ -42,6 +42,9 @@ const resolveActive = <T,>(preferred: T | null, available: T[]): T | null =>
     preferred && available.includes(preferred) ? preferred : available[0] ?? null;
 
 type ProvidersByType = Record<ContentType, ProviderKey[]>;
+const marketplaceTypes: ContentType[] = ['mods', 'modpacks', 'plugins'];
+const isMarketplaceType = (type: ContentTab | null): type is ContentType =>
+    !!type && marketplaceTypes.includes(type as ContentType);
 
 const ModsAndPluginsPage = () => {
     const modSettings = useStoreState(state => state.everest?.data?.mods);
@@ -98,27 +101,26 @@ const ModsAndPluginsPage = () => {
     }, [providersByType]);
 
     const localStorageKey = 'marketplace:last';
-    const lastState = useMemo(() => {
+    const lastMarketplaceState = useMemo(() => {
         const raw = localStorage.getItem(localStorageKey);
         if (!raw) return null;
         try {
-            return JSON.parse(raw) as { type?: ContentTab; provider?: ProviderKey };
+            const parsed = JSON.parse(raw) as { type?: ContentType; provider?: ProviderKey };
+            if (!isMarketplaceType(parsed.type ?? null)) return null;
+            return parsed;
         } catch {
             return null;
         }
     }, []);
 
-    const initialType =
-        (searchParams.get('type') as ContentTab | null) ?? (lastState?.type as ContentTab | null) ?? null;
-    const initialProvider =
-        (searchParams.get('provider') as ProviderKey | null) ?? (lastState?.provider as ProviderKey | null) ?? null;
+    const initialType = (searchParams.get('type') as ContentTab | null) ?? (lastMarketplaceState?.type ?? null);
+    const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? lastMarketplaceState?.provider ?? null;
     const providerPools: Record<ContentType, ProviderKey[]> = {
         mods: providersByType.mods,
         modpacks: providersByType.modpacks,
         plugins: providersByType.plugins,
     };
-    const initialProviderPool =
-        initialType && initialType !== 'installed' ? providerPools[initialType] : providersByType.mods;
+    const initialProviderPool = isMarketplaceType(initialType) ? providerPools[initialType] : providersByType.mods;
 
     const defaultType = useMemo(() => {
         const primary = availableContentTypes.find(t => t !== 'installed');
@@ -143,12 +145,11 @@ const ModsAndPluginsPage = () => {
     useEffect(() => {
         if (!activeType) return;
 
-        if (activeType === 'installed') {
-            setActiveProvider(null);
-            setSearchParams({ type: activeType });
-            localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType }));
-            return;
-        }
+         if (activeType === 'installed') {
+             setActiveProvider(null);
+             setSearchParams({ type: activeType });
+             return;
+         }
 
         const currentProviders = providersByType[activeType] ?? [];
         const resolvedProvider = resolveActive(activeProvider, currentProviders);
@@ -156,10 +157,10 @@ const ModsAndPluginsPage = () => {
             setActiveProvider(resolvedProvider);
         }
 
-        const params: Record<string, string> = { type: activeType };
-        if (resolvedProvider) params.provider = resolvedProvider;
-        setSearchParams(params);
-        localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
+         const params: Record<string, string> = { type: activeType };
+         if (resolvedProvider) params.provider = resolvedProvider;
+         setSearchParams(params);
+         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
     const handleProviderChange = useCallback((provider: ProviderKey) => {

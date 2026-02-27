@@ -188,16 +188,32 @@ class PluginInstallService
         ?string $projectName = null,
         ?string $versionName = null
     ): string {
-        $preferredName = null;
+        $extension = 'jar';
+        $base = null;
         if ($projectName) {
-            $slug = $this->slugify($projectName);
+            $projectSlug = $this->slugify($projectName);
             $versionSlug = $versionName ? $this->slugify($versionName) : null;
-            $preferredName = $versionSlug ? "{$slug}-{$versionSlug}" : $slug;
+            $base = $versionSlug ? "{$projectSlug}-{$versionSlug}" : $projectSlug;
         }
 
-        // Prefer a derived name over the raw filename so we don't end up with just the version number.
-        $rawBase = $preferredName ?: $fileName ?: ($type . '_' . $projectId . '_' . $versionId);
-        $base = preg_replace('/\.[^.]+$/', '', $rawBase); // strip extension for sanitizing
+        if (!$base && $fileName) {
+            $baseFromFile = $this->slugify(pathinfo($fileName, PATHINFO_FILENAME));
+            $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
+            if ($fileExt) {
+                $extension = strtolower($fileExt);
+            }
+            $versionSlug = $versionName ? $this->slugify($versionName) : null;
+            if ($baseFromFile && (!$versionSlug || $baseFromFile !== $versionSlug)) {
+                $base = $baseFromFile;
+            }
+        }
+
+        if (!$base) {
+            $versionSlug = $versionName ? $this->slugify($versionName) : 'latest';
+            $prefix = $type === 'plugin' ? 'spigot' : $type;
+            $base = "{$prefix}-{$projectId}-{$versionSlug}";
+        }
+
         $base = $this->slugify($base);
 
         if (strlen($base) > 120) {
@@ -208,7 +224,7 @@ class PluginInstallService
             $base = $type . '_' . $versionId;
         }
 
-        $clean = $base . '.jar';
+        $clean = $base . '.' . $extension;
 
         return $clean;
     }
