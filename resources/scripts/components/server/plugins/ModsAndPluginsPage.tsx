@@ -36,7 +36,7 @@ const ComingSoon = ({ label }: { label: string }) => (
     <div css={tw`py-12 text-center text-neutral-300`}>{label} (coming soon)</div>
 );
 
-const contentOrder: ContentTab[] = ['mods', 'modpacks', 'plugins', 'installed'];
+const contentOrder: ContentTab[] = ['installed', 'mods', 'modpacks', 'plugins'];
 
 const resolveActive = <T,>(preferred: T | null, available: T[]): T | null =>
     preferred && available.includes(preferred) ? preferred : available[0] ?? null;

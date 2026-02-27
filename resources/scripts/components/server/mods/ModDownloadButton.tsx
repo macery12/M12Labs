@@ -30,12 +30,13 @@ export default ({ modId, fileId, fileName, source, disabledReason }: Props) => {
         setDownloaded(false);
 
         downloadMod(uuid, modId, fileId, source)
-            .then(() => {
+            .then(data => {
+                const resolvedName = data?.file?.name || fileName;
                 setDownloaded(true);
                 addFlash({
                     key: 'mods',
                     type: 'success',
-                    message: `Successfully downloaded ${fileName} to ${source === 'spigot' ? '/plugins' : '/mods'} directory.`,
+                    message: `Successfully downloaded ${resolvedName} to ${source === 'spigot' ? '/plugins' : '/mods'} directory.`,
                 });
                 setTimeout(() => setDownloaded(false), 3000);
             })

@@ -233,15 +233,21 @@ export const getModFiles = (uuid: string, modId: number | string, params: ModFil
     });
 };
 
+export interface DownloadResponse {
+    success: boolean;
+    message: string;
+    file?: { name?: string; path?: string };
+}
+
 export const downloadMod = (
     uuid: string,
     modId: number | string,
     fileId: number | string,
     source?: string,
-): Promise<void> => {
+): Promise<DownloadResponse> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${uuid}/mods/${modId}/files/${fileId}/download`, { source })
-            .then(() => resolve())
+            .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
