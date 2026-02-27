@@ -8,7 +8,7 @@ class ProviderAccessService
     {
     }
 
-    public function isProviderAllowed(string $providerKey, int $eggId, int $nestId): bool
+    public function isProviderAllowed(string $providerKey, int $nestId, int $eggId): bool
     {
         return $this->providerGate->isProviderAllowed($providerKey, $nestId, $eggId);
     }
@@ -36,7 +36,7 @@ class ProviderAccessService
 
         foreach ($providersByType as $type => $providers) {
             foreach ($providers as $provider) {
-                if ($this->isProviderAllowed($provider['key'], $eggId, $nestId)) {
+                if ($this->isProviderAllowed($provider['key'], $nestId, $eggId)) {
                     $allowed[$type][] = $provider['name'];
                 }
             }

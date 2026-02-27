@@ -101,7 +101,11 @@ const ModsAndPluginsPage = () => {
             if (type === 'installed') {
                 return providerAccess?.installed ?? true;
             }
-            return (providersByType as ProvidersByType)[type]?.length > 0;
+
+            if (type === 'mods') return providersByType.mods.length > 0;
+            if (type === 'modpacks') return providersByType.modpacks.length > 0;
+            if (type === 'plugins') return providersByType.plugins.length > 0;
+            return false;
         });
     }, [providerAccess, providersByType, hasProviderTabs]);
 
@@ -122,9 +126,7 @@ const ModsAndPluginsPage = () => {
         }
 
         const currentProviders =
-            resolvedType && resolvedType !== 'installed'
-                ? (providersByType as any)[resolvedType] ?? []
-                : (providersByType as any).mods ?? [];
+            resolvedType && resolvedType !== 'installed' ? providersByType[resolvedType] ?? [] : providersByType.mods;
         const resolvedProvider = resolveActive(activeProvider, currentProviders);
         if (resolvedProvider !== activeProvider) {
             setActiveProvider(resolvedProvider);

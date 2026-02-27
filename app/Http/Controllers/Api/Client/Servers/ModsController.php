@@ -91,7 +91,7 @@ class ModsController extends ClientApiController
 
         $providerKey = $this->resolveProviderKey($source, $resource);
 
-        if (!$this->providerAccessService->isProviderAllowed($providerKey, $server->egg_id, $server->nest_id)) {
+        if (!$this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id)) {
             return $this->denyResponse();
         }
 
@@ -117,7 +117,7 @@ class ModsController extends ClientApiController
             }
 
             $result[$providerKey] = [
-                'allowed' => $this->providerAccessService->isProviderAllowed($providerKey, $server->egg_id, $server->nest_id),
+                'allowed' => $this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id),
                 'reason' => "Disabled by administrator for this server's egg/nest.",
             ];
         }
