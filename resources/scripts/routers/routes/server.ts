@@ -14,7 +14,7 @@ const NetworkContainer = lazy(() => import('@server/network/NetworkContainer'));
 const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
-const PluginsContainer = lazy(() => import('@server/plugins/PluginsContainer'));
+const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
 const LegacyRedirects = lazy(() => import('@server/plugins/RedirectLegacyPlugins'));
 
 const server: ServerRouteDefinition[] = [
@@ -37,7 +37,7 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.DatabaseIcon,
         category: 'data',
     }),
-    route('plugins/*', PluginsContainer, {
+    route('plugins/*', ModsAndPluginsPage, {
         permission: 'file.create',
         name: 'Plugins',
         icon: Icon.PuzzleIcon,

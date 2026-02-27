@@ -8,10 +8,10 @@ const RedirectLegacyPlugins = () => {
     const basePath = match ? `${match[1]}/plugins` : '/plugins';
 
     if (isModpacks) {
-        return <Navigate to={`${basePath}?provider=curseforge&resource=modpacks`} replace />;
+        return <Navigate to={`${basePath}?type=modpacks&provider=curseforge`} replace />;
     }
 
-    return <Navigate to={`${basePath}?provider=modrinth&resource=mods`} replace />;
+    return <Navigate to={`${basePath}?type=mods&provider=modrinth`} replace />;
 };
 
 export default RedirectLegacyPlugins;

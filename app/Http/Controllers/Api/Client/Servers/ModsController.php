@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\SpigetService;
-use Everest\Services\Plugins\PluginProviderGate;
+use Everest\Services\Plugins\ProviderAccessService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
@@ -32,7 +32,7 @@ class ModsController extends ClientApiController
         private SpigetService $spigetService,
         private PluginInstallService $pluginInstallService,
         private DaemonFileRepository $fileRepository,
-        private PluginProviderGate $providerGate
+        private ProviderAccessService $providerAccessService
     ) {
         parent::__construct();
     }
@@ -91,7 +91,7 @@ class ModsController extends ClientApiController
 
         $providerKey = $this->resolveProviderKey($source, $resource);
 
-        if (!$this->providerGate->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id)) {
+        if (!$this->providerAccessService->isProviderAllowed($providerKey, $server->egg_id, $server->nest_id)) {
             return $this->denyResponse();
         }
 
@@ -117,7 +117,7 @@ class ModsController extends ClientApiController
             }
 
             $result[$providerKey] = [
-                'allowed' => $this->providerGate->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id),
+                'allowed' => $this->providerAccessService->isProviderAllowed($providerKey, $server->egg_id, $server->nest_id),
                 'reason' => "Disabled by administrator for this server's egg/nest.",
             ];
         }
