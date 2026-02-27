@@ -203,9 +203,8 @@ class PluginInstallService
                 $extension = strtolower($fileExt);
             }
             $versionSlug = $versionName ? $this->slugify($versionName) : null;
-            // If a version slug exists and matches the filename, skip using the filename to avoid reintroducing a bare version name.
-            // When no version slug is available, using the filename is still preferable over falling back to an id-based default.
-            if ($baseFromFile && (!$versionSlug || $baseFromFile !== $versionSlug)) {
+            // Prefer the filename unless it matches the version slug (which would produce a bare version name); with no version slug, still use the filename.
+            if ($baseFromFile && ($versionSlug === null || $baseFromFile !== $versionSlug)) {
                 $base = $baseFromFile;
             }
         }
