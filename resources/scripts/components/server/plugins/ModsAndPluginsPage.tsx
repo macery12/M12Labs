@@ -97,8 +97,21 @@ const ModsAndPluginsPage = () => {
         return result;
     }, [providersByType]);
 
-    const initialType = (searchParams.get('type') as ContentTab | null) ?? null;
-    const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? null;
+    const localStorageKey = 'marketplace:last';
+    const lastState = useMemo(() => {
+        const raw = localStorage.getItem(localStorageKey);
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw) as { type?: ContentTab; provider?: ProviderKey };
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const initialType =
+        (searchParams.get('type') as ContentTab | null) ?? (lastState?.type as ContentTab | null) ?? null;
+    const initialProvider =
+        (searchParams.get('provider') as ProviderKey | null) ?? (lastState?.provider as ProviderKey | null) ?? null;
     const providerPools: Record<ContentType, ProviderKey[]> = {
         mods: providersByType.mods,
         modpacks: providersByType.modpacks,
@@ -127,6 +140,7 @@ const ModsAndPluginsPage = () => {
         if (activeType === 'installed') {
             setActiveProvider(null);
             setSearchParams({ type: activeType });
+            localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType }));
             return;
         }
 
@@ -139,6 +153,7 @@ const ModsAndPluginsPage = () => {
         const params: Record<string, string> = { type: activeType };
         if (resolvedProvider) params.provider = resolvedProvider;
         setSearchParams(params);
+        localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
     const handleProviderChange = useCallback((provider: ProviderKey) => {

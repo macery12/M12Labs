@@ -340,7 +340,7 @@ class SpigetService
             'fileStatus' => 4,
             'hashes' => [],
             'fileDate' => isset($version['releaseDate']) ? date('c', (int) $version['releaseDate']) : '',
-            'fileLength' => $version['size'] ?? 0,
+            'fileLength' => $version['size'] ?? null,
             'downloadCount' => $version['downloads'] ?? 0,
             'downloadUrl' => $this->getDownloadUrl($modId, $version['id'])['url'],
             'gameVersions' => [],

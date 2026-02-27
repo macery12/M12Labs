@@ -196,7 +196,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                             {isExternal && (
                                 <>
                                     <span>•</span>
-                                    <span css={tw`text-yellow-400`}>External download</span>
+                                    <span css={tw`text-yellow-400`}>External download (manual)</span>
                                 </>
                             )}
                         </ModStats>
@@ -204,6 +204,34 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                 </ModHeader>
 
                 <ModSummary>{mod.summary}</ModSummary>
+
+                {isExternal && (
+                    <Section>
+                        <SectionTitle>External Download</SectionTitle>
+                        <p css={tw`text-neutral-300 mb-3`}>
+                            This download is hosted externally and can’t be installed automatically from the panel. You
+                            can download it manually, or search for an alternative provider if available.
+                        </p>
+                        <div css={tw`flex gap-2 flex-wrap`}>
+                            {externalUrl && (
+                                <button
+                                    css={tw`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-sm`}
+                                    onClick={() => window.open(externalUrl, '_blank', 'noopener,noreferrer')}
+                                    type="button"
+                                >
+                                    Open Download Page
+                                </button>
+                            )}
+                            <button
+                                css={tw`px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors text-sm`}
+                                onClick={() => window.open(`https://modrinth.com/mods?query=${encodeURIComponent(mod.name)}`, '_blank', 'noopener,noreferrer')}
+                                type="button"
+                            >
+                                Search on Modrinth
+                            </button>
+                        </div>
+                    </Section>
+                )}
 
                 {(descriptionText || documentationText || (mod.testedVersions && mod.testedVersions.length > 0)) && (
                     <Section>
@@ -242,9 +270,14 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                     <Section>
                         <SectionTitle>File Info</SectionTitle>
                         <p css={tw`text-neutral-300`}>
-                            Type: {mod.file.type ?? 'Unknown'} • Size:{' '}
-                            {mod.file.size ? (mod.file.size / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown'}{' '}
-                            {mod.file.sizeUnit ? `(${mod.file.sizeUnit})` : ''}
+                            Type: {mod.file.type ?? 'Unknown'}
+                            {mod.file.size && mod.file.size > 0 && (
+                                <>
+                                    {' '}
+                                    • Size: {(mod.file.size / 1024 / 1024).toFixed(2)} MB{' '}
+                                    {mod.file.sizeUnit ? `(${mod.file.sizeUnit})` : ''}
+                                </>
+                            )}
                         </p>
                         {mod.file.externalUrl && (
                             <a
@@ -297,7 +330,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                                                 {' • '}
                                                 <span>{new Date(file.fileDate).toLocaleDateString()}</span>
                                                 {' • '}
-                                                <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
+                                                 {file.fileLength > 0 && <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>}
                                             </FileDetails>
                                         </FileInfo>
                                         <ModDownloadButton

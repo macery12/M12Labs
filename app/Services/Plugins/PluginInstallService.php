@@ -58,7 +58,14 @@ class PluginInstallService
 
         $download = $adapter->getDownloadUrl($projectId, $versionId);
 
-        $fileName = $this->normalizeFileName($download['fileName'] ?? null, $projectId, $versionId, $type);
+        $fileName = $this->normalizeFileName(
+            $download['fileName'] ?? null,
+            $projectId,
+            $versionId,
+            $type,
+            $download['projectName'] ?? null,
+            $download['versionName'] ?? null
+        );
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         $this->validateExtension($extension, $type);
 
@@ -148,6 +155,7 @@ class PluginInstallService
             }
 
             $targetPath = $this->determineInstallPath($type, $fileName);
+            $targetPath = $this->ensureUniqueFilePath($server, $targetPath);
             $this->createTargetDirectory($server, $type);
 
             $content = file_get_contents($tempPath);
@@ -172,17 +180,45 @@ class PluginInstallService
         ];
     }
 
-    private function normalizeFileName(?string $fileName, string|int $projectId, string|int $versionId, string $type): string
-    {
-        $clean = $fileName ?: ($type . '_' . $projectId . '_' . $versionId . '.jar');
-        $clean = str_replace(['\\', '/'], '-', $clean);
-        $clean = preg_replace('/[^A-Za-z0-9._-]/', '_', $clean) ?: ($type . '_' . $versionId . '.jar');
-
-        if (!str_contains($clean, '.')) {
-            $clean .= '.jar';
+    private function normalizeFileName(
+        ?string $fileName,
+        string|int $projectId,
+        string|int $versionId,
+        string $type,
+        ?string $projectName = null,
+        ?string $versionName = null
+    ): string {
+        $preferredName = null;
+        if ($projectName) {
+            $slug = $this->slugify($projectName);
+            $versionSlug = $versionName ? $this->slugify($versionName) : null;
+            $preferredName = $versionSlug ? "{$slug}-{$versionSlug}" : $slug;
         }
 
+        $base = $fileName ?: ($preferredName ?: ($type . '_' . $projectId . '_' . $versionId));
+        $base = preg_replace('/\.[^.]+$/', '', $base); // strip extension for sanitizing
+        $base = $this->slugify($base);
+
+        if (strlen($base) > 120) {
+            $base = substr($base, 0, 120);
+        }
+
+        if ($base === '') {
+            $base = $type . '_' . $versionId;
+        }
+
+        $clean = $base . '.jar';
+
         return $clean;
+    }
+
+    private function slugify(string $value): string
+    {
+        $value = strtolower($value);
+        $value = str_replace(' ', '-', $value);
+        $value = preg_replace('/[^a-z0-9._-]/', '', $value) ?? '';
+        $value = preg_replace('/-{2,}/', '-', $value);
+        return trim($value, '-');
     }
 
     private function validateExtension(string $extension, string $type): void
@@ -200,6 +236,35 @@ class PluginInstallService
         }
 
         return '/mods/' . $fileName;
+    }
+
+    private function ensureUniqueFilePath(Server $server, string $path): string
+    {
+        $directory = rtrim(dirname($path), '/');
+        $name = basename($path);
+        $nameWithoutExt = preg_replace('/\.[^.]+$/', '', $name);
+        $ext = pathinfo($name, PATHINFO_EXTENSION);
+
+        $files = [];
+        try {
+            $files = $this->fileRepository->setServer($server)->getDirectory($directory === '.' ? '/' : $directory);
+        } catch (\Exception $e) {
+            // ignore listing errors; fall back to original path
+            return $path;
+        }
+
+        $existing = collect($files)->pluck('name')->filter()->all();
+        if (!in_array($name, $existing, true)) {
+            return $path;
+        }
+
+        $suffix = 1;
+        do {
+            $candidate = $nameWithoutExt . '-' . $suffix . ($ext ? '.' . $ext : '');
+            $suffix++;
+        } while (in_array($candidate, $existing, true) && $suffix < 50);
+
+        return ($directory === '.' ? '' : $directory) . '/' . $candidate;
     }
 
     private function createTargetDirectory(Server $server, string $type): void
