@@ -52,21 +52,13 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
 
         $files = $this->spigetService->getModFiles($projectId, [
             'index' => 0,
-            'pageSize' => 100,
+            'pageSize' => 1,
         ]);
 
-        $matched = [];
-        foreach ($files['data'] ?? [] as $file) {
-            if ((int) ($file['id'] ?? 0) === (int) $versionId) {
-                $matched = $file;
-                break;
-            }
-        }
-
         return [
-            'url' => $matched['downloadUrl'] ?? $this->spigetService->getDownloadUrl($projectId, $versionId)['url'],
-            'fileName' => $matched['fileName'] ?? 'plugin_' . $versionId . '.jar',
-            'fileSize' => $matched['fileLength'] ?? null,
+            'url' => $this->spigetService->getDownloadUrl($projectId, $versionId)['url'],
+            'fileName' => $files['data'][0]['fileName'] ?? 'plugin_' . $versionId . '.jar',
+            'fileSize' => $files['data'][0]['fileLength'] ?? null,
         ];
     }
 }

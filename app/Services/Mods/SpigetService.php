@@ -158,7 +158,8 @@ class SpigetService
     public function getDownloadUrl(string|int $modId, string|int $versionId): array
     {
         return [
-            'url' => $this->endpoint . "/resources/{$modId}/versions/{$versionId}/download",
+            // Always use the base resource download endpoint; Spiget handles redirecting to the latest file.
+            'url' => $this->endpoint . "/resources/{$modId}/download",
             'fileName' => null,
             'fileSize' => null,
         ];

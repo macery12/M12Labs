@@ -81,13 +81,36 @@ class PluginInstallService
         }
 
         try {
+            if (in_array($providerKey, ['spiget', 'spigot'], true)) {
+                $preflight = Http::withHeaders([
+                    'User-Agent' => config('app.name', 'M12Labs') . ' Marketplace Downloader',
+                    'Accept' => '*/*',
+                ])
+                    ->timeout(60)
+                    ->withOptions(['allow_redirects' => ['track_redirects' => true, 'max' => 5]])
+                    ->get($downloadUrl);
+
+                $redirects = $this->normalizeRedirectHistory($preflight->header('X-Guzzle-Redirect-History'));
+                $finalUrl = $redirects ? end($redirects) : $downloadUrl;
+                $finalHost = parse_url($finalUrl, PHP_URL_HOST) ?: '';
+                $contentType = strtolower((string) $preflight->header('Content-Type'));
+
+                if (str_contains($finalHost, 'spigotmc.org')) {
+                    throw new ModsServiceException('SpigotMC blocks automated downloads for this plugin. Please download manually from the resource page.');
+                }
+
+                if (str_contains($contentType, 'text/html')) {
+                    throw new ModsServiceException('This plugin requires a manual download from SpigotMC.');
+                }
+            }
+
             $response = Http::withHeaders([
                 'User-Agent' => config('app.name', 'M12Labs') . ' Marketplace Downloader',
                 'Accept' => '*/*',
             ])
                 ->timeout(300)
                 ->sink($fileHandle)
-                ->withOptions(['allow_redirects' => ['track_redirects' => true]])
+                ->withOptions(['allow_redirects' => ['track_redirects' => true, 'max' => 5]])
                 ->get($downloadUrl);
 
             if (!$response->successful()) {
@@ -104,6 +127,15 @@ class PluginInstallService
                     'body_preview' => $bodyPreview,
                 ]);
                 throw new ModsServiceException('Failed to download file from provider.');
+            }
+
+            // If the final host is spigotmc.org or HTML content slipped through, treat as manual download required.
+            $redirects = $this->normalizeRedirectHistory($response->header('X-Guzzle-Redirect-History'));
+            $finalUrl = $redirects ? end($redirects) : $downloadUrl;
+            $finalHost = parse_url($finalUrl, PHP_URL_HOST) ?: '';
+            $contentType = strtolower((string) $response->header('Content-Type'));
+            if (str_contains($finalHost, 'spigotmc.org') || str_contains($contentType, 'text/html')) {
+                throw new ModsServiceException('SpigotMC blocks automated downloads for this plugin. Please download manually from the resource page.');
             }
 
             $downloadedSize = filesize($tempPath);
