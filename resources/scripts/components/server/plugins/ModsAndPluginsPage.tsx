@@ -235,6 +235,7 @@ const ModsAndPluginsPage = () => {
         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
+    // Prefer explicit iconId from Wings; fall back to stableId slug when iconId is absent.
     const buildIconUrl = useCallback(
         (iconId?: string | null, stableId?: string | null) => {
             const slug = iconId ?? stableId;
