@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import tw from 'twin.macro';
 import PageContentBlock from '@/elements/PageContentBlock';
@@ -117,14 +117,20 @@ const ModsAndPluginsPage = () => {
     }, [providersByType]);
 
     const localStorageKey = 'marketplace:last';
+    const restoredParamsRef = useRef(false);
+
     useEffect(() => {
+        if (restoredParamsRef.current) return;
         if (searchParams.toString()) {
-            localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
+            restoredParamsRef.current = true;
             return;
         }
 
         const saved = localStorage.getItem('marketplace:lastUrl');
-        if (!saved) return;
+        if (!saved) {
+            restoredParamsRef.current = true;
+            return;
+        }
 
         try {
             const url = new URL(saved, window.location.origin);
@@ -133,8 +139,15 @@ const ModsAndPluginsPage = () => {
             }
         } catch {
             // Corrupted/invalid stored URL; safe to ignore and fall back to defaults.
+        } finally {
+            restoredParamsRef.current = true;
         }
     }, [searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (!searchParams.toString()) return;
+        localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
+    }, [searchParams]);
 
     const lastMarketplaceState = useMemo(() => {
         const raw = localStorage.getItem(localStorageKey);
