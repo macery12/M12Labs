@@ -17,10 +17,12 @@ interface Props {
     onRescan: () => Promise<void> | void;
     onDelete: (paths: string[]) => Promise<void> | void;
     onToggle: (paths: string[], disabled: boolean) => Promise<void> | void;
-    onRetry?: () => Promise<void> | void;
+    onRetry: () => Promise<void> | void;
 }
 
 type TabKey = 'installed' | 'disabled';
+const LONG_LOADING_HINT_DELAY_MS = 5000;
+const SKELETON_COUNT = 3;
 
 const formatWhen = (date: Date | null) => {
     if (!date) return 'Unknown';
@@ -42,10 +44,10 @@ const AddonCard = ({
     onSelect: (path: string) => void;
     onDetails: (addon: InstalledAddon) => void;
 }) => {
-    const [showIcon, setShowIcon] = useState(Boolean(addon.iconUrl));
+    const [iconFailed, setIconFailed] = useState(false);
 
     useEffect(() => {
-        setShowIcon(Boolean(addon.iconUrl));
+        setIconFailed(false);
     }, [addon.iconUrl]);
 
     return (
@@ -58,14 +60,14 @@ const AddonCard = ({
                 css={tw`mt-1`}
             />
             <div css={tw`w-12 h-12 rounded bg-neutral-800 overflow-hidden flex items-center justify-center`}>
-                {showIcon && addon.iconUrl ? (
+                {addon.iconUrl && !iconFailed ? (
                     <img
                         src={addon.iconUrl}
                         alt={addon.displayName}
                         css={tw`w-full h-full object-cover`}
                         loading="lazy"
                         decoding="async"
-                        onError={() => setShowIcon(false)}
+                        onError={() => setIconFailed(true)}
                     />
                 ) : (
                     <div css={tw`text-lg font-semibold text-neutral-300`}>{addon.displayName?.[0] ?? '?'}</div>
@@ -240,14 +242,18 @@ const InstalledAddonsList = ({
             setShowLongHint(false);
             return undefined;
         }
-        const timer = window.setTimeout(() => setShowLongHint(true), 5000);
+        const timer = window.setTimeout(() => setShowLongHint(true), LONG_LOADING_HINT_DELAY_MS);
         return () => window.clearTimeout(timer);
     }, [loading]);
 
     if (loading) {
         return (
-            <div css={tw`space-y-4`}>
-                <div css={tw`text-sm text-neutral-300 bg-neutral-900 border border-neutral-700 rounded p-3`}>
+            <div css={tw`space-y-4`} aria-busy="true">
+                <div
+                    css={tw`text-sm text-neutral-300 bg-neutral-900 border border-neutral-700 rounded p-3`}
+                    role="status"
+                    aria-live="polite"
+                >
                     <div css={tw`flex items-center justify-between mb-2`}>
                         <span>Scanning installed mods/plugins on the node…</span>
                         <div css={tw`h-1 w-24 bg-neutral-800 rounded overflow-hidden`}>
@@ -256,10 +262,11 @@ const InstalledAddonsList = ({
                     </div>
                     {showLongHint && <div css={tw`text-xs text-neutral-400`}>This can take a bit on large modpacks.</div>}
                 </div>
-                {[1, 2, 3].map(key => (
+                {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
                     <div
-                        key={key}
+                        key={`addon-skeleton-${index}`}
                         css={tw`border border-neutral-800 rounded-lg p-4 flex gap-4 items-start bg-neutral-900 animate-pulse`}
+                        aria-hidden="true"
                     >
                         <div css={tw`w-12 h-12 rounded bg-neutral-800`} />
                         <div css={tw`flex-1 space-y-2`}>
@@ -280,7 +287,7 @@ const InstalledAddonsList = ({
                     css={tw`bg-red-900 bg-opacity-30 border border-red-700 text-red-100 rounded p-3 flex items-center justify-between`}
                 >
                     <div>{error}</div>
-                    <Button.Text onClick={() => onRetry?.()} className="!text-xs">
+                    <Button.Text aria-label="Retry loading installed addons" onClick={() => onRetry()} className="!text-xs">
                         Retry
                     </Button.Text>
                 </div>
