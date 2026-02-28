@@ -722,7 +722,7 @@ class ModsController extends ClientApiController
         if (str_ends_with($lower, '.disabled')) {
             $trimmed = substr($lower, 0, -strlen('.disabled'));
 
-            return str_ends_with($trimmed, '.jar');
+            return str_ends_with($trimmed, '.jar') || !str_contains($trimmed, '.');
         }
 
         return false;
@@ -754,7 +754,7 @@ class ModsController extends ClientApiController
         if (str_ends_with($lower, '.disabled')) {
             $trimmed = substr($lower, 0, -strlen('.disabled'));
 
-            return str_ends_with($trimmed, '.jar');
+            return str_ends_with($trimmed, '.jar') || !str_contains($trimmed, '.');
         }
 
         return false;
