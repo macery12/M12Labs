@@ -267,7 +267,7 @@ const ModsAndPluginsPage = () => {
                 plugins: (data.plugins ?? []).map(mapIcon),
             };
         },
-        [buildIconUrl],
+        [resolveIconUrl, uuid],
     );
 
     const fetchInstalled = useCallback(() => {

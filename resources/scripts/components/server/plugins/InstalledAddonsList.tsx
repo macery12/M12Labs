@@ -48,7 +48,7 @@ const AddonCard = ({
 
     useEffect(() => {
         setIconFailed(false);
-    }, [addon.iconUrl]);
+    }, [addon.iconUrl, addon.iconId]);
 
     return (
         <div css={tw`border border-neutral-700 rounded-lg p-4 flex gap-4 items-start bg-neutral-900`}>
@@ -70,7 +70,18 @@ const AddonCard = ({
                         onError={() => setIconFailed(true)}
                     />
                 ) : (
-                    <div css={tw`text-lg font-semibold text-neutral-300`}>{addon.displayName?.[0] ?? '?'}</div>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        css={tw`w-7 h-7 text-neutral-400`}
+                        role="img"
+                    >
+                        <title>No icon available</title>
+                        <path
+                            fill="currentColor"
+                            d="M6.5 4a2.5 2.5 0 0 0-2.45 3.01l.05.19L4.5 9h1.75A1.75 1.75 0 0 1 8 10.75v1.5A1.75 1.75 0 0 1 6.25 14H4.5l-.4 1.8a2.5 2.5 0 1 0 3.16 3.16l.09-.21L8 16.5h1.75A1.75 1.75 0 0 1 11.5 18.25v1.35l1.68.37a2.5 2.5 0 1 0 3.14-3.14l-.37-1.68H18a2 2 0 0 0 2-2v-1.75a2 2 0 0 0-2-2h-1.05l-.37-1.68A2.5 2.5 0 0 0 12 6.03l-.5.11V4.5A2.5 2.5 0 0 0 9 2.04v1.1A2.5 2.5 0 0 0 6.5 4"
+                        />
+                    </svg>
                 )}
             </div>
             <div css={tw`flex-1 min-w-0 space-y-1`}>
@@ -255,7 +266,7 @@ const InstalledAddonsList = ({
                     aria-live="polite"
                 >
                     <div css={tw`flex items-center justify-between mb-2`}>
-                        <span>Scanning installed mods/plugins on the node…</span>
+                        <span>Scanning server for installed mods/plugins…</span>
                         <div css={tw`h-1 w-24 bg-neutral-800 rounded overflow-hidden`}>
                             <div css={tw`h-full w-1/2 bg-blue-500 animate-pulse`} />
                         </div>
