@@ -747,7 +747,17 @@ class ModsController extends ClientApiController
     {
         $lower = strtolower($name);
 
-        return str_ends_with($lower, '.jar.disabled') || (str_ends_with($lower, '.disabled') && $this->isJarLike($name));
+        if (str_ends_with($lower, '.jar.disabled')) {
+            return true;
+        }
+
+        if (str_ends_with($lower, '.disabled')) {
+            $trimmed = substr($lower, 0, -strlen('.disabled'));
+
+            return str_ends_with($trimmed, '.jar');
+        }
+
+        return false;
     }
 
     private function formatTimestamp(mixed $value): ?string

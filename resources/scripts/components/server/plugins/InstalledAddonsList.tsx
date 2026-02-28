@@ -51,7 +51,7 @@ const Section = ({ title, items }: { title: string; items: InstalledAddon[] }) =
                                               const farApart = Math.abs(hourDelta) > 48;
 
                                               return farApart
-                                                  ? format(item.modifiedAt, 'MMM do, yyyy h:mma')
+                                                  ? format(item.modifiedAt, 'MMM do, yyyy h:mm a')
                                                   : formatDistanceToNow(item.modifiedAt, { addSuffix: true });
                                           })()
                                         : 'Unknown'}
