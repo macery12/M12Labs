@@ -117,6 +117,25 @@ const ModsAndPluginsPage = () => {
     }, [providersByType]);
 
     const localStorageKey = 'marketplace:last';
+    useEffect(() => {
+        if (searchParams.toString()) {
+            localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
+            return;
+        }
+
+        const saved = localStorage.getItem('marketplace:lastUrl');
+        if (!saved) return;
+
+        try {
+            const url = new URL(saved, window.location.origin);
+            if (url.search) {
+                setSearchParams(url.searchParams);
+            }
+        } catch {
+            // ignore
+        }
+    }, [searchParams, setSearchParams]);
+
     const lastMarketplaceState = useMemo(() => {
         const raw = localStorage.getItem(localStorageKey);
         if (!raw) return null;
@@ -151,6 +170,23 @@ const ModsAndPluginsPage = () => {
     );
 
     useEffect(() => {
+        const type = (searchParams.get('type') as ContentTab | null) ?? null;
+        const provider = (searchParams.get('provider') as ProviderKey | null) ?? null;
+        const resolvedType = resolveActive(type, availableContentTypes) ?? defaultType;
+        if (resolvedType && resolvedType !== activeType) {
+            setActiveType(resolvedType);
+        }
+
+        if (resolvedType && resolvedType !== 'installed') {
+            const pool = providerPools[resolvedType] ?? [];
+            const resolvedProvider = resolveActive(provider, pool);
+            if (resolvedProvider !== activeProvider) {
+                setActiveProvider(resolvedProvider);
+            }
+        }
+    }, [searchParams, availableContentTypes, defaultType, providerPools, activeType, activeProvider]);
+
+    useEffect(() => {
         const resolvedType = resolveActive(activeType, availableContentTypes);
         const preferred = resolvedType ?? defaultType;
         if (preferred !== activeType) {
@@ -179,19 +215,44 @@ const ModsAndPluginsPage = () => {
         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
+    const buildIconUrl = useCallback(
+        (stableId?: string | null) => {
+            if (!stableId || !uuid) return undefined;
+            return `/api/client/servers/${uuid}/addons/icon/${stableId}`;
+        },
+        [uuid],
+    );
+
+    const decorateInstalled = useCallback(
+        (data: InstalledAddonResponse | null) => {
+            if (!data) return null;
+            const mapIcon = (addon: any) => ({
+                ...addon,
+                iconUrl: addon.iconUrl ?? buildIconUrl(addon.stableId),
+            });
+
+            return {
+                ...data,
+                mods: (data.mods ?? []).map(mapIcon),
+                plugins: (data.plugins ?? []).map(mapIcon),
+            };
+        },
+        [buildIconUrl],
+    );
+
     const fetchInstalled = useCallback(() => {
         if (!uuid) return;
 
         setLoadingInstalled(true);
         getInstalledAddons(uuid)
-            .then(setInstalledAddons)
+            .then(res => setInstalledAddons(decorateInstalled(res)))
             .catch(error => {
                 console.error(error);
-                setInstalledAddons({ mods: [], plugins: [] });
+                setInstalledAddons(decorateInstalled({ mods: [], plugins: [] }));
                 addError({ key: 'plugins', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoadingInstalled(false));
-    }, [uuid, addError]);
+    }, [uuid, addError, decorateInstalled]);
 
     useEffect(() => {
         if (activeType !== 'installed') return;

@@ -191,6 +191,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/installed/toggle', [Client\Servers\ModsController::class, 'toggleInstalled']);
             Route::post('/installed/delete', [Client\Servers\ModsController::class, 'deleteInstalled']);
         });
+        Route::get('/addons/icon/{stable}', [Client\Servers\ModsController::class, 'icon']);
 
         Route::post('/command', [Client\Servers\CommandController::class, 'index']);
         Route::post('/power', [Client\Servers\PowerController::class, 'index']);

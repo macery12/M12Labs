@@ -58,17 +58,6 @@ class PluginInstallService
 
         $download = $adapter->getDownloadUrl($projectId, $versionId);
 
-        $fileName = $this->normalizeFileName(
-            $download['fileName'] ?? null,
-            $projectId,
-            $versionId,
-            $type,
-            $download['projectName'] ?? null,
-            $download['versionName'] ?? null
-        );
-        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $this->validateExtension($extension, $type);
-
         $downloadUrl = $download['url'] ?? null;
         if (empty($downloadUrl)) {
             throw new ModsServiceException('Unable to resolve download URL for the selected file.');
@@ -145,6 +134,30 @@ class PluginInstallService
                 throw new ModsServiceException('SpigotMC blocks automated downloads for this plugin. Please download manually from the resource page.');
             }
 
+            $contentDispositionName = $this->extractFileNameFromContentDisposition($response->header('Content-Disposition'));
+            $fileName = $this->normalizeFileName(
+                $download['fileName'] ?? null,
+                $projectId,
+                $versionId,
+                $type,
+                $download['projectName'] ?? null,
+                $download['versionName'] ?? null,
+                $contentDispositionName
+            );
+            $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            $this->validateExtension($extension, $type);
+
+            Log::debug('PluginInstallService filename resolution', [
+                'provider' => $providerKey,
+                'projectId' => $projectId,
+                'versionId' => $versionId,
+                'projectName' => $download['projectName'] ?? null,
+                'versionName' => $download['versionName'] ?? null,
+                'fileName_meta' => $download['fileName'] ?? null,
+                'content_disposition_filename' => $contentDispositionName,
+                'resolved' => $fileName,
+            ]);
+
             $downloadedSize = filesize($tempPath);
             $sizeFromProvider = $download['fileSize'] ?? null;
             $effectiveSize = $sizeFromProvider && $sizeFromProvider > 0 ? $sizeFromProvider : $downloadedSize;
@@ -186,50 +199,73 @@ class PluginInstallService
         string|int $versionId,
         string $type,
         ?string $projectName = null,
-        ?string $versionName = null
+        ?string $versionName = null,
+        ?string $contentDispositionName = null
     ): string {
-        $extension = 'jar';
-        $base = null;
+        $projectSlug = $projectName ? $this->slugify($projectName) : null;
         $versionSlug = $versionName ? $this->slugify($versionName) : null;
-        if ($projectName) {
-            $projectSlug = $this->slugify($projectName);
-            $base = $versionSlug ? "{$projectSlug}-{$versionSlug}" : $projectSlug;
-        }
 
-        if (!$base && !empty($fileName)) {
-            $fileParts = pathinfo($fileName);
-            $baseFromFile = $this->slugify($fileParts['filename'] ?? '');
-            $fileExt = $fileParts['extension'] ?? null;
-            if (!empty($fileExt)) {
-                $extension = strtolower($fileExt);
+        $candidates = array_filter([
+            $contentDispositionName,
+            $fileName,
+            $projectSlug && $versionSlug ? "{$projectSlug}-{$versionSlug}" : null,
+            $projectSlug,
+            $versionSlug ? "plugin-{$projectId}-{$versionSlug}" : null,
+        ]);
+
+        $selected = null;
+        $extension = 'jar';
+
+        foreach ($candidates as $candidate) {
+            $parts = pathinfo($candidate);
+            $base = $parts['filename'] ?? null;
+            if (!$base) {
+                continue;
             }
-            // Avoid using the filename when it would collapse to the same value as the version slug (bare version name).
-            if (!empty($baseFromFile) && $this->shouldUseFilename($baseFromFile, $versionSlug)) {
-                $base = $baseFromFile;
+
+            $base = $this->slugify($base);
+            if ($base === '') {
+                continue;
             }
+
+            if ($versionSlug && $base === $versionSlug && ($projectSlug || $contentDispositionName)) {
+                continue;
+            }
+
+            if (!empty($parts['extension'])) {
+                $extension = strtolower($parts['extension']);
+            }
+
+            $selected = $base;
+            break;
         }
 
-        if (!$base) {
-            // Problem statement requirement (do not change): fall back to "latest" so the filename follows
-            // spigot-{projectId}-{versionName|latest}.jar when the provider omits a version label, avoiding bare version names.
-            $versionSlug = $versionSlug ?? 'latest';
-            $prefix = $type === 'plugin' ? 'spigot' : $type;
-            $base = "{$prefix}-{$projectId}-{$versionSlug}";
+        if (!$selected) {
+            $selected = $type . '_' . $versionId;
         }
 
-        $base = $this->slugify($base);
-
-        if (strlen($base) > 120) {
-            $base = substr($base, 0, 120);
+        if (strlen($selected) > 120) {
+            $selected = substr($selected, 0, 120);
         }
 
-        if ($base === '') {
-            $base = $type . '_' . $versionId;
+        return $selected . '.' . $extension;
+    }
+
+    private function extractFileNameFromContentDisposition(?string $header): ?string
+    {
+        if (!$header) {
+            return null;
         }
 
-        $clean = $base . '.' . $extension;
+        if (preg_match('/filename\\*=UTF-8\\'' . "'" . '?([^;]+)$/i', $header, $matches)) {
+            return rawurldecode($matches[1]);
+        }
 
-        return $clean;
+        if (preg_match('/filename="?([^";]+)"?/i', $header, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
     }
 
     private function slugify(string $value): string

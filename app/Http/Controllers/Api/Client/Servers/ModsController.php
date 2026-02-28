@@ -7,6 +7,7 @@ use Everest\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Exception\ClientException;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\SpigetService;
@@ -22,6 +23,7 @@ use Everest\Http\Requests\Api\Client\Servers\Mods\GetModFilesRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetMinecraftVersionsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetInstalledAddonsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\RescanAddonsRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\AddonIconRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\BulkDeleteAddonsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\ToggleAddonRequest;
 use Illuminate\Http\Response;
@@ -166,6 +168,48 @@ class ModsController extends ClientApiController
 
             return response()->json(['error' => 'Unable to trigger rescan'], 500);
         }
+    }
+
+    public function icon(AddonIconRequest $request, Server $server, string $stable)
+    {
+        try {
+            $response = $this->fileRepository->setServer($server)->getHttpClient()->get(
+                sprintf('/api/servers/%s/addons/icon/%s', $server->uuid, $stable),
+                ['stream' => true]
+            );
+        } catch (ClientException $e) {
+            $status = $e->getResponse()?->getStatusCode() ?? 500;
+            if ($status === Response::HTTP_NOT_FOUND) {
+                return response('', Response::HTTP_NOT_FOUND);
+            }
+
+            Log::warning('Addon icon proxy failed', [
+                'server_id' => $server->id,
+                'server_uuid' => $server->uuid,
+                'stable' => $stable,
+                'status' => $status,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Unable to fetch addon icon'], 502);
+        } catch (\Throwable $e) {
+            Log::warning('Addon icon proxy failed', [
+                'server_id' => $server->id,
+                'server_uuid' => $server->uuid,
+                'stable' => $stable,
+                'status' => null,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Unable to fetch addon icon'], 502);
+        }
+
+        $contentType = $response->getHeaderLine('Content-Type') ?: 'application/octet-stream';
+
+        return response($response->getBody()->getContents(), $response->getStatusCode(), [
+            'Content-Type' => $contentType,
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
     }
 
     public function toggleInstalled(ToggleAddonRequest $request, Server $server): JsonResponse
