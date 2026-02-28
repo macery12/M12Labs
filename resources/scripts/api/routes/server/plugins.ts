@@ -30,11 +30,20 @@ export interface InstalledAddon {
     iconUrl?: string | null;
     identityKey?: string | null;
     parsing?: boolean;
+    parseError?: string | null;
+    stableId?: string | null;
 }
 
 export interface InstalledAddonResponse {
     mods: InstalledAddon[];
     plugins: InstalledAddon[];
+    stats?: {
+        mods?: number;
+        plugins?: number;
+        disabled?: number;
+        total?: number;
+    };
+    scanInProgress?: boolean;
 }
 
 const toInstalledAddon = (raw: any): InstalledAddon => ({
@@ -50,15 +59,19 @@ const toInstalledAddon = (raw: any): InstalledAddon => ({
     version: raw?.version ?? null,
     description: raw?.description ?? null,
     authors: Array.isArray(raw?.authors) ? raw.authors : raw?.authors ? [raw.authors] : [],
-    iconUrl: raw?.icon_url ?? null,
+    iconUrl: raw?.icon_url ?? raw?.iconUrl ?? null,
     identityKey: raw?.identity_key ?? null,
     parsing: Boolean(raw?.parsing),
+    parseError: raw?.parseError ?? raw?.parse_error ?? null,
+    stableId: raw?.stable_id ?? raw?.stableId ?? null,
 });
 
 export const getInstalledAddons = (uuid: string): Promise<InstalledAddonResponse> =>
     http.get(`/api/client/servers/${uuid}/plugins/installed`).then(r => ({
         mods: (r.data?.mods ?? []).map(toInstalledAddon),
         plugins: (r.data?.plugins ?? []).map(toInstalledAddon),
+        stats: r.data?.stats,
+        scanInProgress: Boolean(r.data?.scanInProgress),
     }));
 
 export const toggleInstalledAddons = (uuid: string, paths: string[], disabled: boolean): Promise<void> =>
@@ -66,3 +79,6 @@ export const toggleInstalledAddons = (uuid: string, paths: string[], disabled: b
 
 export const deleteInstalledAddons = (uuid: string, paths: string[]): Promise<void> =>
     http.post(`/api/client/servers/${uuid}/plugins/installed/delete`, { paths }).then(() => undefined);
+
+export const rescanInstalledAddons = (uuid: string): Promise<void> =>
+    http.post(`/api/client/servers/${uuid}/plugins/installed/rescan`).then(() => undefined);

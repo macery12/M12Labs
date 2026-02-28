@@ -13,6 +13,7 @@ import {
     InstalledAddonResponse,
     deleteInstalledAddons,
     toggleInstalledAddons,
+    rescanInstalledAddons,
     PluginCapabilityResponse,
     ProviderKey,
 } from '@/api/routes/server/plugins';
@@ -232,6 +233,18 @@ const ModsAndPluginsPage = () => {
         [uuid, fetchInstalled, addError],
     );
 
+    const handleRescanInstalled = useCallback(async () => {
+        if (!uuid) return;
+        try {
+            await rescanInstalledAddons(uuid);
+            setLoadingInstalled(true);
+            setTimeout(() => fetchInstalled(), 1500);
+        } catch (error) {
+            console.error(error);
+            addError({ key: 'plugins', message: httpErrorToHuman(error) });
+        }
+    }, [uuid, fetchInstalled, addError]);
+
     const renderProviderTabs = (providers: ProviderKey[], current: ProviderKey | null) =>
         providers.length > 1 ? (
             <div css={tw`mb-4`}>
@@ -262,6 +275,9 @@ const ModsAndPluginsPage = () => {
                     mods={installedAddons?.mods ?? []}
                     plugins={installedAddons?.plugins ?? []}
                     loading={loadingInstalled}
+                    stats={installedAddons?.stats}
+                    scanInProgress={installedAddons?.scanInProgress}
+                    onRescan={handleRescanInstalled}
                     onDelete={handleDeleteInstalled}
                     onToggle={handleToggleInstalled}
                 />

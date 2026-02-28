@@ -1,5 +1,5 @@
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
-import { InstalledAddon } from '@/api/routes/server/plugins';
+import { InstalledAddon, InstalledAddonResponse } from '@/api/routes/server/plugins';
 import Spinner from '@/elements/Spinner';
 import tw from 'twin.macro';
 import { bytesToString } from '@/lib/formatters';
@@ -12,6 +12,9 @@ interface Props {
     mods: InstalledAddon[];
     plugins: InstalledAddon[];
     loading: boolean;
+    stats?: InstalledAddonResponse['stats'];
+    scanInProgress?: boolean;
+    onRescan: () => Promise<void> | void;
     onDelete: (paths: string[]) => Promise<void> | void;
     onToggle: (paths: string[], disabled: boolean) => Promise<void> | void;
 }
@@ -69,6 +72,14 @@ const AddonCard = ({
                             css={tw`text-[11px] uppercase tracking-wide bg-blue-500 bg-opacity-20 text-blue-200 px-2 py-0.5 rounded`}
                         >
                             Parsing
+                        </span>
+                    )}
+                    {addon.parseError && (
+                        <span
+                            css={tw`text-[11px] uppercase tracking-wide bg-red-500 bg-opacity-20 text-red-200 px-2 py-0.5 rounded`}
+                            title={addon.parseError}
+                        >
+                            Parse Error
                         </span>
                     )}
                 </div>
@@ -131,7 +142,7 @@ const Section = ({
     );
 };
 
-const InstalledAddonsList = ({ mods, plugins, loading, onDelete, onToggle }: Props) => {
+const InstalledAddonsList = ({ mods, plugins, loading, stats, scanInProgress, onDelete, onToggle, onRescan }: Props) => {
     const [tab, setTab] = useState<TabKey>('installed');
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [confirming, setConfirming] = useState(false);
@@ -152,13 +163,15 @@ const InstalledAddonsList = ({ mods, plugins, loading, onDelete, onToggle }: Pro
     const filteredMods = mods.filter(mod => (tab === 'disabled' ? mod.disabled : !mod.disabled));
     const filteredPlugins = plugins.filter(plugin => (tab === 'disabled' ? plugin.disabled : !plugin.disabled));
 
-    const counts = useMemo(
-        () => ({
-            installed: allAddons.filter(a => !a.disabled).length,
-            disabled: allAddons.filter(a => a.disabled).length,
-        }),
-        [allAddons],
-    );
+    const counts = useMemo(() => {
+        const disabled = stats?.disabled ?? allAddons.filter(a => a.disabled).length;
+        const total = stats?.total ?? allAddons.length;
+
+        return {
+            installed: Math.max(total - disabled, 0),
+            disabled,
+        };
+    }, [allAddons, stats]);
 
     const toggleSelection = (path: string) => {
         setSelected(prev => {
@@ -242,8 +255,17 @@ const InstalledAddonsList = ({ mods, plugins, loading, onDelete, onToggle }: Pro
                     <Button.Danger disabled={!hasSelection} onClick={() => setConfirming(true)} className="!text-xs">
                         Delete Selected
                     </Button.Danger>
+                    <Button.Text disabled={loading} onClick={() => onRescan()} className="!text-xs">
+                        Rescan
+                    </Button.Text>
                 </div>
             </div>
+
+            {scanInProgress && (
+                <div css={tw`text-xs text-blue-200 bg-blue-900 bg-opacity-30 border border-blue-700 rounded px-3 py-2`}>
+                    Wings is scanning addons… This may take a moment.
+                </div>
+            )}
 
             <div css={tw`space-y-6`}>
                 <Section

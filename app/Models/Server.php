@@ -384,11 +384,6 @@ class Server extends Model
         return $this->hasManyThrough(Mount::class, MountServer::class, 'server_id', 'id', 'id', 'mount_id');
     }
 
-    public function addonFiles(): HasMany
-    {
-        return $this->hasMany(ServerAddonFile::class);
-    }
-
     /**
      * Returns all of the activity log entries where the server is the subject.
      */

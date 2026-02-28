@@ -2,12 +2,10 @@
 
 namespace Everest\Http\Controllers\Api\Client\Servers;
 
-use Carbon\Carbon;
 use Everest\Models\Server;
 use Everest\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
@@ -16,7 +14,6 @@ use Everest\Services\Plugins\ProviderAccessService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
-use Everest\Jobs\Mods\ScanAddonFileJob;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetModRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
@@ -24,12 +21,10 @@ use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetModFilesRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetMinecraftVersionsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetInstalledAddonsRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\RescanAddonsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\BulkDeleteAddonsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\ToggleAddonRequest;
-use Everest\Models\ServerAddonFile;
-use Everest\Services\Mods\AddonFileService;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
 
 class ModsController extends ClientApiController
 {
@@ -139,28 +134,38 @@ class ModsController extends ClientApiController
 
     public function installed(GetInstalledAddonsRequest $request, Server $server): JsonResponse
     {
-        $mods = $this->syncAddonDirectory($server, '/mods', 'mod');
-        $plugins = $this->syncAddonDirectory($server, '/plugins', 'plugin');
+        try {
+            $response = $this->fileRepository->setServer($server)->getHttpClient()->get(
+                sprintf('/api/servers/%s/addons/installed', $server->uuid)
+            );
 
-        $paths = array_merge(
-            array_map(fn (ServerAddonFile $file) => $file->path, $mods),
-            array_map(fn (ServerAddonFile $file) => $file->path, $plugins)
-        );
+            return response()->json(json_decode($response->getBody()->getContents(), true));
+        } catch (\Throwable $e) {
+            Log::warning('Failed to fetch installed addons from Wings', [
+                'server_id' => $server->id,
+                'error' => $e->getMessage(),
+            ]);
 
-        ServerAddonFile::query()
-            ->where('server_id', $server->id)
-            ->when(!empty($paths), function ($query) use ($paths) {
-                $query->whereNotIn('path', $paths);
-            })
-            ->when(empty($paths), function ($query) {
-                $query->whereNotNull('id');
-            })
-            ->delete();
+            return response()->json(['error' => 'Unable to load installed addons'], 500);
+        }
+    }
 
-        return response()->json([
-            'mods' => $this->formatAddonResponse($mods),
-            'plugins' => $this->formatAddonResponse($plugins),
-        ]);
+    public function rescanInstalled(RescanAddonsRequest $request, Server $server): JsonResponse
+    {
+        try {
+            $this->fileRepository->setServer($server)->getHttpClient()->post(
+                sprintf('/api/servers/%s/addons/rescan', $server->uuid)
+            );
+
+            return response()->json([], Response::HTTP_ACCEPTED);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to trigger addon rescan on Wings', [
+                'server_id' => $server->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Unable to trigger rescan'], 500);
+        }
     }
 
     public function toggleInstalled(ToggleAddonRequest $request, Server $server): JsonResponse
@@ -685,155 +690,6 @@ class ModsController extends ClientApiController
         }
     }
 
-    private function syncAddonDirectory(Server $server, string $path, string $type): array
-    {
-        $entries = $this->scanJarDirectory($server, $path, $type);
-        $existing = ServerAddonFile::query()->with('package')->where('server_id', $server->id)->get()->keyBy('path');
-        $results = [];
-
-        foreach ($entries as $entry) {
-            $modified = $entry['modified_at'] instanceof Carbon ? $entry['modified_at'] : $this->formatTimestamp($entry['modified_at']);
-            $current = $existing->get($entry['path']);
-
-            $modifiedChanged = false;
-            if ($current?->modified_at || $modified) {
-                $modifiedChanged = !$current?->modified_at || !$modified || !$current->modified_at->equalTo($modified);
-            }
-
-            $fingerprintChanged = !$current
-                || $current->size !== $entry['size']
-                || $modifiedChanged;
-
-            $record = ServerAddonFile::query()->updateOrCreate(
-                ['server_id' => $server->id, 'path' => $entry['path']],
-                [
-                    'type' => $type,
-                    'disabled' => $entry['disabled'],
-                    'size' => $entry['size'],
-                    'modified_at' => $modified,
-                ]
-            )->fresh(['package']);
-
-            if ($fingerprintChanged || !$record->jar_hash) {
-                ScanAddonFileJob::dispatch($server->id, $entry['path'], $type);
-            }
-
-            $results[] = $record;
-        }
-
-        return $results;
-    }
-
-    /**
-     * Recursively scan a directory for jar-based addons (mods/plugins) while respecting
-     * symlinks and missing directories.
-     */
-    private function scanJarDirectory(Server $server, string $path, string $type): array
-    {
-        $results = [];
-        $queue = [$this->normalizePath($path)];
-
-        while (!empty($queue)) {
-            $current = array_shift($queue);
-            $entries = $this->listDirectorySafely($server, $current);
-
-            if ($entries === null) {
-                continue;
-            }
-
-            foreach ($entries as $entry) {
-                $name = Arr::get($entry, 'name');
-                if (!$name || $name === '.' || $name === '..') {
-                    continue;
-                }
-
-                $isFile = (bool) Arr::get($entry, 'file', true);
-                $isSymlink = (bool) Arr::get($entry, 'symlink', false);
-                $fullPath = $this->joinPath($current, $name);
-
-                if ($isFile && AddonFileService::isJarLike($name)) {
-                    $results[] = [
-                        'name' => $name,
-                        'display_name' => AddonFileService::stripDisabledSuffix($name),
-                        'path' => $fullPath,
-                        'size' => (int) Arr::get($entry, 'size', 0),
-                        'modified_at' => $this->formatTimestamp(Arr::get($entry, 'modified')),
-                        'type' => $type,
-                        'disabled' => AddonFileService::isDisabledFile($name),
-                    ];
-                    continue;
-                }
-
-                if (!$isFile && !$isSymlink) {
-                    $queue[] = $fullPath;
-                }
-            }
-        }
-
-        usort($results, fn ($a, $b) => strcasecmp($a['display_name'], $b['display_name']));
-
-        return $results;
-    }
-
-    private function listDirectorySafely(Server $server, string $path): ?array
-    {
-        try {
-            return $this->fileRepository->setServer($server)->getDirectory($path);
-        } catch (\Throwable $e) {
-            Log::debug('Installed addons scan skipped directory', ['path' => $path, 'error' => $e->getMessage()]);
-
-            return null;
-        }
-    }
-
-    private function formatTimestamp(mixed $value): ?Carbon
-    {
-        if (empty($value)) {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($value);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
-
-    /**
-     * @param ServerAddonFile[] $files
-     */
-    private function formatAddonResponse(array $files): array
-    {
-        $collection = collect($files)->sortBy(function (ServerAddonFile $file) {
-            $fallback = AddonFileService::stripDisabledSuffix(basename($file->path));
-
-            return strtolower($file->package?->name ?? $fallback);
-        });
-
-        return $collection->map(function (ServerAddonFile $file) {
-            $package = $file->package;
-            $iconUrl = $package?->icon_path ? Storage::disk('public')->url($package->icon_path) : null;
-
-            return [
-                'id' => $file->id,
-                'name' => basename($file->path),
-                'display_name' => $package?->name ?? AddonFileService::stripDisabledSuffix(basename($file->path)),
-                'path' => $file->path,
-                'size' => $file->size,
-                'modified_at' => optional($file->modified_at)->toIso8601String(),
-                'type' => $file->type,
-                'disabled' => $file->disabled,
-                'loader' => $package?->loader,
-                'identity_key' => $package?->identity_key,
-                'version' => $file->package_version,
-                'description' => $package?->description,
-                'authors' => $package?->authors ?? [],
-                'icon_url' => $iconUrl,
-                'parsing' => !$file->last_scanned_at,
-            ];
-        })->values()->toArray();
-    }
-
     private function renameAddonFiles(Server $server, array $paths, bool $disabled): void
     {
         if (empty($paths)) {
@@ -846,13 +702,11 @@ class ModsController extends ClientApiController
             $base = basename($normalized);
             $dir = trim(dirname($normalized), '/');
             $root = $dir === '' ? '/' : '/' . $dir;
-            $target = $disabled ? $this->applyDisabledSuffix($base) : AddonFileService::stripDisabledSuffix($base);
+            $target = $disabled ? $this->applyDisabledSuffix($base) : $this->stripDisabledSuffix($base);
 
             $grouped[$root][] = [
                 'from' => ltrim($base, '/'),
                 'to' => ltrim($target, '/'),
-                'original' => $normalized,
-                'targetPath' => $this->joinPath($root, $target),
             ];
         }
 
@@ -862,9 +716,6 @@ class ModsController extends ClientApiController
                     return ['from' => $file['from'], 'to' => $file['to']];
                 }, $files));
 
-                foreach ($files as $file) {
-                    $this->refreshAddonRecordPath($server, $file['original'], $root, $file['targetPath'], $disabled);
-                }
             } catch (\Throwable $e) {
                 Log::warning('Failed renaming addon files', ['root' => $root, 'error' => $e->getMessage()]);
             }
@@ -892,21 +743,11 @@ class ModsController extends ClientApiController
                 Log::warning('Failed deleting addon files', ['root' => $root, 'error' => $e->getMessage()]);
             }
         }
-
-        ServerAddonFile::query()->where('server_id', $server->id)->whereIn('path', array_map([$this, 'normalizePath'], $paths))->delete();
-    }
-
-    private function refreshAddonRecordPath(Server $server, string $originalPath, string $root, string $targetPath, bool $disabled): void
-    {
-        ServerAddonFile::query()->where('server_id', $server->id)->where('path', $originalPath)->update([
-            'path' => $this->normalizePath($targetPath),
-            'disabled' => $disabled,
-        ]);
     }
 
     private function applyDisabledSuffix(string $name): string
     {
-        $base = AddonFileService::stripDisabledSuffix($name);
+        $base = $this->stripDisabledSuffix($name);
         $lower = strtolower($base);
 
         if (str_ends_with($lower, '.jar')) {
@@ -914,6 +755,20 @@ class ModsController extends ClientApiController
         }
 
         return $base . '.jar.disabled';
+    }
+
+    private function stripDisabledSuffix(string $name): string
+    {
+        $lower = strtolower($name);
+        $suffixes = ['.jar.disabled', '.disabled', '.disabled.jar', '.dissabled', '.dissabled.jar'];
+
+        foreach ($suffixes as $suffix) {
+            if (str_ends_with($lower, $suffix)) {
+                return substr($name, 0, -strlen($suffix));
+            }
+        }
+
+        return $name;
     }
 
     private function joinPath(string $base, string $name): string
