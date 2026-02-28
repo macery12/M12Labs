@@ -6,19 +6,10 @@ import Spinner from '@/elements/Spinner';
 import ModsContainer from '@server/mods/ModsContainer';
 import ModpacksContainer from '@server/modpacks/ModpacksContainer';
 import ContentTypeTabPanel from '@server/plugins/ContentTypeTabPanel';
-import {
-    ContentType,
-    getInstalledAddons,
-    getPluginCapabilities,
-    InstalledAddonResponse,
-    PluginCapabilityResponse,
-    ProviderKey,
-} from '@/api/routes/server/plugins';
+import { ContentType, getPluginCapabilities, PluginCapabilityResponse, ProviderKey } from '@/api/routes/server/plugins';
 import { useStoreState } from '@/state/hooks';
 import { ServerContext } from '@/state/server';
 import InstalledAddonsList from '@server/plugins/InstalledAddonsList';
-import useFlash from '@/plugins/useFlash';
-import { httpErrorToHuman } from '@/api/http';
 
 type ContentTab = ContentType | 'installed';
 
@@ -38,7 +29,9 @@ const providerLabels: Record<ProviderKey, string> = {
 const EmptyState = () => (
     <div css={tw`py-12 text-center`}>
         <p css={tw`text-lg text-neutral-200 mb-2`}>No marketplace integrations are enabled for this server’s egg.</p>
-        <p css={tw`text-sm text-neutral-400`}>Ask your admin to enable providers in Admin → Plugins → Access Control.</p>
+        <p css={tw`text-sm text-neutral-400`}>
+            Ask your admin to enable providers in Admin → Plugins → Access Control.
+        </p>
     </div>
 );
 
@@ -62,13 +55,10 @@ const ModsAndPluginsPage = () => {
     const serverModsEnabled = ServerContext.useStoreState(state => state.server.data?.modsEnabled ?? false);
     const uuidFallback = useStoreState(state => state.server?.data?.uuid);
     const uuid = serverUuid ?? uuidFallback;
-    const { addError } = useFlash();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const [providerAccess, setProviderAccess] = useState<PluginCapabilityResponse | null>(null);
     const [loadingProviders, setLoadingProviders] = useState(true);
-    const [installedAddons, setInstalledAddons] = useState<InstalledAddonResponse | null>(null);
-    const [loadingInstalled, setLoadingInstalled] = useState(false);
 
     const modsFeatureEnabled = (modSettings?.enabled ?? false) && serverModsEnabled;
     const curseforgeConfigured = !!modSettings?.curseforge_api_key;
@@ -105,11 +95,10 @@ const ModsAndPluginsPage = () => {
     }, [modsFeatureEnabled, providerAccess, curseforgeConfigured]);
 
     const availableContentTypes = useMemo(() => {
-        const result: ContentTab[] = [];
+        const result: ContentTab[] = ['installed'];
         if (providersByType.mods.length) result.push('mods');
         if (providersByType.modpacks.length) result.push('modpacks');
         if (providersByType.plugins.length) result.push('plugins');
-        result.push('installed');
         return result;
     }, [providersByType]);
 
@@ -126,7 +115,7 @@ const ModsAndPluginsPage = () => {
         }
     }, []);
 
-    const initialType = (searchParams.get('type') as ContentTab | null) ?? (lastMarketplaceState?.type ?? null);
+    const initialType = (searchParams.get('type') as ContentTab | null) ?? lastMarketplaceState?.type ?? null;
     const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? lastMarketplaceState?.provider;
     const providerPools: Record<ContentType, ProviderKey[]> = {
         mods: providersByType.mods,
@@ -135,13 +124,10 @@ const ModsAndPluginsPage = () => {
     };
     const initialProviderPool = isMarketplaceType(initialType) ? providerPools[initialType] : providersByType.mods;
 
-    const defaultType = useMemo(() => {
-        const primary = availableContentTypes.find(t => t !== 'installed');
-        return primary ?? availableContentTypes[0] ?? null;
-    }, [availableContentTypes]);
+    const defaultType: ContentTab | null = 'installed';
 
-    const [activeType, setActiveType] = useState<ContentTab | null>(() =>
-        resolveActive(initialType, availableContentTypes) ?? defaultType,
+    const [activeType, setActiveType] = useState<ContentTab | null>(
+        () => resolveActive(initialType, availableContentTypes) ?? defaultType,
     );
     const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(() =>
         resolveActive(initialProvider, initialProviderPool),
@@ -176,20 +162,6 @@ const ModsAndPluginsPage = () => {
         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
-    useEffect(() => {
-        if (activeType !== 'installed' || !uuid) return;
-
-        setLoadingInstalled(true);
-        getInstalledAddons(uuid)
-            .then(setInstalledAddons)
-            .catch(error => {
-                console.error(error);
-                setInstalledAddons({ mods: [], plugins: [] });
-                addError({ key: 'plugins', message: httpErrorToHuman(error) });
-            })
-            .finally(() => setLoadingInstalled(false));
-    }, [activeType, uuid, addError]);
-
     const handleProviderChange = useCallback((provider: ProviderKey) => {
         setActiveProvider(provider);
     }, []);
@@ -219,13 +191,7 @@ const ModsAndPluginsPage = () => {
         if (!activeType) return null;
 
         if (activeType === 'installed') {
-            return (
-                <InstalledAddonsList
-                    mods={installedAddons?.mods ?? []}
-                    plugins={installedAddons?.plugins ?? []}
-                    loading={loadingInstalled}
-                />
-            );
+            return <InstalledAddonsList serverUuid={uuid} />;
         }
 
         if (activeType === 'mods') {
@@ -245,11 +211,7 @@ const ModsAndPluginsPage = () => {
             return (
                 <>
                     {renderProviderTabs(providersByType.modpacks, modpackProvider)}
-                    {modpackProvider === 'curseforge' ? (
-                        <ModpacksContainer />
-                    ) : (
-                        <ComingSoon label={'Modpacks'} />
-                    )}
+                    {modpackProvider === 'curseforge' ? <ModpacksContainer /> : <ComingSoon label={'Modpacks'} />}
                 </>
             );
         }
