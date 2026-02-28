@@ -172,6 +172,11 @@ class ModsController extends ClientApiController
 
     public function icon(AddonIconRequest $request, Server $server, string $stable)
     {
+        Log::info('Addon icon proxy hit', [
+            'server_id' => $server->id,
+            'server_uuid' => $server->uuid,
+            'stable' => $stable,
+        ]);
         try {
             $response = $this->fileRepository->setServer($server)->getHttpClient()->get(
                 sprintf('/api/servers/%s/addons/icon/%s', $server->uuid, $stable),
