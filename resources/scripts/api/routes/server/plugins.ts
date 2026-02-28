@@ -15,6 +15,7 @@ export const getPluginCapabilities = (uuid: string): Promise<PluginCapabilityRes
 export type InstalledAddonType = 'mod' | 'plugin';
 
 export interface InstalledAddon {
+    id: number;
     name: string;
     displayName: string;
     path: string;
@@ -22,6 +23,13 @@ export interface InstalledAddon {
     modifiedAt: Date | null;
     type: InstalledAddonType;
     disabled: boolean;
+    loader?: string | null;
+    version?: string | null;
+    description?: string | null;
+    authors: string[];
+    iconUrl?: string | null;
+    identityKey?: string | null;
+    parsing?: boolean;
 }
 
 export interface InstalledAddonResponse {
@@ -30,6 +38,7 @@ export interface InstalledAddonResponse {
 }
 
 const toInstalledAddon = (raw: any): InstalledAddon => ({
+    id: Number(raw?.id ?? 0),
     name: raw?.name ?? '',
     displayName: raw?.display_name ?? raw?.name ?? '',
     path: raw?.path ?? '',
@@ -37,6 +46,13 @@ const toInstalledAddon = (raw: any): InstalledAddon => ({
     modifiedAt: raw?.modified_at ? new Date(raw.modified_at) : null,
     type: (raw?.type ?? 'mod') as InstalledAddonType,
     disabled: Boolean(raw?.disabled),
+    loader: raw?.loader ?? null,
+    version: raw?.version ?? null,
+    description: raw?.description ?? null,
+    authors: Array.isArray(raw?.authors) ? raw.authors : raw?.authors ? [raw.authors] : [],
+    iconUrl: raw?.icon_url ?? null,
+    identityKey: raw?.identity_key ?? null,
+    parsing: Boolean(raw?.parsing),
 });
 
 export const getInstalledAddons = (uuid: string): Promise<InstalledAddonResponse> =>
@@ -44,3 +60,9 @@ export const getInstalledAddons = (uuid: string): Promise<InstalledAddonResponse
         mods: (r.data?.mods ?? []).map(toInstalledAddon),
         plugins: (r.data?.plugins ?? []).map(toInstalledAddon),
     }));
+
+export const toggleInstalledAddons = (uuid: string, paths: string[], disabled: boolean): Promise<void> =>
+    http.post(`/api/client/servers/${uuid}/plugins/installed/toggle`, { paths, disabled }).then(() => undefined);
+
+export const deleteInstalledAddons = (uuid: string, paths: string[]): Promise<void> =>
+    http.post(`/api/client/servers/${uuid}/plugins/installed/delete`, { paths }).then(() => undefined);

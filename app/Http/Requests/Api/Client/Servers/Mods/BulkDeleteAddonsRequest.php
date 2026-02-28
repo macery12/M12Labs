@@ -1,0 +1,22 @@
+<?php
+
+namespace Everest\Http\Requests\Api\Client\Servers\Mods;
+
+use Everest\Models\Permission;
+use Everest\Http\Requests\Api\Client\ClientApiRequest;
+
+class BulkDeleteAddonsRequest extends ClientApiRequest
+{
+    public function permission(): string
+    {
+        return Permission::ACTION_FILE_DELETE;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'paths' => 'required|array|min:1',
+            'paths.*' => 'required|string',
+        ];
+    }
+}

@@ -11,6 +11,8 @@ import {
     getInstalledAddons,
     getPluginCapabilities,
     InstalledAddonResponse,
+    deleteInstalledAddons,
+    toggleInstalledAddons,
     PluginCapabilityResponse,
     ProviderKey,
 } from '@/api/routes/server/plugins';
@@ -176,8 +178,8 @@ const ModsAndPluginsPage = () => {
         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
-    useEffect(() => {
-        if (activeType !== 'installed' || !uuid) return;
+    const fetchInstalled = useCallback(() => {
+        if (!uuid) return;
 
         setLoadingInstalled(true);
         getInstalledAddons(uuid)
@@ -188,11 +190,47 @@ const ModsAndPluginsPage = () => {
                 addError({ key: 'plugins', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoadingInstalled(false));
-    }, [activeType, uuid, addError]);
+    }, [uuid, addError]);
+
+    useEffect(() => {
+        if (activeType !== 'installed') return;
+
+        fetchInstalled();
+    }, [activeType, fetchInstalled]);
 
     const handleProviderChange = useCallback((provider: ProviderKey) => {
         setActiveProvider(provider);
     }, []);
+
+    const handleDeleteInstalled = useCallback(
+        async (paths: string[]) => {
+            if (!uuid || !paths.length) return;
+
+            try {
+                await deleteInstalledAddons(uuid, paths);
+                fetchInstalled();
+            } catch (error) {
+                console.error(error);
+                addError({ key: 'plugins', message: httpErrorToHuman(error) });
+            }
+        },
+        [uuid, fetchInstalled, addError],
+    );
+
+    const handleToggleInstalled = useCallback(
+        async (paths: string[], disabled: boolean) => {
+            if (!uuid || !paths.length) return;
+
+            try {
+                await toggleInstalledAddons(uuid, paths, disabled);
+                fetchInstalled();
+            } catch (error) {
+                console.error(error);
+                addError({ key: 'plugins', message: httpErrorToHuman(error) });
+            }
+        },
+        [uuid, fetchInstalled, addError],
+    );
 
     const renderProviderTabs = (providers: ProviderKey[], current: ProviderKey | null) =>
         providers.length > 1 ? (
@@ -224,6 +262,8 @@ const ModsAndPluginsPage = () => {
                     mods={installedAddons?.mods ?? []}
                     plugins={installedAddons?.plugins ?? []}
                     loading={loadingInstalled}
+                    onDelete={handleDeleteInstalled}
+                    onToggle={handleToggleInstalled}
                 />
             );
         }
