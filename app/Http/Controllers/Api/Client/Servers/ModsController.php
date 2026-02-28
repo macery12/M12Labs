@@ -205,7 +205,8 @@ class ModsController extends ClientApiController
         }
 
         $contentType = $response->getHeaderLine('Content-Type') ?: 'application/octet-stream';
-        if (!str_starts_with(strtolower($contentType), 'image/')) {
+        $allowedImageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
+        if (!in_array(strtolower($contentType), $allowedImageTypes, true)) {
             Log::warning('Addon icon proxy received non-image content', [
                 'server_id' => $server->id,
                 'server_uuid' => $server->uuid,
