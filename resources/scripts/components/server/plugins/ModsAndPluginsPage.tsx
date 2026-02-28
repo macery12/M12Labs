@@ -146,7 +146,11 @@ const ModsAndPluginsPage = () => {
 
     useEffect(() => {
         if (!searchParams.toString()) return;
-        localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
+        const handle = window.setTimeout(() => {
+            localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
+        }, 150);
+
+        return () => window.clearTimeout(handle);
     }, [searchParams]);
 
     const lastMarketplaceState = useMemo(() => {

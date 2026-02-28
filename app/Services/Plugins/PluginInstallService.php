@@ -260,12 +260,12 @@ class PluginInstallService
 
         $header = trim($header);
 
-        if (preg_match('~filename\\*=UTF-8\'\'([^;]+)~i', $header, $matches)) {
+        if (preg_match("#filename\\*=UTF-8''([^;]+)#i", $header, $matches)) {
             return rawurldecode($matches[1]);
         }
 
-        if (preg_match('~filename="?([^";]+)"?~i', $header, $matches)) {
-            return $matches[1];
+        if (preg_match('~filename=(?:"([^"]+)"|([^;]+))~i', $header, $matches)) {
+            return $matches[1] ?: $matches[2];
         }
 
         return null;
