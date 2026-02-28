@@ -120,11 +120,11 @@ const ModsAndPluginsPage = () => {
     const localStorageKey = 'marketplace:last';
     const restoredParamsRef = useRef(false);
 
-    const hasSearchParams = useCallback(() => searchParams.toString().length > 0, [searchParams]);
+    const hasSearchParams = useMemo(() => searchParams.toString().length > 0, [searchParams]);
 
     useEffect(() => {
         if (restoredParamsRef.current) return;
-        if (hasSearchParams()) {
+        if (hasSearchParams) {
             restoredParamsRef.current = true;
             return;
         }
@@ -142,13 +142,12 @@ const ModsAndPluginsPage = () => {
             }
         } catch {
             // Corrupted/invalid stored URL; safe to ignore and fall back to defaults.
-        } finally {
-            restoredParamsRef.current = true;
         }
+        restoredParamsRef.current = true;
     }, [searchParams, setSearchParams, hasSearchParams]);
 
     useEffect(() => {
-        if (!hasSearchParams()) return;
+        if (!hasSearchParams) return;
         const handle = window.setTimeout(() => {
             localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
         }, MARKETPLACE_SAVE_DEBOUNCE_MS);

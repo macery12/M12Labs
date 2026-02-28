@@ -228,7 +228,7 @@ class PluginInstallService
                 continue;
             }
 
-            // Avoid choosing a bare version slug when richer context (project name or upstream filename) is available.
+            // Avoid choosing a bare version slug when richer context (project name or upstream filename) is evaluated first.
             if ($versionSlug && $base === $versionSlug && ($projectSlug || $contentDispositionName)) {
                 continue;
             }
@@ -260,11 +260,11 @@ class PluginInstallService
 
         $header = trim($header);
 
-        if (preg_match('~filename\\*=UTF-8\'\'([^;]+)~i', $header, $matches)) {
+        if (preg_match('~(?:^|;)\\s*filename\\*=UTF-8\'\'([^;]+)~i', $header, $matches)) {
             return rawurldecode($matches[1]);
         }
 
-        if (preg_match('~filename=(?:"([^"]+)"|([^;]+))~i', $header, $matches)) {
+        if (preg_match('~(?:^|;)\\s*filename=(?:"([^"]+)"|([^;]+))~i', $header, $matches)) {
             return $matches[1] ?: $matches[2];
         }
 
