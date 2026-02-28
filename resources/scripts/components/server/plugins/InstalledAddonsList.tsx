@@ -46,9 +46,14 @@ const Section = ({ title, items }: { title: string; items: InstalledAddon[] }) =
                                     title={item.modifiedAt ? format(item.modifiedAt, 'PPpp') : undefined}
                                 >
                                     {item.modifiedAt
-                                        ? Math.abs(differenceInHours(item.modifiedAt, new Date())) > 48
-                                            ? format(item.modifiedAt, 'MMM do, yyyy h:mma')
-                                            : formatDistanceToNow(item.modifiedAt, { addSuffix: true })
+                                        ? (() => {
+                                              const hourDelta = differenceInHours(new Date(), item.modifiedAt);
+                                              const farApart = Math.abs(hourDelta) > 48;
+
+                                              return farApart
+                                                  ? format(item.modifiedAt, 'MMM do, yyyy h:mma')
+                                                  : formatDistanceToNow(item.modifiedAt, { addSuffix: true });
+                                          })()
                                         : 'Unknown'}
                                 </span>
                             </div>
