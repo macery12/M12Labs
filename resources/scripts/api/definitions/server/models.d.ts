@@ -11,6 +11,7 @@ interface Server {
     name: string;
     node: string;
     isNodeUnderMaintenance: boolean;
+    isNodeSupercharged: boolean;
     status: ServerStatus;
     sftpDetails: {
         ip: string;

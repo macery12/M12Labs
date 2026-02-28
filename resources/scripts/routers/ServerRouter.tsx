@@ -82,6 +82,7 @@ function ServerRouter() {
     const billable = server?.billingProductId;
     const modsEnabled = server?.modsEnabled;
     const extensionsEnabled = server?.extensionsEnabled;
+    const supercharged = server?.isNodeSupercharged;
     const status = ServerContext.useStoreState(state => state.status.value);
 
     const categories = ['data', 'configuration'] as const;
@@ -209,7 +210,7 @@ function ServerRouter() {
                             route =>
                                 route.name &&
                                 (!route.condition ||
-                                    route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
+                                    route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged })),
                         )
                         .map(route => (
                             <MobileSidebar.Link
@@ -253,7 +254,7 @@ function ServerRouter() {
                                     !route.category &&
                                     route.name &&
                                     (!route.condition ||
-                                        route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
+                                        route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged })),
                             )
                             .map(route => (
                                 <NavLink
@@ -272,7 +273,7 @@ function ServerRouter() {
                                     route.category === category &&
                                     route.name &&
                                     (!route.condition ||
-                                        route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled })),
+                                        route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged })),
                             );
                             if (categoryRoutes.length === 0) return null;
 

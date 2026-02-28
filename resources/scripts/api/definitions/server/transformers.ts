@@ -11,6 +11,7 @@ export default class Transformers {
         name: data.name,
         node: data.node,
         isNodeUnderMaintenance: data.is_node_under_maintenance,
+        isNodeSupercharged: data.is_node_supercharged,
         status: data.status,
         invocation: data.invocation,
         dockerImage: data.docker_image,
@@ -106,22 +107,48 @@ export default class Transformers {
         modifiedAt: new Date(data.attributes.modified_at),
 
         isArchiveType: function () {
+            const lowerName = this.name.toLowerCase();
+
+            const archiveExtensions = [
+                '.zip',
+                '.7z',
+                '.ddup',
+                '.rar',
+                '.tar',
+                '.tar.gz',
+                '.tgz',
+                '.tar.bz2',
+                '.tbz2',
+                '.tar.xz',
+                '.txz',
+                '.tar.zst',
+                '.tzst',
+                '.tar.lz4',
+                '.tlz4',
+                '.tar.br',
+            ];
+
+            const archiveMimeTypes = [
+                'application/vnd.rar',
+                'application/x-rar-compressed',
+                'application/x-tar',
+                'application/x-br',
+                'application/x-bzip2',
+                'application/gzip',
+                'application/x-gzip',
+                'application/x-lzip',
+                'application/x-sz',
+                'application/x-xz',
+                'application/zstd',
+                'application/zip',
+                'application/x-zip-compressed',
+                'application/x-7z-compressed',
+            ];
+
             return (
                 this.isFile &&
-                [
-                    'application/vnd.rar', // .rar
-                    'application/x-rar-compressed', // .rar (2)
-                    'application/x-tar', // .tar
-                    'application/x-br', // .tar.br
-                    'application/x-bzip2', // .tar.bz2, .bz2
-                    'application/gzip', // .tar.gz, .gz
-                    'application/x-gzip',
-                    'application/x-lzip', // .tar.lz4, .lz4 (not sure if this mime type is correct)
-                    'application/x-sz', // .tar.sz, .sz (not sure if this mime type is correct)
-                    'application/x-xz', // .tar.xz, .xz
-                    'application/zstd', // .tar.zst, .zst
-                    'application/zip', // .zip
-                ].indexOf(this.mimetype) >= 0
+                (archiveExtensions.some(extension => lowerName.endsWith(extension)) ||
+                    archiveMimeTypes.indexOf(this.mimetype) >= 0)
             );
         },
 

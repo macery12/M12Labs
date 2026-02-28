@@ -71,6 +71,7 @@ class ServerTransformer extends Transformer
             'name' => $server->name,
             'node' => $server->node->name,
             'is_node_under_maintenance' => $server->node->isUnderMaintenance(),
+            'is_node_supercharged' => $server->node->isSupercharged(),
             'sftp_details' => [
                 'ip' => $server->node->fqdn,
                 'port' => $server->node->public_port_sftp,

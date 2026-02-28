@@ -439,6 +439,16 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::delete('/', [Application\Nodes\AllocationController::class, 'deleteAll']);
             Route::delete('/{allocation:id}', [Application\Nodes\AllocationController::class, 'delete']);
         });
+
+        // Wings-RS (Supercharged) endpoints
+        Route::group(['prefix' => '/{node:id}/wings-rs'], function () {
+            Route::post('/detect', [Application\Nodes\NodeWingsRsController::class, 'detect']);
+            Route::get('/overview', [Application\Nodes\NodeWingsRsController::class, 'overview']);
+            Route::get('/stats', [Application\Nodes\NodeWingsRsController::class, 'stats']);
+            Route::get('/logs', [Application\Nodes\NodeWingsRsController::class, 'logs']);
+            Route::get('/logs/{file}', [Application\Nodes\NodeWingsRsController::class, 'logContents'])->where('file', '[a-zA-Z0-9._-]+');
+            Route::post('/upgrade', [Application\Nodes\NodeWingsRsController::class, 'upgrade']);
+        });
     });
 
     /*
@@ -475,6 +485,12 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{server:id}/reinstall', [Application\Servers\ServerManagementController::class, 'reinstall']);
         Route::post('/{server:id}/transfer', [Application\Servers\ServerManagementController::class, 'transfer']);
         Route::post('/{server:id}/mods/toggle', [Application\Servers\ServerController::class, 'toggleMods']);
+
+        Route::group(['prefix' => '/{server:id}/wings-rs'], function () {
+            Route::get('/status', [Application\Servers\ServerWingsRsController::class, 'status']);
+            Route::get('/stats', [Application\Servers\ServerWingsRsController::class, 'stats']);
+            Route::get('/install-logs', [Application\Servers\ServerWingsRsController::class, 'installLogs']);
+        });
 
         Route::post('/{server:id}/delete', [Application\Servers\ServerController::class, 'delete']);
 

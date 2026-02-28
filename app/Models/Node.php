@@ -41,6 +41,9 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property bool|null $deployable_free
  * @property int $servers_count
  * @property string|null $price_multiplier_description
+ * @property string $wings_type
+ * @property string|null $wings_version
+ * @property \Carbon\Carbon|null $wings_detected_at
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property Allocation[]|Collection $allocations
@@ -66,6 +69,9 @@ class Node extends Model
 
     public const DAEMON_TOKEN_ID_LENGTH = 16;
     public const DAEMON_TOKEN_LENGTH = 64;
+
+    public const WINGS_TYPE_DEFAULT = 'default';
+    public const WINGS_TYPE_RS = 'wings-rs';
 
     /**
      * The table associated with the model.
@@ -95,6 +101,9 @@ class Node extends Model
         'deployable_free' => 'boolean',
         'price_multiplier' => 'float',
         'price_multiplier_description' => 'string',
+        'wings_type' => 'string',
+        'wings_version' => 'string',
+        'wings_detected_at' => 'datetime',
     ];
 
     /**
@@ -107,6 +116,7 @@ class Node extends Model
         'memory', 'memory_overallocate', 'disk',
         'disk_overallocate', 'upload_size', 'daemon_base',
         'description', 'maintenance_mode', 'deployable', 'deployable_free', 'price_multiplier', 'price_multiplier_description',
+        'wings_type', 'wings_version', 'wings_detected_at',
     ];
 
     public static array $validationRules = [
@@ -147,7 +157,16 @@ class Node extends Model
         'disk_overallocate' => 0,
         'daemon_base' => self::DEFAULT_DAEMON_BASE,
         'maintenance_mode' => false,
+        'wings_type' => self::WINGS_TYPE_DEFAULT,
     ];
+
+    /**
+     * Determine if this node is running Wings-RS (Supercharged).
+     */
+    public function isSupercharged(): bool
+    {
+        return $this->wings_type === self::WINGS_TYPE_RS;
+    }
 
     /**
      * Get the connection address to use when making calls to this node.

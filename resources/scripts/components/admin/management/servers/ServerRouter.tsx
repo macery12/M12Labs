@@ -13,6 +13,7 @@ import {
     CogIcon,
     CurrencyDollarIcon,
     DatabaseIcon,
+    LightningBoltIcon,
     ExclamationIcon,
     ExternalLinkIcon,
     InformationCircleIcon,
@@ -25,6 +26,7 @@ import ServerOverviewContainer from './ServerOverviewContainer';
 import ServerConfigurationContainer from './ServerConfigurationContainer';
 import ServerResourcesContainer from './ServerResourcesContainer';
 import ServerDangerZoneContainer from './ServerDangerZoneContainer';
+import ServerWingsRsContainer from './ServerWingsRsContainer';
 import Pill from '@/elements/Pill';
 
 export default () => {
@@ -114,6 +116,11 @@ export default () => {
                     icon={ExclamationIcon}
                 />
                 <SubNavigationLink
+                    to={`/admin/servers/${params.id}/wings-rs`}
+                    name={'Wings-RS'}
+                    icon={LightningBoltIcon}
+                />
+                <SubNavigationLink
                     to={`/server/${server.uuid.split('-')[0]}`}
                     name={'View as user'}
                     icon={ExternalLinkIcon}
@@ -127,6 +134,7 @@ export default () => {
                 <Route path={'databases'} element={<ServerDatabases />} />
                 <Route path={'billing'} element={<ServerBillingContainer />} />
                 <Route path={'danger'} element={<ServerDangerZoneContainer />} />
+                <Route path={'wings-rs'} element={<ServerWingsRsContainer />} />
             </Routes>
         </AdminContentBlock>
     );

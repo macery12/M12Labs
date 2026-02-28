@@ -6,6 +6,7 @@ use Everest\Models\Node;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Everest\Services\Nodes\WingsDetectionService;
 use Everest\Repositories\Wings\DaemonConfigurationRepository;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
@@ -14,7 +15,10 @@ class NodeInformationController extends ApplicationApiController
     /**
      * NodeInformationController constructor.
      */
-    public function __construct(private DaemonConfigurationRepository $repository)
+    public function __construct(
+        private DaemonConfigurationRepository $repository,
+        private WingsDetectionService $detectionService
+    )
     {
         parent::__construct();
     }
@@ -26,7 +30,14 @@ class NodeInformationController extends ApplicationApiController
      */
     public function information(Request $request, Node $node): JsonResponse
     {
+        if (!$node->isSupercharged()) {
+            $this->detectionService->detect($node);
+            $node->refresh();
+        }
+
         $data = $this->repository->setNode($node)->getSystemInformation();
+
+        $isSupercharged = $node->isSupercharged() || !empty($data['supercharged']);
 
         return new JsonResponse([
             'version' => $data['version'] ?? null,
@@ -35,7 +46,7 @@ class NodeInformationController extends ApplicationApiController
                 'arch' => $data['architecture'] ?? null,
                 'release' => $data['kernel_version'] ?? null,
                 'cpus' => $data['cpu_count'] ?? null,
-                'supercharged' => $data['supercharged'] ?? false,
+                'supercharged' => $isSupercharged,
             ],
         ]);
     }

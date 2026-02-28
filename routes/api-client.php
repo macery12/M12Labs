@@ -308,6 +308,19 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/plans/{product}/change', [Client\Billing\PlanChangeController::class, 'changePlan']);
         });
 
+        // Wings-RS (Supercharged) endpoints
+        Route::group(['prefix' => '/wings-rs'], function () {
+            Route::get('/status', [Client\Servers\WingsRsController::class, 'status']);
+            Route::post('/fingerprints', [Client\Servers\WingsRsController::class, 'fingerprints']);
+            Route::post('/search', [Client\Servers\WingsRsController::class, 'searchFiles']);
+            Route::post('/compress', [Client\Servers\WingsRsController::class, 'compressAdvanced']);
+            Route::delete('/operations/{operation}', [Client\Servers\WingsRsController::class, 'cancelOperation']);
+            Route::post('/script', [Client\Servers\WingsRsController::class, 'runScript']);
+            Route::post('/abort-install', [Client\Servers\WingsRsController::class, 'abortInstall']);
+            Route::get('/install-logs', [Client\Servers\WingsRsController::class, 'installLogs']);
+            Route::get('/ssh', [Client\Servers\WingsRsController::class, 'sshInfo']);
+        });
+
         /*
         |--------------------------------------------------------------------------
         | Extensions Routes

@@ -17,19 +17,33 @@ import { useStoreState } from '@/state/hooks';
 import classNames from 'classnames';
 import { encodePathSegments } from '@/lib/helpers';
 
+const isVirtualArchiveType = (name: string) => {
+    const lower = name.toLowerCase();
+
+    return lower.endsWith('.zip') || lower.endsWith('.7z') || lower.endsWith('.ddup');
+};
+
 function Clickable({ file, children }: { file: FileObject; children: ReactNode }) {
     const [canRead] = usePermissions(['file.read']);
     const [canReadContents] = usePermissions(['file.read-content']);
     const id = ServerContext.useStoreState(state => state.server.data!.id);
     const directory = ServerContext.useStoreState(state => state.files.directory);
 
-    return (file.isFile && (!file.isEditable() || !canReadContents)) || (!file.isFile && !canRead) ? (
-        <div className={styles.details}>{children}</div>
-    ) : (
-        <NavLink
-            className={styles.details}
-            to={`/server/${id}/files${file.isFile ? '/edit' : '#'}${encodePathSegments(join(directory, file.name))}`}
-        >
+    const isArchive = file.isFile && file.isArchiveType();
+    const isVirtualArchive = isArchive && isVirtualArchiveType(file.name);
+    const canBrowseAsFolder = !file.isFile || isVirtualArchive;
+    const canOpenInEditor = file.isFile && !isArchive;
+
+    const canAccess = canBrowseAsFolder ? canRead : canOpenInEditor ? canReadContents : false;
+    if (!canAccess) {
+        return <div className={styles.details}>{children}</div>;
+    }
+
+    const nextPath = encodePathSegments(join(directory, file.name));
+    const target = canBrowseAsFolder ? `/server/${id}/files#${nextPath}` : `/server/${id}/files/edit${nextPath}`;
+
+    return (
+        <NavLink className={styles.details} to={target}>
             {children}
         </NavLink>
     );
