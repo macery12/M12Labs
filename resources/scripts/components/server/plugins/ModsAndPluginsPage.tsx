@@ -73,6 +73,7 @@ const ModsAndPluginsPage = () => {
     const [loadingProviders, setLoadingProviders] = useState(true);
     const [installedAddons, setInstalledAddons] = useState<InstalledAddonResponse | null>(null);
     const [loadingInstalled, setLoadingInstalled] = useState(false);
+    const [installedError, setInstalledError] = useState<string | null>(null);
 
     const modsFeatureEnabled = (modSettings?.enabled ?? false) && serverModsEnabled;
     const curseforgeConfigured = !!modSettings?.curseforge_api_key;
@@ -235,9 +236,9 @@ const ModsAndPluginsPage = () => {
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
     const buildIconUrl = useCallback(
-        (stableId?: string | null) => {
-            if (!stableId || !uuid) return undefined;
-            return `/api/client/servers/${uuid}/addons/icon/${stableId}`;
+        (iconId?: string | null) => {
+            if (!iconId || !uuid) return undefined;
+            return `/api/client/servers/${uuid}/addons/icon/${iconId}`;
         },
         [uuid],
     );
@@ -247,7 +248,7 @@ const ModsAndPluginsPage = () => {
             if (!data || !uuid) return data;
             const mapIcon = (addon: InstalledAddon) => ({
                 ...addon,
-                iconUrl: addon.iconUrl ?? buildIconUrl(addon.stableId),
+                iconUrl: addon.iconUrl ?? (addon.iconId ? buildIconUrl(addon.iconId) : null),
             });
 
             return {
@@ -262,12 +263,17 @@ const ModsAndPluginsPage = () => {
     const fetchInstalled = useCallback(() => {
         if (!uuid) return;
 
+        setInstalledError(null);
         setLoadingInstalled(true);
         getInstalledAddons(uuid)
-            .then(res => setInstalledAddons(decorateInstalled(res)))
+            .then(res => {
+                setInstalledAddons(decorateInstalled(res));
+                setInstalledError(null);
+            })
             .catch(error => {
                 console.error(error);
                 setInstalledAddons(decorateInstalled({ mods: [], plugins: [] }));
+                setInstalledError('Failed to load installed addons from node');
                 addError({ key: 'plugins', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoadingInstalled(false));
@@ -355,11 +361,13 @@ const ModsAndPluginsPage = () => {
                     mods={installedAddons?.mods ?? []}
                     plugins={installedAddons?.plugins ?? []}
                     loading={loadingInstalled}
+                    error={installedError}
                     stats={installedAddons?.stats}
                     scanInProgress={installedAddons?.scanInProgress}
                     onRescan={handleRescanInstalled}
                     onDelete={handleDeleteInstalled}
                     onToggle={handleToggleInstalled}
+                    onRetry={fetchInstalled}
                 />
             );
         }

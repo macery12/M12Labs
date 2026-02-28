@@ -1,6 +1,5 @@
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import { InstalledAddon, InstalledAddonResponse } from '@/api/routes/server/plugins';
-import Spinner from '@/elements/Spinner';
 import tw from 'twin.macro';
 import { bytesToString } from '@/lib/formatters';
 import Button from '@/elements/button/Button';
@@ -12,11 +11,13 @@ interface Props {
     mods: InstalledAddon[];
     plugins: InstalledAddon[];
     loading: boolean;
+    error?: string | null;
     stats?: InstalledAddonResponse['stats'];
     scanInProgress?: boolean;
     onRescan: () => Promise<void> | void;
     onDelete: (paths: string[]) => Promise<void> | void;
     onToggle: (paths: string[], disabled: boolean) => Promise<void> | void;
+    onRetry?: () => Promise<void> | void;
 }
 
 type TabKey = 'installed' | 'disabled';
@@ -41,6 +42,12 @@ const AddonCard = ({
     onSelect: (path: string) => void;
     onDetails: (addon: InstalledAddon) => void;
 }) => {
+    const [showIcon, setShowIcon] = useState(Boolean(addon.iconUrl));
+
+    useEffect(() => {
+        setShowIcon(Boolean(addon.iconUrl));
+    }, [addon.iconUrl]);
+
     return (
         <div css={tw`border border-neutral-700 rounded-lg p-4 flex gap-4 items-start bg-neutral-900`}>
             <input
@@ -51,8 +58,15 @@ const AddonCard = ({
                 css={tw`mt-1`}
             />
             <div css={tw`w-12 h-12 rounded bg-neutral-800 overflow-hidden flex items-center justify-center`}>
-                {addon.iconUrl ? (
-                    <img src={addon.iconUrl} alt={addon.displayName} css={tw`w-full h-full object-cover`} />
+                {showIcon && addon.iconUrl ? (
+                    <img
+                        src={addon.iconUrl}
+                        alt={addon.displayName}
+                        css={tw`w-full h-full object-cover`}
+                        loading="lazy"
+                        decoding="async"
+                        onError={() => setShowIcon(false)}
+                    />
                 ) : (
                     <div css={tw`text-lg font-semibold text-neutral-300`}>{addon.displayName?.[0] ?? '?'}</div>
                 )}
@@ -142,11 +156,23 @@ const Section = ({
     );
 };
 
-const InstalledAddonsList = ({ mods, plugins, loading, stats, scanInProgress, onDelete, onToggle, onRescan }: Props) => {
+const InstalledAddonsList = ({
+    mods,
+    plugins,
+    loading,
+    error,
+    stats,
+    scanInProgress,
+    onDelete,
+    onToggle,
+    onRescan,
+    onRetry,
+}: Props) => {
     const [tab, setTab] = useState<TabKey>('installed');
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [confirming, setConfirming] = useState(false);
     const [details, setDetails] = useState<InstalledAddon | null>(null);
+    const [showLongHint, setShowLongHint] = useState(false);
 
     const allAddons = useMemo(() => [...mods, ...plugins], [mods, plugins]);
     const addonByPath = useMemo(() => {
@@ -209,12 +235,56 @@ const InstalledAddonsList = ({ mods, plugins, loading, stats, scanInProgress, on
         }
     };
 
+    useEffect(() => {
+        if (!loading) {
+            setShowLongHint(false);
+            return undefined;
+        }
+        const timer = window.setTimeout(() => setShowLongHint(true), 5000);
+        return () => window.clearTimeout(timer);
+    }, [loading]);
+
     if (loading) {
-        return <Spinner size={'large'} centered />;
+        return (
+            <div css={tw`space-y-4`}>
+                <div css={tw`text-sm text-neutral-300 bg-neutral-900 border border-neutral-700 rounded p-3`}>
+                    <div css={tw`flex items-center justify-between mb-2`}>
+                        <span>Scanning installed mods/plugins on the node…</span>
+                        <div css={tw`h-1 w-24 bg-neutral-800 rounded overflow-hidden`}>
+                            <div css={tw`h-full w-1/2 bg-blue-500 animate-pulse`} />
+                        </div>
+                    </div>
+                    {showLongHint && <div css={tw`text-xs text-neutral-400`}>This can take a bit on large modpacks.</div>}
+                </div>
+                {[1, 2, 3].map(key => (
+                    <div
+                        key={key}
+                        css={tw`border border-neutral-800 rounded-lg p-4 flex gap-4 items-start bg-neutral-900 animate-pulse`}
+                    >
+                        <div css={tw`w-12 h-12 rounded bg-neutral-800`} />
+                        <div css={tw`flex-1 space-y-2`}>
+                            <div css={tw`h-4 bg-neutral-800 rounded w-2/5`} />
+                            <div css={tw`h-3 bg-neutral-800 rounded w-4/5`} />
+                            <div css={tw`h-3 bg-neutral-800 rounded w-3/5`} />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     }
 
     return (
         <div css={tw`space-y-4`}>
+            {error && (
+                <div
+                    css={tw`bg-red-900 bg-opacity-30 border border-red-700 text-red-100 rounded p-3 flex items-center justify-between`}
+                >
+                    <div>{error}</div>
+                    <Button.Text onClick={() => onRetry?.()} className="!text-xs">
+                        Retry
+                    </Button.Text>
+                </div>
+            )}
             <div css={tw`flex items-center justify-between`}>
                 <div css={tw`flex gap-2`}>
                     <button

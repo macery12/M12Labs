@@ -28,6 +28,7 @@ export interface InstalledAddon {
     description?: string | null;
     authors: string[];
     iconUrl?: string | null;
+    iconId: string | null;
     identityKey?: string | null;
     parsing?: boolean;
     parseError?: string | null;
@@ -60,6 +61,7 @@ const toInstalledAddon = (raw: any): InstalledAddon => ({
     description: raw?.description ?? null,
     authors: Array.isArray(raw?.authors) ? raw.authors : raw?.authors ? [raw.authors] : [],
     iconUrl: raw?.icon_url ?? raw?.iconUrl ?? null,
+    iconId: raw?.icon_id ?? raw?.iconId ?? null,
     identityKey: raw?.identity_key ?? null,
     parsing: Boolean(raw?.parsing),
     parseError: raw?.parseError ?? raw?.parse_error ?? null,
