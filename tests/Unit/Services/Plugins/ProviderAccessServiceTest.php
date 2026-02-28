@@ -8,14 +8,30 @@ use Everest\Services\Plugins\ProviderAccessService;
 use Everest\Tests\TestCase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Everest\Contracts\Repository\SettingsRepositoryInterface;
+use Mockery;
 
 class ProviderAccessServiceTest extends TestCase
 {
     private ProviderAccessService $service;
+    private bool $spigetEnabled = true;
 
     public function setUp(): void
     {
         parent::setUp();
+
+        $this->app->instance(
+            SettingsRepositoryInterface::class,
+            Mockery::mock(SettingsRepositoryInterface::class)->shouldReceive('get')->andReturnUsing(
+                function (string $key, $default) {
+                    if ($key === 'settings::modules:mods:spiget_enabled') {
+                        return $this->spigetEnabled;
+                    }
+
+                    return $default;
+                }
+            )->getMock()
+        );
 
         $this->service = new ProviderAccessService(new PluginProviderGate());
 
@@ -34,6 +50,7 @@ class ProviderAccessServiceTest extends TestCase
     protected function tearDown(): void
     {
         Schema::dropIfExists('plugin_provider_rules');
+        Mockery::close();
         parent::tearDown();
     }
 
@@ -70,5 +87,21 @@ class ProviderAccessServiceTest extends TestCase
         $allowed = $this->service->getAllowedProvidersForServer(10, 5);
 
         $this->assertSame(['spigot'], $allowed['plugins']);
+    }
+
+    public function testSpigotHiddenWhenSpigetGloballyDisabled(): void
+    {
+        $this->spigetEnabled = false;
+
+        PluginProviderRule::create([
+            'provider_key' => 'spigot.plugins',
+            'enabled_global' => true,
+            'allowed_nest_ids' => [1],
+            'allowed_egg_ids' => [],
+        ]);
+
+        $allowed = $this->service->getAllowedProvidersForServer(10, 1);
+
+        $this->assertSame([], $allowed['plugins']);
     }
 }

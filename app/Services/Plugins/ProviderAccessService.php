@@ -2,6 +2,8 @@
 
 namespace Everest\Services\Plugins;
 
+use Everest\Models\Setting;
+
 class ProviderAccessService
 {
     private const PROVIDERS_BY_TYPE = [
@@ -23,6 +25,17 @@ class ProviderAccessService
 
     public function isProviderAllowed(string $providerKey, int $nestId, int $eggId): bool
     {
+        if ($providerKey === 'spigot.plugins') {
+            $spigetEnabled = (bool) Setting::get(
+                'settings::modules:mods:spiget_enabled',
+                config('modules.mods.spiget_enabled', false)
+            );
+
+            if (!$spigetEnabled) {
+                return false;
+            }
+        }
+
         return $this->providerGate->isProviderAllowed($providerKey, $nestId, $eggId);
     }
 
