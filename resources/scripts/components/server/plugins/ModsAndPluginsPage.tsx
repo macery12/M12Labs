@@ -50,6 +50,7 @@ const ComingSoon = ({ label }: { label: string }) => (
 );
 
 const contentOrder: ContentTab[] = ['installed', 'mods', 'modpacks', 'plugins'];
+const MARKETPLACE_SAVE_DEBOUNCE_MS = 150;
 
 const resolveActive = <T,>(preferred: T | null, available: T[]): T | null =>
     preferred && available.includes(preferred) ? preferred : available[0] ?? null;
@@ -148,7 +149,7 @@ const ModsAndPluginsPage = () => {
         if (!searchParams.toString()) return;
         const handle = window.setTimeout(() => {
             localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
-        }, 150);
+        }, MARKETPLACE_SAVE_DEBOUNCE_MS);
 
         return () => window.clearTimeout(handle);
     }, [searchParams]);
