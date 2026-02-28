@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import {
     InstalledAddon,
@@ -47,14 +47,17 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
     const [togglingPath, setTogglingPath] = useState<string | null>(null);
     const [data, setData] = useState<PaginatedResult<InstalledAddon> | null>(null);
 
-    const fetchInstalled = async () =>
-        getInstalledAddons(serverUuid!, {
-            type: activeType,
-            status,
-            search: debouncedSearch,
-            page,
-            perPage: ITEMS_PER_PAGE,
-        });
+    const fetchInstalled = useCallback(
+        () =>
+            getInstalledAddons(serverUuid!, {
+                type: activeType,
+                status,
+                search: debouncedSearch,
+                page,
+                perPage: ITEMS_PER_PAGE,
+            }),
+        [serverUuid, activeType, status, debouncedSearch, page],
+    );
 
     // Keep search debounced to avoid excessive calls.
     useEffect(() => {
