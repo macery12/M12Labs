@@ -41,7 +41,10 @@ const Section = ({ title, items }: { title: string; items: InstalledAddon[] }) =
                             </div>
                             <div css={tw`flex items-center gap-6 text-sm text-neutral-300`}>
                                 <span css={tw`whitespace-nowrap`}>{bytesToString(item.size)}</span>
-                                <span css={tw`text-right text-neutral-400 whitespace-nowrap`} title={item.modifiedAt?.toString()}>
+                                <span
+                                    css={tw`text-right text-neutral-400 whitespace-nowrap`}
+                                    title={item.modifiedAt ? format(item.modifiedAt, 'PPpp') : undefined}
+                                >
                                     {item.modifiedAt
                                         ? Math.abs(differenceInHours(item.modifiedAt, new Date())) > 48
                                             ? format(item.modifiedAt, 'MMM do, yyyy h:mma')

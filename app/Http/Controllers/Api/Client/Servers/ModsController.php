@@ -715,28 +715,12 @@ class ModsController extends ClientApiController
     {
         $lower = strtolower($name);
 
-        if (str_ends_with($lower, '.jar')) {
-            return true;
-        }
-
-        if (str_ends_with($lower, '.jar.disabled')) {
-            return true;
-        }
-
-        if (str_ends_with($lower, '.disabled')) {
-            $trimmed = substr($lower, 0, -strlen('.disabled'));
-
-            return str_ends_with($trimmed, '.jar');
-        }
-
-        return false;
+        return str_ends_with($lower, '.jar') || str_ends_with($lower, '.jar.disabled') || str_ends_with($lower, '.disabled');
     }
 
     private function stripDisabledSuffix(string $name): string
     {
-        $clean = preg_replace('/\.jar\.disabled$/i', '.jar', $name);
-
-        return preg_replace('/\.disabled$/i', '', $clean ?? $name) ?? $name;
+        return preg_replace('/\.disabled$/i', '', $name) ?? $name;
     }
 
     private function isDisabledFile(string $name): bool
@@ -763,7 +747,7 @@ class ModsController extends ClientApiController
     {
         $normalizedBase = $this->normalizePath($base);
 
-        return ($normalizedBase === '/' ? '' : $normalizedBase) . '/' . ltrim($name, '/');
+        return rtrim($normalizedBase, '/') . '/' . ltrim($name, '/');
     }
 
     private function normalizePath(string $path): string
