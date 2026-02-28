@@ -228,6 +228,7 @@ class PluginInstallService
                 continue;
             }
 
+            // Avoid choosing a bare version slug when richer context (project name or upstream filename) is available.
             if ($versionSlug && $base === $versionSlug && ($projectSlug || $contentDispositionName)) {
                 continue;
             }
@@ -257,7 +258,7 @@ class PluginInstallService
             return null;
         }
 
-        if (preg_match('/filename\\*=UTF-8\\'' . "'" . '?([^;]+)$/i', $header, $matches)) {
+        if (preg_match("/filename\\*=UTF-8'?([^;]+)$/i", $header, $matches)) {
             return rawurldecode($matches[1]);
         }
 
