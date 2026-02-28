@@ -167,15 +167,17 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
     const renderItem = (item: InstalledAddon) => (
         <div
             key={item.path}
-            css={tw`rounded border border-neutral-700 px-4 py-3 bg-neutral-800/40 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4`}
+            css={tw`rounded border border-neutral-700 px-3 py-3 sm:px-4 sm:py-3 bg-neutral-800/40 flex flex-col gap-2 h-full`}
         >
-            <div css={tw`flex-1 min-w-0`}>
-                <div css={tw`text-base sm:text-lg font-semibold text-neutral-100 truncate`}>
-                    {item.friendlyName || item.filename}
+            <div css={tw`flex items-start gap-3`}>
+                <div css={tw`flex-1 min-w-0`}>
+                    <div css={tw`text-base sm:text-lg font-semibold text-neutral-100 truncate`}>
+                        {item.friendlyName || item.filename}
+                    </div>
+                    <div css={tw`font-mono text-xs text-neutral-400 truncate`}>{item.filename}</div>
                 </div>
-                <div css={tw`font-mono text-xs text-neutral-400 truncate`}>{item.filename}</div>
             </div>
-            <div css={tw`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-neutral-200`}>
+            <div css={tw`flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-neutral-200`}>
                 <span css={[tw`px-2 py-1 rounded-full text-xs font-semibold`, badgeStyle(item.enabled)]}>
                     {item.enabled ? 'Enabled' : 'Disabled'}
                 </span>
@@ -192,6 +194,7 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
                     onClick={() => handleToggle(item)}
                     disabled={togglingPath === item.path || loading}
                     loading={togglingPath === item.path}
+                    css={tw`ml-auto`}
                 >
                     {item.enabled ? 'Disable' : 'Enable'}
                 </Button>
@@ -218,9 +221,13 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
                 renderEmpty()
             ) : (
                 <Pagination data={data} onPageSelect={setPage}>
-                    {({ items }) => (
-                        <div css={tw`space-y-3`}>{!items.length ? renderEmpty() : items.map(renderItem)}</div>
-                    )}
+                    {({ items }) =>
+                        !items.length ? (
+                            renderEmpty()
+                        ) : (
+                            <div css={tw`grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4`}>{items.map(renderItem)}</div>
+                        )
+                    }
                 </Pagination>
             )}
         </div>
