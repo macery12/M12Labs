@@ -188,16 +188,27 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
                 >
                     {formatModified(item.modifiedAt)}
                 </span>
-                <Button
-                    size={Button.Sizes.Small}
-                    variant={item.enabled ? Button.Variants.Secondary : Button.Variants.Success}
-                    onClick={() => handleToggle(item)}
-                    disabled={togglingPath === item.path || loading}
-                    loading={togglingPath === item.path}
-                    css={tw`ml-auto flex-none`}
-                >
-                    {item.enabled ? 'Disable' : 'Enable'}
-                </Button>
+                {item.enabled ? (
+                    <Button.Danger
+                        size={Button.Sizes.Small}
+                        onClick={() => handleToggle(item)}
+                        disabled={togglingPath === item.path || loading}
+                        loading={togglingPath === item.path}
+                        css={tw`ml-auto flex-none`}
+                    >
+                        Disable
+                    </Button.Danger>
+                ) : (
+                    <Button.Success
+                        size={Button.Sizes.Small}
+                        onClick={() => handleToggle(item)}
+                        disabled={togglingPath === item.path || loading}
+                        loading={togglingPath === item.path}
+                        css={tw`ml-auto flex-none`}
+                    >
+                        Enable
+                    </Button.Success>
+                )}
             </div>
         </div>
     );
