@@ -120,9 +120,11 @@ const ModsAndPluginsPage = () => {
     const localStorageKey = 'marketplace:last';
     const restoredParamsRef = useRef(false);
 
+    const hasSearchParams = useCallback(() => searchParams.toString().length > 0, [searchParams]);
+
     useEffect(() => {
         if (restoredParamsRef.current) return;
-        if (searchParams.toString()) {
+        if (hasSearchParams()) {
             restoredParamsRef.current = true;
             return;
         }
@@ -143,16 +145,16 @@ const ModsAndPluginsPage = () => {
         } finally {
             restoredParamsRef.current = true;
         }
-    }, [searchParams, setSearchParams]);
+    }, [searchParams, setSearchParams, hasSearchParams]);
 
     useEffect(() => {
-        if (!searchParams.toString()) return;
+        if (!hasSearchParams()) return;
         const handle = window.setTimeout(() => {
             localStorage.setItem('marketplace:lastUrl', `${window.location.pathname}?${searchParams.toString()}`);
         }, MARKETPLACE_SAVE_DEBOUNCE_MS);
 
         return () => window.clearTimeout(handle);
-    }, [searchParams]);
+    }, [searchParams, hasSearchParams]);
 
     const lastMarketplaceState = useMemo(() => {
         const raw = localStorage.getItem(localStorageKey);
