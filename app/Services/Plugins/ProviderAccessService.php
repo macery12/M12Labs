@@ -14,8 +14,6 @@ class ProviderAccessService
         ],
         'plugins' => [
             ['key' => 'spigot.plugins', 'name' => 'spigot'],
-            // Legacy support for existing policy keys.
-            ['key' => 'spiget.plugins', 'name' => 'spigot'],
         ],
     ];
 

@@ -88,8 +88,8 @@ export default () => {
                     Default policy denies all providers unless enabled globally and allowed for nests/eggs. Configure
                     access under Access Control.
                 </Alert>
-                <AdminBox title={'Disable Plugins Module'}>
-                    Clicking the button below will disable the Plugins module for all users. Your CurseForge API key will
+                <AdminBox title={'Disable Marketplace Module'}>
+                    Clicking the button below will disable the Marketplace module for all users. Your CurseForge API key will
                     remain in the database unless you choose to delete it manually.
                     <div className={'mt-2 text-right'}>
                         <ToggleFeatureButton />
