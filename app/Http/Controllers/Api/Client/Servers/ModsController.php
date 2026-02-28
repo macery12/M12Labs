@@ -715,7 +715,7 @@ class ModsController extends ClientApiController
     {
         $lower = strtolower($name);
 
-        if (str_ends_with($lower, '.jar') || str_ends_with($lower, '.jar.disabled')) {
+        if (str_ends_with($lower, '.jar')) {
             return true;
         }
 
@@ -730,22 +730,24 @@ class ModsController extends ClientApiController
 
     private function stripDisabledSuffix(string $name): string
     {
-        return preg_replace('/\.disabled$/i', '', $name) ?? $name;
+        $lower = strtolower($name);
+
+        if (str_ends_with($lower, '.jar.disabled')) {
+            return substr($name, 0, -strlen('.disabled'));
+        }
+
+        if (str_ends_with($lower, '.disabled')) {
+            return substr($name, 0, -strlen('.disabled'));
+        }
+
+        return $name;
     }
 
     private function isDisabledFile(string $name): bool
     {
         $lower = strtolower($name);
 
-        if (str_ends_with($lower, '.jar.disabled')) {
-            return true;
-        }
-
-        if (str_ends_with($lower, '.disabled')) {
-            return str_ends_with(substr($lower, 0, -strlen('.disabled')), '.jar');
-        }
-
-        return false;
+        return str_ends_with($lower, '.jar.disabled') || (str_ends_with($lower, '.disabled') && $this->isJarLike($name));
     }
 
     private function formatTimestamp(mixed $value): ?string
