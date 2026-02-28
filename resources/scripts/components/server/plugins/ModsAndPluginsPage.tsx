@@ -235,11 +235,11 @@ const ModsAndPluginsPage = () => {
         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
-    // iconId is provided by Wings in the installed addons response (icon_id), replacing the previous stableId-based slug guessing.
     const buildIconUrl = useCallback(
-        (iconId?: string | null) => {
-            if (!iconId || !uuid) return undefined;
-            return `/api/client/servers/${uuid}/addons/icon/${iconId}`;
+        (iconId?: string | null, stableId?: string | null) => {
+            const slug = iconId ?? stableId;
+            if (!slug || !uuid) return undefined;
+            return `/api/client/servers/${uuid}/addons/icon/${slug}`;
         },
         [uuid],
     );
@@ -247,7 +247,8 @@ const ModsAndPluginsPage = () => {
     const resolveIconUrl = useCallback(
         (addon: InstalledAddon) => {
             if (addon.iconUrl) return addon.iconUrl;
-            if (addon.iconId) return buildIconUrl(addon.iconId) ?? null;
+            const resolved = buildIconUrl(addon.iconId, addon.stableId);
+            if (resolved) return resolved;
             return null;
         },
         [buildIconUrl],
