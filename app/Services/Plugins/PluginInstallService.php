@@ -261,14 +261,29 @@ class PluginInstallService
         $header = trim($header);
 
         if (preg_match('~(?:^|;)\\s*filename\\*=UTF-8\'\'([^;]+)~i', $header, $matches)) {
-            return rawurldecode($matches[1]);
+            return $this->sanitizeFilenameCandidate(rawurldecode($matches[1]));
         }
 
         if (preg_match('~(?:^|;)\\s*filename=(?:"([^"]+)"|([^;]+))~i', $header, $matches)) {
-            return $matches[1] ?: $matches[2];
+            $candidate = $matches[1] ?: $matches[2];
+
+            return $this->sanitizeFilenameCandidate($candidate);
         }
 
         return null;
+    }
+
+    private function sanitizeFilenameCandidate(?string $candidate): ?string
+    {
+        if (!$candidate) {
+            return null;
+        }
+
+        if (str_contains($candidate, '..') || str_contains($candidate, '/') || str_contains($candidate, '\\')) {
+            return null;
+        }
+
+        return $candidate;
     }
 
     private function slugify(string $value): string
