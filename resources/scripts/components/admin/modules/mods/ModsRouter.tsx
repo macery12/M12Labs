@@ -14,11 +14,12 @@ import AccessControlContainer from './AccessControlContainer';
 export default () => {
     const settings = useStoreState(state => state.everest.data!.mods);
     const location = useLocation();
-    const basePath = location.pathname.startsWith('/admin/plugins')
-        ? '/admin/plugins'
-        : location.pathname.startsWith('/admin/mods')
-          ? '/admin/mods'
-          : '/admin/marketplace';
+    let basePath = '/admin/marketplace';
+    if (location.pathname.startsWith('/admin/plugins')) {
+        basePath = '/admin/plugins';
+    } else if (location.pathname.startsWith('/admin/mods')) {
+        basePath = '/admin/mods';
+    }
 
     if (!settings.enabled) return <EnableMods />;
 
