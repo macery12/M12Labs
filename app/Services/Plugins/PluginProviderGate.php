@@ -36,8 +36,8 @@ class PluginProviderGate
             return in_array($nestId, $allowedNests, true);
         }
 
-        // Default deny when no allowed nests or eggs are configured.
-        return false;
+        // If globally enabled and no restrictions are set, allow all.
+        return true;
     }
 
     /**

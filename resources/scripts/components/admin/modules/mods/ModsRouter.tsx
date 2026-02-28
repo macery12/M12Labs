@@ -1,5 +1,5 @@
 import { useStoreState } from '@/state/hooks';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { CogIcon, DatabaseIcon, ServerIcon } from '@heroicons/react/outline';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import { NotFound } from '@/elements/ScreenBlock';
@@ -13,16 +13,23 @@ import AccessControlContainer from './AccessControlContainer';
 
 export default () => {
     const settings = useStoreState(state => state.everest.data!.mods);
+    const location = useLocation();
+    let basePath = '/admin/marketplace';
+    if (location.pathname.startsWith('/admin/plugins')) {
+        basePath = '/admin/plugins';
+    } else if (location.pathname.startsWith('/admin/mods')) {
+        basePath = '/admin/mods';
+    }
 
     if (!settings.enabled) return <EnableMods />;
 
     return (
-        <AdminContentBlock title={'Plugins'}>
+        <AdminContentBlock title={'Marketplace'}>
             <FlashMessageRender byKey={'admin:plugins'} className={'mb-4'} />
             <FlashMessageRender byKey={'plugins:servers'} className={'mb-4'} />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
-                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Plugins</h2>
+                    <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Marketplace</h2>
                     <p
                         className={
                             'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
@@ -33,16 +40,16 @@ export default () => {
                 </div>
             </div>
             <SubNavigation>
-                <SubNavigationLink to={'/admin/plugins'} name={'Overview'} base>
+                <SubNavigationLink to={`${basePath}`} name={'Overview'} base>
                     <DatabaseIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/plugins/servers'} name={'Servers'}>
+                <SubNavigationLink to={`${basePath}/servers`} name={'Servers'}>
                     <ServerIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/plugins/settings'} name={'Settings'}>
+                <SubNavigationLink to={`${basePath}/settings`} name={'Settings'}>
                     <CogIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={'/admin/plugins/access-control'} name={'Access Control'}>
+                <SubNavigationLink to={`${basePath}/access-control`} name={'Access Control'}>
                     <ServerIcon />
                 </SubNavigationLink>
             </SubNavigation>
