@@ -245,9 +245,6 @@ const ModsAndPluginsPage = () => {
     const decorateInstalled = useCallback(
         (data: InstalledAddonResponse | null) => {
             if (!data) return null;
-            if (!(data.mods?.length || data.plugins?.length)) {
-                return data;
-            }
             const mapIcon = (addon: InstalledAddon) => ({
                 ...addon,
                 iconUrl: addon.iconUrl ?? buildIconUrl(addon.stableId),
