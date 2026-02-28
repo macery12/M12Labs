@@ -6,9 +6,11 @@ use Carbon\Carbon;
 use Everest\Models\Server;
 use Everest\Models\Setting;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\SpigetService;
@@ -22,6 +24,7 @@ use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetModFilesRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetMinecraftVersionsRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\ToggleInstalledAddonRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetInstalledAddonsRequest;
 
 class ModsController extends ClientApiController
@@ -132,12 +135,94 @@ class ModsController extends ClientApiController
 
     public function installed(GetInstalledAddonsRequest $request, Server $server): JsonResponse
     {
-        $mods = $this->scanJarDirectory($server, '/mods', 'mod');
-        $plugins = $this->scanJarDirectory($server, '/plugins', 'plugin');
+        $type = $request->input('type') === 'plugins' ? 'plugins' : 'mods';
+        $status = $request->input('status', 'all');
+        $search = trim((string) $request->input('search', ''));
+        $perPage = (int) $request->input('perPage', 50);
+        $page = (int) $request->input('page', 1);
+
+        $items = $this->scanJarDirectory(
+            $server,
+            $type === 'plugins' ? '/plugins' : '/mods',
+            $type === 'plugins' ? 'plugin' : 'mod'
+        );
+
+        $filtered = array_values(array_filter($items, function (array $item) use ($status, $search) {
+            if ($status === 'enabled' && !$item['enabled']) {
+                return false;
+            }
+
+            if ($status === 'disabled' && $item['enabled']) {
+                return false;
+            }
+
+            if ($search !== '') {
+                $needle = Str::lower($search);
+
+                return Str::contains(Str::lower($item['friendly_name']), $needle)
+                    || Str::contains(Str::lower($item['filename']), $needle);
+            }
+
+            return true;
+        }));
+
+        $filtered = $this->sortInstalledAddons($filtered);
+
+        $paginator = $this->paginateInstalled($filtered, $perPage, $page);
 
         return response()->json([
-            'mods' => $mods,
-            'plugins' => $plugins,
+            'items' => $paginator->items(),
+            'pagination' => [
+                'total' => $paginator->total(),
+                'count' => $paginator->count(),
+                'per_page' => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'total_pages' => $paginator->lastPage(),
+            ],
+        ]);
+    }
+
+    public function toggleInstalledAddon(ToggleInstalledAddonRequest $request, Server $server): JsonResponse
+    {
+        $type = $request->input('type') === 'plugins' ? 'plugins' : 'mods';
+        $basePath = $type === 'plugins' ? '/plugins' : '/mods';
+        $rawPath = $request->input('path');
+        $normalizedPath = $this->normalizePath($request->input('path'));
+        $enable = (bool) $request->boolean('enable');
+
+        if (!Str::startsWith($normalizedPath, $basePath) || str_contains($normalizedPath, '..') || str_contains($rawPath, '..') || str_contains($rawPath, '%2e')) {
+            return response()->json(['error' => 'Invalid path for this content type.'], 422);
+        }
+
+        $root = $this->normalizePath(dirname($normalizedPath));
+        if ($root !== $basePath && !Str::startsWith($root, $basePath . '/')) {
+            return response()->json(['error' => 'Invalid directory for this content type.'], 422);
+        }
+        $from = basename($normalizedPath);
+        $target = $this->targetNameForState($from, $enable);
+
+        // If already in desired state, just return the current data.
+        if ($target !== $from) {
+            $this->fileRepository->setServer($server)->renameFiles($root, [['from' => $from, 'to' => $target]]);
+        }
+
+        $items = $this->scanJarDirectory($server, $basePath, $type === 'plugins' ? 'plugin' : 'mod');
+        $updatedPath = $this->joinPath($root, $target);
+        $updated = collect($items)->firstWhere('path', $updatedPath);
+        if (!$updated) {
+            $updated = [
+                'filename' => $target,
+                'friendly_name' => $this->makeFriendlyName($target),
+                'path' => $updatedPath,
+                'size_bytes' => 0,
+                'modified_at' => null,
+                'type' => $type === 'plugins' ? 'plugin' : 'mod',
+                'enabled' => $enable,
+            ];
+        }
+
+        return response()->json([
+            'item' => $updated,
         ]);
     }
 
@@ -677,14 +762,21 @@ class ModsController extends ClientApiController
                 $fullPath = $this->joinPath($current, $name);
 
                 if ($isFile && $this->isJarLike($name)) {
+                    $friendlyName = $this->makeFriendlyName($name);
+                    $isEnabled = !$this->isDisabledFile($name);
                     $results[] = [
-                        'name' => $name,
-                        'display_name' => $this->stripDisabledSuffix($name),
+                        'filename' => $name,
+                        'friendly_name' => $friendlyName,
                         'path' => $fullPath,
-                        'size' => (int) Arr::get($entry, 'size', 0),
+                        'size_bytes' => (int) Arr::get($entry, 'size', 0),
                         'modified_at' => $this->formatTimestamp(Arr::get($entry, 'modified')),
                         'type' => $type,
-                        'disabled' => $this->isDisabledFile($name),
+                        'enabled' => $isEnabled,
+                        // Legacy keys for backward compatibility (can be removed once frontend is migrated)
+                        'name' => $name,
+                        'display_name' => $this->stripDisabledSuffix($name),
+                        'size' => (int) Arr::get($entry, 'size', 0),
+                        'disabled' => !$isEnabled,
                     ];
                     continue;
                 }
@@ -695,9 +787,46 @@ class ModsController extends ClientApiController
             }
         }
 
-        usort($results, fn ($a, $b) => strcasecmp($a['display_name'], $b['display_name']));
-
         return $results;
+    }
+
+    private function paginateInstalled(array $items, int $perPage, int $page): LengthAwarePaginator
+    {
+        $perPage = $perPage > 0 ? $perPage : 50;
+        $page = $page > 0 ? $page : 1;
+        $offset = ($page - 1) * $perPage;
+        $sliced = array_slice($items, $offset, $perPage);
+
+        return new LengthAwarePaginator(
+            $sliced,
+            count($items),
+            $perPage,
+            $page,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+            ]
+        );
+    }
+
+    private function sortInstalledAddons(array $items): array
+    {
+        usort($items, function (array $a, array $b) {
+            if ($a['enabled'] !== $b['enabled']) {
+                return $a['enabled'] ? -1 : 1;
+            }
+
+            $aName = $this->friendlyNameValue($a);
+            $bName = $this->friendlyNameValue($b);
+
+            return strcasecmp($aName, $bName);
+        });
+
+        return $items;
+    }
+
+    private function friendlyNameValue(array $item): string
+    {
+        return $item['friendly_name'] ?: $item['filename'];
     }
 
     private function listDirectorySafely(Server $server, string $path): ?array
@@ -741,6 +870,55 @@ class ModsController extends ClientApiController
         }
 
         return $name;
+    }
+
+    private function makeFriendlyName(string $name): string
+    {
+        $base = $this->stripDisabledSuffix($name);
+        $base = preg_replace('/\.jar$/i', '', $base);
+        $base = preg_replace('/[_-]+/', ' ', $base);
+        $base = trim(preg_replace('/\s+/', ' ', $base));
+
+        if ($base === '') {
+            return $this->stripDisabledSuffix($name);
+        }
+
+        // Preserve existing capitalization when any uppercase characters exist; otherwise title-case the name.
+        $hasUpper = preg_match('/[A-Z]/', $base) > 0;
+
+        return $hasUpper ? $base : Str::title($base);
+    }
+
+    private function hasDisabledSuffix(string $lower): bool
+    {
+        // Treat "*.jar.disabled" or "*.disabled" (when the remaining name has no other extension)
+        // as disabled variants to stay compatible with common toggle patterns.
+        if (str_ends_with($lower, '.disabled')) {
+            $trimmed = substr($lower, 0, -strlen('.disabled'));
+
+            return str_ends_with($trimmed, '.jar') || !str_contains($trimmed, '.');
+        }
+
+        return false;
+    }
+
+    private function targetNameForState(string $current, bool $enable): string
+    {
+        $lower = strtolower($current);
+
+        if ($enable) {
+            if ($this->hasDisabledSuffix($lower)) {
+                return substr($current, 0, -strlen('.disabled'));
+            }
+
+            return $current;
+        }
+
+        if ($this->hasDisabledSuffix($lower)) {
+            return $current;
+        }
+
+        return $current . '.disabled';
     }
 
     private function isDisabledFile(string $name): bool

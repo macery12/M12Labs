@@ -11,4 +11,15 @@ class GetInstalledAddonsRequest extends ClientApiRequest
     {
         return Permission::ACTION_FILE_READ;
     }
+
+    public function rules(): array
+    {
+        return [
+            'type' => 'sometimes|string|in:mods,plugins',
+            'search' => 'sometimes|string|max:200',
+            'status' => 'sometimes|string|in:all,enabled,disabled',
+            'page' => 'sometimes|integer|min:1',
+            'perPage' => 'sometimes|integer|min:1|max:200',
+        ];
+    }
 }

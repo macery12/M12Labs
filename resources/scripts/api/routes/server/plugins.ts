@@ -1,4 +1,4 @@
-import http from '@/api/http';
+import http, { PaginatedResult } from '@/api/http';
 
 export type ProviderKey = 'modrinth' | 'curseforge' | 'spigot';
 export type ContentType = 'mods' | 'modpacks' | 'plugins';
@@ -13,34 +13,69 @@ export const getPluginCapabilities = (uuid: string): Promise<PluginCapabilityRes
     http.get(`/api/client/servers/${uuid}/plugins/capabilities`).then(r => r.data);
 
 export type InstalledAddonType = 'mod' | 'plugin';
+export type InstalledContentType = 'mods' | 'plugins';
+export type InstalledStatusFilter = 'all' | 'enabled' | 'disabled';
 
 export interface InstalledAddon {
-    name: string;
-    displayName: string;
+    filename: string;
+    friendlyName: string;
     path: string;
-    size: number;
+    sizeBytes: number;
     modifiedAt: Date | null;
     type: InstalledAddonType;
-    disabled: boolean;
-}
-
-export interface InstalledAddonResponse {
-    mods: InstalledAddon[];
-    plugins: InstalledAddon[];
+    enabled: boolean;
 }
 
 const toInstalledAddon = (raw: any): InstalledAddon => ({
-    name: raw?.name ?? '',
-    displayName: raw?.display_name ?? raw?.name ?? '',
+    // Backward compatible with legacy keys from earlier installed response.
+    filename: raw?.filename ?? raw?.name ?? '',
+    friendlyName: raw?.friendly_name ?? raw?.display_name ?? raw?.name ?? '',
     path: raw?.path ?? '',
-    size: Number(raw?.size ?? 0),
+    sizeBytes: Number(raw?.size_bytes ?? raw?.size ?? 0),
     modifiedAt: raw?.modified_at ? new Date(raw.modified_at) : null,
     type: (raw?.type ?? 'mod') as InstalledAddonType,
-    disabled: Boolean(raw?.disabled),
+    enabled:
+        typeof raw?.enabled === 'boolean'
+            ? raw.enabled
+            : typeof raw?.disabled === 'boolean'
+              ? !raw.disabled
+              : false,
 });
 
-export const getInstalledAddons = (uuid: string): Promise<InstalledAddonResponse> =>
-    http.get(`/api/client/servers/${uuid}/plugins/installed`).then(r => ({
-        mods: (r.data?.mods ?? []).map(toInstalledAddon),
-        plugins: (r.data?.plugins ?? []).map(toInstalledAddon),
-    }));
+export interface InstalledAddonQuery {
+    type: InstalledContentType;
+    page?: number;
+    perPage?: number;
+    search?: string;
+    status?: InstalledStatusFilter;
+}
+
+export const getInstalledAddons = (uuid: string, query: InstalledAddonQuery): Promise<PaginatedResult<InstalledAddon>> =>
+    http
+        .get(`/api/client/servers/${uuid}/plugins/installed`, {
+            params: {
+                type: query.type,
+                page: query.page ?? 1,
+                perPage: query.perPage ?? 50,
+                search: query.search || undefined,
+                status: query.status ?? 'all',
+            },
+        })
+        .then(r => ({
+            items: (r.data?.items ?? []).map(toInstalledAddon),
+            pagination: {
+                total: r.data?.pagination?.total ?? 0,
+                count: r.data?.pagination?.count ?? 0,
+                perPage: r.data?.pagination?.per_page ?? query.perPage ?? 50,
+                currentPage: r.data?.pagination?.current_page ?? query.page ?? 1,
+                totalPages: r.data?.pagination?.total_pages ?? 1,
+            },
+        }));
+
+export const toggleInstalledAddon = (
+    uuid: string,
+    payload: { type: InstalledContentType; path: string; enable: boolean },
+): Promise<InstalledAddon> =>
+    http
+        .post(`/api/client/servers/${uuid}/plugins/installed/toggle`, payload)
+        .then(r => toInstalledAddon(r.data?.item ?? {}));
