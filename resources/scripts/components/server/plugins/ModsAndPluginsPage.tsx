@@ -132,7 +132,7 @@ const ModsAndPluginsPage = () => {
                 setSearchParams(url.searchParams);
             }
         } catch {
-            // ignore
+            // Corrupted/invalid stored URL; safe to ignore and fall back to defaults.
         }
     }, [searchParams, setSearchParams]);
 
