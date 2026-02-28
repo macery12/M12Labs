@@ -314,7 +314,7 @@ class ScanAddonFileJob extends Job implements ShouldQueue
 
     private function extractTomlArray(string $content, string $key): array
     {
-        if (!preg_match('/' . preg_quote($key, '/') . '\s*=\\s*\\[(.*?)\\]/is', $content, $matches)) {
+        if (!preg_match('/' . preg_quote($key, '/') . '\s*\[(.*?)\]/is', $content, $matches)) {
             return [];
         }
 
