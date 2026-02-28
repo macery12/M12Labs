@@ -2,10 +2,12 @@
 
 namespace Everest\Http\Controllers\Api\Client\Servers;
 
+use Carbon\Carbon;
 use Everest\Models\Server;
 use Everest\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
@@ -20,6 +22,7 @@ use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetModFilesRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetMinecraftVersionsRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\GetInstalledAddonsRequest;
 
 class ModsController extends ClientApiController
 {
@@ -124,6 +127,17 @@ class ModsController extends ClientApiController
 
         return response()->json([
             'providers' => $result,
+        ]);
+    }
+
+    public function installed(GetInstalledAddonsRequest $request, Server $server): JsonResponse
+    {
+        $mods = $this->scanJarDirectory($server, '/mods', 'mod');
+        $plugins = $this->scanJarDirectory($server, '/plugins', 'plugin');
+
+        return response()->json([
+            'mods' => $mods,
+            'plugins' => $plugins,
         ]);
     }
 
@@ -633,6 +647,130 @@ class ModsController extends ClientApiController
                 'error' => 'An unexpected error occurred while downloading the modpack.',
             ], 500);
         }
+    }
+
+    /**
+     * Recursively scan a directory for jar-based addons (mods/plugins) while respecting
+     * symlinks and missing directories.
+     */
+    private function scanJarDirectory(Server $server, string $path, string $type): array
+    {
+        $results = [];
+        $queue = [$this->normalizePath($path)];
+
+        while (!empty($queue)) {
+            $current = array_shift($queue);
+            $entries = $this->listDirectorySafely($server, $current);
+
+            if ($entries === null) {
+                continue;
+            }
+
+            foreach ($entries as $entry) {
+                $name = Arr::get($entry, 'name');
+                if (!$name || $name === '.' || $name === '..') {
+                    continue;
+                }
+
+                $isFile = (bool) Arr::get($entry, 'file', true);
+                $isSymlink = (bool) Arr::get($entry, 'symlink', false);
+                $fullPath = $this->joinPath($current, $name);
+
+                if ($isFile && $this->isJarLike($name)) {
+                    $results[] = [
+                        'name' => $name,
+                        'display_name' => $this->stripDisabledSuffix($name),
+                        'path' => $fullPath,
+                        'size' => (int) Arr::get($entry, 'size', 0),
+                        'modified_at' => $this->formatTimestamp(Arr::get($entry, 'modified')),
+                        'type' => $type,
+                        'disabled' => $this->isDisabledFile($name),
+                    ];
+                    continue;
+                }
+
+                if (!$isFile && !$isSymlink) {
+                    $queue[] = $fullPath;
+                }
+            }
+        }
+
+        usort($results, fn ($a, $b) => strcasecmp($a['display_name'], $b['display_name']));
+
+        return $results;
+    }
+
+    private function listDirectorySafely(Server $server, string $path): ?array
+    {
+        try {
+            return $this->fileRepository->setServer($server)->getDirectory($path);
+        } catch (\Throwable $e) {
+            Log::debug('Installed addons scan skipped directory', ['path' => $path, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    private function isJarLike(string $name): bool
+    {
+        $lower = strtolower($name);
+
+        if (str_ends_with($lower, '.jar')) {
+            return true;
+        }
+
+        if (str_ends_with($lower, '.jar.disabled')) {
+            return true;
+        }
+
+        if (str_ends_with($lower, '.disabled')) {
+            $trimmed = substr($lower, 0, -strlen('.disabled'));
+
+            return str_ends_with($trimmed, '.jar');
+        }
+
+        return false;
+    }
+
+    private function stripDisabledSuffix(string $name): string
+    {
+        $clean = preg_replace('/\.jar\.disabled$/i', '.jar', $name);
+
+        return preg_replace('/\.disabled$/i', '', $clean ?? $name) ?? $name;
+    }
+
+    private function isDisabledFile(string $name): bool
+    {
+        $lower = strtolower($name);
+
+        return str_ends_with($lower, '.jar.disabled') || str_ends_with($lower, '.disabled');
+    }
+
+    private function formatTimestamp(mixed $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toIso8601String();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function joinPath(string $base, string $name): string
+    {
+        $normalizedBase = $this->normalizePath($base);
+
+        return ($normalizedBase === '/' ? '' : $normalizedBase) . '/' . ltrim($name, '/');
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $trimmed = '/' . trim($path, '/');
+
+        return $trimmed === '//' ? '/' : $trimmed;
     }
 
     /**
