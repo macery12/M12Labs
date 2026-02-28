@@ -6,9 +6,19 @@ import Spinner from '@/elements/Spinner';
 import ModsContainer from '@server/mods/ModsContainer';
 import ModpacksContainer from '@server/modpacks/ModpacksContainer';
 import ContentTypeTabPanel from '@server/plugins/ContentTypeTabPanel';
-import { ContentType, getPluginCapabilities, PluginCapabilityResponse, ProviderKey } from '@/api/routes/server/plugins';
+import {
+    ContentType,
+    getInstalledAddons,
+    getPluginCapabilities,
+    InstalledAddonResponse,
+    PluginCapabilityResponse,
+    ProviderKey,
+} from '@/api/routes/server/plugins';
 import { useStoreState } from '@/state/hooks';
 import { ServerContext } from '@/state/server';
+import InstalledAddonsList from '@server/plugins/InstalledAddonsList';
+import useFlash from '@/plugins/useFlash';
+import { httpErrorToHuman } from '@/api/http';
 
 type ContentTab = ContentType | 'installed';
 
@@ -52,10 +62,13 @@ const ModsAndPluginsPage = () => {
     const serverModsEnabled = ServerContext.useStoreState(state => state.server.data?.modsEnabled ?? false);
     const uuidFallback = useStoreState(state => state.server?.data?.uuid);
     const uuid = serverUuid ?? uuidFallback;
+    const { addError } = useFlash();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const [providerAccess, setProviderAccess] = useState<PluginCapabilityResponse | null>(null);
     const [loadingProviders, setLoadingProviders] = useState(true);
+    const [installedAddons, setInstalledAddons] = useState<InstalledAddonResponse | null>(null);
+    const [loadingInstalled, setLoadingInstalled] = useState(false);
 
     const modsFeatureEnabled = (modSettings?.enabled ?? false) && serverModsEnabled;
     const curseforgeConfigured = !!modSettings?.curseforge_api_key;
@@ -163,6 +176,20 @@ const ModsAndPluginsPage = () => {
         localStorage.setItem(localStorageKey, JSON.stringify({ type: activeType, provider: resolvedProvider }));
     }, [activeType, activeProvider, providersByType, setSearchParams]);
 
+    useEffect(() => {
+        if (activeType !== 'installed' || !uuid) return;
+
+        setLoadingInstalled(true);
+        getInstalledAddons(uuid)
+            .then(setInstalledAddons)
+            .catch(error => {
+                console.error(error);
+                setInstalledAddons({ mods: [], plugins: [] });
+                addError({ key: 'plugins', message: httpErrorToHuman(error) });
+            })
+            .finally(() => setLoadingInstalled(false));
+    }, [activeType, uuid, addError]);
+
     const handleProviderChange = useCallback((provider: ProviderKey) => {
         setActiveProvider(provider);
     }, []);
@@ -181,7 +208,7 @@ const ModsAndPluginsPage = () => {
         ) : null;
 
     const renderContent = () => {
-        if (loadingProviders) {
+        if (loadingProviders && activeType !== 'installed') {
             return <Spinner size={'large'} centered />;
         }
 
@@ -193,11 +220,11 @@ const ModsAndPluginsPage = () => {
 
         if (activeType === 'installed') {
             return (
-                <div css={tw`space-y-4`}>
-                    <ComingSoon label={'Installed Mods'} />
-                    <ComingSoon label={'Installed Plugins'} />
-                    <ComingSoon label={'Installed Modpacks'} />
-                </div>
+                <InstalledAddonsList
+                    mods={installedAddons?.mods ?? []}
+                    plugins={installedAddons?.plugins ?? []}
+                    loading={loadingInstalled}
+                />
             );
         }
 
