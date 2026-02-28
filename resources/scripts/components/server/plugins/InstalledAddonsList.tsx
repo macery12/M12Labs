@@ -167,7 +167,7 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
     const renderItem = (item: InstalledAddon) => (
         <div
             key={item.path}
-            css={tw`rounded border border-neutral-700 px-3 py-3 sm:px-4 bg-neutral-800/40 flex flex-col gap-2 h-full`}
+            css={tw`rounded border border-neutral-700 px-3 py-3 sm:px-4 bg-neutral-800/40 flex flex-col gap-2`}
         >
             <div css={tw`flex items-start gap-3`}>
                 <div css={tw`flex-1 min-w-0`}>
@@ -194,7 +194,7 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
                     onClick={() => handleToggle(item)}
                     disabled={togglingPath === item.path || loading}
                     loading={togglingPath === item.path}
-                    css={tw`ml-auto`}
+                    css={tw`ml-auto flex-none`}
                 >
                     {item.enabled ? 'Disable' : 'Enable'}
                 </Button>
