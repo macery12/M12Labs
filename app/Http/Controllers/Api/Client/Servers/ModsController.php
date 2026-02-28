@@ -715,7 +715,17 @@ class ModsController extends ClientApiController
     {
         $lower = strtolower($name);
 
-        return str_ends_with($lower, '.jar') || str_ends_with($lower, '.jar.disabled') || str_ends_with($lower, '.disabled');
+        if (str_ends_with($lower, '.jar') || str_ends_with($lower, '.jar.disabled')) {
+            return true;
+        }
+
+        if (str_ends_with($lower, '.disabled')) {
+            $trimmed = substr($lower, 0, -strlen('.disabled'));
+
+            return str_ends_with($trimmed, '.jar') || !str_contains($trimmed, '.');
+        }
+
+        return false;
     }
 
     private function stripDisabledSuffix(string $name): string
