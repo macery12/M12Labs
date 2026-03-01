@@ -83,6 +83,7 @@ class Category extends Model
         }
 
         // Return the concrete IDs the client needs to display, after pruning any missing eggs.
+        // This list is intentionally materialized here because the allowed egg set is small and required by the client.
         $existingEggs = Egg::query()
             ->whereIn('id', $allowedEggs)
             ->pluck('id')

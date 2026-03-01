@@ -35,6 +35,14 @@ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import classNames from 'classnames';
 import { loadStripeOnce } from '@/lib/stripe';
 
+const extractHttpStatusFromError = (reason: unknown): number | undefined => {
+    if (typeof reason === 'object' && reason !== null) {
+        const response = (reason as { response?: { status?: number } }).response;
+        return response?.status;
+    }
+    return undefined;
+};
+
 export default () => {
     const params = useParams<'id'>();
 
@@ -254,14 +262,6 @@ export default () => {
                 // Initialize selected egg with the default (first allowed egg)
                 const allowedEggs = productData.allowedEggs || [productData.eggId];
 
-                const extractHttpStatusFromError = (reason: unknown): number | undefined => {
-                    if (typeof reason === 'object' && reason !== null) {
-                        const response = (reason as { response?: { status?: number } }).response;
-                        return response?.status;
-                    }
-                    return undefined;
-                };
-
                 const eggResults = await Promise.allSettled(allowedEggs.map(id => getEggInfo(id)));
                 const available: EggInfo[] = [];
                 let removedMissingEggs = false;
@@ -279,6 +279,7 @@ export default () => {
                         return;
                     }
 
+                    // Attach the original error as the cause for debugging.
                     const message = responseStatus
                         ? `Failed to fetch egg information (HTTP ${responseStatus}).`
                         : 'Unexpected error while fetching egg information.';
@@ -297,6 +298,7 @@ export default () => {
                 if (available.length > 0) {
                     setSelectedEggId(available[0].id);
                 } else {
+                    // Clear selections and variables when no eggs remain.
                     setSelectedEggId(undefined);
                     setEggs(undefined);
                 }
