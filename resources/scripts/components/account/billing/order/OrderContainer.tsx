@@ -281,8 +281,8 @@ export default () => {
 
                     // Attach the original error as the cause for debugging.
                     const message = responseStatus
-                        ? `Failed to fetch egg information (HTTP ${responseStatus}).`
-                        : 'Unexpected error while fetching egg information.';
+                        ? `Failed to fetch server software details (HTTP ${responseStatus}).`
+                        : 'Unexpected error while fetching server software details.';
                     throw new Error(message, { cause: result.reason });
                 });
 

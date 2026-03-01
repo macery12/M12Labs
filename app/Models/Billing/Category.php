@@ -87,7 +87,7 @@ class Category extends Model
         $existingEggs = Egg::query()
             ->whereIn('id', $allowedEggs)
             ->pluck('id')
-            ->toArray();
+            ->all();
 
         if (empty($existingEggs)) {
             // Fallback to the legacy single egg_id if it still exists.
