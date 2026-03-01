@@ -35,7 +35,7 @@ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import classNames from 'classnames';
 import { loadStripeOnce } from '@/lib/stripe';
 
-const extractHttpStatusFromError = (reason: unknown): number | undefined => {
+const getResponseStatus = (reason: unknown): number | undefined => {
     if (typeof reason === 'object' && reason !== null) {
         const response = (reason as { response?: { status?: number } }).response;
         return response?.status;
@@ -272,7 +272,7 @@ export default () => {
                         return;
                     }
 
-                    const responseStatus = extractHttpStatusFromError(result.reason);
+                    const responseStatus = getResponseStatus(result.reason);
 
                     if (responseStatus === 404) {
                         removedMissingEggs = true;
@@ -286,13 +286,13 @@ export default () => {
                     throw new Error(message, { cause: result.reason });
                 });
 
-                if (removedMissingEggs) {
-                    addFlash({
-                        key: 'account:billing:order',
-                        type: 'warning',
-                        message: 'Some eggs no longer exist and were removed.',
-                    });
-                }
+                    if (removedMissingEggs) {
+                        addFlash({
+                            key: 'account:billing:order',
+                            type: 'warning',
+                            message: 'Some server software options are no longer available and were removed from selection.',
+                        });
+                    }
 
                 setAvailableEggs(available);
                 if (available.length > 0) {
@@ -553,7 +553,8 @@ export default () => {
                         </div>
                         {availableEggs.length === 0 ? (
                             <Alert type={'warning'}>
-                                No server software options are available for this product. Please contact support.
+                                No server software options are currently available for this product. This may be due to
+                                configuration changes. Please contact support for assistance.
                             </Alert>
                         ) : (
                             <div className={'grid gap-4 sm:grid-cols-2'}>
