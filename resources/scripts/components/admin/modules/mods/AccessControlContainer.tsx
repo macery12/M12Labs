@@ -280,9 +280,7 @@ export default function AccessControlContainer() {
                                     <div className={'flex items-center justify-between'}>
                                         <div>
                                             <p className={'text-base font-semibold text-neutral-50'}>Nests Allowed</p>
-                                            <p className={'text-xs text-neutral-400'}>
-                                                Select nests this provider can use.
-                                            </p>
+                                            <p className={'text-xs text-neutral-400'}>Select nests this provider can use.</p>
                                         </div>
                                         <div className={'flex items-center gap-3 text-xs text-neutral-300'}>
                                             <button
@@ -332,35 +330,37 @@ export default function AccessControlContainer() {
                                     />
                                     <div className={'grid gap-2 md:grid-cols-2 xl:grid-cols-3'}>
                                         {filteredNests.length === 0 && (
-                                            <div className={'text-sm text-neutral-400'}>
-                                                No nests match this search.
-                                            </div>
+                                            <div className={'text-sm text-neutral-400'}>No nests match this search.</div>
                                         )}
-                                        {filteredNests.map(nest => (
-                                            <label
-                                                key={nest.id}
-                                                className={classNames(
-                                                    'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition hover:border-primary-500',
-                                                    (rule.allowed_nest_ids ?? []).includes(nest.id) &&
-                                                        'border-primary-500',
-                                                )}
-                                                style={{
-                                                    backgroundColor: surfaceColor,
-                                                    borderColor: headerColor,
-                                                }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    className={
-                                                        'h-5 w-5 rounded border-neutral-600 bg-neutral-900 text-primary-500 focus:ring-primary-500'
-                                                    }
-                                                    checked={(rule.allowed_nest_ids ?? []).includes(nest.id)}
-                                                    onChange={() => toggleNest(provider.key, nest.id)}
-                                                    disabled={controlsDisabled}
-                                                />
-                                                <span className={'text-sm text-neutral-100'}>{nest.name}</span>
-                                            </label>
-                                        ))}
+                                        {filteredNests.map(nest => {
+                                            const selected = (rule.allowed_nest_ids ?? []).includes(nest.id);
+
+                                            return (
+                                                <label
+                                                    key={nest.id}
+                                                    className={classNames(
+                                                        // NOTE: minimal diff — just added a card-like background + checked highlight bg
+                                                        'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition hover:border-primary-500 bg-neutral-900/40 hover:bg-neutral-900/60',
+                                                        selected && 'border-primary-500 bg-primary-500/10',
+                                                    )}
+                                                    style={{
+                                                        // IMPORTANT: only set borderColor when NOT selected so `border-primary-500` can show
+                                                        borderColor: selected ? undefined : headerColor,
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className={
+                                                            'h-5 w-5 rounded border-neutral-600 bg-neutral-900 text-primary-500 focus:ring-primary-500'
+                                                        }
+                                                        checked={selected}
+                                                        onChange={() => toggleNest(provider.key, nest.id)}
+                                                        disabled={controlsDisabled}
+                                                    />
+                                                    <span className={'text-sm text-neutral-100'}>{nest.name}</span>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -422,33 +422,36 @@ export default function AccessControlContainer() {
                                         {filteredEggs.length === 0 && (
                                             <div className={'text-sm text-neutral-400'}>No eggs match this search.</div>
                                         )}
-                                        {filteredEggs.map(egg => (
-                                            <label
-                                                key={egg.id}
-                                                className={classNames(
-                                                    'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition hover:border-primary-500',
-                                                    (rule.allowed_egg_ids ?? []).includes(egg.id) &&
-                                                        'border-primary-500',
-                                                )}
-                                                style={{
-                                                    backgroundColor: surfaceColor,
-                                                    borderColor: headerColor,
-                                                }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    className={
-                                                        'h-5 w-5 rounded border-neutral-600 bg-neutral-900 text-primary-500 focus:ring-primary-500'
-                                                    }
-                                                    checked={(rule.allowed_egg_ids ?? []).includes(egg.id)}
-                                                    onChange={() => toggleEgg(provider.key, egg.id)}
-                                                    disabled={controlsDisabled}
-                                                />
-                                                <div className={'flex flex-col leading-tight'}>
-                                                    <span className={'text-sm text-neutral-100'}>{egg.name}</span>
-                                                </div>
-                                            </label>
-                                        ))}
+                                        {filteredEggs.map(egg => {
+                                            const selected = (rule.allowed_egg_ids ?? []).includes(egg.id);
+
+                                            return (
+                                                <label
+                                                    key={egg.id}
+                                                    className={classNames(
+                                                        // NOTE: minimal diff — same styling as nests
+                                                        'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition hover:border-primary-500 bg-neutral-900/40 hover:bg-neutral-900/60',
+                                                        selected && 'border-primary-500 bg-primary-500/10',
+                                                    )}
+                                                    style={{
+                                                        borderColor: selected ? undefined : headerColor,
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className={
+                                                            'h-5 w-5 rounded border-neutral-600 bg-neutral-900 text-primary-500 focus:ring-primary-500'
+                                                        }
+                                                        checked={selected}
+                                                        onChange={() => toggleEgg(provider.key, egg.id)}
+                                                        disabled={controlsDisabled}
+                                                    />
+                                                    <div className={'flex flex-col leading-tight'}>
+                                                        <span className={'text-sm text-neutral-100'}>{egg.name}</span>
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
