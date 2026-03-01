@@ -261,11 +261,20 @@ export default () => {
                 eggResults.forEach(result => {
                     if (result.status === 'fulfilled') {
                         available.push(result.value);
-                    } else if (result.reason?.response?.status === 404) {
-                        removedMissingEggs = true;
-                    } else {
-                        throw result.reason;
+                        return;
                     }
+
+                    const responseStatus =
+                        typeof result.reason === 'object' && result.reason
+                            ? (result.reason as any)?.response?.status
+                            : undefined;
+
+                    if (responseStatus === 404) {
+                        removedMissingEggs = true;
+                        return;
+                    }
+
+                    throw result.reason;
                 });
 
                 if (removedMissingEggs) {
@@ -313,7 +322,7 @@ export default () => {
                     // Mollie doesn't need pre-initialization like Stripe
                     // Payment is created when user clicks the button
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error('Error fetching data:', error);
                 clearAndAddHttpError({ key: 'account:billing:order', error });
             }
