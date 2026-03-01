@@ -61,8 +61,8 @@ export default () => {
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
-    const hasEditableVars = eggs?.some(v => v.isEditable) ?? false;
-    const reviewStep = hasEditableVars ? 5 : 4;
+    const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
+    const reviewStep = hasEditableVariables ? 5 : 4;
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -88,7 +88,7 @@ export default () => {
     // Get total number of steps dynamically
     const getTotalSteps = () => {
         let steps = 4; // Node, Egg, Billing, Review (always present)
-        if (hasEditableVars) steps++; // Add variables step if editable vars exist
+        if (hasEditableVariables) steps++; // Add variables step if editable variables exist
         return steps;
     };
 
@@ -115,7 +115,7 @@ export default () => {
         if (step === 1) return hasValidSelectedNode; // Node selection
         if (step === 2) return selectedEggId !== undefined; // Egg selection
         if (step === 3) return selectedBillingDays !== 0; // Billing cycle
-        if (hasEditableVars && step === 4) return true; // Variables (optional inputs)
+        if (hasEditableVariables && step === 4) return true; // Variables (optional inputs)
         if (step === reviewStep) return serverName.trim() !== '' && legalAgreed; // Review
         return false;
     };
@@ -128,7 +128,7 @@ export default () => {
         stepMap[stepNum++] = 'Select Location';
         stepMap[stepNum++] = 'Select Server Type';
         stepMap[stepNum++] = 'Select Billing Cycle';
-        if (hasEditableVars) stepMap[stepNum++] = 'Configure Server';
+        if (hasEditableVariables) stepMap[stepNum++] = 'Configure Server';
         stepMap[stepNum++] = 'Review & Confirm';
         stepMap[stepNum++] = 'Payment';
 
@@ -170,7 +170,7 @@ export default () => {
         });
 
         // Step 4: Variables (if editable variables exist)
-        if (hasEditableVars) {
+        if (hasEditableVariables) {
             const varsStep = stepNum++;
             steps.push({
                 id: varsStep,
@@ -544,7 +544,7 @@ export default () => {
                 );
 
             case 4: // Variables (if any)
-                if (!hasEditableVars) {
+                if (!hasEditableVariables) {
                     return renderReviewStep();
                 }
                 return (
