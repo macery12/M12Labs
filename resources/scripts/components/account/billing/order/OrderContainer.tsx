@@ -279,9 +279,7 @@ export default () => {
                         return;
                     }
 
-                    const error = new Error('Failed to load egg data');
-                    (error as any).cause = result.reason;
-                    throw error;
+                    throw new Error('Failed to load egg data', { cause: result.reason });
                 });
 
                 if (removedMissingEggs) {

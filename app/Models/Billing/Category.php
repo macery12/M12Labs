@@ -86,6 +86,7 @@ class Category extends Model
             ->whereIn('id', $allowedEggs)
             ->pluck('id')
             ->toArray();
+        // Return the concrete IDs the client needs to display, after pruning any missing eggs.
 
         if (empty($existingEggs)) {
             // Fallback to the legacy single egg_id if it still exists.
