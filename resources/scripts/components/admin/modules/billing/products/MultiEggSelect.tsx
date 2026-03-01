@@ -51,7 +51,29 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
                 }
             })
             .catch(error => console.error(error));
-    }, [nestId, selectedEggIds]);
+    }, [nestId]);
+
+    useEffect(() => {
+        if (!eggs) {
+            return;
+        }
+
+        const validEggIds = new Set(eggs.map(egg => egg.id));
+        const filtered = selectedEggIds.filter(id => validEggIds.has(id));
+
+        if (filtered.length === 0 && eggs.length > 0) {
+            filtered.push(eggs[0].id);
+        }
+
+        if (filtered.length > 0) {
+            setSelected(filtered);
+            setEggIdValue(filtered[0]);
+            setEggIdTouched(true);
+            setAllowedEggsValue(filtered);
+            setAllowedEggsTouched(true);
+            onEggSelectionChange(filtered);
+        }
+    }, [selectedEggIds, eggs]);
 
     const handleEggToggle = (eggId: number, checked: boolean) => {
         let newSelected: number[];

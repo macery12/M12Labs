@@ -85,7 +85,7 @@ class CategoryControllerTest extends TestCase
 
         $request = Mockery::mock(UpdateBillingCategoryRequest::class);
         $request->shouldReceive('input')->with('eggId')->andReturn(5);
-        $request->shouldReceive('input')->with('allowedEggs', [5])->andReturn([6]);
+        $request->shouldReceive('input')->with('allowedEggs', [5])->andReturn([5, 6]);
         $request->shouldReceive('input')->with('name')->andReturn('Example');
         $request->shouldReceive('input')->with('icon')->andReturn(null);
         $request->shouldReceive('input')->with('description')->andReturn(null);
