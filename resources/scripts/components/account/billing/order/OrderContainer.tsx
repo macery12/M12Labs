@@ -334,6 +334,10 @@ export default () => {
                 }
             } catch (error: unknown) {
                 console.error('Error fetching billing order data:', error);
+                if (error instanceof Error && error.message) {
+                    addFlash({ key: 'account:billing:order', type: 'error', message: error.message });
+                    return;
+                }
                 clearAndAddHttpError({ key: 'account:billing:order', error });
             }
         };
