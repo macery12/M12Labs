@@ -435,7 +435,6 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{server:id}/unsuspend', [Application\Servers\ServerManagementController::class, 'unsuspend']);
         Route::post('/{server:id}/reinstall', [Application\Servers\ServerManagementController::class, 'reinstall']);
         Route::post('/{server:id}/transfer', [Application\Servers\ServerManagementController::class, 'transfer']);
-        Route::post('/{server:id}/mods/toggle', [Application\Servers\ServerController::class, 'toggleMods']);
 
         Route::post('/{server:id}/delete', [Application\Servers\ServerController::class, 'delete']);
 

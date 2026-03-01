@@ -28,7 +28,6 @@ interface Server {
         threads: string;
     };
     eggFeatures: string[];
-    modsEnabled: boolean;
     modpacksSupported: boolean;
     billingProductId?: number;
     billingDays?: number;

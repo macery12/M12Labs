@@ -43,7 +43,6 @@ export interface Server extends Model {
     allocationId: number;
     eggId: number;
     nestId: number;
-    modsEnabled: boolean;
     limits: ServerLimits;
     featureLimits: {
         databases: number;
@@ -111,16 +110,5 @@ export const useServerFromRoute = (): SWRResponse<LoadedServer, AxiosError> => {
     return useSWR(`/api/application/servers/${params.id}`, async () => getServer(Number(params.id)), {
         revalidateOnMount: false,
         revalidateOnFocus: false,
-    });
-};
-
-/**
- * Toggle the mods module for a server.
- */
-export const toggleServerMods = (id: number, enabled: boolean): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        http.post(`/api/application/servers/${id}/mods/toggle`, { mods_enabled: enabled })
-            .then(() => resolve())
-            .catch(reject);
     });
 };

@@ -79,7 +79,6 @@ function ServerRouter() {
     const server = ServerContext.useStoreState(state => state.server.data);
     const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.server);
     const billable = server?.billingProductId;
-    const modsEnabled = server?.modsEnabled;
     const status = ServerContext.useStoreState(state => state.status.value);
 
     const categories = ['data', 'configuration'] as const;
@@ -143,7 +142,7 @@ function ServerRouter() {
                         .filter(
                             route =>
                                 route.name &&
-                                (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                                (!route.condition || route.condition({ billable, activityEnabled })),
                         )
                         .map(route => (
                             <MobileSidebar.Link
@@ -186,7 +185,7 @@ function ServerRouter() {
                                 route =>
                                     !route.category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                                    (!route.condition || route.condition({ billable, activityEnabled })),
                             )
                             .map(route => (
                                 <NavLink to={route.path} key={route.path} end={route.end}>
@@ -199,7 +198,7 @@ function ServerRouter() {
                                 route =>
                                     route.category === category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled })),
+                                    (!route.condition || route.condition({ billable, activityEnabled })),
                             );
                             if (categoryRoutes.length === 0) return null;
 
