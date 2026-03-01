@@ -75,7 +75,7 @@ const server: ServerRouteDefinition[] = [
         category: 'configuration',
     }),
     route('settings/*', ServerSettingsContainer, {
-        permission: ['settings.*', 'billing.*'],
+        permission: 'settings.*',
         name: 'Settings',
         icon: Icon.CogIcon,
         category: 'configuration',
