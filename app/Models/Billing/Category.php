@@ -87,7 +87,14 @@ class Category extends Model
             ->pluck('id')
             ->all();
 
-        return !empty($existingEggs) ? $existingEggs : [$this->egg_id];
+        if (!empty($existingEggs)) {
+            return $existingEggs;
+        }
+
+        // Fallback to the legacy single egg_id if it still exists.
+        $defaultEgg = Egg::query()->find($this->egg_id);
+
+        return $defaultEgg ? [$defaultEgg->id] : [];
     }
 
     /**

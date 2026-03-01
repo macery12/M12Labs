@@ -277,7 +277,12 @@ export default () => {
                 }
 
                 setAvailableEggs(available);
-                setSelectedEggId(available.length > 0 ? available[0].id : undefined);
+                if (available.length > 0) {
+                    setSelectedEggId(available[0].id);
+                } else {
+                    setSelectedEggId(undefined);
+                    setEggs(undefined);
+                }
 
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
@@ -310,6 +315,7 @@ export default () => {
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
+                clearAndAddHttpError({ key: 'account:billing:order', error });
             }
         };
 
