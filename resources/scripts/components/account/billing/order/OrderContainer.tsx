@@ -279,7 +279,10 @@ export default () => {
                         return;
                     }
 
-                    throw new Error('Unexpected error while fetching egg information', { cause: result.reason });
+                    const message = responseStatus
+                        ? `Failed to fetch egg information (HTTP ${responseStatus}).`
+                        : 'Unexpected error while fetching egg information.';
+                    throw new Error(message, { cause: result.reason });
                 });
 
                 if (removedMissingEggs) {
@@ -328,7 +331,7 @@ export default () => {
                     // Payment is created when user clicks the button
                 }
             } catch (error: unknown) {
-                console.error('Error fetching data:', error);
+                console.error('Error fetching billing order data:', error);
                 clearAndAddHttpError({ key: 'account:billing:order', error });
             }
         };
