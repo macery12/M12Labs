@@ -335,6 +335,139 @@ export default () => {
 
     // Render different content based on current step
     const renderStepContent = () => {
+        const renderReviewStep = () => (
+            <div className={'space-y-6'}>
+                <div>
+                    <h2 className={'text-3xl font-bold text-gray-100'}>Review and Confirm</h2>
+                    <p className={'mt-2 text-gray-400'}>Almost done! Name your server and review your order.</p>
+                </div>
+
+                {/* Server Name Section */}
+                <div className={'rounded-lg border p-6'} style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}>
+                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
+                    <input
+                        id={'server-name-input'}
+                        type={'text'}
+                        placeholder={'Enter a name for your server'}
+                        value={serverName}
+                        onChange={e => {
+                            setServerName(e.target.value);
+                            setServerNameTouched(true);
+                        }}
+                        required
+                        maxLength={191}
+                        aria-invalid={serverNameTouched && !serverName.trim()}
+                        aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
+                        className={classNames(
+                            'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
+                            'text-gray-200 placeholder-gray-500',
+                            'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                            {
+                                'border-gray-600': !serverNameTouched,
+                                'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
+                                'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
+                            },
+                        )}
+                        style={{
+                            backgroundColor: colors.secondary,
+                        }}
+                    />
+                    {serverNameTouched && !serverName.trim() && (
+                        <p id={'server-name-error'} className={'mt-2 text-xs text-red-400'} role={'alert'}>
+                            Server name is required to continue
+                        </p>
+                    )}
+                </div>
+
+                {/* Server Configuration Overview */}
+                <div className={'rounded-lg border p-6'} style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}>
+                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Configuration</h3>
+                    <div className={'space-y-3'}>
+                        {/* Product with Icon */}
+                        <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
+                            {product.icon && <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />}
+                            <div>
+                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                <p className={'text-sm text-gray-400'}>
+                                    {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Resources Grid */}
+                        <div className={'grid grid-cols-3 gap-4 pt-2'}>
+                            <div className={'text-center'}>
+                                <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                <p className={'text-xs text-gray-500'}>CPU</p>
+                                <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
+                            </div>
+                            <div className={'text-center'}>
+                                <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                <p className={'text-xs text-gray-500'}>RAM</p>
+                                <p className={'text-sm font-medium text-gray-200'}>
+                                    {(product.limits.memory / 1024).toFixed(1)} GB
+                                </p>
+                            </div>
+                            <div className={'text-center'}>
+                                <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                <p className={'text-xs text-gray-500'}>Storage</p>
+                                <p className={'text-sm font-medium text-gray-200'}>{(product.limits.disk / 1024).toFixed(1)} GB</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Legal Agreements */}
+                <div className={'rounded-lg border p-6'} style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}>
+                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Terms & Conditions</h3>
+                    <div
+                        className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
+                        style={
+                            legalAgreed
+                                ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                : { borderColor: '#374151', backgroundColor: colors.secondary }
+                        }
+                        onClick={() => setLegalAgreed(!legalAgreed)}
+                    >
+                        <AdminCheckbox name={'legal'} checked={legalAgreed} onChange={() => setLegalAgreed(!legalAgreed)} />
+                        <div className={'min-w-0 flex-1'}>
+                            <p className={'text-sm font-medium text-gray-200'}>
+                                I agree to the{' '}
+                                <a
+                                    href={billing.links.terms}
+                                    target={'_blank'}
+                                    rel={'noreferrer'}
+                                    className={'hover:brightness-125'}
+                                    style={{ color: colors.primary }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    Terms of Service
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                </a>
+                                {' and '}
+                                <a
+                                    href={billing.links.privacy}
+                                    target={'_blank'}
+                                    rel={'noreferrer'}
+                                    className={'hover:brightness-125'}
+                                    style={{ color: colors.primary }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    Privacy Policy
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                </a>
+                            </p>
+                            {legalAgreed && (
+                                <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
+                                    ✓ Accepted
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
         switch (currentStep) {
             case 1: // Node Selection
                 return (
@@ -411,193 +544,29 @@ export default () => {
                 );
 
             case 4: // Variables (if any)
-                if (hasEditableVars) {
-                    return (
-                        <div className={'space-y-6'}>
-                            <div>
-                                <h2 className={'text-3xl font-bold text-gray-100'}>Configure Server</h2>
-                                <p className={'mt-2 text-gray-400'}>Set up your server variables and configuration.</p>
-                            </div>
-                            <div className={'grid gap-4 sm:grid-cols-2'}>
-                                {eggs?.map(variable => (
-                                    <div key={variable.envVariable}>
-                                        {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
+                if (!hasEditableVars) {
+                    return renderReviewStep();
                 }
-                // When there are no editable variables, fall through so the default review step renders.
+                return (
+                    <div className={'space-y-6'}>
+                        <div>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Configure Server</h2>
+                            <p className={'mt-2 text-gray-400'}>Set up your server variables and configuration.</p>
+                        </div>
+                        <div className={'grid gap-4 sm:grid-cols-2'}>
+                            {eggs?.map(variable => (
+                                <div key={variable.envVariable}>
+                                    {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
 
             default: // Review & Name Server
                 const finalStep = getTotalSteps();
                 if (currentStep === finalStep) {
-                    return (
-                        <div className={'space-y-6'}>
-                            <div>
-                                <h2 className={'text-3xl font-bold text-gray-100'}>Review and Confirm</h2>
-                                <p className={'mt-2 text-gray-400'}>
-                                    Almost done! Name your server and review your order.
-                                </p>
-                            </div>
-
-                            {/* Server Name Section */}
-                            <div
-                                className={'rounded-lg border p-6'}
-                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                            >
-                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
-                                <input
-                                    id={'server-name-input'}
-                                    type={'text'}
-                                    placeholder={'Enter a name for your server'}
-                                    value={serverName}
-                                    onChange={e => {
-                                        setServerName(e.target.value);
-                                        setServerNameTouched(true);
-                                    }}
-                                    required
-                                    maxLength={191}
-                                    aria-invalid={serverNameTouched && !serverName.trim()}
-                                    aria-describedby={
-                                        serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
-                                    }
-                                    className={classNames(
-                                        'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
-                                        'text-gray-200 placeholder-gray-500',
-                                        'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                                        {
-                                            'border-gray-600': !serverNameTouched,
-                                            'border-green-500 focus:border-green-500':
-                                                serverNameTouched && serverName.trim(),
-                                            'border-red-500 focus:border-red-500':
-                                                serverNameTouched && !serverName.trim(),
-                                        },
-                                    )}
-                                    style={{
-                                        backgroundColor: colors.secondary,
-                                    }}
-                                />
-                                {serverNameTouched && !serverName.trim() && (
-                                    <p id={'server-name-error'} className={'mt-2 text-xs text-red-400'} role={'alert'}>
-                                        Server name is required to continue
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Server Configuration Overview */}
-                            <div
-                                className={'rounded-lg border p-6'}
-                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                            >
-                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Configuration</h3>
-                                <div className={'space-y-3'}>
-                                    {/* Product with Icon */}
-                                    <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
-                                        {product.icon && (
-                                            <img
-                                                src={product.icon}
-                                                className={'h-10 w-10 rounded'}
-                                                alt={product.name}
-                                            />
-                                        )}
-                                        <div>
-                                            <p className={'font-semibold text-gray-200'}>{product.name}</p>
-                                            <p className={'text-sm text-gray-400'}>
-                                                {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}{' '}
-                                                billing cycle
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Resources Grid */}
-                                    <div className={'grid grid-cols-3 gap-4 pt-2'}>
-                                        <div className={'text-center'}>
-                                            <FontAwesomeIcon
-                                                icon={faMicrochip}
-                                                className={'h-4 w-4 mb-1 text-gray-500'}
-                                            />
-                                            <p className={'text-xs text-gray-500'}>CPU</p>
-                                            <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
-                                        </div>
-                                        <div className={'text-center'}>
-                                            <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                            <p className={'text-xs text-gray-500'}>RAM</p>
-                                            <p className={'text-sm font-medium text-gray-200'}>
-                                                {(product.limits.memory / 1024).toFixed(1)} GB
-                                            </p>
-                                        </div>
-                                        <div className={'text-center'}>
-                                            <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                            <p className={'text-xs text-gray-500'}>Storage</p>
-                                            <p className={'text-sm font-medium text-gray-200'}>
-                                                {(product.limits.disk / 1024).toFixed(1)} GB
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Legal Agreements */}
-                            <div
-                                className={'rounded-lg border p-6'}
-                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                            >
-                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Terms & Conditions</h3>
-                                <div
-                                    className={
-                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'
-                                    }
-                                    style={
-                                        legalAgreed
-                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
-                                    }
-                                    onClick={() => setLegalAgreed(!legalAgreed)}
-                                >
-                                    <AdminCheckbox
-                                        name={'legal'}
-                                        checked={legalAgreed}
-                                        onChange={() => setLegalAgreed(!legalAgreed)}
-                                    />
-                                    <div className={'min-w-0 flex-1'}>
-                                        <p className={'text-sm font-medium text-gray-200'}>
-                                            I agree to the{' '}
-                                            <a
-                                                href={billing.links.terms}
-                                                target={'_blank'}
-                                                rel={'noreferrer'}
-                                                className={'hover:brightness-125'}
-                                                style={{ color: colors.primary }}
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                Terms of Service
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
-                                            </a>
-                                            {' and '}
-                                            <a
-                                                href={billing.links.privacy}
-                                                target={'_blank'}
-                                                rel={'noreferrer'}
-                                                className={'hover:brightness-125'}
-                                                style={{ color: colors.primary }}
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                Privacy Policy
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
-                                            </a>
-                                        </p>
-                                        {legalAgreed && (
-                                            <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
-                                                ✓ Accepted
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
+                    return renderReviewStep();
                 }
 
                 // Payment step
