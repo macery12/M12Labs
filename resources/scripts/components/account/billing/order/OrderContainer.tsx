@@ -258,7 +258,7 @@ export default () => {
                 const available: EggInfo[] = [];
                 let removedMissingEggs = false;
 
-                eggResults.forEach((result, index) => {
+                eggResults.forEach(result => {
                     if (result.status === 'fulfilled') {
                         available.push(result.value);
                     } else if (result.reason?.response?.status === 404) {
@@ -277,7 +277,7 @@ export default () => {
                 }
 
                 setAvailableEggs(available);
-                setSelectedEggId(available[0]?.id);
+                setSelectedEggId(available.length > 0 ? available[0].id : undefined);
 
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
