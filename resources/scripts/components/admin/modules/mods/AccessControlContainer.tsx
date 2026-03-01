@@ -11,6 +11,7 @@ import {
 } from '@/api/routes/admin/plugins/providers';
 import useFlash, { useFlashKey } from '@/plugins/useFlash';
 import classNames from 'classnames';
+import { useStoreState } from '@/state/hooks';
 
 const providers = [
     { key: 'modrinth.mods', label: 'Modrinth', description: 'Mods' },
@@ -101,6 +102,9 @@ export default function AccessControlContainer() {
 
     const { clearAndAddHttpError, clearFlashes: clearPluginFlashes } = useFlashKey('admin:plugins');
     const { addFlash } = useFlash();
+    const theme = useStoreState(state => state.theme.data!);
+    const surfaceColor = theme.colors.secondary;
+    const headerColor = theme.colors.headers;
 
     useEffect(() => {
         clearPluginFlashes();
@@ -247,10 +251,14 @@ export default function AccessControlContainer() {
                                     disabled={saving}
                                     aria-label={`Toggle ${provider.label} provider`}
                                     className={classNames(
-                                        'relative inline-flex h-8 w-16 items-center rounded-full border border-neutral-700 transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-neutral-900',
-                                        rule.enabled_global ? 'bg-primary-500/80' : 'bg-neutral-800',
+                                        'relative inline-flex h-8 w-16 items-center rounded-full border transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-neutral-900',
+                                        rule.enabled_global ? 'bg-primary-500/80' : '',
                                         saving && 'opacity-50 cursor-not-allowed',
                                     )}
+                                    style={{
+                                        borderColor: headerColor,
+                                        backgroundColor: rule.enabled_global ? undefined : surfaceColor,
+                                    }}
                                 >
                                     <span
                                         className={classNames(
@@ -315,8 +323,12 @@ export default function AccessControlContainer() {
                                             )
                                         }
                                         className={
-                                            'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed'
+                                            'w-full rounded-md border px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed'
                                         }
+                                        style={{
+                                            backgroundColor: surfaceColor,
+                                            borderColor: headerColor,
+                                        }}
                                     />
                                     <div className={'grid gap-2 md:grid-cols-2 xl:grid-cols-3'}>
                                         {filteredNests.length === 0 && (
@@ -328,10 +340,14 @@ export default function AccessControlContainer() {
                                             <label
                                                 key={nest.id}
                                                 className={classNames(
-                                                    'flex cursor-pointer items-center gap-3 rounded-md border border-neutral-700 bg-neutral-800/50 px-3 py-2 transition hover:border-primary-500 hover:bg-neutral-800',
+                                                    'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition hover:border-primary-500',
                                                     (rule.allowed_nest_ids ?? []).includes(nest.id) &&
                                                         'border-primary-500',
                                                 )}
+                                                style={{
+                                                    backgroundColor: surfaceColor,
+                                                    borderColor: headerColor,
+                                                }}
                                             >
                                                 <input
                                                     type="checkbox"
@@ -395,8 +411,12 @@ export default function AccessControlContainer() {
                                             )
                                         }
                                         className={
-                                            'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed'
+                                            'w-full rounded-md border px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed'
                                         }
+                                        style={{
+                                            backgroundColor: surfaceColor,
+                                            borderColor: headerColor,
+                                        }}
                                     />
                                     <div className={'grid gap-2 md:grid-cols-2 xl:grid-cols-3'}>
                                         {filteredEggs.length === 0 && (
@@ -406,10 +426,14 @@ export default function AccessControlContainer() {
                                             <label
                                                 key={egg.id}
                                                 className={classNames(
-                                                    'flex cursor-pointer items-center gap-3 rounded-md border border-neutral-700 bg-neutral-800/50 px-3 py-2 transition hover:border-primary-500 hover:bg-neutral-800',
+                                                    'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition hover:border-primary-500',
                                                     (rule.allowed_egg_ids ?? []).includes(egg.id) &&
                                                         'border-primary-500',
                                                 )}
+                                                style={{
+                                                    backgroundColor: surfaceColor,
+                                                    borderColor: headerColor,
+                                                }}
                                             >
                                                 <input
                                                     type="checkbox"
@@ -437,7 +461,11 @@ export default function AccessControlContainer() {
                 className={
                     'sticky bottom-0 z-10 mt-4 flex flex-col gap-3 border-t border-neutral-800 bg-neutral-900/90 px-4 py-3 backdrop-blur'
                 }
-                style={{ minHeight: STICKY_ACTION_BAR_HEIGHT }}
+                style={{
+                    minHeight: STICKY_ACTION_BAR_HEIGHT,
+                    backgroundColor: surfaceColor,
+                    borderColor: headerColor,
+                }}
             >
                 <div className={'flex items-center justify-between'}>
                     <div className={'flex items-center gap-3'}>
