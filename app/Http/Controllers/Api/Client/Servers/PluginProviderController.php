@@ -17,8 +17,7 @@ class PluginProviderController extends ClientApiController
 
     public function capabilities(Server $server): JsonResponse
     {
-        $modsEnabled = $server->mods_enabled
-            && (bool) Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false));
+        $modsEnabled = (bool) Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false));
 
         if (!$modsEnabled) {
             return response()->json([
@@ -33,8 +32,7 @@ class PluginProviderController extends ClientApiController
 
     public function index(Server $server): JsonResponse
     {
-        $modsEnabled = $server->mods_enabled
-            && (bool) Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false));
+        $modsEnabled = (bool) Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false));
 
         if (!$modsEnabled) {
             return response()->json([

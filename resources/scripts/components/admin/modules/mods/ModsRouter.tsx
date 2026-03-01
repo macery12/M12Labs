@@ -8,7 +8,6 @@ import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import EnableMods from '@admin/modules/mods/EnableMods';
 import OverviewContainer from '@admin/modules/mods/OverviewContainer';
 import SettingsContainer from './SettingsContainer';
-import ServersContainer from './ServersContainer';
 import AccessControlContainer from './AccessControlContainer';
 
 export default () => {
@@ -26,7 +25,6 @@ export default () => {
     return (
         <AdminContentBlock title={'Marketplace'}>
             <FlashMessageRender byKey={'admin:plugins'} className={'mb-4'} />
-            <FlashMessageRender byKey={'plugins:servers'} className={'mb-4'} />
             <div className={'mb-8 flex w-full flex-row items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Marketplace</h2>
@@ -43,9 +41,6 @@ export default () => {
                 <SubNavigationLink to={`${basePath}`} name={'Overview'} base>
                     <DatabaseIcon />
                 </SubNavigationLink>
-                <SubNavigationLink to={`${basePath}/servers`} name={'Servers'}>
-                    <ServerIcon />
-                </SubNavigationLink>
                 <SubNavigationLink to={`${basePath}/settings`} name={'Settings'}>
                     <CogIcon />
                 </SubNavigationLink>
@@ -55,7 +50,6 @@ export default () => {
             </SubNavigation>
             <Routes>
                 <Route path={'/'} element={<OverviewContainer />} />
-                <Route path={'/servers'} element={<ServersContainer />} />
                 <Route path={'/settings'} element={<SettingsContainer />} />
                 <Route path={'/access-control'} element={<AccessControlContainer />} />
 

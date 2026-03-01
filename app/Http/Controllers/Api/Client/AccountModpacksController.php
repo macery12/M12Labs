@@ -141,9 +141,7 @@ class AccountModpacksController extends ClientApiController
             $user = $request->user();
 
             // Get all servers owned by the user
-            $servers = Server::where('owner_id', $user->id)
-                ->where('mods_enabled', true)
-                ->get();
+            $servers = Server::where('owner_id', $user->id)->get();
 
             // Filter servers to only those with CurseForge-compatible eggs
             $compatibleServers = [];
@@ -264,12 +262,6 @@ class AccountModpacksController extends ClientApiController
                 return response()->json([
                     'error' => 'Server not found or you do not have access to it.',
                 ], 404);
-            }
-
-            if (!$server->mods_enabled) {
-                return response()->json([
-                    'error' => 'Mods are not enabled for this server.',
-                ], 403);
             }
 
             // Get the CurseForge API key from settings

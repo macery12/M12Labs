@@ -52,7 +52,6 @@ const isMarketplaceType = (type: ContentTab | null): type is ContentType =>
 const ModsAndPluginsPage = () => {
     const modSettings = useStoreState(state => state.everest?.data?.mods);
     const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
-    const serverModsEnabled = ServerContext.useStoreState(state => state.server.data?.modsEnabled ?? false);
     const uuidFallback = useStoreState(state => state.server?.data?.uuid);
     const uuid = serverUuid ?? uuidFallback;
 
@@ -60,7 +59,7 @@ const ModsAndPluginsPage = () => {
     const [providerAccess, setProviderAccess] = useState<PluginCapabilityResponse | null>(null);
     const [loadingProviders, setLoadingProviders] = useState(true);
 
-    const modsFeatureEnabled = (modSettings?.enabled ?? false) && serverModsEnabled;
+    const modsFeatureEnabled = modSettings?.enabled ?? false;
     const curseforgeConfigured = !!modSettings?.curseforge_api_key;
 
     useEffect(() => {

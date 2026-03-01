@@ -19,7 +19,6 @@ interface Props {
 
 export default ({ sourceOverride }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
-    const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
     const spigotEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
@@ -78,7 +77,7 @@ export default ({ sourceOverride }: Props) => {
     }, [sourceOverride]);
 
     useEffect(() => {
-        if (!modsEnabled) return;
+        if (!globalModsEnabled) return;
 
         setLoading(true);
         searchMods(uuid, searchParams)
@@ -94,7 +93,7 @@ export default ({ sourceOverride }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, searchParams, modsEnabled]);
+    }, [uuid, searchParams, globalModsEnabled]);
 
     const handleSearch = (params: ModSearchParams) => {
         setSelectedMod(null); // Close modal when searching
@@ -143,24 +142,8 @@ export default ({ sourceOverride }: Props) => {
         );
     }
 
-    if (!modsEnabled) {
-        return (
-            <PageContentBlock title={'Mods Browser'} header description={'Browse and install Minecraft mods.'}>
-                <div css={tw`text-center py-16`}>
-                    <p css={tw`text-neutral-300 text-lg mb-4`}>Mods are not enabled for this server.</p>
-                    <p css={tw`text-neutral-400 text-sm mb-2`}>
-                        An administrator needs to enable the mods feature for this specific server.
-                    </p>
-                    <p css={tw`text-neutral-400 text-xs`}>
-                        This can be done in the admin panel under Servers → [Server Name] → Mods Toggle.
-                    </p>
-                </div>
-            </PageContentBlock>
-        );
-    }
-
     return (
-            <PageContentBlock
+        <PageContentBlock
                 title={'Mods Browser'}
                 header
                 description={`Browse and install Minecraft mods from ${

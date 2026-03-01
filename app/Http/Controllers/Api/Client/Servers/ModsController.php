@@ -91,10 +91,6 @@ class ModsController extends ClientApiController
 
     private function checkProviderAllowed(Server $server, ?string $source, string $resource = 'mods'): ?JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return $this->denyResponse();
-        }
-
         $providerKey = $this->resolveProviderKey($source, $resource);
 
         if (!$this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id)) {
@@ -114,14 +110,6 @@ class ModsController extends ClientApiController
 
         $result = [];
         foreach ($providers as $providerKey) {
-            if (!$server->mods_enabled) {
-                $result[$providerKey] = [
-                    'allowed' => false,
-                    'reason' => 'Plugins module is disabled for this server.',
-                ];
-                continue;
-            }
-
             $result[$providerKey] = [
                 'allowed' => $this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id),
                 'reason' => "Disabled by administrator for this server's egg/nest.",

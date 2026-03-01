@@ -17,7 +17,6 @@ const REQUIRED_MODPACK_VARIABLES = ['PROJECT_ID', 'VERSION_ID'] as const;
 
 export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
-    const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const { addError } = useFlash();
 
@@ -44,7 +43,7 @@ export default () => {
     });
 
     // Only fetch startup data if mods are enabled
-    const shouldFetchStartup = modsEnabled && globalModsEnabled;
+    const shouldFetchStartup = globalModsEnabled;
     const { data: startupData, error: startupError } = getServerStartup(
         uuid,
         shouldFetchStartup ? undefined : { invocation: '', variables: [], dockerImages: {} },
@@ -72,7 +71,7 @@ export default () => {
     }, [startupData, startupError, shouldFetchStartup]);
 
     useEffect(() => {
-        if (!modsEnabled || !modpacksSupported) return;
+        if (!modpacksSupported) return;
 
         setLoading(true);
         searchModpacks(uuid, searchParams)
@@ -85,7 +84,7 @@ export default () => {
                 addError({ key: 'modpacks', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, searchParams, modsEnabled, modpacksSupported]);
+    }, [uuid, searchParams, modpacksSupported]);
 
     const handleSearch = (params: ModpackSearchParams) => {
         setSelectedModpack(null); // Close modal when searching
@@ -108,22 +107,6 @@ export default () => {
                     <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
                     <p css={tw`text-neutral-400 text-sm`}>
                         Contact your panel administrator to enable the Mods module in the admin area.
-                    </p>
-                </div>
-            </PageContentBlock>
-        );
-    }
-
-    if (!modsEnabled) {
-        return (
-            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
-                <div css={tw`text-center py-16`}>
-                    <p css={tw`text-neutral-300 text-lg mb-4`}>Mods are not enabled for this server.</p>
-                    <p css={tw`text-neutral-400 text-sm mb-2`}>
-                        An administrator needs to enable the mods feature for this specific server.
-                    </p>
-                    <p css={tw`text-neutral-400 text-xs`}>
-                        This can be done in the admin panel under Servers → [Server Name] → Mods Toggle.
                     </p>
                 </div>
             </PageContentBlock>

@@ -37,7 +37,7 @@ class ServerTransformer extends Transformer
 
         // Check if server supports modpacks by checking for required environment variables
         $modpacksSupported = false;
-        if ($server->mods_enabled && $server->relationLoaded('variables')) {
+        if ($server->relationLoaded('variables')) {
             $hasProjectId = false;
             $hasVersionId = false;
 
@@ -84,7 +84,6 @@ class ServerTransformer extends Transformer
             'docker_image' => $server->image,
             'egg_features' => $server->egg->inherit_features,
             'egg_id' => $server->egg_id,
-            'mods_enabled' => $server->mods_enabled,
             'modpacks_supported' => $modpacksSupported,
             'billing_product_id' => $server->billing_product_id,
             'billing_days' => $server->billing_days,
