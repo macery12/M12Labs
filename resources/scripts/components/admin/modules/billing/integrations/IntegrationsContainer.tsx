@@ -10,7 +10,8 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
-    const updateEverest = useStoreActions(s => s.everest.updateEverest);
+    const theme = useStoreState(s => s.theme.data!);
+    const _updateEverest = useStoreActions(s => s.everest.updateEverest);
     const [loading, setLoading] = useState<string | null>(null);
 
     const integrations = createIntegrationRegistry(settings);
@@ -50,11 +51,18 @@ export default () => {
                         className={'relative'}
                     >
                         <div className={'absolute top-4 right-4'}>
-                            {integration.enabled ? (
-                                <FontAwesomeIcon icon={faCheckCircle} className={'text-xl text-green-500'} />
-                            ) : (
-                                <FontAwesomeIcon icon={faTimesCircle} className={'text-xl text-gray-500'} />
-                            )}
+                            <span
+                                className={
+                                    'flex h-8 w-8 items-center justify-center rounded-full border border-black/30 shadow-md'
+                                }
+                                style={{ backgroundColor: theme.colors.headers }}
+                            >
+                                {integration.enabled ? (
+                                    <FontAwesomeIcon icon={faCheckCircle} className={'text-lg text-green-500'} />
+                                ) : (
+                                    <FontAwesomeIcon icon={faTimesCircle} className={'text-lg text-gray-500'} />
+                                )}
+                            </span>
                         </div>
 
                         <p className={'mb-4 text-sm text-neutral-400'}>{integration.description}</p>
