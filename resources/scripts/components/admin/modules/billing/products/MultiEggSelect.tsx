@@ -59,13 +59,16 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
         }
 
         const validEggIds = new Set(eggs.map(egg => egg.id));
-        const filtered = selectedEggIds.filter(id => validEggIds.has(id));
+        let filtered = selectedEggIds.filter(id => validEggIds.has(id));
 
         if (filtered.length === 0 && eggs.length > 0) {
-            filtered.push(eggs[0].id);
+            filtered = [eggs[0].id];
         }
 
-        if (filtered.length > 0) {
+        const isSameSelection =
+            filtered.length === selectedEggIds.length && filtered.every((id, index) => id === selectedEggIds[index]);
+
+        if (filtered.length > 0 && !isSameSelection) {
             setSelected(filtered);
             setEggIdValue(filtered[0]);
             setEggIdTouched(true);
