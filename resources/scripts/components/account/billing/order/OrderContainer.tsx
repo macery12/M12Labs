@@ -314,10 +314,6 @@ export default () => {
                     // Payment is created when user clicks the button
                 }
             } catch (error: any) {
-                // Non-404 errors should surface to the user; ignore handled egg 404s only.
-                if (error?.response?.status === 404 && error?.response?.config?.url?.includes('/billing/eggs/')) {
-                    return;
-                }
                 console.error('Error fetching data:', error);
                 clearAndAddHttpError({ key: 'account:billing:order', error });
             }

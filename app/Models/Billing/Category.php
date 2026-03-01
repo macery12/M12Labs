@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Category extends Model
 {
-    protected ?array $resolvedAllowedEggs = null;
     /**
      * The resource name for this model when it is transformed into an
      * API representation using fractal.
@@ -77,10 +76,6 @@ class Category extends Model
      */
     public function getAllowedEggs(): array
     {
-        if (is_array($this->resolvedAllowedEggs)) {
-            return $this->resolvedAllowedEggs;
-        }
-
         $allowedEggs = $this->allowed_eggs;
 
         if (empty($allowedEggs) || !is_array($allowedEggs)) {
@@ -98,7 +93,7 @@ class Category extends Model
             $existingEggs = $defaultEgg ? [$defaultEgg->id] : [];
         }
 
-        return $this->resolvedAllowedEggs = $existingEggs;
+        return $existingEggs;
     }
 
     /**
