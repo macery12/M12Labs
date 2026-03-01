@@ -130,7 +130,11 @@ class CategoryController extends ApplicationApiController
         )));
 
         if (!empty($allowedEggs)) {
-            $allowedEggs = Egg::query()->whereIn('id', $allowedEggs)->pluck('id')->all();
+            $allowedEggs = Egg::query()
+                ->where('nest_id', $defaultEgg->nest_id)
+                ->whereIn('id', $allowedEggs)
+                ->pluck('id')
+                ->all();
         }
 
         if (empty($allowedEggs)) {
