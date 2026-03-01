@@ -254,6 +254,14 @@ export default () => {
                 // Initialize selected egg with the default (first allowed egg)
                 const allowedEggs = productData.allowedEggs || [productData.eggId];
 
+                const getResponseStatus = (reason: unknown): number | undefined => {
+                    if (typeof reason === 'object' && reason !== null) {
+                        const response = (reason as { response?: { status?: number } }).response;
+                        return response?.status;
+                    }
+                    return undefined;
+                };
+
                 const eggResults = await Promise.allSettled(allowedEggs.map(id => getEggInfo(id)));
                 const available: EggInfo[] = [];
                 let removedMissingEggs = false;
@@ -264,17 +272,16 @@ export default () => {
                         return;
                     }
 
-                    const responseStatus =
-                        typeof result.reason === 'object' && result.reason
-                            ? (result.reason as any)?.response?.status
-                            : undefined;
+                    const responseStatus = getResponseStatus(result.reason);
 
                     if (responseStatus === 404) {
                         removedMissingEggs = true;
                         return;
                     }
 
-                    throw result.reason;
+                    const error = new Error('Failed to load egg data');
+                    (error as any).cause = result.reason;
+                    throw error;
                 });
 
                 if (removedMissingEggs) {
