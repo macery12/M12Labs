@@ -152,18 +152,6 @@ export default () => {
                             </CopyOnClick>
                         </div>
                         <div>
-                            <Label>Server Identifier</Label>
-                            <CopyOnClick text={server.id}>
-                                <p css={tw`font-mono text-gray-200`}>{server.id}</p>
-                            </CopyOnClick>
-                        </div>
-                        <div>
-                            <Label>Internal ID</Label>
-                            <CopyOnClick text={String(server.internalId)}>
-                                <p css={tw`font-mono text-gray-200`}>{server.internalId}</p>
-                            </CopyOnClick>
-                        </div>
-                        <div>
                             <Label>Node</Label>
                             <p css={tw`text-gray-200`}>{server.node}</p>
                             {server.nodeId && (
@@ -172,9 +160,6 @@ export default () => {
                         </div>
                     </div>
                 </TitledGreyBox>
-            </div>
-
-            <div css={tw`mt-4`}>
                 <Can action={'settings.reinstall'} renderOnError={null}>
                     <ChangeEggContainer />
                 </Can>
