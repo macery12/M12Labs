@@ -62,6 +62,7 @@ export default () => {
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVars = eggs?.some(v => v.isEditable) ?? false;
+    const reviewStep = hasEditableVars ? 5 : 4;
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -111,20 +112,12 @@ export default () => {
 
     // Check if current step is valid
     const isStepValid = (step: number) => {
-        switch (step) {
-            case 1: // Node selection
-                return hasValidSelectedNode;
-            case 2: // Egg selection
-                return selectedEggId !== undefined;
-            case 3: // Billing cycle
-                return selectedBillingDays !== 0;
-            case 4: // Variables (if applicable) or Review when no variables
-                return hasEditableVars ? true : serverName.trim() !== '' && legalAgreed;
-            case 5: // Review when variables exist
-                return hasEditableVars ? serverName.trim() !== '' && legalAgreed : false;
-            default:
-                return false;
-        }
+        if (step === 1) return hasValidSelectedNode; // Node selection
+        if (step === 2) return selectedEggId !== undefined; // Egg selection
+        if (step === 3) return selectedBillingDays !== 0; // Billing cycle
+        if (hasEditableVars && step === 4) return true; // Variables (optional inputs)
+        if (step === reviewStep) return serverName.trim() !== '' && legalAgreed; // Review
+        return false;
     };
 
     // Get step title
@@ -435,7 +428,7 @@ export default () => {
                         </div>
                     );
                 }
-                // fall through to review
+                // When there are no editable variables, fall through so the default review step renders.
 
             default: // Review & Name Server
                 const finalStep = getTotalSteps();
