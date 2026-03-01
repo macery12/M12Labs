@@ -3,6 +3,7 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\Egg;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -81,7 +82,12 @@ class Category extends Model
             return [$this->egg_id];
         }
 
-        return $allowedEggs;
+        $existingEggs = Egg::query()
+            ->whereIn('id', $allowedEggs)
+            ->pluck('id')
+            ->all();
+
+        return !empty($existingEggs) ? $existingEggs : [$this->egg_id];
     }
 
     /**

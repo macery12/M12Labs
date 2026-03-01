@@ -39,7 +39,7 @@ export default () => {
     const params = useParams<'id'>();
 
     const vars = useRef(new Map<string, string>()).current;
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
 
     const billing = useStoreState(state => state.everest.data!.billing);
@@ -253,12 +253,31 @@ export default () => {
 
                 // Initialize selected egg with the default (first allowed egg)
                 const allowedEggs = productData.allowedEggs || [productData.eggId];
-                setSelectedEggId(allowedEggs[0]);
 
-                // Fetch egg information for all allowed eggs
-                const eggInfoPromises = allowedEggs.map(id => getEggInfo(id));
-                const eggInfos = await Promise.all(eggInfoPromises);
-                setAvailableEggs(eggInfos);
+                const eggResults = await Promise.allSettled(allowedEggs.map(id => getEggInfo(id)));
+                const available: EggInfo[] = [];
+                let removedMissingEggs = false;
+
+                eggResults.forEach((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        available.push(result.value);
+                    } else if (result.reason?.response?.status === 404) {
+                        removedMissingEggs = true;
+                    } else {
+                        throw result.reason;
+                    }
+                });
+
+                if (removedMissingEggs) {
+                    addFlash({
+                        key: 'account:billing:order',
+                        type: 'warning',
+                        message: 'Some eggs no longer exist and were removed.',
+                    });
+                }
+
+                setAvailableEggs(available);
+                setSelectedEggId(available[0]?.id);
 
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
@@ -507,17 +526,21 @@ export default () => {
                                 Choose which type of server software you want to run.
                             </p>
                         </div>
-                        <div className={'grid gap-4 sm:grid-cols-2'}>
-                            {availableEggs.map(egg => (
-                                <EggBox
-                                    egg={egg}
-                                    key={egg.id}
-                                    selected={selectedEggId}
-                                    setSelected={setSelectedEggId}
-                                    onEggChange={() => setEggs(undefined)}
-                                />
-                            ))}
-                        </div>
+                        {availableEggs.length === 0 ? (
+                            <Alert type={'warning'}>No eggs available.</Alert>
+                        ) : (
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {availableEggs.map(egg => (
+                                    <EggBox
+                                        egg={egg}
+                                        key={egg.id}
+                                        selected={selectedEggId}
+                                        setSelected={setSelectedEggId}
+                                        onEggChange={() => setEggs(undefined)}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 );
 
