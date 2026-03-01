@@ -49,7 +49,7 @@ export default (data: Props) => {
 
             // Redirect to Mollie checkout
             // After payment, Mollie will redirect back to return_url with token parameter
-            window.location.href = payment.checkout_url;
+            window.location.href = `/api/client/billing/mollie/payments/${payment.id}/redirect`;
         } catch (error) {
             clearAndAddHttpError({ key: 'account:billing:order', error });
             setLoading(false);

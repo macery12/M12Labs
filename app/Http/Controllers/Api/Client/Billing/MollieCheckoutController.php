@@ -3,6 +3,7 @@
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
@@ -17,9 +18,12 @@ use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
+use Everest\Traits\ValidatesRedirectUrl;
 
 class MollieCheckoutController extends ClientApiController
 {
+    use ValidatesRedirectUrl;
+
     public function __construct(
         private MolliePaymentService $mollieService,
         private BillingValidationService $validationService,
@@ -74,6 +78,11 @@ class MollieCheckoutController extends ClientApiController
             $couponId,
             $returnUrl
         );
+        $rawCheckoutUrl = $payment->getCheckoutUrl();
+        if (!$rawCheckoutUrl) {
+            throw new DisplayException('Mollie checkout URL unavailable.');
+        }
+        $checkoutUrl = $this->validateRedirectUrl($rawCheckoutUrl, ['mollie.com']);
 
         // For renewals, we have all the information upfront
         // For new orders, some fields will be set later via updatePayment
@@ -104,8 +113,27 @@ class MollieCheckoutController extends ClientApiController
         return response()->json([
             'id' => $payment->id,
             'token' => $token,
-            'checkout_url' => $payment->getCheckoutUrl(),
+            'checkout_url' => $checkoutUrl,
         ]);
+    }
+
+    /**
+     * Safely redirect the user to Mollie's hosted checkout after validating the URL.
+     */
+    public function redirectToCheckout(Request $request, string $paymentId): RedirectResponse
+    {
+        // Authorization guard: ensure the payment belongs to the current user before redirecting.
+        $order = Order::where('mollie_payment_id', $paymentId)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        $checkoutUrl = $this->mollieService->getCheckoutUrl($paymentId);
+        if (!$checkoutUrl) {
+            throw new DisplayException('Mollie checkout URL unavailable.');
+        }
+        $safeUrl = $this->validateRedirectUrl($checkoutUrl, ['mollie.com']);
+
+        return redirect()->away($safeUrl);
     }
 
     /**

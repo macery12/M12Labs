@@ -130,6 +130,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
             Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
             Route::get('/mollie/token/{token}', [Client\Billing\MollieCheckoutController::class, 'getPaymentFromToken']);
+            Route::get('/mollie/payments/{payment}/redirect', [Client\Billing\MollieCheckoutController::class, 'redirectToCheckout']);
 
             // PayPal payment routes
             Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);
@@ -137,6 +138,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
             Route::get('/paypal/status', [Client\Billing\PayPalCheckoutController::class, 'checkOrderStatus']);
             Route::get('/paypal/token/{token}', [Client\Billing\PayPalCheckoutController::class, 'getOrderFromToken']);
+            Route::get('/paypal/orders/{order}/redirect', [Client\Billing\PayPalCheckoutController::class, 'redirectToApproval']);
 
             Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
 
