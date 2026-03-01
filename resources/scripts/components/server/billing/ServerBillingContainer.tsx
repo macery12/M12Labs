@@ -17,7 +17,6 @@ import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
 import PaymentContainer from './PaymentContainer';
-import ChangeEggContainer from './ChangeEggContainer';
 import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { getProduct, getProductBillingCycles, BillingCycle } from '@/api/routes/account/billing/products';
@@ -429,9 +428,6 @@ export default () => {
                         </>
                     )}
                 </TitledGreyBox>
-
-                {/* Change Server Type Section */}
-                <ChangeEggContainer />
 
                 {/* Plan Change Section */}
                 <ChangePlanContainer />

@@ -73,9 +73,9 @@ export default () => {
 
     const handleChangeEgg = () => {
         if (selectedEggId === currentEggId) {
-            clearFlashes('server:billing:egg');
+            clearFlashes('server:settings:egg');
             clearAndAddHttpError({
-                key: 'server:billing:egg',
+                key: 'server:settings:egg',
                 error: { message: 'You must select a different server type to continue.' },
             });
             return;
@@ -83,23 +83,23 @@ export default () => {
 
         // If deleteFiles is checked, ensure DELETE confirmation is typed
         if (deleteFiles && confirmDelete !== 'DELETE') {
-            clearFlashes('server:billing:egg');
+            clearFlashes('server:settings:egg');
             clearAndAddHttpError({
-                key: 'server:billing:egg',
+                key: 'server:settings:egg',
                 error: { message: 'You must type DELETE to confirm file deletion.' },
             });
             return;
         }
 
         setChanging(true);
-        clearFlashes('server:billing:egg');
+        clearFlashes('server:settings:egg');
 
         changeEgg(uuid, selectedEggId, deleteFiles)
             .then(() => {
                 window.location.reload(); // Reload to refresh server data
             })
             .catch(error => {
-                clearAndAddHttpError({ key: 'server:billing:egg', error });
+                clearAndAddHttpError({ key: 'server:settings:egg', error });
                 setChanging(false);
                 setConfirmOpen(false);
             });
@@ -168,12 +168,12 @@ export default () => {
                     setConfirmOpen(false);
                     setDeleteFiles(false);
                     setConfirmDelete('');
-                    clearFlashes('server:billing:egg');
+                    clearFlashes('server:settings:egg');
                 }}
                 onConfirmed={handleChangeEgg}
                 buttonType={'danger'}
             >
-                <FlashMessageRender byKey={'server:billing:egg'} css={tw`mb-3`} />
+                <FlashMessageRender byKey={'server:settings:egg'} css={tw`mb-3`} />
                 <p css={tw`text-sm mb-3`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
                     <strong>{selectedEgg?.name}</strong>.

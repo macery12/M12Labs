@@ -3,6 +3,7 @@ import * as Icon from '@heroicons/react/outline';
 import { route, type ServerRouteDefinition } from '@/routers/routes/utils';
 
 const ServerConsoleContainer = lazy(() => import('@server/console/ServerConsoleContainer'));
+const ServerSettingsContainer = lazy(() => import('@server/settings/ServerSettingsContainer'));
 const FileManagerContainer = lazy(() => import('@server/files/FileManagerContainer'));
 const FileEditContainer = lazy(() => import('@server/files/FileEditContainer'));
 const DatabasesContainer = lazy(() => import('@server/databases/DatabasesContainer'));
@@ -71,6 +72,12 @@ const server: ServerRouteDefinition[] = [
         permission: 'startup.*',
         name: 'Startup',
         icon: Icon.PlayIcon,
+        category: 'configuration',
+    }),
+    route('settings/*', ServerSettingsContainer, {
+        permission: ['settings.*', 'billing.*'],
+        name: 'Settings',
+        icon: Icon.CogIcon,
         category: 'configuration',
     }),
     route('activity/*', ServerActivityLogContainer, {

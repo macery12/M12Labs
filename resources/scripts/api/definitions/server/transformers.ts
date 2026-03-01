@@ -9,6 +9,7 @@ export default class Transformers {
         uuid: data.uuid,
         name: data.name,
         node: data.node,
+        nodeId: data.node_id,
         isNodeUnderMaintenance: data.is_node_under_maintenance,
         status: data.status,
         invocation: data.invocation,
