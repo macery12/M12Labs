@@ -19,8 +19,14 @@ class CategoryControllerTest extends TestCase
     {
         parent::setUp();
 
+        $dbPath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'category_controller_test.sqlite';
+
         config()->set('database.default', 'sqlite');
-        config()->set('database.connections.sqlite.database', '/tmp/test.sqlite');
+        config()->set('database.connections.sqlite.database', $dbPath);
+
+        if (!file_exists($dbPath)) {
+            touch($dbPath);
+        }
 
         Schema::dropIfExists('eggs');
         Schema::create('eggs', function (Blueprint $table) {
