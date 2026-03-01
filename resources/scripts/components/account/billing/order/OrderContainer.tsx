@@ -61,6 +61,7 @@ export default () => {
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
+    const hasEditableVars = eggs?.some(v => v.isEditable) ?? false;
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -85,9 +86,8 @@ export default () => {
 
     // Get total number of steps dynamically
     const getTotalSteps = () => {
-        let steps = 3; // Node, Billing, Review (always present)
-        if (availableEggs.length > 1) steps++; // Add egg selection step if multiple eggs
-        if (eggs && eggs.some(v => v.isEditable)) steps++; // Add variables step if editable vars exist
+        let steps = 4; // Node, Egg, Billing, Review (always present)
+        if (hasEditableVars) steps++; // Add variables step if editable vars exist
         return steps;
     };
 
@@ -114,15 +114,14 @@ export default () => {
         switch (step) {
             case 1: // Node selection
                 return hasValidSelectedNode;
-            case 2: // Egg selection (if applicable)
-                if (availableEggs.length <= 1) return true;
+            case 2: // Egg selection
                 return selectedEggId !== undefined;
             case 3: // Billing cycle
                 return selectedBillingDays !== 0;
-            case 4: // Variables (if applicable)
-                return true; // Variables are optional
-            case 5: // Review
-                return serverName.trim() !== '' && legalAgreed;
+            case 4: // Variables (if applicable) or Review when no variables
+                return hasEditableVars ? true : serverName.trim() !== '' && legalAgreed;
+            case 5: // Review when variables exist
+                return hasEditableVars ? serverName.trim() !== '' && legalAgreed : false;
             default:
                 return false;
         }
@@ -134,9 +133,9 @@ export default () => {
         let stepNum = 1;
 
         stepMap[stepNum++] = 'Select Location';
-        if (availableEggs.length > 1) stepMap[stepNum++] = 'Select Server Type';
+        stepMap[stepNum++] = 'Select Server Type';
         stepMap[stepNum++] = 'Select Billing Cycle';
-        if (eggs && eggs.some(v => v.isEditable)) stepMap[stepNum++] = 'Configure Server';
+        if (hasEditableVars) stepMap[stepNum++] = 'Configure Server';
         stepMap[stepNum++] = 'Review & Confirm';
         stepMap[stepNum++] = 'Payment';
 
@@ -161,15 +160,13 @@ export default () => {
             status: currentStep > 1 ? 'complete' : currentStep === 1 ? 'current' : 'upcoming',
         });
 
-        // Step 2: Egg selection (if multiple eggs)
-        if (availableEggs.length > 1) {
-            const eggStep = stepNum++;
-            steps.push({
-                id: eggStep,
-                name: 'Server Type',
-                status: currentStep > eggStep ? 'complete' : currentStep === eggStep ? 'current' : 'upcoming',
-            });
-        }
+        // Step 2: Egg selection
+        const eggStep = stepNum++;
+        steps.push({
+            id: eggStep,
+            name: 'Server Type',
+            status: currentStep > eggStep ? 'complete' : currentStep === eggStep ? 'current' : 'upcoming',
+        });
 
         // Step 3: Billing cycle
         const billingStep = stepNum++;
@@ -180,7 +177,7 @@ export default () => {
         });
 
         // Step 4: Variables (if editable variables exist)
-        if (eggs && eggs.some(v => v.isEditable)) {
+        if (hasEditableVars) {
             const varsStep = stepNum++;
             steps.push({
                 id: varsStep,
@@ -375,8 +372,7 @@ export default () => {
                     </div>
                 );
 
-            case 2: // Egg Selection (only if multiple eggs)
-                if (availableEggs.length <= 1) return null;
+            case 2: // Egg Selection
                 return (
                     <div className={'space-y-6'}>
                         <div>
@@ -399,7 +395,7 @@ export default () => {
                     </div>
                 );
 
-            case availableEggs.length > 1 ? 3 : 2: // Billing Cycle
+            case 3: // Billing Cycle
                 return (
                     <div className={'space-y-6'}>
                         <div>
@@ -421,23 +417,25 @@ export default () => {
                     </div>
                 );
 
-            case availableEggs.length > 1 ? 4 : 3: // Variables (if any)
-                if (!eggs || !eggs.some(v => v.isEditable)) return null;
-                return (
-                    <div className={'space-y-6'}>
-                        <div>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Configure Server</h2>
-                            <p className={'mt-2 text-gray-400'}>Set up your server variables and configuration.</p>
+            case 4: // Variables (if any)
+                if (hasEditableVars) {
+                    return (
+                        <div className={'space-y-6'}>
+                            <div>
+                                <h2 className={'text-3xl font-bold text-gray-100'}>Configure Server</h2>
+                                <p className={'mt-2 text-gray-400'}>Set up your server variables and configuration.</p>
+                            </div>
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {eggs?.map(variable => (
+                                    <div key={variable.envVariable}>
+                                        {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className={'grid gap-4 sm:grid-cols-2'}>
-                            {eggs?.map(variable => (
-                                <div key={variable.envVariable}>
-                                    {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
+                    );
+                }
+                // fall through to review
 
             default: // Review & Name Server
                 const finalStep = getTotalSteps();
