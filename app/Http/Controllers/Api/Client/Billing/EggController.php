@@ -6,6 +6,8 @@ use Everest\Models\Egg;
 use Everest\Models\EggVariable;
 use Everest\Transformers\Api\Client\EggVariableTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EggController extends ClientApiController
 {
@@ -33,7 +35,12 @@ class EggController extends ClientApiController
      */
     public function getEgg(int $id): array
     {
-        $egg = Egg::findOrFail($id);
+        try {
+            $egg = Egg::findOrFail($id);
+        } catch (ModelNotFoundException $exception) {
+            // Provide a stable error code while keeping the 404 status.
+            throw new NotFoundHttpException('EggNotFound: The requested egg could not be found.', $exception);
+        }
 
         return [
             'id' => $egg->id,

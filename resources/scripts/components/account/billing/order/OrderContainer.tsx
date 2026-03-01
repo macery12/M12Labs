@@ -35,11 +35,19 @@ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import classNames from 'classnames';
 import { loadStripeOnce } from '@/lib/stripe';
 
+const getResponseStatus = (reason: unknown): number | undefined => {
+    if (typeof reason === 'object' && reason !== null) {
+        const response = (reason as { response?: { status?: number } }).response;
+        return response?.status;
+    }
+    return undefined;
+};
+
 export default () => {
     const params = useParams<'id'>();
 
     const vars = useRef(new Map<string, string>()).current;
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
 
     const billing = useStoreState(state => state.everest.data!.billing);
@@ -61,6 +69,8 @@ export default () => {
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
+    const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
+    const reviewStep = hasEditableVariables ? 5 : 4;
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -85,9 +95,8 @@ export default () => {
 
     // Get total number of steps dynamically
     const getTotalSteps = () => {
-        let steps = 3; // Node, Billing, Review (always present)
-        if (availableEggs.length > 1) steps++; // Add egg selection step if multiple eggs
-        if (eggs && eggs.some(v => v.isEditable)) steps++; // Add variables step if editable vars exist
+        let steps = 4; // Node, Egg, Billing, Review (always present)
+        if (hasEditableVariables) steps++; // Add variables step if editable variables exist
         return steps;
     };
 
@@ -111,21 +120,12 @@ export default () => {
 
     // Check if current step is valid
     const isStepValid = (step: number) => {
-        switch (step) {
-            case 1: // Node selection
-                return hasValidSelectedNode;
-            case 2: // Egg selection (if applicable)
-                if (availableEggs.length <= 1) return true;
-                return selectedEggId !== undefined;
-            case 3: // Billing cycle
-                return selectedBillingDays !== 0;
-            case 4: // Variables (if applicable)
-                return true; // Variables are optional
-            case 5: // Review
-                return serverName.trim() !== '' && legalAgreed;
-            default:
-                return false;
-        }
+        if (step === 1) return hasValidSelectedNode; // Node selection
+        if (step === 2) return availableEggs.length > 0 && selectedEggId !== undefined; // Egg selection
+        if (step === 3) return selectedBillingDays !== 0; // Billing cycle
+        if (hasEditableVariables && step === 4) return true; // Variables (optional inputs)
+        if (step === reviewStep) return serverName.trim() !== '' && legalAgreed; // Review
+        return false;
     };
 
     // Get step title
@@ -134,9 +134,9 @@ export default () => {
         let stepNum = 1;
 
         stepMap[stepNum++] = 'Select Location';
-        if (availableEggs.length > 1) stepMap[stepNum++] = 'Select Server Type';
+        stepMap[stepNum++] = 'Select Server Type';
         stepMap[stepNum++] = 'Select Billing Cycle';
-        if (eggs && eggs.some(v => v.isEditable)) stepMap[stepNum++] = 'Configure Server';
+        if (hasEditableVariables) stepMap[stepNum++] = 'Configure Server';
         stepMap[stepNum++] = 'Review & Confirm';
         stepMap[stepNum++] = 'Payment';
 
@@ -161,15 +161,13 @@ export default () => {
             status: currentStep > 1 ? 'complete' : currentStep === 1 ? 'current' : 'upcoming',
         });
 
-        // Step 2: Egg selection (if multiple eggs)
-        if (availableEggs.length > 1) {
-            const eggStep = stepNum++;
-            steps.push({
-                id: eggStep,
-                name: 'Server Type',
-                status: currentStep > eggStep ? 'complete' : currentStep === eggStep ? 'current' : 'upcoming',
-            });
-        }
+        // Step 2: Egg selection
+        const eggStep = stepNum++;
+        steps.push({
+            id: eggStep,
+            name: 'Server Type',
+            status: currentStep > eggStep ? 'complete' : currentStep === eggStep ? 'current' : 'upcoming',
+        });
 
         // Step 3: Billing cycle
         const billingStep = stepNum++;
@@ -180,7 +178,7 @@ export default () => {
         });
 
         // Step 4: Variables (if editable variables exist)
-        if (eggs && eggs.some(v => v.isEditable)) {
+        if (hasEditableVariables) {
             const varsStep = stepNum++;
             steps.push({
                 id: varsStep,
@@ -263,12 +261,47 @@ export default () => {
 
                 // Initialize selected egg with the default (first allowed egg)
                 const allowedEggs = productData.allowedEggs || [productData.eggId];
-                setSelectedEggId(allowedEggs[0]);
 
-                // Fetch egg information for all allowed eggs
-                const eggInfoPromises = allowedEggs.map(id => getEggInfo(id));
-                const eggInfos = await Promise.all(eggInfoPromises);
-                setAvailableEggs(eggInfos);
+                const eggResults = await Promise.allSettled(allowedEggs.map(id => getEggInfo(id)));
+                const available: EggInfo[] = [];
+                let removedMissingEggs = false;
+
+                eggResults.forEach(result => {
+                    if (result.status === 'fulfilled') {
+                        available.push(result.value);
+                        return;
+                    }
+
+                    const responseStatus = getResponseStatus(result.reason);
+
+                    if (responseStatus === 404) {
+                        removedMissingEggs = true;
+                        return;
+                    }
+
+                    // Attach the original error as the cause for debugging.
+                    const message = responseStatus
+                        ? `Failed to fetch server software details (HTTP ${responseStatus}).`
+                        : 'Unexpected error while fetching server software details.';
+                    throw new Error(message, { cause: result.reason });
+                });
+
+                    if (removedMissingEggs) {
+                        addFlash({
+                            key: 'account:billing:order',
+                            type: 'warning',
+                            message: 'Some server software options are no longer available and were removed from selection.',
+                        });
+                    }
+
+                setAvailableEggs(available);
+                if (available.length > 0) {
+                    setSelectedEggId(available[0].id);
+                } else {
+                    // Clear selections and variables when no eggs remain.
+                    setSelectedEggId(undefined);
+                    setEggs(undefined);
+                }
 
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
@@ -299,8 +332,13 @@ export default () => {
                     // Mollie doesn't need pre-initialization like Stripe
                     // Payment is created when user clicks the button
                 }
-            } catch (error) {
-                console.error('Error fetching data:', error);
+            } catch (error: unknown) {
+                console.error('Error fetching billing order data:', error);
+                if (error instanceof Error && error.message) {
+                    addFlash({ key: 'account:billing:order', type: 'error', message: error.message });
+                    return;
+                }
+                clearAndAddHttpError({ key: 'account:billing:order', error });
             }
         };
 
@@ -345,6 +383,139 @@ export default () => {
 
     // Render different content based on current step
     const renderStepContent = () => {
+        const renderReviewStep = () => (
+            <div className={'space-y-6'}>
+                <div>
+                    <h2 className={'text-3xl font-bold text-gray-100'}>Review and Confirm</h2>
+                    <p className={'mt-2 text-gray-400'}>Almost done! Name your server and review your order.</p>
+                </div>
+
+                {/* Server Name Section */}
+                <div className={'rounded-lg border p-6'} style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}>
+                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
+                    <input
+                        id={'server-name-input'}
+                        type={'text'}
+                        placeholder={'Enter a name for your server'}
+                        value={serverName}
+                        onChange={e => {
+                            setServerName(e.target.value);
+                            setServerNameTouched(true);
+                        }}
+                        required
+                        maxLength={191}
+                        aria-invalid={serverNameTouched && !serverName.trim()}
+                        aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
+                        className={classNames(
+                            'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
+                            'text-gray-200 placeholder-gray-500',
+                            'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                            {
+                                'border-gray-600': !serverNameTouched,
+                                'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
+                                'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
+                            },
+                        )}
+                        style={{
+                            backgroundColor: colors.secondary,
+                        }}
+                    />
+                    {serverNameTouched && !serverName.trim() && (
+                        <p id={'server-name-error'} className={'mt-2 text-xs text-red-400'} role={'alert'}>
+                            Server name is required to continue
+                        </p>
+                    )}
+                </div>
+
+                {/* Server Configuration Overview */}
+                <div className={'rounded-lg border p-6'} style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}>
+                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Configuration</h3>
+                    <div className={'space-y-3'}>
+                        {/* Product with Icon */}
+                        <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
+                            {product.icon && <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />}
+                            <div>
+                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
+                                <p className={'text-sm text-gray-400'}>
+                                    {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Resources Grid */}
+                        <div className={'grid grid-cols-3 gap-4 pt-2'}>
+                            <div className={'text-center'}>
+                                <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                <p className={'text-xs text-gray-500'}>CPU</p>
+                                <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
+                            </div>
+                            <div className={'text-center'}>
+                                <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                <p className={'text-xs text-gray-500'}>RAM</p>
+                                <p className={'text-sm font-medium text-gray-200'}>
+                                    {(product.limits.memory / 1024).toFixed(1)} GB
+                                </p>
+                            </div>
+                            <div className={'text-center'}>
+                                <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                <p className={'text-xs text-gray-500'}>Storage</p>
+                                <p className={'text-sm font-medium text-gray-200'}>{(product.limits.disk / 1024).toFixed(1)} GB</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Legal Agreements */}
+                <div className={'rounded-lg border p-6'} style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}>
+                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Terms & Conditions</h3>
+                    <div
+                        className={'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'}
+                        style={
+                            legalAgreed
+                                ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                : { borderColor: '#374151', backgroundColor: colors.secondary }
+                        }
+                        onClick={() => setLegalAgreed(!legalAgreed)}
+                    >
+                        <AdminCheckbox name={'legal'} checked={legalAgreed} onChange={() => setLegalAgreed(!legalAgreed)} />
+                        <div className={'min-w-0 flex-1'}>
+                            <p className={'text-sm font-medium text-gray-200'}>
+                                I agree to the{' '}
+                                <a
+                                    href={billing.links.terms}
+                                    target={'_blank'}
+                                    rel={'noreferrer'}
+                                    className={'hover:brightness-125'}
+                                    style={{ color: colors.primary }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    Terms of Service
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                </a>
+                                {' and '}
+                                <a
+                                    href={billing.links.privacy}
+                                    target={'_blank'}
+                                    rel={'noreferrer'}
+                                    className={'hover:brightness-125'}
+                                    style={{ color: colors.primary }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    Privacy Policy
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
+                                </a>
+                            </p>
+                            {legalAgreed && (
+                                <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
+                                    ✓ Accepted
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
         switch (currentStep) {
             case 1: // Node Selection
                 return (
@@ -375,8 +546,7 @@ export default () => {
                     </div>
                 );
 
-            case 2: // Egg Selection (only if multiple eggs)
-                if (availableEggs.length <= 1) return null;
+            case 2: // Egg Selection
                 return (
                     <div className={'space-y-6'}>
                         <div>
@@ -385,21 +555,28 @@ export default () => {
                                 Choose which type of server software you want to run.
                             </p>
                         </div>
-                        <div className={'grid gap-4 sm:grid-cols-2'}>
-                            {availableEggs.map(egg => (
-                                <EggBox
-                                    egg={egg}
-                                    key={egg.id}
-                                    selected={selectedEggId}
-                                    setSelected={setSelectedEggId}
-                                    onEggChange={() => setEggs(undefined)}
-                                />
-                            ))}
-                        </div>
+                        {availableEggs.length === 0 ? (
+                            <Alert type={'warning'}>
+                                No server software options are currently available for this product. This may be due to
+                                configuration changes. Please contact support for assistance.
+                            </Alert>
+                        ) : (
+                            <div className={'grid gap-4 sm:grid-cols-2'}>
+                                {availableEggs.map(egg => (
+                                    <EggBox
+                                        egg={egg}
+                                        key={egg.id}
+                                        selected={selectedEggId}
+                                        setSelected={setSelectedEggId}
+                                        onEggChange={() => setEggs(undefined)}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 );
 
-            case availableEggs.length > 1 ? 3 : 2: // Billing Cycle
+            case 3: // Billing Cycle
                 return (
                     <div className={'space-y-6'}>
                         <div>
@@ -421,8 +598,10 @@ export default () => {
                     </div>
                 );
 
-            case availableEggs.length > 1 ? 4 : 3: // Variables (if any)
-                if (!eggs || !eggs.some(v => v.isEditable)) return null;
+            case 4: // Variables (if any)
+                if (!hasEditableVariables) {
+                    return renderReviewStep();
+                }
                 return (
                     <div className={'space-y-6'}>
                         <div>
@@ -442,171 +621,7 @@ export default () => {
             default: // Review & Name Server
                 const finalStep = getTotalSteps();
                 if (currentStep === finalStep) {
-                    return (
-                        <div className={'space-y-6'}>
-                            <div>
-                                <h2 className={'text-3xl font-bold text-gray-100'}>Review and Confirm</h2>
-                                <p className={'mt-2 text-gray-400'}>
-                                    Almost done! Name your server and review your order.
-                                </p>
-                            </div>
-
-                            {/* Server Name Section */}
-                            <div
-                                className={'rounded-lg border p-6'}
-                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                            >
-                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
-                                <input
-                                    id={'server-name-input'}
-                                    type={'text'}
-                                    placeholder={'Enter a name for your server'}
-                                    value={serverName}
-                                    onChange={e => {
-                                        setServerName(e.target.value);
-                                        setServerNameTouched(true);
-                                    }}
-                                    required
-                                    maxLength={191}
-                                    aria-invalid={serverNameTouched && !serverName.trim()}
-                                    aria-describedby={
-                                        serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
-                                    }
-                                    className={classNames(
-                                        'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
-                                        'text-gray-200 placeholder-gray-500',
-                                        'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                                        {
-                                            'border-gray-600': !serverNameTouched,
-                                            'border-green-500 focus:border-green-500':
-                                                serverNameTouched && serverName.trim(),
-                                            'border-red-500 focus:border-red-500':
-                                                serverNameTouched && !serverName.trim(),
-                                        },
-                                    )}
-                                    style={{
-                                        backgroundColor: colors.secondary,
-                                    }}
-                                />
-                                {serverNameTouched && !serverName.trim() && (
-                                    <p id={'server-name-error'} className={'mt-2 text-xs text-red-400'} role={'alert'}>
-                                        Server name is required to continue
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Server Configuration Overview */}
-                            <div
-                                className={'rounded-lg border p-6'}
-                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                            >
-                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Configuration</h3>
-                                <div className={'space-y-3'}>
-                                    {/* Product with Icon */}
-                                    <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
-                                        {product.icon && (
-                                            <img
-                                                src={product.icon}
-                                                className={'h-10 w-10 rounded'}
-                                                alt={product.name}
-                                            />
-                                        )}
-                                        <div>
-                                            <p className={'font-semibold text-gray-200'}>{product.name}</p>
-                                            <p className={'text-sm text-gray-400'}>
-                                                {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'}{' '}
-                                                billing cycle
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Resources Grid */}
-                                    <div className={'grid grid-cols-3 gap-4 pt-2'}>
-                                        <div className={'text-center'}>
-                                            <FontAwesomeIcon
-                                                icon={faMicrochip}
-                                                className={'h-4 w-4 mb-1 text-gray-500'}
-                                            />
-                                            <p className={'text-xs text-gray-500'}>CPU</p>
-                                            <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
-                                        </div>
-                                        <div className={'text-center'}>
-                                            <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                            <p className={'text-xs text-gray-500'}>RAM</p>
-                                            <p className={'text-sm font-medium text-gray-200'}>
-                                                {(product.limits.memory / 1024).toFixed(1)} GB
-                                            </p>
-                                        </div>
-                                        <div className={'text-center'}>
-                                            <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                            <p className={'text-xs text-gray-500'}>Storage</p>
-                                            <p className={'text-sm font-medium text-gray-200'}>
-                                                {(product.limits.disk / 1024).toFixed(1)} GB
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Legal Agreements */}
-                            <div
-                                className={'rounded-lg border p-6'}
-                                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-                            >
-                                <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Terms & Conditions</h3>
-                                <div
-                                    className={
-                                        'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all'
-                                    }
-                                    style={
-                                        legalAgreed
-                                            ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                            : { borderColor: '#374151', backgroundColor: colors.secondary }
-                                    }
-                                    onClick={() => setLegalAgreed(!legalAgreed)}
-                                >
-                                    <AdminCheckbox
-                                        name={'legal'}
-                                        checked={legalAgreed}
-                                        onChange={() => setLegalAgreed(!legalAgreed)}
-                                    />
-                                    <div className={'min-w-0 flex-1'}>
-                                        <p className={'text-sm font-medium text-gray-200'}>
-                                            I agree to the{' '}
-                                            <a
-                                                href={billing.links.terms}
-                                                target={'_blank'}
-                                                rel={'noreferrer'}
-                                                className={'hover:brightness-125'}
-                                                style={{ color: colors.primary }}
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                Terms of Service
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
-                                            </a>
-                                            {' and '}
-                                            <a
-                                                href={billing.links.privacy}
-                                                target={'_blank'}
-                                                rel={'noreferrer'}
-                                                className={'hover:brightness-125'}
-                                                style={{ color: colors.primary }}
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                Privacy Policy
-                                                <FontAwesomeIcon icon={faExternalLinkAlt} className={'ml-1 text-xs'} />
-                                            </a>
-                                        </p>
-                                        {legalAgreed && (
-                                            <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
-                                                ✓ Accepted
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
+                    return renderReviewStep();
                 }
 
                 // Payment step
