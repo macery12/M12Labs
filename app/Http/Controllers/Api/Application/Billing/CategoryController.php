@@ -57,10 +57,7 @@ class CategoryController extends ApplicationApiController
         $egg = Egg::query()->findOrFail($request->input('eggId'));
 
         // Get allowed eggs from request, default to single egg for backward compatibility
-        $allowedEggs = $request->input('allowedEggs', [$egg->id]);
-        if (empty($allowedEggs)) {
-            $allowedEggs = [$egg->id];
-        }
+        $allowedEggs = $this->normalizeAllowedEggs($egg, $request->input('allowedEggs', [$egg->id]));
 
         try {
             $category = Category::create([
@@ -97,10 +94,7 @@ class CategoryController extends ApplicationApiController
         $egg = Egg::query()->findOrFail($request->input('eggId'));
 
         // Get allowed eggs from request, default to single egg for backward compatibility
-        $allowedEggs = $request->input('allowedEggs', [$egg->id]);
-        if (empty($allowedEggs)) {
-            $allowedEggs = [$egg->id];
-        }
+        $allowedEggs = $this->normalizeAllowedEggs($egg, $request->input('allowedEggs', [$egg->id]));
 
         try {
             $category->updateOrFail([
@@ -125,6 +119,25 @@ class CategoryController extends ApplicationApiController
             ->log();
 
         return $this->returnNoContent();
+    }
+
+    private function normalizeAllowedEggs(Egg $defaultEgg, $allowedEggs): array
+    {
+        $allowedEggs = is_array($allowedEggs) ? $allowedEggs : [$allowedEggs];
+        $allowedEggs = array_values(array_unique(array_map(
+            static fn ($id) => (int) $id,
+            $allowedEggs
+        )));
+
+        if (!empty($allowedEggs)) {
+            $allowedEggs = Egg::query()->whereIn('id', $allowedEggs)->pluck('id')->all();
+        }
+
+        if (empty($allowedEggs)) {
+            $allowedEggs = [$defaultEgg->id];
+        }
+
+        return $allowedEggs;
     }
 
     /**
