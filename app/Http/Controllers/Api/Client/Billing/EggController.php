@@ -39,7 +39,7 @@ class EggController extends ClientApiController
             $egg = Egg::findOrFail($id);
         } catch (ModelNotFoundException $exception) {
             // Provide a stable error code while keeping the 404 status.
-            throw new NotFoundHttpException('EggNotFound', $exception);
+            throw new NotFoundHttpException('EggNotFound: The requested egg could not be found.', $exception);
         }
 
         return [

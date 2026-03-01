@@ -254,7 +254,7 @@ export default () => {
                 // Initialize selected egg with the default (first allowed egg)
                 const allowedEggs = productData.allowedEggs || [productData.eggId];
 
-                const getResponseStatus = (reason: unknown): number | undefined => {
+                const extractHttpStatusFromError = (reason: unknown): number | undefined => {
                     if (typeof reason === 'object' && reason !== null) {
                         const response = (reason as { response?: { status?: number } }).response;
                         return response?.status;
@@ -272,14 +272,14 @@ export default () => {
                         return;
                     }
 
-                    const responseStatus = getResponseStatus(result.reason);
+                    const responseStatus = extractHttpStatusFromError(result.reason);
 
                     if (responseStatus === 404) {
                         removedMissingEggs = true;
                         return;
                     }
 
-                    throw new Error('Failed to load egg data', { cause: result.reason });
+                    throw new Error('Unexpected error while fetching egg information', { cause: result.reason });
                 });
 
                 if (removedMissingEggs) {
