@@ -113,7 +113,7 @@ export default () => {
     // Check if current step is valid
     const isStepValid = (step: number) => {
         if (step === 1) return hasValidSelectedNode; // Node selection
-        if (step === 2) return selectedEggId !== undefined; // Egg selection
+        if (step === 2) return availableEggs.length > 0 && selectedEggId !== undefined; // Egg selection
         if (step === 3) return selectedBillingDays !== 0; // Billing cycle
         if (hasEditableVariables && step === 4) return true; // Variables (optional inputs)
         if (step === reviewStep) return serverName.trim() !== '' && legalAgreed; // Review
@@ -313,7 +313,9 @@ export default () => {
                     // Mollie doesn't need pre-initialization like Stripe
                     // Payment is created when user clicks the button
                 }
-            } catch (error) {
+            } catch (error: any) {
+                // Non-404 errors should surface to the user; ignore handled 404s.
+                if (error?.response?.status === 404) return;
                 console.error('Error fetching data:', error);
                 clearAndAddHttpError({ key: 'account:billing:order', error });
             }
