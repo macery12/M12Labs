@@ -29,7 +29,6 @@ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import ChangePlanContainer from './ChangePlanContainer';
-import { cancelDeletion } from '@/api/routes/server/deletion';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -66,7 +65,6 @@ export default () => {
     const [renewing, setRenewing] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [currentBillingCycle, setCurrentBillingCycle] = useState<BillingCycle | null>(null);
-    const [deletionBusy, setDeletionBusy] = useState<boolean>(false);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
@@ -80,7 +78,6 @@ export default () => {
     const isDeletionScheduled = ServerContext.useStoreState(
         s => s.server.data!.isDeletionScheduled ?? false,
     );
-    const setServerFromState = ServerContext.useStoreActions(actions => actions.server.setServerFromState);
 
     // Get configurable renewal settings
     // Use the actual billing days from the server if available, otherwise fall back to default renewalDays
@@ -168,21 +165,6 @@ export default () => {
         setCouponData(data);
     };
 
-    const handleCancelDeletion = () => {
-        setDeletionBusy(true);
-        clearFlashes('server:billing');
-
-        cancelDeletion(serverUuid)
-            .then(() => {
-                setServerFromState(server => ({
-                    ...server,
-                    isDeletionScheduled: false,
-                }));
-            })
-            .catch(error => clearAndAddHttpError({ key: 'server:billing', error }))
-            .finally(() => setDeletionBusy(false));
-    };
-
     // Calculate days remaining until renewal (can be negative if overdue)
     const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
     const daysOverdue = daysRemaining < 0 ? Math.abs(daysRemaining) : 0;
@@ -219,9 +201,14 @@ export default () => {
                                 })}{' '}
                                 (end of day).
                             </div>
-                            <Button onClick={handleCancelDeletion} disabled={deletionBusy}>
-                                {deletionBusy ? 'Cancelling...' : 'Cancel Deletion'}
-                            </Button>
+                            <Link
+                                to={'../settings'}
+                                className={
+                                    'rounded bg-gray-700 px-3 py-2 text-center text-sm font-medium text-gray-100 hover:bg-gray-600'
+                                }
+                            >
+                                Manage in Settings
+                            </Link>
                         </div>
                     </Alert>
                 )}
@@ -350,11 +337,16 @@ export default () => {
                     {isDeletionScheduled ? (
                         <div css={tw`space-y-3`}>
                             <Alert type={'warning'}>
-                                This server is scheduled for deletion. Cancel deletion to renew.
+                                This server is scheduled for deletion. Manage or cancel it from the Settings page.
                             </Alert>
-                            <Button onClick={handleCancelDeletion} disabled={deletionBusy} css={tw`w-full`}>
-                                {deletionBusy ? 'Cancelling...' : 'Cancel Deletion'}
-                            </Button>
+                            <Link
+                                to={'../settings'}
+                                className={
+                                    'inline-block rounded bg-gray-700 px-3 py-2 text-center text-sm font-medium text-gray-100 hover:bg-gray-600'
+                                }
+                            >
+                                Open Settings
+                            </Link>
                         </div>
                     ) : !product ? (
                         <Alert type={'danger'}>

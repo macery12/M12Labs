@@ -75,7 +75,7 @@ function ServerConsoleContainer() {
                         month: 'long',
                         day: 'numeric',
                     })}{' '}
-                    (end of day). Visit the billing page to cancel deletion if this was a mistake.
+                    (end of day). Visit the settings page to manage or cancel deletion if this was a mistake.
                 </Alert>
             )}
             {showRenewalWarning && (

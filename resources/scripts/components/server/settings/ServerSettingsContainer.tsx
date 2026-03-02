@@ -14,7 +14,7 @@ import { Alert } from '@/elements/alert';
 import CopyOnClick from '@/elements/CopyOnClick';
 import { ServerContext } from '@/state/server';
 import { renameServer, reinstallServer } from '@/api/routes/server';
-import { scheduleDeletion } from '@/api/routes/server/deletion';
+import { cancelDeletion, scheduleDeletion } from '@/api/routes/server/deletion';
 import useFlash from '@/plugins/useFlash';
 import Can from '@/elements/Can';
 import { usePermissions } from '@/plugins/usePermissions';
@@ -33,6 +33,8 @@ export default () => {
     const [reinstalling, setReinstalling] = useState(false);
     const [scheduleOpen, setScheduleOpen] = useState(false);
     const [scheduling, setScheduling] = useState(false);
+    const [cancelOpen, setCancelOpen] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
 
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const canRename = usePermissions('settings.rename')[0];
@@ -90,6 +92,26 @@ export default () => {
             .finally(() => {
                 setScheduling(false);
                 setScheduleOpen(false);
+            });
+    };
+
+    const handleCancelDeletion = () => {
+        setCancelling(true);
+        clearFlashes('settings');
+
+        cancelDeletion(server.uuid)
+            .then(() => {
+                setServer({ ...server, isDeletionScheduled: false });
+                addFlash({
+                    key: 'settings',
+                    type: 'success',
+                    message: 'Scheduled deletion canceled. Your server will continue renewing as normal.',
+                });
+            })
+            .catch(error => clearAndAddHttpError({ key: 'settings', error }))
+            .finally(() => {
+                setCancelling(false);
+                setCancelOpen(false);
             });
     };
 
@@ -187,8 +209,29 @@ export default () => {
                             buttonType={'danger'}
                         >
                             This will mark your server for deletion at the end of its current renewal period. You can
-                            cancel before then from the Billing page.
+                            cancel before then from this Settings page.
                         </Dialog.Confirm>
+                        {server.isDeletionScheduled && (
+                            <>
+                                <Button
+                                    css={tw`w-full mt-3`}
+                                    disabled={cancelling}
+                                    onClick={() => setCancelOpen(true)}
+                                >
+                                    {cancelling ? 'Cancelling...' : 'Cancel Scheduled Deletion'}
+                                </Button>
+                                <Dialog.Confirm
+                                    open={cancelOpen}
+                                    title={'Cancel scheduled deletion?'}
+                                    confirm={'Yes, cancel deletion'}
+                                    onClose={() => setCancelOpen(false)}
+                                    onConfirmed={handleCancelDeletion}
+                                >
+                                    This will cancel the scheduled deletion for this server. It will continue to renew
+                                    normally unless you schedule deletion again.
+                                </Dialog.Confirm>
+                            </>
+                        )}
                     </TitledGreyBox>
                 </Can>
 
