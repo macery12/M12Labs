@@ -85,6 +85,8 @@ export default () => {
     const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
+    const settingsPath = `/server/${serverUuid}/settings`;
+    const settingsLinkStyles = tw`inline-block rounded bg-gray-700 px-3 py-2 text-center text-sm font-medium text-gray-100 hover:bg-gray-600`;
 
     /**
      * Calculate grace period threshold in days based on billing cycle length.
@@ -201,13 +203,8 @@ export default () => {
                                 })}{' '}
                                 (end of day).
                             </div>
-                            <Link
-                                to={'../settings'}
-                                className={
-                                    'rounded bg-gray-700 px-3 py-2 text-center text-sm font-medium text-gray-100 hover:bg-gray-600'
-                                }
-                            >
-                                Manage in Settings
+                            <Link to={settingsPath} css={settingsLinkStyles}>
+                                Manage Scheduled Deletion in Settings
                             </Link>
                         </div>
                     </Alert>
@@ -337,15 +334,10 @@ export default () => {
                     {isDeletionScheduled ? (
                         <div css={tw`space-y-3`}>
                             <Alert type={'warning'}>
-                                This server is scheduled for deletion. Manage or cancel it from the Settings page.
+                                This server is scheduled for deletion. Manage or cancel from Server Settings.
                             </Alert>
-                            <Link
-                                to={'../settings'}
-                                className={
-                                    'inline-block rounded bg-gray-700 px-3 py-2 text-center text-sm font-medium text-gray-100 hover:bg-gray-600'
-                                }
-                            >
-                                Open Settings
+                            <Link to={settingsPath} css={settingsLinkStyles}>
+                                Manage Scheduled Deletion in Settings
                             </Link>
                         </div>
                     ) : !product ? (

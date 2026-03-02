@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Link } from 'react-router-dom';
 import isEqual from 'react-fast-compare';
 import { Alert } from '@/elements/alert';
 import Can from '@/elements/Can';
@@ -49,6 +50,7 @@ function ServerConsoleContainer() {
     );
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
     const settings = useStoreState(state => state.everest.data!.billing);
+    const settingsPath = `/server/${uuid}/settings`;
 
     // Get configurable renewal settings
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
@@ -75,7 +77,10 @@ function ServerConsoleContainer() {
                         month: 'long',
                         day: 'numeric',
                     })}{' '}
-                    (end of day). Visit the settings page to manage or cancel deletion if this was a mistake.
+                    (end of day).{' '}
+                    <Link to={settingsPath} className={'font-semibold underline'}>
+                        Manage or cancel in Settings.
+                    </Link>
                 </Alert>
             )}
             {showRenewalWarning && (
