@@ -44,6 +44,9 @@ function ServerConsoleContainer() {
     const isNodeUnderMaintenance = ServerContext.useStoreState(state => state.server.data!.isNodeUnderMaintenance);
     const status = ServerContext.useStoreState(state => state.status.value);
     const renewalDate = ServerContext.useStoreState(state => state.server.data!.renewalDate);
+    const isDeletionScheduled = ServerContext.useStoreState(
+        state => state.server.data!.isDeletionScheduled ?? false,
+    );
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
     const settings = useStoreState(state => state.everest.data!.billing);
 
@@ -64,6 +67,17 @@ function ServerConsoleContainer() {
 
     return (
         <PageContentBlock title={'Server Console'} showFlashKey={'console:share'}>
+            {isDeletionScheduled && renewalDate && (
+                <Alert type={'warning'} className={'mb-4'}>
+                    Scheduled for deletion on{' '}
+                    {new Date(renewalDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                    })}{' '}
+                    (end of day). Visit the billing page to cancel deletion if this was a mistake.
+                </Alert>
+            )}
             {showRenewalWarning && (
                 <Alert type={'warning'} className={'mb-4'}>
                     Your server is {Math.abs(daysUntilRenewal!)} day{Math.abs(daysUntilRenewal!) !== 1 ? 's' : ''}{' '}

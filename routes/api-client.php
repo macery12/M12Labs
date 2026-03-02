@@ -295,5 +295,10 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/plans/{product}/validate', [Client\Billing\PlanChangeController::class, 'validatePlanChange']);
             Route::post('/plans/{product}/change', [Client\Billing\PlanChangeController::class, 'changePlan']);
         });
+
+        Route::group(['prefix' => '/deletion'], function () {
+            Route::post('/schedule', [Client\Servers\DeletionScheduleController::class, 'schedule']);
+            Route::post('/cancel', [Client\Servers\DeletionScheduleController::class, 'cancel']);
+        });
     });
 });

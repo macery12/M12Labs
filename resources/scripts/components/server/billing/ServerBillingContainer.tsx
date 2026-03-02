@@ -29,6 +29,8 @@ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import ChangePlanContainer from './ChangePlanContainer';
+import ConfirmationModal from '@/elements/ConfirmationModal';
+import { scheduleDeletion, cancelDeletion } from '@/api/routes/server/deletion';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -65,14 +67,22 @@ export default () => {
     const [renewing, setRenewing] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [currentBillingCycle, setCurrentBillingCycle] = useState<BillingCycle | null>(null);
+    const [showScheduleConfirmation, setShowScheduleConfirmation] = useState<boolean>(false);
+    const [deletionBusy, setDeletionBusy] = useState<boolean>(false);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
+    const currentUserId = useStoreState(s => s.user.data!.id);
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
+    const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
     const billingDays = ServerContext.useStoreState(s => s.server.data!.billingDays);
     const serverStatus = ServerContext.useStoreState(s => s.server.data!.status);
+    const isDeletionScheduled = ServerContext.useStoreState(
+        s => s.server.data!.isDeletionScheduled ?? false,
+    );
+    const setServerFromState = ServerContext.useStoreActions(actions => actions.server.setServerFromState);
 
     // Get configurable renewal settings
     // Use the actual billing days from the server if available, otherwise fall back to default renewalDays
@@ -160,6 +170,41 @@ export default () => {
         setCouponData(data);
     };
 
+    const handleScheduleDeletion = () => {
+        setDeletionBusy(true);
+        clearFlashes('server:billing');
+
+        scheduleDeletion(serverUuid)
+            .then(() => {
+                setServerFromState(server => ({
+                    ...server,
+                    deletionScheduledAt: new Date(),
+                    deletionCanceledAt: undefined,
+                    deletionScheduledBy: currentUserId,
+                    isDeletionScheduled: true,
+                }));
+                setShowScheduleConfirmation(false);
+            })
+            .catch(error => clearAndAddHttpError({ key: 'server:billing', error }))
+            .finally(() => setDeletionBusy(false));
+    };
+
+    const handleCancelDeletion = () => {
+        setDeletionBusy(true);
+        clearFlashes('server:billing');
+
+        cancelDeletion(serverUuid)
+            .then(() => {
+                setServerFromState(server => ({
+                    ...server,
+                    deletionCanceledAt: new Date(),
+                    isDeletionScheduled: false,
+                }));
+            })
+            .catch(error => clearAndAddHttpError({ key: 'server:billing', error }))
+            .finally(() => setDeletionBusy(false));
+    };
+
     // Calculate days remaining until renewal (can be negative if overdue)
     const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
     const daysOverdue = daysRemaining < 0 ? Math.abs(daysRemaining) : 0;
@@ -175,13 +220,44 @@ export default () => {
         : null;
 
     return (
-        <PageContentBlock
-            title={'Server Billing'}
-            header
-            description={'Manage your server subscription, renewal, and billing settings.'}
-        >
-            <ScopedAlert scope="server" position="top-center" />
-            <FlashMessageRender byKey={'server:billing'} css={tw`mb-4`} />
+        <>
+            <ConfirmationModal
+                title={'Schedule server deletion?'}
+                buttonText={'Schedule Deletion'}
+                visible={showScheduleConfirmation}
+                showSpinnerOverlay={deletionBusy}
+                onConfirmed={handleScheduleDeletion}
+                onModalDismissed={() => setShowScheduleConfirmation(false)}
+            >
+                Are you sure you want to schedule this server for deletion? It will be permanently deleted at the end of
+                its renewal date. You can cancel before then.
+            </ConfirmationModal>
+            <PageContentBlock
+                title={'Server Billing'}
+                header
+                description={'Manage your server subscription, renewal, and billing settings.'}
+            >
+                <ScopedAlert scope="server" position="top-center" />
+                <FlashMessageRender byKey={'server:billing'} css={tw`mb-4`} />
+                {isDeletionScheduled && renewalDate && (
+                    <Alert type={'danger'} className={'mb-4'}>
+                        <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
+                            <div>
+                                Scheduled for deletion on{' '}
+                                {new Date(renewalDate).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                })}{' '}
+                                (end of day).
+                            </div>
+                            <Button onClick={handleCancelDeletion} disabled={deletionBusy}>
+                                {deletionBusy ? 'Cancelling...' : 'Cancel Deletion'}
+                            </Button>
+                        </div>
+                    </Alert>
+                )}
             {!product && !loading && (
                 <Alert type={'warning'} className={'mb-6'}>
                     The product package you purchased initially no longer exists, so some details may not be shown.
@@ -304,13 +380,27 @@ export default () => {
             <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
                 {/* Renewal Section */}
                 <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
-                    {!product ? (
+                    {isDeletionScheduled ? (
+                        <div css={tw`space-y-3`}>
+                            <Alert type={'warning'}>
+                                This server is scheduled for deletion. Cancel deletion to renew.
+                            </Alert>
+                            <Button onClick={handleCancelDeletion} disabled={deletionBusy} css={tw`w-full`}>
+                                {deletionBusy ? 'Cancelling...' : 'Cancel Deletion'}
+                            </Button>
+                        </div>
+                    ) : !product ? (
                         <Alert type={'danger'}>
                             The product package that the server was made with no longer exists. In order to renew your
                             server, you&apos;ll need to speak to an administrator.
                         </Alert>
                     ) : (
                         <>
+                            <div css={tw`flex justify-end mb-3`}>
+                                <Button disabled={deletionBusy} onClick={() => setShowScheduleConfirmation(true)}>
+                                    Schedule Deletion
+                                </Button>
+                            </div>
                             {product.price === 0 ? (
                                 <div>
                                     <p css={tw`text-gray-300 text-xs mb-3`}>

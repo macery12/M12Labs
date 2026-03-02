@@ -96,6 +96,10 @@ class ServerTransformer extends Transformer
             ],
             'status' => $server->status,
             'renewal_date' => $server->renewal_date,
+            'deletion_scheduled_at' => $server->deletion_scheduled_at,
+            'deletion_canceled_at' => $server->deletion_canceled_at,
+            'deletion_scheduled_by' => $server->deletion_scheduled_by,
+            'is_deletion_scheduled' => $server->isDeletionScheduled(),
             'is_transferring' => !is_null($server->transfer),
         ];
     }
