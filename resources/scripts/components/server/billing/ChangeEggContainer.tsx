@@ -135,7 +135,8 @@ export default () => {
     };
 
     const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
-    const canChange = selectedEggId !== currentEggId && serverStatus === null;
+    const isStopped = serverStatus === null || serverStatus === 'offline';
+    const canChange = selectedEggId !== currentEggId && isStopped;
 
     if (loading) {
         return (
@@ -170,13 +171,13 @@ export default () => {
                     </Select>
                 </div>
 
-                {serverStatus !== null && (
-                    <Alert type={'warning'} className={'mb-3'}>
-                        Server must be stopped first.
-                    </Alert>
-                )}
+                {!isStopped && (
+                     <Alert type={'warning'} className={'mb-3'}>
+                         Server must be stopped first.
+                     </Alert>
+                 )}
 
-                {selectedEggId !== currentEggId && serverStatus === null && (
+                {selectedEggId !== currentEggId && isStopped && (
                     <Alert type={'warning'} className={'mb-3'}>
                         <strong css={tw`text-yellow-400`}>⚠️ BACKUP YOUR FILES:</strong> This will reinstall your
                         server. While files are typically not deleted, corruption is always possible during
