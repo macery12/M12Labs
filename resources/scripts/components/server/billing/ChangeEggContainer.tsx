@@ -60,8 +60,11 @@ export default () => {
                     canChangeEggs = product.allowEggChanges;
                 }
 
-                // Fetch egg information for all allowed eggs
-                const eggInfos = await Promise.all(allowedEggIds.map(id => getEggInfo(id)));
+                // Remove duplicates and reuse the already-fetched current egg info
+                const uniqueAllowedEggIds = Array.from(new Set(allowedEggIds));
+                const eggInfos = await Promise.all(
+                    uniqueAllowedEggIds.map(id => (id === currentEggId ? Promise.resolve(currentEggInfo) : getEggInfo(id)))
+                );
                 setAvailableEggs(eggInfos);
 
                 // Allow changes when permitted by config and there is more than one choice
