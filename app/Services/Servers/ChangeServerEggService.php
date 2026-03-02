@@ -42,28 +42,30 @@ class ChangeServerEggService
             throw new DisplayException('The server must be installed before changing eggs.');
         }
 
-        // Get the server's product category
-        $product = Product::find($server->billing_product_id);
-        if (!$product) {
-            throw new DisplayException('This server does not have a billing product assigned.');
-        }
+        if (config('modules.billing.enabled')) {
+            // Get the server's product category
+            $product = Product::find($server->billing_product_id);
+            if (!$product) {
+                throw new DisplayException('This server does not have a billing product assigned.');
+            }
 
-        $category = $product->category;
-        if (!$category) {
-            throw new DisplayException('This server\'s product does not have a category assigned.');
-        }
+            $category = $product->category;
+            if (!$category) {
+                throw new DisplayException('This server\'s product does not have a category assigned.');
+            }
 
-        // Check if egg changing is allowed for this category
-        if (!$category->allow_egg_changes) {
-            throw new DisplayException('Egg changes are not allowed for this server\'s category.');
-        }
+            // Check if egg changing is allowed for this category
+            if (!$category->allow_egg_changes) {
+                throw new DisplayException('Egg changes are not allowed for this server\'s category.');
+            }
 
-        // Get allowed eggs for the category
-        $allowedEggs = $category->getAllowedEggs();
+            // Get allowed eggs for the category
+            $allowedEggs = $category->getAllowedEggs();
 
-        // Validate that the new egg is in the allowed list
-        if (!in_array($newEggId, $allowedEggs)) {
-            throw new DisplayException('The selected egg is not allowed for this server\'s category.');
+            // Validate that the new egg is in the allowed list
+            if (!in_array($newEggId, $allowedEggs, true)) {
+                throw new DisplayException('The selected egg is not allowed for this server\'s category.');
+            }
         }
 
         // Validate that the new egg exists
