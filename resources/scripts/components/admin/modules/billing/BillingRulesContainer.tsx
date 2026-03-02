@@ -25,6 +25,10 @@ import NodePricingManager from './NodePricingManager';
 type TabType = 'billing-cycles' | 'node-pricing';
 
 const EPSILON = 0.001;
+const MIN_MULTIPLIER = 0.1;
+const MAX_MULTIPLIER = 10;
+
+const isMultiplierInRange = (value: number): boolean => value >= MIN_MULTIPLIER && value <= MAX_MULTIPLIER;
 
 interface MultiplierStep {
     id: string;
@@ -51,8 +55,8 @@ export const validateMultiplierValue = (raw: string): number => {
         throw new Error('Price adjustment must be a valid number.');
     }
 
-    if (parsed < 0.1 || parsed > 10) {
-        throw new Error('Price adjustment must be between 0.1 and 10.0.');
+    if (!isMultiplierInRange(parsed)) {
+        throw new Error(`Price adjustment must be between ${MIN_MULTIPLIER} and ${MAX_MULTIPLIER}.`);
     }
 
     return parsed;
@@ -77,22 +81,22 @@ export default () => {
     const parseSteps = (stepsString: string | undefined): MultiplierStep[] => {
         if (!stepsString) {
              return [
-                 { id: nanoid(), maxDays: 10, multiplier: 1.3, multiplierInput: '1.3' },
-                 { id: nanoid(), maxDays: 20, multiplier: 1.2, multiplierInput: '1.2' },
-                 { id: nanoid(), maxDays: 29, multiplier: 1.1, multiplierInput: '1.1' },
-                 { id: nanoid(), maxDays: 30, multiplier: 1.0, multiplierInput: '1.0' },
+                 { id: nanoid(), maxDays: 10, multiplier: 1.3, multiplierInput: '1.30' },
+                 { id: nanoid(), maxDays: 20, multiplier: 1.2, multiplierInput: '1.20' },
+                 { id: nanoid(), maxDays: 29, multiplier: 1.1, multiplierInput: '1.10' },
+                 { id: nanoid(), maxDays: 30, multiplier: 1.0, multiplierInput: '1.00' },
                  { id: nanoid(), maxDays: 59, multiplier: 0.95, multiplierInput: '0.95' },
-                 { id: nanoid(), maxDays: 89, multiplier: 0.9, multiplierInput: '0.9' },
+                 { id: nanoid(), maxDays: 89, multiplier: 0.9, multiplierInput: '0.90' },
                  { id: nanoid(), maxDays: 999, multiplier: 0.85, multiplierInput: '0.85' },
              ];
-        }
-        try {
-            const parsed = JSON.parse(stepsString) as StoredMultiplierStep[];
-            // Add IDs to existing steps if they don't have them
+         }
+         try {
+             const parsed = JSON.parse(stepsString) as StoredMultiplierStep[];
+             // Add IDs to existing steps if they don't have them
              return parsed.map(step => ({
                  ...step,
                  id: nanoid(),
-                 multiplierInput: step.multiplier.toFixed(1),
+                 multiplierInput: step.multiplier.toFixed(2),
              }));
          } catch {
              return [];
@@ -107,7 +111,7 @@ export default () => {
      const addStep = () => {
          setMultiplierSteps([
              ...multiplierSteps,
-             { id: nanoid(), maxDays: 30, multiplier: 1.0, multiplierInput: '1.0' },
+             { id: nanoid(), maxDays: 30, multiplier: 1.0, multiplierInput: '1.00' },
          ]);
      };
 
@@ -115,24 +119,25 @@ export default () => {
         setMultiplierSteps(multiplierSteps.filter(step => step.id !== id));
     };
 
-     const updateStep = (id: string, field: 'maxDays', value: number) => {
-         const updated = multiplierSteps.map(step => (step.id === id ? { ...step, [field]: value } : step));
-         setMultiplierSteps(updated);
-     };
+    const updateMaxDays = (id: string, value: number) => {
+        const updated = multiplierSteps.map(step => (step.id === id ? { ...step, maxDays: value } : step));
+        setMultiplierSteps(updated);
+    };
 
-     const updateMultiplierInput = (id: string, value: string) => {
-         const updated = multiplierSteps.map(step => {
-             if (step.id !== id) return step;
-             const parsed = parseFloat(value);
+    const updateMultiplierInput = (id: string, value: string) => {
+        const updated = multiplierSteps.map(step => {
+            if (step.id !== id) return step;
+            const parsed = parseFloat(value);
+            const withinRange = !Number.isNaN(parsed) && isMultiplierInRange(parsed);
 
-             return {
-                 ...step,
-                 multiplierInput: value,
-                 multiplier: Number.isNaN(parsed) ? step.multiplier : parsed,
-             };
-         });
-         setMultiplierSteps(updated);
-     };
+            return {
+                ...step,
+                multiplierInput: value,
+                multiplier: withinRange ? parsed : step.multiplier,
+            };
+        });
+        setMultiplierSteps(updated);
+    };
 
     const handleSaveAll = async () => {
         clearFlashes('admin:billing');
@@ -147,17 +152,21 @@ export default () => {
              // Sort steps by maxDays for consistency
              const sortedSteps = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
 
-             const validatedSteps = sortedSteps.map(step => {
-                 const parsedMultiplier = validateMultiplierValue(
-                     (step.multiplierInput ?? step.multiplier?.toString() ?? '').toString(),
-                 );
-
-                 const normalizedMultiplier = parseFloat(parsedMultiplier.toFixed(2));
+             const validatedSteps = sortedSteps.map((step, idx) => {
+                 let parsedMultiplier: number;
+                 try {
+                     parsedMultiplier = validateMultiplierValue(
+                         step.multiplierInput ?? step.multiplier?.toString() ?? '',
+                     );
+                 } catch (err) {
+                     const message = err instanceof Error ? err.message : 'Invalid price adjustment.';
+                     throw new Error(`Step ${idx + 1} (${step.maxDays} days): ${message}`);
+                 }
 
                  return {
                      ...step,
-                     multiplier: normalizedMultiplier,
-                     multiplierInput: normalizedMultiplier.toFixed(1),
+                     multiplier: parsedMultiplier,
+                     multiplierInput: parsedMultiplier.toFixed(2),
                  };
              });
 
@@ -374,13 +383,7 @@ export default () => {
                                                             min={1}
                                                             max={999}
                                                             value={step.maxDays}
-                                                            onChange={e =>
-                                                                updateStep(
-                                                                    step.id,
-                                                                    'maxDays',
-                                                                    parseInt(e.target.value) || 30,
-                                                                )
-                                                            }
+                                                            onChange={e => updateMaxDays(step.id, parseInt(e.target.value) || 30)}
                                                             disabled={loading}
                                                             css={tw`w-24`}
                                                         />
@@ -402,12 +405,12 @@ export default () => {
                                                         <Input
                                                              type={'number'}
                                                              step={0.01}
-                                                             min={0.1}
-                                                             max={10}
+                                                             min={MIN_MULTIPLIER}
+                                                             max={MAX_MULTIPLIER}
                                                              value={
                                                                  step.multiplierInput ??
-                                                                 step.multiplier?.toFixed(1) ??
-                                                                 '1.0'
+                                                                 step.multiplier?.toFixed(2) ??
+                                                                 '1.00'
                                                              }
                                                              onChange={e => updateMultiplierInput(step.id, e.target.value)}
                                                              disabled={loading}
