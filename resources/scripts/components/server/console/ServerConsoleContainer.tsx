@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Link } from 'react-router-dom';
 import isEqual from 'react-fast-compare';
 import { Alert } from '@/elements/alert';
 import Can from '@/elements/Can';
@@ -44,8 +45,12 @@ function ServerConsoleContainer() {
     const isNodeUnderMaintenance = ServerContext.useStoreState(state => state.server.data!.isNodeUnderMaintenance);
     const status = ServerContext.useStoreState(state => state.status.value);
     const renewalDate = ServerContext.useStoreState(state => state.server.data!.renewalDate);
+    const isDeletionScheduled = ServerContext.useStoreState(
+        state => state.server.data!.isDeletionScheduled ?? false,
+    );
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
     const settings = useStoreState(state => state.everest.data!.billing);
+    const settingsPath = `/server/${uuid}/settings`;
 
     // Get configurable renewal settings
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
@@ -64,6 +69,20 @@ function ServerConsoleContainer() {
 
     return (
         <PageContentBlock title={'Server Console'} showFlashKey={'console:share'}>
+            {isDeletionScheduled && renewalDate && (
+                <Alert type={'warning'} className={'mb-4'}>
+                    Scheduled for deletion on{' '}
+                    {new Date(renewalDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                    })}{' '}
+                    (end of day).{' '}
+                    <Link to={settingsPath} className={'font-semibold underline'}>
+                        Manage or cancel in Settings.
+                    </Link>
+                </Alert>
+            )}
             {showRenewalWarning && (
                 <Alert type={'warning'} className={'mb-4'}>
                     Your server is {Math.abs(daysUntilRenewal!)} day{Math.abs(daysUntilRenewal!) !== 1 ? 's' : ''}{' '}

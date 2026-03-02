@@ -33,6 +33,10 @@ interface Server {
     billingProductId?: number;
     billingDays?: number;
     renewalDate?: Date | undefined;
+    deletionScheduledAt?: Date | undefined;
+    deletionCanceledAt?: Date | undefined;
+    deletionScheduledBy?: number | null;
+    isDeletionScheduled?: boolean;
     featureLimits: {
         databases: number;
         allocations: number;

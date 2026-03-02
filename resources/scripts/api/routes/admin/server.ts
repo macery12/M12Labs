@@ -56,6 +56,10 @@ export interface Server extends Model {
         environment: Record<string, string>;
     };
     renewalDate?: Date | undefined;
+    deletionScheduledAt?: Date | undefined;
+    deletionCanceledAt?: Date | undefined;
+    deletionScheduledBy?: number | null;
+    isDeletionScheduled?: boolean;
     billingProductId?: number;
     billingDays?: number;
     createdAt: Date;

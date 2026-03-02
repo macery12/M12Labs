@@ -26,6 +26,10 @@ export default class Transformers {
         billingProductId: data.billing_product_id,
         billingDays: data.billing_days,
         renewalDate: data.renewal_date ? new Date(data.renewal_date) : undefined,
+        deletionScheduledAt: data.deletion_scheduled_at ? new Date(data.deletion_scheduled_at) : undefined,
+        deletionCanceledAt: data.deletion_canceled_at ? new Date(data.deletion_canceled_at) : undefined,
+        deletionScheduledBy: data.deletion_scheduled_by,
+        isDeletionScheduled: data.is_deletion_scheduled ?? false,
         featureLimits: { ...data.feature_limits },
         isTransferring: data.is_transferring,
         variables: ((data.relationships?.variables as FractalResponseList | undefined)?.data || []).map(

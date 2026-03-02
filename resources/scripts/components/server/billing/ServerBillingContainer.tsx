@@ -68,11 +68,16 @@ export default () => {
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
+    const currentUserId = useStoreState(s => s.user.data!.id);
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
+    const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
     const billingDays = ServerContext.useStoreState(s => s.server.data!.billingDays);
     const serverStatus = ServerContext.useStoreState(s => s.server.data!.status);
+    const isDeletionScheduled = ServerContext.useStoreState(
+        s => s.server.data!.isDeletionScheduled ?? false,
+    );
 
     // Get configurable renewal settings
     // Use the actual billing days from the server if available, otherwise fall back to default renewalDays
@@ -80,6 +85,8 @@ export default () => {
     const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
+    const settingsPath = `/server/${serverUuid}/settings`;
+    const settingsLinkStyles = tw`inline-block rounded bg-gray-700 px-3 py-2 text-center text-sm font-medium text-gray-100 hover:bg-gray-600`;
 
     /**
      * Calculate grace period threshold in days based on billing cycle length.
@@ -175,13 +182,33 @@ export default () => {
         : null;
 
     return (
-        <PageContentBlock
-            title={'Server Billing'}
-            header
-            description={'Manage your server subscription, renewal, and billing settings.'}
-        >
-            <ScopedAlert scope="server" position="top-center" />
-            <FlashMessageRender byKey={'server:billing'} css={tw`mb-4`} />
+        <>
+            <PageContentBlock
+                title={'Server Billing'}
+                header
+                description={'Manage your server subscription, renewal, and billing settings.'}
+            >
+                <ScopedAlert scope="server" position="top-center" />
+                <FlashMessageRender byKey={'server:billing'} css={tw`mb-4`} />
+                {isDeletionScheduled && renewalDate && (
+                    <Alert type={'danger'} className={'mb-4'}>
+                        <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
+                            <div>
+                                Scheduled for deletion on{' '}
+                                {new Date(renewalDate).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                })}{' '}
+                                (end of day).
+                            </div>
+                            <Link to={settingsPath} css={settingsLinkStyles}>
+                                Manage Scheduled Deletion in Settings
+                            </Link>
+                        </div>
+                    </Alert>
+                )}
             {!product && !loading && (
                 <Alert type={'warning'} className={'mb-6'}>
                     The product package you purchased initially no longer exists, so some details may not be shown.
@@ -304,7 +331,16 @@ export default () => {
             <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
                 {/* Renewal Section */}
                 <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
-                    {!product ? (
+                    {isDeletionScheduled ? (
+                        <div css={tw`space-y-3`}>
+                            <Alert type={'warning'}>
+                                This server is scheduled for deletion. Manage or cancel from Server Settings.
+                            </Alert>
+                            <Link to={settingsPath} css={settingsLinkStyles}>
+                                Manage Scheduled Deletion in Settings
+                            </Link>
+                        </div>
+                    ) : !product ? (
                         <Alert type={'danger'}>
                             The product package that the server was made with no longer exists. In order to renew your
                             server, you&apos;ll need to speak to an administrator.
@@ -432,6 +468,7 @@ export default () => {
                 {/* Plan Change Section */}
                 <ChangePlanContainer />
             </div>
-        </PageContentBlock>
+            </PageContentBlock>
+        </>
     );
 };
