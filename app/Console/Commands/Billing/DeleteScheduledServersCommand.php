@@ -22,7 +22,7 @@ class DeleteScheduledServersCommand extends Command
         $today = now()->toDateString();
 
         $servers = Server::whereNotNull('renewal_date')
-            ->whereDate('renewal_date', '=', $today)
+            ->whereDate('renewal_date', '<=', $today)
             ->whereNotNull('deletion_scheduled_at')
             ->where(function ($query) {
                 $query->whereNull('deletion_canceled_at')
