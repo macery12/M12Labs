@@ -518,6 +518,7 @@ export default () => {
                 {/* Plan Change Section */}
                 <ChangePlanContainer />
             </div>
-        </PageContentBlock>
+            </PageContentBlock>
+        </>
     );
 };
