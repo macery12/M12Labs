@@ -28,7 +28,14 @@ const EPSILON = 0.001;
 const MIN_MULTIPLIER = 0.1;
 const MAX_MULTIPLIER = 10;
 
+type ClampTag = 'MIN' | 'MAX';
+
 const isMultiplierInRange = (value: number): boolean => value >= MIN_MULTIPLIER && value <= MAX_MULTIPLIER;
+const clampMultiplier = (value: number): { value: number; clamped?: ClampTag } => {
+    if (value < MIN_MULTIPLIER) return { value: MIN_MULTIPLIER, clamped: 'MIN' };
+    if (value > MAX_MULTIPLIER) return { value: MAX_MULTIPLIER, clamped: 'MAX' };
+    return { value, clamped: undefined };
+};
 
 interface MultiplierStep {
     id: string;
@@ -39,15 +46,15 @@ interface MultiplierStep {
 
 type StoredMultiplierStep = Omit<MultiplierStep, 'id'>;
 
-const formatPriceAdjustment = (multiplier: number): string => {
+const formatPriceAdjustment = (multiplier: number, clamped?: ClampTag): string => {
     // Use epsilon comparison for floating point
     if (Math.abs(multiplier - 1.0) < EPSILON) return 'Standard price';
     const percentage = Math.round((multiplier - 1) * 100);
-    if (percentage > 0) return `+${percentage}%`;
-    return `${percentage}%`;
+    if (percentage > 0) return `+${percentage}%${clamped ? ` (${clamped})` : ''}`;
+    return `${percentage}%${clamped ? ` (${clamped})` : ''}`;
 };
 
-export const validateMultiplierValue = (raw: string): number => {
+export const normalizeMultiplierValue = (raw: string): { value: number; clamped?: ClampTag } => {
     const trimmed = raw.trim();
     const parsed = parseFloat(trimmed);
 
@@ -56,10 +63,10 @@ export const validateMultiplierValue = (raw: string): number => {
     }
 
     if (!isMultiplierInRange(parsed)) {
-        throw new Error(`Price adjustment must be between ${MIN_MULTIPLIER} and ${MAX_MULTIPLIER}.`);
+        return clampMultiplier(parsed);
     }
 
-    return parsed;
+    return { value: parsed, clamped: undefined };
 };
 
 const formatBillingLength = (maxDays: number, isLast: boolean, defaultBillingDays: number): string => {
@@ -127,16 +134,31 @@ export default () => {
     const updateMultiplierInput = (id: string, value: string) => {
         const updated = multiplierSteps.map(step => {
             if (step.id !== id) return step;
-            const parsed = parseFloat(value);
-            const withinRange = !Number.isNaN(parsed) && isMultiplierInRange(parsed);
+            const trimmed = value.trim();
+            const parsed = parseFloat(trimmed);
+            const clamped = Number.isNaN(parsed) ? undefined : clampMultiplier(parsed);
 
             return {
                 ...step,
                 multiplierInput: value,
-                multiplier: withinRange ? parsed : step.multiplier,
+                multiplier: clamped?.value ?? step.multiplier,
             };
         });
         setMultiplierSteps(updated);
+    };
+
+    const getDisplayMultiplier = (step: MultiplierStep): { effective: number; clampTag?: ClampTag } => {
+        const raw = step.multiplierInput ?? step.multiplier?.toString() ?? '';
+        const trimmed = raw.trim();
+        const parsed = parseFloat(trimmed);
+
+        if (!trimmed || Number.isNaN(parsed)) {
+            const clamped = clampMultiplier(step.multiplier);
+            return { effective: clamped.value, clampTag: clamped.clamped };
+        }
+
+        const clamped = clampMultiplier(parsed);
+        return { effective: clamped.value, clampTag: clamped.clamped };
     };
 
     const handleSaveAll = async () => {
@@ -153,11 +175,9 @@ export default () => {
              const sortedSteps = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
 
              const validatedSteps = sortedSteps.map((step, idx) => {
-                 let parsedMultiplier: number;
+                 let normalizedMultiplier: { value: number; clamped?: ClampTag };
                  try {
-                     parsedMultiplier = validateMultiplierValue(
-                         step.multiplierInput ?? step.multiplier?.toString() ?? '',
-                     );
+                     normalizedMultiplier = normalizeMultiplierValue(step.multiplierInput ?? step.multiplier?.toString() ?? '');
                  } catch (err) {
                      const message = err instanceof Error ? err.message : 'Invalid price adjustment.';
                      throw new Error(`Step ${idx + 1} (${step.maxDays} days): ${message}`);
@@ -165,8 +185,8 @@ export default () => {
 
                  return {
                      ...step,
-                     multiplier: parsedMultiplier,
-                     multiplierInput: parsedMultiplier.toFixed(2),
+                     multiplier: normalizedMultiplier.value,
+                     multiplierInput: normalizedMultiplier.value.toFixed(2),
                  };
              });
 
@@ -364,6 +384,7 @@ export default () => {
                                 <tbody>
                                     {sortedStepsForDisplay.map((step, idx) => {
                                         const isLast = idx === sortedStepsForDisplay.length - 1;
+                                        const displayMultiplier = getDisplayMultiplier(step);
                                         return (
                                             <tr
                                                 key={step.id}
@@ -394,13 +415,16 @@ export default () => {
                                                         <span
                                                             css={[
                                                                 tw`min-w-[120px] font-medium`,
-                                                                Math.abs(step.multiplier - 1.0) < EPSILON &&
+                                                                Math.abs(displayMultiplier.effective - 1.0) < EPSILON &&
                                                                     tw`text-blue-400`,
-                                                                step.multiplier >= 1.0 + EPSILON && tw`text-red-400`,
-                                                                step.multiplier < 1.0 - EPSILON && tw`text-green-400`,
+                                                                displayMultiplier.effective >= 1.0 + EPSILON && tw`text-red-400`,
+                                                                displayMultiplier.effective < 1.0 - EPSILON && tw`text-green-400`,
                                                             ]}
                                                         >
-                                                            {formatPriceAdjustment(step.multiplier)}
+                                                            {formatPriceAdjustment(
+                                                                displayMultiplier.effective,
+                                                                displayMultiplier.clampTag,
+                                                            )}
                                                         </span>
                                                         <Input
                                                              type={'number'}

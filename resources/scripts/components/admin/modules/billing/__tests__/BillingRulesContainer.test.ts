@@ -1,20 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { validateMultiplierValue } from '../BillingRulesContainer';
+import { normalizeMultiplierValue } from '../BillingRulesContainer';
 
-describe('validateMultiplierValue', () => {
+describe('normalizeMultiplierValue', () => {
     it('accepts values within range with decimals', () => {
-        expect(validateMultiplierValue('0.1')).toBe(0.1);
-        expect(validateMultiplierValue('1.25')).toBe(1.25);
-        expect(validateMultiplierValue('10')).toBe(10);
+        expect(normalizeMultiplierValue('0.1')).toEqual({ value: 0.1, clamped: undefined });
+        expect(normalizeMultiplierValue('0.11')).toEqual({ value: 0.11, clamped: undefined });
+        expect(normalizeMultiplierValue('1.25')).toEqual({ value: 1.25, clamped: undefined });
+        expect(normalizeMultiplierValue('10')).toEqual({ value: 10, clamped: undefined });
     });
 
     it('rejects empty or non-numeric values', () => {
-        expect(() => validateMultiplierValue('')).toThrowError();
-        expect(() => validateMultiplierValue('abc')).toThrowError();
+        expect(() => normalizeMultiplierValue('')).toThrowError();
+        expect(() => normalizeMultiplierValue('abc')).toThrowError();
     });
 
-    it('rejects values outside allowed bounds', () => {
-        expect(() => validateMultiplierValue('0.05')).toThrowError();
-        expect(() => validateMultiplierValue('10.5')).toThrowError();
+    it('clamps values outside allowed bounds', () => {
+        expect(normalizeMultiplierValue('0.02')).toEqual({ value: 0.1, clamped: 'MIN' });
+        expect(normalizeMultiplierValue('50')).toEqual({ value: 10, clamped: 'MAX' });
     });
 });
