@@ -93,6 +93,12 @@ export default () => {
             });
     };
 
+    const scheduleButtonText = server.isDeletionScheduled
+        ? 'Deletion Scheduled'
+        : scheduling
+        ? 'Scheduling...'
+        : 'Schedule Deletion';
+
     return (
         <PageContentBlock
             title={'Server Settings'}
@@ -168,7 +174,7 @@ export default () => {
                             disabled={scheduling || server.isDeletionScheduled}
                             onClick={() => setScheduleOpen(true)}
                         >
-                            {server.isDeletionScheduled ? 'Deletion Scheduled' : scheduling ? 'Scheduling...' : 'Schedule Deletion'}
+                            {scheduleButtonText}
                         </Button.Danger>
                         <Dialog.Confirm
                             open={scheduleOpen}
