@@ -137,12 +137,12 @@ export default () => {
     );
     const [loading, setLoading] = useState(false);
 
-     const addStep = () => {
-         setMultiplierSteps([
-             ...multiplierSteps,
-             { id: nanoid(), maxDays: 30, maxDaysInput: '30', multiplier: 1.0, multiplierInput: '1.00' },
-         ]);
-     };
+    const addStep = () => {
+        setMultiplierSteps([
+            ...multiplierSteps,
+            { id: nanoid(), maxDays: 1, maxDaysInput: '0', multiplier: 1.0, multiplierInput: '1.00' },
+        ]);
+    };
 
     const removeStep = (id: string) => {
         setMultiplierSteps(multiplierSteps.filter(step => step.id !== id));
@@ -288,8 +288,8 @@ export default () => {
         }
     };
 
-    // Sort steps for display
-    const sortedStepsForDisplay = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
+    // Display steps as entered; sorting now only occurs during save
+    const stepsForDisplay = multiplierSteps;
 
     return (
         <div>
@@ -439,8 +439,8 @@ export default () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sortedStepsForDisplay.map((step, idx) => {
-                                        const isLast = idx === sortedStepsForDisplay.length - 1;
+                                    {stepsForDisplay.map((step, idx) => {
+                                        const isLast = idx === stepsForDisplay.length - 1;
                                         const displayMultiplier = getDisplayMultiplier(step);
                                         const displayMaxDays = getDisplayMaxDays(step);
                                         return (
