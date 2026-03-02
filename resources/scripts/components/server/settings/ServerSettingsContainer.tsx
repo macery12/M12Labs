@@ -97,7 +97,7 @@ export default () => {
     if (scheduling) {
         scheduleButtonText = 'Scheduling...';
     }
-    if (server.isDeletionScheduled) {
+    else if (server.isDeletionScheduled) {
         scheduleButtonText = 'Deletion Scheduled';
     }
 
