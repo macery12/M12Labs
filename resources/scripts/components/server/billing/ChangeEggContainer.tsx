@@ -28,7 +28,7 @@ export default () => {
     const [selectedEggId, setSelectedEggId] = useState<number>(currentEggId);
     const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
     const [currentEgg, setCurrentEgg] = useState<EggInfo | null>(null);
-    const [allowEggChanges, setAllowEggChanges] = useState<boolean>(false);
+    const [allowEggChanges, setAllowEggChanges] = useState<boolean>(true);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleteFiles, setDeleteFiles] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState('');
@@ -38,28 +38,34 @@ export default () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Validate required data
-                if (!billingProductId || !currentEggId) {
-                    setLoading(false);
+                // Require at least a current egg to render meaningful data
+                if (!currentEggId) {
                     setAllowEggChanges(false);
+                    setLoading(false);
                     return;
                 }
 
-                // Fetch current egg info first
+                // Always fetch current egg info for display
                 const currentEggInfo = await getEggInfo(currentEggId);
                 setCurrentEgg(currentEggInfo);
 
-                // Fetch product to get allowed eggs
-                const product = await getProduct(billingProductId);
-                const allowedEggs = product.allowedEggs || [product.eggId];
+                // Default to only the current egg
+                let allowedEggIds: number[] = [currentEggId];
+                let canChangeEggs = true;
+
+                // If the server has an associated product, respect its allowed eggs and toggle
+                if (billingProductId) {
+                    const product = await getProduct(billingProductId);
+                    allowedEggIds = product.allowedEggs || [product.eggId];
+                    canChangeEggs = product.allowEggChanges;
+                }
 
                 // Fetch egg information for all allowed eggs
-                const eggInfoPromises = allowedEggs.map(id => getEggInfo(id));
-                const eggInfos = await Promise.all(eggInfoPromises);
+                const eggInfos = await Promise.all(allowedEggIds.map(id => getEggInfo(id)));
                 setAvailableEggs(eggInfos);
 
-                // Check if category allows egg changes (from product)
-                setAllowEggChanges(product.allowEggChanges && allowedEggs.length > 1);
+                // Allow changes when permitted by config and there is more than one choice
+                setAllowEggChanges(canChangeEggs && eggInfos.length > 1);
                 setLoading(false);
             } catch (error) {
                 console.error(error);
