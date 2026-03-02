@@ -5,6 +5,7 @@ namespace Everest\Transformers\Api\Application;
 use Everest\Models\User;
 use Illuminate\Support\Str;
 use Everest\Models\ActivityLog;
+use Illuminate\Support\Facades\Log;
 use League\Fractal\Resource\Item;
 use Everest\Transformers\Api\Transformer;
 use League\Fractal\Resource\NullResource;
@@ -28,11 +29,17 @@ class ActivityLogTransformer extends Transformer
             'batch' => $model->batch,
             'event' => $model->event,
             'is_api' => !is_null($model->api_key_id),
+            'is_admin' => (bool) $model->is_admin,
             'ip' => $model->ip,
             'description' => $model->description,
             'properties' => $this->properties($model),
             'has_additional_metadata' => $this->hasAdditionalMetadata($model),
             'timestamp' => $model->timestamp->toIso8601String(),
+            'scope' => $this->scope($model),
+            'context' => $this->context($model),
+            'category' => $this->category($model),
+            'source' => $this->source($model),
+            'severity' => $this->severity($model),
         ];
     }
 
@@ -51,11 +58,15 @@ class ActivityLogTransformer extends Transformer
      */
     protected function properties(ActivityLog $model): object
     {
-        if (!$model->properties || $model->properties->isEmpty()) {
+        $propertiesCollection = $model->properties instanceof \Illuminate\Support\Collection
+            ? $model->properties
+            : collect($model->properties ?? []);
+
+        if ($propertiesCollection->isEmpty()) {
             return (object) [];
         }
 
-        $properties = $model->properties
+        $properties = $propertiesCollection
             ->mapWithKeys(function ($value, $key) use ($model) {
                 if ($key === 'ip' && !optional($model->actor)->is($this->request->user())) {
                     return [$key => '[hidden]'];
@@ -92,7 +103,11 @@ class ActivityLogTransformer extends Transformer
      */
     protected function hasAdditionalMetadata(ActivityLog $model): bool
     {
-        if (is_null($model->properties) || $model->properties->isEmpty()) {
+        $propertiesCollection = $model->properties instanceof \Illuminate\Support\Collection
+            ? $model->properties
+            : collect($model->properties ?? []);
+
+        if ($propertiesCollection->isEmpty()) {
             return false;
         }
 
@@ -100,12 +115,96 @@ class ActivityLogTransformer extends Transformer
         preg_match_all('/:(?<key>[\w.-]+\w)(?:[^\w:]?|$)/', $str, $matches);
 
         $exclude = array_merge($matches['key'], ['ip', 'useragent', 'using_sftp']);
-        foreach ($model->properties->keys() as $key) {
+        foreach ($propertiesCollection->keys() as $key) {
             if (!in_array($key, $exclude, true)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    protected function scope(ActivityLog $model): string
+    {
+        $inferred = $this->inferScope($model);
+        if ($model->scope && $model->scope !== $inferred) {
+            Log::warning('activity.scope_mismatch', [
+                'id' => $model->id,
+                'scope' => $model->scope,
+                'inferred' => $inferred,
+                'event' => $model->event,
+            ]);
+        }
+
+        return $model->scope ?? $inferred;
+    }
+
+    protected function inferScope(ActivityLog $model): string
+    {
+        if (!is_null($model->server_id)) {
+            return 'server';
+        }
+
+        if ($model->is_admin) {
+            return 'admin';
+        }
+
+        return 'account';
+    }
+
+    protected function context(ActivityLog $model): string
+    {
+        $properties = $model->properties ?? collect();
+
+        $context = is_array($properties) ? $properties['context'] ?? null : $properties->get('context');
+
+        if (is_string($context)) {
+            return $context;
+        }
+
+        return $model->is_admin ? 'admin' : 'client';
+    }
+
+    protected function category(ActivityLog $model): string
+    {
+        $event = $model->event;
+
+        return match (true) {
+            Str::startsWith($event, 'auth:') => 'auth',
+            Str::startsWith($event, 'server:file') => 'files',
+            Str::startsWith($event, 'server:backup') => 'backups',
+            Str::startsWith($event, ['server:plugin', 'server:mod', 'server:install']) => 'plugins',
+            Str::startsWith($event, 'server:') => 'server',
+            default => 'admin',
+        };
+    }
+
+    protected function source(ActivityLog $model): string
+    {
+        $properties = $model->properties ?? collect();
+        $source = is_array($properties) ? $properties['source'] ?? null : $properties->get('source');
+
+        if (is_string($source)) {
+            return $source;
+        }
+
+        if ($model->api_key_id) {
+            return 'api';
+        }
+
+        return 'panel';
+    }
+
+    protected function severity(ActivityLog $model): string
+    {
+        if (Str::startsWith($model->event, 'auth:failed')) {
+            return 'critical';
+        }
+
+        if (Str::contains($model->event, ['failed', 'error', 'denied'])) {
+            return 'warning';
+        }
+
+        return 'info';
     }
 }

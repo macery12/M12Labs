@@ -49,10 +49,18 @@ class ActivityProcessingController extends Controller
                 $datum['metadata'] = array_merge($datum['metadata'] ?? [], ['original_timestamp' => $datum['timestamp']]);
             }
 
+            $properties = $datum['metadata'] ?? [];
+            if (!isset($properties['context'])) {
+                $properties['context'] = 'client';
+            }
+            $properties['source'] = $properties['source'] ?? 'wings';
+
             $log = [
                 'ip' => empty($datum['ip']) ? '127.0.0.1' : $datum['ip'],
                 'event' => $datum['event'],
-                'properties' => json_encode($datum['metadata'] ?? []),
+                'properties' => json_encode($properties),
+                'scope' => 'server',
+                'server_id' => $server->id,
                 // We have to change the time to the current timezone due to the way Laravel is handling
                 // the date casting internally. If we just leave it in UTC it ends up getting double-cast
                 // and the time is way off.

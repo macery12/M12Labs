@@ -113,6 +113,23 @@ export default ({ activity, children }: Props) => {
                                     )}
                                     {children}
                                 </div>
+                                <div className={'flex items-center gap-2'}>
+                                    {activity.context === 'admin' && (
+                                        <span className={'rounded-full border border-red-400/40 bg-red-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-red-200'}>
+                                            Admin
+                                        </span>
+                                    )}
+                                    {activity.isApi && (
+                                        <span className={'rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-emerald-200'}>
+                                            API
+                                        </span>
+                                    )}
+                                    {activity.category && (
+                                        <span className={'rounded-full border border-slate-400/30 bg-slate-600/60 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-200'}>
+                                            {activity.category}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Action Description */}

@@ -15,7 +15,16 @@ class ActivityLogController extends ApplicationApiController
      */
     public function __invoke(ActivityRequest $request): array
     {
-        $activityQuery = ActivityLog::where('is_admin', true)
+        $activityQuery = ActivityLog::query()
+            ->where(function ($query) {
+                $query->where('scope', 'admin')
+                    ->orWhere(function ($sub) {
+                        $sub->where('scope', 'server')->where('is_admin', true);
+                    })
+                    ->orWhere(function ($sub) {
+                        $sub->whereNull('scope')->where('is_admin', true);
+                    });
+            })
             ->whereNotIn('event', ActivityLog::DISABLED_EVENTS);
 
         $activity = QueryBuilder::for($activityQuery)
@@ -56,7 +65,16 @@ class ActivityLogController extends ApplicationApiController
      */
     public function users(ActivityRequest $request): array
     {
-        $users = ActivityLog::where('is_admin', true)
+        $users = ActivityLog::query()
+            ->where(function ($query) {
+                $query->where('scope', 'admin')
+                    ->orWhere(function ($sub) {
+                        $sub->where('scope', 'server')->where('is_admin', true);
+                    })
+                    ->orWhere(function ($sub) {
+                        $sub->whereNull('scope')->where('is_admin', true);
+                    });
+            })
             ->whereNotIn('event', ActivityLog::DISABLED_EVENTS)
             ->whereNotNull('actor_id')
             ->join('users', 'activity_logs.actor_id', '=', 'users.id')
@@ -79,7 +97,16 @@ class ActivityLogController extends ApplicationApiController
      */
     public function events(ActivityRequest $request): array
     {
-        $events = ActivityLog::where('is_admin', true)
+        $events = ActivityLog::query()
+            ->where(function ($query) {
+                $query->where('scope', 'admin')
+                    ->orWhere(function ($sub) {
+                        $sub->where('scope', 'server')->where('is_admin', true);
+                    })
+                    ->orWhere(function ($sub) {
+                        $sub->whereNull('scope')->where('is_admin', true);
+                    });
+            })
             ->whereNotIn('event', ActivityLog::DISABLED_EVENTS)
             ->orderBy('event')
             ->distinct()

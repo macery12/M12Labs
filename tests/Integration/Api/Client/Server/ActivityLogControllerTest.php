@@ -27,9 +27,9 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
     }
 
     /**
-     * Ensure server activity endpoint excludes admin activity logs.
+     * Ensure server activity endpoint includes all server scoped logs (including admin actions).
      */
-    public function testServerActivityDoesNotIncludeAdminLogs(): void
+    public function testServerActivityIncludesAdminLogs(): void
     {
         $user = User::factory()->create();
 
@@ -100,6 +100,7 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
             'actor_type' => $user->getMorphClass(),
             'server_id' => $server->id,
             'is_admin' => false,
+            'scope' => 'server',
             'timestamp' => now(),
         ]);
 
@@ -110,6 +111,7 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
             'actor_type' => $user->getMorphClass(),
             'server_id' => $server->id,
             'is_admin' => true,
+            'scope' => 'server',
             'timestamp' => now(),
         ]);
 
@@ -119,9 +121,10 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
         $response = $this->actingAs($user)->getJson("/api/client/servers/{$server->uuid}/activity");
 
         $response->assertStatus(Response::HTTP_OK);
-        $response->assertJsonCount(1, 'data');
-        $response->assertJsonMissing(['event' => 'admin:event']);
-        $response->assertJsonPath('data.0.attributes.event', 'server:task');
+        $response->assertJsonCount(2, 'data');
+        $response->assertJsonFragment(['event' => 'admin:event']);
+        $response->assertJsonFragment(['event' => 'server:task']);
+        $response->assertJsonFragment(['scope' => 'server']);
     }
 
     protected function setUpDatabase(): void
@@ -160,6 +163,7 @@ class ActivityLogControllerTest extends ClientApiIntegrationTestCase
             $table->unsignedInteger('server_id')->nullable();
             $table->unsignedInteger('api_key_id')->nullable();
             $table->boolean('is_admin')->default(false);
+            $table->string('scope')->nullable();
             $table->json('properties')->nullable();
             $table->timestamp('timestamp')->useCurrent();
         });
