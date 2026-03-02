@@ -9,6 +9,7 @@ import useFlash from '@/plugins/useFlash';
 import { changeEgg } from '@/api/routes/server/startup';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
+import { getCategories } from '@/api/routes/account/billing/categories';
 import { Alert } from '@/elements/alert';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -55,9 +56,28 @@ export default () => {
 
                 // If the server has an associated product, respect its allowed eggs and toggle
                 if (billingProductId) {
-                    const product = await getProduct(billingProductId);
-                    allowedEggIds = product.allowedEggs || [product.eggId];
-                    canChangeEggs = product.allowEggChanges;
+                    try {
+                        const product = await getProduct(billingProductId);
+                        allowedEggIds = product.allowedEggs || [product.eggId];
+                        canChangeEggs = product.allowEggChanges;
+                    } catch (error) {
+                        // Fall back to category lookup below
+                        console.warn('Unable to load billing product, falling back to category search', error);
+                    }
+                }
+
+                // Fallback: find the category that includes this egg and use its allowed eggs
+                if (allowedEggIds.length === 1 || !billingProductId) {
+                    try {
+                        const categories = await getCategories();
+                        const category = categories.find(c => c.allowedEggs?.includes(currentEggId));
+                        if (category) {
+                            allowedEggIds = category.allowedEggs || allowedEggIds;
+                            canChangeEggs = category.allowEggChanges ?? canChangeEggs;
+                        }
+                    } catch (error) {
+                        console.warn('Unable to load categories for egg lookup', error);
+                    }
                 }
 
                 // Remove duplicates and reuse the already-fetched current egg info
