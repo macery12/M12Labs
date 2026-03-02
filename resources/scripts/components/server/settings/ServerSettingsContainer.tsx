@@ -93,11 +93,13 @@ export default () => {
             });
     };
 
-    const scheduleButtonText = server.isDeletionScheduled
-        ? 'Deletion Scheduled'
-        : scheduling
-        ? 'Scheduling...'
-        : 'Schedule Deletion';
+    let scheduleButtonText = 'Schedule Deletion';
+    if (scheduling) {
+        scheduleButtonText = 'Scheduling...';
+    }
+    if (server.isDeletionScheduled) {
+        scheduleButtonText = 'Deletion Scheduled';
+    }
 
     return (
         <PageContentBlock
