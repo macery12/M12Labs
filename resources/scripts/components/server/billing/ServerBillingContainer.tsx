@@ -29,8 +29,7 @@ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import tw from 'twin.macro';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import ChangePlanContainer from './ChangePlanContainer';
-import ConfirmationModal from '@/elements/ConfirmationModal';
-import { scheduleDeletion, cancelDeletion } from '@/api/routes/server/deletion';
+import { cancelDeletion } from '@/api/routes/server/deletion';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -67,7 +66,6 @@ export default () => {
     const [renewing, setRenewing] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [currentBillingCycle, setCurrentBillingCycle] = useState<BillingCycle | null>(null);
-    const [showScheduleConfirmation, setShowScheduleConfirmation] = useState<boolean>(false);
     const [deletionBusy, setDeletionBusy] = useState<boolean>(false);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
@@ -170,22 +168,6 @@ export default () => {
         setCouponData(data);
     };
 
-    const handleScheduleDeletion = () => {
-        setDeletionBusy(true);
-        clearFlashes('server:billing');
-
-        scheduleDeletion(serverUuid)
-            .then(() => {
-                setServerFromState(server => ({
-                    ...server,
-                    isDeletionScheduled: true,
-                }));
-                setShowScheduleConfirmation(false);
-            })
-            .catch(error => clearAndAddHttpError({ key: 'server:billing', error }))
-            .finally(() => setDeletionBusy(false));
-    };
-
     const handleCancelDeletion = () => {
         setDeletionBusy(true);
         clearFlashes('server:billing');
@@ -217,17 +199,6 @@ export default () => {
 
     return (
         <>
-            <ConfirmationModal
-                title={'Schedule server deletion?'}
-                buttonText={'Schedule Deletion'}
-                visible={showScheduleConfirmation}
-                showSpinnerOverlay={deletionBusy}
-                onConfirmed={handleScheduleDeletion}
-                onModalDismissed={() => setShowScheduleConfirmation(false)}
-            >
-                Are you sure you want to schedule this server for deletion? It will be permanently deleted at the end of
-                its renewal date. You can cancel before then.
-            </ConfirmationModal>
             <PageContentBlock
                 title={'Server Billing'}
                 header
@@ -392,11 +363,6 @@ export default () => {
                         </Alert>
                     ) : (
                         <>
-                            <div css={tw`flex justify-end mb-3`}>
-                                <Button disabled={deletionBusy} onClick={() => setShowScheduleConfirmation(true)}>
-                                    Schedule Deletion
-                                </Button>
-                            </div>
                             {product.price === 0 ? (
                                 <div>
                                     <p css={tw`text-gray-300 text-xs mb-3`}>

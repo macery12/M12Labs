@@ -14,6 +14,7 @@ import { Alert } from '@/elements/alert';
 import CopyOnClick from '@/elements/CopyOnClick';
 import { ServerContext } from '@/state/server';
 import { renameServer, reinstallServer } from '@/api/routes/server';
+import { scheduleDeletion } from '@/api/routes/server/deletion';
 import useFlash from '@/plugins/useFlash';
 import Can from '@/elements/Can';
 import { usePermissions } from '@/plugins/usePermissions';
@@ -30,6 +31,8 @@ export default () => {
 
     const [reinstallOpen, setReinstallOpen] = useState(false);
     const [reinstalling, setReinstalling] = useState(false);
+    const [scheduleOpen, setScheduleOpen] = useState(false);
+    const [scheduling, setScheduling] = useState(false);
 
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const canRename = usePermissions('settings.rename')[0];
@@ -67,6 +70,26 @@ export default () => {
             .finally(() => {
                 setReinstalling(false);
                 setReinstallOpen(false);
+            });
+    };
+
+    const handleScheduleDeletion = () => {
+        setScheduling(true);
+        clearFlashes('settings');
+
+        scheduleDeletion(server.uuid)
+            .then(() => {
+                setServer({ ...server, isDeletionScheduled: true });
+                addFlash({
+                    key: 'settings',
+                    type: 'success',
+                    message: 'Server scheduled for deletion at the end of the renewal period.',
+                });
+            })
+            .catch(error => clearAndAddHttpError({ key: 'settings', error }))
+            .finally(() => {
+                setScheduling(false);
+                setScheduleOpen(false);
             });
     };
 
@@ -139,6 +162,24 @@ export default () => {
                             </div>
                             Your server will be stopped and the installation script will be re-run. Are you sure you wish
                             to continue?
+                        </Dialog.Confirm>
+                        <Button.Danger
+                            css={tw`w-full mt-3`}
+                            disabled={scheduling || server.isDeletionScheduled}
+                            onClick={() => setScheduleOpen(true)}
+                        >
+                            {server.isDeletionScheduled ? 'Deletion Scheduled' : scheduling ? 'Scheduling...' : 'Schedule Deletion'}
+                        </Button.Danger>
+                        <Dialog.Confirm
+                            open={scheduleOpen}
+                            title={'Schedule server deletion?'}
+                            confirm={'Yes, schedule deletion'}
+                            onClose={() => setScheduleOpen(false)}
+                            onConfirmed={handleScheduleDeletion}
+                            buttonType={'danger'}
+                        >
+                            This will mark your server for deletion at the end of its current renewal period. You can
+                            cancel before then from the Billing page.
                         </Dialog.Confirm>
                     </TitledGreyBox>
                 </Can>
