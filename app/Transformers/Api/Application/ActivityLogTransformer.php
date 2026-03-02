@@ -173,9 +173,7 @@ class ActivityLogTransformer extends Transformer
             Str::startsWith($event, 'auth:') => 'auth',
             Str::startsWith($event, 'server:file') => 'files',
             Str::startsWith($event, 'server:backup') => 'backups',
-            Str::startsWith($event, 'server:plugin'),
-            Str::startsWith($event, 'server:mod'),
-            Str::startsWith($event, 'server:install') => 'plugins',
+            Str::startsWith($event, ['server:plugin', 'server:mod', 'server:install']) => 'plugins',
             Str::startsWith($event, 'server:') => 'server',
             default => 'admin',
         };

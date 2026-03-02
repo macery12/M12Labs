@@ -27,7 +27,6 @@ class ActivityLogController extends ClientApiController
                 })
                 ->where('actor_type', $user->getMorphClass())
                 ->where('actor_id', $user->id)
-                ->whereNull('server_id')
                 ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
         )
             ->with('actor')
