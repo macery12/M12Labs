@@ -209,12 +209,12 @@ class ActivityLogTransformer extends Transformer
 
     protected function severity(ActivityLog $model): string
     {
-        if (Str::contains($model->event, ['failed', 'error', 'denied'])) {
-            return 'warning';
-        }
-
         if (Str::startsWith($model->event, 'auth:failed')) {
             return 'critical';
+        }
+
+        if (Str::contains($model->event, ['failed', 'error', 'denied'])) {
+            return 'warning';
         }
 
         return 'info';

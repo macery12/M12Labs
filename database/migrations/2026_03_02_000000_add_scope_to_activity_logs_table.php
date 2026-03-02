@@ -14,10 +14,6 @@ return new class extends Migration {
             });
         }
 
-        if (!Schema::hasColumn('activity_logs', 'scope')) {
-            return;
-        }
-
         try {
             DB::table('activity_logs')
                 ->whereNull('scope')
