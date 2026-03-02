@@ -25,27 +25,75 @@ import NodePricingManager from './NodePricingManager';
 type TabType = 'billing-cycles' | 'node-pricing';
 
 const EPSILON = 0.001;
+const MIN_MULTIPLIER = 0.1;
+const MAX_MULTIPLIER = 10;
+const MIN_BILLING_DAYS = 1;
+const MAX_BILLING_DAYS = 360;
+
+type ClampTag = 'MIN' | 'MAX';
+
+const isMultiplierInRange = (value: number): boolean => value >= MIN_MULTIPLIER && value <= MAX_MULTIPLIER;
+const clampMultiplier = (value: number): { value: number; clamped?: ClampTag } => {
+    if (value < MIN_MULTIPLIER) return { value: MIN_MULTIPLIER, clamped: 'MIN' };
+    if (value > MAX_MULTIPLIER) return { value: MAX_MULTIPLIER, clamped: 'MAX' };
+    return { value, clamped: undefined };
+};
+const clampBillingDays = (value: number): { value: number; clamped?: ClampTag } => {
+    if (value < MIN_BILLING_DAYS) return { value: MIN_BILLING_DAYS, clamped: 'MIN' };
+    if (value > MAX_BILLING_DAYS) return { value: MAX_BILLING_DAYS, clamped: 'MAX' };
+    return { value, clamped: undefined };
+};
 
 interface MultiplierStep {
     id: string;
     maxDays: number;
+    maxDaysInput?: string;
     multiplier: number;
+    multiplierInput?: string;
 }
 
 type StoredMultiplierStep = Omit<MultiplierStep, 'id'>;
 
-const formatPriceAdjustment = (multiplier: number): string => {
+const formatPriceAdjustment = (multiplier: number, clamped?: ClampTag): string => {
     // Use epsilon comparison for floating point
     if (Math.abs(multiplier - 1.0) < EPSILON) return 'Standard price';
     const percentage = Math.round((multiplier - 1) * 100);
-    if (percentage > 0) return `+${percentage}%`;
-    return `${percentage}%`;
+    if (percentage > 0) return `+${percentage}%${clamped ? ` (${clamped})` : ''}`;
+    return `${percentage}%${clamped ? ` (${clamped})` : ''}`;
 };
 
-const formatBillingLength = (maxDays: number, isLast: boolean, defaultBillingDays: number): string => {
-    if (maxDays === defaultBillingDays) return `${maxDays} days (base)`;
-    if (isLast) return `${maxDays}+ days`;
-    return `Up to ${maxDays} days`;
+export const normalizeMultiplierValue = (raw: string): { value: number; clamped?: ClampTag } => {
+    const trimmed = raw.trim();
+    const parsed = parseFloat(trimmed);
+
+    if (!trimmed || Number.isNaN(parsed)) {
+        throw new Error('Price adjustment must be a valid number.');
+    }
+
+    if (!isMultiplierInRange(parsed)) {
+        return clampMultiplier(parsed);
+    }
+
+    return { value: parsed, clamped: undefined };
+};
+
+export const normalizeBillingDaysValue = (raw: string | number): { value: number; clamped?: ClampTag } => {
+    const trimmed = typeof raw === 'number' ? raw.toString() : raw.trim();
+    const parsed = parseInt(trimmed, 10);
+
+    if (!trimmed || Number.isNaN(parsed)) {
+        throw new Error('Billing length must be a valid number of days.');
+    }
+
+    const clamped = clampBillingDays(parsed);
+    return { value: clamped.value, clamped: clamped.clamped };
+};
+
+const formatBillingLength = (maxDays: number, isLast: boolean, defaultBillingDays: number, clamped?: ClampTag): string => {
+    const suffix = clamped ? ` (${clamped})` : '';
+    if (maxDays === defaultBillingDays) return `${maxDays} days (base)${suffix}`;
+    if (isLast) return `${maxDays}+ days${suffix}`;
+    return `Up to ${maxDays} days${suffix}`;
 };
 
 export default () => {
@@ -59,28 +107,30 @@ export default () => {
 
     // Parse multiplier steps from settings or use defaults
     const parseSteps = (stepsString: string | undefined): MultiplierStep[] => {
-        if (!stepsString) {
-            return [
-                { id: nanoid(), maxDays: 10, multiplier: 1.3 },
-                { id: nanoid(), maxDays: 20, multiplier: 1.2 },
-                { id: nanoid(), maxDays: 29, multiplier: 1.1 },
-                { id: nanoid(), maxDays: 30, multiplier: 1.0 },
-                { id: nanoid(), maxDays: 59, multiplier: 0.95 },
-                { id: nanoid(), maxDays: 89, multiplier: 0.9 },
-                { id: nanoid(), maxDays: 999, multiplier: 0.85 },
-            ];
-        }
-        try {
-            const parsed = JSON.parse(stepsString) as StoredMultiplierStep[];
-            // Add IDs to existing steps if they don't have them
-            return parsed.map(step => ({
-                ...step,
-                id: nanoid(),
-            }));
-        } catch {
-            return [];
-        }
-    };
+         if (!stepsString) {
+             return [
+                 { id: nanoid(), maxDays: 10, maxDaysInput: '10', multiplier: 1.3, multiplierInput: '1.30' },
+                 { id: nanoid(), maxDays: 20, maxDaysInput: '20', multiplier: 1.2, multiplierInput: '1.20' },
+                 { id: nanoid(), maxDays: 29, maxDaysInput: '29', multiplier: 1.1, multiplierInput: '1.10' },
+                 { id: nanoid(), maxDays: 30, maxDaysInput: '30', multiplier: 1.0, multiplierInput: '1.00' },
+                 { id: nanoid(), maxDays: 59, maxDaysInput: '59', multiplier: 0.95, multiplierInput: '0.95' },
+                 { id: nanoid(), maxDays: 89, maxDaysInput: '89', multiplier: 0.9, multiplierInput: '0.90' },
+                 { id: nanoid(), maxDays: 999, maxDaysInput: '999', multiplier: 0.85, multiplierInput: '0.85' },
+             ];
+         }
+         try {
+             const parsed = JSON.parse(stepsString) as StoredMultiplierStep[];
+             // Add IDs to existing steps if they don't have them
+             return parsed.map(step => ({
+                 ...step,
+                 id: nanoid(),
+                 maxDaysInput: step.maxDays.toString(),
+                 multiplierInput: step.multiplier.toFixed(2),
+             }));
+         } catch {
+             return [];
+         }
+     };
 
     const [multiplierSteps, setMultiplierSteps] = useState<MultiplierStep[]>(
         parseSteps(settings.renewal?.multiplier_steps as string | undefined),
@@ -88,16 +138,74 @@ export default () => {
     const [loading, setLoading] = useState(false);
 
     const addStep = () => {
-        setMultiplierSteps([...multiplierSteps, { id: nanoid(), maxDays: 30, multiplier: 1.0 }]);
+        setMultiplierSteps([
+            ...multiplierSteps,
+            { id: nanoid(), maxDays: 1, maxDaysInput: '0', multiplier: 1.0, multiplierInput: '1.00' },
+        ]);
     };
 
     const removeStep = (id: string) => {
         setMultiplierSteps(multiplierSteps.filter(step => step.id !== id));
     };
 
-    const updateStep = (id: string, field: 'maxDays' | 'multiplier', value: number) => {
-        const updated = multiplierSteps.map(step => (step.id === id ? { ...step, [field]: value } : step));
+    const updateMaxDays = (id: string, value: string) => {
+        const updated = multiplierSteps.map(step => {
+            if (step.id !== id) return step;
+            const trimmed = value.trim();
+            const parsed = parseInt(trimmed, 10);
+            const clamped = Number.isNaN(parsed) ? clampBillingDays(step.maxDays) : clampBillingDays(parsed);
+
+            return {
+                ...step,
+                maxDaysInput: value,
+                maxDays: clamped.value,
+            };
+        });
         setMultiplierSteps(updated);
+    };
+
+    const updateMultiplierInput = (id: string, value: string) => {
+        const updated = multiplierSteps.map(step => {
+            if (step.id !== id) return step;
+            const trimmed = value.trim();
+            const parsed = parseFloat(trimmed);
+            const clamped = Number.isNaN(parsed) ? undefined : clampMultiplier(parsed);
+
+            return {
+                ...step,
+                multiplierInput: value,
+                multiplier: clamped?.value ?? step.multiplier,
+            };
+        });
+        setMultiplierSteps(updated);
+    };
+
+    const getDisplayMultiplier = (step: MultiplierStep): { effective: number; clampTag?: ClampTag } => {
+        const raw = step.multiplierInput ?? step.multiplier?.toString() ?? '';
+        const trimmed = raw.trim();
+        const parsed = parseFloat(trimmed);
+
+        if (!trimmed || Number.isNaN(parsed)) {
+            const clamped = clampMultiplier(step.multiplier);
+            return { effective: clamped.value, clampTag: clamped.clamped };
+        }
+
+        const clamped = clampMultiplier(parsed);
+        return { effective: clamped.value, clampTag: clamped.clamped };
+    };
+
+    const getDisplayMaxDays = (step: MultiplierStep): { effective: number; clampTag?: ClampTag } => {
+        const raw = step.maxDaysInput ?? step.maxDays?.toString() ?? '';
+        const trimmed = raw.trim();
+        const parsed = parseInt(trimmed, 10);
+
+        if (!trimmed || Number.isNaN(parsed)) {
+            const clamped = clampBillingDays(step.maxDays);
+            return { effective: clamped.value, clampTag: clamped.clamped };
+        }
+
+        const clamped = clampBillingDays(parsed);
+        return { effective: clamped.value, clampTag: clamped.clamped };
     };
 
     const handleSaveAll = async () => {
@@ -110,35 +218,63 @@ export default () => {
                 throw new Error('At least one multiplier step is required');
             }
 
-            // Sort steps by maxDays for consistency
-            const sortedSteps = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
+             // Sort steps by maxDays for consistency
+             const sortedSteps = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
 
-            // Remove IDs before saving (backend doesn't need them)
-            const stepsToSave = sortedSteps.map(step => ({
-                maxDays: step.maxDays,
-                multiplier: step.multiplier,
-            }));
+             const validatedSteps = sortedSteps.map((step, idx) => {
+                 let normalizedMultiplier: { value: number; clamped?: ClampTag };
+                 let normalizedMaxDays: { value: number; clamped?: ClampTag };
+                 try {
+                     normalizedMultiplier = normalizeMultiplierValue(step.multiplierInput ?? step.multiplier?.toString() ?? '');
+                 } catch (err) {
+                     const message = err instanceof Error ? err.message : 'Invalid price adjustment.';
+                     throw new Error(`Step ${idx + 1} (${step.maxDays} days): ${message}`);
+                 }
+
+                 try {
+                     normalizedMaxDays = normalizeBillingDaysValue(step.maxDaysInput ?? step.maxDays?.toString() ?? '');
+                 } catch (err) {
+                     const message = err instanceof Error ? err.message : 'Invalid billing length.';
+                     throw new Error(`Step ${idx + 1}: ${message}`);
+                 }
+
+                 return {
+                     ...step,
+                     maxDays: normalizedMaxDays.value,
+                     maxDaysInput: normalizedMaxDays.value.toString(),
+                     multiplier: normalizedMultiplier.value,
+                     multiplierInput: normalizedMultiplier.value.toFixed(2),
+                 };
+             });
+
+             // Remove IDs before saving (backend doesn't need them)
+             const stepsToSave = validatedSteps.map(step => ({
+                 maxDays: step.maxDays,
+                 multiplier: step.multiplier,
+             }));
 
             // Save both settings
             await updateSettings('renewal:default_billing_days', defaultBillingDays);
             await updateSettings('renewal:multiplier_steps', JSON.stringify(stepsToSave));
 
-            // Update state with all new values
-            updateEverest({
-                billing: {
-                    ...settings,
-                    renewal: {
-                        ...settings.renewal,
-                        default_billing_days: defaultBillingDays,
-                        multiplier_steps: JSON.stringify(stepsToSave),
-                    },
-                },
-            });
+             // Update state with all new values
+             updateEverest({
+                 billing: {
+                     ...settings,
+                     renewal: {
+                         ...settings.renewal,
+                         default_billing_days: defaultBillingDays,
+                         multiplier_steps: JSON.stringify(stepsToSave),
+                     },
+                 },
+             });
 
-            addFlash({
-                key: 'admin:billing',
-                type: 'success',
-                message: 'Billing rules updated successfully.',
+             setMultiplierSteps(validatedSteps);
+
+             addFlash({
+                 key: 'admin:billing',
+                 type: 'success',
+                 message: 'Billing rules updated successfully.',
             });
         } catch (error) {
             console.error(error);
@@ -152,8 +288,8 @@ export default () => {
         }
     };
 
-    // Sort steps for display
-    const sortedStepsForDisplay = [...multiplierSteps].sort((a, b) => a.maxDays - b.maxDays);
+    // Display steps as entered; sorting now only occurs during save
+    const stepsForDisplay = multiplierSteps;
 
     return (
         <div>
@@ -303,8 +439,10 @@ export default () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sortedStepsForDisplay.map((step, idx) => {
-                                        const isLast = idx === sortedStepsForDisplay.length - 1;
+                                    {stepsForDisplay.map((step, idx) => {
+                                        const isLast = idx === stepsForDisplay.length - 1;
+                                        const displayMultiplier = getDisplayMultiplier(step);
+                                        const displayMaxDays = getDisplayMaxDays(step);
                                         return (
                                             <tr
                                                 key={step.id}
@@ -313,24 +451,23 @@ export default () => {
                                                 <td css={tw`py-3 px-4`}>
                                                     <div css={tw`flex items-center gap-2`}>
                                                         <span css={tw`text-neutral-300 min-w-[150px]`}>
-                                                            {formatBillingLength(
-                                                                step.maxDays,
-                                                                isLast,
-                                                                defaultBillingDays,
-                                                            )}
+                                                             {formatBillingLength(
+                                                                 displayMaxDays.effective,
+                                                                 isLast,
+                                                                 defaultBillingDays,
+                                                                 displayMaxDays.clampTag,
+                                                             )}
                                                         </span>
                                                         <Input
                                                             type={'number'}
-                                                            min={1}
-                                                            max={999}
-                                                            value={step.maxDays}
-                                                            onChange={e =>
-                                                                updateStep(
-                                                                    step.id,
-                                                                    'maxDays',
-                                                                    parseInt(e.target.value) || 30,
-                                                                )
+                                                            min={MIN_BILLING_DAYS}
+                                                            max={MAX_BILLING_DAYS}
+                                                            value={
+                                                                step.maxDaysInput ??
+                                                                step.maxDays?.toString() ??
+                                                                defaultBillingDays.toString()
                                                             }
+                                                            onChange={e => updateMaxDays(step.id, e.target.value)}
                                                             disabled={loading}
                                                             css={tw`w-24`}
                                                         />
@@ -341,31 +478,32 @@ export default () => {
                                                         <span
                                                             css={[
                                                                 tw`min-w-[120px] font-medium`,
-                                                                Math.abs(step.multiplier - 1.0) < EPSILON &&
+                                                                Math.abs(displayMultiplier.effective - 1.0) < EPSILON &&
                                                                     tw`text-blue-400`,
-                                                                step.multiplier >= 1.0 + EPSILON && tw`text-red-400`,
-                                                                step.multiplier < 1.0 - EPSILON && tw`text-green-400`,
+                                                                displayMultiplier.effective >= 1.0 + EPSILON && tw`text-red-400`,
+                                                                displayMultiplier.effective < 1.0 - EPSILON && tw`text-green-400`,
                                                             ]}
                                                         >
-                                                            {formatPriceAdjustment(step.multiplier)}
+                                                            {formatPriceAdjustment(
+                                                                displayMultiplier.effective,
+                                                                displayMultiplier.clampTag,
+                                                            )}
                                                         </span>
                                                         <Input
-                                                            type={'number'}
-                                                            step={0.01}
-                                                            min={0.5}
-                                                            max={2.0}
-                                                            value={step.multiplier}
-                                                            onChange={e =>
-                                                                updateStep(
-                                                                    step.id,
-                                                                    'multiplier',
-                                                                    parseFloat(e.target.value) || 1.0,
-                                                                )
-                                                            }
-                                                            disabled={loading}
-                                                            css={tw`w-24`}
-                                                        />
-                                                    </div>
+                                                             type={'number'}
+                                                             step={0.01}
+                                                             min={MIN_MULTIPLIER}
+                                                             max={MAX_MULTIPLIER}
+                                                             value={
+                                                                 step.multiplierInput ??
+                                                                 step.multiplier?.toFixed(2) ??
+                                                                 '1.00'
+                                                             }
+                                                             onChange={e => updateMultiplierInput(step.id, e.target.value)}
+                                                             disabled={loading}
+                                                             css={tw`w-24`}
+                                                         />
+                                                     </div>
                                                 </td>
                                                 <td css={tw`py-3 px-4 text-right`}>
                                                     <Button
