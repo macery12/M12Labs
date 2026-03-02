@@ -19,18 +19,18 @@ class DeleteScheduledServersCommand extends Command
 
     public function handle(): void
     {
-        $today = now()->startOfDay();
+        $today = now()->toDateString();
 
         $servers = Server::whereNotNull('renewal_date')
-            ->whereDate('renewal_date', '<=', $today)
+            ->whereDate('renewal_date', '=', $today)
             ->whereNotNull('deletion_scheduled_at')
+            ->where(function ($query) {
+                $query->whereNull('deletion_canceled_at')
+                    ->orWhereColumn('deletion_canceled_at', '<', 'deletion_scheduled_at');
+            })
             ->get();
 
         foreach ($servers as $server) {
-            if (!$server->isDeletionScheduled()) {
-                continue;
-            }
-
             $this->info("Deleting server {$server->id} scheduled for {$server->renewal_date}");
 
             try {

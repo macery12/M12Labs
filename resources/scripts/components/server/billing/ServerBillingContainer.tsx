@@ -178,9 +178,6 @@ export default () => {
             .then(() => {
                 setServerFromState(server => ({
                     ...server,
-                    deletionScheduledAt: new Date(),
-                    deletionCanceledAt: undefined,
-                    deletionScheduledBy: currentUserId,
                     isDeletionScheduled: true,
                 }));
                 setShowScheduleConfirmation(false);
@@ -197,7 +194,6 @@ export default () => {
             .then(() => {
                 setServerFromState(server => ({
                     ...server,
-                    deletionCanceledAt: new Date(),
                     isDeletionScheduled: false,
                 }));
             })
