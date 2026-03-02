@@ -65,6 +65,7 @@ class ServerTransformer extends Transformer
             'uuid' => $server->uuid,
             'name' => $server->name,
             'node' => $server->node->name,
+            'node_id' => $server->node_id,
             'is_node_under_maintenance' => $server->node->isUnderMaintenance(),
             'sftp_details' => [
                 'ip' => $server->node->fqdn,

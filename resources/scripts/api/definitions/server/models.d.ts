@@ -6,6 +6,7 @@ interface Server {
     id: string;
     internalId: number | string;
     uuid: string;
+    nodeId?: number;
     groupId?: number | null;
     name: string;
     node: string;
