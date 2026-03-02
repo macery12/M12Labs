@@ -136,7 +136,7 @@ export default () => {
 
     const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
     const isStopped = serverStatus === null || serverStatus === 'offline';
-    const canChange = isStopped;
+    const canChange = selectedEggId !== currentEggId && isStopped;
 
     if (loading) {
         return (
