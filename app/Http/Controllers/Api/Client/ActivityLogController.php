@@ -15,13 +15,24 @@ class ActivityLogController extends ClientApiController
      */
     public function __invoke(ClientApiRequest $request): array
     {
+        $user = $request->user();
+
         $activity = QueryBuilder::for(
-            $request->user()->activity()->where('is_admin', false)
+            ActivityLog::query()
+                ->where(function ($query) {
+                    $query->where('scope', 'account')
+                        ->orWhere(function ($sub) {
+                            $sub->whereNull('scope')->whereNull('server_id');
+                        });
+                })
+                ->where('actor_type', $user->getMorphClass())
+                ->where('actor_id', $user->id)
+                ->whereNull('server_id')
+                ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
         )
             ->with('actor')
             ->allowedFilters([AllowedFilter::partial('event')])
             ->allowedSorts(['timestamp'])
-            ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
             ->paginate(min($request->query('per_page', 5), 100))
             ->appends($request->query());
 
