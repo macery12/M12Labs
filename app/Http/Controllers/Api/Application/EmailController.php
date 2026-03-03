@@ -192,7 +192,10 @@ class EmailController extends ApplicationApiController
     {
         $enabled = request()->input('enabled');
 
-        Setting::set('settings::modules:email:notifications:global_enabled', $enabled ? 'true' : 'false');
+        $normalized = $enabled ? 'true' : 'false';
+
+        Setting::set('settings::modules:email:notifications:global_enabled', $normalized);
+        cache()->put('email.notifications.global_enabled', $normalized, 60);
 
         Activity::event('admin:email:notifications:global-toggle')
             ->property('enabled', $enabled)
