@@ -43,6 +43,7 @@ class EmailNotificationSetting extends Model
             'email.notifications.global_enabled',
             60,
             static function () {
+                // Avoid the repository's per-process cache so queue workers pick up changes promptly
                 $rawGlobal = Setting::query()
                     ->where('key', 'settings::modules:email:notifications:global_enabled')
                     ->value('value');
