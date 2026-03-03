@@ -19,6 +19,7 @@ class EmailNotificationSetting extends Model
 {
     public const GLOBAL_ENABLED_CACHE_KEY = 'email.notifications.global_enabled';
     public const GLOBAL_ENABLED_CACHE_TTL = 60;
+    // Default uses normalized string; legacy numeric values remain accepted by allowed list.
     public const GLOBAL_ENABLED_DEFAULT = 'true';
 
     protected $table = 'email_notification_settings';
