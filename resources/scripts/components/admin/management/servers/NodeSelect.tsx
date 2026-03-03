@@ -26,6 +26,12 @@ export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null
     }, []);
 
     const onSelect = (selected: Node) => {
+        if (node?.id === selected.id) {
+            setNode(null);
+            setFieldValue('nodeId', null);
+            return;
+        }
+
         setNode(selected);
         setFieldValue('nodeId', selected.id);
     };
@@ -33,7 +39,7 @@ export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null
     return (
         <div>
             <div className="flex items-center justify-between mb-2">
-                <Label htmlFor={'nodeId'}>Node</Label>
+                <Label>Node</Label>
                 {node && (
                     <span className="text-xs text-primary-300 bg-primary-500/10 px-2 py-1 rounded">Selected</span>
                 )}
@@ -60,6 +66,7 @@ export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null
                                     : 'border-neutral-700 bg-neutral-800 hover:border-primary-400',
                             )}
                             onClick={() => onSelect(n)}
+                            aria-label={`Select node ${n.name} (${n.fqdn})`}
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div>
