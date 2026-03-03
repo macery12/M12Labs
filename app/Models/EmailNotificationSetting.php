@@ -19,7 +19,8 @@ class EmailNotificationSetting extends Model
 {
     public const GLOBAL_ENABLED_SETTING_KEY = 'settings::modules:email:notifications:global_enabled';
     public const GLOBAL_ENABLED_CACHE_KEY = 'email.notifications.global_enabled';
-    public const GLOBAL_ENABLED_CACHE_TTL = 60; // seconds
+    // Short TTL keeps admin toggle changes responsive while avoiding excessive DB reads.
+    public const GLOBAL_ENABLED_CACHE_TTL = 15; // seconds
     public const GLOBAL_ENABLED_DEFAULT = 'true';
 
     protected $table = 'email_notification_settings';
