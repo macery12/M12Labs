@@ -18,4 +18,13 @@ describe('alert dismissal helpers', () => {
 
         expect(isAlertDismissedForUser(alert, userId)).toBe(true);
     });
+
+    it('does not persist dismissal for non-dismissible alerts', () => {
+        const alert = { id: 3, dismissible: false };
+        const key = getAlertDismissKey(alert.id, userId);
+
+        dismissAlertForUser(alert, userId);
+
+        expect(localStorage.getItem(key)).toBeNull();
+    });
 });
