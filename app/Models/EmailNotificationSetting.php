@@ -17,9 +17,9 @@ namespace Everest\Models;
  */
 class EmailNotificationSetting extends Model
 {
+    public const GLOBAL_ENABLED_SETTING_KEY = 'settings::modules:email:notifications:global_enabled';
     public const GLOBAL_ENABLED_CACHE_KEY = 'email.notifications.global_enabled';
     public const GLOBAL_ENABLED_CACHE_TTL = 60;
-    // Default uses normalized string; legacy numeric values remain accepted by allowed list.
     public const GLOBAL_ENABLED_DEFAULT = 'true';
 
     protected $table = 'email_notification_settings';
@@ -50,14 +50,10 @@ class EmailNotificationSetting extends Model
             static function () {
                 // Avoid the repository's per-process cache so queue workers pick up changes promptly
                 $rawGlobal = Setting::query()
-                    ->where('key', 'settings::modules:email:notifications:global_enabled')
+                    ->where('key', self::GLOBAL_ENABLED_SETTING_KEY)
                     ->value('value');
 
-                if ($rawGlobal === null) {
-                    return self::GLOBAL_ENABLED_DEFAULT;
-                }
-
-                return strtolower((string) $rawGlobal);
+                return self::normalizeFlag($rawGlobal);
             }
         );
         if (!in_array($globalEnabled, ['1', 'true', 'yes', 'on'], true)) {
@@ -87,5 +83,18 @@ class EmailNotificationSetting extends Model
         return static::where('category', $category)
             ->where('enabled', true)
             ->get();
+    }
+
+    public static function normalizeFlag(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if ($value === null) {
+            return self::GLOBAL_ENABLED_DEFAULT;
+        }
+
+        return strtolower((string) $value);
     }
 }
