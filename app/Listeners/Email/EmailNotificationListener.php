@@ -3,7 +3,6 @@
 namespace Everest\Listeners\Email;
 
 use Everest\Jobs\Email\SendEmailJob;
-use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Email\EmailTypeRegistry;
 use Illuminate\Support\Facades\Log;
 
@@ -44,18 +43,6 @@ class EmailNotificationListener
         
         // Get user ID if available
         $userId = property_exists($event, 'user') && $event->user ? $event->user->id : null;
-
-        // Centralized global kill-switch check before queueing any email work
-        if (!EmailNotificationSetting::isGloballyEnabled()) {
-            Log::info('EmailNotificationListener: Global email notifications disabled, skipping dispatch', [
-                'event' => get_class($event),
-                'template_key' => $templateKey,
-                'recipient' => $recipient,
-                'correlation_id' => $correlationId,
-            ]);
-
-            return;
-        }
 
         Log::info('EmailNotificationListener: Dispatching email', [
             'event' => get_class($event),
