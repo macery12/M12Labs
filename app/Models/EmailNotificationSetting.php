@@ -38,15 +38,17 @@ class EmailNotificationSetting extends Model
      */
     public static function isEnabled(string $templateKey): bool
     {
-        // Check global kill switch
-        $globalEnabled = strtolower((string) Setting::get('settings::modules:email:notifications:global_enabled', '1'));
-        if (!in_array($globalEnabled, ['1', 'true', 'yes', 'on'], true)) {
-            return false;
-        }
-        
+        return self::isTemplateEnabled($templateKey);
+    }
+
+    /**
+     * Check if a specific template is enabled (ignores global switch).
+     */
+    public static function isTemplateEnabled(string $templateKey): bool
+    {
         $setting = static::where('template_key', $templateKey)->first();
-        
-        return $setting ? $setting->enabled : false;
+
+        return $setting ? (bool) $setting->enabled : false;
     }
 
     /**
@@ -68,4 +70,5 @@ class EmailNotificationSetting extends Model
             ->where('enabled', true)
             ->get();
     }
+
 }
