@@ -201,7 +201,6 @@ Route::middleware([AdminSubject::class])->group(function () {
         
         // Email notification settings
         Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
-        Route::put('/notifications/global', [Application\EmailController::class, 'updateGlobalToggle']);
         Route::put('/notifications/{id}', [Application\EmailController::class, 'updateNotificationSetting']);
         
         // Email quota management

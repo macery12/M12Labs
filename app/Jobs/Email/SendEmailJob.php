@@ -98,20 +98,6 @@ class SendEmailJob extends Job implements ShouldQueue
             );
         }
 
-        // Defensive global gate (primary gate is in EmailNotificationListener)
-        if (!EmailNotificationSetting::isGloballyEnabled()) {
-            $reason = 'Email notifications are globally disabled';
-
-            Log::info('SendEmailJob: Global email disabled', [
-                'template_key' => $this->templateKey,
-                'correlation_id' => $this->correlationId,
-                'reason' => $reason,
-            ]);
-
-            $tracker->markSkipped($delivery, $reason);
-            return;
-        }
-
         // Check if this email type is enabled (template-level)
         if (!EmailNotificationSetting::isTemplateEnabled($this->templateKey)) {
             $reason = "Email type '{$this->templateKey}' is disabled";

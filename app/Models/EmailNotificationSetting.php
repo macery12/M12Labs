@@ -17,9 +17,6 @@ namespace Everest\Models;
  */
 class EmailNotificationSetting extends Model
 {
-    public const GLOBAL_ENABLED_SETTING_KEY = 'settings::modules:email:notifications:global_enabled';
-    public const GLOBAL_ENABLED_DEFAULT = 'true';
-
     protected $table = 'email_notification_settings';
 
     protected $fillable = [
@@ -41,7 +38,7 @@ class EmailNotificationSetting extends Model
      */
     public static function isEnabled(string $templateKey): bool
     {
-        return self::isGloballyEnabled() && self::isTemplateEnabled($templateKey);
+        return self::isTemplateEnabled($templateKey);
     }
 
     /**
@@ -52,18 +49,6 @@ class EmailNotificationSetting extends Model
         $setting = static::where('template_key', $templateKey)->first();
 
         return $setting ? (bool) $setting->enabled : false;
-    }
-
-    /**
-     * Check if global email notifications are enabled.
-     */
-    public static function isGloballyEnabled(): bool
-    {
-        $rawGlobal = Setting::query()
-            ->where('key', self::GLOBAL_ENABLED_SETTING_KEY)
-            ->value('value');
-
-        return self::normalizeFlag($rawGlobal) === 'true';
     }
 
     /**
@@ -86,25 +71,4 @@ class EmailNotificationSetting extends Model
             ->get();
     }
 
-    /**
-     * Normalize a flag value to the canonical 'true' or 'false' string.
-     * - Booleans are mapped directly to strings.
-     * - Null or empty values fall back to the default.
-     * - Legacy truthy strings (1/true/yes/on) normalize to 'true'.
-     * - Everything else normalizes to 'false'.
-     */
-    public static function normalizeFlag(mixed $value): string
-    {
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
-
-        if ($value === null || $value === '') {
-            return self::GLOBAL_ENABLED_DEFAULT;
-        }
-
-        $lowerValue = strtolower((string) $value);
-
-        return in_array($lowerValue, ['1', 'true', 'yes', 'on'], true) ? 'true' : 'false';
-    }
 }

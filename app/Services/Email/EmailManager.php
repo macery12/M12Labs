@@ -164,11 +164,9 @@ class EmailManager
             }
         }
 
-        // Enforce global/template-level disable (mirrors SendEmailJob path)
-        if (!EmailNotificationSetting::isEnabled($templateKey)) {
-            $reason = EmailNotificationSetting::isGloballyEnabled()
-                ? "Email type '{$templateKey}' is disabled"
-                : 'Email notifications are globally disabled';
+        // Enforce template-level disable
+        if (!EmailNotificationSetting::isTemplateEnabled($templateKey)) {
+            $reason = "Email type '{$templateKey}' is disabled";
 
             Log::info('EmailManager: Email type disabled', [
                 'template_key' => $templateKey,

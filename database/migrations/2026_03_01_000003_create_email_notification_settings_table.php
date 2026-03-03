@@ -12,6 +12,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Clean up unused global email settings table from earlier attempts.
+        Schema::dropIfExists('email_global_settings');
+
         if (!Schema::hasTable('email_notification_settings')) {
             Schema::create('email_notification_settings', function (Blueprint $table) {
                 $table->id();
