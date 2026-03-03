@@ -7,11 +7,13 @@ import { searchNodes } from '@/api/routes/admin/node';
 import Label from '@/elements/Label';
 import Spinner from '@/elements/Spinner';
 import { Alert } from '@/elements/alert';
+import { useStoreState } from '@/state/hooks';
 
 export const fetchAllNodes = () => searchNodes({ filters: {} });
 
 export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null) => void }) => {
     const { setFieldValue } = useFormikContext();
+    const { colors } = useStoreState(state => state.theme.data!);
 
     const [nodes, setNodes] = useState<Node[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
@@ -55,40 +57,59 @@ export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null
                 <Alert type={'warning'}>No nodes available. Create a node first.</Alert>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {nodes.map(n => (
+                    {nodes.map(n => {
+                        const isSelected = node?.id === n.id;
+
+                        return (
                         <button
                             key={n.id}
                             type="button"
                             className={classNames(
-                                'w-full rounded border p-4 text-left transition-colors duration-150',
-                                node?.id === n.id
-                                    ? 'border-primary-500 bg-primary-500/10'
-                                    : 'border-neutral-700 bg-neutral-800 hover:border-primary-400',
+                                'w-full rounded-lg border text-left transition-colors duration-150 p-3',
+                                'hover:-translate-y-0.5 hover:shadow-sm',
+                                isSelected
+                                    ? 'border-neutral-600'
+                                    : 'border-neutral-700 bg-neutral-800 hover:border-neutral-500',
                             )}
+                            style={
+                                isSelected
+                                    ? {
+                                          borderColor: colors.primary,
+                                          backgroundColor: `${colors.primary}15`,
+                                      }
+                                    : {}
+                            }
                             onClick={() => onSelect(n)}
                             aria-label={`Select node ${n.name} (${n.fqdn})`}
                         >
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start justify-between gap-2">
                                 <div>
-                                    <p className="font-semibold text-neutral-100">{n.name}</p>
-                                    <p className="text-xs text-neutral-400 break-all">{n.fqdn}</p>
+                                    <p className="font-semibold text-sm text-neutral-100">{n.name}</p>
+                                    <p className="text-[11px] text-neutral-400 break-all">{n.fqdn}</p>
                                 </div>
-                                {node?.id === n.id && (
-                                    <span className="text-xs bg-primary-500/20 text-primary-200 px-2 py-1 rounded">
+                                {isSelected && (
+                                    <span
+                                        className="text-[11px] px-2 py-0.5 rounded font-medium"
+                                        style={{
+                                            backgroundColor: `${colors.primary}20`,
+                                            color: colors.primary,
+                                        }}
+                                    >
                                         Selected
                                     </span>
                                 )}
                             </div>
-                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-400">
-                                <div>
-                                    <span className="text-neutral-300 font-semibold">HTTP</span> {n.ports.http.public}
-                                </div>
-                                <div>
-                                    <span className="text-neutral-300 font-semibold">SFTP</span> {n.ports.sftp.public}
-                                </div>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-neutral-300">
+                                <span className="rounded bg-neutral-700/60 px-2 py-1">
+                                    HTTP {n.ports.http.public}
+                                </span>
+                                <span className="rounded bg-neutral-700/60 px-2 py-1">
+                                    SFTP {n.ports.sftp.public}
+                                </span>
                             </div>
                         </button>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
