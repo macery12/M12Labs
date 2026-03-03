@@ -17,6 +17,10 @@ namespace Everest\Models;
  */
 class EmailNotificationSetting extends Model
 {
+    public const GLOBAL_ENABLED_CACHE_KEY = 'email.notifications.global_enabled';
+    public const GLOBAL_ENABLED_CACHE_TTL = 60;
+    public const GLOBAL_ENABLED_DEFAULT = '1';
+
     protected $table = 'email_notification_settings';
 
     protected $fillable = [
@@ -40,15 +44,15 @@ class EmailNotificationSetting extends Model
     {
         // Check global kill switch (cache in shared store to avoid stale per-process values)
         $globalEnabled = cache()->remember(
-            'email.notifications.global_enabled',
-            60,
+            self::GLOBAL_ENABLED_CACHE_KEY,
+            self::GLOBAL_ENABLED_CACHE_TTL,
             static function () {
                 // Avoid the repository's per-process cache so queue workers pick up changes promptly
                 $rawGlobal = Setting::query()
                     ->where('key', 'settings::modules:email:notifications:global_enabled')
                     ->value('value');
 
-                return strtolower((string) ($rawGlobal ?? '1'));
+                return strtolower((string) ($rawGlobal ?? self::GLOBAL_ENABLED_DEFAULT));
             }
         );
         if (!in_array($globalEnabled, ['1', 'true', 'yes', 'on'], true)) {
