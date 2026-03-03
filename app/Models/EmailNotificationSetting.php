@@ -19,7 +19,7 @@ class EmailNotificationSetting extends Model
 {
     public const GLOBAL_ENABLED_SETTING_KEY = 'settings::modules:email:notifications:global_enabled';
     public const GLOBAL_ENABLED_CACHE_KEY = 'email.notifications.global_enabled';
-    public const GLOBAL_ENABLED_CACHE_TTL = 60;
+    public const GLOBAL_ENABLED_CACHE_TTL = 60; // seconds
     public const GLOBAL_ENABLED_DEFAULT = 'true';
 
     protected $table = 'email_notification_settings';
@@ -56,7 +56,8 @@ class EmailNotificationSetting extends Model
                 return self::normalizeFlag($rawGlobal);
             }
         );
-        if (!in_array($globalEnabled, ['1', 'true', 'yes', 'on'], true)) {
+
+        if ($globalEnabled !== 'true') {
             return false;
         }
         
@@ -91,10 +92,8 @@ class EmailNotificationSetting extends Model
             return $value ? 'true' : 'false';
         }
 
-        if ($value === null) {
-            return self::GLOBAL_ENABLED_DEFAULT;
-        }
+        $normalized = strtolower((string) ($value ?? self::GLOBAL_ENABLED_DEFAULT));
 
-        return strtolower((string) $value);
+        return in_array($normalized, ['1', 'true', 'yes', 'on'], true) ? 'true' : 'false';
     }
 }
