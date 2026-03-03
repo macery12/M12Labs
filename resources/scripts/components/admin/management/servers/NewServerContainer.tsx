@@ -238,7 +238,10 @@ function InternalForm() {
                                 <div className="xl:col-span-2">
                                     <NodeSelect node={node} setNode={setNode} />
                                 </div>
-                                <div className="rounded border border-neutral-900 bg-neutral-800 p-4 shadow-inner xl:col-span-2">
+                                <div
+                                    className="rounded border p-4 shadow-inner xl:col-span-2"
+                                    style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
+                                >
                                     <FormikSwitch
                                         name={'startOnCompletion'}
                                         label={'Start after installation'}

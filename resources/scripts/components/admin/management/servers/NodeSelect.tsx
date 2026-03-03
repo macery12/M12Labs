@@ -61,27 +61,20 @@ export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null
                         const isSelected = node?.id === n.id;
 
                         return (
-                        <button
-                            key={n.id}
-                            type="button"
-                            className={classNames(
-                                'w-full rounded-lg border text-left transition-colors duration-150 p-3',
-                                'hover:-translate-y-0.5 hover:shadow-sm',
-                                isSelected
-                                    ? 'border-neutral-600'
-                                    : 'border-neutral-700 bg-neutral-800 hover:border-neutral-500',
-                            )}
-                            style={
-                                isSelected
-                                    ? {
-                                          borderColor: colors.primary,
-                                          backgroundColor: `${colors.primary}15`,
-                                      }
-                                    : {}
-                            }
-                            onClick={() => onSelect(n)}
-                            aria-label={`Select node ${n.name} (${n.fqdn})`}
-                        >
+                            <button
+                                key={n.id}
+                                type="button"
+                                className={classNames(
+                                    'w-full rounded-lg border text-left transition-colors duration-150 p-3',
+                                    'hover:-translate-y-0.5 hover:shadow-sm',
+                                )}
+                                style={{
+                                    backgroundColor: isSelected ? `${colors.primary}20` : colors.secondary,
+                                    borderColor: isSelected ? colors.primary : colors.headers,
+                                }}
+                                onClick={() => onSelect(n)}
+                                aria-label={`Select node ${n.name} (${n.fqdn})`}
+                            >
                             <div className="flex items-start justify-between gap-2">
                                 <div>
                                     <p className="font-semibold text-sm text-neutral-100">{n.name}</p>
