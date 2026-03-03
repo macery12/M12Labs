@@ -92,7 +92,11 @@ class EmailNotificationSetting extends Model
             return $value ? 'true' : 'false';
         }
 
-        $normalized = strtolower((string) ($value ?? self::GLOBAL_ENABLED_DEFAULT));
+        if ($value === null || $value === '') {
+            return self::GLOBAL_ENABLED_DEFAULT;
+        }
+
+        $normalized = strtolower((string) $value);
 
         return in_array($normalized, ['1', 'true', 'yes', 'on'], true) ? 'true' : 'false';
     }

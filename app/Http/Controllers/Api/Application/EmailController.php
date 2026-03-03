@@ -202,7 +202,7 @@ class EmailController extends ApplicationApiController
         Setting::set(EmailNotificationSetting::GLOBAL_ENABLED_SETTING_KEY, $normalized);
 
         Activity::event('admin:email:notifications:global-toggle')
-            ->property('enabled', $enabled)
+            ->property('enabled', $normalized)
             ->description('Global email notifications ' . ($enabled ? 'enabled' : 'disabled'))
             ->log();
 
