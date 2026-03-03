@@ -18,9 +18,6 @@ namespace Everest\Models;
 class EmailNotificationSetting extends Model
 {
     public const GLOBAL_ENABLED_SETTING_KEY = 'settings::modules:email:notifications:global_enabled';
-    public const GLOBAL_ENABLED_CACHE_KEY = 'email.notifications.global_enabled';
-    // Short TTL keeps admin toggle changes responsive while avoiding excessive DB reads.
-    public const GLOBAL_ENABLED_CACHE_TTL = 15; // seconds
     public const GLOBAL_ENABLED_DEFAULT = 'true';
 
     protected $table = 'email_notification_settings';
@@ -44,19 +41,12 @@ class EmailNotificationSetting extends Model
      */
     public static function isEnabled(string $templateKey): bool
     {
-        // Check global kill switch (cache in shared store to avoid stale per-process values)
-        $globalEnabled = cache()->remember(
-            self::GLOBAL_ENABLED_CACHE_KEY,
-            self::GLOBAL_ENABLED_CACHE_TTL,
-            static function () {
-                // Avoid the repository's per-process cache so queue workers pick up changes promptly
-                $rawGlobal = Setting::query()
-                    ->where('key', self::GLOBAL_ENABLED_SETTING_KEY)
-                    ->value('value');
+        // Check global kill switch (read directly to avoid stale per-process cache)
+        $rawGlobal = Setting::query()
+            ->where('key', self::GLOBAL_ENABLED_SETTING_KEY)
+            ->value('value');
 
-                return self::normalizeFlag($rawGlobal);
-            }
-        );
+        $globalEnabled = self::normalizeFlag($rawGlobal);
 
         if ($globalEnabled === 'false') {
             return false;
