@@ -41,13 +41,17 @@ class EmailNotificationSetting extends Model
      */
     public static function isEnabled(string $templateKey): bool
     {
-        if (!self::isGloballyEnabled()) {
-            return false;
-        }
-        
+        return self::isGloballyEnabled() && self::isTemplateEnabled($templateKey);
+    }
+
+    /**
+     * Check if a specific template is enabled (ignores global switch).
+     */
+    public static function isTemplateEnabled(string $templateKey): bool
+    {
         $setting = static::where('template_key', $templateKey)->first();
-        
-        return $setting ? $setting->enabled : false;
+
+        return $setting ? (bool) $setting->enabled : false;
     }
 
     /**
