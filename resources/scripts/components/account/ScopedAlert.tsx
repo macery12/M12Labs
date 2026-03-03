@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Alert } from '@/elements/alert';
 import { useStoreState } from '@/state/hooks';
-import { usePersistedState } from '@/plugins/usePersistedState';
-import { capitalize } from '@/lib/strings';
 import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
 import SlideOutAlert from '@/components/elements/SlideOutAlert';
+import { capitalize } from '@/lib/strings';
+import { dismissAlertForUser, isAlertDismissedForUser } from '@/lib/alerts';
 
 interface ScopedAlertProps {
     scope: 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
@@ -27,19 +27,13 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
     }, [scope]);
 
     // Helper function to check if an alert is dismissed
-    const isAlertDismissed = (alertId: number): boolean => {
-        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
-        return localStorage.getItem(dismissedKey) === 'true';
-    };
+    const isAlertDismissed = (alert: ActiveAlert): boolean => isAlertDismissedForUser(alert, user);
 
     // Helper function to dismiss an alert
-    const dismissAlert = (alertId: number) => {
-        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
-        localStorage.setItem(dismissedKey, 'true');
-    };
+    const dismissAlert = (alert: ActiveAlert) => dismissAlertForUser(alert, user);
 
     // Filter out dismissed alerts, notification-only alerts, and group by position
-    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a.id) && a.position !== 'notification');
+    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && a.position !== 'notification');
 
     // Apply position filter if specified
     const filteredAlerts = position === 'all' ? visibleAlerts : visibleAlerts.filter(a => a.position === position);
@@ -54,11 +48,13 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
     // Get the current center alert to show
     const currentCenterAlert = centerAlerts[dialogAlertIndex] || null;
 
-    // Always allow closing popups - this prevents page blocking
+    // Close popups only when dismissal is allowed
     const handleCenterAlertClose = () => {
+        if (!currentCenterAlert?.dismissible) return;
+
         // Mark as dismissed for this user
         if (currentCenterAlert) {
-            dismissAlert(currentCenterAlert.id);
+            dismissAlert(currentCenterAlert);
         }
 
         // Move to next center alert if available
@@ -70,14 +66,14 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
         }
     };
 
-    const handleSlideOutClose = (alertId: number) => {
-        dismissAlert(alertId);
+    const handleSlideOutClose = (alert: ActiveAlert) => {
+        dismissAlert(alert);
         // Force re-render to update visible alerts
         setAlerts(prev => [...prev]);
     };
 
-    const handleTopCenterClose = (alertId: number) => {
-        dismissAlert(alertId);
+    const handleTopCenterClose = (alert: ActiveAlert) => {
+        dismissAlert(alert);
         // Force re-render to update visible alerts
         setAlerts(prev => [...prev]);
     };
@@ -105,7 +101,11 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
             {topCenterAlerts.length > 0 && (
                 <div className="mb-4 space-y-3">
                     {topCenterAlerts.map(alert => (
-                        <Alert key={alert.id} type={alert.type} onClose={() => handleTopCenterClose(alert.id)}>
+                        <Alert
+                            key={alert.id}
+                            type={alert.type}
+                            onClose={alert.dismissible ? () => handleTopCenterClose(alert) : undefined}
+                        >
                             {renderAlertContent(alert)}
                         </Alert>
                     ))}
@@ -122,7 +122,8 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
                     type={alert.type}
                     link={alert.link}
                     link_text={alert.link_text}
-                    onClose={() => handleSlideOutClose(alert.id)}
+                    dismissible={alert.dismissible}
+                    onClose={alert.dismissible ? () => handleSlideOutClose(alert) : undefined}
                     index={index}
                 />
             ))}

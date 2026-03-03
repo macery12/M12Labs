@@ -4,6 +4,7 @@ import { faBell } from '@fortawesome/free-solid-svg-icons';
 import AlertHistoryModal from '@account/AlertHistoryModal';
 import { getActiveAlerts } from '@/api/client/alerts';
 import { useStoreState } from '@/state/hooks';
+import { isAlertDismissedForUser } from '@/lib/alerts';
 
 export default () => {
     const { uuid: user } = useStoreState(s => s.user.data!);
@@ -25,12 +26,7 @@ export default () => {
                 const uniqueAlerts = Array.from(new Map(allAlerts.map(alert => [alert.id, alert])).values());
 
                 // Count unread: notification alerts + dismissed other alerts
-                const unread = uniqueAlerts.filter(alert => {
-                    const dismissedKey = `alert_dismissed_${alert.id}_${user}`;
-                    const isDismissed = localStorage.getItem(dismissedKey) === 'true';
-                    // Count notification alerts that aren't dismissed, or any alert that isn't dismissed
-                    return !isDismissed;
-                }).length;
+                const unread = uniqueAlerts.filter(alert => !isAlertDismissedForUser(alert, user)).length;
 
                 setUnreadCount(unread);
             })

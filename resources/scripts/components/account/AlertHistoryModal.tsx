@@ -6,6 +6,7 @@ import tw from 'twin.macro';
 import Spinner from '@/elements/Spinner';
 import { format } from 'date-fns';
 import { useStoreState } from '@/state/hooks';
+import { getAlertDismissKey, isAlertDismissedForUser } from '@/lib/alerts';
 
 interface Props {
     open: boolean;
@@ -52,14 +53,11 @@ export default ({ open, onClose }: Props) => {
     }, [open]);
 
     // Check if an alert is dismissed
-    const isAlertDismissed = (alertId: number): boolean => {
-        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
-        return localStorage.getItem(dismissedKey) === 'true';
-    };
+    const isAlertDismissed = (alert: ActiveAlert): boolean => isAlertDismissedForUser(alert, user);
 
     // Reopen a dismissed popup alert
     const reopenAlert = (alertId: number) => {
-        const dismissedKey = `alert_dismissed_${alertId}_${user}`;
+        const dismissedKey = getAlertDismissKey(alertId, user);
         localStorage.removeItem(dismissedKey);
         // Refresh the page to show the alert
         window.location.reload();
@@ -119,7 +117,7 @@ export default ({ open, onClose }: Props) => {
                 ) : (
                     <div css={tw`max-h-96 overflow-y-auto space-y-3`}>
                         {alerts.map(alert => {
-                            const isDismissed = isAlertDismissed(alert.id);
+                            const isDismissed = isAlertDismissed(alert);
                             const isPopup = alert.position === 'center';
 
                             return (
