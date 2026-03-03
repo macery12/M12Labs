@@ -57,7 +57,7 @@ class EmailNotificationSetting extends Model
             }
         );
 
-        if ($globalEnabled !== 'true') {
+        if ($globalEnabled === 'false') {
             return false;
         }
         
@@ -86,6 +86,13 @@ class EmailNotificationSetting extends Model
             ->get();
     }
 
+    /**
+     * Normalize a flag value to the canonical 'true' or 'false' string.
+     * - Booleans are mapped directly to strings.
+     * - Null or empty values fall back to the default.
+     * - Legacy truthy strings (1/true/yes/on) normalize to 'true'.
+     * - Everything else normalizes to 'false'.
+     */
     public static function normalizeFlag(mixed $value): string
     {
         if (is_bool($value)) {

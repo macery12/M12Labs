@@ -194,12 +194,12 @@ class EmailController extends ApplicationApiController
 
         $normalized = EmailNotificationSetting::normalizeFlag($enabled);
 
+        Setting::set(EmailNotificationSetting::GLOBAL_ENABLED_SETTING_KEY, $normalized);
         cache()->put(
             EmailNotificationSetting::GLOBAL_ENABLED_CACHE_KEY,
             $normalized,
             EmailNotificationSetting::GLOBAL_ENABLED_CACHE_TTL
         );
-        Setting::set(EmailNotificationSetting::GLOBAL_ENABLED_SETTING_KEY, $normalized);
 
         Activity::event('admin:email:notifications:global-toggle')
             ->property('enabled', $normalized)
