@@ -2,6 +2,7 @@
 
 namespace Everest\Services\Email;
 
+use Everest\Models\EmailNotificationSetting;
 use Everest\Models\Setting;
 use Everest\Models\EmailDelivery;
 use Everest\Services\Email\Emails\BaseEmail;
@@ -161,6 +162,18 @@ class EmailManager
                     'provider' => 'resend',
                 ]);
             }
+        }
+
+        // Enforce global/template-level disable (mirrors SendEmailJob path)
+        if (!EmailNotificationSetting::isEnabled($templateKey)) {
+            Log::info('EmailManager: Email type disabled', [
+                'template_key' => $templateKey,
+                'correlation_id' => $correlationId,
+            ]);
+
+            $tracker->markSkipped($delivery, "Email type '{$templateKey}' is disabled");
+
+            return EmailResult::success('disabled');
         }
 
         if ($result = $this->shouldSkipRecipient($recipient, $tracker, $delivery)) {
