@@ -40,7 +40,7 @@ function LoginContainer() {
     }, []);
 
     const useOauth = (name: string) => {
-        externalLogin(name)
+        externalLogin(name, token.current)
             .then(url => {
                 // @ts-expect-error this is fine
                 window.location = url;
@@ -141,12 +141,22 @@ function LoginContainer() {
                     )}
                     <div className={'mt-4 grid w-full grid-cols-2 gap-4'}>
                         {modules.discord.enabled && (
-                            <Button.Info type={'button'} onClick={() => useOauth('discord')} size={Button.Sizes.Small}>
+                            <Button.Info
+                                type={'button'}
+                                onClick={() => useOauth('discord')}
+                                size={Button.Sizes.Small}
+                                disabled={captchaEnabled && !captchaToken}
+                            >
                                 <FontAwesomeIcon icon={faDiscord} className={'my-auto mr-2'} /> Use Discord SSO
                             </Button.Info>
                         )}
                         {modules.google.enabled && (
-                            <Button.Text type={'button'} onClick={() => useOauth('google')} size={Button.Sizes.Small}>
+                            <Button.Text
+                                type={'button'}
+                                onClick={() => useOauth('google')}
+                                size={Button.Sizes.Small}
+                                disabled={captchaEnabled && !captchaToken}
+                            >
                                 <FontAwesomeIcon icon={faGoogle} className={'my-auto mr-2'} /> Use Google SSO
                             </Button.Text>
                         )}

@@ -43,7 +43,6 @@ Route::middleware(['throttle:authentication'])->group(function () {
 
     Route::post('/modules/discord', [Auth\Modules\DiscordLoginController::class, 'requestToken'])->middleware('captcha');
     Route::get('/modules/discord/authenticate', [Auth\Modules\DiscordLoginController::class, 'authenticate'])
-        ->middleware('captcha')
         ->name('auth.modules.discord.authenticate');
     Route::get('/modules/discord/registration-data', [Auth\Modules\DiscordLoginController::class, 'getRegistrationData'])
         ->name('auth.modules.discord.registration-data');
@@ -55,7 +54,6 @@ Route::middleware(['throttle:authentication'])->group(function () {
 
     Route::post('/modules/google', [Auth\Modules\GoogleLoginController::class, 'requestToken'])->middleware('captcha');
     Route::get('/modules/google/authenticate', [Auth\Modules\GoogleLoginController::class, 'authenticate'])
-        ->middleware('captcha')
         ->name('auth.modules.google.authenticate');
 
     // Recovery code based password reset endpoint.
