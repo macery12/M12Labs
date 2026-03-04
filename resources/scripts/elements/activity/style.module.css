@@ -1,8 +1,8 @@
 .icons {
-    @apply flex space-x-1 mx-2 transition-colors duration-100 text-slate-400;
+    @apply ml-1 mr-1 flex items-center space-x-1 text-slate-400 transition-colors duration-100;
 
     & svg {
-        @apply px-1 py-px cursor-pointer hover:text-slate-50 h-5 w-auto;
+        @apply h-4 w-4 cursor-pointer text-slate-400 transition-colors duration-100 hover:text-slate-50;
     }
 }
 

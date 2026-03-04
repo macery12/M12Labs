@@ -5,6 +5,7 @@ import tw from 'twin.macro';
 import { formatDistanceToNowStrict, format } from 'date-fns';
 import CopyOnClick from '@/elements/CopyOnClick';
 import Pill from '@/elements/Pill';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     order: AccountOrder | AdminOrder;
@@ -12,6 +13,8 @@ interface Props {
 }
 
 const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) => {
+    const { colors } = useStoreState(state => state.theme.data!);
+
     const getOrderTypeName = (type: string) => {
         switch (type) {
             case 'new':
@@ -43,12 +46,13 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
             {/* Order Information */}
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Order Information</h3>
-                <div css={tw`bg-neutral-900 rounded-lg p-4 space-y-3`}>
+                <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
                     <div css={tw`flex justify-between items-start`}>
                         <span css={tw`text-sm text-gray-400`}>Order ID</span>
                         <CopyOnClick text={order.id.toString()}>
                             <code
                                 css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                                style={{ backgroundColor: colors.background || colors.secondary }}
                             >
                                 {order.id}
                             </code>
@@ -88,7 +92,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
             {/* Product Information */}
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Product & Billing</h3>
-                <div css={tw`bg-neutral-900 rounded-lg p-4 space-y-3`}>
+                <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
                     <div css={tw`flex justify-between items-start`}>
                         <span css={tw`text-sm text-gray-400`}>Product Name</span>
                         <span css={tw`text-sm text-white font-medium`}>{order.name}</span>
@@ -121,7 +125,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
             {isAdmin && 'user_id' in order && (
                 <div>
                     <h3 css={tw`text-lg font-semibold text-white mb-4`}>Customer Information</h3>
-                    <div css={tw`bg-neutral-900 rounded-lg p-4 space-y-3`}>
+                    <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
                         <div css={tw`flex justify-between items-start`}>
                             <span css={tw`text-sm text-gray-400`}>User ID</span>
                             <code css={tw`text-sm font-mono text-gray-300`}>{order.user_id}</code>
@@ -133,7 +137,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
             {/* Additional Details */}
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Additional Details</h3>
-                <div css={tw`bg-neutral-900 rounded-lg p-4 space-y-3`}>
+                <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
                     <div css={tw`flex justify-between items-start`}>
                         <span css={tw`text-sm text-gray-400`}>Status</span>
                         <span css={tw`text-sm text-white capitalize`}>{order.status}</span>

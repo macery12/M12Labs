@@ -23,7 +23,7 @@ export default () => {
             return;
         }
 
-        clearFlashes();
+        clearFlashes('email:test');
         setStatus('loading');
 
         sendTestEmail({ to: email })

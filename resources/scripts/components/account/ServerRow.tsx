@@ -46,24 +46,24 @@ const UtilBox = ({
     rounded?: string;
     server?: Server;
 }) => {
+    const stateLabel = server?.isTransferring ? 'Transferring' : server?.status === 'suspended' ? 'Suspended' : 'Offline';
+
     return (
         <div
             className={classNames(
-                'col-span-2 m-auto h-full w-full bg-white/10 px-4 py-2 lg:col-span-1 lg:shadow-xl',
+                'col-span-2 m-auto h-full w-full min-w-0 bg-white/10 px-3 py-2 lg:col-span-1 lg:shadow-xl',
                 rounded === 'left' && 'lg:rounded-l-lg',
                 rounded === 'right' && 'lg:rounded-r-lg',
                 rounded === 'full' && 'lg:col-span-3 lg:rounded-lg',
             )}
         >
-            <div className={'text-center font-bold text-gray-300'}>
-                <p className={'my-auto inline-flex text-sm'}>
-                    <FontAwesomeIcon icon={icon} className={'my-auto mr-1'} size={'xs'} />
-                    <p className={'my-auto'}>
-                        {utilised > -1
-                            ? `${utilised === Infinity ? 0 : utilised}%`
-                            : `Server is ${server?.isTransferring ? 'transferring' : server?.status ?? 'offline'}`}
-                    </p>
-                </p>
+            <div className={'flex items-center justify-center text-center font-bold text-gray-300'}>
+                <span className={'inline-flex max-w-full flex-wrap items-center justify-center gap-x-1 text-xs sm:text-sm'}>
+                    <FontAwesomeIcon icon={icon} className={'mt-0.5 flex-shrink-0'} size={'xs'} />
+                    <span className={'whitespace-normal break-words leading-tight'}>
+                    {utilised > -1 ? `${utilised === Infinity ? 0 : utilised}%` : stateLabel}
+                    </span>
+                </span>
             </div>
         </div>
     );
@@ -130,7 +130,7 @@ export default ({
     return (
         <>
             <div
-                className={'mb-2 grid w-full grid-cols-2 rounded-lg p-4 lg:grid-cols-12'}
+                className={'mb-2 grid w-full grid-cols-2 overflow-hidden rounded-lg p-4 lg:grid-cols-12'}
                 style={{ backgroundColor: colors.background }}
             >
                 <FontAwesomeIcon
@@ -140,9 +140,9 @@ export default ({
                 />
                 <Link
                     to={`/server/${server.id}`}
-                    className="col-span-1 mb-4 whitespace-nowrap text-white transition duration-300 hover:brightness-150 lg:col-span-6 lg:mb-0"
+                    className="col-span-1 mb-4 min-w-0 text-white transition duration-300 hover:brightness-150 lg:col-span-6 lg:mb-0"
                 >
-                    {server.name}
+                    <div className={'truncate'}>{server.name}</div>
                     <div className={'my-auto text-xs text-gray-500'}>
                         {server.allocations[0]?.ip.toString()}:{server.allocations[0]?.port.toString()}
                     </div>
@@ -172,7 +172,7 @@ export default ({
                         </div>
                     )}
                 </div>
-                {server.status || stats?.status === 'offline' ? (
+                {isSuspended || server.status === 'offline' || (stats?.status ?? 'offline') === 'offline' ? (
                     <UtilBox rounded={'full'} utilised={-1} icon={faInfoCircle} server={server} />
                 ) : (
                     <>

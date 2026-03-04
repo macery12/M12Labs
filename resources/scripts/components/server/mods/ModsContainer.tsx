@@ -15,9 +15,10 @@ type ModSource = 'modrinth' | 'curseforge' | 'spigot';
 
 interface Props {
     sourceOverride?: ModSource;
+    contentType?: 'mods' | 'plugins';
 }
 
-export default ({ sourceOverride }: Props) => {
+export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
@@ -29,6 +30,8 @@ export default ({ sourceOverride }: Props) => {
         ? (normalizedDefaultSource as ModSource)
         : 'modrinth') as ModSource;
     const { addError } = useFlash();
+    const contentLabel = contentType === 'plugins' ? 'Plugins' : 'Mods';
+    const contentLabelLower = contentType === 'plugins' ? 'plugins' : 'mods';
 
     const [loading, setLoading] = useState(false);
     const [mods, setMods] = useState<CurseForgeMod[]>([]);
@@ -131,7 +134,11 @@ export default ({ sourceOverride }: Props) => {
 
     if (!globalModsEnabled) {
         return (
-            <PageContentBlock title={'Mods Browser'} header description={'Browse and install Minecraft mods.'}>
+            <PageContentBlock
+                title={`${contentLabel} Browser`}
+                header
+                description={`Browse and install Minecraft ${contentLabelLower}.`}
+            >
                 <div css={tw`text-center py-16`}>
                     <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
                     <p css={tw`text-neutral-400 text-sm`}>
@@ -144,9 +151,9 @@ export default ({ sourceOverride }: Props) => {
 
     return (
         <PageContentBlock
-                title={'Mods Browser'}
+                title={`${contentLabel} Browser`}
                 header
-                description={`Browse and install Minecraft mods from ${
+                description={`Browse and install Minecraft ${contentLabelLower} from ${
                     activeSource === 'modrinth'
                         ? 'Modrinth'
                         : activeSource === 'curseforge'
@@ -202,6 +209,7 @@ export default ({ sourceOverride }: Props) => {
                 onSearch={handleSearch}
                 initialParams={searchParams}
                 source={activeSource}
+                contentType={contentType}
                 filtersMeta={filtersMeta}
             />
 
@@ -213,6 +221,7 @@ export default ({ sourceOverride }: Props) => {
                 <ModList
                     mods={mods}
                     loading={loading}
+                    contentType={contentType}
                     pagination={pagination}
                     onModClick={handleModClick}
                     onPageChange={handlePageChange}

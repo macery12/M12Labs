@@ -2,6 +2,7 @@ import React from 'react';
 import { faCreditCard } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import tw from 'twin.macro';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     processor: 'stripe' | 'mollie' | 'paypal';
@@ -9,35 +10,29 @@ interface Props {
 }
 
 const PaymentProcessorBadge: React.FC<Props> = ({ processor, size = 'medium' }) => {
+    const { colors } = useStoreState(state => state.theme.data!);
+
     const getProcessorInfo = () => {
         switch (processor) {
             case 'stripe':
                 return {
                     name: 'Stripe',
                     emoji: '💳',
-                    color: 'bg-purple-600',
-                    textColor: 'text-white',
                 };
             case 'mollie':
                 return {
                     name: 'Mollie',
                     emoji: '💶',
-                    color: 'bg-blue-500',
-                    textColor: 'text-white',
                 };
             case 'paypal':
                 return {
                     name: 'PayPal',
                     emoji: '🅿️',
-                    color: 'bg-cyan-500',
-                    textColor: 'text-white',
                 };
             default:
                 return {
                     name: 'Unknown',
                     emoji: '❓',
-                    color: 'bg-gray-500',
-                    textColor: 'text-white',
                 };
         }
     };
@@ -58,8 +53,13 @@ const PaymentProcessorBadge: React.FC<Props> = ({ processor, size = 'medium' }) 
 
     return (
         <span
-            css={tw`inline-flex items-center gap-1.5 rounded-full font-medium shadow-sm`}
-            className={`${info.color} ${info.textColor} ${getSizeClasses()}`}
+            css={tw`inline-flex items-center gap-1.5 rounded-full border font-medium shadow-sm`}
+            className={getSizeClasses()}
+            style={{
+                backgroundColor: colors.secondary,
+                borderColor: colors.primary,
+                color: '#fff',
+            }}
         >
             <span>{info.emoji}</span>
             {info.name}

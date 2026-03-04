@@ -26,12 +26,14 @@ class EmailManager
 
         // Check if Resend is enabled
         if (!$this->isEnabled()) {
-            Log::info('Email sending is disabled, skipping', [
+            $error = 'Email sending is currently disabled in Admin → Email settings. Enable email delivery before sending test or custom emails.';
+
+            Log::warning('Email sending is disabled, skipping', [
                 'recipient' => $recipient,
                 'subject' => $email->subject(),
             ]);
 
-            return EmailResult::success('disabled');
+            return EmailResult::failure($error, 422);
         }
 
         // Get API key from settings
