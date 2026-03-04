@@ -12,6 +12,7 @@ import {
     faClock,
     faServer,
 } from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     order: AccountOrder | AdminOrder;
@@ -22,10 +23,13 @@ interface TimelineEvent {
     description: string;
     timestamp: Date;
     icon: any;
-    color: string;
+    color?: string;
+    themeColor?: boolean;
 }
 
 const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
+    const { colors } = useStoreState(state => state.theme.data!);
+
     // Build timeline events based on order data
     const getTimelineEvents = (): TimelineEvent[] => {
         const events: TimelineEvent[] = [];
@@ -36,7 +40,7 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
             description: `${getOrderTypeName(order.type)} order initiated for ${order.name}`,
             timestamp: order.created_at,
             icon: faShoppingCart,
-            color: 'text-blue-400',
+            themeColor: true,
         });
 
         // Payment initiated
@@ -47,7 +51,7 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
             }`,
             timestamp: order.created_at, // Usually same as creation
             icon: faCreditCard,
-            color: 'text-purple-400',
+            themeColor: true,
         });
 
         // Payment status events
@@ -131,13 +135,20 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
                             <div key={index} css={tw`relative flex gap-4`}>
                                 {/* Icon */}
                                 <div
-                                    className={`flex-shrink-0 w-8 h-8 rounded-full bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center z-10 ${event.color}`}
+                                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 border-neutral-700 flex items-center justify-center z-10 ${event.color ?? ''}`}
+                                    style={{
+                                        color: event.themeColor ? colors.primary : undefined,
+                                        backgroundColor: colors.background || colors.secondary,
+                                    }}
                                 >
                                     <FontAwesomeIcon icon={event.icon} size="sm" />
                                 </div>
 
                                 {/* Content */}
-                                <div css={tw`flex-1 bg-neutral-900 rounded-lg p-4 border border-neutral-700`}>
+                                <div
+                                    css={tw`flex-1 rounded-lg p-4 border border-neutral-700`}
+                                    style={{ backgroundColor: colors.secondary }}
+                                >
                                     <div css={tw`flex justify-between items-start mb-2`}>
                                         <h4 css={tw`text-sm font-semibold text-white`}>{event.title}</h4>
                                         <time css={tw`text-xs text-gray-500`}>
@@ -153,7 +164,10 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
             </div>
 
             {/* Additional info */}
-            <div css={tw`bg-neutral-900 rounded-lg p-4 border border-neutral-700`}>
+            <div
+                css={tw`rounded-lg p-4 border border-neutral-700`}
+                style={{ backgroundColor: colors.secondary }}
+            >
                 <p css={tw`text-xs text-gray-500`}>
                     <strong>Note:</strong> This timeline shows key events in the order lifecycle. Webhook events and
                     detailed provider responses may not be fully represented in this view.

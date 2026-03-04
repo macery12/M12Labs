@@ -97,10 +97,17 @@ class EmailController extends ApplicationApiController
             );
 
             if (!$result->success) {
+                $error = $result->error
+                    ?? $result->reason
+                    ?? 'Failed to send test email. Please verify your email module configuration.';
+
+                $statusCode = $result->statusCode
+                    ?? (($result->status === 'skipped' || str_contains(strtolower($error), 'disabled')) ? 422 : 500);
+
                 return response()->json([
                     'success' => false,
-                    'error' => $result->error,
-                ], 500);
+                    'error' => $error,
+                ], $statusCode);
             }
 
             Activity::event('admin:email:test')
@@ -135,10 +142,17 @@ class EmailController extends ApplicationApiController
             );
 
             if (!$result->success) {
+                $error = $result->error
+                    ?? $result->reason
+                    ?? 'Failed to send custom email. Please verify your email module configuration.';
+
+                $statusCode = $result->statusCode
+                    ?? (($result->status === 'skipped' || str_contains(strtolower($error), 'disabled')) ? 422 : 500);
+
                 return response()->json([
                     'success' => false,
-                    'error' => $result->error,
-                ], 500);
+                    'error' => $error,
+                ], $statusCode);
             }
 
             Activity::event('admin:email:custom')

@@ -221,7 +221,7 @@ const ModsAndPluginsPage = () => {
                 <>
                     {renderProviderTabs(providersByType.plugins, pluginProvider)}
                     {pluginProvider === 'spigot' ? (
-                        <ModsContainer sourceOverride="spigot" />
+                        <ModsContainer sourceOverride="spigot" contentType="plugins" />
                     ) : (
                         <ComingSoon label={'Plugins'} />
                     )}

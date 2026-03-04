@@ -10,6 +10,7 @@ import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
 import OrderInspectorOverviewTab from './OrderInspectorOverviewTab';
 import OrderInspectorPaymentTab from './OrderInspectorPaymentTab';
 import OrderInspectorTimelineTab from './OrderInspectorTimelineTab';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     order: AccountOrder | AdminOrder;
@@ -22,6 +23,7 @@ type TabType = 'overview' | 'payment' | 'timeline';
 
 const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin = false }) => {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const { colors } = useStoreState(state => state.theme.data!);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -63,7 +65,10 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
 
             {/* Full-screen container */}
             <div className="fixed inset-0 flex items-center justify-center p-4">
-                <Dialog.Panel css={tw`bg-neutral-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col`}>
+                <Dialog.Panel
+                    css={tw`rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col`}
+                    style={{ backgroundColor: colors.background || colors.secondary }}
+                >
                     {/* Header */}
                     <div className={`p-6 border-b border-neutral-700 ${getRowAccentColor(order.status)}`}>
                         <div css={tw`flex items-start justify-between`}>
@@ -103,35 +108,38 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
                     </div>
 
                     {/* Tabs */}
-                    <div css={tw`border-b border-neutral-700 bg-neutral-900/50`}>
+                    <div css={tw`border-b border-neutral-700`} style={{ backgroundColor: colors.secondary }}>
                         <div css={tw`flex gap-1 px-6`}>
                             <button
                                 onClick={() => setActiveTab('overview')}
-                                className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                                className={'px-4 py-3 text-sm font-medium transition-colors border-b-2'}
+                                style={
                                     activeTab === 'overview'
-                                        ? 'border-blue-500 text-white'
-                                        : 'border-transparent text-gray-400 hover:text-gray-200'
-                                }`}
+                                        ? { borderBottomColor: colors.primary, color: '#fff' }
+                                        : { borderBottomColor: 'transparent', color: '#9ca3af' }
+                                }
                             >
                                 Overview
                             </button>
                             <button
                                 onClick={() => setActiveTab('payment')}
-                                className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                                className={'px-4 py-3 text-sm font-medium transition-colors border-b-2'}
+                                style={
                                     activeTab === 'payment'
-                                        ? 'border-blue-500 text-white'
-                                        : 'border-transparent text-gray-400 hover:text-gray-200'
-                                }`}
+                                        ? { borderBottomColor: colors.primary, color: '#fff' }
+                                        : { borderBottomColor: 'transparent', color: '#9ca3af' }
+                                }
                             >
                                 Payment
                             </button>
                             <button
                                 onClick={() => setActiveTab('timeline')}
-                                className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                                className={'px-4 py-3 text-sm font-medium transition-colors border-b-2'}
+                                style={
                                     activeTab === 'timeline'
-                                        ? 'border-blue-500 text-white'
-                                        : 'border-transparent text-gray-400 hover:text-gray-200'
-                                }`}
+                                        ? { borderBottomColor: colors.primary, color: '#fff' }
+                                        : { borderBottomColor: 'transparent', color: '#9ca3af' }
+                                }
                             >
                                 Timeline
                             </button>
