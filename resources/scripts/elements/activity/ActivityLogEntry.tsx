@@ -42,7 +42,7 @@ function wrapProperties(value: unknown): any {
 
 function hasFileDiff(activity: ActivityLog): boolean {
     return (
-        activity.event === 'server:file.write' &&
+        (activity.event === 'server:file.write' || activity.event === 'server:sftp.write') &&
         activity.properties?.diff !== undefined &&
         typeof activity.properties.diff === 'object'
     );
@@ -52,8 +52,12 @@ function getFileDiff(activity: ActivityLog): FileDiff | null {
     if (!hasFileDiff(activity)) return null;
 
     const diff = activity.properties.diff as Record<string, unknown>;
+    const fileFromFiles = Array.isArray(activity.properties.files)
+        ? (activity.properties.files[0] as string | undefined)
+        : undefined;
+
     return {
-        file: activity.properties.file as string | undefined,
+        file: (activity.properties.file as string | undefined) || fileFromFiles,
         additions: (diff.additions as number) || 0,
         deletions: (diff.deletions as number) || 0,
         hunks: (diff.hunks as FileDiff['hunks']) || [],
@@ -62,12 +66,25 @@ function getFileDiff(activity: ActivityLog): FileDiff | null {
     };
 }
 
+function getCommand(activity: ActivityLog): string | null {
+    if (typeof activity.properties?.command !== 'string') {
+        return null;
+    }
+
+    if (activity.event !== 'server:console.command' && activity.event !== 'server:ssh.command') {
+        return null;
+    }
+
+    return activity.properties.command;
+}
+
 export default ({ activity, children }: Props) => {
     const { pathTo } = useLocationHash();
     const actor = activity.relationships.actor;
     const properties = wrapProperties(activity.properties);
     const { colors } = useStoreState(state => state.theme.data!);
     const fileDiff = getFileDiff(activity);
+    const command = getCommand(activity);
 
     return (
         <div
@@ -111,6 +128,16 @@ export default ({ activity, children }: Props) => {
                                             <FolderOpenIcon />
                                         </Tooltip>
                                     )}
+                                    {activity.event.startsWith('server:ssh.') && (
+                                        <Tooltip placement={'top'} content={'Using SSH'}>
+                                            <TerminalIcon />
+                                        </Tooltip>
+                                    )}
+                                    {activity.properties?.source === 'ssh' && !activity.event.startsWith('server:ssh.') && (
+                                        <Tooltip placement={'top'} content={'Via SSH'}>
+                                            <TerminalIcon />
+                                        </Tooltip>
+                                    )}
                                     {children}
                                 </div>
                             </div>
@@ -138,6 +165,12 @@ export default ({ activity, children }: Props) => {
                                     <span className="mx-1">/</span>
                                     <span className="text-red-400">-{fileDiff.deletions}</span>
                                     <span className="ml-1">lines changed</span>
+                                </div>
+                            )}
+
+                            {command && (
+                                <div className="mt-2 rounded bg-slate-900/70 border border-slate-700 px-2 py-1 text-xs font-mono text-slate-200 break-all">
+                                    {command}
                                 </div>
                             )}
                         </div>
