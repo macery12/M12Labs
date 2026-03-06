@@ -26,13 +26,11 @@ export default () => {
     const handleDismissConfiguration = () => {
         // Disable AI when user dismisses configuration dialog
         updateSettings({ enabled: false })
-            .then(() => {
-                // @ts-expect-error this is fine
-                window.location = '/admin/ai';
-            })
             .catch(error => {
                 console.error('Failed to disable AI:', error);
-                // Still reload to let user try again
+            })
+            .finally(() => {
+                // Reload page to refresh everest state and return to EnableAI screen
                 // @ts-expect-error this is fine
                 window.location = '/admin/ai';
             });
