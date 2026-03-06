@@ -25,10 +25,17 @@ export default () => {
 
     const handleDismissConfiguration = () => {
         // Disable AI when user dismisses configuration dialog
-        updateSettings({ enabled: false }).then(() => {
-            // @ts-expect-error this is fine
-            window.location = '/admin/ai';
-        });
+        updateSettings({ enabled: false })
+            .then(() => {
+                // @ts-expect-error this is fine
+                window.location = '/admin/ai';
+            })
+            .catch(error => {
+                console.error('Failed to disable AI:', error);
+                // Still reload to let user try again
+                // @ts-expect-error this is fine
+                window.location = '/admin/ai';
+            });
     };
 
     if (settings.enabled && needsConfiguration) return <ConfigureAI onDismiss={handleDismissConfiguration} />;
