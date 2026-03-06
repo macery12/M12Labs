@@ -54,15 +54,25 @@ class GoogleLoginController extends AbstractLoginController
         if (User::where('email', $response->email)->exists()) {
             $user = User::where('email', $response->email)->first();
 
-            $this->sendLoginResponse($user, $request);
+            $loginResponse = $this->sendLoginResponse($user, $request);
+            $redirect = redirect('/');
 
-            return redirect('/');
+            foreach ($loginResponse->headers->getCookies() as $cookie) {
+                $redirect->headers->setCookie($cookie);
+            }
+
+            return $redirect;
         } else {
             $user = $this->createAccount(['email' => $response->email, 'username' => 'null_user_' . $this->randStr(16)]);
 
-            $this->sendLoginResponse($user, $request);
+            $loginResponse = $this->sendLoginResponse($user, $request);
+            $redirect = redirect('/account/setup');
 
-            return redirect('/account/setup');
+            foreach ($loginResponse->headers->getCookies() as $cookie) {
+                $redirect->headers->setCookie($cookie);
+            }
+
+            return $redirect;
         }
 
         return redirect()->route('auth.login');

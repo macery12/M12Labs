@@ -200,9 +200,14 @@ class DiscordLoginController extends AbstractLoginController
 
         if ($user) {
             // User exists with this Discord ID, log them in
-            $this->sendLoginResponse($user, $request);
+            $loginResponse = $this->sendLoginResponse($user, $request);
+            $redirect = redirect('/');
 
-            return redirect('/');
+            foreach ($loginResponse->headers->getCookies() as $cookie) {
+                $redirect->headers->setCookie($cookie);
+            }
+
+            return $redirect;
         }
 
         // Check if user exists with the same email

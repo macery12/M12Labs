@@ -26,10 +26,14 @@ const login = ({ username, password, ...rest }: LoginData & Record<string, any>)
     });
 };
 
-const externalLogin = (name: string): Promise<void> => {
+const externalLogin = (name: string, captchaToken?: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
-            .then(() => http.post(`/auth/modules/${name}`))
+            .then(() =>
+                http.post(`/auth/modules/${name}`, {
+                    'cf-turnstile-response': captchaToken,
+                }),
+            )
             .then(({ data }) => resolve(data || []))
             .catch(reject);
     });
