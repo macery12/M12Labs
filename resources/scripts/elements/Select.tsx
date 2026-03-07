@@ -25,6 +25,11 @@ const selectStyle = () => {
         background-position-x: calc(100% - 0.75rem);
         background-position-y: center;
 
+        &[multiple] {
+            ${tw`h-32 overflow-y-auto pr-3`};
+            background-image: none !important;
+        }
+
         &::-ms-expand {
             display: none;
         }
