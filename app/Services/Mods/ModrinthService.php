@@ -373,7 +373,9 @@ class ModrinthService
             'summary' => $modrinthMod['description'] ?? '',
             'status' => 4, // Approved
             'downloadCount' => $modrinthMod['downloads'] ?? 0,
-            'isFeatured' => !empty($modrinthMod['featured_gallery']),
+            'isFeatured' => array_key_exists('featured_gallery', $modrinthMod)
+                ? $modrinthMod['featured_gallery'] !== null
+                : false,
             'primaryCategoryId' => 0,
             'categories' => $modrinthMod['categories'] ?? [],
             'classId' => 6, // Mods

@@ -5,7 +5,7 @@ import Input from '@/elements/Input';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
-import { type ModSearchParams, getMinecraftVersions, getModLoaderTypes } from '@/api/routes/server/mods';
+import { type ModSearchParams, getMinecraftVersions } from '@/api/routes/server/mods';
 import { httpErrorToHuman } from '@/api/http';
 import useFlash from '@/plugins/useFlash';
 
@@ -47,8 +47,6 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
     const [platform, setPlatform] = useState<string>(initialParams.platform || '');
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
-    const [, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
-
     useEffect(() => {
         if (contentType !== 'plugins' || source !== 'modrinth') {
             setPlatform('');
@@ -85,33 +83,6 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             });
 
-        if (contentType === 'plugins' && source === 'modrinth') {
-            setModLoaders([]);
-            return;
-        }
-
-        getModLoaderTypes(uuid, source, contentType)
-            .then(response => {
-                // CurseForge mod loader API returns different structure
-                const loaders = response.data
-                    .filter(
-                        (ml: any) =>
-                            ml.name &&
-                            (ml.name.toLowerCase().includes('forge') ||
-                                ml.name.toLowerCase().includes('fabric') ||
-                                ml.name.toLowerCase().includes('quilt') ||
-                                ml.name.toLowerCase() === 'neoforge'),
-                    )
-                    .map((ml: any) => ({
-                        id: ml.id || ml.type,
-                        name: ml.name,
-                    }));
-                setModLoaders(loaders);
-            })
-            .catch(error => {
-                console.error(error);
-                addError({ key: 'mods', message: httpErrorToHuman(error) });
-            });
     }, [uuid, source, contentType]);
 
     useEffect(() => {
