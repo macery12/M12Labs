@@ -228,7 +228,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
 
                 {showPlatformFilter && (
                     <div>
-                        <Label>Platforms (OR)</Label>
+                        <Label>Platforms (any)</Label>
                         <Select
                             multiple
                             value={platforms}

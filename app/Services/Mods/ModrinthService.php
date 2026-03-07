@@ -246,14 +246,7 @@ class ModrinthService
         }
 
         if ($projectType === 'plugin' && !empty($params['platform'])) {
-            $platforms = $params['platform'];
-            $platformList = is_array($platforms) ? $platforms : [$platforms];
-            $validPlatforms = array_values(
-                array_filter(
-                    array_map(static fn ($p) => strtolower((string) $p), $platformList),
-                    fn ($p) => in_array($p, $this->pluginPlatforms, true)
-                )
-            );
+            $validPlatforms = $this->normalizePlatforms($params['platform']);
 
             if (!empty($validPlatforms)) {
                 // OR within same facet array
@@ -357,6 +350,22 @@ class ModrinthService
                 'platforms' => $platforms,
             ],
         ];
+    }
+
+    /**
+     * Normalize platform inputs to allowed lowercase list.
+     *
+     * @param array|string $platforms
+     * @return array<int, string>
+     */
+    private function normalizePlatforms(array|string $platforms): array
+    {
+        $platformList = is_array($platforms) ? $platforms : [$platforms];
+
+        $normalized = array_map(static fn ($p) => strtolower((string) $p), $platformList);
+        $valid = array_filter($normalized, fn ($p) => in_array($p, $this->pluginPlatforms, true));
+
+        return array_values(array_unique($valid));
     }
 
     /**
@@ -533,14 +542,7 @@ class ModrinthService
         }
 
         if ($resource === 'plugins' && !empty($params['platform'])) {
-            $platforms = $params['platform'];
-            $platformList = is_array($platforms) ? $platforms : [$platforms];
-            $validPlatforms = array_values(
-                array_filter(
-                    array_map(static fn ($p) => strtolower((string) $p), $platformList),
-                    fn ($p) => in_array($p, $this->pluginPlatforms, true)
-                )
-            );
+            $validPlatforms = $this->normalizePlatforms($params['platform']);
 
             if (!empty($validPlatforms)) {
                 $fileParams['loaders'] = json_encode($validPlatforms);

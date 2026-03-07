@@ -104,7 +104,7 @@ function Modal({
         if (!render) {
             onDismissed();
         }
-    }, [render]);
+    }, [render, onDismissed]);
 
     return (
         <FadeTransition as={Fragment} show={render} duration="duration-150" appear={appear ?? true} unmount>
