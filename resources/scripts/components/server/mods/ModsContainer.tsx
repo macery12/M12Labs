@@ -240,6 +240,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                     gameVersion={searchParams.gameVersion}
                     modLoaderType={searchParams.modLoaderType}
                     contentType={contentType}
+                    platform={searchParams.platform}
                 />
             )}
         </PageContentBlock>

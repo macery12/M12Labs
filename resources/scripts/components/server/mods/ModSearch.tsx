@@ -44,12 +44,18 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
     const [categoryId, setCategoryId] = useState<string>('');
     const [minRating, setMinRating] = useState<string>(initialParams.minRating?.toString() ?? '');
-    const [platform, setPlatform] = useState<string>(initialParams.platform || '');
+    const [platforms, setPlatforms] = useState<string[]>(
+        Array.isArray(initialParams.platform)
+            ? initialParams.platform
+            : initialParams.platform
+              ? [initialParams.platform]
+              : [],
+    );
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
     useEffect(() => {
         if (contentType !== 'plugins' || source !== 'modrinth') {
-            setPlatform('');
+            setPlatforms([]);
         }
     }, [contentType, source]);
 
@@ -113,7 +119,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
             modLoaderType: source === 'spigot' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
             minRating: source === 'spigot' && minRating ? parseFloat(minRating) : undefined,
-            platform: platform || undefined,
+            platform: platforms.length ? platforms : undefined,
             resource: contentType,
             pageSize: 20,
             index: 0,
@@ -127,7 +133,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
         setModLoaderType('');
         setCategoryId('');
         setMinRating('');
-        setPlatform('');
+        setPlatforms([]);
         onSearch({
             sortField: source === 'spigot' ? 'downloads' : '2',
             sortOrder: 'desc',
@@ -167,6 +173,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
             { value: 'velocity', label: 'Velocity' },
             { value: 'waterfall', label: 'Waterfall' },
             { value: 'sponge', label: 'Sponge' },
+            { value: 'bungeecord', label: 'BungeeCord' },
         ];
     const searchPlaceholder = contentType === 'plugins' ? 'Search plugins...' : 'Search mods...';
 
@@ -221,8 +228,18 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
 
                 {showPlatformFilter && (
                     <div>
-                        <Label>Platform</Label>
-                        <Select value={platform} onChange={e => setPlatform(e.target.value)}>
+                        <Label>Platforms (OR)</Label>
+                        <Select
+                            multiple
+                            value={platforms}
+                            onChange={e =>
+                                setPlatforms(
+                                    Array.from(e.target.selectedOptions)
+                                        .map(option => option.value)
+                                        .filter(Boolean),
+                                )
+                            }
+                        >
                             <option value="">Any Platform</option>
                             {platformOptions.map(option => (
                                 <option key={option.value} value={option.value}>

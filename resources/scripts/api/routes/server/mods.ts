@@ -12,7 +12,7 @@ export interface ModSearchParams {
     categoryId?: number;
     minRating?: number;
     resource?: 'mods' | 'plugins';
-    platform?: string;
+    platform?: string | string[];
 }
 
 export interface ModFileParams {
@@ -22,6 +22,7 @@ export interface ModFileParams {
     index?: number;
     source?: 'modrinth' | 'curseforge' | 'spigot';
     resource?: 'mods' | 'plugins';
+    platform?: string | string[];
 }
 
 export interface CurseForgeAuthor {

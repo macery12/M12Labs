@@ -246,9 +246,18 @@ class ModrinthService
         }
 
         if ($projectType === 'plugin' && !empty($params['platform'])) {
-            $platform = strtolower((string) $params['platform']);
-            if (in_array($platform, $this->pluginPlatforms, true)) {
-                $facets[] = ['categories:' . $platform];
+            $platforms = $params['platform'];
+            $platformList = is_array($platforms) ? $platforms : [$platforms];
+            $validPlatforms = array_values(
+                array_filter(
+                    array_map(static fn ($p) => strtolower((string) $p), $platformList),
+                    fn ($p) => in_array($p, $this->pluginPlatforms, true)
+                )
+            );
+
+            if (!empty($validPlatforms)) {
+                // OR within same facet array
+                $facets[] = array_map(static fn ($p) => 'categories:' . $p, $validPlatforms);
             }
         }
 
@@ -520,6 +529,21 @@ class ModrinthService
 
             if (isset($loaderMap[$params['modLoaderType']])) {
                 $fileParams['loaders'] = json_encode([$loaderMap[$params['modLoaderType']]]);
+            }
+        }
+
+        if ($resource === 'plugins' && !empty($params['platform'])) {
+            $platforms = $params['platform'];
+            $platformList = is_array($platforms) ? $platforms : [$platforms];
+            $validPlatforms = array_values(
+                array_filter(
+                    array_map(static fn ($p) => strtolower((string) $p), $platformList),
+                    fn ($p) => in_array($p, $this->pluginPlatforms, true)
+                )
+            );
+
+            if (!empty($validPlatforms)) {
+                $fileParams['loaders'] = json_encode($validPlatforms);
             }
         }
 

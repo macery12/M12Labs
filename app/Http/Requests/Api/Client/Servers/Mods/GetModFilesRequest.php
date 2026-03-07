@@ -19,6 +19,9 @@ class GetModFilesRequest extends ClientApiRequest
             'modLoaderType' => 'nullable|integer|in:0,1,2,3,4,5,6',
             'pageSize' => 'nullable|integer|min:1|max:50',
             'index' => 'nullable|integer|min:0',
+            'resource' => 'nullable|string|in:mods,plugins',
+            'platform' => 'nullable',
+            'platform.*' => 'string|max:50',
         ];
     }
 }

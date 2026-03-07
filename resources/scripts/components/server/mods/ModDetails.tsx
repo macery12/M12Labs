@@ -17,6 +17,7 @@ interface Props {
     gameVersion?: string;
     modLoaderType?: number;
     contentType?: 'mods' | 'plugins';
+    platform?: string | string[];
 }
 
 // Mod loader type ID to name mapping
@@ -111,7 +112,7 @@ const getReleaseTypeColor = (type: number) => {
     }
 };
 
-export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType = 'mods' }: Props) => {
+export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType = 'mods', platform }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -145,6 +146,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
             gameVersion,
             modLoaderType,
             resource: contentType,
+            platform,
         })
             .then(response => {
                 setFiles(response.data);
