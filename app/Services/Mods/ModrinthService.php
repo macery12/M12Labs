@@ -368,7 +368,7 @@ class ModrinthService
      */
     private function normalizePlatforms(array|string|null $platforms): array
     {
-        $platformList = is_array($platforms) ? $platforms : [$platforms];
+        $platformList = is_array($platforms) ? $platforms : ($platforms !== null ? [$platforms] : []);
 
         $normalized = array_map(static fn ($p) => strtolower((string) $p), $platformList);
         $valid = array_filter($normalized, fn ($p) => in_array($p, $this->pluginPlatforms, true));
