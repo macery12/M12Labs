@@ -258,6 +258,7 @@ class ModrinthService
         }
 
         if ($projectType === 'plugin') {
+            // Always restrict plugin searches to server-side plugin loader categories
             $platformFacets = $this->filterPluginLoaderPlatforms($params['platform'] ?? null);
             $facets[] = array_map(static fn ($p) => 'categories:' . $p, $platformFacets);
         }
@@ -384,7 +385,7 @@ class ModrinthService
      */
     private function filterPluginLoaderPlatforms(array|string|null $platforms): array
     {
-        $normalized = $this->normalizePlatforms($platforms ?? []);
+        $normalized = $this->normalizePlatforms($platforms);
         $loaderPlatforms = array_values(array_intersect($normalized, $this->pluginLoaderFacets));
 
         return !empty($loaderPlatforms) ? $loaderPlatforms : $this->pluginLoaderFacets;
