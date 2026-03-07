@@ -26,6 +26,13 @@ class ModrinthService
         'waterfall',
         'sponge',
     ];
+    private array $pluginLoaderFacets = [
+        'paper',
+        'spigot',
+        'bukkit',
+        'purpur',
+        'folia',
+    ];
 
     /**
      * ModrinthService constructor.
@@ -224,6 +231,11 @@ class ModrinthService
         // Always filter for Minecraft mods/plugins
         $facets[] = ['project_type:' . $projectType];
 
+        // Restrict plugin searches to server-side required projects
+        if ($projectType === 'plugin') {
+            $facets[] = ['server_side:required'];
+        }
+
         // Add game version facet if provided
         if (!empty($params['gameVersion'])) {
             $facets[] = ['versions:' . $params['gameVersion']];
@@ -245,13 +257,9 @@ class ModrinthService
             }
         }
 
-        if ($projectType === 'plugin' && !empty($params['platform'])) {
-            $validPlatforms = $this->normalizePlatforms($params['platform']);
-
-            if (!empty($validPlatforms)) {
-                // OR within same facet array
-                $facets[] = array_map(static fn ($p) => 'categories:' . $p, $validPlatforms);
-            }
+        if ($projectType === 'plugin') {
+            $platformFacets = $this->filterPluginLoaderPlatforms($params['platform'] ?? null);
+            $facets[] = array_map(static fn ($p) => 'categories:' . $p, $platformFacets);
         }
 
         // Add facets as JSON array if any exist
@@ -358,7 +366,7 @@ class ModrinthService
      * @param array|string $platforms
      * @return array<int, string>
      */
-    private function normalizePlatforms(array|string $platforms): array
+    private function normalizePlatforms(array|string|null $platforms): array
     {
         $platformList = is_array($platforms) ? $platforms : [$platforms];
 
@@ -366,6 +374,20 @@ class ModrinthService
         $valid = array_filter($normalized, fn ($p) => in_array($p, $this->pluginPlatforms, true));
 
         return array_values(array_unique($valid));
+    }
+
+    /**
+     * Return only plugin loader platforms, defaulting to the recommended set.
+     *
+     * @param array|string|null $platforms
+     * @return array<int, string>
+     */
+    private function filterPluginLoaderPlatforms(array|string|null $platforms): array
+    {
+        $normalized = $this->normalizePlatforms($platforms ?? []);
+        $loaderPlatforms = array_values(array_intersect($normalized, $this->pluginLoaderFacets));
+
+        return !empty($loaderPlatforms) ? $loaderPlatforms : $this->pluginLoaderFacets;
     }
 
     /**
@@ -541,12 +563,9 @@ class ModrinthService
             }
         }
 
-        if ($resource === 'plugins' && !empty($params['platform'])) {
-            $validPlatforms = $this->normalizePlatforms($params['platform']);
-
-            if (!empty($validPlatforms)) {
-                $fileParams['loaders'] = json_encode($validPlatforms);
-            }
+        if ($resource === 'plugins') {
+            $pluginLoaders = $this->filterPluginLoaderPlatforms($params['platform'] ?? null);
+            $fileParams['loaders'] = json_encode($pluginLoaders);
         }
 
         $cacheKey = "modrinth_mod_files_{$modId}_{$resource}_" . md5(json_encode($fileParams));

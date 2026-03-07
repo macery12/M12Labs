@@ -156,7 +156,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, mod.id, source, gameVersion, modLoaderType]);
+    }, [uuid, mod.id, source, gameVersion, modLoaderType, platform]);
 
     const displayFiles = showAllFiles ? files : files.slice(0, 5);
 
