@@ -44,25 +44,20 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
     const [categoryId, setCategoryId] = useState<string>('');
     const [minRating, setMinRating] = useState<string>(initialParams.minRating?.toString() ?? '');
-    const [platforms, setPlatforms] = useState<string[]>(
-        Array.isArray(initialParams.platform)
-            ? initialParams.platform
-            : initialParams.platform
-              ? [initialParams.platform]
-              : [],
+    const [platform, setPlatform] = useState<string>(
+        Array.isArray(initialParams.platform) ? initialParams.platform[0] ?? '' : initialParams.platform ?? '',
     );
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
     useEffect(() => {
         if (contentType !== 'plugins' || source !== 'modrinth') {
-            setPlatforms([]);
+            setPlatform('');
         }
     }, [contentType, source]);
 
     useEffect(() => {
         if (source === 'spigot') {
             setMinecraftVersions([]);
-            setModLoaders([]);
             return;
         }
 
@@ -119,7 +114,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
             modLoaderType: source === 'spigot' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
             minRating: source === 'spigot' && minRating ? parseFloat(minRating) : undefined,
-            platform: platforms.length ? platforms : undefined,
+            platform: platform || undefined,
             resource: contentType,
             pageSize: 20,
             index: 0,
@@ -133,7 +128,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
         setModLoaderType('');
         setCategoryId('');
         setMinRating('');
-        setPlatforms([]);
+        setPlatform('');
         onSearch({
             sortField: source === 'spigot' ? 'downloads' : '2',
             sortOrder: 'desc',
@@ -230,15 +225,8 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                     <div>
                         <Label>Platforms (any)</Label>
                         <Select
-                            multiple
-                            value={platforms}
-                            onChange={e =>
-                                setPlatforms(
-                                    Array.from(e.target.selectedOptions)
-                                        .map(option => option.value)
-                                        .filter(Boolean),
-                                )
-                            }
+                            value={platform}
+                            onChange={e => setPlatform(e.target.value)}
                         >
                             <option value="">Any Platform</option>
                             {platformOptions.map(option => (
