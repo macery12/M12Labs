@@ -217,15 +217,17 @@ class Product extends Model
 
         // Find the first matching step (billing cycle multiplier)
         $billingMultiplier = 1.0;
+        $matchedStep = false;
         foreach ($steps as $step) {
             if ($days <= $step['maxDays']) {
                 $billingMultiplier = $step['multiplier'];
+                $matchedStep = true;
                 break;
             }
         }
 
         // If no step matched (days > all maxDays), use the last step's multiplier
-        if ($billingMultiplier === 1.0 && !empty($steps)) {
+        if (!$matchedStep && !empty($steps)) {
             $billingMultiplier = end($steps)['multiplier'];
         }
 

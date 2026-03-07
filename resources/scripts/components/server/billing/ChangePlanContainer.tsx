@@ -66,16 +66,18 @@ export default () => {
 
         // Find matching multiplier step
         let multiplier = 1.0;
+        let matchedStep = false;
         if (multiplierSteps.length > 0) {
             const sortedSteps = [...multiplierSteps].sort((a: any, b: any) => a.maxDays - b.maxDays);
             for (const step of sortedSteps) {
                 if (days <= step.maxDays) {
                     multiplier = step.multiplier;
+                    matchedStep = true;
                     break;
                 }
             }
             // If no match found, use last step's multiplier
-            if (multiplier === 1.0) {
+            if (!matchedStep) {
                 multiplier = sortedSteps[sortedSteps.length - 1]?.multiplier || 1.0;
             }
         }
