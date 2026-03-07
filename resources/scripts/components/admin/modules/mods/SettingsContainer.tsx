@@ -20,6 +20,7 @@ const SettingsContainer = () => {
         const payload: ModsSettings = {
             enabled: values.enabled,
             default_source: values.default_source,
+            spiget_enabled: values.spiget_enabled,
         };
 
         // Only include API key if it was provided
@@ -70,6 +71,7 @@ const SettingsContainer = () => {
                 enabled: mods.enabled,
                 curseforge_api_key: typeof mods.curseforge_api_key === 'string' ? '' : '',
                 default_source: mods.default_source || 'modrinth',
+                spiget_enabled: typeof mods.spiget_enabled === 'boolean' ? mods.spiget_enabled : true,
             }}
         >
             {() => (
@@ -83,6 +85,24 @@ const SettingsContainer = () => {
                                 </label>
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     When enabled, users can search for and install Minecraft mods through the panel.
+                                </p>
+                            </div>
+                        </AdminBox>
+
+                        <AdminBox title={'Spigot Provider'} icon={faPowerOff}>
+                            <div>
+                                <label className={'flex items-center'}>
+                                    <Field
+                                        id={'spiget_enabled'}
+                                        name={'spiget_enabled'}
+                                        type={'checkbox'}
+                                        className={'mr-2'}
+                                    />
+                                    <span>Enable Spigot (Spiget) provider</span>
+                                </label>
+                                <p className={'mt-1.5 text-xs text-gray-400'}>
+                                    Allow users to browse and install plugins from Spigot when permitted by Access
+                                    Control.
                                 </p>
                             </div>
                         </AdminBox>

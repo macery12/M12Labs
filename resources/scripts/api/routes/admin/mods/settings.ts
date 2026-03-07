@@ -4,6 +4,7 @@ export interface ModsSettings {
     curseforge_api_key?: string | boolean;
     enabled?: boolean;
     default_source?: string;
+    spiget_enabled?: boolean;
 }
 
 export const updateSettings = (settings: ModsSettings): Promise<void> =>
