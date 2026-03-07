@@ -15,10 +15,11 @@ interface Props {
     fileId: number | string;
     fileName: string;
     source: string;
+    contentType?: 'mods' | 'plugins';
     disabledReason?: string | null;
 }
 
-export default ({ modId, fileId, fileName, source, disabledReason }: Props) => {
+export default ({ modId, fileId, fileName, source, contentType = 'mods', disabledReason }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addFlash, addError } = useFlash();
 
@@ -29,14 +30,16 @@ export default ({ modId, fileId, fileName, source, disabledReason }: Props) => {
         setDownloading(true);
         setDownloaded(false);
 
-        downloadMod(uuid, modId, fileId, source)
+        downloadMod(uuid, modId, fileId, source, contentType)
             .then(data => {
                 const resolvedName = data?.file?.name || fileName;
+                const destination =
+                    data?.file?.path && data.file.path.includes('/plugins') ? '/plugins' : '/mods';
                 setDownloaded(true);
                 addFlash({
                     key: 'mods',
                     type: 'success',
-                    message: `Successfully downloaded ${resolvedName} to ${source === 'spigot' ? '/plugins' : '/mods'} directory.`,
+                    message: `Successfully downloaded ${resolvedName} to ${destination} directory.`,
                 });
                 setTimeout(() => setDownloaded(false), 3000);
             })

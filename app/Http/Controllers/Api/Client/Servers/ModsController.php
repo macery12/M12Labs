@@ -74,11 +74,11 @@ class ModsController extends ClientApiController
             return 'spigot.plugins';
         }
 
-        if ($source === 'modrinth' && $resource === 'mods') {
-            return 'modrinth.mods';
+        if ($source === 'modrinth') {
+            return $resource === 'plugins' ? 'modrinth.plugins' : 'modrinth.mods';
         }
 
-        return 'modrinth.mods';
+        return $resource === 'plugins' ? 'modrinth.plugins' : 'modrinth.mods';
     }
 
     private function denyResponse(): JsonResponse
@@ -105,6 +105,7 @@ class ModsController extends ClientApiController
         $providers = [
             'modrinth.mods',
             'curseforge',
+            'modrinth.plugins',
             'spigot.plugins',
         ];
 
@@ -221,7 +222,9 @@ class ModsController extends ClientApiController
      */
     public function search(SearchModsRequest $request, Server $server): JsonResponse
     {
-        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
             return $response;
         }
 
@@ -238,6 +241,8 @@ class ModsController extends ClientApiController
             'index' => $request->input('index', 0),
             'categoryId' => $request->input('categoryId'),
             'minRating' => $request->input('minRating'),
+            'platform' => $request->input('platform'),
+            'resource' => $resource,
         ], function ($value) {
             return $value !== null;
         });
@@ -260,7 +265,9 @@ class ModsController extends ClientApiController
      */
     public function getMod(GetModRequest $request, Server $server, string $modId): JsonResponse
     {
-        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
             return $response;
         }
 
@@ -285,7 +292,9 @@ class ModsController extends ClientApiController
      */
     public function getModFiles(GetModFilesRequest $request, Server $server, string $modId): JsonResponse
     {
-        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
             return $response;
         }
 
@@ -297,6 +306,7 @@ class ModsController extends ClientApiController
             'modLoaderType' => $request->input('modLoaderType'),
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
+            'resource' => $resource,
         ], function ($value) {
             return $value !== null;
         });
@@ -319,13 +329,15 @@ class ModsController extends ClientApiController
      */
     public function downloadMod(DownloadModRequest $request, Server $server, string $modId, string $fileId): JsonResponse
     {
-        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
             return $response;
         }
 
         try {
             $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
-            $type = in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
+            $type = $resource === 'plugins' || in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
             $result = $this->pluginInstallService->installFromProvider($server, $source, $type, $modId, $fileId);
 
             return response()->json($result);
@@ -349,7 +361,9 @@ class ModsController extends ClientApiController
      */
     public function getMinecraftVersions(GetMinecraftVersionsRequest $request, Server $server): JsonResponse
     {
-        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
             return $response;
         }
 
@@ -374,7 +388,9 @@ class ModsController extends ClientApiController
      */
     public function getModLoaderTypes(GetMinecraftVersionsRequest $request, Server $server): JsonResponse
     {
-        if ($response = $this->checkProviderAllowed($server, $request->input('source'), 'mods')) {
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
             return $response;
         }
 

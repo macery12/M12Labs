@@ -16,6 +16,16 @@ class ModrinthService
     private array $cacheTtl;
     private float $requestDelaySeconds = 0.2; // Modrinth has higher rate limits
     private int $rateLimitPerMinute = 300; // 300 requests per minute for Modrinth
+    private array $pluginPlatforms = [
+        'paper',
+        'purpur',
+        'spigot',
+        'bukkit',
+        'folia',
+        'velocity',
+        'waterfall',
+        'sponge',
+    ];
 
     /**
      * ModrinthService constructor.
@@ -197,6 +207,7 @@ class ModrinthService
      */
     public function searchMods(array $params = []): array
     {
+        $projectType = ($params['resource'] ?? 'mods') === 'plugins' ? 'plugin' : 'mod';
         $searchParams = [
             'limit' => min($params['pageSize'] ?? 20, config('modules.mods.max_page_size', 50)),
             'offset' => $params['index'] ?? 0,
@@ -210,8 +221,8 @@ class ModrinthService
         // Build facets array for filtering
         $facets = [];
 
-        // Always filter for Minecraft mods
-        $facets[] = ['project_type:mod'];
+        // Always filter for Minecraft mods/plugins
+        $facets[] = ['project_type:' . $projectType];
 
         // Add game version facet if provided
         if (!empty($params['gameVersion'])) {
@@ -219,7 +230,7 @@ class ModrinthService
         }
 
         // Add loader facet if provided (map from CurseForge IDs to Modrinth loader names)
-        if (!empty($params['modLoaderType'])) {
+        if ($projectType === 'mod' && !empty($params['modLoaderType'])) {
             $loaderMap = [
                 1 => 'forge',
                 2 => 'cauldron',
@@ -231,6 +242,13 @@ class ModrinthService
 
             if (isset($loaderMap[$params['modLoaderType']])) {
                 $facets[] = ['categories:' . $loaderMap[$params['modLoaderType']]];
+            }
+        }
+
+        if ($projectType === 'plugin' && !empty($params['platform'])) {
+            $platform = strtolower((string) $params['platform']);
+            if (in_array($platform, $this->pluginPlatforms, true)) {
+                $facets[] = ['categories:' . $platform];
             }
         }
 
@@ -261,14 +279,16 @@ class ModrinthService
             return $this->makeRequest('GET', 'search', $searchParams);
         });
 
+        $filtersMeta = $projectType === 'plugin' ? $this->getPluginFiltersMetadata() : null;
+
         // Transform Modrinth response to match CurseForge format for frontend compatibility
-        return $this->transformSearchResponse($response, $searchParams);
+        return $this->transformSearchResponse($response, $searchParams, $filtersMeta);
     }
 
     /**
      * Transform Modrinth search response to CurseForge-compatible format.
      */
-    private function transformSearchResponse(array $response, array $searchParams): array
+    private function transformSearchResponse(array $response, array $searchParams, ?array $filtersMeta = null): array
     {
         $hits = $response['hits'] ?? [];
         $totalHits = $response['total_hits'] ?? 0;
@@ -277,13 +297,55 @@ class ModrinthService
             return $this->transformModToCommonFormat($hit);
         }, $hits);
 
-        return [
+        $result = [
             'data' => $transformedMods,
             'pagination' => [
                 'index' => $searchParams['offset'] ?? 0,
                 'pageSize' => $searchParams['limit'] ?? 20,
                 'resultCount' => count($transformedMods),
                 'totalCount' => $totalHits,
+            ],
+        ];
+
+        if ($filtersMeta) {
+            $result['filters'] = $filtersMeta;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Filters metadata for plugin searches.
+     */
+    private function getPluginFiltersMetadata(): array
+    {
+        $sortOptions = [
+            ['id' => '1', 'label' => 'Featured'],
+            ['id' => '2', 'label' => 'Popularity'],
+            ['id' => '3', 'label' => 'Last Updated'],
+            ['id' => '4', 'label' => 'Name'],
+            ['id' => '5', 'label' => 'Author'],
+            ['id' => '6', 'label' => 'Total Downloads'],
+        ];
+
+        $platforms = array_map(
+            fn (string $platform) => ['id' => $platform, 'name' => ucfirst($platform)],
+            $this->pluginPlatforms
+        );
+
+        return [
+            'supported' => [
+                'search' => true,
+                'sort' => array_column($sortOptions, 'id'),
+                'platform' => true,
+            ],
+            'unsupported' => [
+                'modLoader' => 'Mod loaders are not applicable for plugins.',
+                'category' => 'Categories are mapped via platform tags for plugins.',
+            ],
+            'options' => [
+                'sortBy' => $sortOptions,
+                'platforms' => $platforms,
             ],
         ];
     }
@@ -293,13 +355,17 @@ class ModrinthService
      */
     private function transformModToCommonFormat(array $modrinthMod): array
     {
+        $projectType = $modrinthMod['project_type'] ?? 'mod';
+        $slug = $modrinthMod['slug'] ?? '';
+        $typePath = $projectType === 'plugin' ? 'plugin' : 'mod';
+
         return [
-            'id' => $modrinthMod['project_id'] ?? '',
+            'id' => $modrinthMod['project_id'] ?? $modrinthMod['id'] ?? '',
             'gameId' => 432, // Minecraft
             'name' => $modrinthMod['title'] ?? '',
-            'slug' => $modrinthMod['slug'] ?? '',
+            'slug' => $slug,
             'links' => [
-                'websiteUrl' => 'https://modrinth.com/mod/' . ($modrinthMod['slug'] ?? ''),
+                'websiteUrl' => "https://modrinth.com/{$typePath}/" . $slug,
                 'wikiUrl' => $modrinthMod['wiki_url'] ?? '',
                 'issuesUrl' => $modrinthMod['issues_url'] ?? '',
                 'sourceUrl' => $modrinthMod['source_url'] ?? '',
@@ -307,7 +373,7 @@ class ModrinthService
             'summary' => $modrinthMod['description'] ?? '',
             'status' => 4, // Approved
             'downloadCount' => $modrinthMod['downloads'] ?? 0,
-            'isFeatured' => $modrinthMod['featured_gallery'] !== null,
+            'isFeatured' => !empty($modrinthMod['featured_gallery']),
             'primaryCategoryId' => 0,
             'categories' => $modrinthMod['categories'] ?? [],
             'classId' => 6, // Mods
@@ -364,13 +430,17 @@ class ModrinthService
      */
     private function transformModDetailsToCommonFormat(array $modrinthMod): array
     {
+        $projectType = $modrinthMod['project_type'] ?? 'mod';
+        $slug = $modrinthMod['slug'] ?? '';
+        $typePath = $projectType === 'plugin' ? 'plugin' : 'mod';
+
         return [
             'id' => $modrinthMod['id'] ?? '',
             'gameId' => 432,
             'name' => $modrinthMod['title'] ?? '',
-            'slug' => $modrinthMod['slug'] ?? '',
+            'slug' => $slug,
             'links' => [
-                'websiteUrl' => 'https://modrinth.com/mod/' . ($modrinthMod['slug'] ?? ''),
+                'websiteUrl' => "https://modrinth.com/{$typePath}/" . $slug,
                 'wikiUrl' => $modrinthMod['wiki_url'] ?? '',
                 'issuesUrl' => $modrinthMod['issues_url'] ?? '',
                 'sourceUrl' => $modrinthMod['source_url'] ?? '',
@@ -427,6 +497,7 @@ class ModrinthService
      */
     public function getModFiles(string $modId, array $params = []): array
     {
+        $resource = ($params['resource'] ?? 'mods') === 'plugins' ? 'plugins' : 'mods';
         $fileParams = [];
 
         // Add game version filter if provided
@@ -435,7 +506,7 @@ class ModrinthService
         }
 
         // Add loader filter if provided
-        if (!empty($params['modLoaderType'])) {
+        if ($resource === 'mods' && !empty($params['modLoaderType'])) {
             $loaderMap = [
                 1 => 'forge',
                 2 => 'cauldron',
@@ -450,7 +521,7 @@ class ModrinthService
             }
         }
 
-        $cacheKey = "modrinth_mod_files_{$modId}_" . md5(json_encode($fileParams));
+        $cacheKey = "modrinth_mod_files_{$modId}_{$resource}_" . md5(json_encode($fileParams));
 
         $response = $this->makeCachedRequest($cacheKey, $this->cacheTtl['mod_files'], function () use ($modId, $fileParams) {
             return $this->makeRequest('GET', 'project/' . $modId . '/version', $fileParams);
