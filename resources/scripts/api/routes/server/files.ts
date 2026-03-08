@@ -1,9 +1,6 @@
 import http from '@/api/http';
 import { FileObject, Transformers } from '@definitions/server';
 
-// Shared timeout for file fetch/save requests. External abort signals will take precedence over this timeout.
-const FILE_REQUEST_TIMEOUT_MS = 20000;
-
 const chmodFiles = (uuid: string, directory: string, files: { file: string; mode: string }[]): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${uuid}/files/chmod`, { root: directory, files })
@@ -49,10 +46,8 @@ const copyFile = (uuid: string, location: string): Promise<void> => {
 const getFileContents = (
     server: string,
     file: string,
-    options?: { signal?: AbortSignal; timeoutMs?: number },
+    options?: { signal?: AbortSignal },
 ): Promise<string> => {
-    const timeoutMs = options?.timeoutMs ?? FILE_REQUEST_TIMEOUT_MS;
-
     return http
         .get(`/api/client/servers/${server}/files/contents`, {
             params: { file },
@@ -62,8 +57,6 @@ const getFileContents = (
                 Accept: 'text/plain',
             },
             signal: options?.signal,
-            timeout: timeoutMs,
-            timeoutErrorMessage: 'The server took too long to return this file.',
         })
         .then(({ data }) => data);
 };
@@ -107,10 +100,6 @@ const saveFileContents = async (
                 content,
                 original_content: originalContent,
             },
-            {
-                timeout: FILE_REQUEST_TIMEOUT_MS,
-                timeoutErrorMessage: 'Saving the file is taking too long. Please try again.',
-            },
         );
     } else {
         // Fallback to the old endpoint for backward compatibility
@@ -119,8 +108,6 @@ const saveFileContents = async (
             headers: {
                 'Content-Type': 'text/plain',
             },
-            timeout: FILE_REQUEST_TIMEOUT_MS,
-            timeoutErrorMessage: 'Saving the file is taking too long. Please try again.',
         });
     }
 };
