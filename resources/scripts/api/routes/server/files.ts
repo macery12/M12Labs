@@ -1,6 +1,9 @@
 import http from '@/api/http';
 import { FileObject, Transformers } from '@definitions/server';
 
+// Shared timeout for file fetch/save requests. External abort signals will take precedence over this timeout.
+const FILE_REQUEST_TIMEOUT_MS = 20000;
+
 const chmodFiles = (uuid: string, directory: string, files: { file: string; mode: string }[]): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${uuid}/files/chmod`, { root: directory, files })
@@ -43,11 +46,12 @@ const copyFile = (uuid: string, location: string): Promise<void> => {
     });
 };
 
-const FILE_FETCH_TIMEOUT_MS = 20000;
-
-const getFileContents = (server: string, file: string): Promise<string> => {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), FILE_FETCH_TIMEOUT_MS);
+const getFileContents = (
+    server: string,
+    file: string,
+    options?: { signal?: AbortSignal; timeoutMs?: number },
+): Promise<string> => {
+    const timeoutMs = options?.timeoutMs ?? FILE_REQUEST_TIMEOUT_MS;
 
     return http
         .get(`/api/client/servers/${server}/files/contents`, {
@@ -57,10 +61,11 @@ const getFileContents = (server: string, file: string): Promise<string> => {
             headers: {
                 Accept: 'text/plain',
             },
-            signal: controller.signal,
+            signal: options?.signal,
+            timeout: timeoutMs,
+            timeoutErrorMessage: 'The server took too long to return this file.',
         })
-        .then(({ data }) => data)
-        .finally(() => clearTimeout(timeout));
+        .then(({ data }) => data);
 };
 
 const getFileDownloadUrl = (uuid: string, file: string): Promise<string> => {
@@ -95,11 +100,18 @@ const saveFileContents = async (
 ): Promise<void> => {
     // Use the new endpoint with diff tracking when originalContent is provided
     if (originalContent !== undefined) {
-        await http.post(`/api/client/servers/${uuid}/files/write-with-diff`, {
-            file,
-            content,
-            original_content: originalContent,
-        });
+        await http.post(
+            `/api/client/servers/${uuid}/files/write-with-diff`,
+            {
+                file,
+                content,
+                original_content: originalContent,
+            },
+            {
+                timeout: FILE_REQUEST_TIMEOUT_MS,
+                timeoutErrorMessage: 'Saving the file is taking too long. Please try again.',
+            },
+        );
     } else {
         // Fallback to the old endpoint for backward compatibility
         await http.post(`/api/client/servers/${uuid}/files/write`, content, {
@@ -107,6 +119,8 @@ const saveFileContents = async (
             headers: {
                 'Content-Type': 'text/plain',
             },
+            timeout: FILE_REQUEST_TIMEOUT_MS,
+            timeoutErrorMessage: 'Saving the file is taking too long. Please try again.',
         });
     }
 };
