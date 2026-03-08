@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Application\Nodes;
 
 use Everest\Models\Node;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\Allocation;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -17,6 +16,7 @@ use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Allocations\GetAllocationsRequest;
 use Everest\Http\Requests\Api\Application\Allocations\StoreAllocationRequest;
 use Everest\Http\Requests\Api\Application\Allocations\DeleteAllocationRequest;
+use Everest\Http\Requests\Api\Application\Allocations\DeleteAllAllocationsRequest;
 
 class AllocationController extends ApplicationApiController
 {
@@ -100,11 +100,11 @@ class AllocationController extends ApplicationApiController
     /**
      * Delete all unused allocations on a node.
      */
-    public function deleteAll(Request $request, Node $node): Response
+    public function deleteAll(DeleteAllAllocationsRequest $request, Node $node): Response
     {
-        $allocations = Allocation::where('server_id', null)->get();
-
-        $allocations->map->delete();
+        Allocation::where('node_id', $node->id)
+            ->whereNull('server_id')
+            ->delete();
 
         return $this->returnNoContent();
     }

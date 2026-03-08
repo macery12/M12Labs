@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Application\Eggs;
 
 use Everest\Models\Egg;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\EggVariable;
 use Illuminate\Database\ConnectionInterface;
@@ -13,6 +12,7 @@ use Everest\Transformers\Api\Application\EggVariableTransformer;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\StoreEggVariableRequest;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\UpdateEggVariablesRequest;
+use Everest\Http\Requests\Api\Application\Eggs\Variables\DeleteEggVariableRequest;
 
 class EggVariableController extends ApplicationApiController
 {
@@ -63,7 +63,7 @@ class EggVariableController extends ApplicationApiController
     /**
      * Deletes a single egg variable.
      */
-    public function delete(Request $request, Egg $egg, EggVariable $eggVariable): Response
+    public function delete(DeleteEggVariableRequest $request, Egg $egg, EggVariable $eggVariable): Response
     {
         EggVariable::query()
             ->where('id', $eggVariable->id)
