@@ -498,10 +498,6 @@ class EmailManager
             return true;
         }
 
-        if (!str_contains($recipient, '@')) {
-            return true;
-        }
-
         $domain = Str::lower(Str::afterLast($recipient, '@'));
         $testDomains = array_map('strtolower', config('email.domain_blacklist', []));
 
