@@ -4,6 +4,8 @@ namespace Everest\Http\Controllers\Auth\Modules;
 
 use Carbon\Carbon;
 use Everest\Models\User;
+use Illuminate\Support\Str;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -39,11 +41,14 @@ class DiscordLoginController extends AbstractLoginController
             $this->sendLockoutResponse($request);
         }
 
+        $state = Str::random(40);
+        $request->session()->put('discord_oauth_state', $state);
+
         return 'https://discord.com/api/oauth2/authorize?'
             . 'client_id=' . config('modules.auth.discord.client_id')
             . '&redirect_uri=' . route('auth.modules.discord.authenticate')
             . '&response_type=code&scope=identify%20email'
-            . '&state=' . encrypt($request->ip());
+            . '&state=' . $state;
     }
 
     /**
@@ -125,7 +130,7 @@ class DiscordLoginController extends AbstractLoginController
         // Clear the session data
         $request->session()->forget('discord_registration_data');
 
-        // Log the user in
+        // Log the user in (new registrations won't have 2FA enabled)
         return $this->sendLoginResponse($user, $request);
     }
 
@@ -171,6 +176,14 @@ class DiscordLoginController extends AbstractLoginController
      */
     public function authenticate(Request $request): RedirectResponse
     {
+        // Validate OAuth state parameter to prevent CSRF attacks
+        $sessionState = $request->session()->pull('discord_oauth_state');
+        $returnedState = $request->input('state');
+
+        if (!$sessionState || !$returnedState || !hash_equals($sessionState, $returnedState)) {
+            return redirect()->route('auth.login')->with('error', 'Invalid OAuth state. Please try again.');
+        }
+
         $response = Http::asForm()->post('https://discord.com/api/oauth2/token', [
             'client_id' => config('modules.auth.discord.client_id'),
             'client_secret' => config('modules.auth.discord.client_secret'),
@@ -199,6 +212,11 @@ class DiscordLoginController extends AbstractLoginController
         $user = User::where('external_id', $account->id)->first();
 
         if ($user) {
+            // If user has 2FA enabled, redirect to login for TOTP verification
+            if ($user->use_totp) {
+                return $this->redirectToTwoFactorChallenge($request, $user);
+            }
+
             // User exists with this Discord ID, log them in
             $loginResponse = $this->sendLoginResponse($user, $request);
             $redirect = redirect('/');
@@ -231,6 +249,23 @@ class DiscordLoginController extends AbstractLoginController
         ]);
 
         return redirect('/auth/discord/register');
+    }
+
+    /**
+     * Redirect a user with 2FA enabled to the TOTP verification challenge.
+     * Stores the pending authentication in session for the checkpoint flow.
+     */
+    protected function redirectToTwoFactorChallenge(Request $request, User $user): RedirectResponse
+    {
+        $token = Str::random(64);
+
+        $request->session()->put('auth_confirmation_token', [
+            'user_id' => $user->id,
+            'token_value' => $token,
+            'expires_at' => CarbonImmutable::now()->addMinutes(5),
+        ]);
+
+        return redirect('/auth/login?checkpoint=' . $token);
     }
 
     /**

@@ -67,7 +67,7 @@ class ServerManagementController extends ApplicationApiController
      *
      * @throws \Throwable
      */
-    public function toggle(Server $server): Response
+    public function toggle(ServerWriteRequest $request, Server $server): Response
     {
         if ($server->status === Server::STATUS_INSTALL_FAILED) {
             throw new \Exception('The server failed to install, so we cannot change the state.');

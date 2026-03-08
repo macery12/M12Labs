@@ -4,10 +4,10 @@ namespace Everest\Http\Controllers\Api\Application\Nodes;
 
 use Everest\Models\Node;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Everest\Repositories\Wings\DaemonConfigurationRepository;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
+use Everest\Http\Requests\Api\Application\Nodes\GetNodeInformationRequest;
 
 class NodeInformationController extends ApplicationApiController
 {
@@ -24,7 +24,7 @@ class NodeInformationController extends ApplicationApiController
      *
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function information(Request $request, Node $node): JsonResponse
+    public function information(GetNodeInformationRequest $request, Node $node): JsonResponse
     {
         $data = $this->repository->setNode($node)->getSystemInformation();
 
@@ -45,7 +45,7 @@ class NodeInformationController extends ApplicationApiController
      *
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function utilization(Request $request, Node $node): JsonResponse
+    public function utilization(GetNodeInformationRequest $request, Node $node): JsonResponse
     {
         $data = $this->repository->setNode($node)->getSystemUtilization();
 
