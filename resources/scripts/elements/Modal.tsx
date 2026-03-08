@@ -100,10 +100,13 @@ function Modal({
         }
     }, [visible]);
 
+    const previousRender = useRef(render);
     useEffect(() => {
-        if (!render) {
+        if (previousRender.current && !render) {
             onDismissed();
         }
+
+        previousRender.current = render;
     }, [render, onDismissed]);
 
     return (
