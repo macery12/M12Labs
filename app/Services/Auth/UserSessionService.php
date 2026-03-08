@@ -93,12 +93,6 @@ class UserSessionService
                 'user_agent' => $this->userAgent(),
             ]);
 
-        if (!$updated) {
-            Log::warning('UserSessionService: updateActivity found no session', [
-                'user_id' => $user->id,
-                'session_id' => $sessionId,
-            ]);
-        }
     }
 
     /**

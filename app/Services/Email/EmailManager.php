@@ -10,6 +10,7 @@ use Everest\Services\Email\Emails\CustomMessageEmail;
 use Everest\Exceptions\Service\Email\ResendException;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class EmailManager
 {
@@ -419,7 +420,7 @@ class EmailManager
     /**
      * Check if Resend email is enabled.
      */
-    private function isEnabled(): bool
+    public static function isDeliveryEnabled(): bool
     {
         $raw = Setting::get('settings::modules:email:resend:enabled', false);
 
@@ -430,6 +431,11 @@ class EmailManager
         $value = strtolower((string) $raw);
 
         return in_array($value, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function isEnabled(): bool
+    {
+        return self::isDeliveryEnabled();
     }
 
     /**
@@ -467,7 +473,7 @@ class EmailManager
         ?EmailDeliveryTracker $tracker = null,
         ?EmailDelivery $delivery = null
     ): ?EmailResult {
-        if (is_blocked_email_recipient($recipient)) {
+        if (self::isBlockedRecipient($recipient)) {
             if ($tracker && $delivery) {
                 try {
                     $tracker->markSkipped($delivery, 'Blocked recipient email');
@@ -480,6 +486,22 @@ class EmailManager
         }
 
         return null;
+    }
+
+    public static function isBlockedRecipient(string $recipient): bool
+    {
+        if (function_exists('is_blocked_email_recipient')) {
+            return is_blocked_email_recipient($recipient);
+        }
+
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return true;
+        }
+
+        $domain = Str::lower(Str::afterLast($recipient, '@'));
+        $testDomains = array_map('strtolower', config('email.domain_blacklist', []));
+
+        return in_array($domain, $testDomains, true);
     }
 
 }
