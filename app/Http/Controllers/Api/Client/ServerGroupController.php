@@ -58,7 +58,8 @@ class ServerGroupController extends ClientApiController
      */
     public function remove(ClientApiRequest $request, int $id): JsonResponse
     {
-        $group = $request->user()->serverGroups()->findOrFail($id);
+        // Verify group ownership - findOrFail ensures the group belongs to this user
+        $request->user()->serverGroups()->findOrFail($id);
         $server = $request->user()->servers()->where('uuid', $request->input('server'))->firstOrFail();
 
         $server->update(['group_id' => null]);
