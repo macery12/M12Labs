@@ -17,6 +17,9 @@ class PluginProviderGate
         if (!$rule && $providerKey === 'spigot.plugins') {
             $rule = PluginProviderRule::query()->where('provider_key', 'spiget.plugins')->first();
         }
+        if (!$rule && $providerKey === 'modrinth.plugins') {
+            $rule = PluginProviderRule::query()->where('provider_key', 'modrinth.mods')->first();
+        }
 
         if (!$rule || !$rule->enabled_global) {
             return false;

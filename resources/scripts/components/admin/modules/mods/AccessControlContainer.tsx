@@ -15,6 +15,7 @@ import { useStoreState } from '@/state/hooks';
 
 const providers = [
     { key: 'modrinth.mods', label: 'Modrinth', description: 'Mods' },
+    { key: 'modrinth.plugins', label: 'Modrinth (Plugins)', description: 'Plugins' },
     { key: 'curseforge', label: 'CurseForge', description: 'Mods + Modpacks' },
     { key: 'spigot.plugins', label: 'Spigot', description: 'Plugins' },
 ];

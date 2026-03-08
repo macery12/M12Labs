@@ -222,9 +222,11 @@ const ModsAndPluginsPage = () => {
                     {renderProviderTabs(providersByType.plugins, pluginProvider)}
                     {pluginProvider === 'spigot' ? (
                         <ModsContainer sourceOverride="spigot" contentType="plugins" />
-                    ) : (
-                        <ComingSoon label={'Plugins'} />
-                    )}
+                    ) : null}
+                    {pluginProvider === 'modrinth' ? (
+                        <ModsContainer sourceOverride="modrinth" contentType="plugins" />
+                    ) : null}
+                    {!['spigot', 'modrinth'].includes(pluginProvider ?? '') && <ComingSoon label={'Plugins'} />}
                 </>
             );
         }

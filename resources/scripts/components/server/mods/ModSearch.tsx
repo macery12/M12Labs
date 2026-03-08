@@ -5,7 +5,7 @@ import Input from '@/elements/Input';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
-import { type ModSearchParams, getMinecraftVersions, getModLoaderTypes } from '@/api/routes/server/mods';
+import { type ModSearchParams, getMinecraftVersions } from '@/api/routes/server/mods';
 import { httpErrorToHuman } from '@/api/http';
 import useFlash from '@/plugins/useFlash';
 
@@ -13,11 +13,13 @@ interface Props {
     onSearch: (params: ModSearchParams) => void;
     initialParams: ModSearchParams;
     source: string;
+    contentType?: 'mods' | 'plugins';
     filtersMeta?: {
         options?: {
             categories?: Array<{ id: number; name: string }>;
             sortBy?: Array<{ id: string; label: string }>;
             minRating?: Array<{ id: number | null; label: string }>;
+            platforms?: Array<{ id: string; name: string }>;
         };
         unsupported?: Record<string, string>;
     };
@@ -32,7 +34,7 @@ const DEFAULT_SORT_OPTIONS = [
     { value: '6', label: 'Total Downloads' },
 ];
 
-export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
+export default ({ onSearch, initialParams, source, contentType = 'mods', filtersMeta }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -42,18 +44,24 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
     const [modLoaderType, setModLoaderType] = useState<string>(initialParams.modLoaderType?.toString() || '');
     const [categoryId, setCategoryId] = useState<string>('');
     const [minRating, setMinRating] = useState<string>(initialParams.minRating?.toString() ?? '');
+    const [platform, setPlatform] = useState<string>(
+        Array.isArray(initialParams.platform) ? initialParams.platform[0] ?? '' : initialParams.platform ?? '',
+    );
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
-    const [modLoaders, setModLoaders] = useState<Array<{ id: number; name: string }>>([]);
+    useEffect(() => {
+        if (contentType !== 'plugins' || source !== 'modrinth') {
+            setPlatform('');
+        }
+    }, [contentType, source]);
 
     useEffect(() => {
         if (source === 'spigot') {
             setMinecraftVersions([]);
-            setModLoaders([]);
             return;
         }
 
-        getMinecraftVersions(uuid, source)
+        getMinecraftVersions(uuid, source, contentType)
             .then(response => {
                 const versions = response.data
                     .filter(v => v.versionString && v.gameVersionTypeId === 1)
@@ -76,29 +84,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             });
 
-        getModLoaderTypes(uuid, source)
-            .then(response => {
-                // CurseForge mod loader API returns different structure
-                const loaders = response.data
-                    .filter(
-                        (ml: any) =>
-                            ml.name &&
-                            (ml.name.toLowerCase().includes('forge') ||
-                                ml.name.toLowerCase().includes('fabric') ||
-                                ml.name.toLowerCase().includes('quilt') ||
-                                ml.name.toLowerCase() === 'neoforge'),
-                    )
-                    .map((ml: any) => ({
-                        id: ml.id || ml.type,
-                        name: ml.name,
-                    }));
-                setModLoaders(loaders);
-            })
-            .catch(error => {
-                console.error(error);
-                addError({ key: 'mods', message: httpErrorToHuman(error) });
-            });
-    }, [uuid, source]);
+    }, [uuid, source, contentType]);
 
     useEffect(() => {
         if (source !== 'spigot') return;
@@ -111,11 +97,12 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                 index: 0,
                 categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
                 minRating: minRating ? parseFloat(minRating) : undefined,
+                resource: contentType,
             });
         }, 400);
 
         return () => clearTimeout(timer);
-    }, [searchFilter, sortField, categoryId, minRating, source]);
+    }, [searchFilter, sortField, categoryId, minRating, source, contentType]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -127,6 +114,8 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
             modLoaderType: source === 'spigot' ? undefined : modLoaderType ? parseInt(modLoaderType, 10) : undefined,
             categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
             minRating: source === 'spigot' && minRating ? parseFloat(minRating) : undefined,
+            platform: platform || undefined,
+            resource: contentType,
             pageSize: 20,
             index: 0,
         });
@@ -139,16 +128,19 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
         setModLoaderType('');
         setCategoryId('');
         setMinRating('');
+        setPlatform('');
         onSearch({
             sortField: source === 'spigot' ? 'downloads' : '2',
             sortOrder: 'desc',
+            platform: undefined,
+            resource: contentType,
             pageSize: 20,
             index: 0,
         });
     };
 
     const sortOptions =
-        source === 'spigot' && filtersMeta?.options?.sortBy?.length
+        filtersMeta?.options?.sortBy?.length
             ? filtersMeta.options.sortBy.map(option => ({ value: option.id, label: option.label }))
             : DEFAULT_SORT_OPTIONS;
 
@@ -164,6 +156,21 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                   { id: 3.0, label: '3.0+' },
               ];
     const showMinecraftVersion = source !== 'spigot';
+    const showPlatformFilter = contentType === 'plugins' && source === 'modrinth';
+    const platformOptions =
+        filtersMeta?.options?.platforms?.map(option => ({ value: option.id, label: option.name })) ??
+        [
+            { value: 'paper', label: 'Paper' },
+            { value: 'purpur', label: 'Purpur' },
+            { value: 'spigot', label: 'Spigot' },
+            { value: 'bukkit', label: 'Bukkit' },
+            { value: 'folia', label: 'Folia' },
+            { value: 'velocity', label: 'Velocity' },
+            { value: 'waterfall', label: 'Waterfall' },
+            { value: 'sponge', label: 'Sponge' },
+            { value: 'bungeecord', label: 'BungeeCord' },
+        ];
+    const searchPlaceholder = contentType === 'plugins' ? 'Search plugins...' : 'Search mods...';
 
     return (
         <form onSubmit={handleSubmit}>
@@ -172,7 +179,7 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                     <Label>Search</Label>
                     <Input
                         type={'text'}
-                        placeholder={'Search mods...'}
+                        placeholder={searchPlaceholder}
                         value={searchFilter}
                         onChange={e => setSearchFilter(e.target.value)}
                     />
@@ -213,6 +220,23 @@ export default ({ onSearch, initialParams, source, filtersMeta }: Props) => {
                         ))}
                     </Select>
                 </div>
+
+                {showPlatformFilter && (
+                    <div>
+                        <Label>Platforms (any)</Label>
+                        <Select
+                            value={platform}
+                            onChange={e => setPlatform(e.target.value)}
+                        >
+                            <option value="">Any Platform</option>
+                            {platformOptions.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                )}
 
                 {source === 'spigot' && (
                     <div>

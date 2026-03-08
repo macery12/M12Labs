@@ -57,6 +57,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
         minRating: undefined,
         platform: undefined,
         categoryId: undefined,
+        resource: contentType,
     });
 
     useEffect(() => {
@@ -75,9 +76,10 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
             minRating: undefined,
             platform: undefined,
             categoryId: undefined,
+            resource: contentType,
         });
         setFiltersMeta(null);
-    }, [sourceOverride]);
+    }, [sourceOverride, contentType]);
 
     useEffect(() => {
         if (!globalModsEnabled) return;
@@ -100,7 +102,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
 
     const handleSearch = (params: ModSearchParams) => {
         setSelectedMod(null); // Close modal when searching
-        setSearchParams({ ...params, index: 0, source: activeSource });
+        setSearchParams({ ...params, index: 0, source: activeSource, resource: contentType });
     };
 
     const handlePageChange = (newIndex: number) => {
@@ -128,6 +130,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
             minRating: undefined,
             platform: undefined,
             categoryId: undefined,
+            resource: contentType,
         });
         setFiltersMeta(null);
     };
@@ -236,6 +239,8 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                     source={activeSource}
                     gameVersion={searchParams.gameVersion}
                     modLoaderType={searchParams.modLoaderType}
+                    contentType={contentType}
+                    platform={searchParams.platform}
                 />
             )}
         </PageContentBlock>

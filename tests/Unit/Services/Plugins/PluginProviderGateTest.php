@@ -92,4 +92,16 @@ class PluginProviderGateTest extends TestCase
         $this->assertTrue($this->gate->isProviderAllowed('spigot.plugins', 1, 1));
         $this->assertTrue($this->gate->isProviderAllowed('spigot.plugins', 99, 999));
     }
+
+    public function testModrinthPluginsFallbackToModsRule(): void
+    {
+        PluginProviderRule::create([
+            'provider_key' => 'modrinth.mods',
+            'enabled_global' => true,
+            'allowed_nest_ids' => [],
+            'allowed_egg_ids' => [],
+        ]);
+
+        $this->assertTrue($this->gate->isProviderAllowed('modrinth.plugins', 3, 15));
+    }
 }
