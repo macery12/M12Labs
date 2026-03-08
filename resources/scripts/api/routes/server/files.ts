@@ -43,16 +43,24 @@ const copyFile = (uuid: string, location: string): Promise<void> => {
     });
 };
 
+const FILE_FETCH_TIMEOUT_MS = 20000;
+
 const getFileContents = (server: string, file: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${server}/files/contents`, {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), FILE_FETCH_TIMEOUT_MS);
+
+    return http
+        .get(`/api/client/servers/${server}/files/contents`, {
             params: { file },
             transformResponse: res => res,
             responseType: 'text',
+            headers: {
+                Accept: 'text/plain',
+            },
+            signal: controller.signal,
         })
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
+        .then(({ data }) => data)
+        .finally(() => clearTimeout(timeout));
 };
 
 const getFileDownloadUrl = (uuid: string, file: string): Promise<string> => {
