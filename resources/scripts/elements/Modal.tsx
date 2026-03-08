@@ -101,13 +101,19 @@ function Modal({
     }, [visible]);
 
     const previousRender = useRef(render);
+    const onDismissRef = useRef(onDismissed);
+
+    useEffect(() => {
+        onDismissRef.current = onDismissed;
+    }, [onDismissed]);
+
     useEffect(() => {
         if (previousRender.current && !render) {
-            onDismissed();
+            onDismissRef.current();
         }
 
         previousRender.current = render;
-    }, [render, onDismissed]);
+    }, [render]);
 
     return (
         <FadeTransition as={Fragment} show={render} duration="duration-150" appear={appear ?? true} unmount>
