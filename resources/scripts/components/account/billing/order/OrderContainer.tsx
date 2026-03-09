@@ -443,7 +443,7 @@ export default () => {
                         </div>
 
                         {/* Resources Grid */}
-                        <div className={'grid grid-cols-3 gap-4 pt-2'}>
+                        <div className={'grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2'}>
                             <div className={'text-center'}>
                                 <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
                                 <p className={'text-xs text-gray-500'}>CPU</p>

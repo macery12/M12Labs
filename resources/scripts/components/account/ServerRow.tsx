@@ -130,7 +130,7 @@ export default ({
     return (
         <>
             <div
-                className={'mb-2 grid w-full grid-cols-2 overflow-hidden rounded-lg p-4 lg:grid-cols-12'}
+                className={'mb-2 grid w-full grid-cols-1 overflow-hidden rounded-lg p-4 sm:grid-cols-2 lg:grid-cols-12'}
                 style={{ backgroundColor: colors.background }}
             >
                 <FontAwesomeIcon

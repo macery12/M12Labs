@@ -177,8 +177,8 @@ export function Pagination<T>({ data, onPageSelect, children }: Props<T>) {
         <>
             {children}
 
-            <div css={tw`h-12 flex flex-row items-center w-full px-6 py-3 border-t border-neutral-500`}>
-                <p css={tw`text-sm leading-5 text-neutral-400`}>
+            <div css={tw`min-h-[3rem] flex flex-col sm:flex-row items-start sm:items-center w-full px-4 sm:px-6 py-3 gap-2 border-t border-neutral-500`}>
+                <p css={tw`text-xs sm:text-sm leading-5 text-neutral-400`}>
                     Showing{' '}
                     <span css={tw`text-neutral-300`}>
                         {(pagination.currentPage - 1) * pagination.perPage + (pagination.total > 0 ? 1 : 0)}
@@ -191,7 +191,7 @@ export function Pagination<T>({ data, onPageSelect, children }: Props<T>) {
                 </p>
 
                 {isFirstPage && isLastPage ? null : (
-                    <div css={tw`flex flex-row ml-auto`}>
+                    <div css={tw`flex flex-row sm:ml-auto`}>
                         <nav css={tw`relative z-0 inline-flex shadow-sm`}>
                             <PaginationArrow
                                 type="button"
