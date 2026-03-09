@@ -8,7 +8,7 @@ import { withSubComponents } from '@/lib/helpers';
 const MobileSidebar = ({ children }: { children: ReactNode[] }) => {
     return (
         <div className={'fixed bottom-0 z-50 block h-16 w-full rounded-t-xl bg-black/80 md:hidden'}>
-            <div className={'flex h-full space-x-8 overflow-x-auto px-8'}>{children}</div>
+            <div className={'flex h-full space-x-4 overflow-x-auto px-4 sm:space-x-8 sm:px-8'}>{children}</div>
         </div>
     );
 };

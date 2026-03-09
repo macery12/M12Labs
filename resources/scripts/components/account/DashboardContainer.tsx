@@ -80,7 +80,7 @@ export default () => {
             <FlashMessageRender className={'my-4'} byKey={'dashboard'} />
             <div className={classNames('grid gap-4', activityEnabled ? 'lg:grid-cols-3' : 'lg:grid-cols-2')}>
                 <div className="relative overflow-x-auto lg:col-span-2">
-                    <h2 css={tw`text-neutral-300 mb-4 px-4 text-2xl flex justify-between`}>
+                    <h2 css={tw`text-neutral-300 mb-4 px-4 text-2xl flex flex-wrap items-center justify-between gap-2`}>
                         <div className={'inline-flex'}>
                             {user.rootAdmin && (
                                 <div className={'mr-3 mt-1.5'}>

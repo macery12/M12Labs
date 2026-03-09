@@ -368,7 +368,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                 {mod.screenshots && mod.screenshots.length > 0 && (
                     <Section>
                         <SectionTitle>Screenshots</SectionTitle>
-                        <div css={tw`grid grid-cols-2 gap-2`}>
+                        <div css={tw`grid grid-cols-1 sm:grid-cols-2 gap-2`}>
                             {mod.screenshots.slice(0, 4).map((screenshot, idx) => (
                                 <img
                                     key={screenshot.id || idx}

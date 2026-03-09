@@ -47,7 +47,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Order Information</h3>
                 <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Order ID</span>
                         <CopyOnClick text={order.id.toString()}>
                             <code
@@ -58,13 +58,13 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                             </code>
                         </CopyOnClick>
                     </div>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Order Type</span>
                         <Pill size="small" type={getOrderTypeColor(order.type)}>
                             {getOrderTypeName(order.type)}
                         </Pill>
                     </div>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Created</span>
                         <div css={tw`text-right`}>
                             <div css={tw`text-sm text-white`}>{format(order.created_at, 'MMM dd, yyyy HH:mm:ss')}</div>
@@ -74,7 +74,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                         </div>
                     </div>
                     {order.updated_at && (
-                        <div css={tw`flex justify-between items-start`}>
+                        <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                             <span css={tw`text-sm text-gray-400`}>Last Updated</span>
                             <div css={tw`text-right`}>
                                 <div css={tw`text-sm text-white`}>
@@ -93,25 +93,25 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Product & Billing</h3>
                 <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Product Name</span>
                         <span css={tw`text-sm text-white font-medium`}>{order.name}</span>
                     </div>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Description</span>
                         <span css={tw`text-sm text-white max-w-md text-right`}>{order.description}</span>
                     </div>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Product ID</span>
                         <code css={tw`text-sm font-mono text-gray-300`}>{order.product_id}</code>
                     </div>
                     {'egg_id' in order && order.egg_id && (
-                        <div css={tw`flex justify-between items-start`}>
+                        <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                             <span css={tw`text-sm text-gray-400`}>Egg ID</span>
                             <code css={tw`text-sm font-mono text-gray-300`}>{order.egg_id}</code>
                         </div>
                     )}
-                    <div css={tw`flex justify-between items-start border-t border-neutral-800 pt-3 mt-3`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1 border-t border-neutral-800 pt-3 mt-3`}>
                         <span css={tw`text-sm text-gray-400 font-medium`}>Total Amount</span>
                         <span css={tw`text-lg text-white font-bold`}>
                             ${order.total.toFixed(2)}
@@ -126,7 +126,7 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                 <div>
                     <h3 css={tw`text-lg font-semibold text-white mb-4`}>Customer Information</h3>
                     <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
-                        <div css={tw`flex justify-between items-start`}>
+                        <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                             <span css={tw`text-sm text-gray-400`}>User ID</span>
                             <code css={tw`text-sm font-mono text-gray-300`}>{order.user_id}</code>
                         </div>
@@ -138,11 +138,11 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Additional Details</h3>
                 <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Status</span>
                         <span css={tw`text-sm text-white capitalize`}>{order.status}</span>
                     </div>
-                    <div css={tw`flex justify-between items-start`}>
+                    <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Payment Provider</span>
                         <span css={tw`text-sm text-white capitalize`}>{order.payment_processor}</span>
                     </div>
