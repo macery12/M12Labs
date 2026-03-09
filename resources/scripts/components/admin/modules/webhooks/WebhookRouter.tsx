@@ -16,7 +16,7 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Webhooks'}>
-            <div className={'mb-8 flex w-full flex-row items-center'}>
+            <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Webhook Management</h2>
                     <p
