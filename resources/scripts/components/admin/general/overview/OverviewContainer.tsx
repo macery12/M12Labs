@@ -133,7 +133,7 @@ export default () => {
                 )}
             </AdminBox>
             <AdminBox title={'Suggested Actions'} className={'mt-6'} icon={faQuestionCircle}>
-                <div className={'grid gap-4 lg:grid-cols-3'}>
+                <div className={'grid gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
                     {!everest.auth.registration.enabled && (
                         <SuggestionCard
                             icon={faUserPlus}

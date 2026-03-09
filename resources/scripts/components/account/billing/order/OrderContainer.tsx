@@ -688,13 +688,13 @@ export default () => {
             {/* Main Wizard Content with Two-Column Layout */}
             <div className={'mt-10'}>
                 <div className={'mx-auto max-w-7xl'}>
-                    <div className={'grid grid-cols-1 lg:grid-cols-3 gap-8'}>
+                    <div className={'grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8'}>
                         {/* Left Column - Main Content */}
                         <div className={'lg:col-span-2'}>{renderStepContent()}</div>
 
                         {/* Right Column - Sticky Subtotal Card */}
                         <div className={'lg:col-span-1'}>
-                            <div className={'sticky top-24'}>
+                            <div className={'sticky top-8 lg:top-24'}>
                                 <SubtotalCard
                                     basePrice={product.price}
                                     selectedNode={selectedNode}

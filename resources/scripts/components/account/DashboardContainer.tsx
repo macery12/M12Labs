@@ -117,7 +117,7 @@ export default () => {
                                                     you&apos;d like to run.
                                                     <div className={'text-right'}>
                                                         <Link to={'/account/billing/order'}>
-                                                            <Button className={'w-1/2 font-normal text-white'}>
+                                                            <Button className={'w-full sm:w-1/2 font-normal text-white'}>
                                                                 View Options{' '}
                                                                 <FontAwesomeIcon
                                                                     icon={faCircleArrowRight}

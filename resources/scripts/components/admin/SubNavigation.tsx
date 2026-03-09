@@ -7,9 +7,10 @@ import { SiteTheme } from '@/state/theme';
 
 const StyledSubNavigation = styled.div<{ $theme: SiteTheme }>`
     ${tw`flex flex-row items-center flex-shrink-0 h-12 mb-4 border-b border-neutral-700 overflow-x-auto`};
+    -webkit-overflow-scrolling: touch;
 
     & > a {
-        ${tw`flex flex-row items-center h-full px-4 border-b text-base whitespace-nowrap border-transparent`};
+        ${tw`flex flex-row items-center h-full px-2 sm:px-4 border-b text-sm sm:text-base whitespace-nowrap border-transparent`};
 
         & > svg {
             ${tw`w-6 h-6 mr-2`};

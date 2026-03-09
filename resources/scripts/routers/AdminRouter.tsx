@@ -100,7 +100,7 @@ function AdminRouter() {
                     </div>
                 </Sidebar.User>
             </Sidebar>
-            <div className={'flex-1 overflow-x-hidden px-6 pt-6 lg:px-10 lg:pt-8 xl:px-16 xl:pt-12'}>
+            <div className={'flex-1 overflow-x-hidden px-4 pt-4 pb-20 sm:px-6 sm:pt-6 md:pb-6 lg:px-10 lg:pt-8 xl:px-16 xl:pt-12'}>
                 <ScopedAlert scope="admin" position="top-center" />
                 <ScopedAlert scope="admin" position="slide-out" />
                 <ScopedAlert scope="admin" position="center" />
