@@ -2,9 +2,8 @@
 
 namespace Everest\Http\Controllers\Api\Client;
 
-use Everest\Models\Server;
-use Everest\Models\ServerGroup;
 use Illuminate\Http\JsonResponse;
+use Everest\Models\ServerGroup;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Transformers\Api\Client\ServerGroupTransformer;
@@ -42,10 +41,11 @@ class ServerGroupController extends ClientApiController
      */
     public function add(ClientApiRequest $request, int $id): JsonResponse
     {
-        $server = Server::where('uuid', $request->input('server'))->first();
+        $group = $request->user()->serverGroups()->findOrFail($id);
+        $server = $request->user()->servers()->where('uuid', $request->input('server'))->firstOrFail();
 
         try {
-            $server->update(['group_id' => $id]);
+            $server->update(['group_id' => $group->id]);
         } catch (DisplayException $ex) {
             throw new DisplayException('Unable to assign group to server.');
         }
@@ -58,7 +58,9 @@ class ServerGroupController extends ClientApiController
      */
     public function remove(ClientApiRequest $request, int $id): JsonResponse
     {
-        $server = Server::where('uuid', $request->input('server'))->first();
+        // Verify group ownership - findOrFail ensures the group belongs to this user
+        $request->user()->serverGroups()->findOrFail($id);
+        $server = $request->user()->servers()->where('uuid', $request->input('server'))->firstOrFail();
 
         $server->update(['group_id' => null]);
 
@@ -70,7 +72,7 @@ class ServerGroupController extends ClientApiController
      */
     public function update(ClientApiRequest $request, int $id): JsonResponse
     {
-        $group = ServerGroup::findOrFail($id);
+        $group = $request->user()->serverGroups()->findOrFail($id);
 
         $group->update([
             'name' => $request['name'] ?? $group->name,
@@ -85,7 +87,7 @@ class ServerGroupController extends ClientApiController
      */
     public function delete(ClientApiRequest $request, int $id): JsonResponse
     {
-        $group = ServerGroup::findOrFail($id);
+        $group = $request->user()->serverGroups()->findOrFail($id);
 
         $group->delete();
 

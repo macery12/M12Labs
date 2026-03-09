@@ -15,6 +15,7 @@ class ProviderAccessService
             ['key' => 'curseforge', 'name' => 'curseforge'],
         ],
         'plugins' => [
+            ['key' => 'modrinth.plugins', 'name' => 'modrinth'],
             ['key' => 'spigot.plugins', 'name' => 'spigot'],
         ],
     ];

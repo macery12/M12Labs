@@ -16,6 +16,8 @@ interface Props {
     source: string;
     gameVersion?: string;
     modLoaderType?: number;
+    contentType?: 'mods' | 'plugins';
+    platform?: string | string[];
 }
 
 // Mod loader type ID to name mapping
@@ -110,7 +112,7 @@ const getReleaseTypeColor = (type: number) => {
     }
 };
 
-export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => {
+export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType = 'mods', platform }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -143,6 +145,8 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
             source,
             gameVersion,
             modLoaderType,
+            resource: contentType,
+            platform,
         })
             .then(response => {
                 setFiles(response.data);
@@ -152,7 +156,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, mod.id, source, gameVersion, modLoaderType]);
+    }, [uuid, mod.id, source, gameVersion, modLoaderType, platform]);
 
     const displayFiles = showAllFiles ? files : files.slice(0, 5);
 
@@ -335,6 +339,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType }: Props) => 
                                             fileId={file.id}
                                             fileName={file.fileName}
                                             source={source}
+                                            contentType={contentType}
                                             disabledReason={
                                                 isPremium
                                                     ? 'Premium (blocked)'

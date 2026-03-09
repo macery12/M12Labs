@@ -11,6 +11,8 @@ export interface ModSearchParams {
     source?: 'modrinth' | 'curseforge' | 'spigot';
     categoryId?: number;
     minRating?: number;
+    resource?: 'mods' | 'plugins';
+    platform?: string | string[];
 }
 
 export interface ModFileParams {
@@ -19,6 +21,8 @@ export interface ModFileParams {
     pageSize?: number;
     index?: number;
     source?: 'modrinth' | 'curseforge' | 'spigot';
+    resource?: 'mods' | 'plugins';
+    platform?: string | string[];
 }
 
 export interface CurseForgeAuthor {
@@ -217,15 +221,24 @@ export const searchMods = (uuid: string, params: ModSearchParams): Promise<ModSe
     });
 };
 
-export const getMod = (uuid: string, modId: number | string, source?: string): Promise<ModResponse> => {
+export const getMod = (
+    uuid: string,
+    modId: number | string,
+    source?: string,
+    resource?: 'mods' | 'plugins',
+): Promise<ModResponse> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${uuid}/mods/${modId}`, { params: { source } })
+        http.get(`/api/client/servers/${uuid}/mods/${modId}`, { params: { source, resource } })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const getModFiles = (uuid: string, modId: number | string, params: ModFileParams): Promise<ModFilesResponse> => {
+export const getModFiles = (
+    uuid: string,
+    modId: number | string,
+    params: ModFileParams,
+): Promise<ModFilesResponse> => {
     return new Promise((resolve, reject) => {
         http.get(`/api/client/servers/${uuid}/mods/${modId}/files`, { params })
             .then(({ data }) => resolve(data))
@@ -244,25 +257,34 @@ export const downloadMod = (
     modId: number | string,
     fileId: number | string,
     source?: string,
+    resource?: 'mods' | 'plugins',
 ): Promise<DownloadResponse> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${uuid}/mods/${modId}/files/${fileId}/download`, { source })
+        http.post(`/api/client/servers/${uuid}/mods/${modId}/files/${fileId}/download`, { source, resource })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const getMinecraftVersions = (uuid: string, source?: string): Promise<{ data: MinecraftVersion[] }> => {
+export const getMinecraftVersions = (
+    uuid: string,
+    source?: string,
+    resource?: 'mods' | 'plugins',
+): Promise<{ data: MinecraftVersion[] }> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${uuid}/mods/minecraft/versions`, { params: { source } })
+        http.get(`/api/client/servers/${uuid}/mods/minecraft/versions`, { params: { source, resource } })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const getModLoaderTypes = (uuid: string, source?: string): Promise<{ data: ModLoaderType[] }> => {
+export const getModLoaderTypes = (
+    uuid: string,
+    source?: string,
+    resource?: 'mods' | 'plugins',
+): Promise<{ data: ModLoaderType[] }> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${uuid}/mods/minecraft/loaders`, { params: { source } })
+        http.get(`/api/client/servers/${uuid}/mods/minecraft/loaders`, { params: { source, resource } })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

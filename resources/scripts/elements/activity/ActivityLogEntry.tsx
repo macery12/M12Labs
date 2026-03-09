@@ -75,10 +75,10 @@ export default ({ activity, children }: Props) => {
             style={{ backgroundColor: colors.secondary }}
         >
             {/* Avatar Column - Always visible on larger screens */}
-            <div className={'hidden items-start justify-center pt-1 pl-2 sm:col-span-1 sm:flex 2xl:col-span-1'}>
+            <div className={'hidden items-center justify-center pl-2 sm:col-span-1 sm:flex 2xl:col-span-1'}>
                 <div
                     className={
-                        'mr-2 flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-600 ring-1 ring-slate-500/50'
+                        'mr-2 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-600 ring-1 ring-slate-500/50'
                     }
                 >
                     <Avatar name={actor?.uuid || 'system'} size={'100%'} />
@@ -97,7 +97,7 @@ export default ({ activity, children }: Props) => {
                                     {/* Mobile Avatar */}
                                     <div
                                         className={
-                                            'mr-2 flex h-5 w-5 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-600 sm:hidden'
+                                            'mr-2 flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-600 sm:hidden'
                                         }
                                     >
                                         <Avatar name={actor?.uuid || 'system'} size={'100%'} />

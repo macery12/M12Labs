@@ -3,6 +3,8 @@
 namespace Everest\Http\Controllers\Auth\Modules;
 
 use Everest\Models\User;
+use Illuminate\Support\Str;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Socialite\Facades\Socialite;
@@ -54,6 +56,11 @@ class GoogleLoginController extends AbstractLoginController
         if (User::where('email', $response->email)->exists()) {
             $user = User::where('email', $response->email)->first();
 
+            // If user has 2FA enabled, redirect to login for TOTP verification
+            if ($user->use_totp) {
+                return $this->redirectToTwoFactorChallenge($request, $user);
+            }
+
             $loginResponse = $this->sendLoginResponse($user, $request);
             $redirect = redirect('/');
 
@@ -76,6 +83,23 @@ class GoogleLoginController extends AbstractLoginController
         }
 
         return redirect()->route('auth.login');
+    }
+
+    /**
+     * Redirect a user with 2FA enabled to the TOTP verification challenge.
+     * Stores the pending authentication in session for the checkpoint flow.
+     */
+    protected function redirectToTwoFactorChallenge(Request $request, User $user): RedirectResponse
+    {
+        $token = Str::random(64);
+
+        $request->session()->put('auth_confirmation_token', [
+            'user_id' => $user->id,
+            'token_value' => $token,
+            'expires_at' => CarbonImmutable::now()->addMinutes(5),
+        ]);
+
+        return redirect('/auth/login?checkpoint=' . $token);
     }
 
     /**

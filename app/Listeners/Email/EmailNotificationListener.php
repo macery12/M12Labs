@@ -13,6 +13,13 @@ class EmailNotificationListener
      */
     public function handle(object $event): void
     {
+        if (!\Everest\Services\Email\EmailManager::isDeliveryEnabled()) {
+            Log::info('EmailNotificationListener: Skipping dispatch because email delivery is disabled', [
+                'event' => get_class($event),
+            ]);
+            return;
+        }
+
         // Get template key for this event
         $templateKey = EmailTypeRegistry::getTemplateKey($event);
         

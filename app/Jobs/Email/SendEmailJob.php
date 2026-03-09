@@ -51,6 +51,15 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker): void
     {
+        if (!EmailManager::isDeliveryEnabled()) {
+            Log::info('SendEmailJob: Email delivery disabled, skipping dispatch', [
+                'template_key' => $this->templateKey,
+                'recipient' => $this->recipient,
+                'correlation_id' => $this->correlationId,
+            ]);
+            return;
+        }
+
         Log::info('SendEmailJob: Starting', [
             'template_key' => $this->templateKey,
             'recipient' => $this->recipient,
@@ -59,7 +68,7 @@ class SendEmailJob extends Job implements ShouldQueue
         ]);
 
         // Hard block invalid or blacklisted recipients before any processing
-        if (is_blocked_email_recipient($this->recipient)) {
+        if (EmailManager::isBlockedRecipient($this->recipient)) {
             $delivery = $tracker->startDelivery(
                 correlationId: $this->correlationId,
                 recipient: $this->recipient,
