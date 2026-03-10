@@ -6,6 +6,7 @@ use Everest\Models\Billing\Product;
 use Illuminate\Support\Facades\Http;
 use Everest\Models\Billing\BillingException;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
+use Everest\Models\Setting;
 
 class PayPalPaymentService
 {
@@ -17,7 +18,11 @@ class PayPalPaymentService
 
     public function __construct()
     {
-        $config = config('modules.billing.paypal_standalone');
+        $config = [
+            'client_id' => Setting::get('settings::modules:billing:paypal_standalone:client_id', config('modules.billing.paypal_standalone.client_id')),
+            'client_secret' => Setting::get('settings::modules:billing:paypal_standalone:client_secret', config('modules.billing.paypal_standalone.client_secret')),
+            'mode' => Setting::get('settings::modules:billing:paypal_standalone:mode', config('modules.billing.paypal_standalone.mode')),
+        ];
         $this->clientId = $config['client_id'] ?? null;
         $this->clientSecret = $config['client_secret'] ?? null;
         $this->mode = $config['mode'] ?? 'sandbox';

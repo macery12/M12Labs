@@ -8,6 +8,7 @@ use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
+use Everest\Models\Setting;
 
 class MolliePaymentService
 {
@@ -15,7 +16,7 @@ class MolliePaymentService
 
     public function __construct()
     {
-        $mollieKey = config('modules.billing.mollie.api_key');
+        $mollieKey = Setting::get('settings::modules:billing:mollie:api_key', config('modules.billing.mollie.api_key'));
         if ($mollieKey) {
             $this->mollie = new MollieApiClient();
             $this->mollie->setApiKey($mollieKey);

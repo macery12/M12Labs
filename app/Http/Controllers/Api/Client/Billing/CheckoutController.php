@@ -15,6 +15,7 @@ use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
+use Everest\Models\Setting;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
@@ -40,7 +41,7 @@ class CheckoutController extends ClientApiController
         parent::__construct();
 
         // Initialize Stripe client if secret key is configured
-        $stripeSecret = config('modules.billing.keys.secret');
+        $stripeSecret = Setting::get('settings::modules:billing:keys:secret', config('modules.billing.keys.secret'));
         if ($stripeSecret) {
             try {
                 $this->stripe = new StripeClient($stripeSecret);
@@ -156,7 +157,7 @@ class CheckoutController extends ClientApiController
      */
     public function getStripeKey(Request $request, int $id): JsonResponse
     {
-        $publicKey = (string) config('modules.billing.keys.publishable') ?? null;
+        $publicKey = (string) Setting::get('settings::modules:billing:keys:publishable', config('modules.billing.keys.publishable')) ?? null;
 
         if (!$publicKey) {
             throw new BillingExceptionClass('The Stripe Public API key is missing', 'Add the Stripe \'publishable\' key to your billing panel', BillingException::TYPE_STOREFRONT, null, 'stripe', null, ['key_missing' => true]);
