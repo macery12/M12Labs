@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -11,13 +12,30 @@ class AddForeignKeysServers extends Migration
      */
     public function up(): void
     {
-        Schema::table('servers', function (Blueprint $table) {
-            $table->integer('node', false, true)->change();
-            $table->integer('owner', false, true)->change();
-            $table->integer('allocation', false, true)->change();
-            $table->integer('service', false, true)->change();
-            $table->integer('option', false, true)->change();
+        // Ensure all referenced columns use the exact same type as their parents
+        // before attempting to add foreign keys. Doctrine/DBAL does not always
+        // detect the difference between MEDIUMINT and INT on MariaDB, so we
+        // perform explicit SQL casts when running on MySQL-compatible drivers.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                'ALTER TABLE `servers`
+                    MODIFY `node` INT UNSIGNED NOT NULL,
+                    MODIFY `owner` INT UNSIGNED NOT NULL,
+                    MODIFY `allocation` INT UNSIGNED NOT NULL,
+                    MODIFY `service` INT UNSIGNED NOT NULL,
+                    MODIFY `option` INT UNSIGNED NOT NULL'
+            );
+        } else {
+            Schema::table('servers', function (Blueprint $table) {
+                $table->unsignedInteger('node')->change();
+                $table->unsignedInteger('owner')->change();
+                $table->unsignedInteger('allocation')->change();
+                $table->unsignedInteger('service')->change();
+                $table->unsignedInteger('option')->change();
+            });
+        }
 
+        Schema::table('servers', function (Blueprint $table) {
             $table->foreign('node')->references('id')->on('nodes');
             $table->foreign('owner')->references('id')->on('users');
             $table->foreign('allocation')->references('id')->on('allocations');
@@ -50,12 +68,25 @@ class AddForeignKeysServers extends Migration
             $table->dropIndex(['option']);
 
             $table->dropColumn('deleted_at');
-
-            $table->mediumInteger('node', false, true)->change();
-            $table->mediumInteger('owner', false, true)->change();
-            $table->mediumInteger('allocation', false, true)->change();
-            $table->mediumInteger('service', false, true)->change();
-            $table->mediumInteger('option', false, true)->change();
         });
+
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                'ALTER TABLE `servers`
+                    MODIFY `node` MEDIUMINT UNSIGNED NOT NULL,
+                    MODIFY `owner` MEDIUMINT UNSIGNED NOT NULL,
+                    MODIFY `allocation` MEDIUMINT UNSIGNED NOT NULL,
+                    MODIFY `service` MEDIUMINT UNSIGNED NOT NULL,
+                    MODIFY `option` MEDIUMINT UNSIGNED NOT NULL'
+            );
+        } else {
+            Schema::table('servers', function (Blueprint $table) {
+                $table->mediumInteger('node', false, true)->change();
+                $table->mediumInteger('owner', false, true)->change();
+                $table->mediumInteger('allocation', false, true)->change();
+                $table->mediumInteger('service', false, true)->change();
+                $table->mediumInteger('option', false, true)->change();
+            });
+        }
     }
 }

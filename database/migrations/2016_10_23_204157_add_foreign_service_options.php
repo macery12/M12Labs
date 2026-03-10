@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -11,8 +12,15 @@ class AddForeignServiceOptions extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `service_options` MODIFY `parent_service` INT UNSIGNED NOT NULL');
+        } else {
+            Schema::table('service_options', function (Blueprint $table) {
+                $table->unsignedInteger('parent_service')->change();
+            });
+        }
+
         Schema::table('service_options', function (Blueprint $table) {
-            $table->integer('parent_service', false, true)->change();
             $table->foreign('parent_service')->references('id')->on('services');
         });
     }
@@ -25,8 +33,14 @@ class AddForeignServiceOptions extends Migration
         Schema::table('service_options', function (Blueprint $table) {
             $table->dropForeign(['parent_service']);
             $table->dropIndex(['parent_service']);
-
-            $table->mediumInteger('parent_service', false, true)->change();
         });
+
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `service_options` MODIFY `parent_service` MEDIUMINT UNSIGNED NOT NULL');
+        } else {
+            Schema::table('service_options', function (Blueprint $table) {
+                $table->mediumInteger('parent_service', false, true)->change();
+            });
+        }
     }
 }

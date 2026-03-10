@@ -12,9 +12,20 @@ class AddForeignAllocations extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                'ALTER TABLE `allocations`
+                    MODIFY `assigned_to` INT UNSIGNED NULL,
+                    MODIFY `node` INT UNSIGNED NOT NULL'
+            );
+        } else {
+            Schema::table('allocations', function (Blueprint $table) {
+                $table->unsignedInteger('assigned_to')->nullable()->change();
+                $table->unsignedInteger('node')->nullable(false)->change();
+            });
+        }
+
         Schema::table('allocations', function (Blueprint $table) {
-            $table->integer('assigned_to', false, true)->nullable()->change();
-            $table->integer('node', false, true)->nullable(false)->change();
             $table->foreign('assigned_to')->references('id')->on('servers');
             $table->foreign('node')->references('id')->on('nodes');
         });
@@ -31,14 +42,19 @@ class AddForeignAllocations extends Migration
 
             $table->dropForeign(['node']);
             $table->dropIndex(['node']);
-
-            $table->mediumInteger('assigned_to', false, true)->nullable()->change();
-            $table->mediumInteger('node', false, true)->nullable(false)->change();
         });
 
-        DB::statement('ALTER TABLE allocations
-             MODIFY COLUMN assigned_to MEDIUMINT(8) UNSIGNED NULL,
-             MODIFY COLUMN node MEDIUMINT(8) UNSIGNED NOT NULL
-         ');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                'ALTER TABLE `allocations`
+                    MODIFY `assigned_to` MEDIUMINT UNSIGNED NULL,
+                    MODIFY `node` MEDIUMINT UNSIGNED NOT NULL'
+            );
+        } else {
+            Schema::table('allocations', function (Blueprint $table) {
+                $table->mediumInteger('assigned_to', false, true)->nullable()->change();
+                $table->mediumInteger('node', false, true)->nullable(false)->change();
+            });
+        }
     }
 }

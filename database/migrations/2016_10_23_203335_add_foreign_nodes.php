@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -11,8 +12,15 @@ class AddForeignNodes extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `nodes` MODIFY `location` INT UNSIGNED NOT NULL');
+        } else {
+            Schema::table('nodes', function (Blueprint $table) {
+                $table->unsignedInteger('location')->nullable(false)->change();
+            });
+        }
+
         Schema::table('nodes', function (Blueprint $table) {
-            $table->integer('location', false, true)->nullable(false)->change();
             $table->foreign('location')->references('id')->on('locations');
         });
     }
@@ -25,8 +33,14 @@ class AddForeignNodes extends Migration
         Schema::table('nodes', function (Blueprint $table) {
             $table->dropForeign(['location']);
             $table->dropIndex(['location']);
-
-            $table->mediumInteger('location', false, true)->nullable(false)->change();
         });
+
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `nodes` MODIFY `location` MEDIUMINT UNSIGNED NOT NULL');
+        } else {
+            Schema::table('nodes', function (Blueprint $table) {
+                $table->mediumInteger('location', false, true)->nullable(false)->change();
+            });
+        }
     }
 }
