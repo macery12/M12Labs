@@ -97,10 +97,17 @@ class EmailController extends ApplicationApiController
             );
 
             if (!$result->success) {
+                $error = $result->error
+                    ?? $result->reason
+                    ?? 'Failed to send test email. Please verify your email module configuration.';
+
+                $statusCode = $result->statusCode
+                    ?? (($result->status === 'skipped' || str_contains(strtolower($error), 'disabled')) ? 422 : 500);
+
                 return response()->json([
                     'success' => false,
-                    'error' => $result->error,
-                ], 500);
+                    'error' => $error,
+                ], $statusCode);
             }
 
             Activity::event('admin:email:test')
@@ -135,10 +142,17 @@ class EmailController extends ApplicationApiController
             );
 
             if (!$result->success) {
+                $error = $result->error
+                    ?? $result->reason
+                    ?? 'Failed to send custom email. Please verify your email module configuration.';
+
+                $statusCode = $result->statusCode
+                    ?? (($result->status === 'skipped' || str_contains(strtolower($error), 'disabled')) ? 422 : 500);
+
                 return response()->json([
                     'success' => false,
-                    'error' => $result->error,
-                ], 500);
+                    'error' => $error,
+                ], $statusCode);
             }
 
             Activity::event('admin:email:custom')
@@ -170,38 +184,8 @@ class EmailController extends ApplicationApiController
             ->get()
             ->groupBy('category');
 
-        $rawGlobal = Setting::get('settings::modules:email:notifications:global_enabled');
-        $globalEnabled = true;
-        if (is_bool($rawGlobal)) {
-            $globalEnabled = $rawGlobal;
-        } elseif (!is_null($rawGlobal)) {
-            $normalized = strtolower(trim((string) $rawGlobal));
-            $globalEnabled = $normalized === '' || in_array($normalized, ['1', 'true', 'yes', 'on'], true);
-        }
-
         return response()->json([
-            'global_enabled' => $globalEnabled,
             'categories' => $settings,
-        ]);
-    }
-
-    /**
-     * Update global email notification toggle.
-     */
-    public function updateGlobalToggle(): JsonResponse
-    {
-        $enabled = request()->input('enabled');
-
-        Setting::set('settings::modules:email:notifications:global_enabled', $enabled ? 'true' : 'false');
-
-        Activity::event('admin:email:notifications:global-toggle')
-            ->property('enabled', $enabled)
-            ->description('Global email notifications ' . ($enabled ? 'enabled' : 'disabled'))
-            ->log();
-
-        return response()->json([
-            'success' => true,
-            'enabled' => $enabled,
         ]);
     }
 

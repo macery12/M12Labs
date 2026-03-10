@@ -81,7 +81,9 @@ const admin: AdminRouteDefinition[] = [
     }),
     route('tickets/*', TicketRouter, { name: 'Tickets', icon: Icon.TicketIcon, category: 'modules', advanced: true }),
     route('ai/*', AIRouter, { name: 'AI', icon: Icon.SparklesIcon, category: 'modules', advanced: true }),
-    route('mods/*', ModsRouter, { name: 'Mods', icon: Icon.CubeIcon, category: 'modules', advanced: true }),
+    route('marketplace/*', ModsRouter, { name: 'Marketplace', icon: Icon.CubeIcon, category: 'modules', advanced: true }),
+    route('plugins/*', ModsRouter, { name: undefined, icon: Icon.CubeIcon, category: 'modules', advanced: true }),
+    route('mods/*', ModsRouter, { name: undefined, icon: Icon.CubeIcon, category: 'modules', advanced: true }),
     route('email/*', EmailRouter, { name: 'Email', icon: Icon.MailIcon, category: 'modules', advanced: true }),
     route('webhooks/*', WebhookRouter, {
         name: 'Webhooks',

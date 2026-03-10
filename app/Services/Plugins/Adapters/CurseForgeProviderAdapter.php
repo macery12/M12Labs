@@ -43,11 +43,14 @@ class CurseForgeProviderAdapter implements ProviderAdapterInterface
     {
         $file = $this->curseForgeService->getModFile((int) $projectId, (int) $versionId);
         $fileData = $file['data'] ?? [];
+        $project = $this->curseForgeService->getMod((int) $projectId)['data'] ?? [];
 
         return [
             'url' => $this->curseForgeService->getModFileDownloadUrl((int) $projectId, (int) $versionId),
             'fileName' => $fileData['fileName'] ?? null,
             'fileSize' => $fileData['fileLength'] ?? null,
+            'projectName' => $project['name'] ?? null,
+            'versionName' => $fileData['displayName'] ?? null,
         ];
     }
 }

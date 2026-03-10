@@ -122,6 +122,36 @@ class NodePriceMultiplierTest extends TestCase
         $this->assertEquals(1.0, $result['node_multiplier']);
     }
 
+    public function testProductCalculatePriceHonorsBaseMultiplierForDefaultCycle(): void
+    {
+        $category = Category::create([
+            'name' => 'Base Multiplier Category',
+            'description' => 'Test',
+            'nest_id' => 1,
+        ]);
+
+        $product = Product::create([
+            'name' => 'Base Multiplier Product',
+            'description' => 'Test',
+            'price' => 10.0,
+            'category_id' => $category->id,
+            'cpu_limit' => 100,
+            'memory_limit' => 1024,
+            'disk_limit' => 5000,
+            'database_limit' => 1,
+            'backup_limit' => 1,
+            'allocation_limit' => 1,
+        ]);
+
+        Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
+
+        $result = $product->calculatePrice(30);
+
+        $this->assertEquals(10.0, $result['price']);
+        $this->assertEquals(1.0, $result['multiplier']);
+        $this->assertEquals(0.0, $result['discount_percent']);
+    }
+
     /**
      * Test that product calculatePrice handles removed node gracefully.
      */

@@ -38,7 +38,7 @@ class ServerTransformer extends Transformer
 
         // Check if server supports modpacks by checking for required environment variables
         $modpacksSupported = false;
-        if ($server->mods_enabled && $server->relationLoaded('variables')) {
+        if ($server->relationLoaded('variables')) {
             $hasProjectId = false;
             $hasVersionId = false;
 
@@ -70,6 +70,7 @@ class ServerTransformer extends Transformer
             'uuid' => $server->uuid,
             'name' => $server->name,
             'node' => $server->node->name,
+            'node_id' => $server->node_id,
             'is_node_under_maintenance' => $server->node->isUnderMaintenance(),
             'is_node_supercharged' => $server->node->isSupercharged(),
             'sftp_details' => [
@@ -90,7 +91,6 @@ class ServerTransformer extends Transformer
             'docker_image' => $server->image,
             'egg_features' => $server->egg->inherit_features,
             'egg_id' => $server->egg_id,
-            'mods_enabled' => $server->mods_enabled,
             'modpacks_supported' => $modpacksSupported,
             'extensions_enabled' => $extensionsEnabled,
             'billing_product_id' => $server->billing_product_id,
@@ -104,6 +104,10 @@ class ServerTransformer extends Transformer
             ],
             'status' => $server->status,
             'renewal_date' => $server->renewal_date,
+            'deletion_scheduled_at' => $server->deletion_scheduled_at,
+            'deletion_canceled_at' => $server->deletion_canceled_at,
+            'deletion_scheduled_by' => $server->deletion_scheduled_by,
+            'is_deletion_scheduled' => $server->isDeletionScheduled(),
             'is_transferring' => !is_null($server->transfer),
         ];
     }

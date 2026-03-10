@@ -11,24 +11,27 @@ import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
 
-type ModSource = 'modrinth' | 'curseforge' | 'spiget';
+type ModSource = 'modrinth' | 'curseforge' | 'spigot';
 
 interface Props {
     sourceOverride?: ModSource;
+    contentType?: 'mods' | 'plugins';
 }
 
-export default ({ sourceOverride }: Props) => {
+export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
-    const modsEnabled = ServerContext.useStoreState(state => state.server.data!.modsEnabled);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
-    const spigetEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
+    const spigotEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
     const defaultSource = useStoreState(state => state.everest.data?.mods?.default_source ?? 'modrinth');
-    const validSources: ModSource[] = ['modrinth', 'curseforge', 'spiget'];
-    const resolvedDefaultSource = (validSources.includes(defaultSource as ModSource)
-        ? (defaultSource as ModSource)
+    const normalizedDefaultSource = defaultSource === 'spiget' ? 'spigot' : defaultSource;
+    const validSources: ModSource[] = ['modrinth', 'curseforge', 'spigot'];
+    const resolvedDefaultSource = (validSources.includes(normalizedDefaultSource as ModSource)
+        ? (normalizedDefaultSource as ModSource)
         : 'modrinth') as ModSource;
     const { addError } = useFlash();
+    const contentLabel = contentType === 'plugins' ? 'Plugins' : 'Mods';
+    const contentLabelLower = contentType === 'plugins' ? 'plugins' : 'mods';
 
     const [loading, setLoading] = useState(false);
     const [mods, setMods] = useState<CurseForgeMod[]>([]);
@@ -44,7 +47,7 @@ export default ({ sourceOverride }: Props) => {
 
     const [searchParams, setSearchParams] = useState<ModSearchParams>({
         searchFilter: '',
-        sortField: (sourceOverride ?? activeSource) === 'spiget' ? 'downloads' : '2',
+        sortField: (sourceOverride ?? activeSource) === 'spigot' ? 'downloads' : '2',
         sortOrder: 'desc',
         gameVersion: undefined,
         modLoaderType: undefined,
@@ -54,6 +57,7 @@ export default ({ sourceOverride }: Props) => {
         minRating: undefined,
         platform: undefined,
         categoryId: undefined,
+        resource: contentType,
     });
 
     useEffect(() => {
@@ -62,7 +66,7 @@ export default ({ sourceOverride }: Props) => {
         setSelectedMod(null);
         setSearchParams({
             searchFilter: '',
-            sortField: sourceOverride === 'spiget' ? 'downloads' : '2',
+            sortField: sourceOverride === 'spigot' ? 'downloads' : '2',
             sortOrder: 'desc',
             gameVersion: undefined,
             modLoaderType: undefined,
@@ -72,12 +76,13 @@ export default ({ sourceOverride }: Props) => {
             minRating: undefined,
             platform: undefined,
             categoryId: undefined,
+            resource: contentType,
         });
         setFiltersMeta(null);
-    }, [sourceOverride]);
+    }, [sourceOverride, contentType]);
 
     useEffect(() => {
-        if (!modsEnabled) return;
+        if (!globalModsEnabled) return;
 
         setLoading(true);
         searchMods(uuid, searchParams)
@@ -93,11 +98,11 @@ export default ({ sourceOverride }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, searchParams, modsEnabled]);
+    }, [uuid, searchParams, globalModsEnabled]);
 
     const handleSearch = (params: ModSearchParams) => {
         setSelectedMod(null); // Close modal when searching
-        setSearchParams({ ...params, index: 0, source: activeSource });
+        setSearchParams({ ...params, index: 0, source: activeSource, resource: contentType });
     };
 
     const handlePageChange = (newIndex: number) => {
@@ -121,17 +126,22 @@ export default ({ sourceOverride }: Props) => {
             searchFilter: '',
             gameVersion: undefined,
             modLoaderType: undefined,
-            sortField: source === 'spiget' ? 'downloads' : '2',
+            sortField: source === 'spigot' ? 'downloads' : '2',
             minRating: undefined,
             platform: undefined,
             categoryId: undefined,
+            resource: contentType,
         });
         setFiltersMeta(null);
     };
 
     if (!globalModsEnabled) {
         return (
-            <PageContentBlock title={'Mods Browser'} header description={'Browse and install Minecraft mods.'}>
+            <PageContentBlock
+                title={`${contentLabel} Browser`}
+                header
+                description={`Browse and install Minecraft ${contentLabelLower}.`}
+            >
                 <div css={tw`text-center py-16`}>
                     <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
                     <p css={tw`text-neutral-400 text-sm`}>
@@ -142,32 +152,16 @@ export default ({ sourceOverride }: Props) => {
         );
     }
 
-    if (!modsEnabled) {
-        return (
-            <PageContentBlock title={'Mods Browser'} header description={'Browse and install Minecraft mods.'}>
-                <div css={tw`text-center py-16`}>
-                    <p css={tw`text-neutral-300 text-lg mb-4`}>Mods are not enabled for this server.</p>
-                    <p css={tw`text-neutral-400 text-sm mb-2`}>
-                        An administrator needs to enable the mods feature for this specific server.
-                    </p>
-                    <p css={tw`text-neutral-400 text-xs`}>
-                        This can be done in the admin panel under Servers → [Server Name] → Mods Toggle.
-                    </p>
-                </div>
-            </PageContentBlock>
-        );
-    }
-
     return (
-            <PageContentBlock
-                title={'Mods Browser'}
+        <PageContentBlock
+                title={`${contentLabel} Browser`}
                 header
-                description={`Browse and install Minecraft mods from ${
+                description={`Browse and install Minecraft ${contentLabelLower} from ${
                     activeSource === 'modrinth'
                         ? 'Modrinth'
                         : activeSource === 'curseforge'
                         ? 'CurseForge'
-                        : 'Spiget'
+                        : 'Spigot'
                 }.`}
                 showFlashKey={'mods'}
             >
@@ -198,17 +192,17 @@ export default ({ sourceOverride }: Props) => {
                                 CurseForge
                             </button>
                         )}
-                        {spigetEnabled && (
+                        {spigotEnabled && (
                             <button
                                 css={[
                                     tw`px-4 py-2 font-medium transition-colors`,
-                                    activeSource === 'spiget'
+                                    activeSource === 'spigot'
                                         ? tw`text-blue-400 border-b-2 border-blue-400`
                                         : tw`text-neutral-400 hover:text-neutral-300`,
                                 ]}
-                                onClick={() => handleSourceChange('spiget')}
+                                onClick={() => handleSourceChange('spigot')}
                             >
-                                Spiget
+                                Spigot
                             </button>
                         )}
                     </div>
@@ -218,6 +212,7 @@ export default ({ sourceOverride }: Props) => {
                 onSearch={handleSearch}
                 initialParams={searchParams}
                 source={activeSource}
+                contentType={contentType}
                 filtersMeta={filtersMeta}
             />
 
@@ -229,6 +224,7 @@ export default ({ sourceOverride }: Props) => {
                 <ModList
                     mods={mods}
                     loading={loading}
+                    contentType={contentType}
                     pagination={pagination}
                     onModClick={handleModClick}
                     onPageChange={handlePageChange}
@@ -243,6 +239,8 @@ export default ({ sourceOverride }: Props) => {
                     source={activeSource}
                     gameVersion={searchParams.gameVersion}
                     modLoaderType={searchParams.modLoaderType}
+                    contentType={contentType}
+                    platform={searchParams.platform}
                 />
             )}
         </PageContentBlock>

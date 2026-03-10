@@ -2,9 +2,8 @@
 
 namespace Everest\Services\Servers;
 
-use Everest\Models\Egg;
-use Everest\Models\Server;
-use Everest\Models\Billing\Product;
+    use Everest\Models\Egg;
+    use Everest\Models\Server;
 use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Database\ConnectionInterface;
@@ -40,30 +39,6 @@ class ChangeServerEggService
         // Validate server is installed
         if (!$server->isInstalled()) {
             throw new DisplayException('The server must be installed before changing eggs.');
-        }
-
-        // Get the server's product category
-        $product = Product::find($server->billing_product_id);
-        if (!$product) {
-            throw new DisplayException('This server does not have a billing product assigned.');
-        }
-
-        $category = $product->category;
-        if (!$category) {
-            throw new DisplayException('This server\'s product does not have a category assigned.');
-        }
-
-        // Check if egg changing is allowed for this category
-        if (!$category->allow_egg_changes) {
-            throw new DisplayException('Egg changes are not allowed for this server\'s category.');
-        }
-
-        // Get allowed eggs for the category
-        $allowedEggs = $category->getAllowedEggs();
-
-        // Validate that the new egg is in the allowed list
-        if (!in_array($newEggId, $allowedEggs)) {
-            throw new DisplayException('The selected egg is not allowed for this server\'s category.');
         }
 
         // Validate that the new egg exists

@@ -176,6 +176,9 @@ class Server extends Model
         'billing_product_id' => 'nullable|int|exists:products,id',
         'billing_days' => 'nullable|int|min:1',
         'renewal_date' => 'nullable|date',
+        'deletion_scheduled_at' => 'nullable|date',
+        'deletion_scheduled_by' => 'nullable|integer|exists:users,id',
+        'deletion_canceled_at' => 'nullable|date',
         'database_limit' => 'present|nullable|integer|min:0',
         'allocation_limit' => 'sometimes|nullable|integer|min:0',
         'backup_limit' => 'present|nullable|integer|min:0',
@@ -236,6 +239,9 @@ class Server extends Model
         'billing_product_id' => 'integer',
         'billing_days' => 'integer',
         'renewal_date' => 'datetime',
+        'deletion_scheduled_at' => 'datetime',
+        'deletion_scheduled_by' => 'integer',
+        'deletion_canceled_at' => 'datetime',
         'database_limit' => 'integer',
         'allocation_limit' => 'integer',
         'backup_limit' => 'integer',
@@ -466,5 +472,18 @@ class Server extends Model
         } catch (\Throwable $e) {
             $this->attributes['renewal_date'] = null;
         }
+    }
+
+    /**
+     * Determine if the server is currently scheduled for deletion.
+     */
+    public function isDeletionScheduled(): bool
+    {
+        if (is_null($this->deletion_scheduled_at)) {
+            return false;
+        }
+
+        return is_null($this->deletion_canceled_at)
+            || $this->deletion_canceled_at->lessThan($this->deletion_scheduled_at);
     }
 }

@@ -142,6 +142,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
             Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
             Route::get('/mollie/token/{token}', [Client\Billing\MollieCheckoutController::class, 'getPaymentFromToken']);
+            Route::get('/mollie/payments/{payment}/redirect', [Client\Billing\MollieCheckoutController::class, 'redirectToCheckout']);
 
             // PayPal payment routes
             Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);
@@ -149,6 +150,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/paypal/capture', [Client\Billing\PayPalCheckoutController::class, 'captureOrder']);
             Route::get('/paypal/status', [Client\Billing\PayPalCheckoutController::class, 'checkOrderStatus']);
             Route::get('/paypal/token/{token}', [Client\Billing\PayPalCheckoutController::class, 'getOrderFromToken']);
+            Route::get('/paypal/orders/{order}/redirect', [Client\Billing\PayPalCheckoutController::class, 'redirectToApproval']);
 
             Route::post('/coupons/validate', [Client\Billing\CouponController::class, 'validateCoupon']);
 
@@ -195,6 +197,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::get('/activity/users', [Client\Servers\ActivityLogController::class, 'users']);
         Route::get('/activity/events', [Client\Servers\ActivityLogController::class, 'events']);
 
+        Route::group(['prefix' => '/plugins'], function () {
+            Route::get('/providers', [Client\Servers\PluginProviderController::class, 'index']);
+            Route::get('/capabilities', [Client\Servers\PluginProviderController::class, 'capabilities']);
+            Route::get('/installed', [Client\Servers\ModsController::class, 'installed']);
+            Route::post('/installed/toggle', [Client\Servers\ModsController::class, 'toggleInstalledAddon']);
+        });
+
         Route::post('/command', [Client\Servers\CommandController::class, 'index']);
         Route::post('/power', [Client\Servers\PowerController::class, 'index']);
         Route::post('/ai', [Client\Servers\AIController::class, 'index']);
@@ -225,6 +234,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::group(['prefix' => '/mods'], function () {
             Route::get('/search', [Client\Servers\ModsController::class, 'search'])->middleware(['throttle:mods.browse']);
+            Route::get('/providers', [Client\Servers\ModsController::class, 'providerAccess']);
             Route::get('/{modId}', [Client\Servers\ModsController::class, 'getMod'])->middleware(['throttle:mods.browse']);
             Route::get('/{modId}/files', [Client\Servers\ModsController::class, 'getModFiles'])->middleware(['throttle:mods.browse']);
             Route::post('/{modId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadMod'])->middleware(['throttle:5,1']);
@@ -319,6 +329,11 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/abort-install', [Client\Servers\WingsRsController::class, 'abortInstall']);
             Route::get('/install-logs', [Client\Servers\WingsRsController::class, 'installLogs']);
             Route::get('/ssh', [Client\Servers\WingsRsController::class, 'sshInfo']);
+        });
+
+        Route::group(['prefix' => '/deletion'], function () {
+            Route::post('/schedule', [Client\Servers\DeletionScheduleController::class, 'schedule']);
+            Route::post('/cancel', [Client\Servers\DeletionScheduleController::class, 'cancel']);
         });
 
         /*

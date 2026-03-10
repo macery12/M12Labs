@@ -1,7 +1,7 @@
 import type { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { dirname } from 'pathe';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
@@ -84,7 +84,7 @@ export default () => {
     const setDirectory = ServerContext.useStoreActions(actions => actions.files.setDirectory);
     const { addError, clearFlashes } = useFlash();
 
-    let fetchFileContent: null | (() => Promise<string>) = null;
+    const fetchFileContent = useRef<null | (() => Promise<string>)>(null);
 
     useEffect(() => {
         if (action === 'new') {
@@ -95,10 +95,11 @@ export default () => {
             return;
         }
 
+        const controller = new AbortController();
         setError('');
         setLoading(true);
         setDirectory(dirname(filename));
-        getFileContents(uuid, filename)
+        getFileContents(uuid, filename, { signal: controller.signal })
             .then(fileContent => {
                 setContent(fileContent);
                 setOriginalContent(fileContent);
@@ -107,7 +108,9 @@ export default () => {
                 console.error(error);
                 setError(httpErrorToHuman(error));
             })
-            .then(() => setLoading(false));
+            .finally(() => setLoading(false));
+
+        return () => controller.abort();
     }, [action, uuid, filename]);
 
     const save = (name?: string) => {
@@ -116,13 +119,13 @@ export default () => {
             return;
         }
 
-        if (!fetchFileContent) {
+        if (!fetchFileContent.current) {
             return;
         }
 
         setLoading(true);
         clearFlashes('files:view');
-        fetchFileContent()
+        fetchFileContent.current()
             .then(newContent => {
                 // Pass original content for diff calculation (use empty string for new files)
                 const original = action === 'new' ? '' : originalContent;
@@ -194,7 +197,7 @@ export default () => {
                         setLanguage(l);
                     }}
                     fetchContent={value => {
-                        fetchFileContent = value;
+                        fetchFileContent.current = value;
                     }}
                     onContentSaved={
                         isArchiveReadonly

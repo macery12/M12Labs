@@ -24,6 +24,9 @@ class SearchModsRequest extends ClientApiRequest
             'index' => 'nullable|integer|min:0',
             'categoryId' => 'nullable|integer|min:0',
             'minRating' => 'nullable|numeric|min:0|max:5',
+            'resource' => 'nullable|string|in:mods,plugins',
+            'platform' => 'nullable',
+            'platform.*' => 'string|max:50',
         ];
     }
 }

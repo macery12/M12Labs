@@ -7,6 +7,7 @@ interface Server {
     id: string;
     internalId: number | string;
     uuid: string;
+    nodeId?: number;
     groupId?: number | null;
     name: string;
     node: string;
@@ -30,12 +31,15 @@ interface Server {
         threads: string;
     };
     eggFeatures: string[];
-    modsEnabled: boolean;
     modpacksSupported: boolean;
     extensionsEnabled: boolean;
     billingProductId?: number;
     billingDays?: number;
     renewalDate?: Date | undefined;
+    deletionScheduledAt?: Date | undefined;
+    deletionCanceledAt?: Date | undefined;
+    deletionScheduledBy?: number | null;
+    isDeletionScheduled?: boolean;
     featureLimits: {
         databases: number;
         allocations: number;

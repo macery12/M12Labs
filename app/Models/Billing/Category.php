@@ -3,6 +3,7 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\Egg;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -78,10 +79,23 @@ class Category extends Model
         $allowedEggs = $this->allowed_eggs;
 
         if (empty($allowedEggs) || !is_array($allowedEggs)) {
-            return [$this->egg_id];
+            $allowedEggs = [$this->egg_id];
         }
 
-        return $allowedEggs;
+        // Return the concrete IDs the client needs to display, after pruning any missing eggs.
+        // This list is intentionally materialized here because the allowed egg set is small and required by the client.
+        $existingEggs = Egg::query()
+            ->whereIn('id', $allowedEggs)
+            ->pluck('id')
+            ->all();
+
+        if (empty($existingEggs)) {
+            // Fallback to the legacy single egg_id if it still exists.
+            $defaultEgg = Egg::query()->find($this->egg_id);
+            $existingEggs = $defaultEgg ? [$defaultEgg->id] : [];
+        }
+
+        return $existingEggs;
     }
 
     /**

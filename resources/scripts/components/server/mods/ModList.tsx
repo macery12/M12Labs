@@ -11,6 +11,7 @@ import { useStoreState } from '@/state/hooks';
 interface Props {
     mods: CurseForgeMod[];
     loading: boolean;
+    contentType?: 'mods' | 'plugins';
     pagination: {
         index: number;
         pageSize: number;
@@ -75,13 +76,16 @@ const PaginationButton = styled(Button)`
     }
 `;
 
-export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) => {
+export default ({ mods, loading, contentType = 'mods', pagination, onModClick, onPageChange }: Props) => {
     const { background } = useStoreState(state => state.theme.data!.colors);
+    const contentLabelLower = contentType === 'plugins' ? 'plugins' : 'mods';
 
     if (!mods.length && !loading) {
         return (
             <div css={tw`text-center py-16`}>
-                <p css={tw`text-neutral-400 text-lg`}>No mods found matching your search criteria.</p>
+                <p css={tw`text-neutral-400 text-lg`}>
+                    No {contentLabelLower} found matching your search criteria.
+                </p>
             </div>
         );
     }
@@ -149,6 +153,18 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                                         <ModAuthor title={mod.authors[0]?.name || 'Unknown'}>
                                             by {mod.authors[0]?.name || 'Unknown'}
                                         </ModAuthor>
+                                        <div css={tw`flex gap-2 mt-1`}>
+                                            {mod.isPremium && (
+                                                <span css={tw`text-[11px] px-2 py-0.5 bg-red-900/60 text-red-200 rounded`}>
+                                                    Premium
+                                                </span>
+                                            )}
+                                            {mod.isExternal && (
+                                                <span css={tw`text-[11px] px-2 py-0.5 bg-yellow-900/60 text-yellow-200 rounded`}>
+                                                    External
+                                                </span>
+                                            )}
+                                        </div>
                                     </ModInfo>
                                 </ModHeader>
                                 <ModStats>
@@ -224,7 +240,7 @@ export default ({ mods, loading, pagination, onModClick, onPageChange }: Props) 
                     <p css={tw`text-center text-sm text-neutral-400 mt-4`}>
                         Showing {pagination.index + 1} -{' '}
                         {Math.min(pagination.index + pagination.resultCount, pagination.totalCount)} of{' '}
-                        {pagination.totalCount.toLocaleString()} mods
+                        {pagination.totalCount.toLocaleString()} {contentLabelLower}
                     </p>
                 )}
             </FadeTransition>

@@ -278,6 +278,8 @@ class ActivityLogService
     {
         Assert::notNull($this->activity);
 
+        $this->applyScopeAndContext();
+
         $response = $this->connection->transaction(function () {
             $this->activity->save();
 
@@ -299,5 +301,41 @@ class ActivityLogService
         $this->subjects = [];
 
         return $response;
+    }
+
+    protected function applyScopeAndContext(): void
+    {
+        Assert::notNull($this->activity);
+
+        $activity = $this->activity;
+
+        $properties = $activity->properties instanceof Collection
+            ? $activity->properties
+            : Collection::make($activity->properties ?? []);
+
+        $context = $activity->is_admin ? 'admin' : 'client';
+        if (!$properties->has('context')) {
+            $properties->put('context', $context);
+        }
+
+        if (!$properties->has('source')) {
+            $properties->put('source', $activity->api_key_id ? 'api' : 'panel');
+        }
+
+        $activity->properties = $properties;
+        $activity->scope = $this->determineScope($activity, (string) $properties->get('context'));
+    }
+
+    protected function determineScope(ActivityLog $activity, string $context): string
+    {
+        if (!is_null($activity->server_id)) {
+            return 'server';
+        }
+
+        if ($context === 'admin') {
+            return 'admin';
+        }
+
+        return 'account';
     }
 }

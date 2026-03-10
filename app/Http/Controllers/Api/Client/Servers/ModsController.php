@@ -2,14 +2,19 @@
 
 namespace Everest\Http\Controllers\Api\Client\Servers;
 
+use Carbon\Carbon;
 use Everest\Models\Server;
 use Everest\Models\Setting;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\SpigetService;
+use Everest\Services\Plugins\ProviderAccessService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
@@ -19,6 +24,8 @@ use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetModFilesRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetMinecraftVersionsRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\ToggleInstalledAddonRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\GetInstalledAddonsRequest;
 
 class ModsController extends ClientApiController
 {
@@ -30,7 +37,8 @@ class ModsController extends ClientApiController
         private ModrinthService $modrinthService,
         private SpigetService $spigetService,
         private PluginInstallService $pluginInstallService,
-        private DaemonFileRepository $fileRepository
+        private DaemonFileRepository $fileRepository,
+        private ProviderAccessService $providerAccessService
     ) {
         parent::__construct();
     }
@@ -46,11 +54,165 @@ class ModsController extends ClientApiController
             return $this->curseForgeService;
         }
 
-        if ($source === 'spiget') {
+        if (in_array($source, ['spiget', 'spigot'], true)) {
             return $this->spigetService;
         }
 
         return $this->modrinthService;
+    }
+
+    /**
+     * Determine provider key based on source and resource.
+     */
+    private function resolveProviderKey(?string $source, string $resource = 'mods'): string
+    {
+        if ($source === 'curseforge') {
+            return 'curseforge';
+        }
+
+        if (in_array($source, ['spiget', 'spigot'], true)) {
+            return 'spigot.plugins';
+        }
+
+        if ($source === 'modrinth') {
+            return $resource === 'plugins' ? 'modrinth.plugins' : 'modrinth.mods';
+        }
+
+        return $resource === 'plugins' ? 'modrinth.plugins' : 'modrinth.mods';
+    }
+
+    private function denyResponse(): JsonResponse
+    {
+        return response()->json([
+            'error' => 'Provider disabled',
+            'reason' => "This provider is not enabled for this server (egg/nest policy).",
+        ], 403);
+    }
+
+    private function checkProviderAllowed(Server $server, ?string $source, string $resource = 'mods'): ?JsonResponse
+    {
+        $providerKey = $this->resolveProviderKey($source, $resource);
+
+        if (!$this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id)) {
+            return $this->denyResponse();
+        }
+
+        return null;
+    }
+
+    public function providerAccess(Server $server): JsonResponse
+    {
+        $providers = [
+            'modrinth.mods',
+            'curseforge',
+            'modrinth.plugins',
+            'spigot.plugins',
+        ];
+
+        $result = [];
+        foreach ($providers as $providerKey) {
+            $result[$providerKey] = [
+                'allowed' => $this->providerAccessService->isProviderAllowed($providerKey, $server->nest_id, $server->egg_id),
+                'reason' => "Disabled by administrator for this server's egg/nest.",
+            ];
+        }
+
+        return response()->json([
+            'providers' => $result,
+        ]);
+    }
+
+    public function installed(GetInstalledAddonsRequest $request, Server $server): JsonResponse
+    {
+        $type = $request->input('type') === 'plugins' ? 'plugins' : 'mods';
+        $status = $request->input('status', 'all');
+        $search = trim((string) $request->input('search', ''));
+        $perPage = (int) $request->input('perPage', 50);
+        $page = (int) $request->input('page', 1);
+
+        $items = $this->scanJarDirectory(
+            $server,
+            $type === 'plugins' ? '/plugins' : '/mods',
+            $type === 'plugins' ? 'plugin' : 'mod'
+        );
+
+        $filtered = array_values(array_filter($items, function (array $item) use ($status, $search) {
+            if ($status === 'enabled' && !$item['enabled']) {
+                return false;
+            }
+
+            if ($status === 'disabled' && $item['enabled']) {
+                return false;
+            }
+
+            if ($search !== '') {
+                $needle = Str::lower($search);
+
+                return Str::contains(Str::lower($item['friendly_name']), $needle)
+                    || Str::contains(Str::lower($item['filename']), $needle);
+            }
+
+            return true;
+        }));
+
+        $filtered = $this->sortInstalledAddons($filtered);
+
+        $paginator = $this->paginateInstalled($filtered, $perPage, $page);
+
+        return response()->json([
+            'items' => $paginator->items(),
+            'pagination' => [
+                'total' => $paginator->total(),
+                'count' => $paginator->count(),
+                'per_page' => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'total_pages' => $paginator->lastPage(),
+            ],
+        ]);
+    }
+
+    public function toggleInstalledAddon(ToggleInstalledAddonRequest $request, Server $server): JsonResponse
+    {
+        $type = $request->input('type') === 'plugins' ? 'plugins' : 'mods';
+        $basePath = $type === 'plugins' ? '/plugins' : '/mods';
+        $rawPath = $request->input('path');
+        $normalizedPath = $this->normalizePath($request->input('path'));
+        $enable = (bool) $request->boolean('enable');
+
+        if (!Str::startsWith($normalizedPath, $basePath) || str_contains($normalizedPath, '..') || str_contains($rawPath, '..') || str_contains($rawPath, '%2e')) {
+            return response()->json(['error' => 'Invalid path for this content type.'], 422);
+        }
+
+        $root = $this->normalizePath(dirname($normalizedPath));
+        if ($root !== $basePath && !Str::startsWith($root, $basePath . '/')) {
+            return response()->json(['error' => 'Invalid directory for this content type.'], 422);
+        }
+        $from = basename($normalizedPath);
+        $target = $this->targetNameForState($from, $enable);
+
+        // If already in desired state, just return the current data.
+        if ($target !== $from) {
+            $this->fileRepository->setServer($server)->renameFiles($root, [['from' => $from, 'to' => $target]]);
+        }
+
+        $items = $this->scanJarDirectory($server, $basePath, $type === 'plugins' ? 'plugin' : 'mod');
+        $updatedPath = $this->joinPath($root, $target);
+        $updated = collect($items)->firstWhere('path', $updatedPath);
+        if (!$updated) {
+            $updated = [
+                'filename' => $target,
+                'friendly_name' => $this->makeFriendlyName($target),
+                'path' => $updatedPath,
+                'size_bytes' => 0,
+                'modified_at' => null,
+                'type' => $type === 'plugins' ? 'plugin' : 'mod',
+                'enabled' => $enable,
+            ];
+        }
+
+        return response()->json([
+            'item' => $updated,
+        ]);
     }
 
     /**
@@ -60,10 +222,10 @@ class ModsController extends ClientApiController
      */
     public function search(SearchModsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -79,6 +241,8 @@ class ModsController extends ClientApiController
             'index' => $request->input('index', 0),
             'categoryId' => $request->input('categoryId'),
             'minRating' => $request->input('minRating'),
+            'platform' => $request->input('platform'),
+            'resource' => $resource,
         ], function ($value) {
             return $value !== null;
         });
@@ -101,10 +265,10 @@ class ModsController extends ClientApiController
      */
     public function getMod(GetModRequest $request, Server $server, string $modId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -128,10 +292,10 @@ class ModsController extends ClientApiController
      */
     public function getModFiles(GetModFilesRequest $request, Server $server, string $modId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -142,6 +306,8 @@ class ModsController extends ClientApiController
             'modLoaderType' => $request->input('modLoaderType'),
             'pageSize' => $request->input('pageSize', 20),
             'index' => $request->input('index', 0),
+            'resource' => $resource,
+            'platform' => $request->input('platform'),
         ], function ($value) {
             return $value !== null;
         });
@@ -164,15 +330,15 @@ class ModsController extends ClientApiController
      */
     public function downloadMod(DownloadModRequest $request, Server $server, string $modId, string $fileId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
+            return $response;
         }
 
         try {
             $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
-            $type = $source === 'spiget' ? 'plugin' : 'mod';
+            $type = $resource === 'plugins' || in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
             $result = $this->pluginInstallService->installFromProvider($server, $source, $type, $modId, $fileId);
 
             return response()->json($result);
@@ -196,10 +362,10 @@ class ModsController extends ClientApiController
      */
     public function getMinecraftVersions(GetMinecraftVersionsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -223,10 +389,10 @@ class ModsController extends ClientApiController
      */
     public function getModLoaderTypes(GetMinecraftVersionsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        $resource = $request->input('resource', 'mods') === 'plugins' ? 'plugins' : 'mods';
+
+        if ($response = $this->checkProviderAllowed($server, $request->input('source'), $resource)) {
+            return $response;
         }
 
         $source = $request->input('source');
@@ -250,10 +416,8 @@ class ModsController extends ClientApiController
      */
     public function searchModpacks(SearchModsRequest $request, Server $server): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         // Only accept valid modpack search parameters
@@ -286,10 +450,8 @@ class ModsController extends ClientApiController
      */
     public function getModpack(GetModRequest $request, Server $server, int $modpackId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         try {
@@ -310,10 +472,8 @@ class ModsController extends ClientApiController
      */
     public function getModpackFiles(GetModFilesRequest $request, Server $server, int $modpackId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         $params = array_filter([
@@ -343,10 +503,8 @@ class ModsController extends ClientApiController
      */
     public function downloadModpack(DownloadModRequest $request, Server $server, int $modpackId, int $fileId): JsonResponse
     {
-        if (!$server->mods_enabled) {
-            return response()->json([
-                'error' => 'Mods module is not enabled for this server.',
-            ], 403);
+        if ($response = $this->checkProviderAllowed($server, 'curseforge', 'modpacks')) {
+            return $response;
         }
 
         // Extend PHP execution time for large modpack downloads (10 minutes)
@@ -579,6 +737,237 @@ class ModsController extends ClientApiController
                 'error' => 'An unexpected error occurred while downloading the modpack.',
             ], 500);
         }
+    }
+
+    /**
+     * Recursively scan a directory for jar-based addons (mods/plugins) while respecting
+     * symlinks and missing directories.
+     */
+    private function scanJarDirectory(Server $server, string $path, string $type): array
+    {
+        $results = [];
+        $queue = [$this->normalizePath($path)];
+
+        while (!empty($queue)) {
+            $current = array_shift($queue);
+            $entries = $this->listDirectorySafely($server, $current);
+
+            if ($entries === null) {
+                continue;
+            }
+
+            foreach ($entries as $entry) {
+                $name = Arr::get($entry, 'name');
+                if (!$name || $name === '.' || $name === '..') {
+                    continue;
+                }
+
+                $isFile = (bool) Arr::get($entry, 'file', true);
+                $isSymlink = (bool) Arr::get($entry, 'symlink', false);
+                $fullPath = $this->joinPath($current, $name);
+
+                if ($isFile && $this->isJarLike($name)) {
+                    $friendlyName = $this->makeFriendlyName($name);
+                    $isEnabled = !$this->isDisabledFile($name);
+                    $results[] = [
+                        'filename' => $name,
+                        'friendly_name' => $friendlyName,
+                        'path' => $fullPath,
+                        'size_bytes' => (int) Arr::get($entry, 'size', 0),
+                        'modified_at' => $this->formatTimestamp(Arr::get($entry, 'modified')),
+                        'type' => $type,
+                        'enabled' => $isEnabled,
+                        // Legacy keys for backward compatibility (can be removed once frontend is migrated)
+                        'name' => $name,
+                        'display_name' => $this->stripDisabledSuffix($name),
+                        'size' => (int) Arr::get($entry, 'size', 0),
+                        'disabled' => !$isEnabled,
+                    ];
+                    continue;
+                }
+
+                if (!$isFile && !$isSymlink) {
+                    $queue[] = $fullPath;
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    private function paginateInstalled(array $items, int $perPage, int $page): LengthAwarePaginator
+    {
+        $perPage = $perPage > 0 ? $perPage : 50;
+        $page = $page > 0 ? $page : 1;
+        $offset = ($page - 1) * $perPage;
+        $sliced = array_slice($items, $offset, $perPage);
+
+        return new LengthAwarePaginator(
+            $sliced,
+            count($items),
+            $perPage,
+            $page,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+            ]
+        );
+    }
+
+    private function sortInstalledAddons(array $items): array
+    {
+        usort($items, function (array $a, array $b) {
+            if ($a['enabled'] !== $b['enabled']) {
+                return $a['enabled'] ? -1 : 1;
+            }
+
+            $aName = $this->friendlyNameValue($a);
+            $bName = $this->friendlyNameValue($b);
+
+            return strcasecmp($aName, $bName);
+        });
+
+        return $items;
+    }
+
+    private function friendlyNameValue(array $item): string
+    {
+        return $item['friendly_name'] ?: $item['filename'];
+    }
+
+    private function listDirectorySafely(Server $server, string $path): ?array
+    {
+        try {
+            return $this->fileRepository->setServer($server)->getDirectory($path);
+        } catch (\Throwable $e) {
+            Log::debug('Installed addons scan skipped directory', ['path' => $path, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    private function isJarLike(string $name): bool
+    {
+        $lower = strtolower($name);
+
+        if (str_ends_with($lower, '.jar')) {
+            return true;
+        }
+
+        if (str_ends_with($lower, '.disabled')) {
+            $trimmed = substr($lower, 0, -strlen('.disabled'));
+
+            return str_ends_with($trimmed, '.jar') || !str_contains($trimmed, '.');
+        }
+
+        return false;
+    }
+
+    private function stripDisabledSuffix(string $name): string
+    {
+        $lower = strtolower($name);
+
+        if (str_ends_with($lower, '.jar.disabled')) {
+            return substr($name, 0, -strlen('.disabled'));
+        }
+
+        if (str_ends_with($lower, '.disabled')) {
+            return substr($name, 0, -strlen('.disabled'));
+        }
+
+        return $name;
+    }
+
+    private function makeFriendlyName(string $name): string
+    {
+        $base = $this->stripDisabledSuffix($name);
+        $base = preg_replace('/\.jar$/i', '', $base);
+        $base = preg_replace('/[_-]+/', ' ', $base);
+        $base = trim(preg_replace('/\s+/', ' ', $base));
+
+        if ($base === '') {
+            return $this->stripDisabledSuffix($name);
+        }
+
+        // Preserve existing capitalization when any uppercase characters exist; otherwise title-case the name.
+        $hasUpper = preg_match('/[A-Z]/', $base) > 0;
+
+        return $hasUpper ? $base : Str::title($base);
+    }
+
+    private function hasDisabledSuffix(string $lower): bool
+    {
+        // Treat "*.jar.disabled" or "*.disabled" (when the remaining name has no other extension)
+        // as disabled variants to stay compatible with common toggle patterns.
+        if (str_ends_with($lower, '.disabled')) {
+            $trimmed = substr($lower, 0, -strlen('.disabled'));
+
+            return str_ends_with($trimmed, '.jar') || !str_contains($trimmed, '.');
+        }
+
+        return false;
+    }
+
+    private function targetNameForState(string $current, bool $enable): string
+    {
+        $lower = strtolower($current);
+
+        if ($enable) {
+            if ($this->hasDisabledSuffix($lower)) {
+                return substr($current, 0, -strlen('.disabled'));
+            }
+
+            return $current;
+        }
+
+        if ($this->hasDisabledSuffix($lower)) {
+            return $current;
+        }
+
+        return $current . '.disabled';
+    }
+
+    private function isDisabledFile(string $name): bool
+    {
+        $lower = strtolower($name);
+
+        if (str_ends_with($lower, '.jar.disabled')) {
+            return true;
+        }
+
+        if (str_ends_with($lower, '.disabled')) {
+            $trimmed = substr($lower, 0, -strlen('.disabled'));
+
+            return str_ends_with($trimmed, '.jar') || !str_contains($trimmed, '.');
+        }
+
+        return false;
+    }
+
+    private function formatTimestamp(mixed $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toIso8601String();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function joinPath(string $base, string $name): string
+    {
+        $normalizedBase = $this->normalizePath($base);
+
+        return rtrim($normalizedBase, '/') . '/' . ltrim($name, '/');
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $trimmed = '/' . trim($path, '/');
+
+        return $trimmed === '//' ? '/' : $trimmed;
     }
 
     /**

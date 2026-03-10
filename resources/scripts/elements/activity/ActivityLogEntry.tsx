@@ -92,32 +92,40 @@ export default ({ activity, children }: Props) => {
             style={{ backgroundColor: colors.secondary }}
         >
             {/* Avatar Column - Always visible on larger screens */}
-            <div className={'hidden items-start justify-center pt-1 sm:col-span-1 sm:flex 2xl:col-span-1'}>
-                <div className={'flex h-12 w-12 items-center overflow-hidden rounded-full bg-slate-600 ring-2 ring-slate-500/50'}>
-                    <Avatar name={actor?.uuid || 'system'} />
+            <div className={'hidden items-center justify-center pl-2 sm:col-span-1 sm:flex 2xl:col-span-1'}>
+                <div
+                    className={
+                        'mr-2 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-600 ring-1 ring-slate-500/50'
+                    }
+                >
+                    <Avatar name={actor?.uuid || 'system'} size={'100%'} />
                 </div>
             </div>
 
             {/* Content Column */}
-            <div className={'col-span-10 flex flex-col sm:col-span-9'}>
+            <div className={'col-span-10 flex flex-col sm:col-span-9 sm:pl-3'}>
                 <div className={'flex flex-col space-y-2'}>
                     {/* Main Info Row */}
                     <div className={'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2'}>
                         <div className={'flex-1 min-w-0'}>
                             {/* User and Action */}
-                            <div className={'flex flex-wrap items-center gap-x-2 gap-y-1'}>
-                                <div className={'flex items-center gap-2'}>
+                            <div className={'flex flex-wrap items-center gap-x-3 gap-y-2'}>
+                                <div className={'flex min-w-0 items-center gap-2 pr-1'}>
                                     {/* Mobile Avatar */}
-                                    <div className={'flex h-8 w-8 items-center overflow-hidden rounded-full bg-slate-600 sm:hidden'}>
-                                        <Avatar name={actor?.uuid || 'system'} />
+                                    <div
+                                        className={
+                                            'mr-2 flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-600 sm:hidden'
+                                        }
+                                    >
+                                        <Avatar name={actor?.uuid || 'system'} size={'100%'} />
                                     </div>
                                     <Tooltip placement={'top'} content={actor?.email || 'System User'}>
-                                        <span className={'font-semibold text-slate-50 text-base'}>
+                                        <span className={'truncate font-semibold text-slate-50 text-base'}>
                                             {actor?.username || 'System'}
                                         </span>
                                     </Tooltip>
                                 </div>
-                                <div className={classNames(style.icons, 'group-hover:text-slate-300')}>
+                                <div className={classNames(style.icons, 'flex-shrink-0 group-hover:text-slate-300')}>
                                     {activity.isApi && (
                                         <Tooltip placement={'top'} content={'Using API Key'}>
                                             <TerminalIcon />
@@ -139,6 +147,23 @@ export default ({ activity, children }: Props) => {
                                         </Tooltip>
                                     )}
                                     {children}
+                                </div>
+                                <div className={'flex flex-wrap items-center gap-2 pl-1'}>
+                                    {activity.context === 'admin' && (
+                                        <span className={'rounded-full border border-red-400/40 bg-red-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-red-200'}>
+                                            Admin
+                                        </span>
+                                    )}
+                                    {activity.isApi && (
+                                        <span className={'rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-emerald-200'}>
+                                            API
+                                        </span>
+                                    )}
+                                    {activity.category && (
+                                        <span className={'rounded-full border border-slate-400/30 bg-slate-600/60 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-200'}>
+                                            {activity.category}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 

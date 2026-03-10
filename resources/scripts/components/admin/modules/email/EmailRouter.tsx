@@ -3,7 +3,6 @@ import EmailContainer from '@/components/admin/modules/email/EmailContainer';
 import EmailActivityLog from '@/components/admin/modules/email/EmailActivityLog';
 import DeferredQueueViewer from '@/components/admin/modules/email/DeferredQueueViewer';
 import PageContentBlock from '@/elements/PageContentBlock';
-import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import ContentBox from '@/elements/ContentBox';
 import ResendSettings from '@/components/admin/modules/email/ResendSettings';
@@ -15,14 +14,6 @@ import VerificationRestrictions from '@/components/admin/modules/email/Verificat
 export default () => {
     return (
         <PageContentBlock title={'Email Management'}>
-            <FlashMessageRender byKey={'email:resend'} />
-            <FlashMessageRender byKey={'email:test'} />
-            <FlashMessageRender byKey={'email:custom'} />
-            <FlashMessageRender byKey={'email:notifications'} />
-            <FlashMessageRender byKey={'email:activity'} />
-            <FlashMessageRender byKey={'email:deferred'} />
-            <FlashMessageRender byKey={'email:verification'} />
-
             <SubNavigation>
                 <SubNavigationLink to='/admin/email' name='Settings' base />
                 <SubNavigationLink to='/admin/email/notifications' name='Notifications' />

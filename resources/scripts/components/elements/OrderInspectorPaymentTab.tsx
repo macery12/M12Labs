@@ -7,12 +7,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
 import { formatDistanceToNowStrict, format } from 'date-fns';
 import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     order: AccountOrder | AdminOrder;
 }
 
 const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
+    const { colors } = useStoreState(state => state.theme.data!);
+
     const getProviderDashboardUrl = () => {
         switch (order.payment_processor) {
             case 'stripe':
@@ -45,6 +48,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     <CopyOnClick text={order.payment_intent_id}>
                         <code
                             css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            style={{ backgroundColor: colors.background || colors.secondary }}
                         >
                             {order.payment_intent_id.length > 30
                                 ? `${order.payment_intent_id.substring(0, 30)}...`
@@ -64,6 +68,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     <CopyOnClick text={order.mollie_payment_id}>
                         <code
                             css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            style={{ backgroundColor: colors.background || colors.secondary }}
                         >
                             {order.mollie_payment_id}
                         </code>
@@ -76,6 +81,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     <CopyOnClick text={order.payment_intent_id}>
                         <code
                             css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            style={{ backgroundColor: colors.background || colors.secondary }}
                         >
                             {order.payment_intent_id.length > 30
                                 ? `${order.payment_intent_id.substring(0, 30)}...`
@@ -95,6 +101,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     <CopyOnClick text={order.paypal_order_id}>
                         <code
                             css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            style={{ backgroundColor: colors.background || colors.secondary }}
                         >
                             {order.paypal_order_id}
                         </code>
@@ -107,6 +114,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     <CopyOnClick text={order.paypal_capture_id}>
                         <code
                             css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            style={{ backgroundColor: colors.background || colors.secondary }}
                         >
                             {order.paypal_capture_id}
                         </code>
@@ -119,6 +127,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     <CopyOnClick text={order.paypal_payer_id}>
                         <code
                             css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            style={{ backgroundColor: colors.background || colors.secondary }}
                         >
                             {order.paypal_payer_id}
                         </code>
@@ -166,7 +175,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
             {/* Provider Information */}
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Payment Provider</h3>
-                <div css={tw`bg-neutral-900 rounded-lg p-4 space-y-3`}>
+                <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
                     <div css={tw`flex justify-between items-center`}>
                         <span css={tw`text-sm text-gray-400`}>Provider</span>
                         <PaymentProcessorBadge processor={order.payment_processor} size="medium" />
@@ -177,7 +186,8 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                                 href={providerUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                css={tw`inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors`}
+                                css={tw`inline-flex items-center gap-2 text-sm transition-opacity hover:opacity-80`}
+                                style={{ color: colors.primary }}
                             >
                                 <FontAwesomeIcon icon={faExternalLinkAlt} />
                                 View in{' '}
@@ -193,7 +203,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
             {/* Transaction Details */}
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Transaction Details</h3>
-                <div css={tw`bg-neutral-900 rounded-lg p-4`}>
+                <div css={tw`rounded-lg p-4`} style={{ backgroundColor: colors.secondary }}>
                     {order.payment_processor === 'stripe' && renderStripeDetails()}
                     {order.payment_processor === 'mollie' && renderMollieDetails()}
                     {order.payment_processor === 'paypal' && renderPayPalDetails()}
@@ -203,7 +213,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
             {/* Payment Status Mapping */}
             <div>
                 <h3 css={tw`text-lg font-semibold text-white mb-4`}>Status Information</h3>
-                <div css={tw`bg-neutral-900 rounded-lg p-4 space-y-3`}>
+                <div css={tw`rounded-lg p-4 space-y-3`} style={{ backgroundColor: colors.secondary }}>
                     <div css={tw`flex justify-between items-start`}>
                         <span css={tw`text-sm text-gray-400`}>Order Status</span>
                         <span css={tw`text-sm text-white capitalize font-medium`}>{order.status}</span>

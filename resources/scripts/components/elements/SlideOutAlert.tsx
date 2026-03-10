@@ -8,17 +8,20 @@ interface SlideOutAlertProps {
     type: 'success' | 'info' | 'warning' | 'danger';
     link?: string;
     link_text?: string;
-    onClose: () => void;
+    dismissible: boolean;
+    onClose?: () => void;
     index: number;
 }
 
-export default ({ id, title, content, type, link, link_text, onClose, index }: SlideOutAlertProps) => {
+export default ({ id, title, content, type, link, link_text, dismissible, onClose, index }: SlideOutAlertProps) => {
     const [isClosing, setIsClosing] = useState(false);
 
     const handleClose = () => {
+        if (!dismissible) return;
+
         setIsClosing(true);
         setTimeout(() => {
-            onClose();
+            onClose?.();
         }, 300);
     };
 
@@ -64,9 +67,9 @@ export default ({ id, title, content, type, link, link_text, onClose, index }: S
                     type: alertType as 'success' | 'error' | 'info' | 'warning',
                     message: messageContent,
                     title: title, // Only pass title once to AlertComponent
-                    dismissible: true,
+                    dismissible: dismissible,
                 }}
-                onDismiss={handleClose}
+                onDismiss={dismissible ? handleClose : undefined}
             />
         </div>
     );

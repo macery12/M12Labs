@@ -9,6 +9,7 @@ import EnableAI from '@admin/modules/ai/EnableAI';
 import OverviewContainer from '@admin/modules/ai/OverviewContainer';
 import ConfigureAI from '@admin/modules/ai/ConfigureAI';
 import SettingsContainer from './SettingsContainer';
+import { updateSettings } from '@/api/routes/admin/ai/settings';
 
 export default () => {
     const settings = useStoreState(state => state.everest.data!.ai);
@@ -22,7 +23,20 @@ export default () => {
             ? !settings.endpoint || !settings.model
             : !settings.key || !settings.endpoint || !settings.model;
 
-    if (settings.enabled && needsConfiguration) return <ConfigureAI />;
+    const handleDismissConfiguration = () => {
+        // Disable AI when user dismisses configuration dialog
+        updateSettings({ enabled: false })
+            .catch(error => {
+                console.error('Failed to disable AI:', error);
+            })
+            .finally(() => {
+                // Reload page to refresh everest state and return to EnableAI screen
+                // @ts-expect-error this is fine
+                window.location = '/admin/ai';
+            });
+    };
+
+    if (settings.enabled && needsConfiguration) return <ConfigureAI onDismiss={handleDismissConfiguration} />;
 
     return (
         <AdminContentBlock title={'Jexactyl AI'}>

@@ -176,16 +176,26 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Mods Controller Routes
+    | Plugins Controller Routes
     |--------------------------------------------------------------------------
     |
-    | Endpoint: /api/application/mods
+    | Endpoint: /api/application/plugins
     |
     */
+    Route::group(['prefix' => '/plugins'], function () {
+        Route::put('/settings', [Application\PluginsController::class, 'update']);
+        Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
+        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
+
+        Route::get('/providers', [Application\PluginProviderRulesController::class, 'index']);
+        Route::put('/providers', [Application\PluginProviderRulesController::class, 'update']);
+    });
+
+    // Legacy mods routes (backwards compatibility)
     Route::group(['prefix' => '/mods'], function () {
-        Route::put('/settings', [Application\ModsController::class, 'update']);
-        Route::get('/analytics', [Application\ModsController::class, 'analytics']);
-        Route::delete('/key', [Application\ModsController::class, 'resetKey']);
+        Route::put('/settings', [Application\PluginsController::class, 'update']);
+        Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
+        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
     });
 
     /*
@@ -222,7 +232,6 @@ Route::middleware([AdminSubject::class])->group(function () {
         
         // Email notification settings
         Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
-        Route::put('/notifications/global', [Application\EmailController::class, 'updateGlobalToggle']);
         Route::put('/notifications/{id}', [Application\EmailController::class, 'updateNotificationSetting']);
         
         // Email quota management
@@ -484,7 +493,6 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{server:id}/unsuspend', [Application\Servers\ServerManagementController::class, 'unsuspend']);
         Route::post('/{server:id}/reinstall', [Application\Servers\ServerManagementController::class, 'reinstall']);
         Route::post('/{server:id}/transfer', [Application\Servers\ServerManagementController::class, 'transfer']);
-        Route::post('/{server:id}/mods/toggle', [Application\Servers\ServerController::class, 'toggleMods']);
 
         Route::group(['prefix' => '/{server:id}/wings-rs'], function () {
             Route::get('/status', [Application\Servers\ServerWingsRsController::class, 'status']);

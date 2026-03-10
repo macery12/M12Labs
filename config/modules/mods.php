@@ -51,10 +51,10 @@ return [
     'modrinth_api_url' => env('MODRINTH_API_URL', 'https://api.modrinth.com/v2'),
 
     /*
-     * Spiget API endpoint and toggle.
+     * Spigot (Spiget API) endpoint and toggle.
      */
     'spiget_api_url' => env('SPIGET_API_URL', 'https://api.spiget.org/v2'),
-    'spiget_enabled' => env('SPIGET_ENABLED', false),
+    'spiget_enabled' => env('SPIGET_ENABLED', true),
 
     /*
      * Maximum download sizes (in bytes).

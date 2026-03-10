@@ -6,18 +6,11 @@ import NotificationSettings from '@/components/admin/modules/email/NotificationS
 import SendTestEmail from '@/components/admin/modules/email/SendTestEmail';
 import SendCustomEmail from '@/components/admin/modules/email/SendCustomEmail';
 import EmailActivityLog from '@/components/admin/modules/email/EmailActivityLog';
-import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 
 export default () => {
     return (
         <PageContentBlock title={'Email Management'}>
-            <FlashMessageRender byKey={'email:resend'} />
-            <FlashMessageRender byKey={'email:test'} />
-            <FlashMessageRender byKey={'email:custom'} />
-            <FlashMessageRender byKey={'email:notifications'} />
-            <FlashMessageRender byKey={'email:activity'} />
-
             <SubNavigation>
                 <SubNavigationLink to='/admin/email' name='Settings' base>
                     Settings

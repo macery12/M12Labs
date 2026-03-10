@@ -3,6 +3,7 @@ import * as Icon from '@heroicons/react/outline';
 import { route, type ServerRouteDefinition } from '@/routers/routes/utils';
 
 const ServerConsoleContainer = lazy(() => import('@server/console/ServerConsoleContainer'));
+const ServerSettingsContainer = lazy(() => import('@server/settings/ServerSettingsContainer'));
 const FileManagerContainer = lazy(() => import('@server/files/FileManagerContainer'));
 const FileEditContainer = lazy(() => import('@server/files/FileEditContainer'));
 const DatabasesContainer = lazy(() => import('@server/databases/DatabasesContainer'));
@@ -14,12 +15,11 @@ const NetworkContainer = lazy(() => import('@server/network/NetworkContainer'));
 const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
+const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
 const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
 const ModpacksContainer = lazy(() => import('@server/modpacks/ModpacksContainer'));
 const ExtensionsRouter = lazy(() => import('@server/extensions/ExtensionsRouter'));
 const CustomDomainsContainer = lazy(() => import('@server/domains/CustomDomainsContainer'));
-const PluginsContainer = lazy(() => import('@server/plugins/PluginsContainer'));
-const LegacyRedirects = lazy(() => import('@server/plugins/RedirectLegacyPlugins'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -41,19 +41,11 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.DatabaseIcon,
         category: 'data',
     }),
-    route('plugins/*', PluginsContainer, {
+    route('marketplace/*', ModsAndPluginsPage, {
         permission: 'file.create',
-        name: 'Plugins',
+        name: 'Mods & Plugins',
         icon: Icon.PuzzleIcon,
         category: 'data',
-    }),
-    route('mods/*', LegacyRedirects, {
-        permission: 'file.create',
-        name: undefined,
-    }),
-    route('modpacks/*', LegacyRedirects, {
-        permission: 'file.create',
-        name: undefined,
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',
@@ -90,6 +82,12 @@ const server: ServerRouteDefinition[] = [
         permission: 'startup.*',
         name: 'Startup',
         icon: Icon.PlayIcon,
+        category: 'configuration',
+    }),
+    route('settings/*', ServerSettingsContainer, {
+        permission: 'settings.*',
+        name: 'Settings',
+        icon: Icon.CogIcon,
         category: 'configuration',
     }),
     route('activity/*', ServerActivityLogContainer, {

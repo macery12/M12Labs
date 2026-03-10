@@ -66,10 +66,16 @@ interface ActivityLog extends Model<'actor'> {
     event: string;
     ip: string | null;
     isApi: boolean;
+    isAdmin: boolean;
     description: string | null;
     properties: Record<string, string | unknown>;
     hasAdditionalMetadata: boolean;
     timestamp: Date;
+    scope: 'account' | 'server' | 'admin';
+    context: string;
+    category: string;
+    source: string;
+    severity: string;
     relationships: {
         actor: User | null;
     };

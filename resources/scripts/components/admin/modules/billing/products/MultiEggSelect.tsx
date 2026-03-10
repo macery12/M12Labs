@@ -33,30 +33,57 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
             .then(_eggs => {
                 setEggs(_eggs);
 
-                // If we have previously selected eggs, use them
-                if (selectedEggIds.length > 0) {
-                    setSelected(selectedEggIds);
-                    // Set the primary egg (first in the list)
-                    setEggIdValue(selectedEggIds[0]);
+                const validEggIds = new Set(_eggs.map(egg => egg.id));
+                const initialSelection = selectedEggIds.filter(id => validEggIds.has(id));
+
+                let nextSelected = initialSelection;
+                if (nextSelected.length === 0 && _eggs.length > 0) {
+                    nextSelected = [_eggs[0].id];
+                }
+
+                setSelected(nextSelected);
+                if (nextSelected.length > 0) {
+                    setEggIdValue(nextSelected[0]);
                     setEggIdTouched(true);
-                    setAllowedEggsValue(selectedEggIds);
+                    setAllowedEggsValue(nextSelected);
                     setAllowedEggsTouched(true);
-                } else if (_eggs.length > 0) {
-                    // Default to first egg if none selected
-                    const defaultEggId = _eggs[0].id;
-                    setSelected([defaultEggId]);
-                    setEggIdValue(defaultEggId);
-                    setEggIdTouched(true);
-                    setAllowedEggsValue([defaultEggId]);
-                    setAllowedEggsTouched(true);
-                    onEggSelectionChange([defaultEggId]);
+                    onEggSelectionChange(nextSelected);
                 }
             })
             .catch(error => console.error(error));
     }, [nestId]);
 
+    useEffect(() => {
+        if (!eggs) {
+            return;
+        }
+
+        const validEggIds = new Set(eggs.map(egg => egg.id));
+        let filtered = selectedEggIds.filter(id => validEggIds.has(id));
+
+        if (filtered.length === 0 && eggs.length > 0) {
+            filtered = [eggs[0].id];
+        }
+
+        const isSameSelection =
+            filtered.length === selectedEggIds.length && filtered.every((id, index) => id === selectedEggIds[index]);
+
+        if (filtered.length > 0 && !isSameSelection) {
+            setSelected(filtered);
+            setEggIdValue(filtered[0]);
+            setEggIdTouched(true);
+            setAllowedEggsValue(filtered);
+            setAllowedEggsTouched(true);
+            onEggSelectionChange(filtered);
+        }
+    }, [selectedEggIds, eggs]);
+
     const handleEggToggle = (eggId: number, checked: boolean) => {
         let newSelected: number[];
+
+        if (!eggs?.some(egg => egg.id === eggId)) {
+            return;
+        }
 
         if (checked) {
             // Add egg to selection

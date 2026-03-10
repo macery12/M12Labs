@@ -35,7 +35,7 @@ export default ({
 
             // Redirect to PayPal checkout
             // After payment, PayPal will redirect back to return_url with token parameter
-            window.location.href = order.approval_url;
+            window.location.href = `/api/client/billing/paypal/orders/${order.id}/redirect`;
         } catch (error) {
             clearAndAddHttpError({ key: 'suspended:billing', error });
             setLoading(false);

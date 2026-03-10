@@ -4,16 +4,10 @@ export interface ModsSettings {
     curseforge_api_key?: string | boolean;
     enabled?: boolean;
     default_source?: string;
-    spiget_enabled?: boolean;
 }
 
-export const updateSettings = (settings: ModsSettings): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        http.put(`/api/application/mods/settings`, settings)
-            .then(() => resolve())
-            .catch(reject);
-    });
-};
+export const updateSettings = (settings: ModsSettings): Promise<void> =>
+    http.put(`/api/application/plugins/settings`, settings).then(() => {});
 
 export interface RateLimitUsage {
     requests_this_minute: number;
@@ -23,22 +17,30 @@ export interface RateLimitUsage {
 }
 
 export interface ModsAnalytics {
-    curseforge_rate_limit: RateLimitUsage;
-    modrinth_rate_limit: RateLimitUsage;
+    totals: {
+        installs: number;
+        by_provider: { modrinth: number; curseforge: number; spigot: number };
+        failures: number;
+        retries: number;
+        bandwidth_bytes: number;
+        bandwidth_bytes_24h: number;
+    };
+    trends: {
+        last_24h: Array<{ timestamp: string; installs: number }>;
+        last_7d: Array<{ date: string; installs: number }>;
+    };
+    provider_health: Record<
+        string,
+        {
+            enabled: boolean;
+            rate_limit: RateLimitUsage | null;
+            denied_by_policy: number;
+        }
+    >;
 }
 
-export const getModsAnalytics = (): Promise<ModsAnalytics> => {
-    return new Promise((resolve, reject) => {
-        http.get(`/api/application/mods/analytics`)
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
+export const getModsAnalytics = (): Promise<ModsAnalytics> =>
+    http.get(`/api/application/plugins/analytics`).then(({ data }) => data);
 
-export const resetCurseForgeKey = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        http.delete(`/api/application/mods/key`)
-            .then(() => resolve())
-            .catch(reject);
-    });
-};
+export const resetCurseForgeKey = (): Promise<void> =>
+    http.delete(`/api/application/plugins/key`).then(() => {});

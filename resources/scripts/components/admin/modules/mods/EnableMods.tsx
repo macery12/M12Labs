@@ -7,10 +7,10 @@ export default () => {
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     return (
-        <FeatureContainer icon={faCube} title={'Mods Module'}>
-            Enable the Mods module to integrate CurseForge with Jexactyl, allowing users to search for and install
-            Minecraft mods directly from the panel. You&apos;ll need a CurseForge API key to use this feature, which can
-            be obtained from the CurseForge Console.
+        <FeatureContainer icon={faCube} title={'Marketplace Module'}>
+            Enable the Marketplace module to integrate Modrinth, CurseForge, and Spiget with Jexactyl, allowing users to
+            search for and install mods, modpacks, and plugins directly from the panel. You&apos;ll need a CurseForge API
+            key to use CurseForge content, obtainable from the CurseForge Console.
             <p className={'mt-2 text-right'}>
                 <ToggleFeatureButton />
             </p>

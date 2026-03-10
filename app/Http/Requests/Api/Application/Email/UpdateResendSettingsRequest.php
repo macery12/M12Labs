@@ -33,9 +33,11 @@ class UpdateResendSettingsRequest extends ApplicationApiRequest
     public function normalize(?array $only = null): array
     {
         $data = [];
-        
-        // Enabled is always included (boolean field with default)
-        $data['modules:email:resend:enabled'] = $this->input('enabled', false) ? 'true' : 'false';
+
+        // Only include enabled when explicitly present to avoid accidental disable on partial saves.
+        if ($this->has('enabled')) {
+            $data['modules:email:resend:enabled'] = $this->input('enabled', false) ? 'true' : 'false';
+        }
         
         // Only include other fields if they exist in the request
         // This allows partial updates without overwriting existing values

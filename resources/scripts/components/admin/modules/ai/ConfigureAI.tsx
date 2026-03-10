@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Form, Formik, FormikHelpers } from 'formik';
 import { useState } from 'react';
 import { object, string } from 'yup';
+import { useStoreState } from '@/state/hooks';
 
 interface ConfigureAIProps {
     onDismiss?: () => void;
@@ -27,6 +28,7 @@ export default ({ onDismiss }: ConfigureAIProps) => {
     const [key, setKey] = useState<string>('');
     const [model, setModel] = useState<string>('gpt-3.5-turbo');
     const [loading, setLoading] = useState<boolean>(false);
+    const { primary } = useStoreState(state => state.theme.data!.colors);
 
     const { addFlash, clearAndAddHttpError } = useFlashKey('admin:settings:ai');
 
@@ -88,7 +90,7 @@ export default ({ onDismiss }: ConfigureAIProps) => {
             <SpinnerOverlay visible={loading} />
             <div className={'mt-2 text-sm text-gray-400'}>
                 <p>
-                    In order to use <span style={{ color: theme.primary }}>Jexactyl AI</span>, you must configure an
+                    In order to use <span style={{ color: primary }}>Jexactyl AI</span>, you must configure an
                     OpenAI-compatible API endpoint.
                 </p>
                 <p className={'my-2 text-gray-400'}>

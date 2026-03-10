@@ -9,6 +9,7 @@ import useFlash from '@/plugins/useFlash';
 import { changeEgg } from '@/api/routes/server/startup';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { getEggInfo, type EggInfo } from '@/api/routes/account/billing/products';
+import { getCategories } from '@/api/routes/account/billing/categories';
 import { Alert } from '@/elements/alert';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -28,7 +29,7 @@ export default () => {
     const [selectedEggId, setSelectedEggId] = useState<number>(currentEggId);
     const [availableEggs, setAvailableEggs] = useState<EggInfo[]>([]);
     const [currentEgg, setCurrentEgg] = useState<EggInfo | null>(null);
-    const [allowEggChanges, setAllowEggChanges] = useState<boolean>(false);
+    const [allowEggChanges, setAllowEggChanges] = useState<boolean>(true);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleteFiles, setDeleteFiles] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState('');
@@ -38,28 +39,56 @@ export default () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Validate required data
-                if (!billingProductId || !currentEggId) {
-                    setLoading(false);
+                // Require at least a current egg to render meaningful data
+                if (!currentEggId) {
                     setAllowEggChanges(false);
+                    setLoading(false);
                     return;
                 }
 
-                // Fetch current egg info first
+                // Always fetch current egg info for display
                 const currentEggInfo = await getEggInfo(currentEggId);
                 setCurrentEgg(currentEggInfo);
 
-                // Fetch product to get allowed eggs
-                const product = await getProduct(billingProductId);
-                const allowedEggs = product.allowedEggs || [product.eggId];
+                // Default to only the current egg
+                let allowedEggIds: number[] = [currentEggId];
+                let canChangeEggs = true;
 
-                // Fetch egg information for all allowed eggs
-                const eggInfoPromises = allowedEggs.map(id => getEggInfo(id));
-                const eggInfos = await Promise.all(eggInfoPromises);
+                // If the server has an associated product, respect its allowed eggs and toggle
+                if (billingProductId) {
+                    try {
+                        const product = await getProduct(billingProductId);
+                        allowedEggIds = product.allowedEggs || [product.eggId];
+                        canChangeEggs = product.allowEggChanges;
+                    } catch (error) {
+                        // Fall back to category lookup below
+                        console.warn('Unable to load billing product, falling back to category search', error);
+                    }
+                }
+
+                // Fallback: find the category that includes this egg and use its allowed eggs
+                if (allowedEggIds.length === 1 || !billingProductId) {
+                    try {
+                        const categories = await getCategories();
+                        const category = categories.find(c => c.allowedEggs?.includes(currentEggId));
+                        if (category) {
+                            allowedEggIds = category.allowedEggs || allowedEggIds;
+                            canChangeEggs = category.allowEggChanges ?? canChangeEggs;
+                        }
+                    } catch (error) {
+                        console.warn('Unable to load categories for egg lookup', error);
+                    }
+                }
+
+                // Remove duplicates and reuse the already-fetched current egg info
+                const uniqueAllowedEggIds = Array.from(new Set(allowedEggIds));
+                const eggInfos = await Promise.all(
+                    uniqueAllowedEggIds.map(id => (id === currentEggId ? Promise.resolve(currentEggInfo) : getEggInfo(id)))
+                );
                 setAvailableEggs(eggInfos);
 
-                // Check if category allows egg changes (from product)
-                setAllowEggChanges(product.allowEggChanges && allowedEggs.length > 1);
+                // Allow changes when permitted by config and there is more than one choice
+                setAllowEggChanges(canChangeEggs && eggInfos.length > 1);
                 setLoading(false);
             } catch (error) {
                 console.error(error);
@@ -73,9 +102,9 @@ export default () => {
 
     const handleChangeEgg = () => {
         if (selectedEggId === currentEggId) {
-            clearFlashes('server:billing:egg');
+            clearFlashes('server:settings:egg');
             clearAndAddHttpError({
-                key: 'server:billing:egg',
+                key: 'server:settings:egg',
                 error: { message: 'You must select a different server type to continue.' },
             });
             return;
@@ -83,30 +112,31 @@ export default () => {
 
         // If deleteFiles is checked, ensure DELETE confirmation is typed
         if (deleteFiles && confirmDelete !== 'DELETE') {
-            clearFlashes('server:billing:egg');
+            clearFlashes('server:settings:egg');
             clearAndAddHttpError({
-                key: 'server:billing:egg',
+                key: 'server:settings:egg',
                 error: { message: 'You must type DELETE to confirm file deletion.' },
             });
             return;
         }
 
         setChanging(true);
-        clearFlashes('server:billing:egg');
+        clearFlashes('server:settings:egg');
 
         changeEgg(uuid, selectedEggId, deleteFiles)
             .then(() => {
                 window.location.reload(); // Reload to refresh server data
             })
             .catch(error => {
-                clearAndAddHttpError({ key: 'server:billing:egg', error });
+                clearAndAddHttpError({ key: 'server:settings:egg', error });
                 setChanging(false);
                 setConfirmOpen(false);
             });
     };
 
     const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
-    const canChange = selectedEggId !== currentEggId && serverStatus === null;
+    const isStopped = serverStatus === null || serverStatus === 'offline';
+    const canChange = selectedEggId !== currentEggId && isStopped;
 
     if (loading) {
         return (
@@ -141,13 +171,13 @@ export default () => {
                     </Select>
                 </div>
 
-                {serverStatus !== null && (
-                    <Alert type={'warning'} className={'mb-3'}>
-                        Server must be stopped first.
-                    </Alert>
-                )}
+                {!isStopped && (
+                     <Alert type={'warning'} className={'mb-3'}>
+                         Server must be stopped first.
+                     </Alert>
+                 )}
 
-                {selectedEggId !== currentEggId && serverStatus === null && (
+                {selectedEggId !== currentEggId && isStopped && (
                     <Alert type={'warning'} className={'mb-3'}>
                         <strong css={tw`text-yellow-400`}>⚠️ BACKUP YOUR FILES:</strong> This will reinstall your
                         server. While files are typically not deleted, corruption is always possible during
@@ -168,12 +198,12 @@ export default () => {
                     setConfirmOpen(false);
                     setDeleteFiles(false);
                     setConfirmDelete('');
-                    clearFlashes('server:billing:egg');
+                    clearFlashes('server:settings:egg');
                 }}
                 onConfirmed={handleChangeEgg}
                 buttonType={'danger'}
             >
-                <FlashMessageRender byKey={'server:billing:egg'} css={tw`mb-3`} />
+                <FlashMessageRender byKey={'server:settings:egg'} css={tw`mb-3`} />
                 <p css={tw`text-sm mb-3`}>
                     You are about to change your server type from <strong>{currentEgg?.name}</strong> to{' '}
                     <strong>{selectedEgg?.name}</strong>.

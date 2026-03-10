@@ -28,7 +28,7 @@ export default () => {
             return;
         }
 
-        clearFlashes();
+        clearFlashes('email:custom');
         setStatus('loading');
 
         sendCustomEmail({ to, subject, html, text: text || undefined })

@@ -116,7 +116,6 @@ export interface EverestSettings {
         enabled: boolean;
         curseforge_api_key: boolean | string;
         default_source?: string;
-        spiget_enabled?: boolean;
     };
     webhooks: {
         enabled: boolean;

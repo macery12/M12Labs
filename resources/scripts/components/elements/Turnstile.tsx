@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface TurnstileProps {
     siteKey: string;
@@ -28,6 +28,7 @@ declare global {
 export default function Turnstile({ siteKey, onVerify, onError, onExpire }: TurnstileProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetId = useRef<string | null>(null);
+    const [missingTurnstile, setMissingTurnstile] = useState(false);
 
     // Store callbacks in refs to avoid re-rendering when they change
     const onVerifyRef = useRef(onVerify);
@@ -41,29 +42,37 @@ export default function Turnstile({ siteKey, onVerify, onError, onExpire }: Turn
         onExpireRef.current = onExpire;
     });
 
+    const options: TurnstileRenderOptions | null = useMemo(() => {
+        // Build a strict allowlisted options object — never spread arbitrary props into render.
+        // The sitekey is sourced from trusted server configuration, not user input.
+        if (!siteKey || typeof siteKey !== 'string') return null;
+
+        return {
+            sitekey: siteKey,
+            callback: (token: string) => onVerifyRef.current(token),
+            'error-callback': () => onErrorRef.current?.(),
+            'expired-callback': () => {
+                widgetId.current = null;
+                onExpireRef.current?.();
+            },
+        };
+    }, [siteKey]);
+
     useEffect(() => {
-        if (!containerRef.current || !siteKey) return;
+        if (!containerRef.current || !options) return;
 
         const initTurnstile = () => {
-            if (window.turnstile && containerRef.current && !widgetId.current) {
-                widgetId.current = window.turnstile.render(containerRef.current, {
-                    sitekey: siteKey,
-                    callback: (token: string) => onVerifyRef.current(token),
-                    'error-callback': () => onErrorRef.current?.(),
-                    'expired-callback': () => {
-                        widgetId.current = null;
-                        onExpireRef.current?.();
-                    },
-                });
+            if (window.turnstile && containerRef.current && !widgetId.current && options) {
+                widgetId.current = window.turnstile.render(containerRef.current, options);
+                setMissingTurnstile(false);
             }
         };
 
-        // If Turnstile is already loaded, initialize immediately
         if (window.turnstile) {
             initTurnstile();
         } else {
-            // Otherwise, wait for the script to load
             window.onTurnstileLoad = initTurnstile;
+            setMissingTurnstile(true);
         }
 
         return () => {
@@ -72,7 +81,11 @@ export default function Turnstile({ siteKey, onVerify, onError, onExpire }: Turn
                 widgetId.current = null;
             }
         };
-    }, [siteKey]); // Only re-render when siteKey changes
+    }, [options]);
 
-    return <div ref={containerRef} />;
+    if (!options) {
+        return <div ref={containerRef} />;
+    }
+
+    return <div ref={containerRef}>{missingTurnstile && !widgetId.current ? 'Loading verification…' : null}</div>;
 }

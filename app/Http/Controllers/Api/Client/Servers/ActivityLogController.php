@@ -117,7 +117,12 @@ class ActivityLogController extends ClientApiController
     {
         $builder = ActivityLog::query()
             ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
-            ->where('activity_logs.is_admin', 0)
+            ->where(function (Builder $query) {
+                $query->where('activity_logs.scope', 'server')
+                    ->orWhere(function (Builder $sub) {
+                        $sub->whereNull('activity_logs.scope')->whereNotNull('activity_logs.server_id');
+                    });
+            })
             ->where(function (Builder $query) use ($server) {
                 $query->where('activity_logs.server_id', $server->id)
                     ->orWhereExists(function ($sub) use ($server) {

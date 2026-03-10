@@ -89,7 +89,10 @@ class ServerTransformer extends Transformer
             'billing_product_id' => $model->billing_product_id,
             'billing_days' => $model->billing_days,
             'renewal_date' => $this->formatDate($model->renewal_date),
-            'mods_enabled' => $model->mods_enabled,
+            'deletion_scheduled_at' => $this->formatDate($model->deletion_scheduled_at),
+            'deletion_scheduled_by' => $model->deletion_scheduled_by,
+            'deletion_canceled_at' => $this->formatDate($model->deletion_canceled_at),
+            'is_deletion_scheduled' => $model->isDeletionScheduled(),
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String(),
         ];

@@ -45,11 +45,14 @@ class ModrinthProviderAdapter implements ProviderAdapterInterface
 
         $path = parse_url($downloadUrl, PHP_URL_PATH);
         $guessedName = $path ? basename($path) : null;
+        $project = $this->modrinthService->getMod((string) $projectId);
 
         return [
             'url' => $downloadUrl,
             'fileName' => $guessedName ?: 'mod_' . $versionId . '.jar',
             'fileSize' => null,
+            'projectName' => $project['title'] ?? $project['name'] ?? null,
+            'versionName' => null,
         ];
     }
 }

@@ -8,6 +8,7 @@ use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Servers\SuspensionService;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ServerRenewalService
 {
@@ -34,6 +35,10 @@ class ServerRenewalService
         // Verify that the server uses this product
         if ($server->billing_product_id !== $product->id) {
             throw new DisplayException('This server does not use this product.');
+        }
+
+        if ($server->isDeletionScheduled()) {
+            throw new ConflictHttpException('This server is scheduled for deletion. Cancel deletion before renewing.');
         }
 
         // Create an order record for the renewal

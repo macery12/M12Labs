@@ -4,6 +4,7 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\RedirectResponse;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
@@ -18,9 +19,12 @@ use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
+use Everest\Traits\ValidatesRedirectUrl;
 
 class PayPalCheckoutController extends ClientApiController
 {
+    use ValidatesRedirectUrl;
+
     public function __construct(
         private PayPalPaymentService $paypalService,
         private BillingValidationService $validationService,
@@ -105,12 +109,38 @@ class PayPalCheckoutController extends ClientApiController
 
         // Get approval URL for redirect
         $approvalUrl = $this->paypalService->getApprovalUrl($paypalOrder);
+        if (!$approvalUrl) {
+            throw new DisplayException('PayPal approval URL unavailable.');
+        }
+        $approvalUrl = $this->validateRedirectUrl($approvalUrl, ['paypal.com']);
 
         return response()->json([
             'id' => $paypalOrder['id'],
             'token' => $token,
             'approval_url' => $approvalUrl,
         ]);
+    }
+
+    /**
+     * Safely redirect the user to PayPal after validating the approval URL.
+     */
+    public function redirectToApproval(Request $request, string $orderId): RedirectResponse
+    {
+        // Authorization guard: ensure the order belongs to the current user before redirecting.
+        $order = Order::where('paypal_order_id', $orderId)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        $paypalOrder = $this->paypalService->getOrder($orderId);
+        $approvalUrl = $this->paypalService->getApprovalUrl($paypalOrder);
+
+        if (!$approvalUrl) {
+            throw new DisplayException('PayPal approval URL unavailable.');
+        }
+
+        $safeUrl = $this->validateRedirectUrl($approvalUrl, ['paypal.com']);
+
+        return redirect()->away($safeUrl);
     }
 
     /**
