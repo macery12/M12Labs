@@ -1,0 +1,91 @@
+<?php
+
+namespace Everest\Http\Controllers\Api\Client\Extensions;
+
+use Everest\Models\Server;
+use Illuminate\Http\JsonResponse;
+use Everest\Models\ExtensionConfig;
+use Everest\Models\Subuser;
+use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Everest\Http\Requests\Api\Client\Extensions\GetServerExtensionsRequest;
+
+class ExtensionsController extends ClientApiController
+{
+    private function isExtensionDisabledForUser(Server $server, $user, string $extensionId): bool
+    {
+        if ($user->root_admin || $server->owner_id === $user->id) {
+            return false;
+        }
+
+        $subuser = Subuser::query()
+            ->where('user_id', $user->id)
+            ->where('server_id', $server->id)
+            ->first();
+
+        return $subuser && in_array($extensionId, $subuser->disabled_extensions ?? [], true);
+    }
+
+    /**
+     * Get all enabled extensions for a server.
+     */
+    public function index(GetServerExtensionsRequest $request, Server $server): JsonResponse
+    {
+        $enabledConfigs = ExtensionConfig::getEnabledForServer($server);
+        $availableExtensions = config('modules.extensions.available', []);
+
+        $user = $request->user();
+
+        $extensions = [];
+        foreach ($enabledConfigs as $config) {
+            if ($this->isExtensionDisabledForUser($server, $user, $config->extension_id)) {
+                continue;
+            }
+
+            $extensionDef = $availableExtensions[$config->extension_id] ?? null;
+            if ($extensionDef) {
+                $extensions[] = [
+                    'id' => $config->extension_id,
+                    'name' => $extensionDef['name'],
+                    'description' => $extensionDef['description'],
+                    'icon' => $extensionDef['icon'],
+                    'version' => $extensionDef['version'] ?? '1.0.0',
+                    'route' => $extensionDef['route'] ?? $config->extension_id,
+                    'settings' => $config->settings ?? [],
+                ];
+            }
+        }
+
+        return new JsonResponse([
+            'object' => 'list',
+            'data' => $extensions,
+        ]);
+    }
+
+    /**
+     * Check if a specific extension is enabled for a server.
+     */
+    public function check(GetServerExtensionsRequest $request, Server $server, string $extensionId): JsonResponse
+    {
+        if ($this->isExtensionDisabledForUser($server, $request->user(), $extensionId)) {
+            return new JsonResponse([
+                'enabled' => false,
+            ]);
+        }
+
+        $config = ExtensionConfig::getByExtensionId($extensionId);
+
+        if (!$config || !$config->isServerEligible($server)) {
+            return new JsonResponse([
+                'enabled' => false,
+            ]);
+        }
+
+        $availableExtensions = config('modules.extensions.available', []);
+        $extensionDef = $availableExtensions[$extensionId] ?? null;
+
+        return new JsonResponse([
+            'enabled' => true,
+            'route' => $extensionDef['route'] ?? $extensionId,
+        ]);
+    }
+}

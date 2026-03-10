@@ -1,0 +1,557 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Everest\Http\Controllers\Api\Application;
+use Everest\Http\Middleware\Activity\AdminSubject;
+
+Route::middleware([AdminSubject::class])->group(function () {
+    Route::get('/permissions', Application\PermissionsController::class);
+
+    Route::get('/overview/version', [Application\OverviewController::class, 'version']);
+    Route::get('/overview/metrics', [Application\OverviewController::class, 'metrics']);
+
+    Route::get('/activity', Application\ActivityLogController::class);
+    Route::get('/activity/users', [Application\ActivityLogController::class, 'users']);
+    Route::get('/activity/events', [Application\ActivityLogController::class, 'events']);
+
+    Route::group(['prefix' => '/setup'], function () {
+        Route::get('/data', [Application\Setup\SetupController::class, 'data']);
+        Route::post('/finish', [Application\Setup\SetupController::class, 'finish']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settings Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/settings
+    |
+    */
+    Route::group(['prefix' => '/settings'], function () {
+        Route::patch('/', [Application\Settings\GeneralController::class, 'update']);
+        Route::patch('/mode', [Application\Settings\ModeController::class, 'update']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auth Settings Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/auth
+    |
+    */
+    Route::group(['prefix' => '/auth'], function () {
+        Route::group(['prefix' => '/modules'], function () {
+            Route::post('/enable', [Application\Auth\ModuleController::class, 'enable']);
+            Route::post('/disable', [Application\Auth\ModuleController::class, 'disable']);
+
+            Route::put('/', [Application\Auth\ModuleController::class, 'update']);
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Billing Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/billing
+    |
+    */
+    Route::group(['prefix' => '/billing'], function () {
+        Route::get('/analytics', [Application\Billing\BillingController::class, 'analytics']);
+        Route::put('/settings', [Application\Billing\BillingController::class, 'settings']);
+
+        Route::delete('/keys', [Application\Billing\BillingController::class, 'resetKeys']);
+
+        Route::group(['prefix' => '/categories'], function () {
+            Route::get('/', [Application\Billing\CategoryController::class, 'index']);
+            Route::post('/', [Application\Billing\CategoryController::class, 'store']);
+
+            Route::get('/{category:id}', [Application\Billing\CategoryController::class, 'view']);
+            Route::patch('/{category:id}', [Application\Billing\CategoryController::class, 'update']);
+            Route::delete('/{category:id}', [Application\Billing\CategoryController::class, 'delete']);
+
+            Route::group(['prefix' => '/{category:id}/products'], function () {
+                Route::get('/', [Application\Billing\ProductController::class, 'index']);
+                Route::post('/', [Application\Billing\ProductController::class, 'store']);
+
+                Route::get('/{product:id}', [Application\Billing\ProductController::class, 'view']);
+                Route::patch('/{product:id}', [Application\Billing\ProductController::class, 'update']);
+                Route::delete('/{product:id}', [Application\Billing\ProductController::class, 'delete']);
+
+                // Billing cycle routes
+                Route::group(['prefix' => '/{product:id}/billing-cycles'], function () {
+                    Route::get('/', [Application\Billing\BillingCycleController::class, 'index']);
+                    Route::post('/sync', [Application\Billing\BillingCycleController::class, 'sync']);
+                    Route::delete('/{cycle:id}', [Application\Billing\BillingCycleController::class, 'delete']);
+                });
+            });
+        });
+
+        Route::group(['prefix' => '/orders'], function () {
+            Route::get('/', [Application\Billing\OrderController::class, 'index']);
+        });
+
+        Route::group(['prefix' => '/custom-domains'], function () {
+            Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
+            Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
+            Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
+            Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
+        });
+
+        Route::group(['prefix' => '/coupons'], function () {
+            Route::get('/', [Application\Billing\CouponController::class, 'index']);
+            Route::post('/', [Application\Billing\CouponController::class, 'store']);
+
+            Route::get('/{coupon:id}', [Application\Billing\CouponController::class, 'view']);
+            Route::patch('/{coupon:id}', [Application\Billing\CouponController::class, 'update']);
+            Route::delete('/{coupon:id}', [Application\Billing\CouponController::class, 'delete']);
+        });
+
+        Route::group(['prefix' => '/exceptions'], function () {
+            Route::get('/', [Application\Billing\BillingExceptionController::class, 'index']);
+
+            Route::delete('/', [Application\Billing\BillingExceptionController::class, 'resolveAll']);
+            Route::delete('/{uuid}', [Application\Billing\BillingExceptionController::class, 'resolve']);
+        });
+
+        Route::group(['prefix' => '/donations'], function () {
+            Route::get('/', [Application\Billing\DonationController::class, 'index']);
+        });
+
+        Route::prefix('/config')->group(function () {
+            Route::post('/import', [Application\Billing\ConfigController::class, 'import']);
+            Route::post('/export', [Application\Billing\ConfigController::class, 'export']);
+        });
+
+        // Node pricing multiplier routes
+        Route::prefix('/node-pricing')->group(function () {
+            Route::get('/', [Application\Billing\NodePricingController::class, 'index']);
+            Route::patch('/batch', [Application\Billing\NodePricingController::class, 'batchUpdate']);
+            Route::post('/reset-all', [Application\Billing\NodePricingController::class, 'resetAll']);
+            Route::patch('/{id}', [Application\Billing\NodePricingController::class, 'update']);
+            Route::post('/{id}/reset', [Application\Billing\NodePricingController::class, 'reset']);
+        });
+
+        // Get suggested multiplier ranges
+        Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Domains Module Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/custom-domains
+    |
+    */
+    Route::group(['prefix' => '/custom-domains'], function () {
+        Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
+        Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
+        Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
+        Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
+
+        Route::get('/options', [Application\Billing\CustomDomainController::class, 'options']);
+        Route::get('/api-keys', [Application\Billing\CustomDomainController::class, 'apiKeys']);
+        Route::post('/api-keys', [Application\Billing\CustomDomainController::class, 'storeApiKey']);
+        Route::patch('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'updateApiKey']);
+        Route::delete('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'deleteApiKey']);
+
+        Route::get('/settings', [Application\CustomDomains\SettingsController::class, 'index']);
+        Route::put('/settings', [Application\CustomDomains\SettingsController::class, 'update']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/ai
+    |
+    */
+    Route::group(['prefix' => '/ai'], function () {
+        Route::put('/settings', [Application\IntelligenceController::class, 'update']);
+        Route::post('/query', [Application\IntelligenceController::class, 'query']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Plugins Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/plugins
+    |
+    */
+    Route::group(['prefix' => '/plugins'], function () {
+        Route::put('/settings', [Application\PluginsController::class, 'update']);
+        Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
+        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
+
+        Route::get('/providers', [Application\PluginProviderRulesController::class, 'index']);
+        Route::put('/providers', [Application\PluginProviderRulesController::class, 'update']);
+    });
+
+    // Legacy mods routes (backwards compatibility)
+    Route::group(['prefix' => '/mods'], function () {
+        Route::put('/settings', [Application\PluginsController::class, 'update']);
+        Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
+        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Webhook Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/webhooks
+    |
+    */
+    Route::group(['prefix' => '/webhooks'], function () {
+        Route::get('/', [Application\Webhooks\WebhookController::class, 'index']);
+        Route::put('/', [Application\Webhooks\WebhookController::class, 'settings']);
+
+        Route::post('/test', [Application\Webhooks\WebhookController::class, 'test']);
+        Route::put('/toggle', [Application\Webhooks\WebhookController::class, 'toggle']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/email
+    |
+    */
+    Route::group(['prefix' => '/email'], function () {
+        Route::get('/settings', [Application\EmailController::class, 'getSettings']);
+        Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
+        Route::get('/verification-rules', [Application\EmailController::class, 'getVerificationRules']);
+        Route::put('/verification-rules', [Application\EmailController::class, 'updateVerificationRules']);
+        Route::post('/test', [Application\EmailController::class, 'sendTest']);
+        Route::post('/send', [Application\EmailController::class, 'sendCustom']);
+        
+        // Email notification settings
+        Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
+        Route::put('/notifications/{id}', [Application\EmailController::class, 'updateNotificationSetting']);
+        
+        // Email quota management
+        Route::get('/quotas', [Application\EmailController::class, 'getQuotaInfo']);
+        Route::get('/quotas/user/{userId}', [Application\EmailController::class, 'getUserQuota']);
+        Route::put('/quotas/user/{userId}', [Application\EmailController::class, 'updateUserQuota']);
+        
+        // Email activity logs
+        Route::get('/logs', [Application\EmailActivityController::class, 'index']);
+        Route::get('/logs/stats', [Application\EmailActivityController::class, 'getStats']);
+        Route::get('/logs/templates', [Application\EmailActivityController::class, 'getTemplateKeys']);
+        Route::get('/logs/{id}', [Application\EmailActivityController::class, 'show']);
+        Route::get('/logs/{id}/debug-bundle', [Application\EmailActivityController::class, 'debugBundle']);
+        Route::post('/logs/{id}/resend', [Application\EmailActivityController::class, 'resend']);
+        
+        // Deferred email queue
+        Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);
+        Route::post('/deferred/{id}/send-now', [Application\EmailActivityController::class, 'sendDeferredNow']);
+        Route::delete('/deferred/{id}', [Application\EmailActivityController::class, 'cancelDeferred']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/api
+    |
+    */
+    Route::group(['prefix' => '/api'], function () {
+        Route::get('/', [Application\Api\ApiController::class, 'index']);
+        Route::post('/', [Application\Api\ApiController::class, 'store']);
+        Route::delete('/{key:id}', [Application\Api\ApiController::class, 'delete']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tickets Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/tickets
+    |
+    */
+    Route::group(['prefix' => '/tickets'], function () {
+        Route::get('/', [Application\Tickets\TicketController::class, 'index']);
+        Route::post('/', [Application\Tickets\TicketController::class, 'store']);
+        Route::put('/settings', [Application\Tickets\TicketController::class, 'settings']);
+
+        Route::get('/{ticket:id}', [Application\Tickets\TicketController::class, 'view']);
+        Route::put('/{ticket:id}', [Application\Tickets\TicketController::class, 'update']);
+        Route::delete('/{ticket:id}', [Application\Tickets\TicketController::class, 'delete']);
+
+        Route::post('/message', [Application\Tickets\TicketMessageController::class, 'store']);
+        Route::get('/{ticket:id}/messages', [Application\Tickets\TicketMessageController::class, 'index']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Extensions Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/extensions
+    |
+    */
+    Route::group(['prefix' => '/extensions'], function () {
+        Route::get('/', [Application\Extensions\ExtensionsController::class, 'index']);
+        Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
+        Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
+
+        Route::get('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'view']);
+        Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);
+        Route::post('/{extensionId}/toggle', [Application\Extensions\ExtensionsController::class, 'toggle']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Alerts Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/alerts
+    |
+    */
+    Route::group(['prefix' => '/alerts'], function () {
+        // Legacy settings endpoint
+        Route::patch('/', [Application\Alerts\AlertController::class, 'update']);
+
+        // New CRUD endpoints for multiple alerts
+        Route::get('/', [Application\Alerts\AlertController::class, 'index']);
+        Route::post('/', [Application\Alerts\AlertController::class, 'store']);
+        Route::patch('/{alert:id}', [Application\Alerts\AlertController::class, 'updateAlert']);
+        Route::delete('/{alert:id}', [Application\Alerts\AlertController::class, 'destroy']);
+
+        // User search for alert targeting
+        Route::get('/users/search', [Application\Alerts\AlertController::class, 'searchUsers']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Theme controller routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/theme
+    |
+    */
+    Route::group(['prefix' => '/theme'], function () {
+        Route::put('/colors', [Application\Theme\ThemeController::class, 'colors']);
+
+        Route::post('/reset', [Application\Theme\ThemeController::class, 'reset']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Link controller routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/links
+    |
+    */
+    Route::group(['prefix' => '/links'], function () {
+        Route::get('/', [Application\Links\LinkController::class, 'index']);
+        Route::post('/', [Application\Links\LinkController::class, 'store']);
+
+        Route::patch('/{id}', [Application\Links\LinkController::class, 'update']);
+        Route::delete('/{id}', [Application\Links\LinkController::class, 'delete']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/databases
+    |
+    */
+    Route::group(['prefix' => '/databases'], function () {
+        Route::get('/', [Application\Databases\DatabaseController::class, 'index']);
+        Route::get('/{databaseHost:id}', [Application\Databases\DatabaseController::class, 'view']);
+
+        Route::post('/', [Application\Databases\DatabaseController::class, 'store']);
+
+        Route::patch('/{databaseHost:id}', [Application\Databases\DatabaseController::class, 'update']);
+
+        Route::delete('/{databaseHost:id}', [Application\Databases\DatabaseController::class, 'delete']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Egg Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/eggs
+    |
+    */
+    Route::group(['prefix' => '/eggs'], function () {
+        Route::get('/{egg:id}', [Application\Eggs\EggController::class, 'view']);
+        Route::get('/{egg:id}/export', [Application\Eggs\EggController::class, 'export']);
+
+        Route::post('/', [Application\Eggs\EggController::class, 'store']);
+        Route::post('/{egg:id}/variables', [Application\Eggs\EggVariableController::class, 'store']);
+
+        Route::patch('/{egg:id}', [Application\Eggs\EggController::class, 'update']);
+        Route::patch('/{egg:id}/variables', [Application\Eggs\EggVariableController::class, 'update']);
+
+        Route::delete('/{egg:id}', [Application\Eggs\EggController::class, 'delete']);
+        Route::delete('/{egg:id}/variables/{eggVariable:id}', [Application\Eggs\EggVariableController::class, 'delete']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nest Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/nests
+    |
+    */
+    Route::group(['prefix' => '/nests'], function () {
+        Route::get('/', [Application\Nests\NestController::class, 'index']);
+        Route::get('/{nest:id}', [Application\Nests\NestController::class, 'view']);
+        Route::get('/{nest:id}/eggs', [Application\Eggs\EggController::class, 'index']);
+
+        Route::post('/', [Application\Nests\NestController::class, 'store']);
+        Route::post('/{nest:id}/import', [Application\Nests\NestController::class, 'import']);
+
+        Route::patch('/{nest:id}', [Application\Nests\NestController::class, 'update']);
+
+        Route::delete('/{nest:id}', [Application\Nests\NestController::class, 'delete']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Node Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/nodes
+    |
+    */
+    Route::group(['prefix' => '/nodes'], function () {
+        Route::get('/', [Application\Nodes\NodeController::class, 'index']);
+        Route::get('/deployable', [Application\Nodes\NodeDeploymentController::class, '__invoke']);
+        Route::get('/{node:id}', [Application\Nodes\NodeController::class, 'view']);
+        Route::get('/{node:id}/configuration', [Application\Nodes\NodeConfigurationController::class, '__invoke']);
+        Route::get('/{node:id}/information', [Application\Nodes\NodeInformationController::class, 'information']);
+        Route::get('/{node:id}/utilization', [Application\Nodes\NodeInformationController::class, 'utilization']);
+
+        Route::post('/', [Application\Nodes\NodeController::class, 'store']);
+
+        Route::patch('/{node:id}', [Application\Nodes\NodeController::class, 'update']);
+
+        Route::delete('/{node:id}', [Application\Nodes\NodeController::class, 'delete']);
+
+        Route::group(['prefix' => '/{node:id}/allocations'], function () {
+            Route::get('/', [Application\Nodes\AllocationController::class, 'index']);
+            Route::post('/', [Application\Nodes\AllocationController::class, 'store']);
+            Route::delete('/', [Application\Nodes\AllocationController::class, 'deleteAll']);
+            Route::delete('/{allocation:id}', [Application\Nodes\AllocationController::class, 'delete']);
+        });
+
+        // Wings-RS (Supercharged) endpoints
+        Route::group(['prefix' => '/{node:id}/wings-rs'], function () {
+            Route::post('/detect', [Application\Nodes\NodeWingsRsController::class, 'detect']);
+            Route::get('/overview', [Application\Nodes\NodeWingsRsController::class, 'overview']);
+            Route::get('/stats', [Application\Nodes\NodeWingsRsController::class, 'stats']);
+            Route::get('/logs', [Application\Nodes\NodeWingsRsController::class, 'logs']);
+            Route::get('/logs/{file}', [Application\Nodes\NodeWingsRsController::class, 'logContents'])->where('file', '[a-zA-Z0-9._-]+');
+            Route::post('/upgrade', [Application\Nodes\NodeWingsRsController::class, 'upgrade']);
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Server Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/servers
+    |
+    */
+    Route::group(['prefix' => '/servers'], function () {
+        Route::get('/', [Application\Servers\ServerController::class, 'index']);
+
+        Route::group(['prefix' => '/presets'], function () {
+            Route::get('/', [Application\Servers\ServerPresetController::class, 'index']);
+            Route::post('/', [Application\Servers\ServerPresetController::class, 'store']);
+
+            Route::get('/{server_preset:id}', [Application\Servers\ServerPresetController::class, 'view']);
+            Route::patch('/{server_preset:id}', [Application\Servers\ServerPresetController::class, 'update']);
+            Route::delete('/{server_preset:id}', [Application\Servers\ServerPresetController::class, 'delete']);
+        });
+
+        Route::get('/{server:id}', [Application\Servers\ServerController::class, 'view']);
+        Route::get('/external/{external_id}', [Application\Servers\ExternalServerController::class, 'index']);
+
+        Route::patch('/{server:id}', [Application\Servers\ServerController::class, 'update']);
+        Route::patch('/{server:id}/startup', [Application\Servers\StartupController::class, 'index']);
+
+        Route::post('/', [Application\Servers\ServerController::class, 'store']);
+        Route::post('/preset', [Application\Servers\ServerController::class, 'storeWithPreset']);
+        Route::post('/{server:id}/toggle', [Application\Servers\ServerManagementController::class, 'toggle']);
+        Route::post('/{server:id}/suspend', [Application\Servers\ServerManagementController::class, 'suspend']);
+        Route::post('/{server:id}/unsuspend', [Application\Servers\ServerManagementController::class, 'unsuspend']);
+        Route::post('/{server:id}/reinstall', [Application\Servers\ServerManagementController::class, 'reinstall']);
+        Route::post('/{server:id}/transfer', [Application\Servers\ServerManagementController::class, 'transfer']);
+
+        Route::group(['prefix' => '/{server:id}/wings-rs'], function () {
+            Route::get('/status', [Application\Servers\ServerWingsRsController::class, 'status']);
+            Route::get('/stats', [Application\Servers\ServerWingsRsController::class, 'stats']);
+            Route::get('/install-logs', [Application\Servers\ServerWingsRsController::class, 'installLogs']);
+        });
+
+        Route::post('/{server:id}/delete', [Application\Servers\ServerController::class, 'delete']);
+
+        Route::group(['prefix' => '/{server:id}/databases'], function () {
+            Route::get('/', [Application\Servers\DatabaseController::class, 'index']);
+            Route::get('/{database:id}', [Application\Servers\DatabaseController::class, 'view']);
+
+            Route::post('/', [Application\Servers\DatabaseController::class, 'store']);
+            Route::post('/{database:id}/reset-password', [Application\Servers\DatabaseController::class, 'resetPassword']);
+
+            Route::delete('/{database:id}', [Application\Servers\DatabaseController::class, 'delete']);
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/users
+    |
+    */
+    Route::group(['prefix' => '/users'], function () {
+        Route::get('/', [Application\Users\UserController::class, 'index']);
+        Route::get('/{user:id}', [Application\Users\UserController::class, 'view']);
+        Route::get('/external/{external_id}', [Application\Users\ExternalUserController::class, 'index']);
+
+        Route::post('/', [Application\Users\UserController::class, 'store']);
+        Route::post('/{user:id}/suspend', [Application\Users\UserController::class, 'suspend']);
+
+        Route::patch('/{user:id}', [Application\Users\UserController::class, 'update']);
+
+        Route::delete('/{user:id}', [Application\Users\UserController::class, 'delete']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Role Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/roles
+    |
+    */
+    Route::group(['prefix' => '/roles'], function () {
+        Route::get('/', [Application\Roles\RoleController::class, 'index']);
+        Route::get('/permissions', [Application\Roles\RoleController::class, 'permissions']);
+        Route::get('/{role:id}', [Application\Roles\RoleController::class, 'view']);
+
+        Route::post('/', [Application\Roles\RoleController::class, 'store']);
+
+        Route::patch('/{role:id}', [Application\Roles\RoleController::class, 'update']);
+        Route::patch('/{role:id}/permissions', [Application\Roles\RoleController::class, 'updatePermissions']);
+
+        Route::delete('/{role:id}', [Application\Roles\RoleController::class, 'delete']);
+    });
+});

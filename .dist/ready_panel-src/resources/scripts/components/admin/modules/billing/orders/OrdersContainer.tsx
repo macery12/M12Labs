@@ -1,0 +1,27 @@
+import AdminContentBlock from '@/elements/AdminContentBlock';
+import OrdersTable from './OrdersTable';
+import TitledGreyBox from '@/elements/TitledGreyBox';
+import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+
+export default () => (
+    <AdminContentBlock title={'Billing Orders'}>
+        <div className={'flex w-full flex-row items-center p-8'}>
+            <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
+                <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Orders</h2>
+                <p
+                    className={
+                        'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
+                    }
+                >
+                    A list of the orders placed on this Panel.
+                </p>
+            </div>
+        </div>
+        <TitledGreyBox icon={faExclamationTriangle} title={'Important Information'} className={'mb-8'}>
+            Pending orders are automatically set to expired and deleted after 7 days, making them no longer visible in
+            the admin area. If you wish to remove billing orders from Jexactyl manually, you must make a database query
+            to do so. Removing orders manually is not recommended.
+        </TitledGreyBox>
+        <OrdersTable />
+    </AdminContentBlock>
+);
