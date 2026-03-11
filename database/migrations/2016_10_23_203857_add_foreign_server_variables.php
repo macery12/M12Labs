@@ -12,6 +12,9 @@ class AddForeignServerVariables extends Migration
      */
     public function up(): void
     {
+        // Ensure server_variables FKs match servers.id and service_variables.id
+        // (INT UNSIGNED). Raw ALTER sidesteps DBAL mediumint->int mismatches on
+        // MySQL/MariaDB.
         if (DB::getDriverName() === 'mysql') {
             DB::statement(
                 'ALTER TABLE `server_variables`

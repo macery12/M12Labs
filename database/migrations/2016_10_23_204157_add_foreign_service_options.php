@@ -12,6 +12,8 @@ class AddForeignServiceOptions extends Migration
      */
     public function up(): void
     {
+        // Match service_options.parent_service to services.id (INT UNSIGNED);
+        // raw ALTER avoids DBAL mediumint->int issues on MySQL/MariaDB.
         if (DB::getDriverName() === 'mysql') {
             DB::statement('ALTER TABLE `service_options` MODIFY `parent_service` INT UNSIGNED NOT NULL');
         } else {

@@ -12,6 +12,8 @@ class AddForeignAllocations extends Migration
      */
     public function up(): void
     {
+        // MariaDB requires child FKs to match parent INT UNSIGNED exactly; use raw
+        // ALTER to avoid DBAL miscasting MEDIUMINT->INT on MySQL drivers.
         if (DB::getDriverName() === 'mysql') {
             DB::statement(
                 'ALTER TABLE `allocations`

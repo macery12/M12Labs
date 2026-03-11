@@ -12,6 +12,8 @@ class AddForeignApiPermissions extends Migration
      */
     public function up(): void
     {
+        // Align child key_id with api_keys.id (INT UNSIGNED). Raw ALTER avoids
+        // DBAL mediumint->int quirks on MySQL/MariaDB.
         if (DB::getDriverName() === 'mysql') {
             DB::statement('ALTER TABLE `api_permissions` MODIFY `key_id` INT UNSIGNED NOT NULL');
         } else {

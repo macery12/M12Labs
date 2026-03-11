@@ -12,6 +12,8 @@ class AddForeignServiceVariables extends Migration
      */
     public function up(): void
     {
+        // Align option_id to service_options.id (INT UNSIGNED); raw ALTER avoids
+        // DBAL mediumint->int inconsistencies on MySQL/MariaDB.
         if (DB::getDriverName() === 'mysql') {
             DB::statement('ALTER TABLE `service_variables` MODIFY `option_id` INT UNSIGNED NOT NULL');
         } else {

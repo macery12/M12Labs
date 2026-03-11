@@ -12,6 +12,8 @@ class AddForeignNodes extends Migration
      */
     public function up(): void
     {
+        // Parent locations.id is INT UNSIGNED; force nodes.location to match with
+        // raw ALTER to avoid DBAL mediumint->int issues on MySQL/MariaDB.
         if (DB::getDriverName() === 'mysql') {
             DB::statement('ALTER TABLE `nodes` MODIFY `location` INT UNSIGNED NOT NULL');
         } else {
