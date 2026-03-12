@@ -10,9 +10,15 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        if (Schema::hasTable('coupons')) {
-            Schema::table('coupons', function (Blueprint $table) {
-                $table->enum('allowed_for', ['both', 'purchases', 'renewals'])->default('both')->after('is_active');
+        if (Schema::hasTable('coupons') && !Schema::hasColumn('coupons', 'allowed_for')) {
+            $hasIsActive = Schema::hasColumn('coupons', 'is_active');
+
+            Schema::table('coupons', function (Blueprint $table) use ($hasIsActive) {
+                $column = $table->enum('allowed_for', ['both', 'purchases', 'renewals'])->default('both');
+
+                if ($hasIsActive) {
+                    $column->after('is_active');
+                }
             });
         }
     }
@@ -22,7 +28,7 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        if (Schema::hasTable('coupons')) {
+        if (Schema::hasTable('coupons') && Schema::hasColumn('coupons', 'allowed_for')) {
             Schema::table('coupons', function (Blueprint $table) {
                 $table->dropColumn('allowed_for');
             });

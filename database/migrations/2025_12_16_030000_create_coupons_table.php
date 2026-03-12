@@ -21,6 +21,7 @@ return new class () extends Migration {
                 $table->decimal('min_order_total', 10, 2)->nullable();
                 $table->dateTime('expires_at')->nullable();
                 $table->boolean('is_active')->default(true);
+                $table->enum('allowed_for', ['both', 'purchases', 'renewals'])->default('both');
                 $table->timestamps();
             });
         }
