@@ -132,13 +132,9 @@ class SettingsServiceProvider extends ServiceProvider
 
             $value = Arr::get($values, 'settings::' . $key, $config->get($dotKey));
 
-            $prefixedKey = 'settings::' . $key;
-
-            if ($secrets->isSecretKey($prefixedKey)) {
-                // Only reflect presence when the value exists in DB; otherwise leave env/config untouched
-                if (array_key_exists($prefixedKey, $values)) {
-                    $config->set($dotKey, !empty($value));
-                }
+            if ($secrets->isSecretKey('settings::' . $key)) {
+                // Never decrypt secrets during boot; only surface whether a value exists.
+                $config->set($dotKey, !empty($value));
                 continue;
             }
 
