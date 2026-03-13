@@ -2,6 +2,8 @@
 
 namespace Everest\Services\Billing;
 
+use Everest\Models\Setting;
+
 /**
  * Service to manage payment processor configuration and availability.
  */
@@ -20,8 +22,8 @@ class PaymentProcessorConfigService
         );
 
         // Check if required Stripe keys are configured
-        $publishableKey = config('modules.billing.keys.publishable', '');
-        $secretKey = config('modules.billing.keys.secret', '');
+        $publishableKey = Setting::get('settings::modules:billing:keys:publishable', config('modules.billing.keys.publishable', ''));
+        $secretKey = Setting::get('settings::modules:billing:keys:secret', config('modules.billing.keys.secret', ''));
 
         return $stripeEnabled && !empty($publishableKey) && !empty($secretKey);
     }
@@ -39,7 +41,7 @@ class PaymentProcessorConfigService
         );
 
         // Check if Mollie API key is configured
-        $apiKey = config('modules.billing.mollie.api_key', '');
+        $apiKey = Setting::get('settings::modules:billing:mollie:api_key', config('modules.billing.mollie.api_key', ''));
 
         return $mollieEnabled && !empty($apiKey);
     }
@@ -53,8 +55,8 @@ class PaymentProcessorConfigService
         $paypalEnabled = config('modules.billing.integrations.paypal.enabled', false);
 
         // Check if PayPal credentials are configured
-        $clientId = config('modules.billing.paypal_standalone.client_id', '');
-        $clientSecret = config('modules.billing.paypal_standalone.client_secret', '');
+        $clientId = Setting::get('settings::modules:billing:paypal_standalone:client_id', config('modules.billing.paypal_standalone.client_id', ''));
+        $clientSecret = Setting::get('settings::modules:billing:paypal_standalone:client_secret', config('modules.billing.paypal_standalone.client_secret', ''));
 
         return $paypalEnabled && !empty($clientId) && !empty($clientSecret);
     }

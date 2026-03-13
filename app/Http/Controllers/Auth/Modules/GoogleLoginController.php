@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Laravel\Socialite\Facades\Socialite;
 use Everest\Services\Users\UserCreationService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
+use Everest\Models\Setting;
 
 class GoogleLoginController extends AbstractLoginController
 {
@@ -23,8 +24,8 @@ class GoogleLoginController extends AbstractLoginController
 
         $this->config = [
             'redirect' => route('auth.modules.google.authenticate'),
-            'client_id' => config('modules.auth.google.client_id'),
-            'client_secret' => config('modules.auth.google.client_secret'),
+            'client_id' => Setting::get('settings::modules:auth:google:client_id', config('modules.auth.google.client_id')),
+            'client_secret' => Setting::get('settings::modules:auth:google:client_secret', config('modules.auth.google.client_secret')),
         ];
     }
 

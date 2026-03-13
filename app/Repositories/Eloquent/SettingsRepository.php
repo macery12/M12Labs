@@ -4,6 +4,8 @@ namespace Everest\Repositories\Eloquent;
 
 use Everest\Models\Setting;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
+use Everest\Services\Security\SecretEncryptionService;
+use Illuminate\Foundation\Application;
 
 class SettingsRepository extends EloquentRepository implements SettingsRepositoryInterface
 {
@@ -19,6 +21,11 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
         return Setting::class;
     }
 
+    public function __construct(Application $app, private SecretEncryptionService $secrets)
+    {
+        parent::__construct($app);
+    }
+
     /**
      * Store a new persistent setting in the database.
      *
@@ -26,11 +33,22 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
      */
     public function set(string $key, string $value = null)
     {
-        // Clear item from the cache.
-        $this->clearCache($key);
-        $this->withoutFreshModel()->updateOrCreate(['key' => $key], ['value' => $value ?? '']);
+        $normalizedKey = $this->secrets->normalizeKey($key);
 
-        self::$cache[$key] = $value;
+        if ($this->secrets->isSecretKey($normalizedKey)) {
+            $value = $this->secrets->encryptForStorage($value);
+        }
+
+        // Clear item from the cache.
+        $this->clearCache($normalizedKey);
+        $this->withoutFreshModel()->updateOrCreate(['key' => $normalizedKey], ['value' => $value ?? '']);
+
+        $cached = $value;
+        if ($this->secrets->isSecretKey($normalizedKey)) {
+            $cached = $this->secrets->decryptFromStorage($value);
+        }
+
+        self::$cache[$normalizedKey] = $cached;
     }
 
     /**
@@ -38,23 +56,30 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
      */
     public function get(string $key, mixed $default = null): mixed
     {
+        $normalizedKey = $this->secrets->normalizeKey($key);
+
         // If item has already been requested return it from the cache. If
         // we already know it is missing, immediately return the default value.
-        if (array_key_exists($key, self::$cache)) {
-            return self::$cache[$key];
-        } elseif (array_key_exists($key, self::$databaseMiss)) {
+        if (array_key_exists($normalizedKey, self::$cache)) {
+            return self::$cache[$normalizedKey];
+        } elseif (array_key_exists($normalizedKey, self::$databaseMiss)) {
             return value($default);
         }
 
         /** @var Setting $instance */
-        $instance = $this->getBuilder()->where('key', $key)->first();
+        $instance = $this->getBuilder()->where('key', $normalizedKey)->first();
         if (is_null($instance)) {
-            self::$databaseMiss[$key] = true;
+            self::$databaseMiss[$normalizedKey] = true;
 
             return value($default);
         }
 
-        return self::$cache[$key] = $instance->value;
+        $value = $instance->value;
+        if ($this->secrets->isSecretKey($normalizedKey)) {
+            $value = $this->secrets->decryptFromStorage($value);
+        }
+
+        return self::$cache[$normalizedKey] = $value;
     }
 
     /**
@@ -62,8 +87,10 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
      */
     public function forget(string $key)
     {
-        $this->clearCache($key);
-        $this->deleteWhere(['key' => $key]);
+        $normalizedKey = $this->secrets->normalizeKey($key);
+
+        $this->clearCache($normalizedKey);
+        $this->deleteWhere(['key' => $normalizedKey]);
     }
 
     /**
@@ -72,5 +99,22 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
     private function clearCache(string $key)
     {
         unset(self::$cache[$key], self::$databaseMiss[$key]);
+    }
+
+    /**
+     * Return all settings with secrets transparently decrypted.
+     *
+     * This overrides the base repository to ensure callers never receive raw
+     * encrypted payloads for sensitive keys.
+     */
+    public function all(): \Illuminate\Support\Collection
+    {
+        return parent::all()->map(function (Setting $setting) {
+            if ($this->secrets->isSecretKey($setting->key)) {
+                $setting->value = $this->secrets->decryptFromStorage($setting->value);
+            }
+
+            return $setting;
+        });
     }
 }
