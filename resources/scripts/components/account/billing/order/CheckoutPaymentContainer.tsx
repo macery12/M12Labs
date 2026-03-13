@@ -64,7 +64,7 @@ export default () => {
                 type: 'warning',
                 message: 'Missing configuration details. Please configure your server again.',
             });
-            navigate('/account/billing/order');
+            navigate('/account/billing/order', { replace: true });
             return;
         }
 

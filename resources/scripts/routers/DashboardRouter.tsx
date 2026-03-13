@@ -94,7 +94,7 @@ function DashboardRouter() {
         }
     };
 
-    const resolvePath = (route: string) => {
+    const prefixAccountPath = (route: string) => {
         if (route.startsWith('/')) return route;
         return `/account/${route}`.replace(/\/$/, '');
     };
@@ -204,7 +204,7 @@ function DashboardRouter() {
                             .map(({ route, component: Component, path }) => (
                                 <Route
                                     key={route}
-                                    path={resolvePath(route)}
+                                    path={prefixAccountPath(route)}
                                     element={
                                         (() => {
                                             const area = getAreaForPath(path);

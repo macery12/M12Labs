@@ -1,5 +1,5 @@
 import Spinner from '@/elements/Spinner';
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, type RefObject } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
@@ -63,13 +63,15 @@ export default () => {
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
 
     const { colors } = useStoreState(state => state.theme.data!);
-    const sectionRefs = {
+    const checkoutSections = ['pricing', 'software', 'configuration', 'review'] as const;
+    type CheckoutSection = (typeof checkoutSections)[number];
+    const sectionRefs: Record<CheckoutSection, RefObject<HTMLDivElement>> = {
         pricing: useRef<HTMLDivElement>(null),
         software: useRef<HTMLDivElement>(null),
         configuration: useRef<HTMLDivElement>(null),
         review: useRef<HTMLDivElement>(null),
     };
-    const [activeSection, setActiveSection] = useState<'pricing' | 'software' | 'configuration' | 'review'>('pricing');
+    const [activeSection, setActiveSection] = useState<CheckoutSection>('pricing');
 
     // Auto-generate server name
     const generateServerName = useCallback(() => {
@@ -96,7 +98,7 @@ export default () => {
     const softwareComplete = availableEggs.length > 0 && selectedEggId !== undefined;
     const configurationComplete = serverName.trim() !== '';
     const reviewReady = pricingComplete && softwareComplete && configurationComplete && legalAgreed;
-    const derivedActiveSection = useMemo(() => {
+    const derivedActiveSection: CheckoutSection = useMemo(() => {
         if (!pricingComplete) return 'pricing';
         if (!softwareComplete) return 'software';
         if (!configurationComplete) return 'configuration';
@@ -107,7 +109,7 @@ export default () => {
         setActiveSection(derivedActiveSection);
     }, [derivedActiveSection]);
 
-    const scrollToSection = (section: keyof typeof sectionRefs) => {
+    const scrollToSection = (section: CheckoutSection) => {
         setActiveSection(section);
         sectionRefs[section].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
@@ -230,13 +232,12 @@ export default () => {
 
     if (!product) return <Spinner centered />;
 
-    const sectionList: Array<{ key: 'pricing' | 'software' | 'configuration' | 'review'; label: string; complete: boolean }> =
-        [
-            { key: 'pricing', label: 'Pricing', complete: pricingComplete },
-            { key: 'software', label: 'Software', complete: softwareComplete },
-            { key: 'configuration', label: 'Configuration', complete: configurationComplete },
-            { key: 'review', label: 'Review', complete: reviewReady },
-        ];
+    const sectionList: Array<{ key: CheckoutSection; label: string; complete: boolean }> = [
+        { key: 'pricing', label: 'Pricing', complete: pricingComplete },
+        { key: 'software', label: 'Software', complete: softwareComplete },
+        { key: 'configuration', label: 'Configuration', complete: configurationComplete },
+        { key: 'review', label: 'Review', complete: reviewReady },
+    ];
 
     return (
         <PageContentBlock title={'Configure Checkout'}>
