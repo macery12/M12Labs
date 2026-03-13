@@ -67,10 +67,13 @@ export default () => {
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
+    const [, setVarsUpdateCount] = useState<number>(0);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
-    const reviewStep = hasEditableVariables ? 5 : 4;
+    const TOTAL_STEPS = 3;
+    const PAYMENT_STEP = TOTAL_STEPS + 1;
+    const reviewStep = TOTAL_STEPS;
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -93,18 +96,23 @@ export default () => {
         return `${eggName}-${nodePrefix}-${timestamp}`;
     }, [product, selectedNode, selectedEggId, availableEggs, nodes]);
 
-    // Get total number of steps dynamically
-    const getTotalSteps = () => {
-        let steps = 4; // Node, Egg, Billing, Review (always present)
-        if (hasEditableVariables) steps++; // Add variables step if editable variables exist
-        return steps;
+    const areRequiredVariablesFilled = () => {
+        if (!eggs || eggs.length === 0) return true;
+
+        return eggs.every(variable => {
+            if (!variable.isEditable) return true;
+
+            const isRequired = variable.rules.some(rule => rule.includes('required'));
+            if (!isRequired) return true;
+
+            const value = vars.get(variable.envVariable) ?? variable.serverValue ?? variable.defaultValue;
+            return typeof value === 'string' && value.trim().length > 0;
+        });
     };
 
     // Navigate to next step
     const goToNextStep = () => {
-        const totalSteps = getTotalSteps();
-        if (currentStep < totalSteps + 1) {
-            // +1 for payment step
+        if (currentStep < PAYMENT_STEP) {
             setCurrentStep(currentStep + 1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -120,10 +128,14 @@ export default () => {
 
     // Check if current step is valid
     const isStepValid = (step: number) => {
-        if (step === 1) return hasValidSelectedNode; // Node selection
-        if (step === 2) return availableEggs.length > 0 && selectedEggId !== undefined; // Egg selection
-        if (step === 3) return selectedBillingDays !== 0; // Billing cycle
-        if (hasEditableVariables && step === 4) return true; // Variables (optional inputs)
+        if (step === 1) return hasValidSelectedNode && selectedBillingDays !== 0; // Billing & node selection
+        if (step === 2)
+            return (
+                availableEggs.length > 0 &&
+                selectedEggId !== undefined &&
+                eggs !== undefined &&
+                (!hasEditableVariables || areRequiredVariablesFilled())
+            ); // Server type & variables
         if (step === reviewStep) return serverName.trim() !== '' && legalAgreed; // Review
         return false;
     };
@@ -133,10 +145,8 @@ export default () => {
         const stepMap: { [key: number]: string } = {};
         let stepNum = 1;
 
-        stepMap[stepNum++] = 'Select Location';
-        stepMap[stepNum++] = 'Select Server Type';
-        stepMap[stepNum++] = 'Select Billing Cycle';
-        if (hasEditableVariables) stepMap[stepNum++] = 'Configure Server';
+        stepMap[stepNum++] = 'Billing';
+        stepMap[stepNum++] = 'Server Type';
         stepMap[stepNum++] = 'Review & Confirm';
         stepMap[stepNum++] = 'Payment';
 
@@ -154,40 +164,22 @@ export default () => {
         const steps = [];
         let stepNum = 1;
 
-        // Step 1: Node selection
+        // Step 1: Billing (location + cycle)
         steps.push({
             id: stepNum++,
-            name: 'Location',
+            name: 'Billing',
             status: currentStep > 1 ? 'complete' : currentStep === 1 ? 'current' : 'upcoming',
         });
 
-        // Step 2: Egg selection
-        const eggStep = stepNum++;
+        // Step 2: Server Type
+        const serverTypeStep = stepNum++;
         steps.push({
-            id: eggStep,
+            id: serverTypeStep,
             name: 'Server Type',
-            status: currentStep > eggStep ? 'complete' : currentStep === eggStep ? 'current' : 'upcoming',
+            status: currentStep > serverTypeStep ? 'complete' : currentStep === serverTypeStep ? 'current' : 'upcoming',
         });
 
-        // Step 3: Billing cycle
-        const billingStep = stepNum++;
-        steps.push({
-            id: billingStep,
-            name: 'Billing',
-            status: currentStep > billingStep ? 'complete' : currentStep === billingStep ? 'current' : 'upcoming',
-        });
-
-        // Step 4: Variables (if editable variables exist)
-        if (hasEditableVariables) {
-            const varsStep = stepNum++;
-            steps.push({
-                id: varsStep,
-                name: 'Configure',
-                status: currentStep > varsStep ? 'complete' : currentStep === varsStep ? 'current' : 'upcoming',
-            });
-        }
-
-        // Step 5: Review
+        // Step 3: Review
         const reviewStep = stepNum++;
         steps.push({
             id: reviewStep,
@@ -195,11 +187,11 @@ export default () => {
             status: currentStep > reviewStep ? 'complete' : currentStep === reviewStep ? 'current' : 'upcoming',
         });
 
-        // Step 6: Payment
+        // Step 4: Payment
         steps.push({
             id: stepNum,
             name: 'Payment',
-            status: currentStep >= stepNum ? 'current' : 'upcoming',
+            status: currentStep > reviewStep ? 'current' : 'upcoming',
         });
 
         return steps as { id: number; name: string; status: 'complete' | 'current' | 'upcoming' }[];
@@ -383,6 +375,18 @@ export default () => {
 
     // Render different content based on current step
     const renderStepContent = () => {
+        const selectedNodeData = nodes?.find(n => Number(n.id) === selectedNode);
+        const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
+        const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
+
+        const variableValues =
+            eggs
+                ?.filter(variable => variable.isEditable)
+                .map(variable => ({
+                    name: variable.name,
+                    value: vars.get(variable.envVariable) ?? variable.serverValue ?? variable.defaultValue ?? '',
+                })) || [];
+
         const renderReviewStep = () => (
             <div className={'space-y-6'}>
                 <div>
@@ -427,40 +431,74 @@ export default () => {
                     )}
                 </div>
 
-                {/* Server Configuration Overview */}
+                {/* Final Summary */}
                 <div className={'rounded-lg border p-6'} style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}>
-                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Configuration</h3>
-                    <div className={'space-y-3'}>
-                        {/* Product with Icon */}
-                        <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
-                            {product.icon && <img src={product.icon} className={'h-10 w-10 rounded'} alt={product.name} />}
-                            <div>
-                                <p className={'font-semibold text-gray-200'}>{product.name}</p>
-                                <p className={'text-sm text-gray-400'}>
-                                    {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                    <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Configuration Summary</h3>
+                    <div className={'space-y-4'}>
+                        <div className={'grid gap-4 sm:grid-cols-2'}>
+                            <div className={'rounded-md border border-gray-700 p-4'}>
+                                <p className={'text-xs uppercase tracking-wide text-gray-500'}>Location</p>
+                                <p className={'mt-1 text-sm font-medium text-gray-200'}>
+                                    {selectedNodeData ? selectedNodeData.name : 'Not selected'}
                                 </p>
+                            </div>
+                            <div className={'rounded-md border border-gray-700 p-4'}>
+                                <p className={'text-xs uppercase tracking-wide text-gray-500'}>Billing Cycle</p>
+                                <p className={'mt-1 text-sm font-medium text-gray-200'}>
+                                    {selectedCycle
+                                        ? `${selectedCycle.days} ${selectedCycle.days === 1 ? 'day' : 'days'}`
+                                        : 'Not selected'}
+                                </p>
+                            </div>
+                            <div className={'rounded-md border border-gray-700 p-4'}>
+                                <p className={'text-xs uppercase tracking-wide text-gray-500'}>Server Type</p>
+                                <p className={'mt-1 text-sm font-medium text-gray-200'}>
+                                    {selectedEgg ? selectedEgg.name : 'Not selected'}
+                                </p>
+                            </div>
+                            <div className={'rounded-md border border-gray-700 p-4'}>
+                                <p className={'text-xs uppercase tracking-wide text-gray-500'}>Resources</p>
+                                <div className={'mt-2 grid grid-cols-3 gap-2'}>
+                                    <div className={'text-center'}>
+                                        <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                        <p className={'text-xs text-gray-500'}>CPU</p>
+                                        <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
+                                    </div>
+                                    <div className={'text-center'}>
+                                        <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                        <p className={'text-xs text-gray-500'}>RAM</p>
+                                        <p className={'text-sm font-medium text-gray-200'}>
+                                            {(product.limits.memory / 1024).toFixed(1)} GB
+                                        </p>
+                                    </div>
+                                    <div className={'text-center'}>
+                                        <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
+                                        <p className={'text-xs text-gray-500'}>Storage</p>
+                                        <p className={'text-sm font-medium text-gray-200'}>
+                                            {(product.limits.disk / 1024).toFixed(1)} GB
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Resources Grid */}
-                        <div className={'grid grid-cols-3 gap-4 pt-2'}>
-                            <div className={'text-center'}>
-                                <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                <p className={'text-xs text-gray-500'}>CPU</p>
-                                <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
-                            </div>
-                            <div className={'text-center'}>
-                                <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                <p className={'text-xs text-gray-500'}>RAM</p>
-                                <p className={'text-sm font-medium text-gray-200'}>
-                                    {(product.limits.memory / 1024).toFixed(1)} GB
-                                </p>
-                            </div>
-                            <div className={'text-center'}>
-                                <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                <p className={'text-xs text-gray-500'}>Storage</p>
-                                <p className={'text-sm font-medium text-gray-200'}>{(product.limits.disk / 1024).toFixed(1)} GB</p>
-                            </div>
+                        <div className={'rounded-md border border-gray-700 p-4'}>
+                            <p className={'text-xs uppercase tracking-wide text-gray-500'}>Variables</p>
+                            {variableValues.length > 0 ? (
+                                <div className={'mt-3 space-y-2'}>
+                                    {variableValues.map(variable => (
+                                        <div key={variable.name} className={'flex items-center justify-between text-sm'}>
+                                            <span className={'text-gray-400'}>{variable.name}</span>
+                                            <span className={'text-gray-200 font-medium'}>
+                                                {variable.value && variable.value.toString().trim() !== ''
+                                                    ? variable.value
+                                                    : 'Not set'}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className={'mt-3 text-sm text-gray-400'}>No additional configuration required.</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -517,42 +555,68 @@ export default () => {
         );
 
         switch (currentStep) {
-            case 1: // Node Selection
+            case 1: // Billing (Location + Cycle)
                 return (
                     <div className={'space-y-6'}>
                         <div>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Choose Your Server Location</h2>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Select Billing</h2>
                             <p className={'mt-2 text-gray-400'}>
-                                Select the datacenter where you want your server to be deployed.
+                                Start by choosing where your server will live and how often you want to be billed. Pricing updates
+                                instantly as you make your selections.
                             </p>
                         </div>
-                        {(!nodes || nodes.length < 1) && (
-                            <Alert type={'danger'}>
-                                No nodes are available for this product. Please contact support.
-                            </Alert>
-                        )}
-                        <div className={'grid gap-4 sm:grid-cols-2'}>
-                            {nodes?.map(node => (
-                                <NodeBox
-                                    node={node}
-                                    key={node.id}
-                                    selected={selectedNode}
-                                    setSelected={setSelectedNode}
-                                    basePrice={getCurrentPrice()}
-                                    billingDays={selectedBillingDays}
-                                />
-                            ))}
+                        <div className={'grid gap-6 lg:grid-cols-2'}>
+                            <div className={'space-y-4'}>
+                                <div className={'flex items-center justify-between'}>
+                                    <h3 className={'text-xl font-semibold text-gray-100'}>Choose Location</h3>
+                                    <p className={'text-xs text-gray-500'}>Impacts latency and price</p>
+                                </div>
+                                {(!nodes || nodes.length < 1) && (
+                                    <Alert type={'danger'}>
+                                        No nodes are available for this product. Please contact support.
+                                    </Alert>
+                                )}
+                                <div className={'grid gap-4 sm:grid-cols-2'}>
+                                    {nodes?.map(node => (
+                                        <NodeBox
+                                            node={node}
+                                            key={node.id}
+                                            selected={selectedNode}
+                                            setSelected={setSelectedNode}
+                                            basePrice={getCurrentPrice()}
+                                            billingDays={selectedBillingDays}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={'space-y-4'}>
+                                <div className={'flex items-center justify-between'}>
+                                    <h3 className={'text-xl font-semibold text-gray-100'}>Billing Cycle</h3>
+                                    <p className={'text-xs text-gray-500'}>See discounts or premiums</p>
+                                </div>
+                                <div className={'space-y-3'}>
+                                    {billingCycles.map(cycle => (
+                                        <BillingCycleBox
+                                            cycle={cycle}
+                                            key={cycle.days}
+                                            selected={selectedBillingDays}
+                                            setSelected={setSelectedBillingDays}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );
 
-            case 2: // Egg Selection
+            case 2: // Server Type & Variables
                 return (
                     <div className={'space-y-6'}>
                         <div>
                             <h2 className={'text-3xl font-bold text-gray-100'}>Select Server Type</h2>
                             <p className={'mt-2 text-gray-400'}>
-                                Choose which type of server software you want to run.
+                                Choose which type of server software you want to run and configure any required variables below.
                             </p>
                         </div>
                         {availableEggs.length === 0 ? (
@@ -573,59 +637,48 @@ export default () => {
                                 ))}
                             </div>
                         )}
-                    </div>
-                );
 
-            case 3: // Billing Cycle
-                return (
-                    <div className={'space-y-6'}>
-                        <div>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Choose Billing Cycle</h2>
-                            <p className={'mt-2 text-gray-400'}>
-                                Select how often you want to be billed for this server.
-                            </p>
-                        </div>
-                        <div className={'space-y-3'}>
-                            {billingCycles.map(cycle => (
-                                <BillingCycleBox
-                                    cycle={cycle}
-                                    key={cycle.days}
-                                    selected={selectedBillingDays}
-                                    setSelected={setSelectedBillingDays}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                );
-
-            case 4: // Variables (if any)
-                if (!hasEditableVariables) {
-                    return renderReviewStep();
-                }
-                return (
-                    <div className={'space-y-6'}>
-                        <div>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Configure Server</h2>
-                            <p className={'mt-2 text-gray-400'}>Set up your server variables and configuration.</p>
-                        </div>
-                        <div className={'grid gap-4 sm:grid-cols-2'}>
-                            {eggs?.map(variable => (
-                                <div key={variable.envVariable}>
-                                    {variable.isEditable && <VariableBox variable={variable} vars={vars} />}
+                        <div
+                            className={'rounded-lg border p-6'}
+                            style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                        >
+                            <div className={'flex items-center justify-between'}>
+                                <div>
+                                    <h3 className={'text-lg font-semibold text-gray-200'}>Server Configuration</h3>
+                                    <p className={'text-sm text-gray-400'}>
+                                        Fill out variables required by your selected server type.
+                                    </p>
                                 </div>
-                            ))}
+                            </div>
+                            <div className={'mt-4 grid gap-4 sm:grid-cols-2'}>
+                                {eggs === undefined && selectedEggId !== undefined ? (
+                                    <Spinner centered />
+                                ) : hasEditableVariables && eggs ? (
+                                    eggs
+                                        .filter(variable => variable.isEditable)
+                                        .map(variable => (
+                                            <div key={variable.envVariable}>
+                                                <VariableBox
+                                                    variable={variable}
+                                                    vars={vars}
+                                                    onValueChange={() => setVarsUpdateCount(v => v + 1)}
+                                                />
+                                            </div>
+                                        ))
+                                ) : (
+                                    <p className={'text-sm text-gray-400'}>
+                                        No additional configuration is required for this server type.
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );
 
-            default: // Review & Name Server
-                const finalStep = getTotalSteps();
-                if (currentStep === finalStep) {
-                    return renderReviewStep();
-                }
+            case 3:
+                return renderReviewStep();
 
-                // Payment step
-                if (currentStep === finalStep + 1) {
+            case 4: // Payment step
                     return (
                         <div className={'space-y-6'}>
                             <div>
@@ -665,8 +718,8 @@ export default () => {
                             </div>
                         </div>
                     );
-                }
-                return null;
+            default:
+                return renderReviewStep();
         }
     };
 
@@ -706,8 +759,9 @@ export default () => {
                                     couponDiscount={couponData?.discount || 0}
                                     couponCode={couponData?.coupon.code}
                                     productName={product.name}
-                                    showDetailedBreakdown={currentStep === getTotalSteps()}
-                                    showCouponInput={currentStep === getTotalSteps()}
+                                     // Keep detailed pricing breakdown visible throughout checkout for transparency.
+                                     showDetailedBreakdown
+                                     showCouponInput={currentStep === TOTAL_STEPS}
                                     onCouponApplied={handleCouponApplied}
                                 />
                             </div>
@@ -719,19 +773,19 @@ export default () => {
             {/* Navigation Buttons */}
             <div className={'mt-8 flex items-center justify-between border-t border-gray-700 pt-6'}>
                 <div>
-                    {currentStep > 1 && currentStep <= getTotalSteps() && (
+                    {currentStep > 1 && currentStep <= PAYMENT_STEP && (
                         <Button.Text onClick={goToPreviousStep} variant={Button.Variants.Secondary}>
                             ← Back
                         </Button.Text>
                     )}
                 </div>
                 <div>
-                    {currentStep < getTotalSteps() && (
+                    {currentStep < TOTAL_STEPS && (
                         <Button onClick={goToNextStep} size={Button.Sizes.Large} disabled={!isStepValid(currentStep)}>
-                            {currentStep === getTotalSteps() - 1 ? 'Continue to Review' : 'Next →'}
+                            {currentStep === TOTAL_STEPS - 1 ? 'Continue to Review' : 'Next →'}
                         </Button>
                     )}
-                    {currentStep === getTotalSteps() && (
+                    {currentStep === TOTAL_STEPS && (
                         <Button
                             onClick={goToNextStep}
                             size={Button.Sizes.Large}

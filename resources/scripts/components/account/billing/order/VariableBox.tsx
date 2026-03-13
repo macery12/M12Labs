@@ -10,9 +10,10 @@ import isEqual from 'react-fast-compare';
 interface Props {
     variable: EggVariable;
     vars: Map<string, string>;
+    onValueChange?: () => void;
 }
 
-const VariableBox = ({ variable, vars }: Props) => {
+const VariableBox = ({ variable, vars, onValueChange }: Props) => {
     const FLASH_KEY = `billing:variable:${variable.envVariable}`;
 
     const useSwitch = variable.rules.some(
@@ -37,6 +38,7 @@ const VariableBox = ({ variable, vars }: Props) => {
                             } else {
                                 vars.set(variable.envVariable, variable.serverValue === '1' ? '0' : '1');
                             }
+                            onValueChange?.();
                         }}
                     />
                 </>
@@ -45,12 +47,13 @@ const VariableBox = ({ variable, vars }: Props) => {
                     {selectValues.length > 0 ? (
                         <>
                             <Select
-                                onChange={e => {
-                                    vars.set(variable.envVariable, e.target.value);
-                                }}
-                                name={variable.envVariable}
-                                defaultValue={variable.serverValue ?? variable.defaultValue}
-                            >
+                                 onChange={e => {
+                                     vars.set(variable.envVariable, e.target.value);
+                                     onValueChange?.();
+                                 }}
+                                 name={variable.envVariable}
+                                 defaultValue={variable.serverValue ?? variable.defaultValue}
+                             >
                                 {selectValues.map(selectValue => (
                                     <option key={selectValue.replace('in:', '')} value={selectValue.replace('in:', '')}>
                                         {selectValue.replace('in:', '')}
@@ -61,13 +64,14 @@ const VariableBox = ({ variable, vars }: Props) => {
                     ) : (
                         <>
                             <Input
-                                onKeyUp={e => {
-                                    vars.set(variable.envVariable, e.currentTarget.value);
-                                }}
-                                name={variable.envVariable}
-                                defaultValue={variable.serverValue ?? ''}
-                                placeholder={variable.defaultValue}
-                            />
+                                 onKeyUp={e => {
+                                     vars.set(variable.envVariable, e.currentTarget.value);
+                                     onValueChange?.();
+                                 }}
+                                 name={variable.envVariable}
+                                 defaultValue={variable.serverValue ?? ''}
+                                 placeholder={variable.defaultValue}
+                             />
                         </>
                     )}
                 </>
