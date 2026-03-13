@@ -417,16 +417,14 @@ export default () => {
                                 }
                                 onClick={() => setLegalAgreed(prev => !prev)}
                             >
-                                <div onClick={e => e.stopPropagation()}>
-                                    <AdminCheckbox
-                                        name={'legal'}
-                                        checked={legalAgreed}
-                                        onChange={e => {
-                                            e.stopPropagation();
-                                            setLegalAgreed(e.currentTarget.checked);
-                                        }}
-                                    />
-                                </div>
+                                <AdminCheckbox
+                                    name={'legal'}
+                                    checked={legalAgreed}
+                                    onChange={e => {
+                                        e.stopPropagation();
+                                        setLegalAgreed(e.currentTarget.checked);
+                                    }}
+                                />
                                 <div className={'min-w-0 flex-1'}>
                                     <p className={'text-sm font-medium text-gray-200'}>
                                         I agree to the{' '}
