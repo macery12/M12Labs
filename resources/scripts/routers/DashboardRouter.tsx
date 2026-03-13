@@ -94,6 +94,11 @@ function DashboardRouter() {
         }
     };
 
+    const resolvePath = (route: string) => {
+        if (route.startsWith('/')) return route;
+        return `/account/${route}`.replace(/\/$/, '');
+    };
+
     return (
         <div className={'flex h-screen'}>
             {' '}
@@ -199,7 +204,7 @@ function DashboardRouter() {
                             .map(({ route, component: Component, path }) => (
                                 <Route
                                     key={route}
-                                    path={`/account/${route}`.replace(/\/$/, '')}
+                                    path={resolvePath(route)}
                                     element={
                                         (() => {
                                             const area = getAreaForPath(path);
