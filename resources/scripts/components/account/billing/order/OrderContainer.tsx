@@ -1,5 +1,5 @@
 import Spinner from '@/elements/Spinner';
-import { useEffect, useMemo, useRef, useState, useCallback, type RefObject } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import NodeBox from '@account/billing/order/NodeBox';
@@ -9,7 +9,7 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import VariableBox from '@account/billing/order/VariableBox';
 import SubtotalCard from '@account/billing/order/SubtotalCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExternalLinkAlt, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
 import { Alert } from '@/elements/alert';
 import useFlash from '@/plugins/useFlash';
 import { EggVariable } from '@definitions/server';
@@ -63,15 +63,6 @@ export default () => {
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
 
     const { colors } = useStoreState(state => state.theme.data!);
-    const checkoutSections = ['pricing', 'software', 'configuration', 'review'] as const;
-    type CheckoutSection = (typeof checkoutSections)[number];
-    const sectionRefs: Record<CheckoutSection, RefObject<HTMLDivElement>> = {
-        pricing: useRef<HTMLDivElement>(null),
-        software: useRef<HTMLDivElement>(null),
-        configuration: useRef<HTMLDivElement>(null),
-        review: useRef<HTMLDivElement>(null),
-    };
-    const [activeSection, setActiveSection] = useState<CheckoutSection>('pricing');
 
     // Auto-generate server name
     const generateServerName = useCallback(() => {
@@ -98,21 +89,6 @@ export default () => {
     const softwareComplete = availableEggs.length > 0 && selectedEggId !== undefined;
     const configurationComplete = serverName.trim() !== '';
     const reviewReady = pricingComplete && softwareComplete && configurationComplete && legalAgreed;
-    const derivedActiveSection: CheckoutSection = useMemo(() => {
-        if (!pricingComplete) return 'pricing';
-        if (!softwareComplete) return 'software';
-        if (!configurationComplete) return 'configuration';
-        return 'review';
-    }, [pricingComplete, softwareComplete, configurationComplete]);
-
-    useEffect(() => {
-        setActiveSection(derivedActiveSection);
-    }, [derivedActiveSection]);
-
-    const scrollToSection = (section: CheckoutSection) => {
-        setActiveSection(section);
-        sectionRefs[section].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
 
     const handleCouponApplied = (data: ValidateCouponResponse | null) => {
         setCouponData(data);
@@ -232,13 +208,6 @@ export default () => {
 
     if (!product) return <Spinner centered />;
 
-    const sectionList: Array<{ key: CheckoutSection; label: string; complete: boolean }> = [
-        { key: 'pricing', label: 'Pricing', complete: pricingComplete },
-        { key: 'software', label: 'Software', complete: softwareComplete },
-        { key: 'configuration', label: 'Configuration', complete: configurationComplete },
-        { key: 'review', label: 'Review', complete: reviewReady },
-    ];
-
     return (
         <PageContentBlock title={'Configure Checkout'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
@@ -246,53 +215,18 @@ export default () => {
             <div className={'mb-8'}>
                 <h1 className={'text-4xl font-bold text-gray-100'}>Configure Your Server</h1>
                 <p className={'mt-2 text-base text-gray-400'}>
-                    Choose pricing, software, configuration, and review everything on a single page before payment.
+                    Choose your node, software, configuration, and review everything on a single page before payment.
                 </p>
-            </div>
-
-            <div
-                className={'mb-8 rounded-lg border p-4'}
-                style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
-            >
-                <div className={'flex flex-wrap gap-3'}>
-                    {sectionList.map(section => {
-                        const isActive = activeSection === section.key;
-                        return (
-                            <button
-                                key={section.key}
-                                className={classNames(
-                                    'flex items-center gap-3 rounded-lg border px-4 py-2 text-sm font-semibold transition-all',
-                                    isActive ? 'shadow-lg' : 'opacity-80 hover:opacity-100',
-                                )}
-                                style={{
-                                    borderColor: section.complete ? colors.primary : '#4b5563',
-                                    backgroundColor: isActive ? `${colors.primary}15` : 'transparent',
-                                }}
-                                onClick={() => scrollToSection(section.key)}
-                            >
-                                <span
-                                    className={classNames(
-                                        'flex h-6 w-6 items-center justify-center rounded-full text-xs',
-                                        section.complete ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-300',
-                                    )}
-                                >
-                                    {section.complete ? <FontAwesomeIcon icon={faCheckCircle} /> : ''}
-                                </span>
-                                <span className={'text-gray-100'}>{section.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
             </div>
 
             <div className={'grid gap-8 lg:grid-cols-12'}>
                 <div className={'space-y-10 lg:col-span-8'}>
-                    <section ref={sectionRefs.pricing} id={'pricing'} className={'space-y-6'}>
+                    <section id={'pricing'} className={'space-y-6'}>
                         <div className={'space-y-2'}>
                             <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 1</p>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Pricing</h2>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Node Selection</h2>
                             <p className={'text-gray-400'}>
-                                Choose where your server is hosted and how you want to be billed. Pricing updates instantly.
+                                Select the node where your server will run and choose your billing cycle.
                             </p>
                         </div>
                         {(!nodes || nodes.length < 1) && (
@@ -323,7 +257,7 @@ export default () => {
                         </div>
                     </section>
 
-                    <section ref={sectionRefs.software} id={'software'} className={'space-y-6'}>
+                    <section id={'software'} className={'space-y-6'}>
                         <div className={'space-y-2'}>
                             <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 2</p>
                             <h2 className={'text-3xl font-bold text-gray-100'}>Software</h2>
@@ -349,7 +283,7 @@ export default () => {
                         )}
                     </section>
 
-                    <section ref={sectionRefs.configuration} id={'configuration'} className={'space-y-6'}>
+                    <section id={'configuration'} className={'space-y-6'}>
                         <div className={'space-y-2'}>
                             <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 3</p>
                             <h2 className={'text-3xl font-bold text-gray-100'}>Configuration</h2>
@@ -409,7 +343,7 @@ export default () => {
                         )}
                     </section>
 
-                    <section ref={sectionRefs.review} id={'review'} className={'space-y-6'}>
+                    <section id={'review'} className={'space-y-6'}>
                         <div className={'space-y-2'}>
                             <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 4</p>
                             <h2 className={'text-3xl font-bold text-gray-100'}>Review</h2>
@@ -517,11 +451,7 @@ export default () => {
                                 <Button
                                     onClick={() => {
                                         setServerNameTouched(true);
-                                        if (!reviewReady) {
-                                            const targetSection = derivedActiveSection;
-                                            scrollToSection(targetSection);
-                                            return;
-                                        }
+                                        if (!reviewReady) return;
                                         navigate('/checkout/payment', {
                                             state: {
                                                 productId: product.id,
