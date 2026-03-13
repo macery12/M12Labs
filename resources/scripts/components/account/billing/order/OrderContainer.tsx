@@ -209,8 +209,13 @@ export default () => {
     if (!product) return <Spinner centered />;
 
     const sectionContainerClass =
-        'space-y-6 rounded-2xl border border-gray-700/80 p-6 shadow-lg shadow-black/15 transition-colors';
+        'space-y-6 rounded-2xl border border-gray-800 p-6 shadow-lg shadow-black/15 transition-colors';
     const sectionHeaderClass = 'space-y-1.5';
+    const sectionContainerStyle = {
+        backgroundColor: colors.background,
+        borderColor: '#1f2937',
+    };
+    const cardSurfaceStyle = { backgroundColor: colors.secondary, borderColor: '#374151' };
 
     return (
         <PageContentBlock title={'Configure Checkout'}>
@@ -225,11 +230,7 @@ export default () => {
 
             <div className={'grid gap-8 lg:grid-cols-12'}>
                 <div className={'space-y-12 lg:col-span-8'}>
-                    <section
-                        id={'pricing'}
-                        className={`${sectionContainerClass}`}
-                        style={{ backgroundColor: colors.secondary }}
-                    >
+                    <section id={'pricing'} className={`${sectionContainerClass}`} style={sectionContainerStyle}>
                         <div className={sectionHeaderClass}>
                             <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 1</p>
                             <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Node Selection</h2>
@@ -265,11 +266,7 @@ export default () => {
                         </div>
                     </section>
 
-                    <section
-                        id={'software'}
-                        className={`${sectionContainerClass}`}
-                        style={{ backgroundColor: colors.secondary }}
-                    >
+                    <section id={'software'} className={`${sectionContainerClass}`} style={sectionContainerStyle}>
                         <div className={sectionHeaderClass}>
                             <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 2</p>
                             <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Software</h2>
@@ -297,11 +294,7 @@ export default () => {
                         )}
                     </section>
 
-                    <section
-                        id={'configuration'}
-                        className={`${sectionContainerClass}`}
-                        style={{ backgroundColor: colors.secondary }}
-                    >
+                    <section id={'configuration'} className={`${sectionContainerClass}`} style={sectionContainerStyle}>
                         <div className={sectionHeaderClass}>
                             <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 3</p>
                             <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Configuration</h2>
@@ -311,7 +304,7 @@ export default () => {
                         </div>
                         <div
                             className={'rounded-lg border p-6'}
-                            style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                            style={cardSurfaceStyle}
                         >
                             <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
                             <input
@@ -361,11 +354,7 @@ export default () => {
                         )}
                     </section>
 
-                    <section
-                        id={'review'}
-                        className={`${sectionContainerClass}`}
-                        style={{ backgroundColor: colors.secondary }}
-                    >
+                    <section id={'review'} className={`${sectionContainerClass}`} style={sectionContainerStyle}>
                         <div className={sectionHeaderClass}>
                             <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 4</p>
                             <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Review</h2>
@@ -376,7 +365,7 @@ export default () => {
 
                         <div
                             className={'rounded-lg border p-6 space-y-6'}
-                            style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                            style={cardSurfaceStyle}
                         >
                             <div className={'space-y-3'}>
                                 <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
@@ -426,13 +415,21 @@ export default () => {
                                         ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
                                         : { borderColor: '#374151', backgroundColor: colors.secondary }
                                 }
-                                onClick={() => setLegalAgreed(!legalAgreed)}
+                                onClick={e => {
+                                    if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return;
+                                    setLegalAgreed(prev => !prev);
+                                }}
                             >
-                                <AdminCheckbox
-                                    name={'legal'}
-                                    checked={legalAgreed}
-                                    onChange={() => setLegalAgreed(!legalAgreed)}
-                                />
+                                <div onClick={e => e.stopPropagation()}>
+                                    <AdminCheckbox
+                                        name={'legal'}
+                                        checked={legalAgreed}
+                                        onChange={e => {
+                                            e.stopPropagation();
+                                            setLegalAgreed(e.currentTarget.checked);
+                                        }}
+                                    />
+                                </div>
                                 <div className={'min-w-0 flex-1'}>
                                     <p className={'text-sm font-medium text-gray-200'}>
                                         I agree to the{' '}
