@@ -415,10 +415,7 @@ export default () => {
                                         ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
                                         : { borderColor: '#374151', backgroundColor: colors.secondary }
                                 }
-                                onClick={e => {
-                                    if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return;
-                                    setLegalAgreed(prev => !prev);
-                                }}
+                                onClick={() => setLegalAgreed(prev => !prev)}
                             >
                                 <div onClick={e => e.stopPropagation()}>
                                     <AdminCheckbox
