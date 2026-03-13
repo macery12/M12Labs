@@ -208,6 +208,10 @@ export default () => {
 
     if (!product) return <Spinner centered />;
 
+    const sectionContainerClass =
+        'space-y-6 rounded-2xl border border-gray-700/80 p-6 shadow-lg shadow-black/15 transition-colors';
+    const sectionHeaderClass = 'space-y-1.5';
+
     return (
         <PageContentBlock title={'Configure Checkout'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
@@ -220,12 +224,16 @@ export default () => {
             </div>
 
             <div className={'grid gap-8 lg:grid-cols-12'}>
-                <div className={'space-y-10 lg:col-span-8'}>
-                    <section id={'pricing'} className={'space-y-6'}>
-                        <div className={'space-y-2'}>
-                            <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 1</p>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Node Selection</h2>
-                            <p className={'text-gray-400'}>
+                <div className={'space-y-12 lg:col-span-8'}>
+                    <section
+                        id={'pricing'}
+                        className={`${sectionContainerClass}`}
+                        style={{ backgroundColor: colors.secondary }}
+                    >
+                        <div className={sectionHeaderClass}>
+                            <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 1</p>
+                            <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Node Selection</h2>
+                            <p className={'text-sm text-gray-400 md:text-base'}>
                                 Select the node where your server will run and choose your billing cycle.
                             </p>
                         </div>
@@ -257,11 +265,17 @@ export default () => {
                         </div>
                     </section>
 
-                    <section id={'software'} className={'space-y-6'}>
-                        <div className={'space-y-2'}>
-                            <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 2</p>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Software</h2>
-                            <p className={'text-gray-400'}>Pick the server software or modpack you want to run.</p>
+                    <section
+                        id={'software'}
+                        className={`${sectionContainerClass}`}
+                        style={{ backgroundColor: colors.secondary }}
+                    >
+                        <div className={sectionHeaderClass}>
+                            <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 2</p>
+                            <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Software</h2>
+                            <p className={'text-sm text-gray-400 md:text-base'}>
+                                Pick the server software or modpack you want to run.
+                            </p>
                         </div>
                         {availableEggs.length === 0 ? (
                             <Alert type={'warning'}>
@@ -283,11 +297,15 @@ export default () => {
                         )}
                     </section>
 
-                    <section id={'configuration'} className={'space-y-6'}>
-                        <div className={'space-y-2'}>
-                            <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 3</p>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Configuration</h2>
-                            <p className={'text-gray-400'}>
+                    <section
+                        id={'configuration'}
+                        className={`${sectionContainerClass}`}
+                        style={{ backgroundColor: colors.secondary }}
+                    >
+                        <div className={sectionHeaderClass}>
+                            <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 3</p>
+                            <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Configuration</h2>
+                            <p className={'text-sm text-gray-400 md:text-base'}>
                                 Name your server and set any required configuration values for your selected software.
                             </p>
                         </div>
@@ -343,11 +361,17 @@ export default () => {
                         )}
                     </section>
 
-                    <section id={'review'} className={'space-y-6'}>
-                        <div className={'space-y-2'}>
-                            <p className={'text-sm uppercase tracking-wide text-gray-400'}>Section 4</p>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Review</h2>
-                            <p className={'text-gray-400'}>Confirm your selections before continuing to payment.</p>
+                    <section
+                        id={'review'}
+                        className={`${sectionContainerClass}`}
+                        style={{ backgroundColor: colors.secondary }}
+                    >
+                        <div className={sectionHeaderClass}>
+                            <p className={'text-xs uppercase tracking-[0.25em] text-gray-400'}>Section 4</p>
+                            <h2 className={'text-3xl font-bold text-gray-100 leading-tight'}>Review</h2>
+                            <p className={'text-sm text-gray-400 md:text-base'}>
+                                Confirm your selections before continuing to payment.
+                            </p>
                         </div>
 
                         <div
