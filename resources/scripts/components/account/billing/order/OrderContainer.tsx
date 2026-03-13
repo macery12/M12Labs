@@ -67,7 +67,7 @@ export default () => {
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
-    const [, setVarsUpdateCount] = useState<number>(0);
+    const [, forceVariableRender] = useState<number>(0);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
@@ -557,53 +557,78 @@ export default () => {
         switch (currentStep) {
             case 1: // Billing (Location + Cycle)
                 return (
-                    <div className={'space-y-6'}>
-                        <div>
-                            <h2 className={'text-3xl font-bold text-gray-100'}>Select Billing</h2>
-                            <p className={'mt-2 text-gray-400'}>
-                                Start by choosing where your server will live and how often you want to be billed. Pricing updates
-                                instantly as you make your selections.
+                    <div className={'space-y-5'}>
+                        <div className={'space-y-1'}>
+                            <h2 className={'text-3xl font-bold text-gray-100'}>Configure Pricing</h2>
+                            <p className={'text-gray-400'}>
+                                Choose where your server runs and how you want to be billed. Pricing and summary update instantly.
                             </p>
                         </div>
-                        <div className={'grid gap-6 lg:grid-cols-2'}>
-                            <div className={'space-y-4'}>
-                                <div className={'flex items-center justify-between'}>
-                                    <h3 className={'text-xl font-semibold text-gray-100'}>Choose Location</h3>
-                                    <p className={'text-xs text-gray-500'}>Impacts latency and price</p>
+
+                        <div
+                            className={'rounded-xl border p-6 shadow-lg'}
+                            style={{ backgroundColor: colors.secondary, borderColor: '#374151' }}
+                        >
+                            <div className={'flex flex-col gap-2 border-b border-gray-700 pb-4 sm:flex-row sm:items-center sm:justify-between'}>
+                                <div>
+                                    <p className={'text-xs uppercase tracking-wide text-gray-500'}>Step 1</p>
+                                    <h3 className={'text-xl font-semibold text-gray-100'}>Location & Billing Cycle</h3>
+                                    <p className={'text-sm text-gray-400'}>
+                                        Select a location and cycle to see real pricing, discounts, and premiums.
+                                    </p>
                                 </div>
-                                {(!nodes || nodes.length < 1) && (
-                                    <Alert type={'danger'}>
-                                        No nodes are available for this product. Please contact support.
-                                    </Alert>
-                                )}
-                                <div className={'grid gap-4 sm:grid-cols-2'}>
-                                    {nodes?.map(node => (
-                                        <NodeBox
-                                            node={node}
-                                            key={node.id}
-                                            selected={selectedNode}
-                                            setSelected={setSelectedNode}
-                                            basePrice={getCurrentPrice()}
-                                            billingDays={selectedBillingDays}
-                                        />
-                                    ))}
+                                <div className={'flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300'}>
+                                    <span className={'text-gray-400'}>Current total</span>
+                                    <span className={'font-semibold'} style={{ color: colors.primary }}>
+                                        ${getCurrentPrice().toFixed(2)}
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className={'space-y-4'}>
-                                <div className={'flex items-center justify-between'}>
-                                    <h3 className={'text-xl font-semibold text-gray-100'}>Billing Cycle</h3>
-                                    <p className={'text-xs text-gray-500'}>See discounts or premiums</p>
-                                </div>
+                            <div className={'mt-5 grid gap-6 md:grid-cols-2'}>
                                 <div className={'space-y-3'}>
-                                    {billingCycles.map(cycle => (
-                                        <BillingCycleBox
-                                            cycle={cycle}
-                                            key={cycle.days}
-                                            selected={selectedBillingDays}
-                                            setSelected={setSelectedBillingDays}
-                                        />
-                                    ))}
+                                    <div className={'flex items-center justify-between'}>
+                                        <h4 className={'text-sm font-semibold text-gray-200 uppercase tracking-wide'}>
+                                            Location
+                                        </h4>
+                                        <span className={'text-xs text-gray-500'}>Affects latency & price</span>
+                                    </div>
+                                    {(!nodes || nodes.length < 1) && (
+                                        <Alert type={'danger'}>
+                                            No nodes are available for this product. Please contact support.
+                                        </Alert>
+                                    )}
+                                    <div className={'grid gap-3 sm:grid-cols-2'}>
+                                        {nodes?.map(node => (
+                                            <NodeBox
+                                                node={node}
+                                                key={node.id}
+                                                selected={selectedNode}
+                                                setSelected={setSelectedNode}
+                                                basePrice={getCurrentPrice()}
+                                                billingDays={selectedBillingDays}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className={'space-y-3'}>
+                                    <div className={'flex items-center justify-between'}>
+                                        <h4 className={'text-sm font-semibold text-gray-200 uppercase tracking-wide'}>
+                                            Billing Cycle
+                                        </h4>
+                                        <span className={'text-xs text-gray-500'}>Discounts & premiums shown</span>
+                                    </div>
+                                    <div className={'grid gap-3'}>
+                                        {billingCycles.map(cycle => (
+                                            <BillingCycleBox
+                                                cycle={cycle}
+                                                key={cycle.days}
+                                                selected={selectedBillingDays}
+                                                setSelected={setSelectedBillingDays}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -661,7 +686,7 @@ export default () => {
                                                 <VariableBox
                                                     variable={variable}
                                                     vars={vars}
-                                                    onValueChange={() => setVarsUpdateCount(v => v + 1)}
+                                                    onValueChange={() => forceVariableRender(v => v + 1)}
                                                 />
                                             </div>
                                         ))
@@ -739,15 +764,15 @@ export default () => {
             <CheckoutStepper steps={getWizardSteps()} />
 
             {/* Main Wizard Content with Two-Column Layout */}
-            <div className={'mt-10'}>
+            <div className={'mt-8'}>
                 <div className={'mx-auto max-w-7xl'}>
-                    <div className={'grid grid-cols-1 lg:grid-cols-3 gap-8'}>
+                    <div className={'grid grid-cols-1 gap-8 lg:grid-cols-12'}>
                         {/* Left Column - Main Content */}
-                        <div className={'lg:col-span-2'}>{renderStepContent()}</div>
+                        <div className={'lg:col-span-8 xl:col-span-8'}>{renderStepContent()}</div>
 
                         {/* Right Column - Sticky Subtotal Card */}
-                        <div className={'lg:col-span-1'}>
-                            <div className={'sticky top-24'}>
+                        <div className={'lg:col-span-4 xl:col-span-4'}>
+                            <div className={'lg:sticky lg:top-20'}>
                                 <SubtotalCard
                                     basePrice={product.price}
                                     selectedNode={selectedNode}
@@ -759,9 +784,9 @@ export default () => {
                                     couponDiscount={couponData?.discount || 0}
                                     couponCode={couponData?.coupon.code}
                                     productName={product.name}
-                                     // Keep detailed pricing breakdown visible throughout checkout for transparency.
-                                     showDetailedBreakdown
-                                     showCouponInput={currentStep === TOTAL_STEPS}
+                                    // Keep detailed pricing breakdown visible throughout checkout for transparency.
+                                    showDetailedBreakdown={currentStep <= TOTAL_STEPS}
+                                    showCouponInput={currentStep === TOTAL_STEPS}
                                     onCouponApplied={handleCouponApplied}
                                 />
                             </div>
