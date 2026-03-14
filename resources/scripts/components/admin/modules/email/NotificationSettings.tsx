@@ -98,11 +98,11 @@ export default () => {
                             return (
                                 <div
                                     key={setting.id}
-                                    className='flex items-center justify-between rounded-lg border border-neutral-700 p-4'
+                                    className='flex flex-col gap-3 rounded-lg border border-neutral-700 p-4 sm:flex-row sm:items-center sm:justify-between'
                                     style={{ backgroundColor: secondary }}
                                 >
-                                    <div className='flex-1'>
-                                        <div className='flex items-center gap-3'>
+                                    <div className='min-w-0 flex-1'>
+                                        <div className='flex flex-wrap items-center gap-2'>
                                             <Label>{setting.name}</Label>
                                             {setting.rate_limit_exempt && (
                                                 <span className='px-2 py-1 text-xs bg-blue-600 text-white rounded'>
@@ -113,7 +113,7 @@ export default () => {
                                         {setting.description && (
                                             <p className='text-sm text-neutral-300 mt-1'>{setting.description}</p>
                                         )}
-                                        <p className='text-xs text-neutral-400 mt-1 font-mono'>
+                                        <p className='text-xs text-neutral-400 mt-1 font-mono break-all'>
                                             {setting.template_key}
                                         </p>
                                     </div>
@@ -124,7 +124,7 @@ export default () => {
                                                 toggleSetting(setting);
                                             }
                                         }}
-                                        className={`ml-4 px-4 py-2 ${
+                                        className={`flex-shrink-0 self-start px-4 py-2 sm:ml-4 sm:self-center ${
                                             toggling[setting.template_key] ? 'opacity-50 cursor-not-allowed' : ''
                                         }`}
                                     >

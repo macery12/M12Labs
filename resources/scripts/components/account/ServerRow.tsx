@@ -140,7 +140,7 @@ export default ({
                 />
                 <Link
                     to={`/server/${server.id}`}
-                    className="col-span-1 mb-4 min-w-0 text-white transition duration-300 hover:brightness-150 lg:col-span-6 lg:mb-0"
+                    className="col-span-1 mb-4 min-w-0 text-center text-white transition duration-300 hover:brightness-150 lg:col-span-6 lg:mb-0 lg:text-left"
                 >
                     <div className={'truncate'}>{server.name}</div>
                     <div className={'my-auto text-xs text-gray-500'}>

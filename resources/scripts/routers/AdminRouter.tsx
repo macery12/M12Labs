@@ -30,18 +30,30 @@ function AdminRouter() {
             {settings.indicators && <AdminIndicators />}
             <MobileDrawer.Panel>
                 <MobileDrawer.Home />
-                <MobileDrawer.Section>Admin</MobileDrawer.Section>
-                {routes.admin
-                    .filter(route => route.name && (!route.condition || route.condition({ activityEnabled })))
-                    .map(route => (
-                        <MobileDrawer.Link
-                            key={route.route}
-                            icon={route.icon ?? PuzzleIcon}
-                            text={route.name}
-                            linkTo={route.path}
-                            end={route.end}
-                        />
-                    ))}
+                {categories.map(category => {
+                    const categoryRoutes = routes.admin.filter(
+                        route =>
+                            route.category === category &&
+                            route.name &&
+                            (!route.condition || route.condition({ activityEnabled })),
+                    );
+                    if (categoryRoutes.length === 0) return null;
+
+                    return (
+                        <Fragment key={category}>
+                            <MobileDrawer.Section>{category[0]!.toUpperCase() + category.slice(1)}</MobileDrawer.Section>
+                            {categoryRoutes.map(route => (
+                                <MobileDrawer.Link
+                                    key={route.route}
+                                    icon={route.icon ?? PuzzleIcon}
+                                    text={route.name}
+                                    linkTo={route.path}
+                                    end={route.end}
+                                />
+                            ))}
+                        </Fragment>
+                    );
+                })}
             </MobileDrawer.Panel>
             <Sidebar className={'flex-none'} $collapsed={collapsed} theme={theme}>
                 <div

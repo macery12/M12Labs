@@ -332,9 +332,24 @@ export default ({ className, children }: { className?: string; children: ReactNo
     return (
         <div css={tw`flex flex-col w-full`}>
             <div
-                className={classNames(className, 'rounded-lg shadow-md')}
+                className={classNames(className, 'admin-table-wrapper rounded-lg shadow-md')}
                 style={{ backgroundColor: colors.secondary }}
             >
+                <style>{`
+                    @media (max-width: 767px) {
+                        .admin-table-wrapper table td,
+                        .admin-table-wrapper table th {
+                            white-space: normal !important;
+                            padding-left: 0.75rem !important;
+                            padding-right: 0.75rem !important;
+                            font-size: 0.75rem !important;
+                        }
+                        .admin-table-wrapper table td code {
+                            font-size: 0.65rem !important;
+                            word-break: break-all;
+                        }
+                    }
+                `}</style>
                 {children}
             </div>
         </div>
