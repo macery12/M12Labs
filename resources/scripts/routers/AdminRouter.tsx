@@ -4,7 +4,7 @@ import Avatar from '@/elements/Avatar';
 import Sidebar from '@/elements/Sidebar';
 import AdminIndicators from '@admin/AdminIndicators';
 import { usePersistedState } from '@/plugins/usePersistedState';
-import MobileSidebar from '@/elements/MobileSidebar';
+import MobileDrawer from '@/elements/MobileDrawer';
 import Pill from '@/elements/Pill';
 import ErrorBoundary from '@/elements/ErrorBoundary';
 import routes from './routes';
@@ -25,14 +25,16 @@ function AdminRouter() {
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_admin_${user.uuid}`, false);
 
     return (
+        <MobileDrawer>
         <div className={'flex h-screen'}>
             {settings.indicators && <AdminIndicators />}
-            <MobileSidebar>
-                <MobileSidebar.Home />
+            <MobileDrawer.Panel>
+                <MobileDrawer.Home />
+                <MobileDrawer.Section>Admin</MobileDrawer.Section>
                 {routes.admin
                     .filter(route => route.name && (!route.condition || route.condition({ activityEnabled })))
                     .map(route => (
-                        <MobileSidebar.Link
+                        <MobileDrawer.Link
                             key={route.route}
                             icon={route.icon ?? PuzzleIcon}
                             text={route.name}
@@ -40,7 +42,7 @@ function AdminRouter() {
                             end={route.end}
                         />
                     ))}
-            </MobileSidebar>
+            </MobileDrawer.Panel>
             <Sidebar className={'flex-none'} $collapsed={collapsed} theme={theme}>
                 <div
                     className={'my-6 flex h-16 w-full cursor-pointer select-none flex-col items-center justify-center'}
@@ -100,7 +102,12 @@ function AdminRouter() {
                     </div>
                 </Sidebar.User>
             </Sidebar>
-            <div className={'flex-1 overflow-x-hidden px-4 pt-4 pb-20 sm:px-6 sm:pt-6 md:pb-6 lg:px-10 lg:pt-8 xl:px-16 xl:pt-12'}>
+            <div className={'flex-1 overflow-x-hidden px-4 pt-4 sm:px-6 sm:pt-6 lg:px-10 lg:pt-8 xl:px-16 xl:pt-12'}>
+                {/* Mobile hamburger header – only visible below md */}
+                <div className={'mb-4 flex items-center md:hidden'}>
+                    <MobileDrawer.Trigger />
+                    <h1 className={'ml-3 text-lg font-medium text-neutral-50'}>{settings.name}</h1>
+                </div>
                 <ScopedAlert scope="admin" position="top-center" />
                 <ScopedAlert scope="admin" position="slide-out" />
                 <ScopedAlert scope="admin" position="center" />
@@ -124,6 +131,7 @@ function AdminRouter() {
                 </div>
             </div>
         </div>
+        </MobileDrawer>
     );
 }
 

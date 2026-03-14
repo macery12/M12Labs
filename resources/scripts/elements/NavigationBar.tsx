@@ -12,6 +12,7 @@ import { ChevronRightIcon, HomeIcon } from '@heroicons/react/outline';
 import { useActivityLogs } from '@/api/routes/account/activity';
 import Spinner from '@/elements/Spinner';
 import { formatDistanceToNow } from 'date-fns';
+import MobileDrawer from '@/elements/MobileDrawer';
 
 const RightNavigation = styled.div<{ theme: SiteTheme }>`
     & > a,
@@ -120,7 +121,8 @@ const NavigationBar = () => {
     return (
         <div className="mb-8 w-full overflow-x-auto shadow-md" style={{ backgroundColor: theme.colors.sidebar }}>
             <div className="flex h-[3.5rem] w-full items-center px-4 sm:px-8">
-                {renderBreadcrumbs()}
+                <MobileDrawer.Trigger />
+                <div className="ml-2 md:ml-0">{renderBreadcrumbs()}</div>
                 <RightNavigation className="ml-auto flex h-full items-center justify-center" theme={theme}>
                     <div className="relative">
                         <div
