@@ -88,7 +88,7 @@ function CreateAllocationForm({ nodeId }: { nodeId: number }) {
                         isCreatable
                     />
 
-                    <div css={tw`my-6 grid grid-cols-2 gap-2`}>
+                    <div css={tw`my-6 grid grid-cols-1 sm:grid-cols-2 gap-2`}>
                         <Field id={'startPort'} name={'startPort'} label={'Start Port'} type={'text'} />
                         <Field id={'endPort'} name={'endPort'} label={'End Port'} type={'text'} />
                     </div>

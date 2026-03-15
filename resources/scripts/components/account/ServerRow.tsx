@@ -130,7 +130,7 @@ export default ({
     return (
         <>
             <div
-                className={'mb-2 grid w-full grid-cols-2 overflow-hidden rounded-lg p-4 lg:grid-cols-12'}
+                className={'mb-2 grid w-full grid-cols-[auto_1fr] overflow-hidden rounded-lg p-4 lg:grid-cols-12'}
                 style={{ backgroundColor: colors.background }}
             >
                 <FontAwesomeIcon
@@ -140,14 +140,14 @@ export default ({
                 />
                 <Link
                     to={`/server/${server.id}`}
-                    className="col-span-1 mb-4 min-w-0 text-white transition duration-300 hover:brightness-150 lg:col-span-6 lg:mb-0"
+                    className="col-span-1 mb-4 min-w-0 text-center text-white transition duration-300 hover:brightness-150 lg:col-span-6 lg:mb-0 lg:text-left"
                 >
                     <div className={'truncate'}>{server.name}</div>
                     <div className={'my-auto text-xs text-gray-500'}>
                         {server.allocations[0]?.ip.toString()}:{server.allocations[0]?.port.toString()}
                     </div>
                 </Link>
-                <div className={'col-span-1 my-auto mr-2 lg:col-span-2'}>
+                <div className={'col-span-full my-auto mr-2 lg:col-span-2'}>
                     {group && group.id === server.groupId && !removed ? (
                         <Pill size={'small'} type={'unknown'}>
                             <span style={{ color: group?.color }} className={'ml-3 cursor-default'}>

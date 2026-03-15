@@ -48,7 +48,7 @@ const ResourceBox = ({
 }) => (
     <div className={large ? 'col-span-2' : 'col-span-1'}>
         <div className={'rounded-lg bg-black/50 text-left shadow-xl'}>
-            <div className={'grid w-full grid-cols-3 gap-4 p-4'}>
+            <div className={'grid w-full grid-cols-1 sm:grid-cols-3 gap-4 p-4'}>
                 <div className={'m-auto grid h-12 w-12 rounded-xl bg-black'}>
                     <div className={'m-auto'}>
                         <FontAwesomeIcon icon={icon} className={'text-xl'} />

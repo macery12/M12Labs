@@ -69,7 +69,7 @@ export default () => {
 
     return (
         <>
-            <div className={'mb-8 flex w-full flex-row items-center'}>
+            <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'inline-flex font-header text-2xl font-medium'}>
                         {ticket.title}
@@ -106,7 +106,7 @@ export default () => {
                 {({ isSubmitting }) => (
                     <Form>
                         <AdminBox title={'Ticket Options'} icon={faGears} status={boxStatus.status}>
-                            <div className={'grid gap-4 lg:grid-cols-3'}>
+                            <div className={'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
                                 <div>
                                     <Label>Update ticket status</Label>
                                     <Select
@@ -148,7 +148,7 @@ export default () => {
                                     </p>
                                 </div>
                             </div>
-                            <div css={tw`flex flex-row`}>
+                            <div css={tw`flex flex-col sm:flex-row`}>
                                 <div className={'ml-auto mt-4'}>
                                     <DeleteTicketDialog ticketId={ticket.id} />
                                     <Button type={'submit'} disabled={isSubmitting}>

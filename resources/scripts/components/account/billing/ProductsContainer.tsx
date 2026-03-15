@@ -83,8 +83,8 @@ export default () => {
                     Choose and configure any of the products below to your liking.
                 </p>
             </div>
-            <div className={'grid gap-4 lg:grid-cols-4 lg:gap-12'}>
-                <div className={'border-r-4 border-gray-500'}>
+            <div className={'grid gap-4 lg:grid-cols-4 lg:gap-8'}>
+                <div className={'lg:border-r-4 lg:border-gray-500'}>
                     <p className={'mb-8 mt-4 text-2xl font-bold text-gray-300'}>Categories</p>
                     {categories && categories.length < 1 && (
                         <div className={'my-4 font-semibold text-gray-400'}>

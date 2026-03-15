@@ -175,7 +175,7 @@ export default ({ backup, visible, setVisible }: Props) => {
             )}
             <Dialog open={visible} onClose={() => setVisible(false)} title={'Edit Backup'}>
                 <SpinnerOverlay visible={loading} />
-                <div css={tw`text-sm grid grid-cols-2 lg:grid-cols-3 gap-4`}>
+                <div css={tw`text-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4`}>
                     <Can action={'backup.download'}>
                         <Button onClick={doDownload}>
                             <FontAwesomeIcon fixedWidth icon={faCloudDownloadAlt} css={tw`text-xs`} />

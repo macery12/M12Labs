@@ -56,7 +56,7 @@ export default () => {
             >
                 <Form>
                     <FlashMessageRender byKey={'settings:general'} className={'mb-2'} />
-                    <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
+                    <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4 sm:gap-x-8 sm:gap-y-6`}>
                         <AdminBox title={'Maximum Ticket Count'} icon={faFirstOrder}>
                             <div>
                                 <div>

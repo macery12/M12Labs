@@ -21,7 +21,7 @@ export default ({ steps }: Props) => {
                 {steps.map((step, stepIdx) => (
                     <li
                         key={step.name}
-                        className={classNames('relative', stepIdx !== steps.length - 1 ? 'flex-1 pr-8 sm:pr-20' : '')}
+                        className={classNames('relative', stepIdx !== steps.length - 1 ? 'flex-1 pr-4 sm:pr-8 md:pr-20' : '')}
                     >
                         {step.status === 'complete' ? (
                             <>
@@ -37,7 +37,7 @@ export default ({ steps }: Props) => {
                                     <CheckIcon className="h-5 w-5 text-white" aria-hidden="true" />
                                     <span className="sr-only">{step.name}</span>
                                 </div>
-                                <span className="absolute top-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-gray-400">
+                                <span className="absolute top-10 left-1/2 -translate-x-1/2 text-center text-xs text-gray-400 max-w-[60px] sm:max-w-none sm:whitespace-nowrap">
                                     {step.name}
                                 </span>
                             </>
@@ -58,7 +58,7 @@ export default ({ steps }: Props) => {
                                     <span className="sr-only">{step.name}</span>
                                 </div>
                                 <span
-                                    className="absolute top-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-semibold"
+                                    className="absolute top-10 left-1/2 -translate-x-1/2 text-center text-xs font-semibold max-w-[60px] sm:max-w-none sm:whitespace-nowrap"
                                     style={{ color: colors.primary }}
                                 >
                                     {step.name}
@@ -76,7 +76,7 @@ export default ({ steps }: Props) => {
                                     <span className="h-2.5 w-2.5 rounded-full bg-gray-600" />
                                     <span className="sr-only">{step.name}</span>
                                 </div>
-                                <span className="absolute top-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-gray-500">
+                                <span className="absolute top-10 left-1/2 -translate-x-1/2 text-center text-xs text-gray-500 max-w-[60px] sm:max-w-none sm:whitespace-nowrap">
                                     {step.name}
                                 </span>
                             </>

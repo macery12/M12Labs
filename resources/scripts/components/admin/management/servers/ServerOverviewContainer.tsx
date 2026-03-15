@@ -98,7 +98,7 @@ export default () => {
                     <AdminBox icon={faBalanceScale} title={'Resource Limits'}>
                         <div css={tw`space-y-4 min-h-[160px]`}>
                             {/* Primary: Large numbers for main resources with more spacing */}
-                            <div css={tw`grid grid-cols-3 gap-4`}>
+                            <div css={tw`grid grid-cols-1 sm:grid-cols-3 gap-4`}>
                                 <div css={tw`text-center`}>
                                     <div css={tw`text-2xl font-bold text-blue-400`}>
                                         {server.limits.cpu === 0 ? '∞' : server.limits.cpu}

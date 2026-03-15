@@ -737,35 +737,35 @@ function InternalForm() {
 
                         <AdminBox title={'Review Configuration'}>
                             <div className="space-y-4 text-sm">
-                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                <div className="grid grid-cols-1 gap-1 border-b border-neutral-700 pb-3 sm:grid-cols-2 sm:gap-4">
                                     <span className="text-neutral-400">Server Name:</span>
                                     <span className="font-medium text-neutral-200">{values.name || 'Not set'}</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                <div className="grid grid-cols-1 gap-1 border-b border-neutral-700 pb-3 sm:grid-cols-2 sm:gap-4">
                                     <span className="text-neutral-400">Node:</span>
                                     <span className="font-medium text-neutral-200">{node?.name || 'Not set'}</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                <div className="grid grid-cols-1 gap-1 border-b border-neutral-700 pb-3 sm:grid-cols-2 sm:gap-4">
                                     <span className="text-neutral-400">Service:</span>
                                     <span className="font-medium text-neutral-200">{egg?.name || 'Not set'}</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                <div className="grid grid-cols-1 gap-1 border-b border-neutral-700 pb-3 sm:grid-cols-2 sm:gap-4">
                                     <span className="text-neutral-400">Memory:</span>
                                     <span className="font-medium text-neutral-200">
                                         {values.limits.memory} MB ({(values.limits.memory / 1024).toFixed(1)} GB)
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                <div className="grid grid-cols-1 gap-1 border-b border-neutral-700 pb-3 sm:grid-cols-2 sm:gap-4">
                                     <span className="text-neutral-400">Disk:</span>
                                     <span className="font-medium text-neutral-200">
                                         {values.limits.disk} MB ({(values.limits.disk / 1024).toFixed(1)} GB)
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                <div className="grid grid-cols-1 gap-1 border-b border-neutral-700 pb-3 sm:grid-cols-2 sm:gap-4">
                                     <span className="text-neutral-400">CPU:</span>
                                     <span className="font-medium text-neutral-200">{values.limits.cpu}%</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 border-b border-neutral-700 pb-3">
+                                <div className="grid grid-cols-1 gap-1 border-b border-neutral-700 pb-3 sm:grid-cols-2 sm:gap-4">
                                     <span className="text-neutral-400">Allocations:</span>
                                     <div className="font-medium text-neutral-200">
                                         {selectedAllocations.length > 0 ? (
@@ -852,7 +852,7 @@ export default () => {
 
     return (
         <AdminContentBlock title={'New Server'}>
-            <div css={tw`w-full flex flex-row items-center mb-8`}>
+            <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>New Server</h2>
                     <p

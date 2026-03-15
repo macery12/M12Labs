@@ -30,7 +30,7 @@ export default ({ data }: UpcomingRenewalsProps) => {
                                 <FontAwesomeIcon icon={faCalendarAlt} className="text-red-400" />
                                 <h3 className="text-sm font-medium text-gray-300">Overdue (Past Due)</h3>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                                 <div>
                                     <p className="text-xs text-gray-500">Servers</p>
                                     <p className="text-2xl font-bold text-red-400">{overdueRenewals.count}</p>
@@ -52,7 +52,7 @@ export default ({ data }: UpcomingRenewalsProps) => {
                             <FontAwesomeIcon icon={faCalendarAlt} className="text-blue-400" />
                             <h3 className="text-sm font-medium text-gray-300">Next 7 Days</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                             <div>
                                 <p className="text-xs text-gray-500">Servers</p>
                                 <p className="text-2xl font-bold text-blue-400">{renewals7Days.count}</p>
@@ -73,7 +73,7 @@ export default ({ data }: UpcomingRenewalsProps) => {
                             <FontAwesomeIcon icon={faCalendarAlt} className="text-purple-400" />
                             <h3 className="text-sm font-medium text-gray-300">Days 8-14</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                             <div>
                                 <p className="text-xs text-gray-500">Servers</p>
                                 <p className="text-2xl font-bold text-purple-400">{renewals8to14Days.count}</p>
