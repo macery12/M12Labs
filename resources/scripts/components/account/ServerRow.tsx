@@ -134,7 +134,7 @@ export default ({
                 style={{ backgroundColor: colors.background }}
             >
                 <FontAwesomeIcon
-                    className={classNames(statusToColor(stats?.status ?? 'offline'), 'col-span-1 my-auto mx-auto lg:mx-0 lg:ml-4')}
+                    className={classNames(statusToColor(stats?.status ?? 'offline'), 'col-span-1 my-auto ml-4')}
                     icon={server.status === 'suspended' ? faXmarkCircle : faPowerOff}
                     size={'lg'}
                 />
