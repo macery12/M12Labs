@@ -130,11 +130,11 @@ export default ({
     return (
         <>
             <div
-                className={'mb-2 grid w-full grid-cols-1 overflow-hidden rounded-lg p-4 sm:grid-cols-2 lg:grid-cols-12'}
+                className={'mb-2 grid w-full grid-cols-1 overflow-hidden rounded-lg p-4 lg:grid-cols-12'}
                 style={{ backgroundColor: colors.background }}
             >
                 <FontAwesomeIcon
-                    className={classNames(statusToColor(stats?.status ?? 'offline'), 'col-span-1 my-auto ml-4')}
+                    className={classNames(statusToColor(stats?.status ?? 'offline'), 'col-span-1 my-auto mx-auto lg:mx-0 lg:ml-4')}
                     icon={server.status === 'suspended' ? faXmarkCircle : faPowerOff}
                     size={'lg'}
                 />

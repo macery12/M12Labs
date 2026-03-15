@@ -139,10 +139,11 @@ function ServerRouter() {
             <div className={'flex h-screen'}>
                 <MobileDrawer.Panel>
                     <MobileDrawer.Home />
-                    <MobileDrawer.Section>Server</MobileDrawer.Section>
+                    <MobileDrawer.Section>Server {server?.uuid?.slice(0, 8)}</MobileDrawer.Section>
                     {routes.server
                         .filter(
                             route =>
+                                !route.category &&
                                 route.name &&
                                 (!route.condition || route.condition({ billable, activityEnabled })),
                         )
@@ -155,6 +156,30 @@ function ServerRouter() {
                                 end={route.end}
                             />
                         ))}
+                    {categories.map(category => {
+                        const categoryRoutes = routes.server.filter(
+                            route =>
+                                route.category === category &&
+                                route.name &&
+                                (!route.condition || route.condition({ billable, activityEnabled })),
+                        );
+                        if (categoryRoutes.length === 0) return null;
+
+                        return (
+                            <Fragment key={category}>
+                                <MobileDrawer.Section>{category[0]!.toUpperCase() + category.slice(1)}</MobileDrawer.Section>
+                                {categoryRoutes.map(route => (
+                                    <MobileDrawer.Link
+                                        key={route.route}
+                                        icon={route.icon ?? PuzzleIcon}
+                                        text={route.name}
+                                        linkTo={route.path}
+                                        end={route.end}
+                                    />
+                                ))}
+                            </Fragment>
+                        );
+                    })}
                     {(user.rootAdmin || user.admin_role_id) && (
                         <MobileDrawer.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
                     )}
