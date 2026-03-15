@@ -4,11 +4,16 @@ namespace Everest\Services\Security;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Encryption\MissingAppKeyException;
 
 class SecretEncryptionService
 {
+    private const MAX_ENCRYPTED_BYTES = 16384;
+    private const MAX_JSON_DEPTH = 3;
+    private const MAX_DECRYPTION_ATTEMPTS = 5;
+
     /**
      * List of setting keys that should always be stored encrypted.
      * Accepts both prefixed (settings::...) and unprefixed (modules:...) keys.
@@ -57,18 +62,36 @@ class SecretEncryptionService
             return null;
         }
 
-        $value = (string) $value;
+        $originalValue = (string) $value;
+        $value = $originalValue;
 
-        try {
-            // Handle the case where a secret may have been encrypted multiple times by
-            // iteratively decrypting while the payload still looks like a Laravel
-            // encrypted string. This prevents returning an encrypted blob to
-            // downstream services (e.g. payment processors) which would then fail.
-            do {
+        $attempts = 0;
+
+        // Handle the case where a secret may have been encrypted multiple times by
+        // iteratively decrypting while the payload still looks like a Laravel
+        // encrypted string. This prevents returning an encrypted blob to
+        // downstream services (e.g. payment processors) which would then fail.
+        while (
+            $attempts < self::MAX_DECRYPTION_ATTEMPTS
+            && $this->looksLikeEncryptedPayload($value)
+        ) {
+            $attempts++;
+
+            // Safety valve: refuse to repeatedly decrypt extremely large payloads.
+            if (strlen($value) > self::MAX_ENCRYPTED_BYTES) {
+                Log::warning('Secret decryption skipped due to oversized payload.', [
+                    'payload_length' => strlen($value),
+                ]);
+
+                return null;
+            }
+
+            try {
                 $value = Crypt::decryptString($value);
-            } while ($this->looksLikeEncryptedPayload($value));
-        } catch (DecryptException|\RuntimeException) {
-            // Likely a legacy plaintext or already decrypted value — return as-is.
+            } catch (DecryptException|\RuntimeException) {
+                // Likely a legacy plaintext or already decrypted value — return as-is.
+                return $originalValue;
+            }
         }
 
         return $value;
@@ -89,7 +112,29 @@ class SecretEncryptionService
             return false;
         }
 
-        return str_starts_with($decoded, '{"iv":"') && str_contains($decoded, '"value"');
+        try {
+            $payload = json_decode($decoded, true, self::MAX_JSON_DEPTH, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return false;
+        }
+
+        $requiredKeys = ['iv', 'value', 'mac'];
+        $allowedKeys = [...$requiredKeys, 'tag'];
+        $allowedLookup = array_flip($allowedKeys);
+
+        foreach (array_keys($payload) as $key) {
+            if (!isset($allowedLookup[$key])) {
+                return false;
+            }
+        }
+
+        foreach ($requiredKeys as $key) {
+            if (!isset($payload[$key]) || !is_string($payload[$key])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function hasAppKey(): bool
