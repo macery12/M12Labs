@@ -25,6 +25,23 @@ class SecretEncryptionServiceTest extends TestCase
         $this->assertSame('plain-value', $service->decryptFromStorage('plain-value'));
     }
 
+    public function testDecryptsWhenEncryptedMultipleTimes(): void
+    {
+        $service = new SecretEncryptionService();
+
+        $once = $service->encryptForStorage('double-secret');
+        $twice = $service->encryptForStorage($once);
+
+        $this->assertSame('double-secret', $service->decryptFromStorage($twice));
+    }
+
+    public function testDetectsEmailApiKeyAsSecret(): void
+    {
+        $service = new SecretEncryptionService();
+
+        $this->assertTrue($service->isSecretKey('modules:email:resend:api_key'));
+    }
+
     public function testGracefullyHandlesMissingAppKeyOnDecrypt(): void
     {
         $service = new SecretEncryptionService();

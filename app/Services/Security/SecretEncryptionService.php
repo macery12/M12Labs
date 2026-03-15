@@ -18,6 +18,7 @@ class SecretEncryptionService
         'settings::modules:billing:paypal_standalone:client_id',
         'settings::modules:billing:paypal_standalone:client_secret',
         'settings::modules:billing:mollie:api_key',
+        'settings::modules:email:resend:api_key',
         'settings::modules:mods:curseforge_api_key',
         'settings::modules:ai:key',
         'settings::modules:auth:discord:client_secret',
@@ -56,17 +57,39 @@ class SecretEncryptionService
             return null;
         }
 
+        $value = (string) $value;
+
         try {
-            return Crypt::decryptString((string) $value);
+            // Handle the case where a secret may have been encrypted multiple times by
+            // iteratively decrypting while the payload still looks like a Laravel
+            // encrypted string. This prevents returning an encrypted blob to
+            // downstream services (e.g. payment processors) which would then fail.
+            do {
+                $value = Crypt::decryptString($value);
+            } while ($this->looksLikeEncryptedPayload($value));
         } catch (DecryptException|\RuntimeException) {
             // Likely a legacy plaintext or already decrypted value — return as-is.
-            return $value;
         }
+
+        return $value;
     }
 
     public function normalizeKey(string $key): string
     {
         return Str::startsWith($key, 'settings::') ? $key : 'settings::' . ltrim($key, ':');
+    }
+
+    /**
+     * Detects whether the given value appears to be a Laravel encrypted payload.
+     */
+    private function looksLikeEncryptedPayload(string $value): bool
+    {
+        $decoded = base64_decode($value, true);
+        if ($decoded === false) {
+            return false;
+        }
+
+        return str_starts_with($decoded, '{"iv":"') && str_contains($decoded, '"value"');
     }
 
     private function hasAppKey(): bool
