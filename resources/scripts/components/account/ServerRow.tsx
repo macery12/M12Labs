@@ -130,7 +130,7 @@ export default ({
     return (
         <>
             <div
-                className={'mb-2 grid w-full grid-cols-1 overflow-hidden rounded-lg p-4 lg:grid-cols-12'}
+                className={'mb-2 grid w-full grid-cols-[auto_1fr] overflow-hidden rounded-lg p-4 lg:grid-cols-12'}
                 style={{ backgroundColor: colors.background }}
             >
                 <FontAwesomeIcon
@@ -147,7 +147,7 @@ export default ({
                         {server.allocations[0]?.ip.toString()}:{server.allocations[0]?.port.toString()}
                     </div>
                 </Link>
-                <div className={'col-span-1 my-auto mr-2 lg:col-span-2'}>
+                <div className={'col-span-full my-auto mr-2 lg:col-span-2'}>
                     {group && group.id === server.groupId && !removed ? (
                         <Pill size={'small'} type={'unknown'}>
                             <span style={{ color: group?.color }} className={'ml-3 cursor-default'}>
