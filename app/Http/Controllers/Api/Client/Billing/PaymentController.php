@@ -117,6 +117,11 @@ class PaymentController extends ClientApiController
             ]);
         }
 
+        if ($request->filled('server_id') &&
+            !$request->user()->servers()->find($request->input('server_id'))) {
+            throw new DisplayException('You cannot interact with a server you do not own.');
+        }
+
         $metadata = [
             'customer_email' => $request->user()->email,
             'customer_name' => $request->user()->username,
@@ -179,7 +184,7 @@ class PaymentController extends ClientApiController
 
         // Process the renewal or product purchase
         if ($order->type === Order::TYPE_REN && ((int) $intent->metadata->server_id != 0)) {
-            $server = Server::findOrFail((int) $intent->metadata->server_id);
+            $server = $request->user()->servers()->findOrFail((int) $intent->metadata->server_id);
 
             // Unsuspend the server if it was suspended due to billing
             if ($server->isSuspended()) {

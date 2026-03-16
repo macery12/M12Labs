@@ -53,7 +53,7 @@ class FreeProductController extends ClientApiController
         $order = $this->orderService->create(null, $user, $product, Order::STATUS_PENDING, $this->getOrderType($request));
 
         if ($order->type === Order::TYPE_REN && $request->has('server_id')) {
-            $server = Server::findOrFail((int) $request->input('server_id'));
+            $server = $user->servers()->findOrFail((int) $request->input('server_id'));
 
             $server->update([
                 'renewal_date' => $server->renewal_date->addDays(30),
