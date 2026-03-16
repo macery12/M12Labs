@@ -100,7 +100,7 @@ class AllocationController extends ApplicationApiController
     /**
      * Delete all unused allocations on a node.
      */
-    public function deleteAll(Request $request, Node $node): Response
+    public function deleteAll(DeleteAllocationRequest $request, Node $node): Response
     {
         $allocations = Allocation::where('server_id', null)->get();
 

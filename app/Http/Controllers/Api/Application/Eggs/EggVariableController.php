@@ -12,6 +12,7 @@ use Everest\Services\Eggs\Variables\VariableCreationService;
 use Everest\Transformers\Api\Application\EggVariableTransformer;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\StoreEggVariableRequest;
+use Everest\Http\Requests\Api\Application\Eggs\Variables\DeleteEggVariablesRequest;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\UpdateEggVariablesRequest;
 
 class EggVariableController extends ApplicationApiController
@@ -63,7 +64,7 @@ class EggVariableController extends ApplicationApiController
     /**
      * Deletes a single egg variable.
      */
-    public function delete(Request $request, Egg $egg, EggVariable $eggVariable): Response
+    public function delete(DeleteEggVariableRequest $request, Egg $egg, EggVariable $eggVariable): Response
     {
         EggVariable::query()
             ->where('id', $eggVariable->id)
