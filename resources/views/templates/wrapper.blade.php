@@ -22,22 +22,22 @@
         @section('user-data')
             @if(!is_null(Auth::user()))
                 <script>
-                    window.PterodactylUser = {!! json_encode(Auth::user()->toReactObject()) !!};
+                    window.PterodactylUser = {!! json_encode(Auth::user()->toReactObject(), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!};
                 </script>
             @endif
             @if(!empty($siteConfiguration))
                 <script>
-                    window.SiteConfiguration = {!! json_encode($siteConfiguration) !!};
+                    window.SiteConfiguration = {!! json_encode($siteConfiguration, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!};
                 </script>
             @endif
             @if(!empty($everestConfiguration))
                 <script>
-                    window.EverestConfiguration = {!! json_encode($everestConfiguration) !!};
+                    window.EverestConfiguration = {!! json_encode($everestConfiguration, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!};
                 </script>
             @endif
             @if(!empty($themeConfiguration))
                 <script>
-                    window.ThemeConfiguration = {!! json_encode($themeConfiguration) !!};
+                    window.ThemeConfiguration = {!! json_encode($themeConfiguration, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!};
                 </script>
             @endif
         @show

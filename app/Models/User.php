@@ -159,7 +159,7 @@ class User extends Model implements
         'language' => 'en',
         'use_totp' => false,
         'totp_secret' => null,
-        'state' => null,
+        'state' => 'active',
     ];
 
     /**
@@ -173,7 +173,7 @@ class User extends Model implements
         'password' => 'sometimes|nullable|string',
         'root_admin' => 'boolean',
         'language' => 'string',
-        'state' => 'sometimes|nullable|string',
+        'state' => 'sometimes|string|in:active,suspended',
         'use_totp' => 'boolean',
         'admin_role_id' => 'nullable|exists:admin_roles,id',
         'totp_secret' => 'nullable|string',
@@ -202,6 +202,26 @@ class User extends Model implements
         return Collection::make($this->append(['avatar_url', 'admin_role_name'])->toArray())
             ->except(['id', 'external_id', 'admin_role'])
             ->toArray();
+    }
+
+    /**
+     * Accessor for state attribute.
+     */
+    public function getStateAttribute($value)
+    {
+        return $value;
+    }
+
+    /**
+     * Mutator for state attribute: coerce any unexpected value to 'active'.
+     */
+    public function setStateAttribute($value)
+    {
+        if (!in_array($value, ['active', 'suspended'], true)) {
+            $value = 'active';
+        }
+
+        $this->attributes['state'] = $value;
     }
 
     /**
