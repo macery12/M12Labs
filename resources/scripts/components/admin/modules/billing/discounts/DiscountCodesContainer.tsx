@@ -1,6 +1,7 @@
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import DiscountCodesTable from './DiscountCodesTable';
 import DiscountCodeDialog from './DiscountCodeDialog';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 export default () => (
     <AdminContentBlock title={'Billing Orders'}>
@@ -19,6 +20,7 @@ export default () => (
                 <DiscountCodeDialog />
             </div>
         </div>
+        <FlashMessageRender byKey={'admin:billing:discount-codes'} className={'mb-2'} />
         <DiscountCodesTable />
     </AdminContentBlock>
 );

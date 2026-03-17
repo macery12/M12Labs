@@ -27,3 +27,11 @@ export const updateDiscountCode = (id: number, values: DiscountCodeValues): Prom
             .catch(reject);
     });
 };
+
+export const deleteDiscountCode = (id: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.delete(`/api/application/billing/discount-codes/${id}`)
+            .then(() => resolve())
+            .catch(reject);
+    });
+};

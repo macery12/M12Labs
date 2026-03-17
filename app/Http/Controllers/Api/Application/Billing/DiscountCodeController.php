@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Application\Billing;
 
+use Illuminate\Http\Response;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Models\Billing\DiscountCode;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
@@ -11,6 +12,7 @@ use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Services\Billing\DiscountCodes\DiscountCodeCreationService;
 use Everest\Http\Requests\Api\Application\Billing\DiscountCodes\GetDiscountCodesRequest;
 use Everest\Http\Requests\Api\Application\Billing\DiscountCodes\StoreDiscountCodeRequest;
+use Everest\Http\Requests\Api\Application\Billing\DiscountCodes\DeleteDiscountCodeRequest;
 
 class DiscountCodeController extends ApplicationApiController
 {
@@ -36,9 +38,9 @@ class DiscountCodeController extends ApplicationApiController
         }
 
         $discount_codes = QueryBuilder::for(DiscountCode::query())
-            // todo(jex): sorts/filters for this model
-            ->allowedFilters(['id', 'description'])
-            ->allowedSorts(['id', 'description'])
+            ->allowedFilters(['id', 'code', 'type', 'expires_at'])
+            ->allowedSorts(['id', 'code', 'value', 'type', 'uses', 'expires_at', 'created_at'])
+            ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
         return $this->fractal->collection($discount_codes)
@@ -69,5 +71,17 @@ class DiscountCodeController extends ApplicationApiController
         return $this->fractal->item($new_discount_code)
             ->transformWith(DiscountCodeTransformer::class)
             ->toArray();
+    }
+
+    /**
+     * Delete an existing discount code and store it in the database.
+     */
+    public function delete(int $id, DeleteDiscountCodeRequest $request): Response
+    {
+        $discount_code = DiscountCode::findOrFail($id);
+
+        $discount_code->delete();
+
+        return $this->returnNoContent();
     }
 }

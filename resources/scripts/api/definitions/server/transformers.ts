@@ -51,7 +51,7 @@ export default class Transformers {
         databaseHostId: attributes.database_host_id,
         connectionString: `${attributes.host.address}:${attributes.host.port}`,
         allowConnectionsFrom: attributes.connections_from,
-        password: attributes.relationships?.password?.attributes?.password,
+        password: attributes.relationships?.password?.object,
     });
 
     static toSubuser = (data: FractalResponseData): Models.Subuser => ({

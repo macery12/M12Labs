@@ -18,6 +18,7 @@ import { DiscountCodeFilters } from '@/api/routes/admin/billing/types';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useStoreState } from '@/state/hooks';
 import DiscountCodeDialog from './DiscountCodeDialog';
+import DeleteDiscountCodeButton from './DeleteDiscountCodeButton';
 
 function DiscountCodesTable() {
     const { data: orders, error } = useGetDiscountCodes();
@@ -115,6 +116,7 @@ function DiscountCodesTable() {
                                                 </td>
                                                 <td className={'px-6 py-4'}>
                                                     <DiscountCodeDialog discountCode={discountCode} />
+                                                    <DeleteDiscountCodeButton id={discountCode.id} />
                                                 </td>
                                             </TableRow>
                                         ))}
