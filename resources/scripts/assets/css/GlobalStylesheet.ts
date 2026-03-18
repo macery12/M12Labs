@@ -5,6 +5,8 @@ export default createGlobalStyle`
     body {
         ${tw`font-sans text-neutral-200`};
         letter-spacing: 0.015em;
+        background-color: var(--theme-base-background, #141414);
+        color: var(--theme-text-primary, #f8fafc);
     }
 
     h1, h2, h3, h4, h5, h6 {

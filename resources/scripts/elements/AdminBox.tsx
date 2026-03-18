@@ -61,7 +61,8 @@ const AdminBox = ({
             )}
             <div
                 style={{ backgroundColor: `var(--theme-surfaces-header, ${theme.colors.headers})` }}
-                css={tw`flex flex-wrap items-center gap-2 rounded-t px-4 xl:px-5 py-3 border-b border-black transition duration-300`}
+                css={tw`flex flex-wrap items-center gap-2 rounded-t px-4 xl:px-5 py-3 border-b transition duration-300`}
+                className="border-[var(--theme-borders-strong,#000)]"
             >
                 {typeof title === 'string' ? (
                     <p css={tw`font-semibold`}>

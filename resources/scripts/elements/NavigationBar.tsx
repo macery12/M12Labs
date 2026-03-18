@@ -25,7 +25,7 @@ const RightNavigation = styled.div<{ theme: SiteTheme }>`
         &:active,
         &:hover,
         &.active {
-            box-shadow: inset 0 -1px ${({ theme }) => theme.colors.primary};
+            box-shadow: inset 0 -1px var(--theme-navigation-navbarBorder, ${({ theme }) => theme.colors.primary});
         }
     }
 `;
@@ -119,7 +119,10 @@ const NavigationBar = () => {
     };
 
     return (
-        <div className="mb-8 w-full overflow-x-auto shadow-md" style={{ backgroundColor: theme.colors.sidebar }}>
+        <div
+            className="mb-8 w-full overflow-x-auto shadow-md"
+            style={{ backgroundColor: `var(--theme-navigation-navbar, ${theme.colors.headers})` }}
+        >
             <div className="flex h-[3.5rem] w-full items-center px-4 sm:px-8">
                 <MobileDrawer.Trigger />
                 <div className="ml-2 md:ml-0">{renderBreadcrumbs()}</div>
@@ -129,7 +132,7 @@ const NavigationBar = () => {
                             className="absolute top-0 h-px transition-all duration-[250ms] ease-in-out"
                             style={{
                                 width: `${width}%`,
-                                backgroundColor: theme.colors.primary,
+                                backgroundColor: `var(--theme-interactive-accent, ${theme.colors.primary})`,
                             }}
                         />
                         <div className="hidden items-center gap-x-1 lg:flex">{renderPageContent()}</div>

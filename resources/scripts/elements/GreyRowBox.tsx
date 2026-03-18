@@ -13,12 +13,13 @@ interface Props {
 const GreyRowBox = styled.div<{ $hoverable?: boolean; theme: SiteTheme }>`
     ${tw`flex rounded no-underline text-neutral-200 items-center p-4 border border-transparent transition-colors duration-150 overflow-hidden`};
 
-    background-color: ${({ theme }) => theme.colors.secondary};
+    background-color: var(--theme-surfaces-panel, ${({ theme }) => theme.colors.secondary});
 
-    ${props => props.$hoverable !== false && tw`hover:border-neutral-500`};
+    ${props => props.$hoverable !== false && tw`hover:border-[var(--theme-borders-strong,#374151)]`};
 
     & .icon {
-        ${tw`rounded-full w-16 flex items-center justify-center bg-neutral-500 p-3`};
+        ${tw`rounded-full w-16 flex items-center justify-center p-3`};
+        background-color: var(--theme-surfaces-muted, #3f3f46);
     }
 `;
 

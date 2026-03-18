@@ -8,7 +8,7 @@ import { withSubComponents } from '@/lib/helpers';
 const Icon: React.FC<{ icon: React.ElementType }> = ({ icon: Icon }) => {
     const theme = useStoreState(s => s.theme.data!);
 
-    return <Icon color={theme.colors.primary} />;
+    return <Icon color={`var(--theme-interactive-accent, ${theme.colors.primary})`} />;
 };
 
 const Wrapper = styled.div<{ theme: SiteTheme; $admin?: boolean }>`
@@ -31,7 +31,7 @@ const Wrapper = styled.div<{ theme: SiteTheme; $admin?: boolean }>`
         &:active,
         &.active {
             ${tw`bg-black/25 rounded-lg`};
-            color: ${({ theme }) => theme.colors.primary};
+            color: var(--theme-interactive-accent, ${({ theme }) => theme.colors.primary});
             filter: brightness(150%);
         }
     }
@@ -54,7 +54,7 @@ const Sidebar = styled.div<{ $collapsed?: boolean; theme: SiteTheme }>`
     ${tw`transition-all duration-500`};
     ${tw`w-[15rem]`};
 
-    background-color: ${({ theme }) => theme.colors.sidebar};
+    background-color: var(--theme-navigation-sidebar, ${({ theme }) => theme.colors.sidebar});
 
     & > a,
     & > span > a {

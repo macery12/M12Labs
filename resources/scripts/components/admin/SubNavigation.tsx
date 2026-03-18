@@ -6,7 +6,8 @@ import tw, { styled } from 'twin.macro';
 import { SiteTheme } from '@/state/theme';
 
 const StyledSubNavigation = styled.div<{ $theme: SiteTheme }>`
-    ${tw`flex flex-row items-center flex-shrink-0 h-12 mb-4 border-b border-neutral-700 overflow-x-auto`};
+    ${tw`flex flex-row items-center flex-shrink-0 h-12 mb-4 border-b overflow-x-auto`};
+    border-color: var(--theme-borders-strong, #374151);
     -webkit-overflow-scrolling: touch;
 
     & > a {
@@ -18,8 +19,8 @@ const StyledSubNavigation = styled.div<{ $theme: SiteTheme }>`
 
         &:active,
         &.active {
-            color: ${({ $theme }) => $theme.colors.primary};
-            border-color: ${({ $theme }) => $theme.colors.primary};
+            color: var(--theme-interactive-accent, ${({ $theme }) => $theme.colors.primary});
+            border-color: var(--theme-interactive-accent, ${({ $theme }) => $theme.colors.primary});
         }
     }
 `;
