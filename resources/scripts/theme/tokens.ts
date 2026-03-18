@@ -14,6 +14,7 @@ export interface ThemeTokens {
         raised: string;
         header: string;
         overlay: string;
+        muted: string;
     };
     navigation: {
         sidebar: string;
@@ -47,6 +48,7 @@ export interface ThemeTokens {
         accentMuted: string;
         accentHover: string;
         selection: string;
+        disabled: string;
     };
     borders: {
         subtle: string;
@@ -81,6 +83,7 @@ const tokenFallbacks: ThemeTokens = {
         raised: '#1f1f22',
         header: fallbackColors.headers,
         overlay: 'rgba(0,0,0,0.65)',
+        muted: '#1c1c1f',
     },
     navigation: {
         sidebar: fallbackColors.sidebar,
@@ -114,6 +117,7 @@ const tokenFallbacks: ThemeTokens = {
         accentMuted: '#14532d',
         accentHover: statusColors.success,
         selection: 'rgba(34,197,94,0.25)',
+        disabled: 'rgba(255,255,255,0.25)',
     },
     borders: {
         subtle: '#1f2937',
@@ -148,6 +152,7 @@ export const deriveTokensFromColors = (colors: ThemeColorMap): ThemeTokens => {
         surfaces: {
             panel: colors.secondary ?? fallbackColors.secondary,
             header: colors.headers ?? fallbackColors.headers,
+            muted: '#1d1d21',
         },
         navigation: {
             sidebar: colors.sidebar ?? fallbackColors.sidebar,
@@ -158,22 +163,38 @@ export const deriveTokensFromColors = (colors: ThemeColorMap): ThemeTokens => {
         inputs: {
             background: colors.background ?? fallbackColors.background,
             surface: colors.headers ?? fallbackColors.headers,
+            border: '#27272a',
             focus: colors.primary ?? fallbackColors.primary,
         },
         interactive: {
             accent: colors.primary ?? fallbackColors.primary,
+            accentMuted: colors.primary ?? fallbackColors.primary,
+            selection: `${colors.primary ?? fallbackColors.primary}40`,
         },
     });
 };
 
+const deriveLegacyColorsFromTokens = (tokens: ThemeTokens): Partial<ThemeColorMap> => ({
+    primary: tokens.interactive.accent,
+    secondary: tokens.surfaces.panel,
+    background: tokens.base.background,
+    headers: tokens.surfaces.header,
+    sidebar: tokens.navigation.sidebar,
+});
+
 export const normalizeTheme = (theme?: Partial<SiteTheme>): SiteTheme => {
+    const providedTokens = theme?.tokens as Partial<ThemeTokens> | undefined;
+    const mergedTokens = providedTokens ? deepMergeObjects(tokenFallbacks, providedTokens) : undefined;
+
+    const legacyFromTokens = mergedTokens ? deriveLegacyColorsFromTokens(mergedTokens as ThemeTokens) : {};
     const colors: ThemeColorMap = {
         ...fallbackColors,
+        ...legacyFromTokens,
         ...(theme?.colors || {}),
     };
 
     const derivedTokens = deriveTokensFromColors(colors);
-    const tokens = deepMergeObjects(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
+    const tokens = deepMergeObjects(derivedTokens, providedTokens || {});
 
     return {
         ...(theme as SiteTheme),
