@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { flattenTokens, normalizeTheme } from '@/theme/tokens';
+import { flattenTokens, getTokenFallbacks, normalizeTheme } from '@/theme/tokens';
 import { useStoreState } from '@/state/hooks';
 
 const ThemeVariables = () => {
@@ -10,7 +10,7 @@ const ThemeVariables = () => {
         const normalized = normalizeTheme(theme);
         const root = document.documentElement;
 
-        const flattened = flattenTokens(normalized.tokens);
+        const flattened = flattenTokens(normalized.tokens || getTokenFallbacks());
 
         Object.entries(flattened).forEach(([key, value]) => {
             root.style.setProperty(`--theme-${key.replace(/\./g, '-')}`, value);

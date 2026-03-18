@@ -163,7 +163,7 @@ export const normalizeTheme = (theme?: Partial<SiteTheme>): SiteTheme => {
     };
 
     const derivedTokens = deriveTokensFromColors(colors);
-    const tokens = deepMerge(derivedTokens, (theme as any)?.tokens || {});
+    const tokens = deepMerge(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
 
     return {
         ...(theme as SiteTheme),
