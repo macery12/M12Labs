@@ -39,7 +39,9 @@ const inputStyle = () => {
         ${tw`py-2.5 px-3 border-2 rounded text-sm transition-all duration-150`};
         ${tw`border-zinc-700 hover:border-neutral-400 text-neutral-200 shadow-none`};
 
-        background-color: ${theme.colors.background};
+        background-color: var(--theme-inputs-background, ${theme.colors.background});
+        color: var(--theme-inputs-text, ${theme.colors.primary});
+        border-color: var(--theme-inputs-border, #27272a);
 
         & + .input-help {
             ${tw`mt-1 text-xs`};
@@ -53,6 +55,11 @@ const inputStyle = () => {
 
         &:disabled {
             ${tw`opacity-75`};
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--theme-inputs-focus, ${theme.colors.primary});
+            outline-offset: 1px;
         }
 
         ${props =>

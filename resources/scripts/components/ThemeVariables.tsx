@@ -1,0 +1,29 @@
+import { useEffect } from 'react';
+
+import { flattenTokens, normalizeTheme } from '@/theme/tokens';
+import { useStoreState } from '@/state/hooks';
+
+const ThemeVariables = () => {
+    const theme = useStoreState(state => state.theme.data);
+
+    useEffect(() => {
+        const normalized = normalizeTheme(theme);
+        const root = document.documentElement;
+
+        const flattened = flattenTokens(normalized.tokens);
+
+        Object.entries(flattened).forEach(([key, value]) => {
+            root.style.setProperty(`--theme-${key.replace(/\./g, '-')}`, value);
+        });
+
+        root.style.setProperty('--theme-color-primary', normalized.colors.primary);
+        root.style.setProperty('--theme-color-secondary', normalized.colors.secondary);
+        root.style.setProperty('--theme-color-background', normalized.colors.background);
+        root.style.setProperty('--theme-color-headers', normalized.colors.headers);
+        root.style.setProperty('--theme-color-sidebar', normalized.colors.sidebar);
+    }, [theme]);
+
+    return null;
+};
+
+export default ThemeVariables;

@@ -59,8 +59,51 @@
             @import url('//fonts.googleapis.com/css?family=Rubik:300,400,500&display=swap');
             @import url('//fonts.googleapis.com/css?family=IBM+Plex+Mono|IBM+Plex+Sans:500&display=swap');
 
+            :root {
+                --theme-base-background: {{ $themeConfiguration['tokens']['base']['background'] ?? $themeConfiguration['colors']['background'] }};
+                --theme-base-foreground: {{ $themeConfiguration['tokens']['base']['foreground'] ?? '#f8fafc' }};
+                --theme-base-muted: {{ $themeConfiguration['tokens']['base']['muted'] ?? '#a1a1aa' }};
+                --theme-base-border: {{ $themeConfiguration['tokens']['base']['border'] ?? '#27272a' }};
+
+                --theme-surfaces-panel: {{ $themeConfiguration['tokens']['surfaces']['panel'] ?? $themeConfiguration['colors']['secondary'] }};
+                --theme-surfaces-raised: {{ $themeConfiguration['tokens']['surfaces']['raised'] ?? '#1f1f22' }};
+                --theme-surfaces-header: {{ $themeConfiguration['tokens']['surfaces']['header'] ?? $themeConfiguration['colors']['headers'] }};
+                --theme-surfaces-overlay: {{ $themeConfiguration['tokens']['surfaces']['overlay'] ?? 'rgba(0,0,0,0.65)' }};
+
+                --theme-navigation-sidebar: {{ $themeConfiguration['tokens']['navigation']['sidebar'] ?? $themeConfiguration['colors']['sidebar'] }};
+                --theme-navigation-sidebarActive: {{ $themeConfiguration['tokens']['navigation']['sidebarActive'] ?? $themeConfiguration['colors']['primary'] }};
+                --theme-navigation-navbar: {{ $themeConfiguration['tokens']['navigation']['navbar'] ?? $themeConfiguration['colors']['headers'] }};
+                --theme-navigation-navbarBorder: {{ $themeConfiguration['tokens']['navigation']['navbarBorder'] ?? $themeConfiguration['colors']['primary'] }};
+
+                --theme-text-primary: {{ $themeConfiguration['tokens']['text']['primary'] ?? '#f8fafc' }};
+                --theme-text-secondary: {{ $themeConfiguration['tokens']['text']['secondary'] ?? '#e5e7eb' }};
+                --theme-text-muted: {{ $themeConfiguration['tokens']['text']['muted'] ?? '#a1a1aa' }};
+                --theme-text-inverse: {{ $themeConfiguration['tokens']['text']['inverse'] ?? '#0f172a' }};
+                --theme-text-onAccent: {{ $themeConfiguration['tokens']['text']['onAccent'] ?? '#0b0f12' }};
+
+                --theme-status-success: {{ $themeConfiguration['tokens']['status']['success'] ?? '#22c55e' }};
+                --theme-status-warning: {{ $themeConfiguration['tokens']['status']['warning'] ?? '#f59e0b' }};
+                --theme-status-danger: {{ $themeConfiguration['tokens']['status']['danger'] ?? '#ef4444' }};
+                --theme-status-info: {{ $themeConfiguration['tokens']['status']['info'] ?? '#38bdf8' }};
+
+                --theme-inputs-background: {{ $themeConfiguration['tokens']['inputs']['background'] ?? $themeConfiguration['colors']['background'] }};
+                --theme-inputs-surface: {{ $themeConfiguration['tokens']['inputs']['surface'] ?? $themeConfiguration['colors']['headers'] }};
+                --theme-inputs-border: {{ $themeConfiguration['tokens']['inputs']['border'] ?? '#27272a' }};
+                --theme-inputs-focus: {{ $themeConfiguration['tokens']['inputs']['focus'] ?? $themeConfiguration['colors']['primary'] }};
+                --theme-inputs-text: {{ $themeConfiguration['tokens']['inputs']['text'] ?? '#f8fafc' }};
+                --theme-inputs-placeholder: {{ $themeConfiguration['tokens']['inputs']['placeholder'] ?? '#9ca3af' }};
+
+                --theme-interactive-accent: {{ $themeConfiguration['tokens']['interactive']['accent'] ?? $themeConfiguration['colors']['primary'] }};
+                --theme-interactive-accentMuted: {{ $themeConfiguration['tokens']['interactive']['accentMuted'] ?? '#14532d' }};
+                --theme-interactive-accentHover: {{ $themeConfiguration['tokens']['interactive']['accentHover'] ?? '#22c55e' }};
+                --theme-interactive-selection: {{ $themeConfiguration['tokens']['interactive']['selection'] ?? 'rgba(34,197,94,0.25)' }};
+
+                --theme-borders-subtle: {{ $themeConfiguration['tokens']['borders']['subtle'] ?? '#1f2937' }};
+                --theme-borders-strong: {{ $themeConfiguration['tokens']['borders']['strong'] ?? '#374151' }};
+            }
+
             body {
-                background-color: {{ $themeConfiguration['colors']['background'] }}
+                background-color: var(--theme-base-background);
             }
         </style>
 

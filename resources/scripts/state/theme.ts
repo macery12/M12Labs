@@ -1,5 +1,7 @@
 import { action, Action } from 'easy-peasy';
 
+import { ThemeTokens, normalizeTheme } from '@/theme/tokens';
+
 export interface SiteTheme {
     colors: {
         primary: string;
@@ -9,6 +11,7 @@ export interface SiteTheme {
         headers: string;
         sidebar: string;
     };
+    tokens?: ThemeTokens;
 }
 
 export interface ThemeStore {
@@ -20,7 +23,7 @@ const theme: ThemeStore = {
     data: undefined,
 
     setTheme: action((state, payload) => {
-        state.data = payload;
+        state.data = normalizeTheme(payload);
     }),
 };
 

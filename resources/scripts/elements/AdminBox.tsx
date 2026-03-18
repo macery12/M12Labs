@@ -45,7 +45,7 @@ const AdminBox = ({
         <div
             className={className}
             css={tw`relative rounded shadow-md transition duration-300`}
-            style={{ backgroundColor: theme.colors.secondary }}
+            style={{ backgroundColor: 'var(--theme-surfaces-panel, ' + theme.colors.secondary + ')' }}
         >
             <SpinnerOverlay visible={isLoading || false} />
             {status === 'loading' && (
@@ -60,7 +60,7 @@ const AdminBox = ({
                 />
             )}
             <div
-                style={{ backgroundColor: theme.colors.headers }}
+                style={{ backgroundColor: 'var(--theme-surfaces-header, ' + theme.colors.headers + ')' }}
                 css={tw`flex flex-wrap items-center gap-2 rounded-t px-4 xl:px-5 py-3 border-b border-black transition duration-300`}
             >
                 {typeof title === 'string' ? (

@@ -9,6 +9,7 @@ import { CheckCircleIcon } from '@heroicons/react/outline';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { faPaintbrush } from '@fortawesome/free-solid-svg-icons';
+import { normalizeTheme } from '@/theme/tokens';
 
 interface Props {
     setReload: Dispatch<SetStateAction<boolean>>;
@@ -27,16 +28,18 @@ export default ({ setReload }: Props) => {
         setLoading(true);
         setSuccess(false);
 
-        setTheme({
-            colors: {
-                primary: key === 'primary' ? value : colors.primary,
-                secondary: key === 'secondary' ? value : colors.secondary,
+        setTheme(
+            normalizeTheme({
+                colors: {
+                    primary: key === 'primary' ? value : colors.primary,
+                    secondary: key === 'secondary' ? value : colors.secondary,
 
-                background: key === 'background' ? value : colors.background,
-                headers: key === 'headers' ? value : colors.headers,
-                sidebar: key === 'sidebar' ? value : colors.sidebar,
-            },
-        });
+                    background: key === 'background' ? value : colors.background,
+                    headers: key === 'headers' ? value : colors.headers,
+                    sidebar: key === 'sidebar' ? value : colors.sidebar,
+                },
+            }),
+        );
 
         updateColors(key, value)
             .then(() => {

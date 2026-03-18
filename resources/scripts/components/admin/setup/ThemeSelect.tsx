@@ -5,6 +5,7 @@ import AdminBox from '@/elements/AdminBox';
 import { faCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { CheckCircleIcon } from '@heroicons/react/outline';
+import { normalizeTheme } from '@/theme/tokens';
 
 const colorOptions = [
     { hex: '#16a34a', name: 'Jexactyl Green' },
@@ -27,13 +28,15 @@ export default ({ defaultColor }: { defaultColor: string }) => {
 
         updateColors('primary', hex).then(() => {
             setStatus('success');
-            setTheme({
-                ...theme,
-                colors: {
-                    ...theme.colors,
-                    primary: hex,
-                },
-            });
+            setTheme(
+                normalizeTheme({
+                    ...theme,
+                    colors: {
+                        ...theme.colors,
+                        primary: hex,
+                    },
+                }),
+            );
         });
     };
 

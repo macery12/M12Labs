@@ -2,6 +2,7 @@ import { lazy } from 'react';
 import '@/assets/tailwind.css';
 import { store } from '@/state';
 import { SiteTheme } from '@/state/theme';
+import { normalizeTheme } from '@/theme/tokens';
 import { StoreProvider } from 'easy-peasy';
 import { AdminContext } from '@/state/admin';
 import { ServerContext } from '@/state/server';
@@ -16,6 +17,7 @@ import { EverestSettings } from '@/state/everest';
 import Onboarding from '@account/Onboarding';
 import SpeedDial from '@/elements/SpeedDial';
 import SetupContainer from './admin/setup/SetupContainer';
+import ThemeVariables from '@/components/ThemeVariables';
 
 const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
@@ -71,7 +73,7 @@ function App() {
     }
 
     if (!store.getState().theme.data) {
-        store.getActions().theme.setTheme(ThemeConfiguration!);
+        store.getActions().theme.setTheme(normalizeTheme(ThemeConfiguration!));
     }
 
     if (!store.getState().everest.data && EverestConfiguration) {
@@ -92,6 +94,7 @@ function App() {
         <>
             <GlobalStylesheet />
             <StoreProvider store={store}>
+                <ThemeVariables />
                 <ProgressBar />
                 {PterodactylUser?.root_admin && !SiteConfiguration?.setup ? (
                     <SetupContainer />
