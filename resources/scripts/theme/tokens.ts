@@ -62,7 +62,12 @@ export const fallbackColors: ThemeColorMap = {
     sidebar: '#18181b',
 };
 
-const statusSuccess = '#22c55e';
+const statusColors = {
+    success: '#22c55e',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    info: '#38bdf8',
+};
 
 const tokenFallbacks: ThemeTokens = {
     base: {
@@ -91,10 +96,10 @@ const tokenFallbacks: ThemeTokens = {
         onAccent: '#0b0f12',
     },
     status: {
-        success: statusSuccess,
-        warning: '#f59e0b',
-        danger: '#ef4444',
-        info: '#38bdf8',
+        success: statusColors.success,
+        warning: statusColors.warning,
+        danger: statusColors.danger,
+        info: statusColors.info,
     },
     inputs: {
         background: fallbackColors.background,
@@ -107,7 +112,7 @@ const tokenFallbacks: ThemeTokens = {
     interactive: {
         accent: fallbackColors.primary,
         accentMuted: '#14532d',
-        accentHover: statusSuccess,
+        accentHover: statusColors.success,
         selection: 'rgba(34,197,94,0.25)',
     },
     borders: {
@@ -177,10 +182,10 @@ export const normalizeTheme = (theme?: Partial<SiteTheme>): SiteTheme => {
     };
 };
 
-type Flattened = Record<string, string>;
+type FlattenedTokenMap = Record<string, string>;
 
-export const flattenTokens = (tokens: ThemeTokens): Flattened => {
-    const result: Flattened = {};
+export const flattenTokens = (tokens: ThemeTokens): FlattenedTokenMap => {
+    const result: FlattenedTokenMap = {};
 
     const flattenObject = (obj: Record<string, unknown>, prefix: string[] = []) => {
         Object.entries(obj).forEach(([key, value]) => {
