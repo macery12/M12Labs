@@ -114,16 +114,19 @@ const tokenFallbacks: ThemeTokens = {
     },
 };
 
-const deepMerge = <T extends Record<string, any>>(target: T, source: Partial<T>): T => {
+const deepMerge = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
     const output = { ...target } as T;
 
     Object.keys(source || {}).forEach(key => {
-        const value = (source as any)[key];
+        const value = (source as Record<string, unknown>)[key];
 
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-            (output as any)[key] = deepMerge((target as any)[key] || {}, value);
+            (output as Record<string, unknown>)[key] = deepMerge(
+                ((target as Record<string, unknown>)[key] as Record<string, unknown>) || {},
+                value as Record<string, unknown>,
+            );
         } else if (typeof value !== 'undefined') {
-            (output as any)[key] = value;
+            (output as Record<string, unknown>)[key] = value;
         }
     });
 
@@ -177,19 +180,19 @@ type Flattened = Record<string, string>;
 export const flattenTokens = (tokens: ThemeTokens): Flattened => {
     const result: Flattened = {};
 
-    const walk = (obj: Record<string, any>, prefix: string[] = []) => {
+    const walk = (obj: Record<string, unknown>, prefix: string[] = []) => {
         Object.entries(obj).forEach(([key, value]) => {
             const path = [...prefix, key];
 
             if (value && typeof value === 'object' && !Array.isArray(value)) {
-                walk(value as Record<string, any>, path);
+                walk(value as Record<string, unknown>, path);
             } else if (typeof value !== 'undefined') {
                 result[path.join('.')] = String(value);
             }
         });
     };
 
-    walk(tokens as Record<string, any>);
+    walk(tokens as Record<string, unknown>);
 
     return result;
 };
