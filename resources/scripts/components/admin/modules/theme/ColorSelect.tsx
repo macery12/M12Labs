@@ -24,6 +24,7 @@ export default ({ setReload, className }: Props) => {
     const setTheme = useStoreActions(actions => actions.theme.setTheme);
     const normalized = useMemo(() => normalizeTheme(theme), [theme]);
     const colors = normalized.colors;
+    const tokens = normalized.tokens!;
 
     const update = async (key: string, value: string) => {
         clearFlashes();
@@ -143,30 +144,22 @@ export default ({ setReload, className }: Props) => {
                     <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
                         <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Text</p>
                         <div className={'space-y-3'}>
-                            {renderReadOnly(
-                                normalized.tokens.text.primary,
-                                'Primary Text',
-                                'Derived for high-contrast text on dark backgrounds.',
-                            )}
-                            {renderReadOnly(
-                                normalized.tokens.text.muted,
-                                'Muted Text',
-                                'Used for secondary or helper text.',
-                            )}
+                            {renderReadOnly(tokens.text.primary, 'Primary Text', 'Derived for high-contrast text on dark backgrounds.')}
+                            {renderReadOnly(tokens.text.muted, 'Muted Text', 'Used for secondary or helper text.')}
                         </div>
                     </div>
                     <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
                         <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Status</p>
                         <div className={'space-y-3'}>
-                            {renderReadOnly(normalized.tokens.status.success, 'Success', 'Applied to success states.')}
-                            {renderReadOnly(normalized.tokens.status.danger, 'Danger', 'Applied to error states.')}
+                            {renderReadOnly(tokens.status.success, 'Success', 'Applied to success states.')}
+                            {renderReadOnly(tokens.status.danger, 'Danger', 'Applied to error states.')}
                         </div>
                     </div>
                     <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
                         <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Inputs</p>
                         <div className={'space-y-3'}>
-                            {renderReadOnly(normalized.tokens.inputs.surface, 'Field Surface', 'Input backgrounds.')}
-                            {renderReadOnly(normalized.tokens.inputs.focus, 'Focus', 'Outline color when focused.')}
+                            {renderReadOnly(tokens.inputs.surface, 'Field Surface', 'Input backgrounds.')}
+                            {renderReadOnly(tokens.inputs.focus, 'Focus', 'Outline color when focused.')}
                         </div>
                     </div>
                 </div>
