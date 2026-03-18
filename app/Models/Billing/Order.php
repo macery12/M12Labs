@@ -90,7 +90,7 @@ class Order extends Model
     /**
      * Return whether a payment must be collected for this order.
      */
-    public function requiresPayment(): boolean
+    public function requiresPayment(): bool
     {
         if ($this->total > 0.0) {
             return true;
@@ -102,7 +102,7 @@ class Order extends Model
     /**
      * Return whether this order has already been processed.
      */
-    public function isProcessed(): boolean
+    public function isProcessed(): bool
     {
         if ($this->status === Order::STATUS_PROCESSED) {
             return true;
@@ -114,7 +114,7 @@ class Order extends Model
     /**
      * Return whether this order is a renewal or new server.
      */
-    public function isRenewal(): boolean
+    public function isRenewal(): bool
     {
         if ($this->type === Order::TYPE_RENEWAL) {
             return true;

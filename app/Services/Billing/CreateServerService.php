@@ -4,6 +4,7 @@ namespace Everest\Services\Billing;
 
 use Carbon\Carbon;
 use Everest\Models\Egg;
+use Everest\Models\User;
 use Stripe\StripeObject;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class CreateServerService
     /**
      * Process the creation of a server.
      */
-    public function process(User $user, Product $product, StripeObject $metadata, Order $order): Server
+    public function handle(User $user, Product $product, StripeObject $metadata, Order $order): Server
     {
         $egg = Egg::findOrFail($product->category->egg_id);
 

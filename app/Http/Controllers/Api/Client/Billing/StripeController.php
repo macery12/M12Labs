@@ -2,8 +2,10 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
+use Stripe\Webhook;
 use Stripe\StripeClient;
 use Everest\Models\Node;
+use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
@@ -11,6 +13,9 @@ use Everest\Models\Billing\DiscountCode;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
+use Everest\Services\Billing\CreateServerService;
+use Everest\Services\Billing\ServerRenewalService;
+use Everest\Transformers\Api\Client\ServerTransformer;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Everest\Transformers\Api\Client\DiscountCodeTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -23,11 +28,11 @@ class StripeController extends ClientApiController
     public function __construct(
         private CreateOrderService $orderService,
         private ServerRenewalService $renewalService,
+        private CreateServerService $deploymentService,
     ) {
         parent::__construct();
 
         $this->stripe = new StripeClient(config('modules.billing.keys.secret'));
-        $this->webhook_secret = config('modules.billing.keys.webhook_secret');
     }
 
     /**
@@ -37,7 +42,7 @@ class StripeController extends ClientApiController
     {
         $server = null;
         $product = Product::findOrFail($request->input('product_id'));
-        $is_new_order = !$request->filled('server_id') && $request->filled('node_id');
+        $is_new_order = !$request->filled('server_id');
         $node_id = $is_new_order ? $request->input('node_id') : null;
 
         if (!$product->isPaid()) {
@@ -63,6 +68,7 @@ class StripeController extends ClientApiController
 
         $transaction = $this->stripe->checkout->sessions->create([
             'mode' => 'payment',
+            'customer_email' => $request->user()->email,
 
             'line_items' => [[
                 'price_data' => [
@@ -75,8 +81,8 @@ class StripeController extends ClientApiController
                 'quantity' => 1,
             ]],
 
-            'success_url' => config('app.url') . '/billing/success?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => config('app.url') . '/billing/cancel',
+            'success_url' => config('app.url') . '/account/billing/processing?session={CHECKOUT_SESSION_ID}',
+            'cancel_url' => config('app.url') . '/account/billing/cancel',
 
             'metadata' => [
                 'user_id' => (string) $request->user()->id,
@@ -86,10 +92,6 @@ class StripeController extends ClientApiController
                 'server_id' => (string) ($server?->id ?? 0),
                 'variables' => json_encode($request->input('variables') ?? []),
                 'order_type' => $is_new_order ? Order::TYPE_NEW : Order::TYPE_RENEWAL,
-            ],
-
-            'automatic_payment_methods' => [
-                'enabled' => true,
             ],
         ]);
 
@@ -107,19 +109,18 @@ class StripeController extends ClientApiController
     /**
      * Retrieve the checkout session from Stripe and process the order.
      */
-    public function process(ProcessStripePaymentRequest $request): Response
+    public function process(ProcessStripePaymentRequest $request): array
     {
-        $payload = $request->getContent();
-        $signature = $request->header('Stripe-Signature');
-
         try {
-            $event = $this->stripe->webhooks->constructEvent($payload, $signature, $this->webhook_secret);
+            $transaction = $this->stripe->checkout->sessions->retrieve($request->input('session'));
         } catch (DisplayException $ex) {
-            throw new DisplayException('Failed to process order: invalid Stripe signature provided');
+            throw new DisplayException('Failed to process order: unable to retrieve session');
         }
 
-        if ($event->type === 'checkout.session.completed') {
-            $transaction = $event->data->object;
+            if ($transaction->payment_status !== 'paid') {
+                throw new DisplayException('Payment not completed.');
+            }
+
             $metadata = $transaction->metadata;
 
             $user = User::findOrFail($metadata->user_id);
@@ -134,9 +135,9 @@ class StripeController extends ClientApiController
                 if ($order->isRenewal()) {
                     $server = Server::findOrFail($metadata->server_id);
 
-                    $this->renewalService->handle($server);
+                    $new_server = $this->renewalService->handle($server);
                 } else {
-                    $this->deploymentService->handle($user, $product, $metadata->variables);
+                    $new_server = $this->deploymentService->handle($user, $product, $metadata, $order);
                 };
 
                 $order->update(['status' => Order::STATUS_PROCESSED]);
@@ -150,9 +151,10 @@ class StripeController extends ClientApiController
                     'description' => $exception->getMessage(),
                 ]);
             };
-        };
 
-        return $this->returnNoContent();
+        return $this->fractal->item($new_server)
+            ->transformWith(ServerTransformer::class)
+            ->toArray();
     }
 
     /**

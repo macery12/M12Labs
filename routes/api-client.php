@@ -89,6 +89,10 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
 
         Route::get('/orders', [Client\Billing\OrderController::class, 'index']);
         Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
+
+        // v2
+        Route::post('/stripe/create', [Client\Billing\StripeController::class, 'create']);
+        Route::post('/stripe/process', [Client\Billing\StripeController::class, 'process']);
     });
 
     /*

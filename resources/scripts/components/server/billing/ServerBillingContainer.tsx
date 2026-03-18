@@ -8,15 +8,14 @@ import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
-import PaymentContainer from './PaymentContainer';
 import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
-import { format } from 'date-fns';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
+import ServerPaymentButton from './ServerPaymentButton';
 
 function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
@@ -28,12 +27,6 @@ function timeUntil(targetDate: Date | string) {
         days: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
         hours: Math.floor((diffMs / (1000 * 60 * 60)) % 24),
     };
-}
-
-function addDays(date: Date | string, days: number) {
-    const d = date instanceof Date ? new Date(date) : new Date(date);
-    d.setDate(d.getDate() + days);
-    return d;
 }
 
 export default () => {
@@ -49,7 +42,6 @@ export default () => {
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
 
-    // Get configurable renewal settings
     const renewalDays = settings.renewal?.days || 30;
     const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
@@ -75,9 +67,8 @@ export default () => {
         setRenewing(true);
         clearFlashes('server:billing');
 
-        renewFreeServer(billingProductId, serverId)
+        renewFreeServer(billingProductId, Number(serverId))
             .then(() => {
-                // Redirect to server overview after successful renewal
                 navigate(`/server/${serverUuid}`);
             })
             .catch(error => {
@@ -86,14 +77,8 @@ export default () => {
             });
     };
 
-    // Calculate days remaining until renewal (can be negative if overdue)
     const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
     const daysOverdue = daysRemaining < 0 ? Math.abs(daysRemaining) : 0;
-    
-    // Free servers can only be renewed if:
-    // 1. They're within the threshold period before renewal (e.g., 7 days or less and not yet overdue), OR
-    // 2. They're overdue but still within the grace period
-    const canRenew = (daysRemaining <= suspensionThreshold && daysRemaining > 0) || (daysRemaining <= 0 && daysOverdue <= freeGraceDays);
 
     return (
         <PageContentBlock
@@ -152,15 +137,22 @@ export default () => {
                             {product.price === 0 ? (
                                 <div>
                                     <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. You can renew it for another {freeRenewalDays} days starting {suspensionThreshold} days before it expires, giving you time to renew before expiration. You can also renew within the {freeGraceDays}-day grace period after expiration.
+                                        This is a free server. You can renew it for another {freeRenewalDays} days
+                                        starting {suspensionThreshold} days before it expires, giving you time to renew
+                                        before expiration. You can also renew within the {freeGraceDays}-day grace
+                                        period after expiration.
                                     </p>
                                     {daysOverdue > freeGraceDays ? (
                                         <Alert type={'danger'}>
-                                            This server has been overdue for more than {freeGraceDays} days and can no longer be renewed through self-service. Please contact support for assistance.
+                                            This server has been overdue for more than {freeGraceDays} days and can no
+                                            longer be renewed through self-service. Please contact support for
+                                            assistance.
                                         </Alert>
                                     ) : daysRemaining > suspensionThreshold ? (
                                         <Alert type={'info'}>
-                                            You still have {daysRemaining} days before your server expires. The renew button will become available {suspensionThreshold} days before expiration, allowing you to renew in advance.
+                                            You still have {daysRemaining} days before your server expires. The renew
+                                            button will become available {suspensionThreshold} days before expiration,
+                                            allowing you to renew in advance.
                                         </Alert>
                                     ) : (
                                         <Button
@@ -173,7 +165,7 @@ export default () => {
                                     )}
                                 </div>
                             ) : (
-                                <PaymentContainer id={Number(product.id)} />
+                                <ServerPaymentButton product={product} />
                             )}
                         </>
                     )}
