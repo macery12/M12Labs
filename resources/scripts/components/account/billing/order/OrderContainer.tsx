@@ -218,28 +218,9 @@ export default () => {
     };
     const cardSurfaceStyle = { backgroundColor: colors.secondary, borderColor: '#374151' };
 
-                        {/* Resources Grid */}
-                        <div className={'grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2'}>
-                            <div className={'text-center'}>
-                                <FontAwesomeIcon icon={faMicrochip} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                <p className={'text-xs text-gray-500'}>CPU</p>
-                                <p className={'text-sm font-medium text-gray-200'}>{product.limits.cpu}%</p>
-                            </div>
-                            <div className={'text-center'}>
-                                <FontAwesomeIcon icon={faMemory} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                <p className={'text-xs text-gray-500'}>RAM</p>
-                                <p className={'text-sm font-medium text-gray-200'}>
-                                    {(product.limits.memory / 1024).toFixed(1)} GB
-                                </p>
-                            </div>
-                            <div className={'text-center'}>
-                                <FontAwesomeIcon icon={faHdd} className={'h-4 w-4 mb-1 text-gray-500'} />
-                                <p className={'text-xs text-gray-500'}>Storage</p>
-                                <p className={'text-sm font-medium text-gray-200'}>{(product.limits.disk / 1024).toFixed(1)} GB</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    return (
+        <PageContentBlock title={'Configure Checkout'}>
+            <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
 
             <div className={'mb-8'}>
                 <h1 className={'text-4xl font-bold text-gray-100'}>Configure Your Server</h1>
@@ -480,34 +461,32 @@ export default () => {
                                 </div>
                             </div>
 
-            {/* Progress Stepper */}
-            <CheckoutStepper steps={getWizardSteps()} />
-
-            {/* Main Wizard Content with Two-Column Layout */}
-            <div className={'mt-10'}>
-                <div className={'mx-auto max-w-7xl'}>
-                    <div className={'grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8'}>
-                        {/* Left Column - Main Content */}
-                        <div className={'lg:col-span-2'}>{renderStepContent()}</div>
-
-                        {/* Right Column - Sticky Subtotal Card */}
-                        <div className={'lg:col-span-1'}>
-                            <div className={'sticky top-8 lg:top-24'}>
-                                <SubtotalCard
-                                    basePrice={product.price}
-                                    selectedNode={selectedNode}
-                                    nodes={nodes}
-                                    selectedEggId={selectedEggId}
-                                    availableEggs={availableEggs}
-                                    selectedBillingDays={selectedBillingDays}
-                                    billingCycles={billingCycles}
-                                    couponDiscount={couponData?.discount || 0}
-                                    couponCode={couponData?.coupon.code}
-                                    productName={product.name}
-                                    showDetailedBreakdown={currentStep === getTotalSteps()}
-                                    showCouponInput={currentStep === getTotalSteps()}
-                                    onCouponApplied={handleCouponApplied}
-                                />
+                            <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
+                                <div className={'text-sm text-gray-400'}>
+                                    Ensure all required fields are filled before continuing to payment.
+                                </div>
+                                <Button
+                                    onClick={() => {
+                                        setServerNameTouched(true);
+                                        if (!reviewReady) return;
+                                        navigate('/checkout/payment', {
+                                            state: {
+                                                productId: product.id,
+                                                selectedNode,
+                                                selectedBillingDays,
+                                                selectedEggId,
+                                                vars: Array.from(vars.entries()),
+                                                couponId: couponData?.coupon.id,
+                                                couponData,
+                                                serverName: serverName.trim(),
+                                            },
+                                        });
+                                    }}
+                                    size={Button.Sizes.Large}
+                                    disabled={!reviewReady}
+                                >
+                                    Continue to Payment →
+                                </Button>
                             </div>
                         </div>
                     </section>
