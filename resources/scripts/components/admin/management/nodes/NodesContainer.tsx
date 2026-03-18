@@ -58,7 +58,7 @@ const NodesContainer = () => {
             <Dialog title={'Create a New Node'} open={open} onClose={() => setOpen(false)} size={'xl'}>
                 <NewNodeContainer />
             </Dialog>
-            <div css={tw`w-full flex flex-row items-center mb-8`}>
+            <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>Nodes</h2>
                     <p

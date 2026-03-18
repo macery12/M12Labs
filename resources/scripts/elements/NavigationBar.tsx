@@ -12,6 +12,7 @@ import { ChevronRightIcon, HomeIcon } from '@heroicons/react/outline';
 import { useActivityLogs } from '@/api/routes/account/activity';
 import Spinner from '@/elements/Spinner';
 import { formatDistanceToNow } from 'date-fns';
+import MobileDrawer from '@/elements/MobileDrawer';
 
 const RightNavigation = styled.div<{ theme: SiteTheme }>`
     & > a,
@@ -55,7 +56,7 @@ const NavigationBar = () => {
     }, []);
 
     const renderBreadcrumbs = () => (
-        <ol className="inline-flex w-1/3 space-x-2 text-sm text-gray-400">
+        <ol className="inline-flex min-w-0 flex-1 items-center space-x-2 overflow-hidden text-sm text-gray-400">
             <Link to={'/'}>
                 <HomeIcon className="my-auto h-4 w-4 brightness-150" />
             </Link>
@@ -119,8 +120,9 @@ const NavigationBar = () => {
 
     return (
         <div className="mb-8 w-full overflow-x-auto shadow-md" style={{ backgroundColor: theme.colors.sidebar }}>
-            <div className="flex h-[3.5rem] w-full items-center px-8">
-                {renderBreadcrumbs()}
+            <div className="flex h-[3.5rem] w-full items-center px-4 sm:px-8">
+                <MobileDrawer.Trigger />
+                <div className="ml-2 md:ml-0">{renderBreadcrumbs()}</div>
                 <RightNavigation className="ml-auto flex h-full items-center justify-center" theme={theme}>
                     <div className="relative">
                         <div

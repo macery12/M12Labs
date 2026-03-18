@@ -56,7 +56,7 @@ const ScreenBlock = ({ title, image, message, onBack, onRetry, children }: Scree
         <PageContentBlock>
             <div css={tw`flex justify-center`}>
                 <div
-                    css={tw`w-full sm:w-3/4 md:w-1/2 p-12 md:p-20 rounded-lg shadow-lg text-center relative`}
+                    css={tw`w-full sm:w-3/4 md:w-1/2 p-6 sm:p-12 md:p-20 rounded-lg shadow-lg text-center relative`}
                     style={{ backgroundColor: secondary }}
                 >
                     {(typeof onBack === 'function' || typeof onRetry === 'function') && (
@@ -165,7 +165,7 @@ const Suspended = ({
         <PageContentBlock>
             <div css={tw`flex justify-center`}>
                 <div
-                    css={tw`w-full sm:w-3/4 md:w-1/2 p-12 md:p-20 rounded-lg shadow-lg text-left relative`}
+                    css={tw`w-full sm:w-3/4 md:w-1/2 p-6 sm:p-12 md:p-20 rounded-lg shadow-lg text-left relative`}
                     style={{ backgroundColor: secondary }}
                 >
                     <div css={tw`absolute left-0 top-0 ml-4 mt-4`}>

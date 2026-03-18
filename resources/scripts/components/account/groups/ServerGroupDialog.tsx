@@ -63,7 +63,7 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
             <ModifyServerGroup open={open.open === 'modify'} group={group} setOpen={setOpen} />
             <Dialog open={open.open === 'add'} onClose={() => setOpen({ open: 'none' })} title={'Add group to server'}>
                 {groups ? (
-                    <div className={'my-3 grid cursor-pointer grid-cols-2 gap-4 lg:grid-cols-3'}>
+                    <div className={'my-3 grid cursor-pointer grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'}>
                         {groups?.map(group => (
                             <Pill size={'large'} type={'unknown'} key={group.id}>
                                 <span style={{ color: group.color }}>{group.name}</span>
@@ -98,7 +98,7 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
                     </Button>
                 </div>
                 {groups ? (
-                    <div className={'my-3 grid cursor-pointer grid-cols-2 gap-4 lg:grid-cols-3'}>
+                    <div className={'my-3 grid cursor-pointer grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'}>
                         {groups?.map(group => (
                             <Pill size={'large'} key={group.id} type={'unknown'}>
                                 <div

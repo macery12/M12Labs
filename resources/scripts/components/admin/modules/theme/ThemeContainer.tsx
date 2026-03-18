@@ -36,7 +36,7 @@ export default () => {
                 Performing this action will immediately wipe all of your custom theming settings. Only do this if you
                 wish to return to the stock appearance of Jexactyl. This action cannot be reversed.
             </Dialog.Confirm>
-            <div className={'mb-8 flex w-full flex-row items-center'}>
+            <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>System Theme</h2>
                     <p

@@ -14,7 +14,7 @@ const SettingsRouter = () => {
 
     return (
         <AdminContentBlock title={'Settings'}>
-            <div css={tw`w-full flex flex-row items-center mb-8`}>
+            <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>Settings</h2>
                     <p

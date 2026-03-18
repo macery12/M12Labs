@@ -71,7 +71,7 @@ export default () => {
                         <div className="font-bold">
                             Deploying using {selectedPreset.name} onto {selectedNode?.name ?? '...'}
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm text-neutral-400">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-neutral-400">
                             <div>CPU: {selectedPreset.cpu}%</div>
                             <div>Memory: {selectedPreset.memory} MB</div>
                             <div>Disk: {selectedPreset.disk} MB</div>

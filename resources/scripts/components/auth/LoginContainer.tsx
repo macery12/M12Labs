@@ -139,7 +139,7 @@ function LoginContainer() {
                     {(modules.discord.enabled || modules.google.enabled || registration) && (
                         <div className={'my-3 w-full text-center text-gray-400'}>OR</div>
                     )}
-                    <div className={'mt-4 grid w-full grid-cols-2 gap-4'}>
+                    <div className={'mt-4 grid w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4'}>
                         {modules.discord.enabled && (
                             <Button.Info
                                 type={'button'}

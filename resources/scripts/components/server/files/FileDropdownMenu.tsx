@@ -147,7 +147,7 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
             </div>
             {visible && (
                 <Dialog open={visible} onClose={() => setVisible(false)} title={'File Options'}>
-                    <div className={'mt-6 grid grid-cols-2 gap-2 lg:grid-cols-3 lg:gap-4'}>
+                    <div className={'mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4'}>
                         <Can action={'file.update'}>
                             <Button.Text onClick={() => setModal('rename')} className={'w-full'}>
                                 <PencilIcon className={'mt-0.5 mr-2 w-4'} />

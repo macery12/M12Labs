@@ -38,7 +38,7 @@ export default ({ filters }: Props) => {
             <Dialog title={'Create a New Database'} open={open} onClose={() => setOpen(false)} size={'lg'}>
                 <InformationContainer title={'Information'} onSubmit={submit} />
             </Dialog>
-            <div className={'mb-8 flex w-full flex-row items-center'}>
+            <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Database Hosts</h2>
                     <p className={'hidden whitespace-nowrap text-base text-neutral-400 lg:block'}>
