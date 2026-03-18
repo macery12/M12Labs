@@ -6,7 +6,8 @@ import { useStoreState } from '@/state/hooks';
 const ThemeVariables = () => {
     const theme = useStoreState(state => state.theme.data);
 
-    const normalized = useMemo(() => theme ?? normalizeTheme(), [theme]);
+    const fallbackTheme = useMemo(() => normalizeTheme(), []);
+    const normalized = theme ?? fallbackTheme;
 
     useEffect(() => {
         const root = document.documentElement;
