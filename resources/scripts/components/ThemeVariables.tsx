@@ -7,7 +7,7 @@ const ThemeVariables = () => {
     const theme = useStoreState(state => state.theme.data);
 
     useEffect(() => {
-        const normalized = normalizeTheme(theme);
+        const normalized = theme ?? normalizeTheme();
         const root = document.documentElement;
 
         const flattened = flattenTokens(normalized.tokens || getTokenFallbacks());

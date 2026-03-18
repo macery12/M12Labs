@@ -114,14 +114,14 @@ const tokenFallbacks: ThemeTokens = {
     },
 };
 
-const deepMerge = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
+const deepMergeTokens = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
     const output = { ...target } as T;
 
     Object.keys(source || {}).forEach(key => {
         const value = (source as Record<string, unknown>)[key];
 
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-            (output as Record<string, unknown>)[key] = deepMerge(
+            (output as Record<string, unknown>)[key] = deepMergeTokens(
                 ((target as Record<string, unknown>)[key] as Record<string, unknown>) || {},
                 value as Record<string, unknown>,
             );
@@ -134,7 +134,7 @@ const deepMerge = <T extends Record<string, unknown>>(target: T, source: Partial
 };
 
 export const deriveTokensFromColors = (colors: ThemeColorMap): ThemeTokens => {
-    return deepMerge(tokenFallbacks, {
+    return deepMergeTokens(tokenFallbacks, {
         base: {
             background: colors.background ?? fallbackColors.background,
         },
@@ -166,7 +166,7 @@ export const normalizeTheme = (theme?: Partial<SiteTheme>): SiteTheme => {
     };
 
     const derivedTokens = deriveTokensFromColors(colors);
-    const tokens = deepMerge(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
+    const tokens = deepMergeTokens(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
 
     return {
         ...(theme as SiteTheme),
