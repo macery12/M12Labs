@@ -6,38 +6,30 @@ import { faCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { CheckCircleIcon } from '@heroicons/react/outline';
 import { normalizeTheme } from '@/theme/tokens';
-
-const colorOptions = [
-    { hex: '#16a34a', name: 'Jexactyl Green' },
-    { hex: '#12aaaa', name: 'Microsoft Teal' },
-    { hex: '#ff0000', name: 'Brick Red' },
-    { hex: '#9D00FF', name: 'Iris Purple' },
-    { hex: '#FFA500', name: 'Orange Orange' },
-    { hex: '#32559f', name: 'Ptero Blue' },
-    { hex: '#ff99c8', name: 'Pretty Pink' },
-    { hex: '#5e6472', name: 'Plain Grey' },
-];
+import { themePresets } from '@/theme/presets';
 
 export default ({ defaultColor }: { defaultColor: string }) => {
     const { status, setStatus } = useStatus();
     const theme = useStoreState(state => state.theme.data!);
     const setTheme = useStoreActions(actions => actions.theme.setTheme);
 
-    const changeColor = (hex: string) => {
+    const applyPreset = (presetHex: string) => {
         setStatus('loading');
 
-        updateColors('primary', hex).then(() => {
-            setStatus('success');
-            setTheme(
-                normalizeTheme({
-                    ...theme,
-                    colors: {
-                        ...theme.colors,
-                        primary: hex,
-                    },
-                }),
-            );
-        });
+        updateColors('primary', presetHex)
+            .then(() => {
+                setStatus('success');
+                setTheme(
+                    normalizeTheme({
+                        ...theme,
+                        colors: {
+                            ...theme.colors,
+                            primary: presetHex,
+                        },
+                    }),
+                );
+            })
+            .catch(() => setStatus('error'));
     };
 
     return (
@@ -56,26 +48,30 @@ export default ({ defaultColor }: { defaultColor: string }) => {
             </div>
             <AdminBox status={status} title={'Set Primary Color'}>
                 <div className={'grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6 xl:grid-cols-8 lg:gap-6'}>
-                    {colorOptions.map(option => (
-                        <div
-                            className={'relative text-center'}
-                            key={option.hex}
-                            onClick={() => changeColor(option.hex)}
-                        >
-                            <FontAwesomeIcon
-                                icon={faCircle}
-                                style={{ color: option.hex }}
-                                size={'3x'}
-                                className={'transition duration-300 hover:brightness-125'}
-                            />
-                            {defaultColor === option.hex && (
-                                <div className={'absolute top-[10px] right-[27px]'}>
-                                    <CheckCircleIcon className={'w-7'} />
-                                </div>
-                            )}
-                            <p className={'mt-1 text-xs italic text-gray-400'}>{option.name}</p>
-                        </div>
-                    ))}
+                    {themePresets.map(option => {
+                        const primary = option.colors.primary ?? theme.colors.primary;
+
+                        return (
+                            <div
+                                className={'relative text-center'}
+                                key={option.id}
+                                onClick={() => option.colors.primary && applyPreset(option.colors.primary)}
+                            >
+                                <FontAwesomeIcon
+                                    icon={faCircle}
+                                    style={{ color: primary, opacity: option.colors.primary ? 1 : 0.35 }}
+                                    size={'3x'}
+                                    className={'transition duration-300 hover:brightness-125'}
+                                />
+                                {option.colors.primary && defaultColor === option.colors.primary && (
+                                    <div className={'absolute top-[10px] right-[27px]'}>
+                                        <CheckCircleIcon className={'w-7'} />
+                                    </div>
+                                )}
+                                <p className={'mt-1 text-xs italic text-gray-400'}>{option.name}</p>
+                            </div>
+                        );
+                    })}
                 </div>
             </AdminBox>
             <p className={'mt-2 text-right text-gray-400'}>Select a color from the options to apply it.</p>

@@ -6,6 +6,7 @@ import Preview from '@admin/modules/theme/Preview';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import ColorSelect from '@admin/modules/theme/ColorSelect';
 import resetTheme from '@/api/routes/admin/theme/resetTheme';
+import PresetSelect from '@admin/modules/theme/PresetSelect';
 
 export default () => {
     const [reload, setReload] = useState<boolean>(false);
@@ -58,8 +59,9 @@ export default () => {
                     </Button>
                 </div>
             </div>
-            <div className={'grid gap-4 md:grid-cols-2 xl:grid-cols-3'}>
-                <ColorSelect setReload={setReload} />
+            <div className={'grid gap-4 lg:grid-cols-3'}>
+                <PresetSelect setReload={setReload} />
+                <ColorSelect setReload={setReload} className={'lg:col-span-2'} />
                 <Preview reload={reload} />
             </div>
         </AdminContentBlock>
