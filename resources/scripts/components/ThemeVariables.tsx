@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { flattenTokens, getTokenFallbacks, normalizeTheme } from '@/theme/tokens';
 import { useStoreState } from '@/state/hooks';
@@ -6,8 +6,9 @@ import { useStoreState } from '@/state/hooks';
 const ThemeVariables = () => {
     const theme = useStoreState(state => state.theme.data);
 
+    const normalized = useMemo(() => theme ?? normalizeTheme(), [theme]);
+
     useEffect(() => {
-        const normalized = theme ?? normalizeTheme();
         const root = document.documentElement;
 
         const flattened = flattenTokens(normalized.tokens || getTokenFallbacks());
@@ -21,7 +22,7 @@ const ThemeVariables = () => {
         root.style.setProperty('--theme-color-background', normalized.colors.background);
         root.style.setProperty('--theme-color-headers', normalized.colors.headers);
         root.style.setProperty('--theme-color-sidebar', normalized.colors.sidebar);
-    }, [theme]);
+    }, [normalized]);
 
     return null;
 };

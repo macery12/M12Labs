@@ -114,14 +114,14 @@ const tokenFallbacks: ThemeTokens = {
     },
 };
 
-const deepMergeTokens = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
+const mergeDeep = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
     const output = { ...target } as T;
 
     Object.keys(source || {}).forEach(key => {
         const value = (source as Record<string, unknown>)[key];
 
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-            (output as Record<string, unknown>)[key] = deepMergeTokens(
+            (output as Record<string, unknown>)[key] = mergeDeep(
                 ((target as Record<string, unknown>)[key] as Record<string, unknown>) || {},
                 value as Record<string, unknown>,
             );
@@ -134,7 +134,7 @@ const deepMergeTokens = <T extends Record<string, unknown>>(target: T, source: P
 };
 
 export const deriveTokensFromColors = (colors: ThemeColorMap): ThemeTokens => {
-    return deepMergeTokens(tokenFallbacks, {
+    return mergeDeep(tokenFallbacks, {
         base: {
             background: colors.background ?? fallbackColors.background,
         },
@@ -166,7 +166,7 @@ export const normalizeTheme = (theme?: Partial<SiteTheme>): SiteTheme => {
     };
 
     const derivedTokens = deriveTokensFromColors(colors);
-    const tokens = deepMergeTokens(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
+    const tokens = mergeDeep(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
 
     return {
         ...(theme as SiteTheme),
@@ -180,19 +180,19 @@ type Flattened = Record<string, string>;
 export const flattenTokens = (tokens: ThemeTokens): Flattened => {
     const result: Flattened = {};
 
-    const walk = (obj: Record<string, unknown>, prefix: string[] = []) => {
+    const flattenObject = (obj: Record<string, unknown>, prefix: string[] = []) => {
         Object.entries(obj).forEach(([key, value]) => {
             const path = [...prefix, key];
 
             if (value && typeof value === 'object' && !Array.isArray(value)) {
-                walk(value as Record<string, unknown>, path);
+                flattenObject(value as Record<string, unknown>, path);
             } else if (typeof value !== 'undefined') {
                 result[path.join('.')] = String(value);
             }
         });
     };
 
-    walk(tokens as Record<string, unknown>);
+    flattenObject(tokens as Record<string, unknown>);
 
     return result;
 };
