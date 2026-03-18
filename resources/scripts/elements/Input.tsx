@@ -40,7 +40,7 @@ const inputStyle = () => {
         ${tw`border-zinc-700 hover:border-neutral-400 text-neutral-200 shadow-none`};
 
         background-color: var(--theme-inputs-background, ${theme.colors.background});
-        color: var(--theme-inputs-text, var(--theme-text-primary, #f8fafc));
+        color: var(--theme-inputs-text, #f8fafc);
         border-color: var(--theme-inputs-border, #27272a);
 
         & + .input-help {

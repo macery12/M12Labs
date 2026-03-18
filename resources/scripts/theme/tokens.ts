@@ -62,6 +62,8 @@ export const fallbackColors: ThemeColorMap = {
     sidebar: '#18181b',
 };
 
+const statusSuccess = '#22c55e';
+
 const tokenFallbacks: ThemeTokens = {
     base: {
         background: fallbackColors.background,
@@ -89,7 +91,7 @@ const tokenFallbacks: ThemeTokens = {
         onAccent: '#0b0f12',
     },
     status: {
-        success: '#22c55e',
+        success: statusSuccess,
         warning: '#f59e0b',
         danger: '#ef4444',
         info: '#38bdf8',
@@ -105,7 +107,7 @@ const tokenFallbacks: ThemeTokens = {
     interactive: {
         accent: fallbackColors.primary,
         accentMuted: '#14532d',
-        accentHover: '#22c55e',
+        accentHover: statusSuccess,
         selection: 'rgba(34,197,94,0.25)',
     },
     borders: {
