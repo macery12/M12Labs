@@ -51,6 +51,8 @@ export default () => {
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
+    const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(checkoutState?.couponData ?? null);
+    const [couponId, setCouponId] = useState<number | undefined>(checkoutState?.couponId);
 
     const vars = useMemo(
         () => new Map<string, string>(checkoutState?.vars ? [...checkoutState.vars] : []),
@@ -96,7 +98,7 @@ export default () => {
         if (!billing.processors?.stripe?.available) return;
 
         // Skip intent creation if coupon makes order free
-        if (checkoutState?.couponData?.total === 0) {
+        if (couponData?.total === 0) {
             setIntent(null);
             setStripe(null);
             return;
@@ -104,7 +106,7 @@ export default () => {
 
         const initializeStripe = async () => {
             try {
-                const intentData = await getStripeIntent(product.id, checkoutState?.couponId);
+                const intentData = await getStripeIntent(product.id, couponId);
                 setIntent({ id: intentData.id, secret: intentData.secret });
 
                 const stripePublicKey = await getStripeKey(product.id);
@@ -116,7 +118,7 @@ export default () => {
         };
 
         initializeStripe();
-    }, [product?.id, checkoutState?.couponId]);
+    }, [product?.id, couponId, couponData?.total]);
 
     if (!checkoutState?.productId) {
         return (
@@ -152,7 +154,15 @@ export default () => {
         }
     };
 
-    const totalIsFree = product.price === 0 || checkoutState.couponData?.total === 0;
+    const totalIsFree = product.price === 0 || couponData?.total === 0;
+
+    const handleCouponApplied = (data: ValidateCouponResponse | null) => {
+        setCouponData(data);
+        setCouponId(data?.coupon.id);
+        // Reset stripe data so it re-initializes with the new amount
+        setStripe(null);
+        setIntent(null);
+    };
 
     const summaryCard = (
         <div
@@ -250,11 +260,12 @@ export default () => {
                             availableEggs={selectedEgg ? [selectedEgg] : []}
                             selectedBillingDays={checkoutState.selectedBillingDays}
                             billingCycles={billingCycles}
-                            couponDiscount={checkoutState.couponData?.discount || 0}
-                            couponCode={checkoutState.couponData?.coupon.code}
+                            couponDiscount={couponData?.discount || 0}
+                            couponCode={couponData?.coupon.code}
                             productName={product.name}
                             showDetailedBreakdown={true}
-                            showCouponInput={false}
+                            showCouponInput={true}
+                            onCouponApplied={handleCouponApplied}
                         />
                     </div>
                 </div>

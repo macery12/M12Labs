@@ -267,13 +267,13 @@ export default ({
                             aria-hidden={true}
                         />
                     </button>
-                    {showCoupon && onCouponApplied && (
-                        <div>
-                            <CouponInput subtotal={basePrice} onCouponApplied={onCouponApplied} />
-                            <FlashMessageRender byKey={'coupon'} className={'mt-2'} />
-                        </div>
-                    )}
+            {showCoupon && onCouponApplied && (
+                <div>
+                    <CouponInput subtotal={subtotal} onCouponApplied={onCouponApplied} />
+                    <FlashMessageRender byKey={'coupon'} className={'mt-2'} />
                 </div>
+            )}
+        </div>
             )}
         </div>
     );
