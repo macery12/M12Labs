@@ -199,7 +199,7 @@ export default () => {
                                                         Configure
                                                     </Button>
                                                 ) : (
-                                                    <Link to={`/account/billing/order/${product.id}`}>
+                                                    <Link to={`/checkout/configure/${product.id}`}>
                                                         <Button size={Button.Sizes.Large} className={'w-full'}>
                                                             Configure
                                                         </Button>

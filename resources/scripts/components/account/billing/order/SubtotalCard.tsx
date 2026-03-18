@@ -21,7 +21,7 @@ interface SubtotalCardProps {
     productName?: string;
     showDetailedBreakdown?: boolean;
     showCouponInput?: boolean;
-    onCouponApplied?: (data: ValidateCouponResponse | null) => void;
+    onCouponApplied?: (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => void;
 }
 
 const formatPrice = (price: number) => `$${price.toFixed(2)}`;
@@ -267,13 +267,13 @@ export default ({
                             aria-hidden={true}
                         />
                     </button>
-                    {showCoupon && onCouponApplied && (
-                        <div>
-                            <CouponInput subtotal={basePrice} onCouponApplied={onCouponApplied} />
-                            <FlashMessageRender byKey={'coupon'} className={'mt-2'} />
-                        </div>
-                    )}
+            {showCoupon && onCouponApplied && (
+                <div>
+                    <CouponInput subtotal={subtotal} onCouponApplied={onCouponApplied} />
+                    <FlashMessageRender byKey={'coupon'} className={'mt-2'} />
                 </div>
+            )}
+        </div>
             )}
         </div>
     );

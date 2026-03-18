@@ -39,7 +39,11 @@ export default ({ cycle, selected, setSelected }: Props) => {
                 'relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:scale-[1.02]',
                 isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
-            style={isSelected ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` } : {}}
+            style={
+                isSelected
+                    ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                    : { backgroundColor: colors.secondary, borderColor: '#374151' }
+            }
         >
             <div className={'flex items-center justify-between gap-3'}>
                 <div className={'flex items-center gap-3'}>
