@@ -13,8 +13,10 @@ const ThemeVariables = () => {
 
         const flattened = flattenTokens(normalized.tokens ?? getTokenFallbacks());
 
+        const tokenKeyToCssVariable = (key: string) => key.replace(/\./g, '-');
+
         Object.entries(flattened).forEach(([key, value]) => {
-            root.style.setProperty(`--theme-${key.replace(/\./g, '-')}`, value);
+            root.style.setProperty(`--theme-${tokenKeyToCssVariable(key)}`, value);
         });
 
         root.style.setProperty('--theme-color-primary', normalized.colors.primary);

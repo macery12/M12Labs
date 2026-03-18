@@ -121,14 +121,14 @@ const tokenFallbacks: ThemeTokens = {
     },
 };
 
-const mergeDeep = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
+const deepMergeObjects = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
     const output = { ...target } as T;
 
     Object.keys(source || {}).forEach(key => {
         const value = (source as Record<string, unknown>)[key];
 
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-            (output as Record<string, unknown>)[key] = mergeDeep(
+            (output as Record<string, unknown>)[key] = deepMergeObjects(
                 ((target as Record<string, unknown>)[key] as Record<string, unknown>) || {},
                 value as Record<string, unknown>,
             );
@@ -141,7 +141,7 @@ const mergeDeep = <T extends Record<string, unknown>>(target: T, source: Partial
 };
 
 export const deriveTokensFromColors = (colors: ThemeColorMap): ThemeTokens => {
-    return mergeDeep(tokenFallbacks, {
+    return deepMergeObjects(tokenFallbacks, {
         base: {
             background: colors.background ?? fallbackColors.background,
         },
@@ -173,7 +173,7 @@ export const normalizeTheme = (theme?: Partial<SiteTheme>): SiteTheme => {
     };
 
     const derivedTokens = deriveTokensFromColors(colors);
-    const tokens = mergeDeep(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
+    const tokens = deepMergeObjects(derivedTokens, (theme?.tokens as Partial<ThemeTokens>) || {});
 
     return {
         ...(theme as SiteTheme),
@@ -187,19 +187,19 @@ type FlattenedTokenMap = Record<string, string>;
 export const flattenTokens = (tokens: ThemeTokens): FlattenedTokenMap => {
     const result: FlattenedTokenMap = {};
 
-    const flattenObject = (obj: Record<string, unknown>, prefix: string[] = []) => {
+    const flattenObjectRecursively = (obj: Record<string, unknown>, prefix: string[] = []) => {
         Object.entries(obj).forEach(([key, value]) => {
             const path = [...prefix, key];
 
             if (value && typeof value === 'object' && !Array.isArray(value)) {
-                flattenObject(value as Record<string, unknown>, path);
+                flattenObjectRecursively(value as Record<string, unknown>, path);
             } else if (typeof value !== 'undefined') {
                 result[path.join('.')] = String(value);
             }
         });
     };
 
-    flattenObject(tokens as Record<string, unknown>);
+    flattenObjectRecursively(tokens as Record<string, unknown>);
 
     return result;
 };
