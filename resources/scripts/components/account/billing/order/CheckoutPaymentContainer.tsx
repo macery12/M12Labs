@@ -156,10 +156,13 @@ export default () => {
 
     const totalIsFree = product.price === 0 || couponData?.total === 0;
 
-    const handleCouponApplied = (data: ValidateCouponResponse | null) => {
+    const handleCouponApplied = (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => {
+        if (status === 'invalid') return;
+
         setCouponData(data);
         setCouponId(data?.coupon.id);
-        // Reset stripe data so it re-initializes with the new amount
+
+        // Reset stripe data so it re-initializes with the new amount (or removal)
         setStripe(null);
         setIntent(null);
     };

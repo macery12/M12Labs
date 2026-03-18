@@ -21,7 +21,7 @@ interface SubtotalCardProps {
     productName?: string;
     showDetailedBreakdown?: boolean;
     showCouponInput?: boolean;
-    onCouponApplied?: (data: ValidateCouponResponse | null) => void;
+    onCouponApplied?: (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => void;
 }
 
 const formatPrice = (price: number) => `$${price.toFixed(2)}`;

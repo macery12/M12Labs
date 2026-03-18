@@ -90,7 +90,8 @@ export default () => {
     const configurationComplete = serverName.trim() !== '';
     const reviewReady = pricingComplete && softwareComplete && configurationComplete && legalAgreed;
 
-    const handleCouponApplied = (data: ValidateCouponResponse | null) => {
+    const handleCouponApplied = (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => {
+        if (status === 'invalid') return;
         setCouponData(data);
     };
 
