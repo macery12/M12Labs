@@ -11,6 +11,7 @@ const ViewTicketContainer = lazy(() => import('@account/tickets/view/ViewTicketC
 
 const ProductsContainer = lazy(() => import('@account/billing/ProductsContainer'));
 const OrderContainer = lazy(() => import('@account/billing/order/OrderContainer'));
+const CheckoutPaymentContainer = lazy(() => import('@account/billing/order/CheckoutPaymentContainer'));
 const OrdersContainer = lazy(() => import('@account/billing/orders/OrdersContainer'));
 const Processing = lazy(() => import('@account/billing/order/summary/Processing'));
 const Success = lazy(() => import('@account/billing/order/summary/Success'));
@@ -45,6 +46,8 @@ const account: RouteDefinition[] = [
         icon: Icon.CashIcon,
         condition: flags => flags.billing.enabled,
     }),
+    route('/checkout/configure/:id', OrderContainer),
+    route('/checkout/payment', CheckoutPaymentContainer),
     route('billing/order/:id', OrderContainer),
     route('billing/orders', OrdersContainer, {
         name: 'Orders',
