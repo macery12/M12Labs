@@ -149,8 +149,8 @@ const UserPicker = ({
                         <div css={tw`flex items-center gap-3`}>
                             <Avatar name={getAvatarName(user)} size={28} />
                             <div css={tw`flex flex-col`}>
-                                <span css={tw`text-sm text-neutral-100`}>{user.username || user.email}</span>
-                                <span css={tw`text-xs text-neutral-400`}>{user.email}</span>
+                                <span css={tw`text-sm text-neutral-100`}>{primaryText}</span>
+                                {user.email && <span css={tw`text-xs text-neutral-400`}>{user.email}</span>}
                             </div>
                             <div css={tw`ml-auto flex items-center gap-2`}>
                                 <span

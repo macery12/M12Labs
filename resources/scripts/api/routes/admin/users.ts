@@ -73,23 +73,34 @@ export interface UserSearchOptions {
     signal?: AbortSignal;
 }
 
-const searchUsersPaginated = async ({
-    query,
-    limit = 15,
-    page,
-    signal,
-}: UserSearchOptions = {}): Promise<PaginatedResult<User>> => {
-    const params = withQueryBuilderParams({
-        page,
-        filters: query ? { search: query } : undefined,
-        sorts: { username: 'asc' },
-    });
+type LegacySearchParams = QueryBuilderParams<'username' | 'email'>;
+type SearchUsersInput = UserSearchOptions | LegacySearchParams;
+
+const buildSearchParams = ({ limit = 15, ...options }: SearchUsersInput) => {
+    if ('filters' in options || 'sorts' in options) {
+        return {
+            per_page: limit,
+            ...withQueryBuilderParams(options as LegacySearchParams),
+        };
+    }
+
+    const modern = options as UserSearchOptions;
+    return {
+        per_page: limit,
+        ...withQueryBuilderParams({
+            page: modern.page,
+            filters: modern.query ? { search: modern.query } : undefined,
+            sorts: { username: 'asc' },
+        }),
+    };
+};
+
+const searchUsersPaginated = async (options: SearchUsersInput = {}): Promise<PaginatedResult<User>> => {
+    const { signal } = options as UserSearchOptions;
+    const params = buildSearchParams(options);
 
     const { data } = await http.get('/api/application/users', {
-        params: {
-            per_page: limit,
-            ...params,
-        },
+        params,
         signal,
     });
 
@@ -99,7 +110,7 @@ const searchUsersPaginated = async ({
     };
 };
 
-const searchUserAccounts = async (options: UserSearchOptions = {}): Promise<User[]> => {
+const searchUserAccounts = async (options: SearchUsersInput = {}): Promise<User[]> => {
     const { items } = await searchUsersPaginated(options);
     return items;
 };
