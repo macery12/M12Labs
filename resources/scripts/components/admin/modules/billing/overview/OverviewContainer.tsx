@@ -68,12 +68,6 @@ export default () => {
                     content={'Secure your first sale'}
                     link={'/admin/billing/orders'}
                 />
-                <Stepper
-                    className={settings.link || settings.paypal ? 'text-green-500' : 'text-blue-500'}
-                    icon={settings.link || settings.paypal ? faCheck : faArrowRight}
-                    content={'Add PayPal support'}
-                    link={'/admin/billing/settings'}
-                />
             </ol>
             <div className={'flex flex-col items-center rounded-lg shadow md:flex-row col-span-4'}>
                 <div className={'w-full grid grid-cols-3 mb-auto gap-6'}>

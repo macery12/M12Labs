@@ -39,8 +39,6 @@ export interface EverestSettings {
     };
     billing: {
         enabled: boolean;
-        paypal: boolean;
-        link: boolean;
         keys: {
             publishable: boolean;
             secret: boolean;
