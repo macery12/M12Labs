@@ -20,7 +20,7 @@ export default () => {
                 </SubNavigationLink>
             </SubNavigation>
 
-            <ContentBox title={'Resend Configuration'} showFlashes={'email:resend'}>
+            <ContentBox title={'Email Configuration'} showFlashes={'email:settings'}>
                 <ResendSettings />
             </ContentBox>
 
@@ -38,4 +38,3 @@ export default () => {
         </PageContentBlock>
     );
 };
-

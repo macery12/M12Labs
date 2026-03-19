@@ -27,7 +27,7 @@ export default () => {
                     path='/'
                     element={
                         <>
-                            <ContentBox title={'Resend Configuration'} showFlashes={'email:resend'}>
+                            <ContentBox title={'Email Configuration'} showFlashes={'email:settings'}>
                                 <ResendSettings />
                             </ContentBox>
 

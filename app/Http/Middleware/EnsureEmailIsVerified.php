@@ -3,8 +3,8 @@
 namespace Everest\Http\Middleware;
 
 use Closure;
-use Everest\Models\Setting;
 use Everest\Services\Email\EmailVerificationGate;
+use Everest\Services\Email\EmailManager;
 use Illuminate\Http\Request;
 
 class EnsureEmailIsVerified
@@ -33,8 +33,6 @@ class EnsureEmailIsVerified
 
     private function emailSendingEnabled(): bool
     {
-        $value = strtolower((string) Setting::get('settings::modules:email:resend:enabled', '0'));
-
-        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+        return EmailManager::isDeliveryEnabled();
     }
 }

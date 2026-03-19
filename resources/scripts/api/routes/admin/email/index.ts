@@ -1,20 +1,48 @@
 import http from '@/api/http';
 import { type VerificationRules } from '@/state/everest';
 
+export type EmailTransport = 'resend' | 'smtp';
+
 export interface ResendSettings {
-    enabled: boolean;
     api_key: boolean; // true if key exists, false otherwise
     from_email: string;
     from_name: string;
     reply_to: string;
 }
 
-export interface ResendSettingsUpdate {
+export interface SmtpSettings {
+    host: string;
+    port: string | number;
+    username: string;
+    password_set: boolean;
+    encryption: string;
+    from_email: string;
+    from_name: string;
+    reply_to: string;
+}
+
+export interface EmailSettings {
+    enabled: boolean;
+    transport: EmailTransport;
+    resend: ResendSettings;
+    smtp: SmtpSettings;
+}
+
+export interface EmailSettingsUpdate {
     enabled?: boolean;
+    transport?: EmailTransport;
     api_key?: string;
     from_email?: string;
     from_name?: string;
     reply_to?: string;
+    smtp_host?: string;
+    smtp_port?: number | string;
+    smtp_username?: string;
+    smtp_password?: string;
+    smtp_encryption?: string;
+    smtp_from_email?: string;
+    smtp_from_name?: string;
+    smtp_reply_to?: string;
 }
 
 export interface SendTestEmailRequest {
@@ -34,17 +62,17 @@ export interface EmailResponse {
     error?: string;
 }
 
-export const getSettings = (): Promise<ResendSettings> => {
+export const getSettings = (): Promise<EmailSettings> => {
     return new Promise((resolve, reject) => {
-        http.get<ResendSettings>(`/api/application/email/settings`)
+        http.get<EmailSettings>(`/api/application/email/settings`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const updateSettings = (settings: ResendSettingsUpdate): Promise<ResendSettings> => {
+export const updateSettings = (settings: EmailSettingsUpdate): Promise<EmailSettings> => {
     return new Promise((resolve, reject) => {
-        http.put<ResendSettings>(`/api/application/email/settings`, settings)
+        http.put<EmailSettings>(`/api/application/email/settings`, settings)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
