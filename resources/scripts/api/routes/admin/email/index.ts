@@ -12,7 +12,7 @@ export interface ResendSettings {
 
 export interface SmtpSettings {
     host: string;
-    port: string | number;
+    port: string;
     username: string;
     password_set: boolean;
     encryption: string;
@@ -36,7 +36,7 @@ export interface EmailSettingsUpdate {
     from_name?: string;
     reply_to?: string;
     smtp_host?: string;
-    smtp_port?: number | string;
+    smtp_port?: string;
     smtp_username?: string;
     smtp_password?: string;
     smtp_encryption?: string;

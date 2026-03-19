@@ -83,7 +83,7 @@ class SmtpTransport implements EmailTransport
     {
         return sprintf(
             '%s@%s',
-            bin2hex(random_bytes(8)),
+            bin2hex(random_bytes(16)),
             parse_url(config('app.url'), PHP_URL_HOST) ?: 'smtp.local'
         );
     }

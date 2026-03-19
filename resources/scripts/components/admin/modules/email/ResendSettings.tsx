@@ -56,7 +56,7 @@ export default () => {
                 setReplyTo(data.resend.reply_to || '');
 
                 setSmtpHost(data.smtp.host || '');
-                setSmtpPort((data.smtp.port || '').toString());
+                setSmtpPort(data.smtp.port || '');
                 setSmtpUsername(data.smtp.username || '');
                 setSmtpEncryption(data.smtp.encryption || '');
                 setSmtpFromEmail(data.smtp.from_email || '');
@@ -203,7 +203,7 @@ export default () => {
                 setStatus('success');
                 setSettings(updatedSettings);
                 setSmtpHost(updatedSettings.smtp.host || '');
-                setSmtpPort((updatedSettings.smtp.port || '').toString());
+                setSmtpPort(updatedSettings.smtp.port || '');
                 setSmtpUsername(updatedSettings.smtp.username || '');
                 setSmtpEncryption(updatedSettings.smtp.encryption || '');
                 setSmtpFromEmail(updatedSettings.smtp.from_email || '');
