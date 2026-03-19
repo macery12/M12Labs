@@ -91,7 +91,7 @@ const buildSearchParams = ({ limit = DEFAULT_USER_SEARCH_LIMIT, ...options }: Se
         per_page: limit,
         ...withQueryBuilderParams({
             page: modern.page,
-            filters: modern.query ? { '*': modern.query, search: modern.query } : undefined,
+            filters: modern.query ? { '*': modern.query } : undefined,
             sorts: { username: 'asc' },
         }),
     };

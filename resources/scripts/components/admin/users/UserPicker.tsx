@@ -124,7 +124,7 @@ const UserPicker = ({
                 loadUsers({ query: inputValue || undefined })
                     .then(callback)
                     .catch(() => callback([]));
-            }, 250),
+            }, 750),
         [loadUsers],
     );
 
