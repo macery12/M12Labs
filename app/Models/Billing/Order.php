@@ -3,6 +3,7 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\Server;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $total
  * @property string $status
  * @property int $product_id
+ * @property int|null $server_id
  * @property string $type
  * @property int $threat_index
  * @property string|null $transaction_id
@@ -80,6 +82,14 @@ class Order extends Model
     }
 
     /**
+     * Gets the server associated with this order.
+     */
+    public function server(): BelongsTo
+    {
+        return $this->belongsTo(Server::class, 'server_id');
+    }
+
+    /**
      * Gets the product which this order is assigned to.
      */
     public function product(): BelongsTo
@@ -121,5 +131,15 @@ class Order extends Model
         } else {
             return false;
         };
+    }
+
+    /**
+     * Assign a server ID to this model.
+     */
+    public function assignServer(Server $server): void
+    {
+        $this->server()->associate($server);
+
+        $this->save();
     }
 }

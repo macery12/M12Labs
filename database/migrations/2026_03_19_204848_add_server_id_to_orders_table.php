@@ -12,7 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            //
+            $table->unsignedInteger('server_id')->nullable();
+        });
+
+        Schema::table('orders', function (Blueprint $table) {
+            $table->foreign('server_id')
+                ->references('id')
+                ->on('servers')
+                ->nullOnDelete();
         });
     }
 
@@ -22,7 +29,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            //
+            $table->dropForeign(['server_id']);
+            $table->dropColumn('server_id');
         });
     }
 };

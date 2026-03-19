@@ -64,7 +64,7 @@ class StripeController extends ClientApiController
 
         // todo(jex): factor in discounts during sales process
         $price = $product->price;
-        $order_type = $server->exists() ? Order::TYPE_RENEWAL : Order::TYPE_NEW;
+        $order_type = $server ? Order::TYPE_RENEWAL : Order::TYPE_NEW;
 
         $transaction = $this->stripe->checkout->sessions->create([
             'mode' => 'payment',
@@ -95,13 +95,17 @@ class StripeController extends ClientApiController
             ],
         ]);
 
-        $this->orderService->create(
+        $order = $this->orderService->create(
             $transaction->id,
             $request->user(),
             $product,
             Order::STATUS_PENDING,
             $order_type
         );
+
+        if ($server) {
+            $order->assignServer($server);
+        };
 
         return $transaction->url;
     }
@@ -138,6 +142,8 @@ class StripeController extends ClientApiController
                     $new_server = $this->renewalService->handle($server);
                 } else {
                     $new_server = $this->deploymentService->handle($user, $product, $metadata, $order);
+
+                    $order->assignServer($new_server);
                 };
 
                 $order->update(['status' => Order::STATUS_PROCESSED]);
