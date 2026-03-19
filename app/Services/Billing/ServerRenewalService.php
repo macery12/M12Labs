@@ -22,7 +22,7 @@ class ServerRenewalService
         }
 
         $days = config('modules.billing.renewal.days', 30);
-        $new_date = $server->renewal_date->addDays($renewalDays)->toDateTimeString();
+        $new_date = $server->renewal_date->addDays($days)->toDateTimeString();
         
         $server->update(['renewal_date' => $new_date]);
 

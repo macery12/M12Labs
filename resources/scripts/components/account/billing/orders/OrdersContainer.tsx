@@ -134,9 +134,7 @@ function OrderTable() {
                                                     </CopyOnClick>
                                                 </td>
                                                 <td className={'px-6 py-4 text-white font-bold'}>${order.total}/mo</td>
-                                                <td className={'px-6 py-4'}>
-                                                    {order.name.slice(0, 8)} {order.description}
-                                                </td>
+                                                <td className={'px-6 py-4'}>{order.description}</td>
                                                 <td className={'px-6 py-4'}>
                                                     {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
                                                 </td>

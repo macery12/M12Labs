@@ -35,7 +35,7 @@ class ServerDeploymentService
         $renewalDays = config('modules.billing.renewal.days', 30);
         $egg = Egg::findOrFail($product->category->egg_id);
         $allocation = $this->getAllocation($metadata->node_id, $order->id);
-        $environment = $this->getEnvironment($egg->id, $metadata->variables);
+        $environment = $this->getEnvironment($egg->id, json_decode($metadata->variables));
 
         try {
             $server = $this->creation->handle([

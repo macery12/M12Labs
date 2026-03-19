@@ -41,15 +41,14 @@ class StripeController extends ClientApiController
     public function create(CreateStripePaymentRequest $request): string
     {
         $server = null;
+        $node_id = $request->input('node_id') ?? null;
         $product = Product::findOrFail($request->input('product_id'));
-        $is_new_order = !$request->filled('server_id');
-        $node_id = $is_new_order ? $request->input('node_id') : null;
 
         if (!$product->isPaid()) {
             throw new DisplayException('You cannot create a checkout session for a free product.');
         };
 
-        if ($is_new_order) {
+        if ($node_id) {
             if (!Node::findOrFail($request->input('node_id'))->deployable) {
                 throw new DisplayException('Paid servers cannot be deployed to this node.');
             }
@@ -65,6 +64,7 @@ class StripeController extends ClientApiController
 
         // todo(jex): factor in discounts during sales process
         $price = $product->price;
+        $order_type = $server->exists() ? Order::TYPE_RENEWAL : Order::TYPE_NEW;
 
         $transaction = $this->stripe->checkout->sessions->create([
             'mode' => 'payment',
@@ -91,7 +91,7 @@ class StripeController extends ClientApiController
                 'node_id' => (string) ($node_id ?? ''),
                 'server_id' => (string) ($server?->id ?? 0),
                 'variables' => json_encode($request->input('variables') ?? []),
-                'order_type' => $is_new_order ? Order::TYPE_NEW : Order::TYPE_RENEWAL,
+                'order_type' => $order_type,
             ],
         ]);
 
@@ -100,7 +100,7 @@ class StripeController extends ClientApiController
             $request->user(),
             $product,
             Order::STATUS_PENDING,
-            $is_new_order ? Order::TYPE_NEW : Order::TYPE_RENEWAL
+            $order_type
         );
 
         return $transaction->url;
