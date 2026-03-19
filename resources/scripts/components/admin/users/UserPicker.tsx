@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncSelect from 'react-select/async';
 import { components as selectComponents } from 'react-select';
 import tw, { theme } from 'twin.macro';
@@ -53,6 +53,8 @@ const toOption = (user: User): UserOption => ({
     user,
 });
 
+const getAvatarName = (user: User) => user.uuid || user.email || user.username || String(user.id);
+
 const UserPicker = ({
     name,
     label,
@@ -68,16 +70,19 @@ const UserPicker = ({
     const [defaultOptions, setDefaultOptions] = useState<UserOption[]>([]);
     const [totalCount, setTotalCount] = useState<number | null>(null);
 
-    const loadUsers = async (options: UserSearchOptions = {}): Promise<UserOption[]> => {
-        const { items, pagination } = await searchUserAccounts({
-            limit: MAX_RESULTS,
-            ...options,
-        });
+    const loadUsers = useCallback(
+        async (options: UserSearchOptions = {}): Promise<UserOption[]> => {
+            const { items, pagination } = await searchUserAccounts({
+                limit: MAX_RESULTS,
+                ...options,
+            });
 
-        setTotalCount(pagination.total);
+            setTotalCount(pagination.total);
 
-        return items.map(toOption);
-    };
+            return items.map(toOption);
+        },
+        [],
+    );
 
     useEffect(() => {
         let isMounted = true;
@@ -96,7 +101,7 @@ const UserPicker = ({
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [loadUsers]);
 
     const debouncedLoader = useMemo(
         () =>
@@ -105,7 +110,7 @@ const UserPicker = ({
                     .then(callback)
                     .catch(() => callback([]));
             }, 250),
-        [],
+        [loadUsers],
     );
 
     return (
@@ -131,7 +136,7 @@ const UserPicker = ({
                     if (context === 'value') {
                         return (
                             <div css={tw`flex items-center gap-2`}>
-                                <Avatar name={user.uuid || user.email} size={24} />
+                                <Avatar name={getAvatarName(user)} size={24} />
                                 <span css={tw`text-sm text-neutral-100`}>{user.username || user.email}</span>
                                 <span css={tw`text-xs text-neutral-400`}>{user.email}</span>
                             </div>
@@ -140,7 +145,7 @@ const UserPicker = ({
 
                     return (
                         <div css={tw`flex items-center gap-3`}>
-                            <Avatar name={user.uuid || user.email} size={28} />
+                            <Avatar name={getAvatarName(user)} size={28} />
                             <div css={tw`flex flex-col`}>
                                 <span css={tw`text-sm text-neutral-100`}>{user.username || user.email}</span>
                                 <span css={tw`text-xs text-neutral-400`}>{user.email}</span>
