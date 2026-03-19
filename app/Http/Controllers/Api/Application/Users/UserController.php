@@ -54,7 +54,8 @@ class UserController extends ApplicationApiController
                 continue;
             }
 
-            $like = '%' . $trimmed . '%';
+            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $trimmed);
+            $like = '%' . $escaped . '%';
             $builder->orWhere(function (Builder $builder) use ($like, $trimmed) {
                 $builder->where('uuid', 'LIKE', $like)
                     ->orWhere('username', 'LIKE', $like)

@@ -68,16 +68,18 @@ const UserPicker = ({
     menuPortalTarget,
 }: UserPickerProps) => {
     const [defaultOptions, setDefaultOptions] = useState<UserOption[]>([]);
-    const [totalCount, setTotalCount] = useState<number | null>(null);
+    const [initialTotal, setInitialTotal] = useState<number | null>(null);
 
     const loadUsers = useCallback(
-        async (options: UserSearchOptions = {}): Promise<UserOption[]> => {
+        async (options: UserSearchOptions = {}, trackTotal = false): Promise<UserOption[]> => {
             const { items, pagination } = await searchUsersPaginated({
                 limit: MAX_RESULTS,
                 ...options,
             });
 
-            setTotalCount(pagination.total);
+            if (trackTotal) {
+                setInitialTotal(pagination.total);
+            }
 
             return items.map(toOption);
         },
@@ -86,7 +88,7 @@ const UserPicker = ({
 
     useEffect(() => {
         let isMounted = true;
-        loadUsers()
+        loadUsers({}, true)
             .then(options => {
                 if (isMounted) {
                     setDefaultOptions(options);
@@ -128,7 +130,7 @@ const UserPicker = ({
                 isDisabled={disabled}
                 openMenuOnFocus
                 openMenuOnClick
-                menuPlacement={'auto'}
+                menuPlacement="auto"
                 menuPortalTarget={menuPortalTarget ?? undefined}
                 styles={mergeStyles()}
                 formatOptionLabel={(option, { context }) => {
@@ -178,7 +180,7 @@ const UserPicker = ({
                 noOptionsMessage={({ inputValue }) =>
                     inputValue
                         ? 'No results found.'
-                        : totalCount !== null && totalCount <= MAX_RESULTS
+                        : initialTotal !== null && initialTotal <= MAX_RESULTS
                           ? 'All users loaded.'
                           : 'Start typing to search users.'
                 }

@@ -76,7 +76,7 @@ export interface UserSearchOptions {
 type LegacySearchParams = QueryBuilderParams<'username' | 'email'>;
 type SearchUsersInput = UserSearchOptions | LegacySearchParams;
 
-const buildSearchParams = ({ limit = 15, ...options }: SearchUsersInput) => {
+const buildSearchParams = ({ limit = 25, ...options }: SearchUsersInput) => {
     if ('filters' in options || 'sorts' in options) {
         return {
             per_page: limit,
