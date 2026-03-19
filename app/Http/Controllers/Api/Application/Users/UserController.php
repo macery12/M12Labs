@@ -46,6 +46,30 @@ class UserController extends ApplicationApiController
         parent::__construct();
     }
 
+    private function applyUserSearchFilter(Builder $builder, mixed $value): void
+    {
+        foreach (Arr::wrap($value) as $datum) {
+            $trimmed = trim((string) $datum);
+            if ($trimmed === '') {
+                continue;
+            }
+
+            $like = '%' . $trimmed . '%';
+            $builder->orWhere(function (Builder $builder) use ($like, $trimmed) {
+                $builder->where('uuid', 'LIKE', $like)
+                    ->orWhere('username', 'LIKE', $like)
+                    ->orWhere('email', 'LIKE', $like)
+                    ->orWhere('external_id', 'LIKE', $like);
+
+                if (is_numeric($trimmed)) {
+                    $builder->orWhere('id', (int) $trimmed);
+                } else {
+                    $builder->orWhere('id', 'LIKE', $like);
+                }
+            });
+        }
+    }
+
     /**
      * Handle request to list all users on the panel. Returns a JSON-API representation
      * of a collection of users including any defined relations passed in
@@ -65,17 +89,8 @@ class UserController extends ApplicationApiController
                 AllowedFilter::exact('id'),
                 AllowedFilter::exact('uuid'),
                 AllowedFilter::exact('external_id'),
-                AllowedFilter::callback('*', function (Builder $builder, $value) {
-                    foreach (Arr::wrap($value) as $datum) {
-                        $datum = '%' . $datum . '%';
-                        $builder->orWhere(function (Builder $builder) use ($datum) {
-                            $builder->where('uuid', 'LIKE', $datum)
-                                ->orWhere('username', 'LIKE', $datum)
-                                ->orWhere('email', 'LIKE', $datum)
-                                ->orWhere('external_id', 'LIKE', $datum);
-                        });
-                    }
-                }),
+                AllowedFilter::callback('*', fn (Builder $builder, $value) => $this->applyUserSearchFilter($builder, $value)),
+                AllowedFilter::callback('search', fn (Builder $builder, $value) => $this->applyUserSearchFilter($builder, $value)),
             ])
             ->defaultSort('-root_admin')
             ->allowedSorts(['id', 'uuid', 'username', 'email', 'admin_role_id', 'use_totp', 'root_admin', 'state', 'created_at'])

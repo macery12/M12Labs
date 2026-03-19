@@ -66,12 +66,32 @@ const getUser = (id: number, include: string[] = []): Promise<User> => {
     });
 };
 
-const searchUserAccounts = async (params: QueryBuilderParams<'username' | 'email'>): Promise<User[]> => {
-    const { data } = await http.get('/api/application/users', {
-        params: withQueryBuilderParams(params),
+export interface UserSearchOptions {
+    query?: string;
+    limit?: number;
+    page?: number;
+    signal?: AbortSignal;
+}
+
+const searchUserAccounts = async ({ query, limit = 15, page, signal }: UserSearchOptions = {}): Promise<PaginatedResult<User>> => {
+    const params = withQueryBuilderParams({
+        page,
+        filters: query ? { '*': query, search: query } : undefined,
+        sorts: { username: 'asc' },
     });
 
-    return data.data.map(Transformers.toUser);
+    const { data } = await http.get('/api/application/users', {
+        params: {
+            per_page: limit,
+            ...params,
+        },
+        signal,
+    });
+
+    return {
+        items: data.data.map(Transformers.toUser),
+        pagination: getPaginationSet(data.meta.pagination),
+    };
 };
 
 const createUser = (values: UpdateUserValues, include: string[] = []): Promise<User> => {
