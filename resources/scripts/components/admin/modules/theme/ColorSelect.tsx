@@ -19,6 +19,9 @@ interface Props {
 export default ({ setReload, className }: Props) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [success, setSuccess] = useState<boolean>(false);
+    const [activeTab, setActiveTab] = useState<
+        'base' | 'surfaces' | 'navigation' | 'interactive' | 'text' | 'status' | 'inputs' | 'future'
+    >('base');
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const theme = useStoreState(state => state.theme.data!);
     const setTheme = useStoreActions(actions => actions.theme.setTheme);
@@ -94,19 +97,95 @@ export default ({ setReload, className }: Props) => {
             {loading && <Spinner className={'absolute top-0 right-0 m-3.5'} size={'small'} />}
             {success && <CheckCircleIcon className={'absolute top-0 right-0 m-3.5 h-5 w-5 text-green-500'} />}
 
-            <div className={'space-y-6'}>
-                <div className={'grid gap-4 sm:grid-cols-2'}>
-                    <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
-                        <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Base</p>
-                        {renderEditableField(
-                            'background',
-                            'Background',
-                            'Main application background. Choose a dark tone to maintain contrast.',
-                        )}
+            <div className="flex flex-wrap gap-2 border-b border-neutral-800 pb-2 text-sm">
+                <button
+                    className={`rounded px-3 py-1 transition ${
+                        activeTab === 'base' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
+                    }`}
+                    onClick={() => setActiveTab('base')}
+                >
+                    Base
+                </button>
+                <button
+                    className={`rounded px-3 py-1 transition ${
+                        activeTab === 'surfaces' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
+                    }`}
+                    onClick={() => setActiveTab('surfaces')}
+                >
+                    Surfaces
+                </button>
+                <button
+                    className={`rounded px-3 py-1 transition ${
+                        activeTab === 'navigation' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
+                    }`}
+                    onClick={() => setActiveTab('navigation')}
+                >
+                    Navigation
+                </button>
+                <button
+                    className={`rounded px-3 py-1 transition ${
+                        activeTab === 'interactive' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
+                    }`}
+                    onClick={() => setActiveTab('interactive')}
+                >
+                    Interactive
+                </button>
+                <button
+                    className={`rounded px-3 py-1 transition ${
+                        activeTab === 'text' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
+                    }`}
+                    onClick={() => setActiveTab('text')}
+                >
+                    Text
+                </button>
+                <button
+                    className={`rounded px-3 py-1 transition ${
+                        activeTab === 'status' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
+                    }`}
+                    onClick={() => setActiveTab('status')}
+                >
+                    Status
+                </button>
+                <button
+                    className={`rounded px-3 py-1 transition ${
+                        activeTab === 'inputs' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
+                    }`}
+                    onClick={() => setActiveTab('inputs')}
+                >
+                    Inputs
+                </button>
+                <button
+                    className={`rounded px-3 py-1 text-neutral-500 transition ${
+                        activeTab === 'future' ? 'bg-white/5' : 'hover:bg-white/5'
+                    }`}
+                    onClick={() => setActiveTab('future')}
+                >
+                    Coming Soon
+                </button>
+            </div>
+
+            <div className="pt-4">
+                {activeTab === 'base' && (
+                    <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 space-y-3">
+                        <p className="text-sm font-semibold text-neutral-100">Base</p>
+                        <p className="text-xs text-neutral-400">Global background and foundation tokens.</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {renderEditableField(
+                                'background',
+                                'Background',
+                                'Main application background. Choose a dark tone to maintain contrast.',
+                            )}
+                        </div>
                     </div>
-                    <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
-                        <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Surfaces</p>
-                        <div className={'space-y-3'}>
+                )}
+
+                {activeTab === 'surfaces' && (
+                    <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 space-y-3">
+                        <p className="text-sm font-semibold text-neutral-100">Surfaces</p>
+                        <p className="text-xs text-neutral-400">
+                            Card, table, and header treatments for panels and sections.
+                        </p>
+                        <div className="grid gap-4 sm:grid-cols-2">
                             {renderEditableField(
                                 'secondary',
                                 'Panels & Cards',
@@ -115,54 +194,97 @@ export default ({ setReload, className }: Props) => {
                             {renderEditableField(
                                 'headers',
                                 'Headers',
-                                'Used for component and section headers. Slightly darker than surfaces is recommended.',
+                                'Section and component headers; slightly darker than surfaces is recommended.',
                             )}
                         </div>
                     </div>
-                </div>
+                )}
 
-                <div className={'grid gap-4 sm:grid-cols-2'}>
-                    <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
-                        <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Navigation</p>
-                        {renderEditableField(
-                            'sidebar',
-                            'Sidebar',
-                            'Color for navigation sidebars and their base background.',
-                        )}
-                    </div>
-                    <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
-                        <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Interactive</p>
-                        {renderEditableField(
-                            'primary',
-                            'Accent & Buttons',
-                            'Accent color for primary actions, highlights, and borders.',
-                        )}
-                    </div>
-                </div>
-
-                <div className={'grid gap-4 lg:grid-cols-3'}>
-                    <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
-                        <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Text</p>
-                        <div className={'space-y-3'}>
-                            {renderReadOnly(tokens.text.primary, 'Primary Text', 'Derived for high-contrast text on dark backgrounds.')}
-                            {renderReadOnly(tokens.text.muted, 'Muted Text', 'Used for secondary or helper text.')}
+                {activeTab === 'navigation' && (
+                    <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 space-y-3">
+                        <p className="text-sm font-semibold text-neutral-100">Navigation</p>
+                        <p className="text-xs text-neutral-400">Sidebar and navigation rails.</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {renderEditableField(
+                                'sidebar',
+                                'Sidebar',
+                                'Base color for navigation sidebars and related rails.',
+                            )}
                         </div>
                     </div>
-                    <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
-                        <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Status</p>
-                        <div className={'space-y-3'}>
+                )}
+
+                {activeTab === 'interactive' && (
+                    <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 space-y-3">
+                        <p className="text-sm font-semibold text-neutral-100">Interactive</p>
+                        <p className="text-xs text-neutral-400">Primary accents, buttons, and focus rings.</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {renderEditableField(
+                                'primary',
+                                'Accent & Buttons',
+                                'Primary call-to-action, highlights, and borders.',
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'text' && (
+                    <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-neutral-100">Text</p>
+                                <p className="text-xs text-neutral-400">Derived text tokens for readability.</p>
+                            </div>
+                            <p className="text-xs text-neutral-500">Auto-derived</p>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {renderReadOnly(
+                                tokens.text.primary,
+                                'Primary Text',
+                                'High-contrast text on dark backgrounds.',
+                            )}
+                            {renderReadOnly(tokens.text.muted, 'Muted Text', 'Secondary/helper text tone.')}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'status' && (
+                    <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-neutral-100">Status</p>
+                                <p className="text-xs text-neutral-400">Semantic feedback colors.</p>
+                            </div>
+                            <p className="text-xs text-neutral-500">Auto-derived</p>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
                             {renderReadOnly(tokens.status.success, 'Success', 'Applied to success states.')}
                             {renderReadOnly(tokens.status.danger, 'Danger', 'Applied to error states.')}
                         </div>
                     </div>
-                    <div className={'rounded-lg border border-neutral-800 bg-black/20 p-4'}>
-                        <p className={'mb-3 text-sm font-semibold text-neutral-100'}>Inputs</p>
-                        <div className={'space-y-3'}>
+                )}
+
+                {activeTab === 'inputs' && (
+                    <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-neutral-100">Inputs</p>
+                                <p className="text-xs text-neutral-400">Fields, outlines, and focus states.</p>
+                            </div>
+                            <p className="text-xs text-neutral-500">Auto-derived</p>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
                             {renderReadOnly(tokens.inputs.surface, 'Field Surface', 'Input backgrounds.')}
                             {renderReadOnly(tokens.inputs.focus, 'Focus', 'Outline color when focused.')}
                         </div>
                     </div>
-                </div>
+                )}
+
+                {activeTab === 'future' && (
+                    <div className="rounded-lg border border-dashed border-neutral-800 bg-black/10 p-4 text-sm text-neutral-400">
+                        Additional granular tokens (borders, charts, banners) will appear here in a future update.
+                    </div>
+                )}
             </div>
         </AdminBox>
     );

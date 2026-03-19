@@ -55,46 +55,56 @@ export default ({ setReload }: Props) => {
 
     return (
         <AdminBox title={'Presets'} className={'h-full'}>
-            <div className={'grid gap-3 sm:grid-cols-2'}>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-neutral-400">
+                <span>Pick a preset to instantly apply and continue editing.</span>
+                <span className="hidden sm:block text-xs text-neutral-500">One-click apply; no scrolling required.</span>
+            </div>
+            <div className={'grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}>
                 {themePresets.map(preset => {
                     const primary = preset.colors.primary ?? theme.colors.primary;
                     const active = isPresetActive(preset.colors) || activeId === preset.id;
                     const isLoading = loadingId === preset.id;
 
                     return (
-                        <div
+                        <button
                             key={preset.id}
+                            type="button"
+                            onClick={() => applyPreset(preset.id, preset.colors)}
+                            disabled={!preset.colors.primary || isLoading}
                             className={classNames(
-                                'flex flex-col justify-between rounded border border-neutral-800 bg-black/20 p-3 transition duration-200',
-                                active && 'border-green-600/70',
+                                'group flex h-full flex-col items-start justify-between rounded-lg border bg-black/20 p-3 text-left transition duration-150',
+                                'border-neutral-800 hover:border-neutral-500 focus:border-neutral-400 focus:outline-none',
+                                active && 'border-green-600/70 shadow-[0_0_0_1px_rgba(34,197,94,0.35)]',
+                                isLoading && 'opacity-70',
                             )}
                         >
-                            <div className={'flex items-center justify-between'}>
-                                <div className={'flex items-center gap-3'}>
-                                    <div
-                                        className={'h-10 w-10 rounded-full border border-black/40 shadow'}
-                                        style={{ backgroundColor: primary }}
-                                    />
-                                    <div>
-                                        <p className={'font-semibold text-neutral-100'}>{preset.name}</p>
-                                        <p className={'text-xs text-gray-400'}>
-                                            {preset.description ?? 'One-click apply preset'}
-                                        </p>
-                                    </div>
+                            <div className="flex w-full items-center gap-3">
+                                <div
+                                    className="h-9 w-9 rounded-full border border-black/30 shadow-sm"
+                                    style={{ backgroundColor: primary }}
+                                />
+                                <div className="min-w-0">
+                                    <p className="truncate font-semibold text-neutral-100">{preset.name}</p>
+                                    <p className="truncate text-xs text-gray-400">
+                                        {preset.description ?? 'One-click preset'}
+                                    </p>
                                 </div>
-                                {active && <CheckCircleIcon className={'h-5 w-5 text-green-500'} />}
+                                {active && <CheckCircleIcon className={'ml-auto h-5 w-5 text-green-500'} />}
                             </div>
                             <Button
                                 isLoading={isLoading}
-                                className={'mt-3 h-9 w-full'}
+                                className={'mt-3 h-8 w-full'}
                                 type={'button'}
                                 size={'xsmall'}
-                                onClick={() => applyPreset(preset.id, preset.colors)}
                                 disabled={!preset.colors.primary}
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    applyPreset(preset.id, preset.colors);
+                                }}
                             >
                                 Apply
                             </Button>
-                        </div>
+                        </button>
                     );
                 })}
             </div>
