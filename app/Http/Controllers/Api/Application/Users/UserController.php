@@ -63,8 +63,6 @@ class UserController extends ApplicationApiController
 
                 if (is_numeric($trimmed)) {
                     $builder->orWhere('id', (int) $trimmed);
-                } else {
-                    $builder->orWhere('id', 'LIKE', $like);
                 }
             });
         }

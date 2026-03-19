@@ -76,7 +76,7 @@ export interface UserSearchOptions {
 const searchUserAccounts = async ({ query, limit = 15, page, signal }: UserSearchOptions = {}): Promise<PaginatedResult<User>> => {
     const params = withQueryBuilderParams({
         page,
-        filters: query ? { '*': query, search: query } : undefined,
+        filters: query ? { search: query } : undefined,
         sorts: { username: 'asc' },
     });
 
