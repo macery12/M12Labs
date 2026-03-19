@@ -396,10 +396,10 @@ class EmailManager
     }
 
     /**
-    * Resolve the configured transport and validate configuration.
-    *
-    * @return array{EmailTransport,string,string|null,string|null}|EmailResult [transport, from, fromName, replyTo]
-    */
+     * Resolve the configured transport and validate configuration.
+     *
+     * @return array{0: EmailTransport, 1: string, 2: string|null, 3: string|null}|EmailResult
+     */
     private function resolveTransportConfig(
         ?EmailDeliveryTracker $tracker = null,
         ?EmailDelivery $delivery = null,
@@ -407,11 +407,12 @@ class EmailManager
     ): EmailResult|array {
         $transportName = self::getTransport();
 
-        if ($delivery && empty($delivery->provider)) {
+        if ($delivery && $delivery->provider !== $transportName) {
             $delivery->provider = $transportName;
-        } elseif ($delivery && $delivery->provider !== $transportName && $delivery->id) {
-            $delivery->provider = $transportName;
-            $delivery->save();
+
+            if ($delivery->id) {
+                $delivery->save();
+            }
         }
 
         if ($transportName === 'smtp') {

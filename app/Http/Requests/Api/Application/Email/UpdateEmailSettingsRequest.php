@@ -20,6 +20,7 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             'smtp_port' => 'nullable|numeric',
             'smtp_username' => 'nullable|string|max:255',
             'smtp_password' => 'nullable|string|max:255',
+            // Empty string represents no encryption to match UI dropdown default
             'smtp_encryption' => 'nullable|in:,tls,ssl',
             'smtp_from_email' => 'nullable|email|max:255',
             'smtp_from_name' => 'nullable|string|max:255',

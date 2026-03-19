@@ -27,14 +27,15 @@ class SmtpTransport implements EmailTransport
         }
 
         // Apply runtime mail configuration for SMTP
+        $configuredPort = $this->config['port'] ?? null;
+        $configuredPort = ($configuredPort === '' || $configuredPort === null) ? null : (int) $configuredPort;
+
         config([
             'mail.default' => 'smtp',
             'mail.mailers.smtp' => [
                 'transport' => 'smtp',
                 'host' => $this->config['host'] ?? null,
-                'port' => (isset($this->config['port']) && $this->config['port'] !== '' && $this->config['port'] !== null)
-                    ? (int) $this->config['port']
-                    : null,
+                'port' => $configuredPort,
                 'username' => $this->config['username'] ?? null,
                 'password' => $this->config['password'] ?? null,
                 'encryption' => $encryption,

@@ -420,7 +420,7 @@ export default () => {
                     </div>
 
                     <div className={'flex items-center gap-3'}>
-                        <Button onClick={handleSaveResend} disabled={!hasResendChanges || status === 'processing' || !enabled}>
+                        <Button onClick={handleSaveResend} disabled={!hasResendChanges || status === 'processing'}>
                             Save Resend Settings
                         </Button>
                         {!hasResendChanges && (
@@ -535,7 +535,7 @@ export default () => {
                     </div>
 
                     <div className={'flex items-center gap-3'}>
-                        <Button onClick={handleSaveSmtp} disabled={!hasSmtpChanges || status === 'processing' || !enabled}>
+                        <Button onClick={handleSaveSmtp} disabled={!hasSmtpChanges || status === 'processing'}>
                             Save SMTP Settings
                         </Button>
                         {!hasSmtpChanges && (
