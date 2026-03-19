@@ -428,10 +428,16 @@ class EmailManager
             $replyTo = Setting::get('settings::modules:email:smtp:reply_to') ?: config('mail.from.address');
 
             $requiredMissing = [];
-            foreach (['host', 'port', 'from'] as $requiredKey) {
-                if (($requiredKey === 'from' ? $from : $config[$requiredKey]) === null || ($requiredKey === 'from' ? $from : $config[$requiredKey]) === '') {
-                    $requiredMissing[] = $requiredKey;
-                }
+            if (empty($config['host'])) {
+                $requiredMissing[] = 'host';
+            }
+
+            if ($config['port'] === null || $config['port'] === '') {
+                $requiredMissing[] = 'port';
+            }
+
+            if ($from === null || $from === '') {
+                $requiredMissing[] = 'from';
             }
 
             if (!empty($requiredMissing)) {

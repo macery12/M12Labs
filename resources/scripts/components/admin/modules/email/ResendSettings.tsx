@@ -472,7 +472,11 @@ export default () => {
                                 type={'password'}
                                 value={smtpPassword}
                                 onChange={(e) => setSmtpPassword(e.target.value)}
-                                placeholder={settings.smtp.password_set ? '•••••••• (configured)' : 'SMTP password'}
+                                placeholder={
+                                    settings.smtp.password_set
+                                        ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (configured)'
+                                        : 'SMTP password'
+                                }
                                 disabled={!enabled}
                             />
                             <p className={'mt-1 text-xs text-gray-400'}>

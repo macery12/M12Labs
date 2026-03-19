@@ -32,7 +32,9 @@ class SmtpTransport implements EmailTransport
             'mail.mailers.smtp' => [
                 'transport' => 'smtp',
                 'host' => $this->config['host'] ?? null,
-                'port' => $this->config['port'] ? (int) $this->config['port'] : null,
+                'port' => (isset($this->config['port']) && $this->config['port'] !== '' && $this->config['port'] !== null)
+                    ? (int) $this->config['port']
+                    : null,
                 'username' => $this->config['username'] ?? null,
                 'password' => $this->config['password'] ?? null,
                 'encryption' => $encryption,
