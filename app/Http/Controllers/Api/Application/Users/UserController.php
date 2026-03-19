@@ -49,13 +49,15 @@ class UserController extends ApplicationApiController
 
     private function applyUserSearchFilter(Builder $builder, mixed $value): void
     {
+        $escapeLike = static fn (string $input): string => addcslashes($input, '\\%_');
+
         foreach (Arr::wrap($value) as $datum) {
             $trimmed = trim((string) $datum);
             if ($trimmed === '') {
                 continue;
             }
 
-            $escaped = DB::connection()->getQueryGrammar()->escapeLike($trimmed);
+            $escaped = $escapeLike($trimmed);
             $like = '%' . $escaped . '%';
             $builder->orWhere(function (Builder $builder) use ($like, $trimmed) {
                 $builder->where('uuid', 'LIKE', $like)
