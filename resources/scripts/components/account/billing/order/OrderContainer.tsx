@@ -25,7 +25,7 @@ import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Product, type Node } from '@definitions/account/billing';
-import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
+import { createFreeCheckoutSession } from '@/api/routes/account/billing/orders/process';
 import { getProduct, getProductVariables, getViableNodes } from '@/api/routes/account/billing/products';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import AdminCheckbox from '@/elements/AdminCheckbox';
@@ -61,7 +61,7 @@ export default () => {
     const createFree = () => {
         if (product) {
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
-            processUnpaidOrder(product.id, selectedNode, undefined, variables)
+            createFreeCheckoutSession(product.id, selectedNode, undefined, variables)
                 .then(() => navigate('/'))
                 .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
         }

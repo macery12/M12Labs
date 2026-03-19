@@ -3,15 +3,15 @@ import http from '@/api/http';
 import { BillingServerVariables } from '@/components/account/billing/order/PaymentButton';
 import { Transformers } from '@/api/definitions/server';
 
-export const processUnpaidOrder = (
-    product: number,
-    node?: number,
-    renewal?: boolean,
+export const createFreeCheckoutSession = (
+    product_id: number,
+    node_id?: number,
+    is_new_order?: boolean,
     variables?: { key: string; value: string }[],
     server_id?: number,
 ): Promise<Server> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/billing/process/free`, { server_id, node, product, renewal, variables })
+        http.post(`/api/client/billing/process/free`, { server_id, node_id, product_id, is_new_order, variables })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

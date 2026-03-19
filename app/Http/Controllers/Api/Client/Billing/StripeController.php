@@ -13,8 +13,8 @@ use Everest\Models\Billing\DiscountCode;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\CreateOrderService;
-use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\ServerRenewalService;
+use Everest\Services\Billing\ServerDeploymentService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Everest\Transformers\Api\Client\DiscountCodeTransformer;
@@ -28,7 +28,7 @@ class StripeController extends ClientApiController
     public function __construct(
         private CreateOrderService $orderService,
         private ServerRenewalService $renewalService,
-        private CreateServerService $deploymentService,
+        private ServerDeploymentService $deploymentService,
     ) {
         parent::__construct();
 

@@ -2,6 +2,7 @@
 
 namespace Everest\Models\Billing;
 
+use Carbon\Carbon;
 use Everest\Models\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,8 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $backup_limit
  * @property int $database_limit
  * @property int $allocation_limit
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property mixed $category
  */
 class Product extends Model
 {
