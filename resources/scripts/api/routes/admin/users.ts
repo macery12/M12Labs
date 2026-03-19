@@ -73,7 +73,12 @@ export interface UserSearchOptions {
     signal?: AbortSignal;
 }
 
-const searchUserAccounts = async ({ query, limit = 15, page, signal }: UserSearchOptions = {}): Promise<PaginatedResult<User>> => {
+const searchUsersPaginated = async ({
+    query,
+    limit = 15,
+    page,
+    signal,
+}: UserSearchOptions = {}): Promise<PaginatedResult<User>> => {
     const params = withQueryBuilderParams({
         page,
         filters: query ? { search: query } : undefined,
@@ -92,6 +97,11 @@ const searchUserAccounts = async ({ query, limit = 15, page, signal }: UserSearc
         items: data.data.map(Transformers.toUser),
         pagination: getPaginationSet(data.meta.pagination),
     };
+};
+
+const searchUserAccounts = async (options: UserSearchOptions = {}): Promise<User[]> => {
+    const { items } = await searchUsersPaginated(options);
+    return items;
 };
 
 const createUser = (values: UpdateUserValues, include: string[] = []): Promise<User> => {
@@ -141,4 +151,13 @@ const deleteUser = (id: number): Promise<void> => {
     });
 };
 
-export { useGetUsers, getUser, searchUserAccounts, createUser, updateUser, suspendUser, deleteUser };
+export {
+    useGetUsers,
+    getUser,
+    searchUserAccounts,
+    searchUsersPaginated,
+    createUser,
+    updateUser,
+    suspendUser,
+    deleteUser,
+};

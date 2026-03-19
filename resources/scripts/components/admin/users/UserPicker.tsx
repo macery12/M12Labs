@@ -5,7 +5,7 @@ import tw, { theme } from 'twin.macro';
 import { CSSObject } from '@emotion/serialize';
 import { debounce } from 'debounce';
 
-import { UserSearchOptions, searchUserAccounts } from '@/api/routes/admin/users';
+import { UserSearchOptions, searchUsersPaginated } from '@/api/routes/admin/users';
 import type { User } from '@definitions/admin';
 import Label from '@/elements/Label';
 import Avatar from '@/elements/Avatar';
@@ -72,7 +72,7 @@ const UserPicker = ({
 
     const loadUsers = useCallback(
         async (options: UserSearchOptions = {}): Promise<UserOption[]> => {
-            const { items, pagination } = await searchUserAccounts({
+            const { items, pagination } = await searchUsersPaginated({
                 limit: MAX_RESULTS,
                 ...options,
             });
@@ -133,12 +133,14 @@ const UserPicker = ({
                 styles={mergeStyles()}
                 formatOptionLabel={(option, { context }) => {
                     const user = (option as UserOption).user;
+                    const primaryText = user.username || user.email;
+                    const secondaryText = user.email && user.email !== primaryText ? user.email : undefined;
                     if (context === 'value') {
                         return (
                             <div css={tw`flex items-center gap-2`}>
                                 <Avatar name={getAvatarName(user)} size={24} />
-                                <span css={tw`text-sm text-neutral-100`}>{user.username || user.email}</span>
-                                <span css={tw`text-xs text-neutral-400`}>{user.email}</span>
+                                <span css={tw`text-sm text-neutral-100`}>{primaryText}</span>
+                                {secondaryText && <span css={tw`text-xs text-neutral-400`}>{secondaryText}</span>}
                             </div>
                         );
                     }
