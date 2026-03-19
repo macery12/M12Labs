@@ -151,6 +151,7 @@ export const SelectStyle: StylesConfig<T, any, any> = {
     menuPortal: (base: CSSObject, props: MenuPortalProps<T, any, any>): CSSObject => {
         return {
             ...base,
+            zIndex: 50,
         };
     },
 
@@ -211,7 +212,7 @@ export const SelectStyle: StylesConfig<T, any, any> = {
     singleValue: (base: CSSObject, props: SingleValueProps<T, any>): CSSObject => {
         return {
             ...base,
-            color: '#00000',
+            color: theme`colors.neutral.100`,
         };
     },
 

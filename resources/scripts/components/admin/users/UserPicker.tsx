@@ -37,6 +37,12 @@ const optionStyles: Partial<typeof SelectStyle> = {
         ...base,
         maxHeight: 320,
         overflowY: 'auto',
+        background: theme`colors.neutral.900`,
+        border: `1px solid ${theme`colors.neutral.700`}`,
+    }),
+    menuList: (base: CSSObject) => ({
+        ...base,
+        background: theme`colors.neutral.900`,
     }),
 };
 
