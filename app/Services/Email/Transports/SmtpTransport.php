@@ -27,8 +27,8 @@ class SmtpTransport implements EmailTransport
         }
 
         // Apply runtime mail configuration for SMTP
-        $configuredPort = $this->config['port'] ?? null;
-        $configuredPort = ($configuredPort === '' || $configuredPort === null) ? null : (int) $configuredPort;
+        $rawPort = $this->config['port'] ?? null;
+        $configuredPort = ($rawPort === '' || $rawPort === null) ? null : (int) $rawPort;
 
         config([
             'mail.default' => 'smtp',
@@ -63,7 +63,7 @@ class SmtpTransport implements EmailTransport
             });
 
             // Laravel's Mail::send does not expose provider message id; use a generated id for tracking consistency
-            $generatedId = $this->generateMessageId();
+            $generatedId = $this->generateTrackingMessageId();
 
             return new EmailResult(
                 success: true,
@@ -79,7 +79,7 @@ class SmtpTransport implements EmailTransport
         }
     }
 
-    private function generateMessageId(): string
+    private function generateTrackingMessageId(): string
     {
         return sprintf(
             '%s@%s',

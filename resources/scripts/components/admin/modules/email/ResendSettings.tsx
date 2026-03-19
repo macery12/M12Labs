@@ -493,9 +493,9 @@ export default () => {
                                 onChange={(e) => setSmtpEncryption(e.target.value)}
                                 disabled={!enabled}
                             >
-                                <option value=''>None</option>
-                                <option value='tls'>TLS</option>
-                                <option value='ssl'>SSL</option>
+                                <option value="">None</option>
+                                <option value="tls">TLS</option>
+                                <option value="ssl">SSL</option>
                             </select>
                         </div>
                     </div>
