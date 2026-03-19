@@ -162,7 +162,7 @@ export default ({ setReload, className }: Props) => {
                             {renderEditableField(
                                 'headers',
                                 'Headers',
-                                'Section and component headers; slightly darker than surfaces is recommended.',
+                                'Section and component headers; keep contrast comfortable against surface tones.',
                             )}
                         </div>
                     </div>

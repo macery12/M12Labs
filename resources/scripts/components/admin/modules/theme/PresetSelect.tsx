@@ -57,7 +57,7 @@ export default ({ setReload }: Props) => {
         <AdminBox title={'Presets'} className={'h-full'}>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-neutral-400">
                 <span>Pick a preset to instantly apply and continue editing.</span>
-                <span className="hidden sm:block text-xs text-neutral-500">One-click apply. No scrolling required.</span>
+                <span className="hidden sm:block text-xs text-neutral-500">Quick one-click presets.</span>
             </div>
             <div className={'grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}>
                 {themePresets.map(preset => {
