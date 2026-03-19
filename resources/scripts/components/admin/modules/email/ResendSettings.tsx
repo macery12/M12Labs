@@ -10,6 +10,7 @@ import { Button } from '@/elements/button';
 import debounce from 'debounce';
 import { useStoreState } from '@/state/hooks';
 import { EmailSettings, EmailSettingsUpdate, EmailTransport, getSettings, updateSettings } from '@/api/routes/admin/email';
+import SendTestEmail from '@/components/admin/modules/email/SendTestEmail';
 
 export default () => {
     const { status, setStatus } = useStatus();
@@ -42,6 +43,8 @@ export default () => {
     const [savingEnabled, setSavingEnabled] = useState(false);
     const [savingApiKey, setSavingApiKey] = useState(false);
     const [savingTransport, setSavingTransport] = useState(false);
+    const [showInactiveResend, setShowInactiveResend] = useState(false);
+    const [showInactiveSmtp, setShowInactiveSmtp] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -263,41 +266,21 @@ export default () => {
 
     return (
         <AdminBox title={'Email Settings'} icon={faEnvelope} status={status}>
-            <div className={'grid grid-cols-1 gap-6'}>
-                <div
-                    className={'rounded-lg border border-neutral-700 p-4'}
-                    style={{ backgroundColor: secondary }}
-                >
-                    <div className={'flex flex-col gap-3 md:flex-row md:items-center md:justify-between'}>
-                        <div className={'flex items-center gap-3'}>
-                            <span
-                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold ${
-                                    enabled
-                                        ? 'border-green-500/60 bg-green-950 text-green-100'
-                                        : 'border-red-500/60 bg-red-950 text-red-100'
-                                }`}
-                            >
-                                <span
-                                    className={`h-2 w-2 rounded-full ${enabled ? 'bg-green-400' : 'bg-red-400'}`}
-                                />
-                                {enabled ? 'Email delivery is enabled' : 'Email delivery is disabled'}
-                            </span>
-                            <span className={'hidden text-sm text-gray-400 md:inline'}>{toggleHint}</span>
-                        </div>
-                        <div className={'flex items-center gap-2'}>
-                            <StatusToggleButton onClick={toggleEnabled} disabled={savingEnabled} loading={savingEnabled}>
-                                {enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}
-                            </StatusToggleButton>
-                        </div>
-                    </div>
-                    <p className={'mt-2 text-xs text-gray-400 md:hidden'}>{toggleHint}</p>
-                </div>
+            <div className={'flex flex-col gap-6'}>
+                <StatusBanner
+                    enabled={enabled}
+                    transport={transport}
+                    onToggle={toggleEnabled}
+                    saving={savingEnabled}
+                    secondary={secondary}
+                    toggleHint={toggleHint}
+                />
 
-                <div className={'rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: secondary }}>
+                <Card sectionBg={secondary}>
                     <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
-                        <div>
-                            <Label>Active Transport</Label>
-                            <p className={'text-sm text-gray-400'}>Choose how emails are delivered.</p>
+                        <div className={'space-y-1'}>
+                            <Label>Delivery Method</Label>
+                            <p className={'text-sm text-gray-400'}>Choose which transport is active.</p>
                         </div>
                         <select
                             className={
@@ -311,135 +294,173 @@ export default () => {
                             <option value={'smtp'}>SMTP</option>
                         </select>
                     </div>
-                </div>
+                </Card>
 
-                <TransportSection
-                    title={'Resend'}
-                    active={isResendActive}
-                    secondary={secondary}
-                    badgeText={isResendActive ? 'Active' : 'Inactive'}
-                >
-                    <div
-                        className={'space-y-2 rounded-lg border border-neutral-700 p-4'}
-                        style={{ backgroundColor: secondary }}
-                    >
-                        <Label>
-                            API Key
-                            {settings?.resend.api_key && (
-                                <FontAwesomeIcon
-                                    icon={faCheckCircle}
-                                    className={'ml-2 text-green-500'}
-                                    title="API key is configured"
-                                />
-                            )}
-                            {savingApiKey && <FontAwesomeIcon icon={faSpinner} className={'ml-2 fa-spin text-blue-500'} />}
-                        </Label>
-                        <Input
-                            type={'password'}
-                            value={apiKey}
-                            onChange={handleApiKeyChange}
-                            disabled={savingApiKey || !enabled}
-                            placeholder={
-                                settings?.resend.api_key
-                                    ? 'API key is configured - enter a new key to replace it'
-                                    : 'Enter your Resend API key'
-                            }
-                        />
-                        {settings?.resend.api_key && (
-                            <p className={'mt-1 text-sm text-green-400'}>
-                                <FontAwesomeIcon icon={faCheckCircle} className={'mr-1'} />
-                                API key is configured
-                            </p>
-                        )}
-                        <p className={'text-sm text-gray-400'}>
-                            Auto-saves after 1 second — get your API key from{' '}
-                            <a
-                                href="https://resend.com/api-keys"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={'text-blue-400 hover:text-blue-300'}
-                            >
-                                resend.com/api-keys
-                            </a>
-                        </p>
-                    </div>
+                {/* Active transport (primary focus) */}
+                {isResendActive ? renderResendForm(true) : renderSmtpForm(true)}
 
-                    <div>
-                        <Label>
-                            From Email <span className={'text-red-500'}>*</span>
-                        </Label>
-                        <Input
-                            type={'email'}
-                            value={fromEmail}
-                            onChange={(e) => setFromEmail(e.target.value)}
-                            placeholder={'noreply@yourdomain.com'}
-                            disabled={!enabled}
-                        />
-                        <div className={'mt-3 space-y-2 rounded-md border border-amber-500/40 bg-amber-900/30 p-3 text-sm'}>
-                            <div className={'text-amber-100'}>
-                                <strong className={'text-amber-200'}>Important:</strong> Verify this domain in Resend{' '}
-                                <a
-                                    href="https://resend.com/domains"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={'text-blue-300 hover:text-blue-200 underline'}
-                                >
-                                    resend.com/domains
-                                </a>{' '}
-                                or sends will fail with “domain is invalid”.
-                            </div>
-                            <div className={'text-amber-100'}>
-                                <strong className={'text-amber-200'}>Tip:</strong> Avoid <code>noreply@</code>; use a
-                                monitored inbox like <code>support@</code> or <code>hello@</code> to reduce spam filtering.
+                {/* Collapsed inactive transport */}
+                {!isResendActive && renderResendForm(false, showInactiveResend, () => setShowInactiveResend((v) => !v))}
+                {!isSmtpActive && renderSmtpForm(false, showInactiveSmtp, () => setShowInactiveSmtp((v) => !v))}
+
+                <Card sectionBg={secondary}>
+                    <div className={'flex flex-col gap-2'}>
+                        <div className={'flex items-center justify-between'}>
+                            <div className={'space-y-1'}>
+                                <h3 className={'text-lg font-semibold text-white'}>Send a Test Email</h3>
+                                <p className={'text-sm text-gray-400'}>
+                                    After configuring the active transport, send yourself a test to confirm delivery.
+                                </p>
                             </div>
                         </div>
+                        <SendTestEmail />
                     </div>
+                </Card>
+            </div>
+        </AdminBox>
+    );
 
-                    <div>
-                        <Label>From Name</Label>
-                        <Input
-                            value={fromName}
-                            onChange={(e) => setFromName(e.target.value)}
-                            placeholder={'Your App Name'}
-                            disabled={!enabled}
-                        />
-                        <p className={'mt-2 text-sm text-gray-400'}>The name that appears in the "From" field of emails</p>
+    function renderResendForm(active: boolean, expanded?: boolean, toggleExpand?: () => void) {
+        const content = (
+            <div className={'space-y-5'}>
+                <Card sectionBg={secondary}>
+                    <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                        <div className={'space-y-1'}>
+                            <Label>API Key</Label>
+                            <p className={'text-sm text-gray-400'}>
+                                Required to send mail via Resend. Auto-saves after typing.
+                            </p>
+                        </div>
+                        <div className={'flex items-center gap-2'}>
+                            {settings?.resend.api_key && (
+                                <span className={'text-sm text-green-400 inline-flex items-center gap-1'}>
+                                    <FontAwesomeIcon icon={faCheckCircle} />
+                                    Key saved
+                                </span>
+                            )}
+                            {savingApiKey && <FontAwesomeIcon icon={faSpinner} className={'fa-spin text-blue-500'} />}
+                        </div>
                     </div>
+                    <Input
+                        type={'password'}
+                        value={apiKey}
+                        onChange={handleApiKeyChange}
+                        disabled={savingApiKey || !enabled}
+                        placeholder={
+                            settings?.resend.api_key
+                                ? 'API key is configured - enter a new key to replace it'
+                                : 'Enter your Resend API key'
+                        }
+                    />
+                    <p className={'text-sm text-gray-400'}>
+                        Get your key at{' '}
+                        <a
+                            href="https://resend.com/api-keys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={'text-blue-400 hover:text-blue-300'}
+                        >
+                            resend.com/api-keys
+                        </a>
+                    </p>
+                </Card>
 
-                    <div>
-                        <Label>Reply-To Email</Label>
-                        <Input
-                            type={'email'}
-                            value={replyTo}
-                            onChange={(e) => setReplyTo(e.target.value)}
-                            placeholder={'support@yourdomain.com'}
-                            disabled={!enabled}
-                        />
-                        <p className={'mt-2 text-sm text-gray-400'}>
-                            Email address where replies will be sent (optional)
+                <Card sectionBg={secondary}>
+                    <SectionHeader
+                        title={'Sender details'}
+                        description={'Who the email appears to come from.'}
+                    />
+                    <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
+                        <div className={'space-y-2'}>
+                            <Label>
+                                From Email <span className={'text-red-500'}>*</span>
+                            </Label>
+                            <Input
+                                type={'email'}
+                                value={fromEmail}
+                                onChange={(e) => setFromEmail(e.target.value)}
+                                placeholder={'noreply@yourdomain.com'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>From Name</Label>
+                            <Input
+                                value={fromName}
+                                onChange={(e) => setFromName(e.target.value)}
+                                placeholder={'Your App Name'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>Reply-To Email</Label>
+                            <Input
+                                type={'email'}
+                                value={replyTo}
+                                onChange={(e) => setReplyTo(e.target.value)}
+                                placeholder={'support@yourdomain.com'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                    </div>
+                    <div className={'mt-2 space-y-1 rounded-md border border-amber-500/40 bg-amber-900/30 p-3 text-sm'}>
+                        <p className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Domain verification:</strong> verify this domain in Resend or sends will fail.
+                        </p>
+                        <p className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Tip:</strong> use a monitored inbox (e.g. support@) to reduce spam filtering.
                         </p>
                     </div>
+                </Card>
 
-                    <div className={'flex items-center gap-3'}>
-                        <Button onClick={handleSaveResend} disabled={!hasResendChanges || status === 'processing'}>
-                            Save Resend Settings
-                        </Button>
-                        {!hasResendChanges && (
-                            <p className={'text-sm text-gray-400'}>
-                                No changes to save
-                            </p>
-                        )}
-                    </div>
-                </TransportSection>
+                <div className={'flex items-center gap-3'}>
+                    <Button onClick={handleSaveResend} disabled={!hasResendChanges || status === 'processing'}>
+                        Save Resend Settings
+                    </Button>
+                    {!hasResendChanges && <p className={'text-sm text-gray-400'}>No changes to save</p>}
+                </div>
+            </div>
+        );
 
+        if (active) {
+            return (
                 <TransportSection
-                    title={'SMTP'}
-                    active={isSmtpActive}
+                    title={'Resend'}
+                    active
                     secondary={secondary}
-                    badgeText={isSmtpActive ? 'Active' : 'Inactive'}
+                    badgeText={'Active'}
                 >
+                    {content}
+                </TransportSection>
+            );
+        }
+
+        return (
+            <TransportSection
+                title={'Resend'}
+                active={false}
+                secondary={secondary}
+                badgeText={'Inactive'}
+                collapsed
+                expanded={expanded}
+                onToggle={toggleExpand}
+                summary={`From: ${settings?.resend.from_email || 'Not set'}`}
+            >
+                {expanded ? content : null}
+            </TransportSection>
+        );
+    }
+
+    function renderSmtpForm(active: boolean, expanded?: boolean, toggleExpand?: () => void) {
+        const content = (
+            <div className={'space-y-5'}>
+                <Card sectionBg={secondary}>
+                    <SectionHeader
+                        title={'Server connection'}
+                        description={'SMTP host and authentication details.'}
+                    />
                     <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>Host</Label>
                             <Input
                                 value={smtpHost}
@@ -448,7 +469,7 @@ export default () => {
                                 disabled={!enabled}
                             />
                         </div>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>Port</Label>
                             <Input
                                 type={'number'}
@@ -458,33 +479,31 @@ export default () => {
                                 disabled={!enabled}
                             />
                         </div>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>Username</Label>
                             <Input
                                 value={smtpUsername}
                                 onChange={(e) => setSmtpUsername(e.target.value)}
-                                placeholder={'smtp username'}
+                                placeholder={'SMTP username'}
                                 disabled={!enabled}
                             />
                         </div>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>Password</Label>
                             <Input
                                 type={'password'}
                                 value={smtpPassword}
                                 onChange={(e) => setSmtpPassword(e.target.value)}
                                 placeholder={
-                                    settings.smtp.password_set
+                                    settings?.smtp.password_set
                                         ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (configured)'
                                         : 'SMTP password'
                                 }
                                 disabled={!enabled}
                             />
-                            <p className={'mt-1 text-xs text-gray-400'}>
-                                Leave blank to keep the existing password.
-                            </p>
+                            <p className={'text-xs text-gray-400'}>Leave blank to keep the existing password.</p>
                         </div>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>Encryption</Label>
                             <select
                                 className={
@@ -500,9 +519,15 @@ export default () => {
                             </select>
                         </div>
                     </div>
+                </Card>
 
+                <Card sectionBg={secondary}>
+                    <SectionHeader
+                        title={'Sender details'}
+                        description={'From/reply-to information for SMTP emails.'}
+                    />
                     <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>
                                 From Email <span className={'text-red-500'}>*</span>
                             </Label>
@@ -514,7 +539,7 @@ export default () => {
                                 disabled={!enabled}
                             />
                         </div>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>From Name</Label>
                             <Input
                                 value={smtpFromName}
@@ -523,7 +548,7 @@ export default () => {
                                 disabled={!enabled}
                             />
                         </div>
-                        <div>
+                        <div className={'space-y-2'}>
                             <Label>Reply-To Email</Label>
                             <Input
                                 type={'email'}
@@ -534,21 +559,45 @@ export default () => {
                             />
                         </div>
                     </div>
+                </Card>
 
-                    <div className={'flex items-center gap-3'}>
-                        <Button onClick={handleSaveSmtp} disabled={!hasSmtpChanges || status === 'processing'}>
-                            Save SMTP Settings
-                        </Button>
-                        {!hasSmtpChanges && (
-                            <p className={'text-sm text-gray-400'}>
-                                No changes to save
-                            </p>
-                        )}
-                    </div>
-                </TransportSection>
+                <div className={'flex items-center gap-3'}>
+                    <Button onClick={handleSaveSmtp} disabled={!hasSmtpChanges || status === 'processing'}>
+                        Save SMTP Settings
+                    </Button>
+                    {!hasSmtpChanges && <p className={'text-sm text-gray-400'}>No changes to save</p>}
+                </div>
             </div>
-        </AdminBox>
-    );
+        );
+
+        if (active) {
+            return (
+                <TransportSection
+                    title={'SMTP'}
+                    active
+                    secondary={secondary}
+                    badgeText={'Active'}
+                >
+                    {content}
+                </TransportSection>
+            );
+        }
+
+        return (
+            <TransportSection
+                title={'SMTP'}
+                active={false}
+                secondary={secondary}
+                badgeText={'Inactive'}
+                collapsed
+                expanded={expanded}
+                onToggle={toggleExpand}
+                summary={`Host: ${settings?.smtp.host || 'Not set'}`}
+            >
+                {expanded ? content : null}
+            </TransportSection>
+        );
+    }
 };
 
 const TransportSection = ({
@@ -557,12 +606,20 @@ const TransportSection = ({
     children,
     secondary,
     badgeText,
+    collapsed = false,
+    expanded = false,
+    onToggle,
+    summary,
 }: {
     title: string;
     active: boolean;
     children: ReactNode;
     secondary: string;
     badgeText: string;
+    collapsed?: boolean;
+    expanded?: boolean;
+    onToggle?: () => void;
+    summary?: string;
 }) => {
     return (
         <div className={'space-y-4 rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: secondary }}>
@@ -577,9 +634,87 @@ const TransportSection = ({
                         {badgeText}
                     </span>
                 </div>
-                {!active && <span className={'text-xs text-gray-400'}>Inactive transport</span>}
+                {!active && (
+                    <div className={'flex items-center gap-3 text-xs text-gray-400'}>
+                        <span>Inactive transport</span>
+                        {summary && <span className={'text-gray-500'}>{summary}</span>}
+                        {onToggle && (
+                            <Button.Dark onClick={onToggle} size={Button.Sizes.Small}>
+                                {expanded ? 'Hide settings' : 'View settings'}
+                            </Button.Dark>
+                        )}
             </div>
-            <div className={'space-y-4'}>{children}</div>
+                )}
+            </div>
+            {!collapsed || expanded ? <div className={'space-y-4'}>{children}</div> : null}
+        </div>
+    );
+};
+
+const Card = ({ children, sectionBg }: { children: ReactNode; sectionBg: string }) => (
+    <div className={'rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: sectionBg }}>
+        {children}
+    </div>
+);
+
+const SectionHeader = ({ title, description }: { title: string; description: string }) => (
+    <div className={'space-y-1'}>
+        <h3 className={'text-lg font-semibold text-white'}>{title}</h3>
+        <p className={'text-sm text-gray-400'}>{description}</p>
+    </div>
+);
+
+const StatusBanner = ({
+    enabled,
+    transport,
+    onToggle,
+    saving,
+    secondary,
+    toggleHint,
+}: {
+    enabled: boolean;
+    transport: EmailTransport;
+    onToggle: () => void;
+    saving: boolean;
+    secondary: string;
+    toggleHint: string;
+}) => {
+    const isOn = enabled;
+    const StatusToggleButton = isOn ? Button.Success : Button.Danger;
+    const statusText = isOn ? 'Enabled' : 'Disabled';
+    const message = isOn
+        ? `Emails are being sent via ${transport.toUpperCase()}.`
+        : 'Email delivery is currently disabled.';
+
+    return (
+        <div
+            className={`rounded-lg border p-4 shadow-sm ${
+                isOn ? 'border-green-600/60 bg-green-950/60' : 'border-red-600/60 bg-red-950/60'
+            }`}
+            style={{ backgroundColor: secondary }}
+        >
+            <div className={'flex flex-col gap-3 md:flex-row md:items-center md:justify-between'}>
+                <div className={'space-y-1'}>
+                    <div className={'flex items-center gap-2'}>
+                        <span
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${
+                                isOn ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${isOn ? 'bg-green-400' : 'bg-red-400'}`} />
+                            Email delivery {statusText}
+                        </span>
+                        <span className={'text-sm text-gray-300'}>Active transport: {transport.toUpperCase()}</span>
+                    </div>
+                    <p className={'text-sm text-gray-200'}>{message}</p>
+                </div>
+                <div className={'flex items-center gap-2'}>
+                    <StatusToggleButton onClick={onToggle} disabled={saving} loading={saving}>
+                        {isOn ? 'Disable' : 'Enable'}
+                    </StatusToggleButton>
+                </div>
+            </div>
+            <p className={'mt-2 text-xs text-gray-400'}>{toggleHint}</p>
         </div>
     );
 };
