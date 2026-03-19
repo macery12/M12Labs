@@ -16,8 +16,9 @@ import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import ServerPaymentButton from './ServerPaymentButton';
+import OrdersContainer from '@/components/account/billing/orders/OrdersContainer';
 
-function timeUntil(targetDate: Date | string) {
+export function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
 
     const now = new Date();
@@ -125,7 +126,11 @@ export default () => {
                         </div>
                     </ContentBox>
                 )}
-                <ContentBox title={'Renew Server'} className={'lg:col-span-2'}>
+                <div className={'lg:col-span-2'}>
+                    <h2 className={'text-neutral-300 mb-4 px-4 text-2xl'}>Related Orders</h2>
+                    <OrdersContainer server_id={Number(serverId)} />
+                </div>
+                <ContentBox title={'Renew Server'} className={'mt-6'}>
                     <FlashMessageRender byKey={'server:billing'} className={'mb-4'} />
                     {!product ? (
                         <Alert type={'danger'}>

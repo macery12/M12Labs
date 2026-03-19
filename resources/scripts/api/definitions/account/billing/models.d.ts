@@ -1,5 +1,6 @@
 import { Model } from '@definitions';
 import { OrderType } from '@/api/routes/account/billing/orders/types';
+import { Server } from '../../server';
 
 interface Order extends Model {
     id: number;
@@ -10,7 +11,12 @@ interface Order extends Model {
     product_id: number;
     status: OrderStatus;
     type: OrderType;
+    server_id?: number | null;
     created_at: Date;
+
+    relationships: {
+        server: Server | null;
+    };
 }
 
 interface Category extends Model {

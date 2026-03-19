@@ -3,5 +3,6 @@ export type OrderType = 'new' | 'upg' | 'ren';
 
 export interface OrderFilters {
     id?: number;
+    server_id?: number;
     name?: string;
 }

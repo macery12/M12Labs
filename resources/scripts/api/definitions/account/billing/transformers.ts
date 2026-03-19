@@ -1,19 +1,30 @@
 /* eslint-disable camelcase */
 import { FractalResponseData } from '@/api/http';
+import { Transformers as ServerTransformers } from '../../server';
 import * as Models from '@definitions/account/billing/models';
+import { transform } from '@definitions/helpers';
 
 export default class Transformers {
-    static toOrder = ({ attributes: data }: FractalResponseData): Models.Order => ({
-        id: data.id,
-        name: data.name,
-        user_id: data.user_id,
-        description: data.description,
-        total: data.total,
-        status: data.status,
-        product_id: data.product_id,
-        type: data.type,
-        created_at: new Date(data.created_at),
-    });
+    static toOrder = ({ attributes: data }: FractalResponseData): Models.Order => {
+        const { server } = data.relationships || {};
+
+        return {
+            id: data.id,
+            name: data.name,
+            user_id: data.user_id,
+            description: data.description,
+            total: data.total,
+            status: data.status,
+            product_id: data.product_id,
+            type: data.type,
+            server_id: data.server_id ?? null,
+            created_at: new Date(data.created_at),
+
+            relationships: {
+                server: transform(server as FractalResponseData, ServerTransformers.toServer, null),
+            },
+        };
+    };
 
     static toCategory = ({ attributes: data }: FractalResponseData): Models.Category => ({
         id: data.id,
