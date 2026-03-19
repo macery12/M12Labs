@@ -5,7 +5,7 @@ import tw, { theme } from 'twin.macro';
 import { CSSObject } from '@emotion/serialize';
 import { debounce } from 'debounce';
 
-import { UserSearchOptions, searchUsersPaginated } from '@/api/routes/admin/users';
+import { DEFAULT_USER_SEARCH_LIMIT, UserSearchOptions, searchUsersPaginated } from '@/api/routes/admin/users';
 import type { User } from '@definitions/admin';
 import Label from '@/elements/Label';
 import Avatar from '@/elements/Avatar';
@@ -21,7 +21,7 @@ interface UserPickerProps {
     disabled?: boolean;
     className?: string;
     autoFocus?: boolean;
-    menuPortalTarget?: HTMLElement | null;
+    menuPortalTarget?: HTMLElement;
 }
 
 interface UserOption {
@@ -30,7 +30,7 @@ interface UserOption {
     user: User;
 }
 
-const MAX_RESULTS = 25;
+const MAX_RESULTS = DEFAULT_USER_SEARCH_LIMIT;
 
 const optionStyles: Partial<typeof SelectStyle> = {
     menu: (base: CSSObject) => ({
@@ -54,9 +54,10 @@ const toOption = (user: User): UserOption => ({
 });
 
 const getUserIdentity = (user: User) => {
-    const primary = user.username || user.email || `User #${user.id}`;
+    const fallbackId = user.id ?? 'unknown';
+    const primary = user.username || user.email || `User #${fallbackId}`;
     const secondary = user.email && user.email !== primary ? user.email : undefined;
-    const avatar = user.uuid || user.email || user.username || String(user.id);
+    const avatar = user.uuid || user.email || user.username || String(fallbackId);
 
     return { primary, secondary, avatar };
 };
@@ -137,7 +138,7 @@ const UserPicker = ({
                 openMenuOnFocus
                 openMenuOnClick
                 menuPlacement="auto"
-                menuPortalTarget={menuPortalTarget ?? undefined}
+                menuPortalTarget={menuPortalTarget}
                 styles={mergeStyles()}
                 formatOptionLabel={(option, { context }) => {
                     const user = (option as UserOption).user;
