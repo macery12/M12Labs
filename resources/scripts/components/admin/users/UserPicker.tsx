@@ -53,7 +53,7 @@ const toOption = (user: User): UserOption => ({
     user,
 });
 
-const getAvatarName = (user: User) => user.uuid || user.email || user.username || String(user.id);
+const getAvatarIdentifier = (user: User) => user.uuid || user.email || user.username || String(user.id);
 
 const UserPicker = ({
     name,
@@ -138,7 +138,7 @@ const UserPicker = ({
                     if (context === 'value') {
                         return (
                             <div css={tw`flex items-center gap-2`}>
-                                <Avatar name={getAvatarName(user)} size={24} />
+                                <Avatar name={getAvatarIdentifier(user)} size={24} />
                                 <span css={tw`text-sm text-neutral-100`}>{primaryText}</span>
                                 {secondaryText && <span css={tw`text-xs text-neutral-400`}>{secondaryText}</span>}
                             </div>
@@ -147,10 +147,10 @@ const UserPicker = ({
 
                     return (
                         <div css={tw`flex items-center gap-3`}>
-                            <Avatar name={getAvatarName(user)} size={28} />
+                            <Avatar name={getAvatarIdentifier(user)} size={28} />
                             <div css={tw`flex flex-col`}>
                                 <span css={tw`text-sm text-neutral-100`}>{primaryText}</span>
-                                {user.email && <span css={tw`text-xs text-neutral-400`}>{user.email}</span>}
+                                {secondaryText && <span css={tw`text-xs text-neutral-400`}>{secondaryText}</span>}
                             </div>
                             <div css={tw`ml-auto flex items-center gap-2`}>
                                 <span
