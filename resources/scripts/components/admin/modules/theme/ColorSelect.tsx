@@ -10,6 +10,7 @@ import { useStoreActions, useStoreState } from '@/state/hooks';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { faPaintbrush } from '@fortawesome/free-solid-svg-icons';
 import { normalizeTheme } from '@/theme/tokens';
+import classNames from 'classnames';
 
 interface Props {
     setReload: Dispatch<SetStateAction<boolean>>;
@@ -98,66 +99,33 @@ export default ({ setReload, className }: Props) => {
             {success && <CheckCircleIcon className={'absolute top-0 right-0 m-3.5 h-5 w-5 text-green-500'} />}
 
             <div className="flex flex-wrap gap-2 border-b border-neutral-800 pb-2 text-sm">
+                {(
+                    [
+                        ['base', 'Base'],
+                        ['surfaces', 'Surfaces'],
+                        ['navigation', 'Navigation'],
+                        ['interactive', 'Interactive'],
+                        ['text', 'Text'],
+                        ['status', 'Status'],
+                        ['inputs', 'Inputs'],
+                    ] as [typeof activeTab, string][]
+                ).map(([id, label]) => (
+                    <button
+                        key={id}
+                        className={classNames(
+                            'rounded px-3 py-1 transition',
+                            activeTab === id ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300',
+                        )}
+                        onClick={() => setActiveTab(id)}
+                    >
+                        {label}
+                    </button>
+                ))}
                 <button
-                    className={`rounded px-3 py-1 transition ${
-                        activeTab === 'base' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
-                    }`}
-                    onClick={() => setActiveTab('base')}
-                >
-                    Base
-                </button>
-                <button
-                    className={`rounded px-3 py-1 transition ${
-                        activeTab === 'surfaces' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
-                    }`}
-                    onClick={() => setActiveTab('surfaces')}
-                >
-                    Surfaces
-                </button>
-                <button
-                    className={`rounded px-3 py-1 transition ${
-                        activeTab === 'navigation' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
-                    }`}
-                    onClick={() => setActiveTab('navigation')}
-                >
-                    Navigation
-                </button>
-                <button
-                    className={`rounded px-3 py-1 transition ${
-                        activeTab === 'interactive' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
-                    }`}
-                    onClick={() => setActiveTab('interactive')}
-                >
-                    Interactive
-                </button>
-                <button
-                    className={`rounded px-3 py-1 transition ${
-                        activeTab === 'text' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
-                    }`}
-                    onClick={() => setActiveTab('text')}
-                >
-                    Text
-                </button>
-                <button
-                    className={`rounded px-3 py-1 transition ${
-                        activeTab === 'status' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
-                    }`}
-                    onClick={() => setActiveTab('status')}
-                >
-                    Status
-                </button>
-                <button
-                    className={`rounded px-3 py-1 transition ${
-                        activeTab === 'inputs' ? 'bg-white/10 text-neutral-50' : 'hover:bg-white/5 text-neutral-300'
-                    }`}
-                    onClick={() => setActiveTab('inputs')}
-                >
-                    Inputs
-                </button>
-                <button
-                    className={`rounded px-3 py-1 text-neutral-500 transition ${
-                        activeTab === 'future' ? 'bg-white/5' : 'hover:bg-white/5'
-                    }`}
+                    className={classNames(
+                        'rounded px-3 py-1 transition',
+                        activeTab === 'future' ? 'bg-white/5 text-neutral-200' : 'hover:bg-white/5 text-neutral-500',
+                    )}
                     onClick={() => setActiveTab('future')}
                 >
                     Coming Soon
