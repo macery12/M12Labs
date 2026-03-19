@@ -3,6 +3,7 @@
 namespace Everest\Http\Controllers\Api\Application\Users;
 
 use Everest\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Everest\Facades\Activity;
@@ -54,7 +55,7 @@ class UserController extends ApplicationApiController
                 continue;
             }
 
-            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $trimmed);
+            $escaped = DB::connection()->getQueryGrammar()->escapeLike($trimmed);
             $like = '%' . $escaped . '%';
             $builder->orWhere(function (Builder $builder) use ($like, $trimmed) {
                 $builder->where('uuid', 'LIKE', $like)

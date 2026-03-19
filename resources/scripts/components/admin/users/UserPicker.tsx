@@ -53,7 +53,13 @@ const toOption = (user: User): UserOption => ({
     user,
 });
 
-const getAvatarIdentifier = (user: User) => user.uuid || user.email || user.username || String(user.id);
+const getUserIdentity = (user: User) => {
+    const primary = user.username || user.email || `User #${user.id}`;
+    const secondary = user.email && user.email !== primary ? user.email : undefined;
+    const avatar = user.uuid || user.email || user.username || String(user.id);
+
+    return { primary, secondary, avatar };
+};
 
 const UserPicker = ({
     name,
@@ -135,24 +141,23 @@ const UserPicker = ({
                 styles={mergeStyles()}
                 formatOptionLabel={(option, { context }) => {
                     const user = (option as UserOption).user;
-                    const primaryText = user.username || user.email;
-                    const secondaryText = user.email && user.email !== primaryText ? user.email : undefined;
+                    const { primary, secondary, avatar } = getUserIdentity(user);
                     if (context === 'value') {
                         return (
                             <div css={tw`flex items-center gap-2`}>
-                                <Avatar name={getAvatarIdentifier(user)} size={24} />
-                                <span css={tw`text-sm text-neutral-100`}>{primaryText}</span>
-                                {secondaryText && <span css={tw`text-xs text-neutral-400`}>{secondaryText}</span>}
+                                <Avatar name={avatar} size={24} />
+                                <span css={tw`text-sm text-neutral-100`}>{primary}</span>
+                                {secondary && <span css={tw`text-xs text-neutral-400`}>{secondary}</span>}
                             </div>
                         );
                     }
 
                     return (
                         <div css={tw`flex items-center gap-3`}>
-                            <Avatar name={getAvatarIdentifier(user)} size={28} />
+                            <Avatar name={avatar} size={28} />
                             <div css={tw`flex flex-col`}>
-                                <span css={tw`text-sm text-neutral-100`}>{primaryText}</span>
-                                {secondaryText && <span css={tw`text-xs text-neutral-400`}>{secondaryText}</span>}
+                                <span css={tw`text-sm text-neutral-100`}>{primary}</span>
+                                {secondary && <span css={tw`text-xs text-neutral-400`}>{secondary}</span>}
                             </div>
                             <div css={tw`ml-auto flex items-center gap-2`}>
                                 <span
