@@ -76,9 +76,10 @@ export default () => {
           replyTo !== (settings.resend.reply_to || '')
         : false;
 
+    const normalizedSettingsPort = (settings?.smtp.port || '').toString();
     const hasSmtpChanges = settings
         ? smtpHost !== (settings.smtp.host || '') ||
-          smtpPort.toString() !== (settings.smtp.port || '').toString() ||
+          smtpPort !== normalizedSettingsPort ||
           smtpUsername !== (settings.smtp.username || '') ||
           smtpEncryption !== (settings.smtp.encryption || '') ||
           smtpFromEmail !== (settings.smtp.from_email || '') ||

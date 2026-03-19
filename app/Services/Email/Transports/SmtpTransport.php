@@ -47,11 +47,10 @@ class SmtpTransport implements EmailTransport
         ]);
 
         try {
-            Mail::mailer('smtp')->send([], [], function (Message $mail) use ($message) {
+            Mail::mailer('smtp')->html($message->html, function (Message $mail) use ($message) {
                 $mail->to($message->to)
                     ->from($message->from, $message->fromName)
-                    ->subject($message->subject)
-                    ->html($message->html);
+                    ->subject($message->subject);
 
                 if ($message->text) {
                     $mail->text($message->text);
