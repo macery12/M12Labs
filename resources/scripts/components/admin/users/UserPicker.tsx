@@ -137,7 +137,7 @@ const UserPicker = ({
             control: (base, props) => ({
                 ...baseStyles.control(base, props),
                 background: colors.background,
-                borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.700`,
+                borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.500`,
                 ':hover': {
                     ...(baseStyles.control(base, props)?.[':hover'] || {}),
                     borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.400`,
@@ -150,6 +150,14 @@ const UserPicker = ({
             input: (base, props) => ({
                 ...baseStyles.input(base, props),
                 background: colors.background,
+            }),
+            singleValue: (base, props) => ({
+                ...baseStyles.singleValue?.(base, props),
+                color: theme`colors.neutral.100`,
+            }),
+            placeholder: (base, props) => ({
+                ...baseStyles.placeholder?.(base, props),
+                color: theme`colors.neutral.400`,
             }),
         };
     }, [colors.background]);
