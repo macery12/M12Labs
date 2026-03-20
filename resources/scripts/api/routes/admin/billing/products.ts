@@ -8,13 +8,21 @@ import { createPaginatedHook, createContext } from '@/api';
 
 export const Context = createContext<ProductFilters>();
 
-export const getProducts = (id: number) =>
+export const useGetProducts = (id: number) =>
     createPaginatedHook<Product, ProductFilters>({
         url: `/api/application/billing/categories/${id}/products`,
         swrKey: `category:${id}:products`,
         context: Context,
         transformer: Transformers.toProduct,
     })();
+
+export const getProducts = (id: number): Promise<Product[]> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/application/billing/categories/${id}/products`)
+            .then(({ data }) => resolve((data.data || []).map(Transformers.toProduct)))
+            .catch(reject);
+    });
+};
 
 export const createProduct = (id: number, values: ProductValues): Promise<Product> => {
     return new Promise((resolve, reject) => {
@@ -24,8 +32,8 @@ export const createProduct = (id: number, values: ProductValues): Promise<Produc
     });
 };
 
-export const getProduct = async (id: number, productId: number): Promise<Product> => {
-    const { data } = await http.get(`/api/application/billing/categories/${id}/products/${productId}`);
+export const getProduct = async (id: number): Promise<Product> => {
+    const { data } = await http.get(`/api/application/billing/products/${id}`);
 
     return Transformers.toProduct(data);
 };
@@ -54,6 +62,6 @@ export const useProductFromRoute = (): SWRResponse<Product, AxiosError> => {
     const params = useParams<'id' | 'productId'>();
 
     return useSWR(`/api/application/billing/categories/${params.id}/products/${params.productId}`, async () =>
-        getProduct(Number(params.id), Number(params.productId)),
+        getProduct(Number(params.productId)),
     );
 };
