@@ -187,7 +187,7 @@ const UserPicker = ({
                         return (
                             <div css={tw`flex items-center gap-2`}>
                                 <Avatar name={avatar} size={24} />
-                                <span css={[tw`text-sm`, { color: colors.headers ?? theme`colors.neutral.100` }]}>{primary}</span>
+                                <span css={tw`text-sm`}>{primary}</span>
                                 {secondary && (
                                     <span css={[tw`text-xs`, { color: theme`colors.neutral.400` }]}>{secondary}</span>
                                 )}
