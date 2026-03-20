@@ -246,7 +246,7 @@ export default () => {
                 addFlash({
                     key: 'email:settings:transport',
                     type: 'success',
-                    message: `Active transport switched to ${updated.transport.toUpperCase()}`,
+                    message: `Active transport switched to ${getTransportLabel(updated.transport)}`,
                 });
             })
             .catch((error) => {
@@ -270,13 +270,14 @@ export default () => {
     const toggleHint = 'Saves instantly when toggled';
     const isResendActive = transport === 'resend';
     const isSmtpActive = transport === 'smtp';
+    const transportLabel = getTransportLabel(transport);
 
     return (
         <AdminBox title={'Email Settings'} icon={faEnvelope} status={status}>
             <div className={'flex flex-col gap-6'}>
                 <StatusBanner
                     enabled={enabled}
-                    transport={transport}
+                    transport={transportLabel}
                     onToggle={toggleEnabled}
                     saving={savingEnabled}
                     secondary={secondary}
@@ -676,6 +677,8 @@ const SectionHeader = ({ title, description }: { title: string; description: str
     </div>
 );
 
+const getTransportLabel = (value: EmailTransport): string => (value === 'smtp' ? 'SMTP' : 'Resend');
+
 const StatusBanner = ({
     enabled,
     transport,
@@ -685,7 +688,7 @@ const StatusBanner = ({
     toggleHint,
 }: {
     enabled: boolean;
-    transport: EmailTransport;
+    transport: string;
     onToggle: () => void;
     saving: boolean;
     secondary: string;
@@ -695,7 +698,7 @@ const StatusBanner = ({
     const StatusToggleButton = isOn ? Button.Success : Button.Danger;
     const statusText = isOn ? 'Enabled' : 'Disabled';
     const message = isOn
-        ? `Emails are being sent via ${transport.toUpperCase()}.`
+        ? `Emails are being sent via ${transport}.`
         : 'Email delivery is currently disabled.';
 
     return (
@@ -716,7 +719,7 @@ const StatusBanner = ({
                             <span className={`h-2 w-2 rounded-full ${isOn ? 'bg-green-400' : 'bg-red-400'}`} />
                             Email delivery {statusText}
                         </span>
-                        <span className={'text-sm text-gray-300'}>Active transport: {transport.toUpperCase()}</span>
+                        <span className={'text-sm text-gray-300'}>Active transport: {transport}</span>
                     </div>
                     <p className={'text-sm text-gray-200'}>{message}</p>
                 </div>
