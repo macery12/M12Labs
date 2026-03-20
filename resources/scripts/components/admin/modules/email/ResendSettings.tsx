@@ -345,7 +345,7 @@ export default () => {
                         </div>
                         <div className={'flex items-center gap-2'}>
                             {settings?.resend.api_key && (
-                                <span className={'text-sm text-green-400 inline-flex items-center gap-1'}>
+                                <span className={'inline-flex items-center gap-1 text-sm text-green-400'}>
                                     <FontAwesomeIcon icon={faCheckCircle} />
                                     Key saved
                                 </span>
