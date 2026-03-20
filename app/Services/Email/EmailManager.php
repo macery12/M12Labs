@@ -45,6 +45,14 @@ class EmailManager
         }
         [$transport, $from, $fromName, $replyTo] = $transportResolution;
 
+        Log::info('EmailManager: Using transport', [
+            'provider' => $transport->getName(),
+            'recipient' => $recipient,
+            'subject' => $email->subject(),
+            'from' => $from,
+            'reply_to' => $replyTo,
+        ]);
+
         // Render HTML content
         $html = $this->renderHtml($email);
         
@@ -187,6 +195,15 @@ class EmailManager
             return $transportResolution;
         }
         [$transport, $from, $fromName, $replyTo] = $transportResolution;
+
+        Log::info('EmailManager: Using transport', [
+            'provider' => $transport->getName(),
+            'recipient' => $recipient,
+            'template_key' => $templateKey,
+            'correlation_id' => $correlationId,
+            'from' => $from,
+            'reply_to' => $replyTo,
+        ]);
 
         // Convert template key to view path (auth.password_reset -> emails.auth.password-reset)
         // Split on first dot to get category and action
