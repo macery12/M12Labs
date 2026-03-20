@@ -10,6 +10,7 @@ import type { User } from '@definitions/admin';
 import Label from '@/elements/Label';
 import Avatar from '@/elements/Avatar';
 import { SelectStyle } from '@/elements/SelectField';
+import { useStoreState } from '@/state/hooks';
 
 interface UserPickerProps {
     name: string;
@@ -82,6 +83,7 @@ const UserPicker = ({
 }: UserPickerProps) => {
     const [defaultOptions, setDefaultOptions] = useState<UserOption[]>([]);
     const [initialTotal, setInitialTotal] = useState<number | null>(null);
+    const { colors } = useStoreState(state => state.theme.data!);
 
     const loadUsers = useCallback(
         async (options: UserSearchOptions = {}, trackTotal = false): Promise<UserOption[]> => {
@@ -128,6 +130,30 @@ const UserPicker = ({
         [loadUsers],
     );
 
+    const selectStyles = useMemo(() => {
+        const baseStyles = mergeStyles();
+        return {
+            ...baseStyles,
+            control: (base, props) => ({
+                ...baseStyles.control(base, props),
+                background: colors.background,
+                borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.700`,
+                ':hover': {
+                    ...(baseStyles.control(base, props)?.[':hover'] || {}),
+                    borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.600`,
+                },
+            }),
+            valueContainer: (base, props) => ({
+                ...baseStyles.valueContainer(base, props),
+                background: colors.background,
+            }),
+            input: (base, props) => ({
+                ...baseStyles.input(base, props),
+                background: colors.background,
+            }),
+        };
+    }, [colors.background]);
+
     return (
         <div className={className}>
             <Label htmlFor={name}>{label}</Label>
@@ -145,7 +171,7 @@ const UserPicker = ({
                 openMenuOnClick
                 menuPlacement="auto"
                 menuPortalTarget={menuPortalTarget}
-                styles={mergeStyles()}
+                styles={selectStyles}
                 formatOptionLabel={(option, { context }) => {
                     const user = (option as UserOption).user;
                     const { primary, secondary, avatar } = getUserIdentity(user);
