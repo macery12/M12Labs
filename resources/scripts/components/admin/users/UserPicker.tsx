@@ -140,7 +140,7 @@ const UserPicker = ({
                 borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.700`,
                 ':hover': {
                     ...(baseStyles.control(base, props)?.[':hover'] || {}),
-                    borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.600`,
+                    borderColor: props.isFocused ? theme`colors.primary.300` : theme`colors.neutral.400`,
                 },
             }),
             valueContainer: (base, props) => ({
