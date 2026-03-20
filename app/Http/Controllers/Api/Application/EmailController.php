@@ -79,12 +79,6 @@ class EmailController extends ApplicationApiController
     public function updateSettings(UpdateEmailSettingsRequest $request): JsonResponse
     {
         foreach ($request->normalize() as $key => $value) {
-            // Don't overwrite existing API key with empty string
-            // This prevents the placeholder from clearing the real key
-            if (in_array($key, ['modules:email:resend:api_key', 'modules:email:smtp:password'], true) && empty($value)) {
-                continue;
-            }
-            
             Setting::set('settings::' . $key, $value);
         }
 

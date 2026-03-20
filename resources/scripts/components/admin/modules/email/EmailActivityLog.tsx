@@ -349,7 +349,11 @@ export default () => {
                                                     {log.template_key || 'custom'}
                                                 </code>
                                             </Td>
-                                            <Td className='text-gray-400'>{log.provider}</Td>
+                                            <Td>
+                                                <span className='inline-flex items-center rounded-full bg-neutral-800 px-2 py-1 text-xs font-semibold text-neutral-200'>
+                                                    {log.provider ? log.provider.toUpperCase() : 'UNKNOWN'}
+                                                </span>
+                                            </Td>
                                             <Td>
                                                 <span
                                                     className={

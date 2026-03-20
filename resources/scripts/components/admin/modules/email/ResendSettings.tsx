@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import AdminBox from '@/elements/AdminBox';
@@ -7,7 +7,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useFlash from '@/plugins/useFlash';
 import useStatus from '@/plugins/useStatus';
 import { Button } from '@/elements/button';
-import debounce from 'debounce';
 import { useStoreState } from '@/state/hooks';
 import { EmailSettings, EmailSettingsUpdate, EmailTransport, getSettings, updateSettings } from '@/api/routes/admin/email';
 import SendTestEmail from '@/components/admin/modules/email/SendTestEmail';
@@ -45,6 +44,8 @@ export default () => {
     const [savingTransport, setSavingTransport] = useState(false);
     const [showInactiveResend, setShowInactiveResend] = useState(false);
     const [showInactiveSmtp, setShowInactiveSmtp] = useState(false);
+    const [clearApiKey, setClearApiKey] = useState(false);
+    const [clearSmtpPassword, setClearSmtpPassword] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -76,7 +77,9 @@ export default () => {
     const hasResendChanges = settings
         ? fromEmail !== (settings.resend.from_email || '') ||
           fromName !== (settings.resend.from_name || '') ||
-          replyTo !== (settings.resend.reply_to || '')
+          replyTo !== (settings.resend.reply_to || '') ||
+          apiKey.trim().length > 0 ||
+          clearApiKey
         : false;
 
     const normalizedSettingsPort = (settings?.smtp.port || '').toString();
@@ -88,7 +91,8 @@ export default () => {
           smtpFromEmail !== (settings.smtp.from_email || '') ||
           smtpFromName !== (settings.smtp.from_name || '') ||
           smtpReplyTo !== (settings.smtp.reply_to || '') ||
-          smtpPassword.trim().length > 0
+          smtpPassword.trim().length > 0 ||
+          clearSmtpPassword
         : false;
 
     const saveEnabledStatus = (newEnabled: boolean) => {
@@ -120,40 +124,11 @@ export default () => {
         saveEnabledStatus(newEnabled);
     };
 
-    const saveApiKeyDebounced = useCallback(
-        debounce((key: string) => {
-            if (!key.trim()) {
-                setSavingApiKey(false);
-                return;
-            }
-
-            updateSettings({ api_key: key })
-                .then((updatedSettings) => {
-                    setSavingApiKey(false);
-                    setSettings(updatedSettings);
-                    setApiKey('');
-
-                    addFlash({
-                        key: 'email:settings:apikey',
-                        type: 'success',
-                        message: 'API key saved successfully',
-                    });
-                })
-                .catch((error) => {
-                    setSavingApiKey(false);
-                    clearAndAddHttpError({ key: 'email:settings:apikey', error });
-                });
-        }, 1000),
-        []
-    );
-
     const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setApiKey(value);
-
-        if (value.trim()) {
-            setSavingApiKey(true);
-            saveApiKeyDebounced(value);
+        if (value.trim().length > 0) {
+            setClearApiKey(false);
         }
     };
 
@@ -161,17 +136,27 @@ export default () => {
         clearFlashes();
         setStatus('processing');
 
-        updateSettings({
+        const payload: EmailSettingsUpdate = {
             from_email: fromEmail,
             from_name: fromName,
             reply_to: replyTo,
-        })
+        };
+
+        if (apiKey.trim().length > 0 || clearApiKey) {
+            payload.api_key = clearApiKey ? '' : apiKey.trim();
+            setSavingApiKey(true);
+        }
+
+        updateSettings(payload)
             .then((updatedSettings) => {
                 setStatus('success');
                 setSettings(updatedSettings);
                 setFromEmail(updatedSettings.resend.from_email || '');
                 setFromName(updatedSettings.resend.from_name || '');
                 setReplyTo(updatedSettings.resend.reply_to || '');
+                setApiKey('');
+                setClearApiKey(false);
+                setSavingApiKey(false);
 
                 addFlash({
                     key: 'email:settings:resend',
@@ -181,6 +166,7 @@ export default () => {
             })
             .catch((error) => {
                 setStatus('error');
+                setSavingApiKey(false);
                 clearAndAddHttpError({ key: 'email:settings:resend', error });
             });
     };
@@ -198,7 +184,9 @@ export default () => {
             smtp_reply_to: smtpReplyTo,
         };
 
-        if (smtpPassword.trim()) {
+        if (clearSmtpPassword) {
+            payload.smtp_password = '';
+        } else if (smtpPassword.trim()) {
             payload.smtp_password = smtpPassword;
         }
 
@@ -214,6 +202,7 @@ export default () => {
                 setSmtpFromName(updatedSettings.smtp.from_name || '');
                 setSmtpReplyTo(updatedSettings.smtp.reply_to || '');
                 setSmtpPassword('');
+                setClearSmtpPassword(false);
 
                 addFlash({
                     key: 'email:settings:smtp',
@@ -341,7 +330,7 @@ export default () => {
                         <div className={'space-y-1'}>
                             <Label>API Key</Label>
                             <p className={'text-sm text-gray-400'}>
-                                Required to send mail via Resend. Auto-saves after typing.
+                                Enter a key then click “Save Resend Settings”. Check “Clear saved key” to remove it.
                             </p>
                         </div>
                         <div className={'flex items-center gap-2'}>
@@ -365,17 +354,28 @@ export default () => {
                                 : 'Enter your Resend API key'
                         }
                     />
-                    <p className={'text-sm text-gray-400'}>
-                        Get your key at{' '}
-                        <a
-                            href="https://resend.com/api-keys"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={'text-blue-400 hover:text-blue-300'}
-                        >
-                            resend.com/api-keys
-                        </a>
-                    </p>
+                    <div className={'mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                        <p className={'text-sm text-gray-400'}>
+                            Get your key at{' '}
+                            <a
+                                href="https://resend.com/api-keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={'text-blue-400 hover:text-blue-300'}
+                            >
+                                resend.com/api-keys
+                            </a>
+                        </p>
+                        <label className={'flex items-center gap-2 text-sm text-gray-300'}>
+                            <input
+                                type='checkbox'
+                                checked={clearApiKey}
+                                onChange={(e) => setClearApiKey(e.target.checked)}
+                                disabled={!enabled}
+                            />
+                            Clear saved key
+                        </label>
+                    </div>
                 </Card>
 
                 <Card sectionBg={secondary}>
@@ -514,7 +514,20 @@ export default () => {
                                 }
                                 disabled={!enabled}
                             />
-                            <p className={'text-xs text-gray-400'}>Leave blank to keep the existing password.</p>
+                            <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                                <p className={'text-xs text-gray-400'}>
+                                    Leave blank to keep the existing password, or check “Clear password”.
+                                </p>
+                                <label className={'flex items-center gap-2 text-xs text-gray-300'}>
+                                    <input
+                                        type='checkbox'
+                                        checked={clearSmtpPassword}
+                                        onChange={(e) => setClearSmtpPassword(e.target.checked)}
+                                        disabled={!enabled}
+                                    />
+                                    Clear password
+                                </label>
+                            </div>
                         </div>
                         <div className={'space-y-2'}>
                             <Label>Encryption</Label>
