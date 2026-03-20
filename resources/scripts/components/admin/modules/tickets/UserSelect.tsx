@@ -1,7 +1,7 @@
 import { useFormikContext } from 'formik';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { searchUserAccounts } from '@/api/routes/admin/users';
+import { DEFAULT_USER_SEARCH_LIMIT, searchUsersPaginated } from '@/api/routes/admin/users';
 import SearchableSelect, { Option } from '@/elements/SearchableSelect';
 import type { User } from '@definitions/admin';
 import Avatar from '@/elements/Avatar';
@@ -12,14 +12,17 @@ export default ({ selected, isAdmin }: { selected?: User; isAdmin?: boolean }) =
     const [user, setUser] = useState<User | null>(selected || null);
     const [users, setUsers] = useState<User[] | null>(null);
 
-    const onSearch = async (query: string) => {
-        const [byUsername, byEmail] = await Promise.all([
-            searchUserAccounts({ filters: { username: query } }),
-            searchUserAccounts({ filters: { email: query } }),
-        ]);
+    const loadUsers = async (query?: string) => {
+        const { items } = await searchUsersPaginated({
+            query: query || undefined,
+            limit: DEFAULT_USER_SEARCH_LIMIT,
+        });
 
-        const combined = [...new Map([...byUsername, ...byEmail].map(n => [n.id, n])).values()];
-        setUsers(combined);
+        setUsers(items);
+    };
+
+    const onSearch = async (query: string) => {
+        await loadUsers(query);
     };
 
     const onSelect = (user: User | null) => {
@@ -28,6 +31,10 @@ export default ({ selected, isAdmin }: { selected?: User; isAdmin?: boolean }) =
     };
 
     const getSelectedText = (user: User | null): string => user?.email || '';
+
+    useEffect(() => {
+        loadUsers().catch(() => setUsers([]));
+    }, []);
 
     return (
         <SearchableSelect
