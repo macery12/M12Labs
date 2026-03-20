@@ -407,9 +407,16 @@ class EmailManager
 
     public static function getTransport(): string
     {
-        $transport = strtolower((string) Setting::get('settings::modules:email:transport', 'resend'));
+        // Prefer an explicitly selected transport; default to SMTP for first-time setup.
+        $transportSetting = Setting::get('settings::modules:email:transport', null);
+        // Backwards compatibility: older installs may have stored without the settings:: prefix.
+        if ($transportSetting === null) {
+            $transportSetting = Setting::get('modules:email:transport', null);
+        }
 
-        return in_array($transport, ['smtp', 'resend'], true) ? $transport : 'resend';
+        $transport = strtolower((string) ($transportSetting ?? 'smtp'));
+
+        return in_array($transport, ['smtp', 'resend'], true) ? $transport : 'smtp';
     }
 
     /**

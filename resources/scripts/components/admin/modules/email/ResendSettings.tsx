@@ -21,7 +21,7 @@ export default () => {
 
     // Shared state
     const [enabled, setEnabled] = useState(false);
-    const [transport, setTransport] = useState<EmailTransport>('resend');
+    const [transport, setTransport] = useState<EmailTransport>('smtp');
 
     // Resend state
     const [apiKey, setApiKey] = useState('');
