@@ -153,14 +153,14 @@ const UserPicker = ({
             }),
             singleValue: (base, props) => ({
                 ...baseStyles.singleValue?.(base, props),
-                color: colors.headers ?? theme`colors.neutral.100`,
+                color: theme`colors.neutral.100`,
             }),
             placeholder: (base, props) => ({
                 ...baseStyles.placeholder?.(base, props),
                 color: theme`colors.neutral.400`,
             }),
         };
-    }, [colors.background, colors.headers]);
+    }, [colors.background]);
 
     return (
         <div className={className}>
@@ -187,10 +187,8 @@ const UserPicker = ({
                         return (
                             <div css={tw`flex items-center gap-2`}>
                                 <Avatar name={avatar} size={24} />
-                                <span css={tw`text-sm`}>{primary}</span>
-                                {secondary && (
-                                    <span css={[tw`text-xs`, { color: theme`colors.neutral.400` }]}>{secondary}</span>
-                                )}
+                                <span css={tw`text-sm text-neutral-100`}>{primary}</span>
+                                {secondary && <span css={tw`text-xs text-neutral-400`}>{secondary}</span>}
                             </div>
                         );
                     }
