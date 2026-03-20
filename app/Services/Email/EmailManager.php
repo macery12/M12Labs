@@ -426,7 +426,8 @@ class EmailManager
 
             $from = Setting::get('settings::modules:email:smtp:from_email');
             $fromName = Setting::get('settings::modules:email:smtp:from_name');
-            $replyTo = Setting::get('settings::modules:email:smtp:reply_to') ?: config('mail.from.address');
+            // Reply-to should stay within the SMTP identity; fall back to the same "from" address
+            $replyTo = Setting::get('settings::modules:email:smtp:reply_to') ?: $from;
 
             $requiredMissing = [];
             if (empty($config['host'])) {
@@ -480,7 +481,8 @@ class EmailManager
 
         $from = Setting::get('settings::modules:email:resend:from_email');
         $fromName = Setting::get('settings::modules:email:resend:from_name');
-        $replyTo = Setting::get('settings::modules:email:resend:reply_to') ?: config('mail.from.address');
+        // Keep reply-to aligned with the Resend identity; fall back to the same "from" address
+        $replyTo = Setting::get('settings::modules:email:resend:reply_to') ?: $from;
 
         if (empty($from)) {
             return $this->handleConfigFailure(
