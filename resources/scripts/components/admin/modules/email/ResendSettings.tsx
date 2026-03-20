@@ -228,7 +228,13 @@ export default () => {
     };
 
     const handleTransportChange = (value: EmailTransport) => {
+        if (value === transport) {
+            return;
+        }
+
+        const previous = transport;
         setSavingTransport(true);
+        setTransport(value);
         clearFlashes();
 
         updateSettings({ transport: value })
@@ -240,11 +246,12 @@ export default () => {
                 addFlash({
                     key: 'email:settings:transport',
                     type: 'success',
-                    message: `Active transport switched to ${value.toUpperCase()}`,
+                    message: `Active transport switched to ${updated.transport.toUpperCase()}`,
                 });
             })
             .catch((error) => {
                 setSavingTransport(false);
+                setTransport(previous);
                 clearAndAddHttpError({ key: 'email:settings:transport', error });
             });
     };
@@ -277,22 +284,27 @@ export default () => {
                 />
 
                 <Card sectionBg={secondary}>
-                    <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                    <div className={'space-y-3'}>
                         <div className={'space-y-1'}>
                             <Label>Delivery Method</Label>
                             <p className={'text-sm text-gray-400'}>Choose which transport is active.</p>
                         </div>
-                        <select
-                            className={
-                                'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white sm:w-auto'
-                            }
-                            value={transport}
-                            onChange={(e) => handleTransportChange(e.target.value as EmailTransport)}
-                            disabled={savingTransport}
-                        >
-                            <option value={'resend'}>Resend</option>
-                            <option value={'smtp'}>SMTP</option>
-                        </select>
+                        <div className={'grid grid-cols-1 gap-3 sm:grid-cols-2'}>
+                            <TransportChoice
+                                label={'Resend'}
+                                description={'Use Resend API for delivery'}
+                                active={isResendActive}
+                                onSelect={() => handleTransportChange('resend')}
+                                disabled={savingTransport}
+                            />
+                            <TransportChoice
+                                label={'SMTP'}
+                                description={'Use your SMTP server'}
+                                active={isSmtpActive}
+                                onSelect={() => handleTransportChange('smtp')}
+                                disabled={savingTransport}
+                            />
+                        </div>
                     </div>
                 </Card>
 
@@ -716,5 +728,46 @@ const StatusBanner = ({
             </div>
             <p className={'mt-2 text-xs text-gray-400'}>{toggleHint}</p>
         </div>
+    );
+};
+
+const TransportChoice = ({
+    label,
+    description,
+    active,
+    onSelect,
+    disabled,
+}: {
+    label: string;
+    description: string;
+    active: boolean;
+    onSelect: () => void;
+    disabled: boolean;
+}) => {
+    return (
+        <button
+            type={'button'}
+            onClick={onSelect}
+            disabled={disabled}
+            className={`flex w-full flex-col items-start gap-2 rounded-lg border p-4 text-left transition ${
+                active
+                    ? 'border-blue-500/70 bg-blue-950/40 shadow-md'
+                    : 'border-neutral-700 bg-neutral-900/60 hover:border-neutral-600'
+            } ${disabled ? 'opacity-70' : ''}`}
+        >
+            <div className={'flex items-center gap-2'}>
+                <div
+                    className={`h-3 w-3 rounded-full ${active ? 'bg-blue-400' : 'bg-neutral-600'}`}
+                    aria-hidden
+                />
+                <span className={'text-sm font-semibold text-white'}>{label}</span>
+                {active && (
+                    <span className={'rounded-full bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-100'}>
+                        Active
+                    </span>
+                )}
+            </div>
+            <p className={'text-xs text-gray-400'}>{description}</p>
+        </button>
     );
 };
