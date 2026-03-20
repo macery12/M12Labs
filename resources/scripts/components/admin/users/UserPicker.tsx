@@ -160,7 +160,7 @@ const UserPicker = ({
                 color: theme`colors.neutral.400`,
             }),
         };
-    }, [colors.background]);
+    }, [colors.background, colors.headers]);
 
     return (
         <div className={className}>
