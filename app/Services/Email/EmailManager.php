@@ -11,6 +11,7 @@ use Everest\Exceptions\Service\Email\ResendException;
 use Everest\Services\Email\Transports\EmailTransport;
 use Everest\Services\Email\Transports\ResendTransport;
 use Everest\Services\Email\Transports\SmtpTransport;
+use Everest\Services\Security\SecretEncryptionService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -389,7 +390,7 @@ class EmailManager
      */
     public static function isDeliveryEnabled(): bool
     {
-        $raw = Setting::get('settings::modules:email:enabled', Setting::get('settings::modules:email:resend:enabled', false));
+        $raw = self::getEmailSettingFresh('settings::modules:email:enabled', self::getEmailSettingFresh('settings::modules:email:resend:enabled', false));
 
         if (is_bool($raw)) {
             return $raw;
@@ -408,10 +409,10 @@ class EmailManager
     public static function getTransport(): string
     {
         // Prefer an explicitly selected transport; default to SMTP for first-time setup.
-        $transportSetting = Setting::get('settings::modules:email:transport', null);
+        $transportSetting = self::getEmailSettingFresh('settings::modules:email:transport', null);
         // Backwards compatibility: older installs may have stored without the settings:: prefix.
         if ($transportSetting === null) {
-            $transportSetting = Setting::get('modules:email:transport', null);
+            $transportSetting = self::getEmailSettingFresh('modules:email:transport', null);
         }
 
         $transport = strtolower((string) ($transportSetting ?? 'smtp'));
@@ -441,17 +442,17 @@ class EmailManager
 
         if ($transportName === 'smtp') {
             $config = [
-                'host' => Setting::get('settings::modules:email:smtp:host'),
-                'port' => Setting::get('settings::modules:email:smtp:port'),
-                'username' => Setting::get('settings::modules:email:smtp:username'),
-                'password' => Setting::get('settings::modules:email:smtp:password'),
-                'encryption' => Setting::get('settings::modules:email:smtp:encryption'),
+                'host' => self::getEmailSettingFresh('settings::modules:email:smtp:host'),
+                'port' => self::getEmailSettingFresh('settings::modules:email:smtp:port'),
+                'username' => self::getEmailSettingFresh('settings::modules:email:smtp:username'),
+                'password' => self::getEmailSettingFresh('settings::modules:email:smtp:password'),
+                'encryption' => self::getEmailSettingFresh('settings::modules:email:smtp:encryption'),
             ];
 
-            $from = Setting::get('settings::modules:email:smtp:from_email');
-            $fromName = Setting::get('settings::modules:email:smtp:from_name');
+            $from = self::getEmailSettingFresh('settings::modules:email:smtp:from_email');
+            $fromName = self::getEmailSettingFresh('settings::modules:email:smtp:from_name');
             // Reply-to should stay within the SMTP identity; fall back to the same "from" address
-            $replyTo = Setting::get('settings::modules:email:smtp:reply_to') ?: $from;
+            $replyTo = self::getEmailSettingFresh('settings::modules:email:smtp:reply_to') ?: $from;
 
             $requiredMissing = [];
             if (empty($config['host'])) {
@@ -493,7 +494,7 @@ class EmailManager
         }
 
         // Default to Resend
-        $apiKey = Setting::get('settings::modules:email:resend:api_key');
+        $apiKey = self::getEmailSettingFresh('settings::modules:email:resend:api_key');
         if (empty($apiKey)) {
             return $this->handleConfigFailure(
                 tracker: $tracker,
@@ -503,10 +504,10 @@ class EmailManager
             );
         }
 
-        $from = Setting::get('settings::modules:email:resend:from_email');
-        $fromName = Setting::get('settings::modules:email:resend:from_name');
+        $from = self::getEmailSettingFresh('settings::modules:email:resend:from_email');
+        $fromName = self::getEmailSettingFresh('settings::modules:email:resend:from_name');
         // Keep reply-to aligned with the Resend identity; fall back to the same "from" address
-        $replyTo = Setting::get('settings::modules:email:resend:reply_to') ?: $from;
+        $replyTo = self::getEmailSettingFresh('settings::modules:email:resend:reply_to') ?: $from;
 
         if (empty($from)) {
             return $this->handleConfigFailure(
@@ -616,4 +617,27 @@ class EmailManager
         return in_array($domain, $testDomains, true);
     }
 
+    /**
+     * Read email-related settings directly from the database, bypassing the static cache
+     * to ensure transport/config changes take effect immediately for each send.
+     */
+    private static function getEmailSettingFresh(string $key, mixed $default = null): mixed
+    {
+        /** @var SecretEncryptionService $secrets */
+        $secrets = app(SecretEncryptionService::class);
+        $normalizedKey = $secrets->normalizeKey($key);
+
+        $setting = Setting::query()->where('key', $normalizedKey)->first();
+        if (!$setting) {
+            return value($default);
+        }
+
+        $value = $setting->value;
+
+        if ($secrets->isSecretKey($normalizedKey)) {
+            $value = $secrets->decryptFromStorage($value);
+        }
+
+        return $value;
+    }
 }
