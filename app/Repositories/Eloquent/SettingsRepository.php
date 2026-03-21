@@ -27,6 +27,32 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
     }
 
     /**
+     * Some settings (like email transport/provider configs) need to be read fresh
+     * on every call so long-running workers pick up changes immediately.
+     */
+    private function shouldBypassCache(string $normalizedKey): bool
+    {
+        return str_starts_with($normalizedKey, 'settings::modules:email:');
+    }
+
+    private function fetchValueDirect(string $normalizedKey, mixed $default = null): mixed
+    {
+        /** @var Setting|null $instance */
+        $instance = $this->getBuilder()->where('key', $normalizedKey)->first();
+
+        if (is_null($instance)) {
+            return value($default);
+        }
+
+        $value = $instance->value;
+        if ($this->secrets->isSecretKey($normalizedKey)) {
+            $value = $this->secrets->decryptFromStorage($value);
+        }
+
+        return $value;
+    }
+
+    /**
      * Store a new persistent setting in the database.
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
@@ -58,6 +84,10 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
     {
         $normalizedKey = $this->secrets->normalizeKey($key);
 
+        if ($this->shouldBypassCache($normalizedKey)) {
+            return $this->fetchValueDirect($normalizedKey, $default);
+        }
+
         // If item has already been requested return it from the cache. If
         // we already know it is missing, immediately return the default value.
         if (array_key_exists($normalizedKey, self::$cache)) {
@@ -66,20 +96,15 @@ class SettingsRepository extends EloquentRepository implements SettingsRepositor
             return value($default);
         }
 
-        /** @var Setting $instance */
-        $instance = $this->getBuilder()->where('key', $normalizedKey)->first();
-        if (is_null($instance)) {
+        $value = $this->fetchValueDirect($normalizedKey, $default);
+
+        if ($value === value($default)) {
             self::$databaseMiss[$normalizedKey] = true;
-
-            return value($default);
+        } else {
+            self::$cache[$normalizedKey] = $value;
         }
 
-        $value = $instance->value;
-        if ($this->secrets->isSecretKey($normalizedKey)) {
-            $value = $this->secrets->decryptFromStorage($value);
-        }
-
-        return self::$cache[$normalizedKey] = $value;
+        return $value;
     }
 
     /**
