@@ -10,6 +10,7 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailRedactor;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Email\EmailResult;
 use Everest\Exceptions\Service\Email\ResendException;
@@ -95,17 +96,12 @@ class EmailController extends ApplicationApiController
         }
 
         $activitySettings = $request->all();
-        if (array_key_exists('api_key', $activitySettings)) {
-            $activitySettings['api_key'] = '[REDACTED]';
-        }
+        $activitySettings = EmailRedactor::redactExactKeys($activitySettings, ['api_key', 'smtp_password']);
         if (array_key_exists('clear_api_key', $activitySettings)) {
             $activitySettings['clear_api_key'] = (bool) $activitySettings['clear_api_key'];
         }
         if (array_key_exists('clear_smtp_password', $activitySettings)) {
             $activitySettings['clear_smtp_password'] = (bool) $activitySettings['clear_smtp_password'];
-        }
-        if (array_key_exists('smtp_password', $activitySettings)) {
-            $activitySettings['smtp_password'] = '[REDACTED]';
         }
 
         Activity::event('admin:email:update')
@@ -308,6 +304,8 @@ class EmailController extends ApplicationApiController
                 'provider' => $provider,
                 'message_id' => $result->messageId,
                 'recipient' => $recipient,
+                'status' => $result->status ?? 'sent',
+                'reason' => $result->reason,
             ];
 
             if ($this->isTestAction($action)) {
@@ -325,6 +323,8 @@ class EmailController extends ApplicationApiController
         return response()->json([
             'success' => false,
             'provider' => $provider,
+            'status' => $result->status ?? 'failed',
+            'reason' => $result->reason,
             'error' => [
                 'code' => $this->deriveErrorCode($provider, $result, $action),
                 'status' => $status,

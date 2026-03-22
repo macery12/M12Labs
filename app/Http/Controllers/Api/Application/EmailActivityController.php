@@ -5,18 +5,14 @@ namespace Everest\Http\Controllers\Api\Application;
 use Everest\Models\EmailDelivery;
 use Everest\Models\DeferredEmail;
 use Everest\Models\User;
-use Everest\Services\Email\EmailManager;
-use Everest\Services\Email\EmailDeliveryTracker;
 use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EmailActivityController extends ApplicationApiController
 {
-    public function __construct(
-        private EmailManager $emailManager,
-        private EmailDeliveryTracker $tracker
-    ) {
+    public function __construct()
+    {
         parent::__construct();
     }
 
@@ -124,47 +120,6 @@ class EmailActivityController extends ApplicationApiController
     }
 
     /**
-     * Get debug bundle for a specific delivery.
-     */
-    public function debugBundle(int $id): JsonResponse
-    {
-        $delivery = EmailDelivery::findOrFail($id);
-        $bundle = $this->tracker->generateDebugBundle($delivery);
-
-        return response()->json($bundle);
-    }
-
-    /**
-     * Resend a failed email.
-     */
-    public function resend(int $id): JsonResponse
-    {
-        $delivery = EmailDelivery::findOrFail($id);
-
-        if ($delivery->isSuccessful()) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Cannot resend a successful email',
-            ], 400);
-        }
-
-        try {
-            // Re-dispatch the job using original data
-            // Note: We'd need to store template variables to do this properly
-            // For now, return an error
-            return response()->json([
-                'success' => false,
-                'error' => 'Resend functionality requires template data storage (not yet implemented)',
-            ], 400);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
      * Get deferred email queue.
      */
     public function getDeferredQueue(Request $request): JsonResponse
@@ -231,7 +186,7 @@ class EmailActivityController extends ApplicationApiController
 
             return response()->json([
                 'success' => true,
-                'message' => 'Email scheduled for immediate sending',
+                'message' => 'Email moved to the front of the queue. It will be sent on the next queue run.',
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -268,34 +223,6 @@ class EmailActivityController extends ApplicationApiController
             'success' => true,
             'message' => 'Deferred email cancelled',
         ]);
-    }
-
-    /**
-     * Get aggregated statistics for email activity.
-     */
-    public function getStats(Request $request): JsonResponse
-    {
-        $days = min((int) $request->input('days', 7), 90);
-        $since = now()->subDays($days);
-
-        $stats = [
-            'total_sent' => EmailDelivery::where('created_at', '>=', $since)->count(),
-            'successful' => EmailDelivery::where('created_at', '>=', $since)->where('status', 'sent')->count(),
-            'failed' => EmailDelivery::where('created_at', '>=', $since)->where('status', 'failed')->count(),
-            'by_status' => EmailDelivery::where('created_at', '>=', $since)
-                ->selectRaw('status, COUNT(*) as count')
-                ->groupBy('status')
-                ->pluck('count', 'status'),
-            'by_template' => EmailDelivery::where('created_at', '>=', $since)
-                ->selectRaw('template_key, COUNT(*) as count')
-                ->groupBy('template_key')
-                ->orderByDesc('count')
-                ->limit(10)
-                ->pluck('count', 'template_key'),
-            'deferred_count' => DeferredEmail::whereNull('sent_at')->count(),
-        ];
-
-        return response()->json($stats);
     }
 
     /**

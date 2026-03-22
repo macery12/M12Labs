@@ -211,11 +211,8 @@ Route::middleware([AdminSubject::class])->group(function () {
         
         // Email activity logs
         Route::get('/logs', [Application\EmailActivityController::class, 'index']);
-        Route::get('/logs/stats', [Application\EmailActivityController::class, 'getStats']);
         Route::get('/logs/templates', [Application\EmailActivityController::class, 'getTemplateKeys']);
         Route::get('/logs/{id}', [Application\EmailActivityController::class, 'show']);
-        Route::get('/logs/{id}/debug-bundle', [Application\EmailActivityController::class, 'debugBundle']);
-        Route::post('/logs/{id}/resend', [Application\EmailActivityController::class, 'resend']);
         
         // Deferred email queue
         Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);

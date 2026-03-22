@@ -2,6 +2,7 @@
 
 namespace Everest\Models;
 
+use Everest\Services\Email\EmailRedactor;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -90,23 +91,7 @@ class EmailDeliveryAttempt extends Model
      */
     private function sanitizePayload(array $payload): array
     {
-        $sensitiveKeys = ['api_key', 'token', 'password', 'secret', 'authorization'];
-        
-        foreach ($payload as $key => $value) {
-            foreach ($sensitiveKeys as $sensitive) {
-                if (stripos($key, $sensitive) !== false) {
-                    $payload[$key] = '[REDACTED]';
-                    break;
-                }
-            }
-            
-            // Recursively sanitize nested arrays
-            if (is_array($value)) {
-                $payload[$key] = $this->sanitizePayload($value);
-            }
-        }
-
-        return $payload;
+        return EmailRedactor::redactSensitivePayload($payload, ['api_key', 'token', 'password', 'secret', 'authorization']);
     }
 
     /**

@@ -615,26 +615,7 @@ class EmailManager
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
-        $subjects = [
-            'auth.account_created' => 'Welcome to Your Account',
-            'auth.email_verification' => 'Verify Your Email Address',
-            'auth.password_reset' => 'Reset Your Password',
-            'auth.password_changed' => 'Your Password Has Been Changed',
-            'auth.new_login' => 'New Login Detected',
-            'auth.account_locked' => 'Your Account Has Been Suspended',
-            'auth.account_unsuspended' => 'Your Account Has Been Restored',
-            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server.created' => 'Your Server Has Been Created',
-            'server.suspended' => 'Your Server Has Been Suspended',
-            'server.unsuspended' => 'Your Server Has Been Unsuspended',
-            'server.expiring_soon' => 'Your Server Is Expiring Soon',
-            'billing.payment_received' => 'Payment Received - Thank You',
-            'billing.payment_failed' => 'Payment Failed - Action Required',
-            'billing.server_renewal_notice' => 'Server Renewal Notice - Action Required',
-        ];
-
-        return $subjects[$templateKey] ?? 'Notification';
+        return EmailSubjectResolver::forDelivery($templateKey);
     }
 
     /**

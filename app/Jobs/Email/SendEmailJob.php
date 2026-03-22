@@ -10,6 +10,7 @@ use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Email\EmailTypeRegistry;
 use Everest\Services\Email\EmailDeliveryTracker;
+use Everest\Services\Email\EmailSubjectResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -228,25 +229,7 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
-        $subjects = [
-            'auth.account_created' => 'Welcome to ' . config('app.name'),
-            'auth.account_locked' => 'Your Account Has Been Locked',
-            'auth.account_unsuspended' => 'Your Account Has Been Reactivated',
-            'auth.email_verification' => 'Verify Your Email Address',
-            'auth.password_reset' => 'Reset Your Password',
-            'auth.password_changed' => 'Your Password Has Been Changed',
-            'auth.new_login' => 'New Login Detected',
-            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server.created' => 'Your Server Has Been Created',
-            'server.suspended' => 'Server Suspended',
-            'server.unsuspended' => 'Server Reactivated',
-            'billing.payment_received' => 'Payment Received',
-            'billing.payment_failed' => 'Payment Failed',
-            'billing.server_renewal_notice' => 'Server Renewal Notice',
-        ];
-
-        return $subjects[$templateKey] ?? 'Notification from ' . config('app.name');
+        return EmailSubjectResolver::forTracking($templateKey);
     }
 
     /**
