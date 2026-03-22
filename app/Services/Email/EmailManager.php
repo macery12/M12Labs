@@ -118,6 +118,15 @@ class EmailManager
         $tracker = app(EmailDeliveryTracker::class);
         $transportName = self::getTransport();
 
+        if (!in_array($transportName, ['smtp', 'resend'], true)) {
+            return $this->handleConfigFailure(
+                tracker: $tracker,
+                delivery: $delivery,
+                attemptNumber: $attemptNumber,
+                message: 'Invalid email transport configured: ' . $transportName
+            );
+        }
+
         // If no delivery provided, create one (for direct calls outside job system)
         if (!$delivery) {
             $subject = $this->getSubjectForTemplate($templateKey);

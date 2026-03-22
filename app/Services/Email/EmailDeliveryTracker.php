@@ -233,6 +233,8 @@ class EmailDeliveryTracker
             $updateData['status'] = 'sent';
             $updateData['sent_at'] = $attempt->finished_at;
             $updateData['last_message_id'] = $attempt->provider_message_id;
+            // Keep provider_message_id in sync for legacy consumers that read from the delivery row
+            $updateData['provider_message_id'] = $attempt->provider_message_id;
         } else {
             $updateData['status'] = 'failed';
         }
