@@ -32,6 +32,7 @@ export interface EmailSettingsUpdate {
     enabled?: boolean;
     transport?: EmailTransport;
     api_key?: string;
+    clear_api_key?: boolean;
     from_email?: string;
     from_name?: string;
     reply_to?: string;

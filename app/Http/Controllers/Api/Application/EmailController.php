@@ -78,13 +78,23 @@ class EmailController extends ApplicationApiController
      */
     public function updateSettings(UpdateEmailSettingsRequest $request): JsonResponse
     {
+        $shouldClearApiKey = $request->boolean('clear_api_key');
+
         foreach ($request->normalize() as $key => $value) {
+            // Avoid overwriting an existing key with empty string unless explicitly clearing.
+            if ($key === 'modules:email:resend:api_key' && empty($value) && !$shouldClearApiKey) {
+                continue;
+            }
+
             Setting::set('settings::' . $key, $value);
         }
 
         $activitySettings = $request->all();
         if (array_key_exists('api_key', $activitySettings)) {
             $activitySettings['api_key'] = '[REDACTED]';
+        }
+        if (array_key_exists('clear_api_key', $activitySettings)) {
+            $activitySettings['clear_api_key'] = (bool) $activitySettings['clear_api_key'];
         }
         if (array_key_exists('smtp_password', $activitySettings)) {
             $activitySettings['smtp_password'] = '[REDACTED]';

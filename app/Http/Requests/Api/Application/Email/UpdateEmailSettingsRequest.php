@@ -13,6 +13,7 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             'enabled' => 'boolean',
             'transport' => 'nullable|in:resend,smtp',
             'api_key' => 'nullable|string|max:255',
+            'clear_api_key' => 'boolean',
             'from_email' => 'nullable|email|max:255',
             'from_name' => 'nullable|string|max:255',
             'reply_to' => 'nullable|email|max:255',
@@ -56,7 +57,10 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
         }
 
         // Resend fields
-        if ($this->has('api_key')) {
+        $shouldClearApiKey = $this->boolean('clear_api_key');
+        if ($shouldClearApiKey) {
+            $data['modules:email:resend:api_key'] = '';
+        } elseif ($this->has('api_key')) {
             $data['modules:email:resend:api_key'] = $this->input('api_key', '');
         }
 

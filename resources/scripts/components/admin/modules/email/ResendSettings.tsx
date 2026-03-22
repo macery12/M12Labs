@@ -44,7 +44,6 @@ export default () => {
     const [savingTransport, setSavingTransport] = useState(false);
     const [showInactiveResend, setShowInactiveResend] = useState(false);
     const [showInactiveSmtp, setShowInactiveSmtp] = useState(false);
-    const [clearApiKey, setClearApiKey] = useState(false);
     const [clearSmtpPassword, setClearSmtpPassword] = useState(false);
 
     useEffect(() => {
@@ -78,8 +77,7 @@ export default () => {
         ? fromEmail !== (settings.resend.from_email || '') ||
           fromName !== (settings.resend.from_name || '') ||
           replyTo !== (settings.resend.reply_to || '') ||
-          apiKey.trim().length > 0 ||
-          clearApiKey
+          apiKey.trim().length > 0
         : false;
 
     const normalizedSettingsPort = (settings?.smtp.port || '').toString();
@@ -124,14 +122,6 @@ export default () => {
         saveEnabledStatus(newEnabled);
     };
 
-    const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setApiKey(value);
-        if (value.trim().length > 0) {
-            setClearApiKey(false);
-        }
-    };
-
     const handleSaveResend = () => {
         clearFlashes();
         setStatus('processing');
@@ -142,8 +132,8 @@ export default () => {
             reply_to: replyTo,
         };
 
-        if (apiKey.trim().length > 0 || clearApiKey) {
-            payload.api_key = clearApiKey ? '' : apiKey.trim();
+        if (apiKey.trim().length > 0) {
+            payload.api_key = apiKey.trim();
             setSavingApiKey(true);
         }
 
@@ -155,7 +145,6 @@ export default () => {
                 setFromName(updatedSettings.resend.from_name || '');
                 setReplyTo(updatedSettings.resend.reply_to || '');
                 setApiKey('');
-                setClearApiKey(false);
                 setSavingApiKey(false);
 
                 addFlash({
@@ -169,6 +158,33 @@ export default () => {
                 setSavingApiKey(false);
                 clearAndAddHttpError({ key: 'email:settings:resend', error });
             });
+    };
+
+    const handleClearApiKey = () => {
+        if (savingApiKey || !settings?.resend.api_key) {
+            return;
+        }
+
+        clearFlashes();
+        setSavingApiKey(true);
+        setStatus('processing');
+
+        updateSettings({ api_key: '', clear_api_key: true })
+            .then((updatedSettings) => {
+                setStatus('success');
+                setSettings(updatedSettings);
+                setApiKey('');
+                addFlash({
+                    key: 'email:settings:resend',
+                    type: 'success',
+                    message: 'Resend API key cleared',
+                });
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:resend', error });
+            })
+            .finally(() => setSavingApiKey(false));
     };
 
     const handleSaveSmtp = () => {
@@ -330,7 +346,7 @@ export default () => {
                         <div className={'space-y-1'}>
                             <Label>API Key</Label>
                             <p className={'text-sm text-gray-400'}>
-                                Enter a key then click “Save Resend Settings”. Check “Clear saved key” to remove it.
+                                Enter a key then click “Save Resend Settings.” Use the clear button to remove a saved key.
                             </p>
                         </div>
                         <div className={'flex items-center gap-2'}>
@@ -346,7 +362,7 @@ export default () => {
                     <Input
                         type={'password'}
                         value={apiKey}
-                        onChange={handleApiKeyChange}
+                        onChange={(e) => setApiKey(e.target.value)}
                         disabled={savingApiKey || !enabled}
                         placeholder={
                             settings?.resend.api_key
@@ -366,15 +382,16 @@ export default () => {
                                 resend.com/api-keys
                             </a>
                         </p>
-                        <label className={'flex items-center gap-2 text-sm text-gray-300'}>
-                            <input
-                                type='checkbox'
-                                checked={clearApiKey}
-                                onChange={(e) => setClearApiKey(e.target.checked)}
-                                disabled={!enabled}
-                            />
-                            Clear saved key
-                        </label>
+                        <div className={'flex items-center gap-3'}>
+                            <Button.Danger
+                                size={Button.Sizes.Small}
+                                onClick={handleClearApiKey}
+                                disabled={!enabled || !settings?.resend.api_key}
+                                loading={savingApiKey}
+                            >
+                                Clear saved key
+                            </Button.Danger>
+                        </div>
                     </div>
                 </Card>
 
