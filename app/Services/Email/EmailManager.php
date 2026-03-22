@@ -8,6 +8,8 @@ use Everest\Models\EmailDelivery;
 use Everest\Services\Email\Emails\BaseEmail;
 use Everest\Services\Email\Emails\CustomMessageEmail;
 use Everest\Exceptions\Service\Email\ResendException;
+use Everest\Exceptions\Service\Email\ResendAuthenticationException;
+use Everest\Exceptions\Service\Email\ResendValidationException;
 use Everest\Services\Email\Transports\EmailTransport;
 use Everest\Services\Email\Transports\ResendTransport;
 use Everest\Services\Email\Transports\SmtpTransport;
@@ -329,6 +331,8 @@ class EmailManager
 
             return $result;
         } catch (\Exception $e) {
+            $retryable = !($e instanceof ResendAuthenticationException || $e instanceof ResendValidationException);
+
             // Exception during send - update attempt if it was created
             if ($attempt) {
                 try {
@@ -338,7 +342,7 @@ class EmailManager
                         statusCode: method_exists($e, 'getCode') ? $e->getCode() : 0,
                         exception: $e,
                         responsePayload: null,
-                        retryable: true
+                        retryable: $retryable
                     );
                 } catch (\Exception $logException) {
                     Log::warning('Failed to update attempt exception', [
@@ -348,7 +352,7 @@ class EmailManager
                 }
             }
 
-            return EmailResult::failure($e->getMessage(), $e->getCode());
+            return EmailResult::failure($e->getMessage(), $e->getCode(), $retryable);
         }
     }
 
