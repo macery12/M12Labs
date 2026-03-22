@@ -199,7 +199,6 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/test-smtp', [Application\EmailController::class, 'testSmtpConnection']);
         Route::post('/test-resend', [Application\EmailController::class, 'testResendConnection']);
         Route::post('/test', [Application\EmailController::class, 'sendTest']);
-        Route::post('/send', [Application\EmailController::class, 'sendCustom']);
         
         // Email notification settings
         Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);

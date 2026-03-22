@@ -53,13 +53,6 @@ export interface SendTestEmailRequest {
     to: string;
 }
 
-export interface SendCustomEmailRequest {
-    to: string;
-    subject: string;
-    html: string;
-    text?: string;
-}
-
 export interface EmailError {
     code: string;
     status: number;
@@ -126,14 +119,6 @@ export const testResendConnection = (): Promise<EmailResponse> => {
 export const sendTestEmail = (data: SendTestEmailRequest): Promise<EmailResponse> => {
     return new Promise((resolve, reject) => {
         http.post<EmailResponse>(`/api/application/email/test`, data)
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
-
-export const sendCustomEmail = (data: SendCustomEmailRequest): Promise<EmailResponse> => {
-    return new Promise((resolve, reject) => {
-        http.post<EmailResponse>(`/api/application/email/send`, data)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

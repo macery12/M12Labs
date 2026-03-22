@@ -15,7 +15,6 @@ use Everest\Services\Email\EmailResult;
 use Everest\Exceptions\Service\Email\ResendException;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailSettingsRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateVerificationRulesRequest;
-use Everest\Http\Requests\Api\Application\Email\SendCustomEmailRequest;
 use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
 use Everest\Http\Requests\Api\Application\Email\TestEmailConnectionRequest;
 
@@ -163,32 +162,6 @@ class EmailController extends ApplicationApiController
         $result = $this->emailManager->testTransport('resend');
 
         return $this->formatEmailResult($result, 'resend', 'connection_test');
-    }
-
-    /**
-     * Send a custom email.
-     */
-    public function sendCustom(SendCustomEmailRequest $request): JsonResponse
-    {
-        try {
-            $result = $this->emailManager->sendCustom(
-                to: $request->input('to'),
-                subject: $request->input('subject'),
-                html: $request->input('html'),
-                text: $request->input('text')
-            );
-
-            Activity::event('admin:email:custom')
-                ->property('to', $request->input('to'))
-                ->property('subject', $request->input('subject'))
-                ->property('message_id', $result->messageId)
-                ->description($result->success ? 'Custom email sent successfully' : 'Custom email failed')
-                ->log();
-
-            return $this->formatEmailResult($result, EmailManager::getTransport(), 'custom_send', $request->input('to'));
-        } catch (ResendException $e) {
-            return $this->formatExceptionError($e, EmailManager::getTransport());
-        }
     }
 
     /**

@@ -57,7 +57,7 @@ type TestResult = {
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, addFlash, clearAndAddHttpError } = useFlash();
-    const { primary, secondary } = useStoreState((state) => state.theme.data!.colors);
+    const { primary, secondary, headers } = useStoreState((state) => state.theme.data!.colors);
 
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
     const [loading, setLoading] = useState(true);
@@ -421,59 +421,65 @@ export default () => {
                 {activeTab === 'overview' && (
                     <div className={'space-y-4'}>
                         <div className={'grid grid-cols-1 gap-4 lg:grid-cols-3'}>
-                        <Card>
-                            <div className={'flex items-center justify-between'}>
-                                <div className={'space-y-1'}>
-                                    <Label>Email system</Label>
-                                    <p className={'text-sm text-gray-400'}>Toggle delivery for all providers.</p>
+                            <Card className={'h-full'}>
+                                <div className={'flex h-full flex-col justify-between gap-3'}>
+                                    <div className={'flex items-center justify-between'}>
+                                        <div className={'space-y-1'}>
+                                            <Label>Email system</Label>
+                                            <p className={'text-sm text-gray-400'}>Toggle delivery for all providers.</p>
+                                        </div>
+                                        <div className={'flex items-center gap-2'}>
+                                            <StatusBadge status={enabled ? 'success' : 'warning'} />
+                                            {(enabled ? Button.Danger : Button.Success)({
+                                                children: enabled ? 'Disable' : 'Enable',
+                                                onClick: () => setEnabled((v) => !v),
+                                                disabled: saving,
+                                            })}
+                                        </div>
+                                    </div>
+                                    <p className={'text-xs text-gray-500'}>Changes apply when you save.</p>
                                 </div>
-                                <div className={'flex items-center gap-2'}>
-                                    <StatusBadge status={enabled ? 'success' : 'warning'} />
-                                    {(enabled ? Button.Danger : Button.Success)({
-                                        children: enabled ? 'Disable' : 'Enable',
-                                        onClick: () => setEnabled((v) => !v),
-                                        disabled: saving,
-                                    })}
-                                </div>
-                            </div>
-                            <p className={'mt-2 text-xs text-gray-500'}>Changes apply when you save.</p>
-                        </Card>
+                            </Card>
 
-                            <Card>
-                                <div className={'space-y-2'}>
-                                    <Label>Active provider</Label>
-                                    <div className={'grid grid-cols-2 gap-2'}>
-                                        <ProviderPill
-                                            label={'SMTP'}
-                                            active={transport === 'smtp'}
-                                            onClick={() => handleTransportChange('smtp')}
-                                            primary={primary}
-                                        />
-                                        <ProviderPill
-                                            label={'Resend'}
-                                            active={transport === 'resend'}
-                                            onClick={() => handleTransportChange('resend')}
-                                            primary={primary}
-                                        />
+                            <Card className={'h-full'}>
+                                <div className={'flex h-full flex-col justify-between gap-3'}>
+                                    <div className={'space-y-2'}>
+                                        <Label>Active provider</Label>
+                                        <div className={'grid grid-cols-2 gap-2'}>
+                                            <ProviderPill
+                                                label={'SMTP'}
+                                                active={transport === 'smtp'}
+                                                onClick={() => handleTransportChange('smtp')}
+                                                primary={primary}
+                                            />
+                                            <ProviderPill
+                                                label={'Resend'}
+                                                active={transport === 'resend'}
+                                                onClick={() => handleTransportChange('resend')}
+                                                primary={primary}
+                                            />
+                                        </div>
                                     </div>
                                     <p className={'text-xs text-gray-500'}>
-                                        Switching providers does not remove any saved configuration.
+                                        Switching providers preserves your saved configuration.
                                     </p>
                                 </div>
                             </Card>
 
-                            <Card>
-                                <div className={'flex items-center justify-between'}>
-                                    <div>
-                                        <Label>Current status</Label>
-                                        <p className={'text-sm text-gray-300'}>{currentStatus}</p>
+                            <Card className={'h-full'}>
+                                <div className={'flex h-full flex-col justify-between gap-3'}>
+                                    <div className={'flex items-start justify-between'}>
+                                        <div>
+                                            <Label>Current status</Label>
+                                            <p className={'text-sm text-gray-300'}>{currentStatus}</p>
+                                        </div>
+                                        <StatusBadge status={currentStatus === 'Ready' ? 'success' : 'warning'} />
                                     </div>
-                                <StatusBadge status={currentStatus === 'Ready' ? 'success' : 'warning'} />
-                            </div>
-                            <div className={'mt-3 text-xs text-gray-500'}>
-                                {lastSuccess
-                                    ? `Last successful test: ${new Date(lastSuccess.tested_at).toLocaleString()}`
-                                    : 'No successful tests yet.'}
+                                    <div className={'text-xs text-gray-500'}>
+                                        {lastSuccess
+                                            ? `Last successful test: ${new Date(lastSuccess.tested_at).toLocaleString()}`
+                                            : 'No successful tests yet.'}
+                                    </div>
                                 </div>
                             </Card>
                         </div>
@@ -481,7 +487,7 @@ export default () => {
                         <Card>
                             <div className={'space-y-3'}>
                                 <Label>Global sender identity</Label>
-                                <div className={'grid grid-cols-1 gap-4 sm:grid-cols-3'}>
+                                <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
                                     <div className={'space-y-1'}>
                                         <Label>From Name</Label>
                                         <Input
@@ -517,9 +523,6 @@ export default () => {
                                         />
                                     </div>
                                 </div>
-                                <p className={'text-xs text-gray-500'}>
-                                    These values are applied to both providers to keep identities consistent.
-                                </p>
                             </div>
                         </Card>
 
@@ -531,7 +534,6 @@ export default () => {
                                 lastTest={testResults.smtp}
                                 onTest={() => handleTestProvider('smtp')}
                                 testing={testingProvider === 'smtp'}
-                                secondary={secondary}
                             />
                             <StatusCard
                                 title={'Resend'}
@@ -540,7 +542,6 @@ export default () => {
                                 lastTest={testResults.resend}
                                 onTest={() => handleTestProvider('resend')}
                                 testing={testingProvider === 'resend'}
-                                secondary={secondary}
                             />
                         </div>
                     </div>
@@ -624,14 +625,10 @@ export default () => {
                                         Password set: {smtpPasswordSet ? 'Yes' : 'No'}
                                     </p>
                                 </div>
-                                <Button.Dark
-                                    onClick={() => handleTestProvider('smtp')}
-                                    loading={testingProvider === 'smtp'}
-                                    className={'border border-primary-500/50'}
-                                    style={{ borderColor: primary }}
-                                >
+                                <Button onClick={() => handleTestProvider('smtp')} loading={testingProvider === 'smtp'} size={Button.Sizes.Small}>
+                                    <FontAwesomeIcon icon={faVial} className={'mr-1'} />
                                     Test SMTP Connection
-                                </Button.Dark>
+                                </Button>
                             </div>
                             {testResults.smtp && (
                                 <ResultBanner result={testResults.smtp} />
@@ -694,14 +691,10 @@ export default () => {
                                         API key set: {resendKeySet ? 'Yes' : 'No'}
                                     </p>
                                 </div>
-                                <Button.Dark
-                                    onClick={() => handleTestProvider('resend')}
-                                    loading={testingProvider === 'resend'}
-                                    className={'border border-primary-500/50'}
-                                    style={{ borderColor: primary }}
-                                >
+                                <Button onClick={() => handleTestProvider('resend')} loading={testingProvider === 'resend'} size={Button.Sizes.Small}>
+                                    <FontAwesomeIcon icon={faVial} className={'mr-1'} />
                                     Test Resend Connection
-                                </Button.Dark>
+                                </Button>
                             </div>
                             {testResults.resend && <ResultBanner result={testResults.resend} />}
                         </Card>
@@ -747,17 +740,17 @@ export default () => {
                     </div>
                 )}
 
-                <div className={'flex flex-col gap-3 rounded-lg border border-neutral-700 bg-neutral-900/60 p-4 sm:flex-row sm:items-center sm:justify-between'}>
-                    <div>
-                        <p className={'text-sm font-semibold text-white'}>Save all changes</p>
-                        <p className={'text-xs text-gray-400'}>
-                            Applies to all tabs. Passwords and API keys are preserved when left blank.
-                        </p>
-                    </div>
+                <div
+                    className={
+                        'flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between'
+                    }
+                    style={{ backgroundColor: secondary, borderColor: withAlpha(headers, 0.4) }}
+                >
+                    <p className={'text-sm font-semibold text-white'}>Save Settings</p>
                     <div className={'flex items-center gap-3'}>
-                        {!hasChanges && <span className={'text-xs text-gray-500'}>No changes to save</span>}
+                        {!hasChanges && <span className={'text-xs text-gray-400'}>No changes to save</span>}
                         <Button onClick={handleSave} disabled={!hasChanges || saving} loading={saving}>
-                            Save Settings
+                            Save
                         </Button>
                     </div>
                 </div>
@@ -800,9 +793,17 @@ const TabList = ({ active, onSelect, primary }: { active: TabKey; onSelect: (tab
     );
 };
 
-const Card = ({ children }: { children: ReactNode }) => (
-    <div className={'rounded-lg border border-neutral-700 bg-neutral-900/60 p-4'}>{children}</div>
-);
+const Card = ({ children, className }: { children: ReactNode; className?: string }) => {
+    const { headers, secondary } = useStoreState((state) => state.theme.data!.colors);
+    return (
+        <div
+            className={`rounded-lg border p-4 ${className ?? ''}`}
+            style={{ backgroundColor: secondary, borderColor: withAlpha(headers, 0.4) }}
+        >
+            {children}
+        </div>
+    );
+};
 
 const ProviderPill = ({ label, active, onClick, primary }: { label: string; active: boolean; onClick: () => void; primary: string }) => (
     <button
@@ -868,7 +869,6 @@ const StatusCard = ({
     lastTest,
     onTest,
     testing,
-    secondary,
 }: {
     title: string;
     active: boolean;
@@ -876,43 +876,46 @@ const StatusCard = ({
     lastTest?: TestResult;
     onTest: () => void;
     testing: boolean;
-    secondary: string;
-}) => (
-    <div className={'space-y-3 rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: secondary }}>
-        <div className={'flex items-center justify-between'}>
-            <div>
-                <h3 className={'text-lg font-semibold text-white'}>{title}</h3>
-                <p className={'text-sm text-gray-300'}>
-                    {active ? 'Active provider' : 'Inactive provider (fields stay visible)'}
-                </p>
-            </div>
-            <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    active ? 'bg-green-900 text-green-100' : 'bg-neutral-800 text-gray-300'
-                }`}
-            >
-                {configured ? 'Configured' : 'Incomplete'}
-            </span>
-        </div>
-        <div className={'flex flex-col gap-2 text-sm text-gray-400'}>
-            <div className={'flex items-center gap-2'}>
-                <FontAwesomeIcon icon={configured ? faCheckCircle : faExclamationTriangle} />
-                {configured ? 'Required fields present' : 'Missing required fields'}
-            </div>
-            {lastTest && (
-                <div className={'text-xs text-gray-300'}>
-                    Last test: {lastTest.status === 'success' ? 'Success' : 'Failure'} (
-                    {new Date(lastTest.tested_at).toLocaleString()})
+}) => {
+    const { headers, secondary } = useStoreState((state) => state.theme.data!.colors);
+
+    const badge = (label: string, tone: 'success' | 'warning' | 'neutral') => {
+        const map = {
+            success: 'bg-green-900 text-green-100',
+            warning: 'bg-amber-900 text-amber-100',
+            neutral: 'bg-neutral-800 text-gray-200',
+        } as const;
+        return <span className={`rounded-full px-3 py-1 text-xs font-semibold ${map[tone]}`}>{label}</span>;
+    };
+
+    return (
+        <div
+            className={'flex h-full flex-col gap-3 rounded-lg border p-4'}
+            style={{ backgroundColor: secondary, borderColor: withAlpha(headers, 0.4) }}
+        >
+            <div className={'flex flex-wrap items-center justify-between gap-3'}>
+                <div className={'space-y-1'}>
+                    <h3 className={'text-lg font-semibold text-white'}>{title}</h3>
+                    <div className={'flex flex-wrap gap-2 text-sm text-gray-300'}>
+                        {badge(active ? 'Active' : 'Inactive', active ? 'success' : 'warning')}
+                        {badge(configured ? 'Configured' : 'Incomplete', configured ? 'success' : 'warning')}
+                    </div>
                 </div>
-            )}
+                <Button onClick={onTest} loading={testing} size={Button.Sizes.Small}>
+                    <FontAwesomeIcon icon={faVial} className={'mr-1'} />
+                    Test
+                </Button>
+            </div>
+            <div className={'text-sm text-gray-300'}>
+                {lastTest
+                    ? `${lastTest.status === 'success' ? 'Last success' : 'Last failure'} • ${new Date(
+                          lastTest.tested_at,
+                      ).toLocaleString()}`
+                    : 'No tests yet'}
+            </div>
         </div>
-        <div className={'flex justify-end'}>
-            <Button.Dark onClick={onTest} loading={testing}>
-                Test Connection
-            </Button.Dark>
-        </div>
-    </div>
-);
+    );
+};
 
 const ResultBanner = ({ result }: { result: TestResult }) => (
     <div
