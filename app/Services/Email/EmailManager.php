@@ -468,7 +468,7 @@ class EmailManager
             }
 
             if (!empty($config['username']) && ($config['password'] === null || $config['password'] === '')) {
-                $requiredMissing[] = 'password (required when username is set)';
+                $requiredMissing[] = 'password (set in Admin → Email → SMTP password)';
             }
 
             if (!empty($requiredMissing)) {
