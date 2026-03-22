@@ -17,7 +17,6 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             'from_email' => 'nullable|email|max:255',
             'from_name' => 'nullable|string|max:255',
             'reply_to' => 'nullable|email|max:255',
-            'resend_domain' => 'nullable|string|max:255',
             'smtp_host' => 'nullable|string|max:255',
             'smtp_port' => 'nullable|numeric',
             'smtp_username' => 'nullable|string|max:255',
@@ -76,10 +75,6 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
 
         if ($this->has('reply_to')) {
             $data['modules:email:resend:reply_to'] = $this->input('reply_to', '');
-        }
-
-        if ($this->has('resend_domain')) {
-            $data['modules:email:resend:domain'] = $this->input('resend_domain', '');
         }
 
         // SMTP fields

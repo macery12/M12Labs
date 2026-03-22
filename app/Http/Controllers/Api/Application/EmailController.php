@@ -41,7 +41,6 @@ class EmailController extends ApplicationApiController
                 'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
                 'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
                 'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
-                'domain' => Setting::get('settings::modules:email:resend:domain', ''),
             ],
             'smtp' => [
                 'host' => Setting::get('settings::modules:email:smtp:host', ''),
