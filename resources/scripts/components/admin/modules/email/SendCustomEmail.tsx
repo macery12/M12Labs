@@ -47,10 +47,15 @@ export default () => {
                     setText('');
                     setIsOpen(false);
                 } else {
+                    const errorMessage =
+                        typeof response.error === 'string'
+                            ? response.error
+                            : response.error?.message || 'Failed to send email';
+
                     addFlash({
                         key: 'email:custom',
                         type: 'danger',
-                        message: response.error || 'Failed to send email',
+                        message: errorMessage,
                     });
                 }
             })

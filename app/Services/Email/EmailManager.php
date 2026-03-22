@@ -199,7 +199,7 @@ class EmailManager
             ]);
 
             $tracker->markSkipped($delivery, 'Email sending is disabled');
-            return EmailResult::success('disabled');
+            return EmailResult::skipped('disabled');
         }
 
         $transportResolution = $this->resolveTransportConfig($tracker, $delivery, $attemptNumber);
@@ -439,6 +439,42 @@ class EmailManager
     }
 
     /**
+     * Validate and attempt a connection for a specific transport using the configured settings.
+     */
+    public function testTransport(string $transport): EmailResult
+    {
+        $normalized = strtolower($transport);
+        if (!in_array($normalized, ['smtp', 'resend'], true)) {
+            return EmailResult::failure('Unsupported transport: ' . $transport, 400, false);
+        }
+
+        $resolution = $this->resolveTransportConfig(
+            tracker: null,
+            delivery: null,
+            attemptNumber: 1,
+            forcedTransport: $normalized
+        );
+
+        if ($resolution instanceof EmailResult) {
+            return $resolution;
+        }
+
+        [$transportInstance, $from, $fromName, $replyTo] = $resolution;
+
+        $message = new EmailMessage(
+            to: $from,
+            subject: 'Email connection test',
+            html: '<p>Email connection test successful.</p>',
+            text: 'Email connection test successful.',
+            from: $from,
+            fromName: $fromName,
+            replyTo: $replyTo
+        );
+
+        return $transportInstance->send($message);
+    }
+
+    /**
      * Resolve the configured transport and validate configuration.
      *
      * @return array{0: EmailTransport, 1: string, 2: string|null, 3: string|null}|EmailResult
@@ -446,9 +482,10 @@ class EmailManager
     private function resolveTransportConfig(
         ?EmailDeliveryTracker $tracker = null,
         ?EmailDelivery $delivery = null,
-        int $attemptNumber = 1
+        int $attemptNumber = 1,
+        ?string $forcedTransport = null
     ): EmailResult|array {
-        $transportName = self::getTransport();
+        $transportName = $forcedTransport ?? self::getTransport();
 
         if ($delivery && $delivery->provider !== $transportName) {
             $delivery->provider = $transportName;
@@ -570,7 +607,7 @@ class EmailManager
             $tracker->finishAttemptFailure($attempt, $message, 0, null, null, false);
         }
 
-        return EmailResult::failure($message, null, false);
+        return EmailResult::failure($message, 422, false);
     }
 
     /**

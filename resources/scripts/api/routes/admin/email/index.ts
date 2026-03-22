@@ -8,6 +8,7 @@ export interface ResendSettings {
     from_email: string;
     from_name: string;
     reply_to: string;
+    domain?: string;
 }
 
 export interface SmtpSettings {
@@ -33,6 +34,7 @@ export interface EmailSettingsUpdate {
     transport?: EmailTransport;
     api_key?: string;
     clear_api_key?: boolean;
+    resend_domain?: string;
     from_email?: string;
     from_name?: string;
     reply_to?: string;
@@ -58,10 +60,19 @@ export interface SendCustomEmailRequest {
     text?: string;
 }
 
+export interface EmailError {
+    code: string;
+    status: number;
+    message: string;
+}
+
 export interface EmailResponse {
     success: boolean;
     message_id?: string;
-    error?: string;
+    provider?: EmailTransport;
+    tested_at?: string;
+    recipient?: string;
+    error?: EmailError | string;
 }
 
 export const getSettings = (): Promise<EmailSettings> => {
@@ -91,6 +102,22 @@ export const getVerificationRules = (): Promise<VerificationRules> => {
 export const updateVerificationRules = (rules: VerificationRules): Promise<VerificationRules> => {
     return new Promise((resolve, reject) => {
         http.put<VerificationRules>(`/api/application/email/verification-rules`, rules)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const testSmtpConnection = (): Promise<EmailResponse> => {
+    return new Promise((resolve, reject) => {
+        http.post<EmailResponse>(`/api/application/email/test-smtp`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const testResendConnection = (): Promise<EmailResponse> => {
+    return new Promise((resolve, reject) => {
+        http.post<EmailResponse>(`/api/application/email/test-resend`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

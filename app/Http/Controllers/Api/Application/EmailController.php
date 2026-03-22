@@ -11,11 +11,13 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Email\EmailVerificationGate;
+use Everest\Services\Email\EmailResult;
 use Everest\Exceptions\Service\Email\ResendException;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailSettingsRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateVerificationRulesRequest;
 use Everest\Http\Requests\Api\Application\Email\SendCustomEmailRequest;
 use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
+use Everest\Http\Requests\Api\Application\Email\TestEmailConnectionRequest;
 
 class EmailController extends ApplicationApiController
 {
@@ -40,6 +42,7 @@ class EmailController extends ApplicationApiController
                 'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
                 'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
                 'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
+                'domain' => Setting::get('settings::modules:email:resend:domain', ''),
             ],
             'smtp' => [
                 'host' => Setting::get('settings::modules:email:smtp:host', ''),
@@ -121,43 +124,45 @@ class EmailController extends ApplicationApiController
      */
     public function sendTest(SendTestEmailRequest $request): JsonResponse
     {
+        $recipient = $request->input('to');
+
         try {
             $result = $this->emailManager->sendCustom(
-                to: $request->input('to'),
+                to: $recipient,
                 subject: 'Test Email',
                 html: '<h1>Test Email</h1><p>This is a test email from the email system. If you received this, your email configuration is working correctly!</p>'
             );
 
-            if (!$result->success) {
-                $error = $result->error
-                    ?? $result->reason
-                    ?? 'Failed to send test email. Please verify your email module configuration.';
-
-                $statusCode = $result->statusCode
-                    ?? (($result->status === 'skipped' || str_contains(strtolower($error), 'disabled')) ? 422 : 500);
-
-                return response()->json([
-                    'success' => false,
-                    'error' => $error,
-                ], $statusCode);
-            }
-
             Activity::event('admin:email:test')
-                ->property('to', $request->input('to'))
+                ->property('to', $recipient)
                 ->property('message_id', $result->messageId)
-                ->description('Test email sent successfully')
+                ->description($result->success ? 'Test email sent successfully' : 'Test email failed')
                 ->log();
 
-            return response()->json([
-                'success' => true,
-                'message_id' => $result->messageId,
-            ]);
+            return $this->formatEmailResult($result, EmailManager::getTransport(), 'send_test', $recipient);
         } catch (ResendException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->formatExceptionError($e, EmailManager::getTransport());
         }
+    }
+
+    /**
+     * Test SMTP connectivity without sending user-facing notifications.
+     */
+    public function testSmtpConnection(TestEmailConnectionRequest $request): JsonResponse
+    {
+        $result = $this->emailManager->testTransport('smtp');
+
+        return $this->formatEmailResult($result, 'smtp', 'connection_test');
+    }
+
+    /**
+     * Test Resend connectivity without sending user-facing notifications.
+     */
+    public function testResendConnection(TestEmailConnectionRequest $request): JsonResponse
+    {
+        $result = $this->emailManager->testTransport('resend');
+
+        return $this->formatEmailResult($result, 'resend', 'connection_test');
     }
 
     /**
@@ -173,36 +178,16 @@ class EmailController extends ApplicationApiController
                 text: $request->input('text')
             );
 
-            if (!$result->success) {
-                $error = $result->error
-                    ?? $result->reason
-                    ?? 'Failed to send custom email. Please verify your email module configuration.';
-
-                $statusCode = $result->statusCode
-                    ?? (($result->status === 'skipped' || str_contains(strtolower($error), 'disabled')) ? 422 : 500);
-
-                return response()->json([
-                    'success' => false,
-                    'error' => $error,
-                ], $statusCode);
-            }
-
             Activity::event('admin:email:custom')
                 ->property('to', $request->input('to'))
                 ->property('subject', $request->input('subject'))
                 ->property('message_id', $result->messageId)
-                ->description('Custom email sent successfully')
+                ->description($result->success ? 'Custom email sent successfully' : 'Custom email failed')
                 ->log();
 
-            return response()->json([
-                'success' => true,
-                'message_id' => $result->messageId,
-            ]);
+            return $this->formatEmailResult($result, EmailManager::getTransport(), 'custom_send', $request->input('to'));
         } catch (ResendException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->formatExceptionError($e, EmailManager::getTransport());
         }
     }
 
@@ -338,5 +323,81 @@ class EmailController extends ApplicationApiController
             'success' => true,
             'quota' => $quota,
         ]);
+    }
+
+    /**
+     * Normalize an EmailResult into a structured JSON response.
+     */
+    private function formatEmailResult(EmailResult $result, string $provider, string $action, ?string $recipient = null): JsonResponse
+    {
+        if ($result->success) {
+            $payload = [
+                'success' => true,
+                'provider' => $provider,
+                'message_id' => $result->messageId,
+                'recipient' => $recipient,
+            ];
+
+            if ($this->isTestAction($action)) {
+                $payload['tested_at'] = now()->toIso8601String();
+            }
+            if ($this->isSendAction($action)) {
+                $payload['sent_at'] = now()->toIso8601String();
+            }
+
+            return response()->json($payload);
+        }
+
+        $status = $result->statusCode ?? ($result->status === 'skipped' ? 422 : 500);
+
+        return response()->json([
+            'success' => false,
+            'provider' => $provider,
+            'error' => [
+                'code' => $this->deriveErrorCode($provider, $result, $action),
+                'status' => $status,
+                'message' => $result->error ?? $result->reason ?? 'Email action failed',
+            ],
+        ], $status);
+    }
+
+    private function formatExceptionError(\Throwable $e, string $provider): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'provider' => $provider,
+            'error' => [
+                'code' => strtoupper($provider) . '_UNEXPECTED_ERROR',
+                'status' => 500,
+                'message' => $e->getMessage(),
+            ],
+        ], 500);
+    }
+
+    private function deriveErrorCode(string $provider, EmailResult $result, string $action): string
+    {
+        if ($result->status === 'skipped' || $result->reason === 'disabled') {
+            return 'EMAIL_DISABLED';
+        }
+
+        if ($result->retryable === false) {
+            return strtoupper($provider) . '_CONFIG_INVALID';
+        }
+
+        if ($result->statusCode && $result->statusCode >= 400 && $result->statusCode < 500) {
+            return strtoupper($provider) . '_AUTH_FAILED';
+        }
+
+        return strtoupper($provider) . '_' . strtoupper($action) . '_FAILED';
+    }
+
+    private function isTestAction(string $action): bool
+    {
+        return in_array($action, ['send_test', 'connection_test'], true);
+    }
+
+    private function isSendAction(string $action): bool
+    {
+        return in_array($action, ['custom_send'], true);
     }
 }
