@@ -76,6 +76,22 @@ class EmailDeliveryTracker
     }
 
     /**
+     * Mark a deferred delivery as queued again after handing it back to the job queue.
+     */
+    public function markQueued(EmailDelivery $delivery): void
+    {
+        Log::info('EmailDeliveryTracker: Marking as queued', [
+            'delivery_id' => $delivery->id,
+            'correlation_id' => $delivery->correlation_id,
+        ]);
+
+        $delivery->update([
+            'status' => EmailDelivery::STATUS_QUEUED,
+            'last_error' => null,
+        ]);
+    }
+
+    /**
      * Mark a delivery as skipped (email sending disabled or notification type disabled).
      */
     public function markSkipped(EmailDelivery $delivery, string $reason): void

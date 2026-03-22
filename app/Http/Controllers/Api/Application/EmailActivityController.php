@@ -166,7 +166,6 @@ class EmailActivityController extends ApplicationApiController
         try {
             // Send the email using EmailManager
             // This would typically dispatch a job
-            $deferred->incrementAttempts();
             $deferred->scheduled_at = now(); // Move to front of queue
             $deferred->save();
 
