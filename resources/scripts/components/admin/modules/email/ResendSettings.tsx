@@ -1,19 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faCheckCircle,
-    faEnvelope,
-    faExclamationTriangle,
-    faPaperPlane,
-    faPlug,
-    faServer,
-    faVial,
-} from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faPaperPlane, faPlug, faServer, faVial } from '@fortawesome/free-solid-svg-icons';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
 import AdminBox from '@/elements/AdminBox';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import { Button } from '@/elements/button';
+import Pill from '@/elements/Pill';
 import useFlash from '@/plugins/useFlash';
 import useStatus from '@/plugins/useStatus';
 import { useStoreState } from '@/state/hooks';
@@ -27,22 +20,6 @@ import {
     testSmtpConnection,
     updateSettings,
 } from '@/api/routes/admin/email';
-
-const withAlpha = (hex: string, alpha: number) => {
-    const normalized = hex.replace('#', '');
-    const value =
-        normalized.length === 3
-            ? normalized
-                  .split('')
-                  .map((c) => c + c)
-                  .join('')
-            : normalized;
-    const intVal = parseInt(value, 16);
-    const r = (intVal >> 16) & 255;
-    const g = (intVal >> 8) & 255;
-    const b = intVal & 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 type TabKey = 'overview' | 'smtp' | 'resend' | 'testing';
 
@@ -744,7 +721,7 @@ export default () => {
                     className={
                         'flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between'
                     }
-                    style={{ backgroundColor: secondary, borderColor: withAlpha(headers, 0.4) }}
+                    style={{ backgroundColor: secondary, borderColor: headers }}
                 >
                     <p className={'text-sm font-semibold text-white'}>Save Settings</p>
                     <div className={'flex items-center gap-3'}>
@@ -768,37 +745,39 @@ const TabList = ({ active, onSelect, primary }: { active: TabKey; onSelect: (tab
     ];
 
     return (
-        <div className={'grid grid-cols-2 gap-2 sm:grid-cols-4'}>
-            {tabs.map((tab) => (
-                <button
-                    key={tab.key}
-                    type={'button'}
-                    onClick={() => onSelect(tab.key)}
-                    className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-                        active === tab.key
-                            ? 'text-white'
-                            : 'border-neutral-700 bg-neutral-900 text-gray-200 hover:border-neutral-600'
-                    }`}
-                    style={
-                        active === tab.key
-                            ? { borderColor: primary, backgroundColor: withAlpha(primary, 0.2), color: '#fff' }
-                            : undefined
-                    }
-                >
-                    <FontAwesomeIcon icon={tab.icon} />
-                    {tab.label}
-                </button>
-            ))}
+        <div className={'border-b border-neutral-700'}>
+            <div className={'flex flex-wrap gap-4'}>
+                {tabs.map((tab) => {
+                    const isActive = active === tab.key;
+                    return (
+                        <button
+                            key={tab.key}
+                            type={'button'}
+                            onClick={() => onSelect(tab.key)}
+                            className={
+                                'flex items-center gap-2 px-2 pb-2 text-sm font-semibold border-b-2 transition-colors'
+                            }
+                            style={{
+                                borderBottomColor: isActive ? primary : 'transparent',
+                                color: isActive ? '#fff' : '#9ca3af',
+                            }}
+                        >
+                            <FontAwesomeIcon icon={tab.icon} />
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
         </div>
     );
 };
 
 const Card = ({ children, className }: { children: ReactNode; className?: string }) => {
-    const { headers, secondary } = useStoreState((state) => state.theme.data!.colors);
+    const { headers } = useStoreState((state) => state.theme.data!.colors);
     return (
         <div
             className={`rounded-lg border p-4 ${className ?? ''}`}
-            style={{ backgroundColor: secondary, borderColor: withAlpha(headers, 0.4) }}
+            style={{ backgroundColor: headers, borderColor: '#00000040' }}
         >
             {children}
         </div>
@@ -809,14 +788,10 @@ const ProviderPill = ({ label, active, onClick, primary }: { label: string; acti
     <button
         type={'button'}
         onClick={onClick}
-        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-            active ? 'text-white' : 'border-neutral-700 bg-neutral-900 text-gray-200'
+        className={`flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+            active ? 'text-white' : 'text-gray-200'
         }`}
-        style={
-            active
-                ? { borderColor: primary, backgroundColor: withAlpha(primary, 0.2), color: '#fff' }
-                : undefined
-        }
+        style={{ borderColor: active ? primary : 'transparent', backgroundColor: 'transparent' }}
     >
         <span
             className={`h-2 w-2 rounded-full ${active ? '' : 'bg-neutral-600'}`}
@@ -846,20 +821,15 @@ const InputField = ({
 );
 
 const StatusBadge = ({ status }: { status: 'success' | 'warning' | 'info' | 'secondary' }) => {
+    const label = status === 'success' ? 'Success' : status === 'warning' ? 'Warning' : status === 'info' ? 'Info' : 'Status';
     const map = {
-        success: 'bg-green-900 text-green-100',
-        warning: 'bg-amber-900 text-amber-100',
-        info: 'bg-blue-900 text-blue-100',
-        secondary: 'bg-neutral-800 text-gray-200',
+        success: <Pill type={'success'}>{label}</Pill>,
+        warning: <Pill type={'danger'}>{label}</Pill>,
+        info: <Pill type={'info'}>{label}</Pill>,
+        secondary: <Pill>{label}</Pill>,
     } as const;
 
-    const label = status === 'success' ? 'Success' : status === 'warning' ? 'Warning' : status === 'info' ? 'Info' : 'Status';
-
-    return (
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${map[status]}`} aria-label={label}>
-            {label}
-        </span>
-    );
+    return map[status];
 };
 
 const StatusCard = ({
@@ -879,26 +849,17 @@ const StatusCard = ({
 }) => {
     const { headers, secondary } = useStoreState((state) => state.theme.data!.colors);
 
-    const badge = (label: string, tone: 'success' | 'warning' | 'neutral') => {
-        const map = {
-            success: 'bg-green-900 text-green-100',
-            warning: 'bg-amber-900 text-amber-100',
-            neutral: 'bg-neutral-800 text-gray-200',
-        } as const;
-        return <span className={`rounded-full px-3 py-1 text-xs font-semibold ${map[tone]}`}>{label}</span>;
-    };
-
     return (
         <div
             className={'flex h-full flex-col gap-3 rounded-lg border p-4'}
-            style={{ backgroundColor: secondary, borderColor: withAlpha(headers, 0.4) }}
+            style={{ backgroundColor: headers, borderColor: '#00000040' }}
         >
             <div className={'flex flex-wrap items-center justify-between gap-3'}>
                 <div className={'space-y-1'}>
                     <h3 className={'text-lg font-semibold text-white'}>{title}</h3>
                     <div className={'flex flex-wrap gap-2 text-sm text-gray-300'}>
-                        {badge(active ? 'Active' : 'Inactive', active ? 'success' : 'warning')}
-                        {badge(configured ? 'Configured' : 'Incomplete', configured ? 'success' : 'warning')}
+                        <Pill type={active ? 'success' : 'danger'}>{active ? 'Active' : 'Inactive'}</Pill>
+                        <Pill type={configured ? 'success' : 'danger'}>{configured ? 'Configured' : 'Incomplete'}</Pill>
                     </div>
                 </div>
                 <Button onClick={onTest} loading={testing} size={Button.Sizes.Small}>
