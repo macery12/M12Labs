@@ -26,6 +26,9 @@ class SmtpTransport implements EmailTransport
             $encryption = null;
         }
 
+        // Ensure the SMTP mailer is rebuilt with fresh credentials/config for this send.
+        Mail::forgetMailers();
+
         // Apply runtime mail configuration for SMTP
         $rawPort = $this->config['port'] ?? null;
         $configuredPort = ($rawPort === '' || $rawPort === null) ? null : (int) $rawPort;
