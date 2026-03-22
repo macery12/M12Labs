@@ -6,15 +6,23 @@ use Everest\Models\Setting;
 use Everest\Models\EmailNotificationSetting;
 use Everest\Models\EmailQuota;
 use Everest\Models\User;
+use Everest\Models\EmailDelivery;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailPolicyService;
 use Everest\Services\Email\EmailRedactor;
+use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Email\EmailResult;
 use Everest\Exceptions\Service\Email\ResendException;
+use Everest\Http\Requests\Api\Application\Email\GetEmailNotificationSettingsRequest;
+use Everest\Http\Requests\Api\Application\Email\GetEmailQuotaInfoRequest;
+use Everest\Http\Requests\Api\Application\Email\GetUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailSettingsRequest;
+use Everest\Http\Requests\Api\Application\Email\UpdateEmailNotificationSettingRequest;
+use Everest\Http\Requests\Api\Application\Email\UpdateUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateVerificationRulesRequest;
 use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
 use Everest\Http\Requests\Api\Application\Email\TestEmailConnectionRequest;
@@ -24,7 +32,12 @@ class EmailController extends ApplicationApiController
     /**
      * EmailController constructor.
      */
-    public function __construct(private EmailManager $emailManager, private EmailVerificationGate $verificationGate)
+    public function __construct(
+        private EmailManager $emailManager,
+        private EmailVerificationGate $verificationGate,
+        private EmailSettingsReader $settings,
+        private EmailPolicyService $policy
+    )
     {
         parent::__construct();
     }
@@ -34,26 +47,7 @@ class EmailController extends ApplicationApiController
      */
     public function getSettings(): JsonResponse
     {
-        return response()->json([
-            'transport' => EmailManager::getTransport(),
-            'enabled' => EmailManager::isDeliveryEnabled(),
-            'resend' => [
-                'api_key' => !empty(Setting::get('settings::modules:email:resend:api_key', '')),
-                'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
-                'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
-                'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
-            ],
-            'smtp' => [
-                'host' => Setting::get('settings::modules:email:smtp:host', ''),
-                'port' => Setting::get('settings::modules:email:smtp:port', ''),
-                'username' => Setting::get('settings::modules:email:smtp:username', ''),
-                'password_set' => !empty(Setting::get('settings::modules:email:smtp:password', '')),
-                'encryption' => Setting::get('settings::modules:email:smtp:encryption', ''),
-                'from_email' => Setting::get('settings::modules:email:smtp:from_email', ''),
-                'from_name' => Setting::get('settings::modules:email:smtp:from_name', ''),
-                'reply_to' => Setting::get('settings::modules:email:smtp:reply_to', ''),
-            ],
-        ]);
+        return response()->json($this->settings->adminSettings());
     }
 
     public function getVerificationRules(): JsonResponse
@@ -120,6 +114,24 @@ class EmailController extends ApplicationApiController
     {
         $recipient = $request->input('to');
 
+        if (!$this->policy->isDeliveryEnabled()) {
+            return $this->formatEmailResult(
+                EmailResult::skipped('disabled'),
+                $this->settings->transport(),
+                'send_test',
+                $recipient
+            );
+        }
+
+        if ($this->policy->isBlockedRecipient($recipient)) {
+            return $this->formatEmailResult(
+                EmailResult::blocked('blocked_invalid_recipient'),
+                $this->settings->transport(),
+                'send_test',
+                $recipient
+            );
+        }
+
         try {
             $result = $this->emailManager->sendCustom(
                 to: $recipient,
@@ -162,7 +174,7 @@ class EmailController extends ApplicationApiController
     /**
      * Get all email notification settings.
      */
-    public function getNotificationSettings(): JsonResponse
+    public function getNotificationSettings(GetEmailNotificationSettingsRequest $request): JsonResponse
     {
         $settings = EmailNotificationSetting::orderBy('category')
             ->orderBy('name')
@@ -177,10 +189,10 @@ class EmailController extends ApplicationApiController
     /**
      * Update a specific email notification setting.
      */
-    public function updateNotificationSetting(string $id): JsonResponse
+    public function updateNotificationSetting(UpdateEmailNotificationSettingRequest $request, string $id): JsonResponse
     {
         $setting = EmailNotificationSetting::findOrFail($id);
-        $enabled = request()->input('enabled');
+        $enabled = $request->boolean('enabled');
 
         $setting->enabled = $enabled;
         $setting->save();
@@ -200,7 +212,7 @@ class EmailController extends ApplicationApiController
     /**
      * Get email quota information.
      */
-    public function getQuotaInfo(): JsonResponse
+    public function getQuotaInfo(GetEmailQuotaInfoRequest $request): JsonResponse
     {
         // Get aggregate quota stats across all users
         $totalQuotas = EmailQuota::selectRaw('
@@ -221,7 +233,7 @@ class EmailController extends ApplicationApiController
     /**
      * Get email quota for a specific user.
      */
-    public function getUserQuota(int $userId): JsonResponse
+    public function getUserQuota(GetUserEmailQuotaRequest $request, int $userId): JsonResponse
     {
         $user = User::findOrFail($userId);
         $quota = EmailQuota::where('user_id', $userId)->first();
@@ -262,16 +274,9 @@ class EmailController extends ApplicationApiController
     /**
      * Update user email quota plan.
      */
-    public function updateUserQuota(int $userId): JsonResponse
+    public function updateUserQuota(UpdateUserEmailQuotaRequest $request, int $userId): JsonResponse
     {
-        $plan = request()->input('plan', 'free');
-
-        if (!in_array($plan, ['free', 'pro', 'scale'])) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Invalid plan. Must be one of: free, pro, scale',
-            ], 400);
-        }
+        $plan = $request->input('plan', 'free');
 
         $quota = EmailQuota::getOrCreateForUser($userId, $plan);
         
@@ -304,7 +309,7 @@ class EmailController extends ApplicationApiController
                 'provider' => $provider,
                 'message_id' => $result->messageId,
                 'recipient' => $recipient,
-                'status' => $result->status ?? 'sent',
+                'status' => $result->status ?? EmailDelivery::STATUS_SENT,
                 'reason' => $result->reason,
             ];
 
@@ -323,7 +328,7 @@ class EmailController extends ApplicationApiController
         return response()->json([
             'success' => false,
             'provider' => $provider,
-            'status' => $result->status ?? 'failed',
+            'status' => $result->status ?? EmailDelivery::STATUS_FAILED,
             'reason' => $result->reason,
             'error' => [
                 'code' => $this->deriveErrorCode($provider, $result, $action),
@@ -338,6 +343,7 @@ class EmailController extends ApplicationApiController
         return response()->json([
             'success' => false,
             'provider' => $provider,
+            'status' => EmailDelivery::STATUS_FAILED,
             'error' => [
                 'code' => strtoupper($provider) . '_UNEXPECTED_ERROR',
                 'status' => 500,

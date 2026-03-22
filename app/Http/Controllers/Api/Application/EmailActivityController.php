@@ -2,12 +2,15 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
+use Everest\Http\Requests\Api\Application\Email\GetDeferredQueueRequest;
+use Everest\Http\Requests\Api\Application\Email\GetEmailActivityRequest;
+use Everest\Http\Requests\Api\Application\Email\GetEmailTemplateKeysRequest;
+use Everest\Http\Requests\Api\Application\Email\ManageDeferredEmailRequest;
+use Everest\Http\Requests\Api\Application\Email\ViewEmailActivityRequest;
 use Everest\Models\EmailDelivery;
 use Everest\Models\DeferredEmail;
-use Everest\Models\User;
 use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class EmailActivityController extends ApplicationApiController
 {
@@ -19,22 +22,14 @@ class EmailActivityController extends ApplicationApiController
     /**
      * Get email activity logs with pagination and filtering.
      */
-    public function index(Request $request): JsonResponse
+    public function index(GetEmailActivityRequest $request): JsonResponse
     {
         $perPage = min((int) $request->input('per_page', 25), 100);
         
         $query = EmailDelivery::query()->with('user:id,email,username');
 
-        // Apply filters - map old 'sent'/'failed' to new status values
         if ($request->filled('status')) {
-            $status = $request->input('status');
-            if ($status === 'sent') {
-                $query->where('status', 'sent');
-            } elseif ($status === 'failed') {
-                $query->where('status', 'failed');
-            } else {
-                $query->where('status', $status);
-            }
+            $query->where('status', $request->input('status'));
         }
 
         if ($request->filled('template_key')) {
@@ -49,8 +44,8 @@ class EmailActivityController extends ApplicationApiController
             $query->where('user_id', $request->input('user_id'));
         }
 
-        if ($request->has('only_failures') && $request->input('only_failures') === 'true') {
-            $query->where('status', 'failed');
+        if ($request->boolean('only_failures')) {
+            $query->where('status', EmailDelivery::STATUS_FAILED);
         }
 
         // Date range filter
@@ -77,7 +72,6 @@ class EmailActivityController extends ApplicationApiController
 
         $deliveries = $query->paginate($perPage);
 
-        // Transform deliveries to match old EmailLog format for frontend compatibility
         $transformed = $deliveries->toArray();
         $transformed['data'] = array_map(function ($delivery) {
             return $this->transformDeliveryToLegacyFormat($delivery);
@@ -89,14 +83,13 @@ class EmailActivityController extends ApplicationApiController
     /**
      * Get details of a specific email delivery.
      */
-    public function show(int $id): JsonResponse
+    public function show(ViewEmailActivityRequest $request, int $id): JsonResponse
     {
         $delivery = EmailDelivery::with([
             'user:id,email,username',
             'deliveryAttempts'
         ])->findOrFail($id);
 
-        // Transform to legacy format for frontend compatibility
         $log = $this->transformDeliveryToLegacyFormat($delivery->toArray());
         
         // Add attempt information
@@ -122,7 +115,7 @@ class EmailActivityController extends ApplicationApiController
     /**
      * Get deferred email queue.
      */
-    public function getDeferredQueue(Request $request): JsonResponse
+    public function getDeferredQueue(GetDeferredQueueRequest $request): JsonResponse
     {
         $perPage = min((int) $request->input('per_page', 25), 100);
 
@@ -133,7 +126,7 @@ class EmailActivityController extends ApplicationApiController
         // Filter by due status
         if ($request->input('status') === 'due') {
             $query->where('scheduled_at', '<=', now());
-        } else if ($request->input('status') === 'pending') {
+        } elseif ($request->input('status') === 'pending') {
             $query->where('scheduled_at', '>', now());
         }
 
@@ -159,7 +152,7 @@ class EmailActivityController extends ApplicationApiController
     /**
      * Send a deferred email immediately.
      */
-    public function sendDeferredNow(int $id): JsonResponse
+    public function sendDeferredNow(ManageDeferredEmailRequest $request, int $id): JsonResponse
     {
         $deferred = DeferredEmail::findOrFail($id);
 
@@ -186,7 +179,7 @@ class EmailActivityController extends ApplicationApiController
 
             return response()->json([
                 'success' => true,
-                'message' => 'Email moved to the front of the queue. It will be sent on the next queue run.',
+                'message' => 'Email moved to front of queue and will be sent shortly.',
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -199,7 +192,7 @@ class EmailActivityController extends ApplicationApiController
     /**
      * Cancel a deferred email.
      */
-    public function cancelDeferred(int $id): JsonResponse
+    public function cancelDeferred(ManageDeferredEmailRequest $request, int $id): JsonResponse
     {
         $deferred = DeferredEmail::findOrFail($id);
 
@@ -228,7 +221,7 @@ class EmailActivityController extends ApplicationApiController
     /**
      * Get all unique template keys for filtering.
      */
-    public function getTemplateKeys(): JsonResponse
+    public function getTemplateKeys(GetEmailTemplateKeysRequest $request): JsonResponse
     {
         $templateKeys = EmailDelivery::distinct()
             ->whereNotNull('template_key')
@@ -240,27 +233,26 @@ class EmailActivityController extends ApplicationApiController
     }
 
     /**
-     * Transform EmailDelivery to legacy EmailLog format for frontend compatibility.
-     * Maps new field names to old ones expected by the frontend.
+     * Transform EmailDelivery into the admin email log payload.
      */
     private function transformDeliveryToLegacyFormat(array $delivery): array
     {
         return [
             'id' => $delivery['id'],
-            'to' => $delivery['recipient'], // recipient -> to
+            'to' => $delivery['recipient'],
             'subject' => $delivery['subject'],
             'template_key' => $delivery['template_key'],
             'correlation_id' => $delivery['correlation_id'],
-            'message_id' => $delivery['last_message_id'], // last_message_id -> message_id
+            'message_id' => $delivery['last_message_id'],
             'provider' => $delivery['provider'],
             'user_id' => $delivery['user_id'],
-            'success' => $delivery['status'] === 'sent', // status -> success (boolean)
+            'success' => $delivery['status'] === EmailDelivery::STATUS_SENT,
             'status' => $delivery['status'],
-            'attempt_count' => $delivery['attempts'], // attempts -> attempt_count
-            'duration_ms' => null, // Not available in delivery table
-            'error' => $delivery['last_error'], // last_error -> error
+            'attempt_count' => $delivery['attempts'],
+            'duration_ms' => null,
+            'error' => $delivery['last_error'],
             'tags' => $delivery['tags'],
-            'metadata' => null, // Not available in new structure
+            'metadata' => null,
             'created_at' => $delivery['created_at'],
             'updated_at' => $delivery['updated_at'],
             'user' => $delivery['user'] ?? null,

@@ -2,6 +2,7 @@ import http from '@/api/http';
 import { type VerificationRules } from '@/state/everest';
 
 export type EmailTransport = 'resend' | 'smtp';
+export type EmailStatus = 'queued' | 'sending' | 'sent' | 'deferred' | 'skipped' | 'failed';
 
 export interface ResendSettings {
     api_key: boolean; // true if key exists, false otherwise
@@ -64,7 +65,7 @@ export interface EmailResponse {
     provider?: EmailTransport;
     tested_at?: string;
     recipient?: string;
-    status?: string;
+    status?: EmailStatus;
     reason?: string;
     error?: EmailError | string;
 }
@@ -172,7 +173,7 @@ export interface EmailLog {
     provider: string;
     user_id: number | null;
     success: boolean;
-    status: string;
+    status: EmailStatus;
     attempt_count: number;
     duration_ms: number | null;
     error: string | null;
@@ -193,7 +194,7 @@ export interface EmailLogDetail {
     retry_history: Array<{
         attempt: number;
         timestamp: string;
-        status: string;
+        status: EmailStatus;
         duration_ms?: number | null;
         error?: string;
     }>;
@@ -202,13 +203,13 @@ export interface EmailLogDetail {
         to: string;
         subject: string;
         template_key: string | null;
-        status: string;
+        status: EmailStatus;
         created_at: string;
     }>;
 }
 
 export interface EmailLogFilters {
-    status?: string;
+    status?: EmailStatus;
     template_key?: string;
     recipient?: string;
     user_id?: number;
@@ -283,7 +284,7 @@ export const getTemplateKeys = (): Promise<{ template_keys: string[] }> => {
 };
 
 export const getDeferredQueue = (filters?: {
-    status?: string;
+    status?: 'due' | 'pending';
     per_page?: number;
     page?: number;
 }): Promise<DeferredQueueResponse> => {

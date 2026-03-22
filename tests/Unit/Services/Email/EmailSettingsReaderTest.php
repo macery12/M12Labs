@@ -1,0 +1,49 @@
+<?php
+
+namespace Everest\Tests\Unit\Services\Email;
+
+use Everest\Services\Email\EmailSettingsReader;
+use Everest\Tests\TestCase;
+use Mockery;
+
+class EmailSettingsReaderTest extends TestCase
+{
+    public function testItNormalizesDeliveryEnabledAndTransportValues(): void
+    {
+        $reader = Mockery::mock(EmailSettingsReader::class)->makePartial();
+        $reader->shouldReceive('get')->with('settings::modules:email:resend:enabled', false)->andReturn(false);
+        $reader->shouldReceive('get')->with('settings::modules:email:enabled', false)->andReturn('true');
+        $reader->shouldReceive('get')->with('settings::modules:email:transport', null)->andReturn('resend');
+
+        $this->assertTrue($reader->deliveryEnabled());
+        $this->assertSame('resend', $reader->transport());
+    }
+
+    public function testItBuildsAdminSettingsPayload(): void
+    {
+        $reader = Mockery::mock(EmailSettingsReader::class)->makePartial();
+        $reader->shouldReceive('transport')->andReturn('smtp');
+        $reader->shouldReceive('deliveryEnabled')->andReturn(true);
+        $reader->shouldReceive('get')->with('settings::modules:email:resend:api_key', '')->andReturn('secret');
+        $reader->shouldReceive('get')->with('settings::modules:email:resend:from_email', '')->andReturn('noreply@example.com');
+        $reader->shouldReceive('get')->with('settings::modules:email:resend:from_name', '')->andReturn('App');
+        $reader->shouldReceive('get')->with('settings::modules:email:resend:reply_to', '')->andReturn('help@example.com');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:host', '')->andReturn('smtp.example.com');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:port', '')->andReturn('587');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:username', '')->andReturn('mailer');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:password', '')->andReturn('secret');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:encryption', '')->andReturn('tls');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:from_email', '')->andReturn('smtp@example.com');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:from_name', '')->andReturn('SMTP');
+        $reader->shouldReceive('get')->with('settings::modules:email:smtp:reply_to', '')->andReturn('reply@example.com');
+
+        $settings = $reader->adminSettings();
+
+        $this->assertTrue($settings['enabled']);
+        $this->assertSame('smtp', $settings['transport']);
+        $this->assertTrue($settings['enabled']);
+        $this->assertTrue($settings['resend']['api_key']);
+        $this->assertTrue($settings['smtp']['password_set']);
+        $this->assertSame('noreply@example.com', $settings['resend']['from_email']);
+    }
+}

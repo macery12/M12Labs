@@ -46,7 +46,7 @@ class EmailDeliveryTracker
             'user_id' => $userId,
             'subject' => $subject,
             'provider' => $provider,
-            'status' => 'queued',
+            'status' => EmailDelivery::STATUS_QUEUED,
             'attempts' => 0,
             'tags' => $tags,
         ]);
@@ -70,7 +70,7 @@ class EmailDeliveryTracker
         ]);
 
         $delivery->update([
-            'status' => 'deferred',
+            'status' => EmailDelivery::STATUS_DEFERRED,
             'last_error' => "Rate limit exceeded: {$reason}. Scheduled for: {$nextAvailableTime->toDateTimeString()}",
         ]);
     }
@@ -87,7 +87,7 @@ class EmailDeliveryTracker
         ]);
 
         $delivery->update([
-            'status' => 'skipped',
+            'status' => EmailDelivery::STATUS_SKIPPED,
             'last_error' => $reason,
         ]);
     }
@@ -107,9 +107,8 @@ class EmailDeliveryTracker
             'attempt_number' => $attemptNumber,
         ]);
 
-        // Update delivery status to 'sending'
         $delivery->update([
-            'status' => 'sending',
+            'status' => EmailDelivery::STATUS_SENDING,
             'last_attempt_at' => now(),
         ]);
 
@@ -123,7 +122,7 @@ class EmailDeliveryTracker
             'delivery_id' => $delivery->id,
             'attempt_number' => $attemptNumber,
             'started_at' => now(),
-            'status' => 'sending',
+            'status' => EmailDelivery::STATUS_SENDING,
             'success' => false,
             'request_payload' => $requestPayload,
         ]);
@@ -149,7 +148,7 @@ class EmailDeliveryTracker
         $attempt->finished_at = now();
         $attempt->calculateDuration();
         $attempt->success = true;
-        $attempt->status = 'sent';
+        $attempt->status = EmailDelivery::STATUS_SENT;
         $attempt->provider_message_id = $providerMessageId;
         $attempt->status_code = $statusCode;
 
@@ -185,7 +184,7 @@ class EmailDeliveryTracker
         $attempt->finished_at = now();
         $attempt->calculateDuration();
         $attempt->success = false;
-        $attempt->status = 'failed';
+        $attempt->status = EmailDelivery::STATUS_FAILED;
         $attempt->error = $error;
         $attempt->status_code = $statusCode;
         if ($retryable !== null) {
@@ -230,13 +229,13 @@ class EmailDeliveryTracker
 
         // Update status based on attempt result
         if ($attempt->success) {
-            $updateData['status'] = 'sent';
+            $updateData['status'] = EmailDelivery::STATUS_SENT;
             $updateData['sent_at'] = $attempt->finished_at;
             $updateData['last_message_id'] = $attempt->provider_message_id;
             // Keep provider_message_id in sync for legacy consumers that read from the delivery row
             $updateData['provider_message_id'] = $attempt->provider_message_id;
         } else {
-            $updateData['status'] = 'failed';
+            $updateData['status'] = EmailDelivery::STATUS_FAILED;
         }
 
         $delivery->update($updateData);

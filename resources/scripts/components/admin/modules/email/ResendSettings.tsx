@@ -11,8 +11,10 @@ import useFlash from '@/plugins/useFlash';
 import useStatus from '@/plugins/useStatus';
 import { useStoreState } from '@/state/hooks';
 import {
+    type EmailResponse,
     EmailSettings,
     EmailSettingsUpdate,
+    type EmailStatus,
     EmailTransport,
     getSettings,
     sendTestEmail,
@@ -20,11 +22,12 @@ import {
     testSmtpConnection,
     updateSettings,
 } from '@/api/routes/admin/email';
+import { getEmailStatusPresentation } from './status';
 
 type TabKey = 'overview' | 'smtp' | 'resend' | 'testing';
 
 type TestResult = {
-    status: 'success' | 'error';
+    status: EmailStatus;
     provider: EmailTransport;
     message: string;
     tested_at: string;
@@ -34,7 +37,24 @@ type TestResult = {
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, addFlash, clearAndAddHttpError } = useFlash();
-    const { primary, secondary, headers } = useStoreState((state) => state.theme.data!.colors);
+    const { primary, secondary, headers } = useStoreState(state => state.theme.data!.colors);
+
+    const resolveEmailResponseStatus = (response: EmailResponse): EmailStatus =>
+        response.status || (response.success ? 'sent' : 'failed');
+
+    const getFlashType = (status: EmailStatus): 'success' | 'warning' | 'danger' => {
+        const tone = getEmailStatusPresentation(status).tone;
+
+        if (tone === 'success') {
+            return 'success';
+        }
+
+        if (tone === 'warning' || tone === 'neutral') {
+            return 'warning';
+        }
+
+        return 'danger';
+    };
 
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
     const [loading, setLoading] = useState(true);
@@ -47,7 +67,6 @@ export default () => {
     const [transport, setTransport] = useState<EmailTransport>('smtp');
     const [globalSender, setGlobalSender] = useState({ fromEmail: '', fromName: '', replyTo: '' });
 
-    const [resendConfig, setResendConfig] = useState({ from_email: '', from_name: '', reply_to: '' });
     const [resendApiKeyInput, setResendApiKeyInput] = useState('');
     const [resendKeySet, setResendKeySet] = useState(false);
 
@@ -74,17 +93,13 @@ export default () => {
     const [clearingSmtpPassword, setClearingSmtpPassword] = useState(false);
     const [resettingSmtp, setResettingSmtp] = useState(false);
 
-    const pickWithFallback = (
-        primary?: string,
-        smtpValue?: string,
-        resendValue?: string,
-        defaultValue = ''
-    ) => primary || smtpValue || resendValue || defaultValue;
+    const pickWithFallback = (primary?: string, smtpValue?: string, resendValue?: string, defaultValue = '') =>
+        primary || smtpValue || resendValue || defaultValue;
 
     useEffect(() => {
         setLoading(true);
         getSettings()
-            .then((data) => {
+            .then(data => {
                 setSettings(data);
                 setEnabled(data.enabled);
                 setTransport(data.transport);
@@ -94,12 +109,12 @@ export default () => {
                 const derivedFromEmail = pickWithFallback(
                     data.transport === 'smtp' ? data.smtp.from_email : data.resend.from_email,
                     data.smtp.from_email,
-                    data.resend.from_email
+                    data.resend.from_email,
                 );
                 const derivedFromName = pickWithFallback(
                     data.transport === 'smtp' ? data.smtp.from_name : data.resend.from_name,
                     data.smtp.from_name,
-                    data.resend.from_name
+                    data.resend.from_name,
                 );
                 const derivedReplyTo =
                     data.transport === 'smtp'
@@ -112,12 +127,6 @@ export default () => {
                     replyTo: derivedReplyTo,
                 });
 
-                setResendConfig({
-                    from_email: data.resend.from_email || derivedFromEmail,
-                    from_name: data.resend.from_name || derivedFromName,
-                    reply_to: data.resend.reply_to || derivedReplyTo,
-                });
-
                 setSmtpConfig({
                     host: data.smtp.host || '',
                     port: (data.smtp.port || '').toString(),
@@ -128,23 +137,17 @@ export default () => {
                     reply_to: data.smtp.reply_to || derivedReplyTo,
                 });
             })
-            .catch((error) => clearAndAddHttpError({ key: 'email:settings:load', error }))
+            .catch(error => clearAndAddHttpError({ key: 'email:settings:load', error }))
             .finally(() => setLoading(false));
     }, []);
 
     const resolvedReplyTo = useMemo(
         () => globalSender.replyTo || globalSender.fromEmail,
-        [globalSender.replyTo, globalSender.fromEmail]
+        [globalSender.replyTo, globalSender.fromEmail],
     );
 
     useEffect(() => {
-        setSmtpConfig((prev) => ({
-            ...prev,
-            from_email: globalSender.fromEmail,
-            from_name: globalSender.fromName,
-            reply_to: resolvedReplyTo,
-        }));
-        setResendConfig((prev) => ({
+        setSmtpConfig(prev => ({
             ...prev,
             from_email: globalSender.fromEmail,
             from_name: globalSender.fromName,
@@ -217,7 +220,7 @@ export default () => {
         if (transport === 'smtp' && !smtpConfigured) return 'SMTP configuration incomplete';
         if (transport === 'resend' && !resendConfigured) return 'Resend configuration incomplete';
 
-        if (testResults.email?.status === 'error') {
+        if (testResults.email && testResults.email.status !== 'sent') {
             return 'Test failed — see details below';
         }
 
@@ -225,8 +228,8 @@ export default () => {
     }, [enabled, transport, smtpConfigured, resendConfigured, testResults.email]);
 
     const lastSuccess =
-        (testResults.email?.status === 'success' && testResults.email) ||
-        (testResults[transport]?.status === 'success' ? testResults[transport] : undefined);
+        (testResults.email?.status === 'sent' && testResults.email) ||
+        (testResults[transport]?.status === 'sent' ? testResults[transport] : undefined);
 
     const handleSave = () => {
         if (!settings) return;
@@ -258,7 +261,7 @@ export default () => {
         }
 
         updateSettings(payload)
-            .then((updated) => {
+            .then(updated => {
                 setSettings(updated);
                 setEnabled(updated.enabled);
                 setTransport(updated.transport);
@@ -272,7 +275,7 @@ export default () => {
                     replyTo: updated.resend.reply_to || updated.smtp.reply_to || globalSender.replyTo,
                 });
 
-                setSmtpConfig((prev) => ({
+                setSmtpConfig(prev => ({
                     ...prev,
                     host: updated.smtp.host || '',
                     port: (updated.smtp.port || '').toString(),
@@ -287,7 +290,7 @@ export default () => {
                 });
                 setStatus('success');
             })
-            .catch((error) => {
+            .catch(error => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:settings', error });
             })
@@ -304,7 +307,7 @@ export default () => {
         setStatus('processing');
 
         updateSettings({ enabled: newEnabled })
-            .then((updated) => {
+            .then(updated => {
                 setSettings(updated);
                 setEnabled(updated.enabled);
                 setTransport(updated.transport);
@@ -315,7 +318,7 @@ export default () => {
                 });
                 setStatus('success');
             })
-            .catch((error) => {
+            .catch(error => {
                 setEnabled(!newEnabled); // revert
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:settings', error });
@@ -331,7 +334,7 @@ export default () => {
         setStatus('processing');
 
         updateSettings({ api_key: '', clear_api_key: true })
-            .then((updated) => {
+            .then(updated => {
                 setSettings(updated);
                 setResendKeySet(updated.resend.api_key);
                 setResendApiKeyInput('');
@@ -342,7 +345,7 @@ export default () => {
                 });
                 setStatus('success');
             })
-            .catch((error) => {
+            .catch(error => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:settings:resend', error });
             })
@@ -357,7 +360,7 @@ export default () => {
         setStatus('processing');
 
         updateSettings({ smtp_password: '', clear_smtp_password: true })
-            .then((updated) => {
+            .then(updated => {
                 setSettings(updated);
                 setSmtpPasswordSet(updated.smtp.password_set);
                 setSmtpPasswordInput('');
@@ -368,7 +371,7 @@ export default () => {
                 });
                 setStatus('success');
             })
-            .catch((error) => {
+            .catch(error => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:settings:smtp', error });
             })
@@ -395,7 +398,7 @@ export default () => {
         };
 
         updateSettings(payload)
-            .then((updated) => {
+            .then(updated => {
                 setSettings(updated);
                 setSmtpPasswordSet(false);
                 setSmtpPasswordInput('');
@@ -415,7 +418,7 @@ export default () => {
                 });
                 setStatus('success');
             })
-            .catch((error) => {
+            .catch(error => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:settings:smtp', error });
             })
@@ -432,20 +435,24 @@ export default () => {
         const tester = provider === 'smtp' ? testSmtpConnection : testResendConnection;
 
         tester()
-            .then((response) => {
+            .then(response => {
+                const status = resolveEmailResponseStatus(response);
                 const message =
                     response.success && response.tested_at
                         ? `Connection successful (${formatDate(response.tested_at)})`
                         : response.success
-                          ? 'Connection successful'
-                          : extractErrorMessage(response.error, 'Connection failed');
+                        ? 'Connection successful'
+                        : extractErrorMessage(response.error, 'Connection failed');
 
-                const code = !response.success && response.error && typeof response.error !== 'string' ? response.error.code : undefined;
+                const code =
+                    !response.success && response.error && typeof response.error !== 'string'
+                        ? response.error.code
+                        : undefined;
 
-                setTestResults((prev) => ({
+                setTestResults(prev => ({
                     ...prev,
                     [provider]: {
-                        status: response.success ? 'success' : 'error',
+                        status,
                         provider,
                         message,
                         tested_at: response.tested_at || new Date().toISOString(),
@@ -455,11 +462,11 @@ export default () => {
 
                 addFlash({
                     key: 'email:settings:test',
-                    type: response.success ? 'success' : 'danger',
+                    type: getFlashType(status),
                     message,
                 });
             })
-            .catch((error) => clearAndAddHttpError({ key: 'email:settings:test', error }))
+            .catch(error => clearAndAddHttpError({ key: 'email:settings:test', error }))
             .finally(() => setTestingProvider(null));
     };
 
@@ -477,32 +484,36 @@ export default () => {
         clearFlashes('email:settings:test');
 
         sendTestEmail({ to: testRecipient })
-            .then((response) => {
-                const success = response.success;
+            .then(response => {
+                const status = resolveEmailResponseStatus(response);
                 const provider = response.provider || transport;
 
-                const message = success
-                    ? `Test email sent via ${provider.toUpperCase()}`
-                    : extractErrorMessage(response.error, 'Failed to send test email');
+                const message =
+                    status === 'sent'
+                        ? `Test email sent via ${provider.toUpperCase()}`
+                        : extractErrorMessage(response.error, 'Failed to send test email');
 
-                setTestResults((prev) => ({
+                setTestResults(prev => ({
                     ...prev,
                     email: {
-                        status: success ? 'success' : 'error',
+                        status,
                         provider,
                         message,
                         tested_at: response.tested_at || new Date().toISOString(),
-                        code: !success && response.error && typeof response.error !== 'string' ? response.error.code : undefined,
+                        code:
+                            status !== 'sent' && response.error && typeof response.error !== 'string'
+                                ? response.error.code
+                                : undefined,
                     },
                 }));
 
                 addFlash({
                     key: 'email:settings:test',
-                    type: success ? 'success' : 'danger',
+                    type: getFlashType(status),
                     message,
                 });
             })
-            .catch((error) => clearAndAddHttpError({ key: 'email:settings:test', error }))
+            .catch(error => clearAndAddHttpError({ key: 'email:settings:test', error }))
             .finally(() => setTestingSend(false));
     };
 
@@ -529,7 +540,9 @@ export default () => {
                                     <div className={'flex items-center justify-between'}>
                                         <div className={'space-y-1'}>
                                             <Label>Email system</Label>
-                                            <p className={'text-sm text-gray-400'}>Toggle delivery for all providers.</p>
+                                            <p className={'text-sm text-gray-400'}>
+                                                Toggle delivery for all providers.
+                                            </p>
                                         </div>
                                         <div className={'flex items-center gap-2'}>
                                             <StatusBadge status={enabled ? 'success' : 'warning'} />
@@ -582,7 +595,9 @@ export default () => {
                                     </div>
                                     <div className={'text-xs text-gray-500'}>
                                         {lastSuccess
-                                            ? `Last successful test: ${new Date(lastSuccess.tested_at).toLocaleString()}`
+                                            ? `Last successful test: ${new Date(
+                                                  lastSuccess.tested_at,
+                                              ).toLocaleString()}`
                                             : 'No successful tests yet.'}
                                     </div>
                                 </div>
@@ -597,8 +612,8 @@ export default () => {
                                         <Label>From Name</Label>
                                         <Input
                                             value={globalSender.fromName}
-                                            onChange={(e) =>
-                                                setGlobalSender((prev) => ({ ...prev, fromName: e.target.value }))
+                                            onChange={e =>
+                                                setGlobalSender(prev => ({ ...prev, fromName: e.target.value }))
                                             }
                                             placeholder={'Your App'}
                                         />
@@ -610,8 +625,8 @@ export default () => {
                                         <Input
                                             type={'email'}
                                             value={globalSender.fromEmail}
-                                            onChange={(e) =>
-                                                setGlobalSender((prev) => ({ ...prev, fromEmail: e.target.value }))
+                                            onChange={e =>
+                                                setGlobalSender(prev => ({ ...prev, fromEmail: e.target.value }))
                                             }
                                             placeholder={'noreply@yourdomain.com'}
                                         />
@@ -621,8 +636,8 @@ export default () => {
                                         <Input
                                             type={'email'}
                                             value={globalSender.replyTo}
-                                            onChange={(e) =>
-                                                setGlobalSender((prev) => ({ ...prev, replyTo: e.target.value }))
+                                            onChange={e =>
+                                                setGlobalSender(prev => ({ ...prev, replyTo: e.target.value }))
                                             }
                                             placeholder={'support@yourdomain.com'}
                                         />
@@ -662,30 +677,36 @@ export default () => {
                                 </div>
                                 <span
                                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                        transport === 'smtp' ? 'bg-green-900 text-green-100' : 'bg-neutral-800 text-gray-300'
+                                        transport === 'smtp'
+                                            ? 'bg-green-900 text-green-100'
+                                            : 'bg-neutral-800 text-gray-300'
                                     }`}
                                 >
                                     {transport === 'smtp' ? 'Active provider' : 'Inactive'}
                                 </span>
                             </div>
-                            <div className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 ${transport !== 'smtp' ? 'opacity-70' : ''}`}>
+                            <div
+                                className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 ${
+                                    transport !== 'smtp' ? 'opacity-70' : ''
+                                }`}
+                            >
                                 <InputField
                                     label={'Host'}
                                     value={smtpConfig.host}
-                                    onChange={(value) => setSmtpConfig((prev) => ({ ...prev, host: value }))}
+                                    onChange={value => setSmtpConfig(prev => ({ ...prev, host: value }))}
                                     placeholder={'smtp.yourdomain.com'}
                                 />
                                 <InputField
                                     label={'Port'}
                                     value={smtpConfig.port}
-                                    onChange={(value) => setSmtpConfig((prev) => ({ ...prev, port: value }))}
+                                    onChange={value => setSmtpConfig(prev => ({ ...prev, port: value }))}
                                     placeholder={'587'}
                                     type={'number'}
                                 />
                                 <InputField
                                     label={'Username'}
                                     value={smtpConfig.username}
-                                    onChange={(value) => setSmtpConfig((prev) => ({ ...prev, username: value }))}
+                                    onChange={value => setSmtpConfig(prev => ({ ...prev, username: value }))}
                                     placeholder={'user@yourdomain.com'}
                                 />
                                 <div className={'space-y-1'}>
@@ -693,10 +714,8 @@ export default () => {
                                     <Input
                                         type={'password'}
                                         value={smtpPasswordInput}
-                                        onChange={(e) => setSmtpPasswordInput(e.target.value)}
-                                        placeholder={
-                                            smtpPasswordSet ? '•••••••• (saved)' : 'Enter SMTP password'
-                                        }
+                                        onChange={e => setSmtpPasswordInput(e.target.value)}
+                                        placeholder={smtpPasswordSet ? '•••••••• (saved)' : 'Enter SMTP password'}
                                     />
                                     <p className={'text-xs text-gray-500'}>
                                         Leave blank to keep the existing password.
@@ -727,7 +746,7 @@ export default () => {
                                             'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white'
                                         }
                                         value={smtpConfig.encryption}
-                                        onChange={(e) => setSmtpConfig((prev) => ({ ...prev, encryption: e.target.value }))}
+                                        onChange={e => setSmtpConfig(prev => ({ ...prev, encryption: e.target.value }))}
                                     >
                                         <option value="">None</option>
                                         <option value="tls">TLS</option>
@@ -748,14 +767,16 @@ export default () => {
                                         Password set: {smtpPasswordSet ? 'Yes' : 'No'}
                                     </p>
                                 </div>
-                                <Button onClick={() => handleTestProvider('smtp')} loading={testingProvider === 'smtp'} size={Button.Sizes.Small}>
+                                <Button
+                                    onClick={() => handleTestProvider('smtp')}
+                                    loading={testingProvider === 'smtp'}
+                                    size={Button.Sizes.Small}
+                                >
                                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
                                     Test SMTP Connection
                                 </Button>
                             </div>
-                            {testResults.smtp && (
-                                <ResultBanner result={testResults.smtp} />
-                            )}
+                            {testResults.smtp && <ResultBanner result={testResults.smtp} />}
                         </Card>
                     </div>
                 )}
@@ -770,24 +791,28 @@ export default () => {
                                 </div>
                                 <span
                                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                        transport === 'resend' ? 'bg-green-900 text-green-100' : 'bg-neutral-800 text-gray-300'
+                                        transport === 'resend'
+                                            ? 'bg-green-900 text-green-100'
+                                            : 'bg-neutral-800 text-gray-300'
                                     }`}
                                 >
                                     {transport === 'resend' ? 'Active provider' : 'Inactive'}
                                 </span>
                             </div>
 
-                            <div className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 ${transport !== 'resend' ? 'opacity-70' : ''}`}>
+                            <div
+                                className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 ${
+                                    transport !== 'resend' ? 'opacity-70' : ''
+                                }`}
+                            >
                                 <div className={'space-y-1'}>
                                     <Label>API Key</Label>
                                     <Input
                                         type={'password'}
                                         value={resendApiKeyInput}
-                                        onChange={(e) => setResendApiKeyInput(e.target.value)}
+                                        onChange={e => setResendApiKeyInput(e.target.value)}
                                         placeholder={
-                                            resendKeySet
-                                                ? 'Key saved — enter to replace'
-                                                : 'Enter Resend API key'
+                                            resendKeySet ? 'Key saved — enter to replace' : 'Enter Resend API key'
                                         }
                                     />
                                     <p className={'text-xs text-gray-500'}>
@@ -818,7 +843,11 @@ export default () => {
                                         API key set: {resendKeySet ? 'Yes' : 'No'}
                                     </p>
                                 </div>
-                                <Button onClick={() => handleTestProvider('resend')} loading={testingProvider === 'resend'} size={Button.Sizes.Small}>
+                                <Button
+                                    onClick={() => handleTestProvider('resend')}
+                                    loading={testingProvider === 'resend'}
+                                    size={Button.Sizes.Small}
+                                >
                                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
                                     Test Resend Connection
                                 </Button>
@@ -844,7 +873,7 @@ export default () => {
                                 <Input
                                     type={'email'}
                                     value={testRecipient}
-                                    onChange={(e) => setTestRecipient(e.target.value)}
+                                    onChange={e => setTestRecipient(e.target.value)}
                                     placeholder={'recipient@example.com'}
                                 />
                                 <Button onClick={handleSendTestEmail} loading={testingSend} disabled={!testRecipient}>
@@ -886,7 +915,15 @@ export default () => {
     );
 };
 
-const TabList = ({ active, onSelect, primary }: { active: TabKey; onSelect: (tab: TabKey) => void; primary: string }) => {
+const TabList = ({
+    active,
+    onSelect,
+    primary,
+}: {
+    active: TabKey;
+    onSelect: (tab: TabKey) => void;
+    primary: string;
+}) => {
     const tabs: Array<{ key: TabKey; label: string; icon: IconProp }> = [
         { key: 'overview', label: 'Overview', icon: faEnvelope },
         { key: 'smtp', label: 'SMTP', icon: faServer },
@@ -897,7 +934,7 @@ const TabList = ({ active, onSelect, primary }: { active: TabKey; onSelect: (tab
     return (
         <div className={'border-b border-neutral-700'}>
             <div className={'flex flex-wrap gap-4'}>
-                {tabs.map((tab) => {
+                {tabs.map(tab => {
                     const isActive = active === tab.key;
                     return (
                         <button
@@ -923,7 +960,7 @@ const TabList = ({ active, onSelect, primary }: { active: TabKey; onSelect: (tab
 };
 
 const Card = ({ children, className }: { children: ReactNode; className?: string }) => {
-    const { headers } = useStoreState((state) => state.theme.data!.colors);
+    const { headers } = useStoreState(state => state.theme.data!.colors);
     return (
         <div
             className={`rounded-lg border p-4 ${className ?? ''}`}
@@ -934,7 +971,17 @@ const Card = ({ children, className }: { children: ReactNode; className?: string
     );
 };
 
-const ProviderPill = ({ label, active, onClick, primary }: { label: string; active: boolean; onClick: () => void; primary: string }) => (
+const ProviderPill = ({
+    label,
+    active,
+    onClick,
+    primary,
+}: {
+    label: string;
+    active: boolean;
+    onClick: () => void;
+    primary: string;
+}) => (
     <button
         type={'button'}
         onClick={onClick}
@@ -966,12 +1013,13 @@ const InputField = ({
 }) => (
     <div className={'space-y-1'}>
         <Label>{label}</Label>
-        <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type} />
+        <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} type={type} />
     </div>
 );
 
 const StatusBadge = ({ status }: { status: 'success' | 'warning' | 'info' | 'secondary' }) => {
-    const label = status === 'success' ? 'Success' : status === 'warning' ? 'Warning' : status === 'info' ? 'Info' : 'Status';
+    const label =
+        status === 'success' ? 'Success' : status === 'warning' ? 'Warning' : status === 'info' ? 'Info' : 'Status';
     const map = {
         success: <Pill type={'success'}>{label}</Pill>,
         warning: <Pill type={'danger'}>{label}</Pill>,
@@ -997,7 +1045,7 @@ const StatusCard = ({
     onTest: () => void;
     testing: boolean;
 }) => {
-    const { headers, secondary } = useStoreState((state) => state.theme.data!.colors);
+    const { headers, secondary } = useStoreState(state => state.theme.data!.colors);
 
     return (
         <div
@@ -1019,7 +1067,7 @@ const StatusCard = ({
             </div>
             <div className={'text-sm text-gray-300'}>
                 {lastTest
-                    ? `${lastTest.status === 'success' ? 'Last success' : 'Last failure'} • ${new Date(
+                    ? `${lastTest.status === 'sent' ? 'Last success' : 'Last result'} • ${new Date(
                           lastTest.tested_at,
                       ).toLocaleString()}`
                     : 'No tests yet'}
@@ -1031,14 +1079,18 @@ const StatusCard = ({
 const ResultBanner = ({ result }: { result: TestResult }) => (
     <div
         className={`mt-3 rounded-md border p-3 text-sm ${
-            result.status === 'success'
+            getEmailStatusPresentation(result.status).tone === 'success'
                 ? 'border-green-600/50 bg-green-950/40 text-green-100'
+                : getEmailStatusPresentation(result.status).tone === 'warning'
+                ? 'border-yellow-500/50 bg-yellow-950/40 text-yellow-100'
+                : getEmailStatusPresentation(result.status).tone === 'neutral'
+                ? 'border-neutral-600/50 bg-neutral-900 text-neutral-100'
                 : 'border-amber-500/50 bg-amber-950/40 text-amber-100'
         }`}
     >
         <div className={'flex items-center justify-between'}>
             <span className={'font-semibold'}>
-                {result.status === 'success' ? 'Success' : 'Failure'} — {result.provider.toUpperCase()}
+                {getEmailStatusPresentation(result.status).label} — {result.provider.toUpperCase()}
             </span>
             <span className={'text-xs text-gray-300'}>{formatDate(result.tested_at)}</span>
         </div>

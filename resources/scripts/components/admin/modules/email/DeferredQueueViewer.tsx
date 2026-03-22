@@ -75,7 +75,7 @@ export default () => {
             addFlash({
                 key: 'email:deferred',
                 type: 'success',
-                message: 'Email moved to the front of the queue. It will be sent when the next email worker or deferred-email queue run picks it up.',
+                message: 'Email moved to front of queue and will be sent shortly.',
             });
             await loadQueue(true);
         } catch (error: any) {

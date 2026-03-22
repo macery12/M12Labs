@@ -8,7 +8,7 @@ use Everest\Models\EmailQuota;
 use Everest\Models\DeferredEmail;
 use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Email\EmailManager;
-use Everest\Services\Email\EmailTypeRegistry;
+use Everest\Services\Email\EmailPolicyService;
 use Everest\Services\Email\EmailDeliveryTracker;
 use Everest\Services\Email\EmailSubjectResolver;
 use Illuminate\Bus\Queueable;
@@ -50,9 +50,9 @@ class SendEmailJob extends Job implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker): void
+    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker, EmailPolicyService $policy): void
     {
-        if (!EmailManager::isDeliveryEnabled()) {
+        if (!$policy->isDeliveryEnabled()) {
             Log::info('SendEmailJob: Email delivery disabled, skipping dispatch', [
                 'template_key' => $this->templateKey,
                 'recipient' => $this->recipient,
@@ -71,7 +71,7 @@ class SendEmailJob extends Job implements ShouldQueue
         $provider = EmailManager::getTransport();
 
         // Hard block invalid or blacklisted recipients before any processing
-        if (EmailManager::isBlockedRecipient($this->recipient)) {
+        if ($policy->isBlockedRecipient($this->recipient)) {
             $delivery = $tracker->startDelivery(
                 correlationId: $this->correlationId,
                 recipient: $this->recipient,
@@ -113,7 +113,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Check if this email type is enabled (template-level)
-        if (!EmailNotificationSetting::isTemplateEnabled($this->templateKey)) {
+        if (!$policy->isTemplateEnabled($this->templateKey)) {
             $reason = "Email type '{$this->templateKey}' is disabled";
 
             Log::info('SendEmailJob: Email type disabled', [
@@ -162,7 +162,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Validate variables
-        [$validData, $errors] = EmailTypeRegistry::validateVariables($this->templateKey, $this->data);
+        [$validData, $errors] = $policy->validateTemplateData($this->templateKey, $this->data);
         
         if (!empty($errors)) {
             Log::error('SendEmailJob: Variable validation failed', [

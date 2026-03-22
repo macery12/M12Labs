@@ -14,7 +14,7 @@ class EmailDeliveryTrackerTest extends TestCase
 
     private EmailDeliveryTracker $tracker;
 
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         $this->tracker = new EmailDeliveryTracker();
