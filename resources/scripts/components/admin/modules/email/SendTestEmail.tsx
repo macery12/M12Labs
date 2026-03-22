@@ -33,13 +33,17 @@ export default () => {
                     addFlash({
                         key: 'email:test',
                         type: 'success',
-                        message: `Test email sent successfully! Message ID: ${response.message_id}`,
+                        message: `Test email sent successfully via ${response.provider?.toUpperCase() ?? 'active provider'}! Message ID: ${response.message_id}`,
                     });
                 } else {
+                    const errorMessage =
+                        typeof response.error === 'string'
+                            ? response.error
+                            : response.error?.message || 'Failed to send test email';
                     addFlash({
                         key: 'email:test',
                         type: 'danger',
-                        message: response.error || 'Failed to send test email',
+                        message: errorMessage,
                     });
                 }
             })

@@ -8,6 +8,7 @@ export interface ResendSettings {
     from_email: string;
     from_name: string;
     reply_to: string;
+    domain?: string;
 }
 
 export interface SmtpSettings {
@@ -51,17 +52,19 @@ export interface SendTestEmailRequest {
     to: string;
 }
 
-export interface SendCustomEmailRequest {
-    to: string;
-    subject: string;
-    html: string;
-    text?: string;
+export interface EmailError {
+    code: string;
+    status: number;
+    message: string;
 }
 
 export interface EmailResponse {
     success: boolean;
     message_id?: string;
-    error?: string;
+    provider?: EmailTransport;
+    tested_at?: string;
+    recipient?: string;
+    error?: EmailError | string;
 }
 
 export const getSettings = (): Promise<EmailSettings> => {
@@ -96,17 +99,25 @@ export const updateVerificationRules = (rules: VerificationRules): Promise<Verif
     });
 };
 
-export const sendTestEmail = (data: SendTestEmailRequest): Promise<EmailResponse> => {
+export const testSmtpConnection = (): Promise<EmailResponse> => {
     return new Promise((resolve, reject) => {
-        http.post<EmailResponse>(`/api/application/email/test`, data)
+        http.post<EmailResponse>(`/api/application/email/test-smtp`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const sendCustomEmail = (data: SendCustomEmailRequest): Promise<EmailResponse> => {
+export const testResendConnection = (): Promise<EmailResponse> => {
     return new Promise((resolve, reject) => {
-        http.post<EmailResponse>(`/api/application/email/send`, data)
+        http.post<EmailResponse>(`/api/application/email/test-resend`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const sendTestEmail = (data: SendTestEmailRequest): Promise<EmailResponse> => {
+    return new Promise((resolve, reject) => {
+        http.post<EmailResponse>(`/api/application/email/test`, data)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

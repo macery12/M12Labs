@@ -6,7 +6,6 @@ import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import ContentBox from '@/elements/ContentBox';
 import ResendSettings from '@/components/admin/modules/email/ResendSettings';
 import NotificationSettings from '@/components/admin/modules/email/NotificationSettings';
-import SendCustomEmail from '@/components/admin/modules/email/SendCustomEmail';
 import VerificationRestrictions from '@/components/admin/modules/email/VerificationRestrictions';
 
 export default () => {
@@ -29,9 +28,6 @@ export default () => {
                                 <ResendSettings />
                             </ContentBox>
 
-                            <ContentBox title={'Send Custom Email'} showFlashes={'email:custom'} css={'mt-8'}>
-                                <SendCustomEmail />
-                            </ContentBox>
                         </>
                     }
                 />

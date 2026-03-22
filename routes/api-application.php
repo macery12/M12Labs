@@ -196,8 +196,9 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
         Route::get('/verification-rules', [Application\EmailController::class, 'getVerificationRules']);
         Route::put('/verification-rules', [Application\EmailController::class, 'updateVerificationRules']);
+        Route::post('/test-smtp', [Application\EmailController::class, 'testSmtpConnection']);
+        Route::post('/test-resend', [Application\EmailController::class, 'testResendConnection']);
         Route::post('/test', [Application\EmailController::class, 'sendTest']);
-        Route::post('/send', [Application\EmailController::class, 'sendCustom']);
         
         // Email notification settings
         Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
