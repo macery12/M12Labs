@@ -47,7 +47,6 @@ export default () => {
     const [transport, setTransport] = useState<EmailTransport>('smtp');
     const [globalSender, setGlobalSender] = useState({ fromEmail: '', fromName: '', replyTo: '' });
 
-    const [resendDomain, setResendDomain] = useState('');
     const [resendConfig, setResendConfig] = useState({ from_email: '', from_name: '', reply_to: '' });
     const [resendApiKeyInput, setResendApiKeyInput] = useState('');
     const [resendKeySet, setResendKeySet] = useState(false);
@@ -85,7 +84,6 @@ export default () => {
                 setSettings(data);
                 setEnabled(data.enabled);
                 setTransport(data.transport);
-                setResendDomain(data.resend.domain ?? '');
                 setResendKeySet(data.resend.api_key);
                 setSmtpPasswordSet(data.smtp.password_set);
 
@@ -175,7 +173,6 @@ export default () => {
             globalSender.fromEmail !== initialSender.fromEmail ||
             globalSender.fromName !== initialSender.fromName ||
             globalSender.replyTo !== initialSender.replyTo ||
-            resendDomain !== (settings.resend.domain ?? '') ||
             smtpConfig.host !== (settings.smtp.host || '') ||
             smtpConfig.port !== smtpPort ||
             smtpConfig.username !== (settings.smtp.username || '') ||
@@ -189,7 +186,6 @@ export default () => {
         globalSender.fromEmail,
         globalSender.fromName,
         globalSender.replyTo,
-        resendDomain,
         smtpConfig.host,
         smtpConfig.port,
         smtpConfig.username,
@@ -237,7 +233,6 @@ export default () => {
         const payload: EmailSettingsUpdate = {
             enabled,
             transport,
-            resend_domain: resendDomain,
             from_email: globalSender.fromEmail,
             from_name: globalSender.fromName,
             reply_to: globalSender.replyTo,
@@ -263,7 +258,6 @@ export default () => {
                 setSettings(updated);
                 setEnabled(updated.enabled);
                 setTransport(updated.transport);
-                setResendDomain(updated.resend.domain ?? resendDomain);
                 setResendKeySet(updated.resend.api_key);
                 setSmtpPasswordSet(updated.smtp.password_set);
                 setResendApiKeyInput('');
@@ -620,7 +614,7 @@ export default () => {
                             <div className={'flex items-center justify-between'}>
                                 <div className={'space-y-1'}>
                                     <Label>Resend configuration</Label>
-                                    <p className={'text-sm text-gray-400'}>API access and domain.</p>
+                                    <p className={'text-sm text-gray-400'}>API access.</p>
                                 </div>
                                 <span
                                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -648,12 +642,6 @@ export default () => {
                                         Keys are stored securely. Leave blank to keep the existing key.
                                     </p>
                                 </div>
-                                <InputField
-                                    label={'Domain (optional)'}
-                                    value={resendDomain}
-                                    onChange={setResendDomain}
-                                    placeholder={'mg.yourdomain.com'}
-                                />
                             </div>
                         </Card>
 
@@ -788,14 +776,14 @@ const ProviderPill = ({ label, active, onClick, primary }: { label: string; acti
     <button
         type={'button'}
         onClick={onClick}
-        className={`flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition ${
-            active ? 'text-white' : 'text-gray-200'
-        }`}
-        style={{ borderColor: active ? primary : 'transparent', backgroundColor: 'transparent' }}
+        className={`flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${
+            active ? 'text-white' : 'text-gray-200 hover:text-white'
+        } ${active ? '' : 'bg-neutral-800 border-neutral-700 hover:border-neutral-500'}`}
+        style={active ? { backgroundColor: primary, borderColor: primary } : undefined}
     >
         <span
             className={`h-2 w-2 rounded-full ${active ? '' : 'bg-neutral-600'}`}
-            style={active ? { backgroundColor: primary } : undefined}
+            style={active ? { backgroundColor: '#ffffff' } : undefined}
         />
         {label}
     </button>
