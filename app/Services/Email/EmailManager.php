@@ -391,9 +391,9 @@ class EmailManager
 
         $message = new EmailMessage(
             to: $from,
-            subject: 'Email connection test',
-            html: '<p>Email connection test successful.</p>',
-            text: 'Email connection test successful.',
+            subject: 'Email provider connection check',
+            html: '<p>This provider connection check reached the configured sender address successfully.</p>',
+            text: 'This provider connection check reached the configured sender address successfully.',
             from: $from,
             fromName: $fromName,
             replyTo: $replyTo

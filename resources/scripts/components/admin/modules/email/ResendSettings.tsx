@@ -23,6 +23,14 @@ import {
     updateSettings,
 } from '@/api/routes/admin/email';
 import { getEmailStatusPresentation } from './status';
+import {
+    formatTestFlowDate,
+    getConnectionCheckButtonLabel,
+    getConnectionCheckSuccessMessage,
+    getDeliveryTestDescription,
+    getDeliveryTestSuccessMessage,
+    getEmailResponseTimestamp,
+} from './testFlow';
 
 type TabKey = 'overview' | 'smtp' | 'resend' | 'testing';
 
@@ -85,7 +93,7 @@ export default () => {
     const [testResults, setTestResults] = useState<{
         smtp?: TestResult;
         resend?: TestResult;
-        email?: TestResult;
+        delivery?: TestResult;
     }>({});
     const [testRecipient, setTestRecipient] = useState('');
     const [savingEnabled, setSavingEnabled] = useState(false);
@@ -220,15 +228,15 @@ export default () => {
         if (transport === 'smtp' && !smtpConfigured) return 'SMTP configuration incomplete';
         if (transport === 'resend' && !resendConfigured) return 'Resend configuration incomplete';
 
-        if (testResults.email && testResults.email.status !== 'sent') {
-            return 'Test failed — see details below';
+        if (testResults.delivery && testResults.delivery.status !== 'sent') {
+            return 'Delivery test failed — see details below';
         }
 
         return 'Ready';
-    }, [enabled, transport, smtpConfigured, resendConfigured, testResults.email]);
+    }, [enabled, transport, smtpConfigured, resendConfigured, testResults.delivery]);
 
     const lastSuccess =
-        (testResults.email?.status === 'sent' && testResults.email) ||
+        (testResults.delivery?.status === 'sent' && testResults.delivery) ||
         (testResults[transport]?.status === 'sent' ? testResults[transport] : undefined);
 
     const handleSave = () => {
@@ -438,11 +446,9 @@ export default () => {
             .then(response => {
                 const status = resolveEmailResponseStatus(response);
                 const message =
-                    response.success && response.tested_at
-                        ? `Connection successful (${formatDate(response.tested_at)})`
-                        : response.success
-                        ? 'Connection successful'
-                        : extractErrorMessage(response.error, 'Connection failed');
+                    response.success
+                        ? getConnectionCheckSuccessMessage(response)
+                        : extractErrorMessage(response.error, 'Connection check failed');
 
                 const code =
                     !response.success && response.error && typeof response.error !== 'string'
@@ -455,7 +461,7 @@ export default () => {
                         status,
                         provider,
                         message,
-                        tested_at: response.tested_at || new Date().toISOString(),
+                        tested_at: getEmailResponseTimestamp(response),
                         code,
                     },
                 }));
@@ -490,16 +496,16 @@ export default () => {
 
                 const message =
                     status === 'sent'
-                        ? `Test email sent via ${provider.toUpperCase()}`
-                        : extractErrorMessage(response.error, 'Failed to send test email');
+                        ? getDeliveryTestSuccessMessage(response, transport)
+                        : extractErrorMessage(response.error, 'Failed to send delivery test email');
 
                 setTestResults(prev => ({
                     ...prev,
-                    email: {
+                    delivery: {
                         status,
                         provider,
                         message,
-                        tested_at: response.tested_at || new Date().toISOString(),
+                        tested_at: getEmailResponseTimestamp(response),
                         code:
                             status !== 'sent' && response.error && typeof response.error !== 'string'
                                 ? response.error.code
@@ -595,10 +601,10 @@ export default () => {
                                     </div>
                                     <div className={'text-xs text-gray-500'}>
                                         {lastSuccess
-                                            ? `Last successful test: ${new Date(
+                                            ? `Last successful connection check or delivery: ${new Date(
                                                   lastSuccess.tested_at,
                                               ).toLocaleString()}`
-                                            : 'No successful tests yet.'}
+                                            : 'No successful connection checks or delivery tests yet.'}
                                     </div>
                                 </div>
                             </Card>
@@ -763,8 +769,11 @@ export default () => {
                                     <p className={'text-sm text-gray-300'}>
                                         {smtpConfigured ? 'Configured' : 'Missing required fields'}
                                     </p>
-                                    <p className={'text-xs text-gray-500'}>
+                                     <p className={'text-xs text-gray-500'}>
                                         Password set: {smtpPasswordSet ? 'Yes' : 'No'}
+                                    </p>
+                                    <p className={'text-xs text-gray-500'}>
+                                        Uses the configured sender identity, not the recipient delivery test field.
                                     </p>
                                 </div>
                                 <Button
@@ -773,7 +782,7 @@ export default () => {
                                     size={Button.Sizes.Small}
                                 >
                                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
-                                    Test SMTP Connection
+                                    {getConnectionCheckButtonLabel('smtp')}
                                 </Button>
                             </div>
                             {testResults.smtp && <ResultBanner result={testResults.smtp} />}
@@ -842,6 +851,9 @@ export default () => {
                                     <p className={'text-xs text-gray-500'}>
                                         API key set: {resendKeySet ? 'Yes' : 'No'}
                                     </p>
+                                    <p className={'text-xs text-gray-500'}>
+                                        Uses the configured sender identity, not the recipient delivery test field.
+                                    </p>
                                 </div>
                                 <Button
                                     onClick={() => handleTestProvider('resend')}
@@ -849,7 +861,7 @@ export default () => {
                                     size={Button.Sizes.Small}
                                 >
                                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
-                                    Test Resend Connection
+                                    {getConnectionCheckButtonLabel('resend')}
                                 </Button>
                             </div>
                             {testResults.resend && <ResultBanner result={testResults.resend} />}
@@ -862,9 +874,9 @@ export default () => {
                         <Card>
                             <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
                                 <div>
-                                    <Label>Send test email</Label>
+                                    <Label>Send delivery test email</Label>
                                     <p className={'text-sm text-gray-400'}>
-                                        Uses the active provider ({transport.toUpperCase()}).
+                                        {getDeliveryTestDescription(transport)}
                                     </p>
                                 </div>
                                 <StatusBadge status={transport === 'smtp' ? 'info' : 'secondary'} />
@@ -878,10 +890,10 @@ export default () => {
                                 />
                                 <Button onClick={handleSendTestEmail} loading={testingSend} disabled={!testRecipient}>
                                     <FontAwesomeIcon icon={faPaperPlane} className={'mr-2'} />
-                                    Send Test Email
+                                    Send Delivery Test
                                 </Button>
                             </div>
-                            {testResults.email && <ResultBanner result={testResults.email} />}
+                            {testResults.delivery && <ResultBanner result={testResults.delivery} />}
                         </Card>
                         <Card>
                             <div className={'space-y-2'}>
@@ -889,7 +901,7 @@ export default () => {
                                 <ul className={'list-disc space-y-1 pl-5 text-sm text-gray-400'}>
                                     <li>Use a monitored inbox for Reply-To to capture responses.</li>
                                     <li>Configure SPF/DKIM for your domain to avoid spam folders.</li>
-                                    <li>Connection tests validate configuration before attempting delivery.</li>
+                                    <li>Connection checks validate the saved provider setup before you try a recipient delivery test.</li>
                                 </ul>
                             </div>
                         </Card>
@@ -1062,15 +1074,15 @@ const StatusCard = ({
                 </div>
                 <Button onClick={onTest} loading={testing} size={Button.Sizes.Small}>
                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
-                    Test
+                    Check Connection
                 </Button>
             </div>
             <div className={'text-sm text-gray-300'}>
                 {lastTest
-                    ? `${lastTest.status === 'sent' ? 'Last success' : 'Last result'} • ${new Date(
+                    ? `${lastTest.status === 'sent' ? 'Last connection check' : 'Last result'} • ${new Date(
                           lastTest.tested_at,
                       ).toLocaleString()}`
-                    : 'No tests yet'}
+                    : 'No connection checks yet'}
             </div>
         </div>
     );
@@ -1092,14 +1104,12 @@ const ResultBanner = ({ result }: { result: TestResult }) => (
             <span className={'font-semibold'}>
                 {getEmailStatusPresentation(result.status).label} — {result.provider.toUpperCase()}
             </span>
-            <span className={'text-xs text-gray-300'}>{formatDate(result.tested_at)}</span>
+            <span className={'text-xs text-gray-300'}>{formatTestFlowDate(result.tested_at)}</span>
         </div>
         <p className={'mt-1 text-sm text-white'}>{result.message}</p>
         {result.code && <p className={'text-xs text-gray-400'}>Code: {result.code}</p>}
     </div>
 );
-
-const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : '');
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
     if (!error) return fallback;

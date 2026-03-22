@@ -9,6 +9,8 @@ use Everest\Http\Requests\Api\Application\Email\GetEmailQuotaInfoRequest;
 use Everest\Http\Requests\Api\Application\Email\GetEmailTemplateKeysRequest;
 use Everest\Http\Requests\Api\Application\Email\GetUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\ManageDeferredEmailRequest;
+use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
+use Everest\Http\Requests\Api\Application\Email\TestEmailConnectionRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailNotificationSettingRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\ViewEmailActivityRequest;
@@ -45,6 +47,16 @@ class EmailPermissionsRequestTest extends TestCase
     public function testDeferredQueueActionsUseEmailSendPermission(): void
     {
         $this->assertSame(AdminRole::EMAIL_SEND, (new ManageDeferredEmailRequest())->permission());
+        $this->assertSame(AdminRole::EMAIL_SEND, (new SendTestEmailRequest())->permission());
+        $this->assertSame(AdminRole::EMAIL_SEND, (new TestEmailConnectionRequest())->permission());
+    }
+
+    public function testSendTestEmailRequestRequiresAValidRecipient(): void
+    {
+        $request = new SendTestEmailRequest();
+
+        $this->assertFalse(Validator::make(['to' => 'not-an-email'], $request->rules())->passes());
+        $this->assertTrue(Validator::make(['to' => 'admin@example.com'], $request->rules())->passes());
     }
 
     public function testEmailActivityRequestNormalizesBooleanQueryStrings(): void

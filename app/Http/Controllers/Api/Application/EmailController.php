@@ -29,6 +29,9 @@ use Everest\Http\Requests\Api\Application\Email\TestEmailConnectionRequest;
 
 class EmailController extends ApplicationApiController
 {
+    private const ACTION_SEND_TEST = 'send_test';
+    private const ACTION_CONNECTION_TEST = 'connection_test';
+
     /**
      * EmailController constructor.
      */
@@ -108,7 +111,7 @@ class EmailController extends ApplicationApiController
     }
 
     /**
-     * Send a test email.
+     * Send a real delivery test email to a specific recipient.
      */
     public function sendTest(SendTestEmailRequest $request): JsonResponse
     {
@@ -118,7 +121,7 @@ class EmailController extends ApplicationApiController
             return $this->formatEmailResult(
                 EmailResult::skipped('disabled'),
                 $this->settings->transport(),
-                'send_test',
+                self::ACTION_SEND_TEST,
                 $recipient
             );
         }
@@ -127,7 +130,7 @@ class EmailController extends ApplicationApiController
             return $this->formatEmailResult(
                 EmailResult::blocked('blocked_invalid_recipient'),
                 $this->settings->transport(),
-                'send_test',
+                self::ACTION_SEND_TEST,
                 $recipient
             );
         }
@@ -135,19 +138,19 @@ class EmailController extends ApplicationApiController
         try {
             $result = $this->emailManager->sendCustom(
                 to: $recipient,
-                subject: 'Test Email',
-                html: '<h1>Test Email</h1><p>This is a test email from the email system. If you received this, your email configuration is working correctly!</p>'
+                subject: 'Email delivery test',
+                html: '<h1>Email Delivery Test</h1><p>This is a real test email sent from the email settings screen. If you received it, your current email delivery provider can reach recipient inboxes.</p>'
             );
 
             Activity::event('admin:email:test')
                 ->property('to', $recipient)
                 ->property('message_id', $result->messageId)
-                ->description($result->success ? 'Test email sent successfully' : 'Test email failed')
+                ->description($result->success ? 'Delivery test email sent successfully' : 'Delivery test email failed')
                 ->log();
 
-            return $this->formatEmailResult($result, EmailManager::getTransport(), 'send_test', $recipient);
+            return $this->formatEmailResult($result, EmailManager::getTransport(), self::ACTION_SEND_TEST, $recipient);
         } catch (ResendException $e) {
-            return $this->formatExceptionError($e, EmailManager::getTransport());
+            return $this->formatExceptionError($e, EmailManager::getTransport(), self::ACTION_SEND_TEST, $recipient);
         }
     }
 
@@ -158,7 +161,7 @@ class EmailController extends ApplicationApiController
     {
         $result = $this->emailManager->testTransport('smtp');
 
-        return $this->formatEmailResult($result, 'smtp', 'connection_test');
+        return $this->formatEmailResult($result, 'smtp', self::ACTION_CONNECTION_TEST);
     }
 
     /**
@@ -168,7 +171,7 @@ class EmailController extends ApplicationApiController
     {
         $result = $this->emailManager->testTransport('resend');
 
-        return $this->formatEmailResult($result, 'resend', 'connection_test');
+        return $this->formatEmailResult($result, 'resend', self::ACTION_CONNECTION_TEST);
     }
 
     /**
@@ -306,6 +309,7 @@ class EmailController extends ApplicationApiController
         if ($result->success) {
             $payload = [
                 'success' => true,
+                'action' => $action,
                 'provider' => $provider,
                 'message_id' => $result->messageId,
                 'recipient' => $recipient,
@@ -316,7 +320,7 @@ class EmailController extends ApplicationApiController
             if ($this->isTestAction($action)) {
                 $payload['tested_at'] = now()->toIso8601String();
             }
-            if ($this->isSendAction($action)) {
+            if ($action === self::ACTION_SEND_TEST) {
                 $payload['sent_at'] = now()->toIso8601String();
             }
 
@@ -327,6 +331,7 @@ class EmailController extends ApplicationApiController
 
         return response()->json([
             'success' => false,
+            'action' => $action,
             'provider' => $provider,
             'status' => $result->status ?? EmailDelivery::STATUS_FAILED,
             'reason' => $result->reason,
@@ -338,16 +343,23 @@ class EmailController extends ApplicationApiController
         ], $status);
     }
 
-    private function formatExceptionError(\Throwable $e, string $provider): JsonResponse
+    private function formatExceptionError(
+        \Throwable $e,
+        string $provider,
+        string $action = self::ACTION_SEND_TEST,
+        ?string $recipient = null
+    ): JsonResponse
     {
         return response()->json([
             'success' => false,
+            'action' => $action,
             'provider' => $provider,
+            'recipient' => $recipient,
             'status' => EmailDelivery::STATUS_FAILED,
             'error' => [
                 'code' => strtoupper($provider) . '_UNEXPECTED_ERROR',
                 'status' => 500,
-                'message' => $e->getMessage(),
+                'message' => 'Unexpected email provider error. Check the server logs for details.',
             ],
         ], 500);
     }
@@ -371,11 +383,11 @@ class EmailController extends ApplicationApiController
 
     private function isTestAction(string $action): bool
     {
-        return in_array($action, ['send_test', 'connection_test'], true);
+        return in_array($action, [self::ACTION_SEND_TEST, self::ACTION_CONNECTION_TEST], true);
     }
 
     private function isSendAction(string $action): bool
     {
-        return in_array($action, ['custom_send'], true);
+        return in_array($action, ['custom_send', self::ACTION_SEND_TEST], true);
     }
 }

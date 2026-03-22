@@ -61,8 +61,10 @@ export interface EmailError {
 
 export interface EmailResponse {
     success: boolean;
+    action?: 'connection_test' | 'send_test';
     message_id?: string;
     provider?: EmailTransport;
+    sent_at?: string;
     tested_at?: string;
     recipient?: string;
     status?: EmailStatus;
