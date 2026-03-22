@@ -6,7 +6,7 @@ use Everest\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
 use Everest\Events\Email\EmailVerificationRequested;
-use Everest\Models\Setting;
+use Everest\Services\Email\EmailManager;
 
 class EmailVerificationService
 {
@@ -40,14 +40,6 @@ class EmailVerificationService
 
     private function emailSendingEnabled(): bool
     {
-        $raw = Setting::get('settings::modules:email:resend:enabled', false);
-
-        if (is_bool($raw)) {
-            return $raw;
-        }
-
-        $value = strtolower((string) $raw);
-
-        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+        return EmailManager::isDeliveryEnabled();
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\View\View;
 use Everest\Models\Setting;
 use Everest\Services\Billing\PaymentProcessorConfigService;
 use Everest\Services\Email\EmailVerificationGate;
+use Everest\Services\Email\EmailManager;
 
 class EverestComposer
 {
@@ -150,14 +151,6 @@ class EverestComposer
 
     private function emailEnabled(): bool
     {
-        $raw = Setting::get('settings::modules:email:resend:enabled', config('modules.email.enabled', false));
-
-        if (is_bool($raw)) {
-            return $raw;
-        }
-
-        $value = strtolower((string) $raw);
-
-        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+        return EmailManager::isDeliveryEnabled();
     }
 }

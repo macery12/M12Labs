@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Exceptions\Service\Email\ResendException;
-use Everest\Http\Requests\Api\Application\Email\UpdateResendSettingsRequest;
+use Everest\Http\Requests\Api\Application\Email\UpdateEmailSettingsRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateVerificationRulesRequest;
 use Everest\Http\Requests\Api\Application\Email\SendCustomEmailRequest;
 use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
@@ -33,11 +33,24 @@ class EmailController extends ApplicationApiController
     public function getSettings(): JsonResponse
     {
         return response()->json([
-            'enabled' => Setting::get('settings::modules:email:resend:enabled', 'false') === 'true',
-            'api_key' => !empty(Setting::get('settings::modules:email:resend:api_key', '')),
-            'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
-            'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
-            'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
+            'transport' => EmailManager::getTransport(),
+            'enabled' => EmailManager::isDeliveryEnabled(),
+            'resend' => [
+                'api_key' => !empty(Setting::get('settings::modules:email:resend:api_key', '')),
+                'from_email' => Setting::get('settings::modules:email:resend:from_email', ''),
+                'from_name' => Setting::get('settings::modules:email:resend:from_name', ''),
+                'reply_to' => Setting::get('settings::modules:email:resend:reply_to', ''),
+            ],
+            'smtp' => [
+                'host' => Setting::get('settings::modules:email:smtp:host', ''),
+                'port' => Setting::get('settings::modules:email:smtp:port', ''),
+                'username' => Setting::get('settings::modules:email:smtp:username', ''),
+                'password_set' => !empty(Setting::get('settings::modules:email:smtp:password', '')),
+                'encryption' => Setting::get('settings::modules:email:smtp:encryption', ''),
+                'from_email' => Setting::get('settings::modules:email:smtp:from_email', ''),
+                'from_name' => Setting::get('settings::modules:email:smtp:from_name', ''),
+                'reply_to' => Setting::get('settings::modules:email:smtp:reply_to', ''),
+            ],
         ]);
     }
 
@@ -59,25 +72,44 @@ class EmailController extends ApplicationApiController
     }
 
     /**
-     * Update the Resend email settings.
+     * Update the email settings (transport + provider configs).
      *
      * @throws \Throwable
      */
-    public function updateSettings(UpdateResendSettingsRequest $request): JsonResponse
+    public function updateSettings(UpdateEmailSettingsRequest $request): JsonResponse
     {
+        $shouldClearApiKey = $request->boolean('clear_api_key');
+        $shouldClearSmtpPassword = $request->boolean('clear_smtp_password');
+
         foreach ($request->normalize() as $key => $value) {
-            // Don't overwrite existing API key with empty string
-            // This prevents the placeholder from clearing the real key
-            if ($key === 'modules:email:resend:api_key' && empty($value)) {
+            // Avoid overwriting an existing key with empty string unless explicitly clearing.
+            if ($key === 'modules:email:resend:api_key' && empty($value) && !$shouldClearApiKey) {
                 continue;
             }
-            
+            if ($key === 'modules:email:smtp:password' && empty($value) && !$shouldClearSmtpPassword) {
+                continue;
+            }
+
             Setting::set('settings::' . $key, $value);
         }
 
+        $activitySettings = $request->all();
+        if (array_key_exists('api_key', $activitySettings)) {
+            $activitySettings['api_key'] = '[REDACTED]';
+        }
+        if (array_key_exists('clear_api_key', $activitySettings)) {
+            $activitySettings['clear_api_key'] = (bool) $activitySettings['clear_api_key'];
+        }
+        if (array_key_exists('clear_smtp_password', $activitySettings)) {
+            $activitySettings['clear_smtp_password'] = (bool) $activitySettings['clear_smtp_password'];
+        }
+        if (array_key_exists('smtp_password', $activitySettings)) {
+            $activitySettings['smtp_password'] = '[REDACTED]';
+        }
+
         Activity::event('admin:email:update')
-            ->property('settings', $request->all())
-            ->description('Resend email settings were updated')
+            ->property('settings', $activitySettings)
+            ->description('Email settings were updated')
             ->log();
 
         // Return updated settings instead of 204
@@ -92,8 +124,8 @@ class EmailController extends ApplicationApiController
         try {
             $result = $this->emailManager->sendCustom(
                 to: $request->input('to'),
-                subject: 'Test Email from Resend',
-                html: '<h1>Test Email</h1><p>This is a test email from the Resend email system. If you received this, your email configuration is working correctly!</p>'
+                subject: 'Test Email',
+                html: '<h1>Test Email</h1><p>This is a test email from the email system. If you received this, your email configuration is working correctly!</p>'
             );
 
             if (!$result->success) {

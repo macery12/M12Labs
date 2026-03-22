@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Auth;
 
 use Everest\Models\User;
-use Everest\Models\Setting;
 use Everest\Models\EmailNotificationSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -11,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Services\Auth\PasswordResetService;
+use Everest\Services\Email\EmailManager;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\Rules\Password;
 
@@ -113,21 +113,6 @@ class ForgotPasswordController extends AbstractLoginController
             return false;
         }
 
-        $emailResendEnabled = strtolower((string) Setting::get('settings::modules:email:resend:enabled', '0'));
-        if (in_array($emailResendEnabled, ['1', 'true', 'yes', 'on'], true)) {
-            return true;
-        }
-
-        $mailer = config('mail.default');
-
-        if (in_array($mailer, ['array', 'log'], true) || !config('mail.from.address')) {
-            return false;
-        }
-
-        if ($mailer === 'smtp' && !config('mail.mailers.smtp.host')) {
-            return false;
-        }
-
-        return (bool) config("mail.mailers.{$mailer}.transport");
+        return EmailManager::isDeliveryEnabled();
     }
 }

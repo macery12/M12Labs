@@ -2,8 +2,9 @@
 
 namespace Everest\Services\Email;
 
-use Everest\Models\Setting;
 use Everest\Models\User;
+use Everest\Models\Setting;
+use Everest\Services\Email\EmailManager;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -155,13 +156,6 @@ class EmailVerificationGate
             return false;
         }
 
-        $raw = Setting::get('settings::modules:email:resend:enabled', config('modules.email.enabled', false));
-        if (is_bool($raw)) {
-            return $raw;
-        }
-
-        $value = strtolower((string) $raw);
-
-        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+        return EmailManager::isDeliveryEnabled();
     }
 }

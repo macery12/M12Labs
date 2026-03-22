@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import AdminBox from '@/elements/AdminBox';
@@ -6,57 +6,92 @@ import { faEnvelope, faCheckCircle, faSpinner } from '@fortawesome/free-solid-sv
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useFlash from '@/plugins/useFlash';
 import useStatus from '@/plugins/useStatus';
-import { getSettings, updateSettings, ResendSettings } from '@/api/routes/admin/email';
 import { Button } from '@/elements/button';
-import debounce from 'debounce';
 import { useStoreState } from '@/state/hooks';
+import { EmailSettings, EmailSettingsUpdate, EmailTransport, getSettings, updateSettings } from '@/api/routes/admin/email';
+import SendTestEmail from '@/components/admin/modules/email/SendTestEmail';
 
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
     const { secondary } = useStoreState((state) => state.theme.data!.colors);
-    
-    // Settings loaded from API (not everest state)
-    const [settings, setSettings] = useState<ResendSettings | null>(null);
+
+    const [settings, setSettings] = useState<EmailSettings | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Form state - controlled components
+    // Shared state
     const [enabled, setEnabled] = useState(false);
+    const [transport, setTransport] = useState<EmailTransport>('smtp');
+
+    // Resend state
     const [apiKey, setApiKey] = useState('');
     const [fromEmail, setFromEmail] = useState('');
     const [fromName, setFromName] = useState('');
     const [replyTo, setReplyTo] = useState('');
 
-    // Loading states for individual save operations
+    // SMTP state
+    const [smtpHost, setSmtpHost] = useState('');
+    const [smtpPort, setSmtpPort] = useState('');
+    const [smtpUsername, setSmtpUsername] = useState('');
+    const [smtpPassword, setSmtpPassword] = useState('');
+    const [smtpEncryption, setSmtpEncryption] = useState('');
+    const [smtpFromEmail, setSmtpFromEmail] = useState('');
+    const [smtpFromName, setSmtpFromName] = useState('');
+    const [smtpReplyTo, setSmtpReplyTo] = useState('');
+
     const [savingEnabled, setSavingEnabled] = useState(false);
     const [savingApiKey, setSavingApiKey] = useState(false);
+    const [savingTransport, setSavingTransport] = useState(false);
+    const [showInactiveResend, setShowInactiveResend] = useState(false);
+    const [showInactiveSmtp, setShowInactiveSmtp] = useState(false);
+    const [clearingSmtpPassword, setClearingSmtpPassword] = useState(false);
 
-    // Load settings from API on mount
     useEffect(() => {
         setLoading(true);
         getSettings()
             .then((data) => {
                 setSettings(data);
                 setEnabled(data.enabled);
-                setFromEmail(data.from_email || '');
-                setFromName(data.from_name || '');
-                setReplyTo(data.reply_to || '');
+                setTransport(data.transport);
+
+                setFromEmail(data.resend.from_email || '');
+                setFromName(data.resend.from_name || '');
+                setReplyTo(data.resend.reply_to || '');
+
+                setSmtpHost(data.smtp.host || '');
+                setSmtpPort(data.smtp.port || '');
+                setSmtpUsername(data.smtp.username || '');
+                setSmtpEncryption(data.smtp.encryption || '');
+                setSmtpFromEmail(data.smtp.from_email || '');
+                setSmtpFromName(data.smtp.from_name || '');
+                setSmtpReplyTo(data.smtp.reply_to || '');
                 setLoading(false);
             })
             .catch((error) => {
                 setLoading(false);
-                clearAndAddHttpError({ key: 'email:resend:load', error });
+                clearAndAddHttpError({ key: 'email:settings:load', error });
             });
     }, []);
 
-    // Change detection - ONLY for from_email, from_name, reply_to (Save Settings button)
-    const hasFormChanges = settings
-        ? fromEmail !== (settings.from_email || '') ||
-          fromName !== (settings.from_name || '') ||
-          replyTo !== (settings.reply_to || '')
+    const hasResendChanges = settings
+        ? fromEmail !== (settings.resend.from_email || '') ||
+          fromName !== (settings.resend.from_name || '') ||
+          replyTo !== (settings.resend.reply_to || '') ||
+          apiKey.trim().length > 0
         : false;
 
-    // Save enabled/disabled status immediately
+    const normalizedSettingsPort = (settings?.smtp.port || '').toString();
+    const hasSmtpChanges = settings
+        ? smtpHost !== (settings.smtp.host || '') ||
+          smtpPort !== normalizedSettingsPort ||
+          smtpUsername !== (settings.smtp.username || '') ||
+          smtpEncryption !== (settings.smtp.encryption || '') ||
+          smtpFromEmail !== (settings.smtp.from_email || '') ||
+          smtpFromName !== (settings.smtp.from_name || '') ||
+          smtpReplyTo !== (settings.smtp.reply_to || '') ||
+          smtpPassword.trim().length > 0
+        : false;
+
     const saveEnabledStatus = (newEnabled: boolean) => {
         setSavingEnabled(true);
         clearFlashes();
@@ -68,96 +103,191 @@ export default () => {
                 setEnabled(updatedSettings.enabled);
 
                 addFlash({
-                    key: 'email:resend:enabled',
+                    key: 'email:settings:enabled',
                     type: 'success',
-                    message: `Email system ${newEnabled ? 'enabled' : 'disabled'} successfully`,
+                    message: `Email delivery ${newEnabled ? 'enabled' : 'disabled'} successfully`,
                 });
             })
             .catch((error) => {
                 setSavingEnabled(false);
-                // Revert the toggle on error
                 setEnabled(!newEnabled);
-                clearAndAddHttpError({ key: 'email:resend:enabled', error });
+                clearAndAddHttpError({ key: 'email:settings:enabled', error });
             });
     };
 
-    // Toggle enabled/disabled with instant save
     const toggleEnabled = () => {
         const newEnabled = !enabled;
         setEnabled(newEnabled);
         saveEnabledStatus(newEnabled);
     };
 
-    // Auto-save API key with debounce
-    const saveApiKeyDebounced = useCallback(
-        debounce((key: string) => {
-            if (!key.trim()) {
-                setSavingApiKey(false);
-                return;
-            }
-
-            updateSettings({ api_key: key })
-                .then((updatedSettings) => {
-                    setSavingApiKey(false);
-                    setSettings(updatedSettings);
-                    setApiKey(''); // Clear for security
-
-                    addFlash({
-                        key: 'email:resend:apikey',
-                        type: 'success',
-                        message: 'API key saved successfully',
-                    });
-                })
-                .catch((error) => {
-                    setSavingApiKey(false);
-                    clearAndAddHttpError({ key: 'email:resend:apikey', error });
-                });
-        }, 1000),
-        []
-    );
-
-    const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setApiKey(value);
-        
-        if (value.trim()) {
-            setSavingApiKey(true);
-            saveApiKeyDebounced(value);
-        }
-    };
-
-    // Save other settings (from_email, from_name, reply_to) via button
-    const handleSaveSettings = () => {
+    const handleSaveResend = () => {
         clearFlashes();
         setStatus('processing');
 
-        updateSettings({
+        const payload: EmailSettingsUpdate = {
             from_email: fromEmail,
             from_name: fromName,
             reply_to: replyTo,
-        })
+        };
+
+        if (apiKey.trim().length > 0) {
+            payload.api_key = apiKey.trim();
+            setSavingApiKey(true);
+        }
+
+        updateSettings(payload)
             .then((updatedSettings) => {
                 setStatus('success');
                 setSettings(updatedSettings);
-                setFromEmail(updatedSettings.from_email || '');
-                setFromName(updatedSettings.from_name || '');
-                setReplyTo(updatedSettings.reply_to || '');
+                setFromEmail(updatedSettings.resend.from_email || '');
+                setFromName(updatedSettings.resend.from_name || '');
+                setReplyTo(updatedSettings.resend.reply_to || '');
+                setApiKey('');
+                setSavingApiKey(false);
 
                 addFlash({
-                    key: 'email:resend:settings',
+                    key: 'email:settings:resend',
                     type: 'success',
-                    message: 'Email settings saved successfully',
+                    message: 'Resend settings saved successfully',
                 });
             })
             .catch((error) => {
                 setStatus('error');
-                clearAndAddHttpError({ key: 'email:resend:settings', error });
+                setSavingApiKey(false);
+                clearAndAddHttpError({ key: 'email:settings:resend', error });
             });
     };
 
-    if (loading) {
+    const handleClearApiKey = () => {
+        if (savingApiKey || !settings?.resend.api_key) {
+            return;
+        }
+
+        clearFlashes();
+        setSavingApiKey(true);
+        setStatus('processing');
+
+        updateSettings({ api_key: '', clear_api_key: true })
+            .then((updatedSettings) => {
+                setStatus('success');
+                setSettings(updatedSettings);
+                setApiKey('');
+                addFlash({
+                    key: 'email:settings:resend',
+                    type: 'success',
+                    message: 'Resend API key cleared',
+                });
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:resend', error });
+            })
+            .finally(() => setSavingApiKey(false));
+    };
+
+    const handleSaveSmtp = () => {
+        clearFlashes();
+        setStatus('processing');
+        const payload: EmailSettingsUpdate = {
+            smtp_host: smtpHost,
+            smtp_port: smtpPort,
+            smtp_username: smtpUsername,
+            smtp_encryption: smtpEncryption,
+            smtp_from_email: smtpFromEmail,
+            smtp_from_name: smtpFromName,
+            smtp_reply_to: smtpReplyTo,
+        };
+
+        if (smtpPassword.trim()) {
+            payload.smtp_password = smtpPassword;
+        }
+
+        updateSettings(payload)
+            .then((updatedSettings) => {
+                setStatus('success');
+                setSettings(updatedSettings);
+                setSmtpHost(updatedSettings.smtp.host || '');
+                setSmtpPort(updatedSettings.smtp.port || '');
+                setSmtpUsername(updatedSettings.smtp.username || '');
+                setSmtpEncryption(updatedSettings.smtp.encryption || '');
+                setSmtpFromEmail(updatedSettings.smtp.from_email || '');
+                setSmtpFromName(updatedSettings.smtp.from_name || '');
+                setSmtpReplyTo(updatedSettings.smtp.reply_to || '');
+                setSmtpPassword('');
+
+                addFlash({
+                    key: 'email:settings:smtp',
+                    type: 'success',
+                    message: 'SMTP settings saved successfully',
+                });
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:smtp', error });
+            });
+    };
+
+    const handleClearSmtpPassword = () => {
+        if (clearingSmtpPassword || !settings?.smtp.password_set) {
+            return;
+        }
+
+        clearFlashes();
+        setClearingSmtpPassword(true);
+        setStatus('processing');
+
+        updateSettings({ smtp_password: '', clear_smtp_password: true })
+            .then((updatedSettings) => {
+                setStatus('success');
+                setSettings(updatedSettings);
+                setSmtpPassword('');
+
+                addFlash({
+                    key: 'email:settings:smtp',
+                    type: 'success',
+                    message: 'SMTP password cleared',
+                });
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:smtp', error });
+            })
+            .finally(() => setClearingSmtpPassword(false));
+    };
+
+    const handleTransportChange = (value: EmailTransport) => {
+        if (value === transport) {
+            return;
+        }
+
+        const previous = transport;
+        setSavingTransport(true);
+        setTransport(value);
+        clearFlashes();
+
+        updateSettings({ transport: value })
+            .then((updated) => {
+                setSavingTransport(false);
+                setSettings(updated);
+                setTransport(updated.transport);
+
+                addFlash({
+                    key: 'email:settings:transport',
+                    type: 'success',
+                    message: `Active transport switched to ${getTransportLabel(updated.transport)}`,
+                });
+            })
+            .catch((error) => {
+                setSavingTransport(false);
+                setTransport(previous);
+                clearAndAddHttpError({ key: 'email:settings:transport', error });
+            });
+    };
+
+    if (loading || !settings) {
         return (
-            <AdminBox title={'Resend Email Settings'} icon={faEnvelope}>
+            <AdminBox title={'Email Settings'} icon={faEnvelope}>
                 <div className={'flex items-center justify-center py-8'}>
                     <FontAwesomeIcon icon={faSpinner} className={'fa-spin text-gray-400'} size={'2x'} />
                 </div>
@@ -166,174 +296,534 @@ export default () => {
     }
 
     const StatusToggleButton = enabled ? Button.Success : Button.Danger;
-
     const toggleHint = 'Saves instantly when toggled';
+    const isResendActive = transport === 'resend';
+    const isSmtpActive = transport === 'smtp';
+    const transportLabel = getTransportLabel(transport);
 
     return (
-        <AdminBox title={'Resend Email Settings'} icon={faEnvelope} status={status}>
-            <div className={'grid grid-cols-1 gap-6'}>
-                {/* Enable/Disable Toggle - Instant Save */}
-                <div
-                    className={'rounded-lg border border-neutral-700 p-4'}
-                    style={{ backgroundColor: secondary }}
-                >
-                    <div className={'flex flex-col gap-3 md:flex-row md:items-center md:justify-between'}>
-                        <div className={'flex items-center gap-3'}>
-                            <span
-                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold ${
-                                    enabled
-                                        ? 'border-green-500/60 bg-green-950 text-green-100'
-                                        : 'border-red-500/60 bg-red-950 text-red-100'
-                                }`}
-                            >
-                                <span
-                                    className={`h-2 w-2 rounded-full ${
-                                        enabled ? 'bg-green-400' : 'bg-red-400'
-                                    }`}
-                                />
-                                {enabled ? 'Email delivery is enabled' : 'Email delivery is disabled'}
-                            </span>
-                            <span className={'hidden text-sm text-gray-400 md:inline'}>{toggleHint}</span>
+        <AdminBox title={'Email Settings'} icon={faEnvelope} status={status}>
+            <div className={'flex flex-col gap-6'}>
+                <StatusBanner
+                    enabled={enabled}
+                    transport={transportLabel}
+                    onToggle={toggleEnabled}
+                    saving={savingEnabled}
+                    secondary={secondary}
+                    toggleHint={toggleHint}
+                />
+
+                <Card sectionBg={secondary}>
+                    <div className={'space-y-3'}>
+                        <div className={'space-y-1'}>
+                            <Label>Delivery Method</Label>
+                            <p className={'text-sm text-gray-400'}>Choose which transport is active.</p>
                         </div>
-                        <div className={'flex items-center gap-2'}>
-                            <StatusToggleButton onClick={toggleEnabled} disabled={savingEnabled} loading={savingEnabled}>
-                                {enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}
-                            </StatusToggleButton>
+                        <div className={'grid grid-cols-1 gap-3 sm:grid-cols-2'}>
+                            <TransportChoice
+                                label={'Resend'}
+                                description={'Use Resend API for delivery'}
+                                active={isResendActive}
+                                onSelect={() => handleTransportChange('resend')}
+                                disabled={savingTransport}
+                            />
+                            <TransportChoice
+                                label={'SMTP'}
+                                description={'Use your SMTP server'}
+                                active={isSmtpActive}
+                                onSelect={() => handleTransportChange('smtp')}
+                                disabled={savingTransport}
+                            />
                         </div>
                     </div>
-                    <p className={'mt-2 text-xs text-gray-400 md:hidden'}>{toggleHint}</p>
-                </div>
+                </Card>
 
-                {/* API Key - Auto-Save */}
-                <div
-                    className={'space-y-2 rounded-lg border border-neutral-700 p-4'}
-                    style={{ backgroundColor: secondary }}
-                >
-                    <Label>
-                        API Key
-                        {settings?.api_key && (
-                            <FontAwesomeIcon
-                                icon={faCheckCircle}
-                                className={'ml-2 text-green-500'}
-                                title="API key is configured"
-                            />
-                        )}
-                        {savingApiKey && (
-                            <FontAwesomeIcon
-                                icon={faSpinner}
-                                className={'ml-2 fa-spin text-blue-500'}
-                            />
-                        )}
-                    </Label>
+                {/* Active transport (primary focus) */}
+                {isResendActive ? renderResendForm(true) : renderSmtpForm(true)}
+
+                {/* Collapsed inactive transport */}
+                {!isResendActive && renderResendForm(false, showInactiveResend, () => setShowInactiveResend((v) => !v))}
+                {!isSmtpActive && renderSmtpForm(false, showInactiveSmtp, () => setShowInactiveSmtp((v) => !v))}
+
+                <Card sectionBg={secondary}>
+                    <div className={'flex flex-col gap-2'}>
+                        <div className={'flex items-center justify-between'}>
+                            <div className={'space-y-1'}>
+                                <h3 className={'text-lg font-semibold text-white'}>Send a Test Email</h3>
+                                <p className={'text-sm text-gray-400'}>
+                                    After configuring the active transport, send yourself a test to confirm delivery.
+                                </p>
+                            </div>
+                        </div>
+                        <SendTestEmail />
+                    </div>
+                </Card>
+            </div>
+        </AdminBox>
+    );
+
+    function renderResendForm(active: boolean, expanded?: boolean, toggleExpand?: () => void) {
+        const content = (
+            <div className={'space-y-5'}>
+                <Card sectionBg={secondary}>
+                    <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                        <div className={'space-y-1'}>
+                            <Label>API Key</Label>
+                            <p className={'text-sm text-gray-400'}>
+                                Enter a key then click “Save Resend Settings.” Use the clear button to remove a saved key.
+                            </p>
+                        </div>
+                        <div className={'flex items-center gap-2'}>
+                            {settings?.resend.api_key && (
+                                <span className={'inline-flex items-center gap-1 text-sm text-green-400'}>
+                                    <FontAwesomeIcon icon={faCheckCircle} />
+                                    Key saved
+                                </span>
+                            )}
+                            {savingApiKey && <FontAwesomeIcon icon={faSpinner} className={'fa-spin text-blue-500'} />}
+                        </div>
+                    </div>
                     <Input
                         type={'password'}
                         value={apiKey}
-                        onChange={handleApiKeyChange}
-                        disabled={savingApiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        disabled={savingApiKey || !enabled}
                         placeholder={
-                            settings?.api_key
+                            settings?.resend.api_key
                                 ? 'API key is configured - enter a new key to replace it'
                                 : 'Enter your Resend API key'
                         }
                     />
-                    {settings?.api_key && (
-                        <p className={'mt-1 text-sm text-green-400'}>
-                            <FontAwesomeIcon icon={faCheckCircle} className={'mr-1'} />
-                            API key is configured
-                        </p>
-                    )}
-                    <p className={'text-sm text-gray-400'}>
-                        Auto-saves after 1 second — get your API key from{' '}
-                        <a
-                            href="https://resend.com/api-keys"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={'text-blue-400 hover:text-blue-300'}
-                        >
-                            resend.com/api-keys
-                        </a>
-                    </p>
-                    <p className={'text-sm text-yellow-400'}>
-                        🔒 API keys are encrypted in transit via HTTPS and stored securely in the database
-                    </p>
-                </div>
-
-                <hr className={'border-gray-700'} />
-
-                <p className={'text-sm text-gray-400'}>
-                    <strong>Email Configuration</strong> - Use the Save Settings button below
-                </p>
-
-                {/* From Email - Manual Save */}
-                <div>
-                    <Label>
-                        From Email <span className={'text-red-500'}>*</span>
-                    </Label>
-                    <Input
-                        type={'email'}
-                        value={fromEmail}
-                        onChange={(e) => setFromEmail(e.target.value)}
-                        placeholder={'noreply@yourdomain.com'}
-                    />
-                    <div className={'mt-3 space-y-2 rounded-md border border-amber-500/40 bg-amber-900/30 p-3 text-sm'}>
-                        <div className={'text-amber-100'}>
-                            <strong className={'text-amber-200'}>Important:</strong> Verify this domain in Resend{' '}
+                    <div className={'mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                        <p className={'text-sm text-gray-400'}>
+                            Get your key at{' '}
                             <a
-                                href="https://resend.com/domains"
+                                href="https://resend.com/api-keys"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={'text-blue-300 hover:text-blue-200 underline'}
+                                className={'text-blue-400 hover:text-blue-300'}
                             >
-                                resend.com/domains
-                            </a>{' '}
-                            or sends will fail with “domain is invalid”.
-                        </div>
-                        <div className={'text-amber-100'}>
-                            <strong className={'text-amber-200'}>Tip:</strong> Avoid <code>noreply@</code>; use a
-                            monitored inbox like <code>support@</code> or <code>hello@</code> to reduce spam filtering.
+                                resend.com/api-keys
+                            </a>
+                        </p>
+                        <div className={'flex items-center gap-3'}>
+                            <Button.Danger
+                                size={Button.Sizes.Small}
+                                onClick={handleClearApiKey}
+                                disabled={!enabled || !settings?.resend.api_key}
+                                loading={savingApiKey}
+                            >
+                                Clear saved key
+                            </Button.Danger>
                         </div>
                     </div>
-                </div>
+                </Card>
 
-                {/* From Name - Manual Save */}
-                <div>
-                    <Label>From Name</Label>
-                    <Input
-                        value={fromName}
-                        onChange={(e) => setFromName(e.target.value)}
-                        placeholder={'Your App Name'}
+                <Card sectionBg={secondary}>
+                    <SectionHeader
+                        title={'Sender details'}
+                        description={'Who the email appears to come from.'}
                     />
-                    <p className={'mt-2 text-sm text-gray-400'}>
-                        The name that appears in the "From" field of emails
-                    </p>
-                </div>
-
-                {/* Reply-To Email - Manual Save */}
-                <div>
-                    <Label>Reply-To Email</Label>
-                    <Input
-                        type={'email'}
-                        value={replyTo}
-                        onChange={(e) => setReplyTo(e.target.value)}
-                        placeholder={'support@yourdomain.com'}
-                    />
-                    <p className={'mt-2 text-sm text-gray-400'}>
-                        Email address where replies will be sent (optional)
-                    </p>
-                </div>
-
-                {/* Save Settings Button - Manual Save */}
-                <div>
-                    <Button onClick={handleSaveSettings} disabled={!hasFormChanges || status === 'processing'}>
-                        Save Settings
-                    </Button>
-                    {!hasFormChanges && (
-                        <p className={'mt-2 text-sm text-gray-400'}>
-                            No changes to save
+                    <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
+                        <div className={'space-y-2'}>
+                            <Label>
+                                From Email <span className={'text-red-500'}>*</span>
+                            </Label>
+                            <Input
+                                type={'email'}
+                                value={fromEmail}
+                                onChange={(e) => setFromEmail(e.target.value)}
+                                placeholder={'noreply@yourdomain.com'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>From Name</Label>
+                            <Input
+                                value={fromName}
+                                onChange={(e) => setFromName(e.target.value)}
+                                placeholder={'Your App Name'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>Reply-To Email</Label>
+                            <Input
+                                type={'email'}
+                                value={replyTo}
+                                onChange={(e) => setReplyTo(e.target.value)}
+                                placeholder={'support@yourdomain.com'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                    </div>
+                    <div className={'mt-2 space-y-1 rounded-md border border-amber-500/40 bg-amber-900/30 p-3 text-sm'}>
+                        <p className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Domain verification:</strong> verify this domain in Resend or sends will fail.
                         </p>
-                    )}
+                        <p className={'text-amber-100'}>
+                            <strong className={'text-amber-200'}>Tip:</strong> use a monitored inbox (e.g. support@) to reduce spam filtering.
+                        </p>
+                    </div>
+                </Card>
+
+                <div className={'flex items-center gap-3'}>
+                    <Button onClick={handleSaveResend} disabled={!hasResendChanges || status === 'processing'}>
+                        Save Resend Settings
+                    </Button>
+                    {!hasResendChanges && <p className={'text-sm text-gray-400'}>No changes to save</p>}
                 </div>
             </div>
-        </AdminBox>
+        );
+
+        if (active) {
+            return (
+                <TransportSection
+                    title={'Resend'}
+                    active
+                    secondary={secondary}
+                    badgeText={'Active'}
+                >
+                    {content}
+                </TransportSection>
+            );
+        }
+
+        return (
+            <TransportSection
+                title={'Resend'}
+                active={false}
+                secondary={secondary}
+                badgeText={'Inactive'}
+                collapsed
+                expanded={expanded}
+                onToggle={toggleExpand}
+                summary={`From: ${settings?.resend.from_email || 'Not set'}`}
+            >
+                {expanded ? content : null}
+            </TransportSection>
+        );
+    }
+
+    function renderSmtpForm(active: boolean, expanded?: boolean, toggleExpand?: () => void) {
+        const content = (
+            <div className={'space-y-5'}>
+                <Card sectionBg={secondary}>
+                    <SectionHeader
+                        title={'Server connection'}
+                        description={'SMTP host and authentication details.'}
+                    />
+                    <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
+                        <div className={'space-y-2'}>
+                            <Label>Host</Label>
+                            <Input
+                                value={smtpHost}
+                                onChange={(e) => setSmtpHost(e.target.value)}
+                                placeholder={'smtp.yourdomain.com'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>Port</Label>
+                            <Input
+                                type={'number'}
+                                value={smtpPort}
+                                onChange={(e) => setSmtpPort(e.target.value)}
+                                placeholder={'587'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>Username</Label>
+                            <Input
+                                value={smtpUsername}
+                                onChange={(e) => setSmtpUsername(e.target.value)}
+                                placeholder={'SMTP username'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>Password</Label>
+                            <Input
+                                type={'password'}
+                                value={smtpPassword}
+                                onChange={(e) => setSmtpPassword(e.target.value)}
+                                placeholder={
+                                    settings?.smtp.password_set
+                                        ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (configured)'
+                                        : 'SMTP password'
+                                }
+                                disabled={!enabled}
+                            />
+                            <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                                <p className={'text-xs text-gray-400'}>
+                                    Leave blank to keep the existing password, or use the button to clear it.
+                                </p>
+                                <Button.Danger
+                                    size={Button.Sizes.Small}
+                                    onClick={handleClearSmtpPassword}
+                                    disabled={!enabled || !settings?.smtp.password_set}
+                                    loading={clearingSmtpPassword}
+                                >
+                                    Clear password
+                                </Button.Danger>
+                            </div>
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>Encryption</Label>
+                            <select
+                                className={
+                                    'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white'
+                                }
+                                value={smtpEncryption}
+                                onChange={(e) => setSmtpEncryption(e.target.value)}
+                                disabled={!enabled}
+                            >
+                                <option value="">None</option>
+                                <option value="tls">TLS</option>
+                                <option value="ssl">SSL</option>
+                            </select>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card sectionBg={secondary}>
+                    <SectionHeader
+                        title={'Sender details'}
+                        description={'From/reply-to information for SMTP emails.'}
+                    />
+                    <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
+                        <div className={'space-y-2'}>
+                            <Label>
+                                From Email <span className={'text-red-500'}>*</span>
+                            </Label>
+                            <Input
+                                type={'email'}
+                                value={smtpFromEmail}
+                                onChange={(e) => setSmtpFromEmail(e.target.value)}
+                                placeholder={'noreply@yourdomain.com'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>From Name</Label>
+                            <Input
+                                value={smtpFromName}
+                                onChange={(e) => setSmtpFromName(e.target.value)}
+                                placeholder={'Your App Name'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label>Reply-To Email</Label>
+                            <Input
+                                type={'email'}
+                                value={smtpReplyTo}
+                                onChange={(e) => setSmtpReplyTo(e.target.value)}
+                                placeholder={'support@yourdomain.com'}
+                                disabled={!enabled}
+                            />
+                        </div>
+                    </div>
+                </Card>
+
+                <div className={'flex items-center gap-3'}>
+                    <Button onClick={handleSaveSmtp} disabled={!hasSmtpChanges || status === 'processing'}>
+                        Save SMTP Settings
+                    </Button>
+                    {!hasSmtpChanges && <p className={'text-sm text-gray-400'}>No changes to save</p>}
+                </div>
+            </div>
+        );
+
+        if (active) {
+            return (
+                <TransportSection
+                    title={'SMTP'}
+                    active
+                    secondary={secondary}
+                    badgeText={'Active'}
+                >
+                    {content}
+                </TransportSection>
+            );
+        }
+
+        return (
+            <TransportSection
+                title={'SMTP'}
+                active={false}
+                secondary={secondary}
+                badgeText={'Inactive'}
+                collapsed
+                expanded={expanded}
+                onToggle={toggleExpand}
+                summary={`Host: ${settings?.smtp.host || 'Not set'}`}
+            >
+                {expanded ? content : null}
+            </TransportSection>
+        );
+    }
+};
+
+const TransportSection = ({
+    title,
+    active,
+    children,
+    secondary,
+    badgeText,
+    collapsed = false,
+    expanded = false,
+    onToggle,
+    summary,
+}: {
+    title: string;
+    active: boolean;
+    children: ReactNode;
+    secondary: string;
+    badgeText: string;
+    collapsed?: boolean;
+    expanded?: boolean;
+    onToggle?: () => void;
+    summary?: string;
+}) => {
+    return (
+        <div className={'space-y-4 rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: secondary }}>
+            <div className={'flex items-center justify-between'}>
+                <div className={'flex items-center gap-2'}>
+                    <h3 className={'text-lg font-semibold text-white'}>{title}</h3>
+                    <span
+                        className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                            active ? 'bg-green-900 text-green-200' : 'bg-neutral-800 text-neutral-200'
+                        }`}
+                    >
+                        {badgeText}
+                    </span>
+                </div>
+                {!active && (
+                    <div className={'flex items-center gap-3 text-xs text-gray-400'}>
+                        <span>Inactive transport</span>
+                        {summary && <span className={'text-gray-500'}>{summary}</span>}
+                        {onToggle && (
+                            <Button.Dark onClick={onToggle} size={Button.Sizes.Small}>
+                                {expanded ? 'Hide settings' : 'View settings'}
+                            </Button.Dark>
+                        )}
+            </div>
+                )}
+            </div>
+            {!collapsed || expanded ? <div className={'space-y-4'}>{children}</div> : null}
+        </div>
+    );
+};
+
+const Card = ({ children, sectionBg }: { children: ReactNode; sectionBg: string }) => (
+    <div className={'rounded-lg border border-neutral-700 p-4'} style={{ backgroundColor: sectionBg }}>
+        {children}
+    </div>
+);
+
+const SectionHeader = ({ title, description }: { title: string; description: string }) => (
+    <div className={'space-y-1'}>
+        <h3 className={'text-lg font-semibold text-white'}>{title}</h3>
+        <p className={'text-sm text-gray-400'}>{description}</p>
+    </div>
+);
+
+const getTransportLabel = (value: EmailTransport): string => (value === 'smtp' ? 'SMTP' : 'Resend');
+
+const StatusBanner = ({
+    enabled,
+    transport,
+    onToggle,
+    saving,
+    secondary,
+    toggleHint,
+}: {
+    enabled: boolean;
+    transport: string;
+    onToggle: () => void;
+    saving: boolean;
+    secondary: string;
+    toggleHint: string;
+}) => {
+    const isOn = enabled;
+    const StatusToggleButton = isOn ? Button.Success : Button.Danger;
+    const statusText = isOn ? 'Enabled' : 'Disabled';
+    const message = isOn
+        ? `Emails are being sent via ${transport}.`
+        : 'Email delivery is currently disabled.';
+
+    return (
+        <div
+            className={`rounded-lg border p-4 shadow-sm ${
+                isOn ? 'border-green-600/60 bg-green-950/60' : 'border-red-600/60 bg-red-950/60'
+            }`}
+            style={{ backgroundColor: secondary }}
+        >
+            <div className={'flex flex-col gap-3 md:flex-row md:items-center md:justify-between'}>
+                <div className={'space-y-1'}>
+                    <div className={'flex items-center gap-2'}>
+                        <span
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${
+                                isOn ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
+                            }`}
+                        >
+                            <span className={`h-2 w-2 rounded-full ${isOn ? 'bg-green-400' : 'bg-red-400'}`} />
+                            Email delivery {statusText}
+                        </span>
+                        <span className={'text-sm text-gray-300'}>Active transport: {transport}</span>
+                    </div>
+                    <p className={'text-sm text-gray-200'}>{message}</p>
+                </div>
+                <div className={'flex items-center gap-2'}>
+                    <StatusToggleButton onClick={onToggle} disabled={saving} loading={saving}>
+                        {isOn ? 'Disable' : 'Enable'}
+                    </StatusToggleButton>
+                </div>
+            </div>
+            <p className={'mt-2 text-xs text-gray-400'}>{toggleHint}</p>
+        </div>
+    );
+};
+
+const TransportChoice = ({
+    label,
+    description,
+    active,
+    onSelect,
+    disabled,
+}: {
+    label: string;
+    description: string;
+    active: boolean;
+    onSelect: () => void;
+    disabled: boolean;
+}) => {
+    return (
+        <button
+            type={'button'}
+            onClick={onSelect}
+            disabled={disabled}
+            className={`flex w-full flex-col items-start gap-2 rounded-lg border p-4 text-left transition ${
+                active
+                    ? 'border-blue-500/70 bg-blue-950/40 shadow-md'
+                    : 'border-neutral-700 bg-neutral-900/60 hover:border-neutral-600'
+            } ${disabled ? 'opacity-70' : ''}`}
+        >
+            <div className={'flex items-center gap-2'}>
+                <div
+                    className={`h-3 w-3 rounded-full ${active ? 'bg-blue-400' : 'bg-neutral-600'}`}
+                    aria-hidden
+                />
+                <span className={'text-sm font-semibold text-white'}>{label}</span>
+                {active && (
+                    <span className={'rounded-full bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-100'}>
+                        Active
+                    </span>
+                )}
+            </div>
+            <p className={'text-xs text-gray-400'}>{description}</p>
+        </button>
     );
 };

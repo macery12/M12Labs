@@ -172,7 +172,8 @@ class EmailDeliveryTracker
         string $error,
         ?int $statusCode = null,
         ?\Throwable $exception = null,
-        ?array $responsePayload = null
+        ?array $responsePayload = null,
+        ?bool $retryable = null
     ): void {
         Log::warning('EmailDeliveryTracker: Attempt failed', [
             'attempt_id' => $attempt->id,
@@ -187,6 +188,9 @@ class EmailDeliveryTracker
         $attempt->status = 'failed';
         $attempt->error = $error;
         $attempt->status_code = $statusCode;
+        if ($retryable !== null) {
+            $attempt->error_message = $retryable ? 'retryable' : 'non-retryable';
+        }
 
         // Store exception details only in debug mode
         if ($this->isDebugMode() && $exception) {
@@ -229,6 +233,8 @@ class EmailDeliveryTracker
             $updateData['status'] = 'sent';
             $updateData['sent_at'] = $attempt->finished_at;
             $updateData['last_message_id'] = $attempt->provider_message_id;
+            // Keep provider_message_id in sync for legacy consumers that read from the delivery row
+            $updateData['provider_message_id'] = $attempt->provider_message_id;
         } else {
             $updateData['status'] = 'failed';
         }

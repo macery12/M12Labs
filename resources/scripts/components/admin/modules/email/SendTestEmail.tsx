@@ -62,7 +62,7 @@ export default () => {
                     onChange={e => setEmail(e.target.value)}
                 />
                 <p className={'mt-1 text-xs text-gray-400'}>
-                    Send a test email to verify your Resend configuration is working.
+                    Send a test email to verify your email configuration is working for the active transport.
                 </p>
             </div>
 

@@ -8,6 +8,12 @@ use Everest\Models\EmailDelivery;
 use Everest\Services\Email\Emails\BaseEmail;
 use Everest\Services\Email\Emails\CustomMessageEmail;
 use Everest\Exceptions\Service\Email\ResendException;
+use Everest\Exceptions\Service\Email\ResendAuthenticationException;
+use Everest\Exceptions\Service\Email\ResendValidationException;
+use Everest\Services\Email\Transports\EmailTransport;
+use Everest\Services\Email\Transports\ResendTransport;
+use Everest\Services\Email\Transports\SmtpTransport;
+use Everest\Services\Security\SecretEncryptionService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -25,7 +31,7 @@ class EmailManager
             return $result;
         }
 
-        // Check if Resend is enabled
+        // Check if delivery is enabled
         if (!$this->isEnabled()) {
             $error = 'Email sending is currently disabled in Admin → Email settings. Enable email delivery before sending test or custom emails.';
 
@@ -34,32 +40,21 @@ class EmailManager
                 'subject' => $email->subject(),
             ]);
 
-            return EmailResult::failure($error, 422);
+            return EmailResult::failure($error, 422, false);
         }
-
-        // Get API key from settings
-        $apiKey = Setting::get('settings::modules:email:resend:api_key');
-        if (empty($apiKey)) {
-            Log::error('Resend API key not configured');
-            return EmailResult::failure('Resend API key not configured. Please configure the API key in Admin → Email settings.');
+        $transportResolution = $this->resolveTransportConfig();
+        if ($transportResolution instanceof EmailResult) {
+            return $transportResolution;
         }
+        [$transport, $from, $fromName, $replyTo] = $transportResolution;
 
-        // Get from settings
-        $from = Setting::get('settings::modules:email:resend:from_email');
-        $fromName = Setting::get('settings::modules:email:resend:from_name');
-        $replyTo = Setting::get('settings::modules:email:resend:reply_to') ?: config('mail.from.address');
-
-        // Validate required from_email is configured
-        if (empty($from)) {
-            Log::error('Resend from_email not configured');
-            return EmailResult::failure('From email address not configured. Please set the "From Email" in Admin → Email settings.');
-        }
-
-        // Validate from_email format
-        if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
-            Log::error('Resend from_email has invalid format', ['from' => $from]);
-            return EmailResult::failure('From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.');
-        }
+        Log::info('EmailManager: Using transport', [
+            'provider' => $transport->getName(),
+            'recipient' => $recipient,
+            'subject' => $email->subject(),
+            'from' => $from,
+            'reply_to' => $replyTo,
+        ]);
 
         // Render HTML content
         $html = $this->renderHtml($email);
@@ -79,9 +74,7 @@ class EmailManager
             replyTo: $replyTo
         );
 
-        // Send via Resend
-        $service = new ResendService($apiKey);
-        return $service->send($message);
+        return $transport->send($message);
     }
 
     /**
@@ -125,6 +118,16 @@ class EmailManager
         int $attemptNumber = 1
     ): EmailResult {
         $tracker = app(EmailDeliveryTracker::class);
+        $transportName = self::getTransport();
+
+        if (!in_array($transportName, ['smtp', 'resend'], true)) {
+            return $this->handleConfigFailure(
+                tracker: $tracker,
+                delivery: $delivery,
+                attemptNumber: $attemptNumber,
+                message: 'Invalid email transport configured: ' . $transportName
+            );
+        }
 
         // If no delivery provided, create one (for direct calls outside job system)
         if (!$delivery) {
@@ -141,7 +144,8 @@ class EmailManager
                     subject: $subject,
                     templateKey: $templateKey,
                     userId: $userId,
-                    tags: $tags
+                    tags: $tags,
+                    provider: $transportName
                 );
             } catch (\Exception $e) {
                 // If tables don't exist, log clear error message
@@ -162,7 +166,7 @@ class EmailManager
                     'user_id' => $userId,
                     'status' => 'queued',
                     'attempts' => 0,
-                    'provider' => 'resend',
+                    'provider' => $transportName,
                 ]);
             }
         }
@@ -186,7 +190,7 @@ class EmailManager
             return $result;
         }
 
-        // Check if Resend is enabled
+        // Check if delivery is enabled
         if (!$this->isEnabled()) {
             Log::info('Email sending is disabled, skipping', [
                 'recipient' => $recipient,
@@ -198,44 +202,20 @@ class EmailManager
             return EmailResult::success('disabled');
         }
 
-        // Get API key from settings
-        $apiKey = Setting::get('settings::modules:email:resend:api_key');
-        if (empty($apiKey)) {
-            $error = 'Resend API key not configured. Please configure the API key in Admin → Email settings.';
-            Log::error($error);
-            
-            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
-            $tracker->finishAttemptFailure($attempt, $error, 0);
-            
-            return EmailResult::failure($error);
+        $transportResolution = $this->resolveTransportConfig($tracker, $delivery, $attemptNumber);
+        if ($transportResolution instanceof EmailResult) {
+            return $transportResolution;
         }
+        [$transport, $from, $fromName, $replyTo] = $transportResolution;
 
-        // Get from settings
-        $from = Setting::get('settings::modules:email:resend:from_email');
-        $fromName = Setting::get('settings::modules:email:resend:from_name');
-        $replyTo = Setting::get('settings::modules:email:resend:reply_to');
-
-        // Validate required from_email is configured
-        if (empty($from)) {
-            $error = 'From email address not configured. Please set the "From Email" in Admin → Email settings.';
-            Log::error($error);
-            
-            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
-            $tracker->finishAttemptFailure($attempt, $error, 0);
-            
-            return EmailResult::failure($error);
-        }
-
-        // Validate from_email format
-        if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
-            $error = 'From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.';
-            Log::error($error);
-            
-            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
-            $tracker->finishAttemptFailure($attempt, $error, 0);
-            
-            return EmailResult::failure($error);
-        }
+        Log::info('EmailManager: Using transport', [
+            'provider' => $transport->getName(),
+            'recipient' => $recipient,
+            'template_key' => $templateKey,
+            'correlation_id' => $correlationId,
+            'from' => $from,
+            'reply_to' => $replyTo,
+        ]);
 
         // Convert template key to view path (auth.password_reset -> emails.auth.password-reset)
         // Split on first dot to get category and action
@@ -263,9 +243,9 @@ class EmailManager
             ]);
 
             $attempt = $tracker->startAttempt($delivery, $attemptNumber);
-            $tracker->finishAttemptFailure($attempt, $error, 0, $e);
+            $tracker->finishAttemptFailure($attempt, $error, 0, $e, null, false);
 
-            return EmailResult::failure($error);
+            return EmailResult::failure($error, null, false);
         }
 
         // Generate text content
@@ -307,10 +287,9 @@ class EmailManager
             ]);
         }
 
-        // Send via Resend
+        // Send via selected transport
         try {
-            $service = new ResendService($apiKey);
-            $result = $service->send($message);
+            $result = $transport->send($message);
 
             if ($result->success) {
                 // Success - update attempt if it was created
@@ -336,7 +315,10 @@ class EmailManager
                         $tracker->finishAttemptFailure(
                             attempt: $attempt,
                             error: $result->error ?? 'Unknown error',
-                            statusCode: $result->statusCode
+                            statusCode: $result->statusCode,
+                            exception: null,
+                            responsePayload: null,
+                            retryable: $result->retryable
                         );
                     } catch (\Exception $e) {
                         Log::warning('Failed to update attempt failure', [
@@ -349,6 +331,8 @@ class EmailManager
 
             return $result;
         } catch (\Exception $e) {
+            $retryable = !($e instanceof ResendAuthenticationException || $e instanceof ResendValidationException);
+
             // Exception during send - update attempt if it was created
             if ($attempt) {
                 try {
@@ -356,7 +340,9 @@ class EmailManager
                         attempt: $attempt,
                         error: $e->getMessage(),
                         statusCode: method_exists($e, 'getCode') ? $e->getCode() : 0,
-                        exception: $e
+                        exception: $e,
+                        responsePayload: null,
+                        retryable: $retryable
                     );
                 } catch (\Exception $logException) {
                     Log::warning('Failed to update attempt exception', [
@@ -366,7 +352,7 @@ class EmailManager
                 }
             }
 
-            return EmailResult::failure($e->getMessage(), $e->getCode());
+            return EmailResult::failure($e->getMessage(), $e->getCode(), $retryable);
         }
     }
 
@@ -422,7 +408,7 @@ class EmailManager
      */
     public static function isDeliveryEnabled(): bool
     {
-        $raw = Setting::get('settings::modules:email:resend:enabled', false);
+        $raw = self::getEmailSettingFresh('settings::modules:email:enabled', self::getEmailSettingFresh('settings::modules:email:resend:enabled', false));
 
         if (is_bool($raw)) {
             return $raw;
@@ -436,6 +422,155 @@ class EmailManager
     private function isEnabled(): bool
     {
         return self::isDeliveryEnabled();
+    }
+
+    public static function getTransport(): string
+    {
+        // Prefer an explicitly selected transport; default to SMTP for first-time setup.
+        $transportSetting = self::getEmailSettingFresh('settings::modules:email:transport', null);
+        // Backwards compatibility: older installs may have stored without the settings:: prefix.
+        if ($transportSetting === null) {
+            $transportSetting = self::getEmailSettingFresh('modules:email:transport', null);
+        }
+
+        $transport = strtolower((string) ($transportSetting ?? 'smtp'));
+
+        return in_array($transport, ['smtp', 'resend'], true) ? $transport : 'smtp';
+    }
+
+    /**
+     * Resolve the configured transport and validate configuration.
+     *
+     * @return array{0: EmailTransport, 1: string, 2: string|null, 3: string|null}|EmailResult
+     */
+    private function resolveTransportConfig(
+        ?EmailDeliveryTracker $tracker = null,
+        ?EmailDelivery $delivery = null,
+        int $attemptNumber = 1
+    ): EmailResult|array {
+        $transportName = self::getTransport();
+
+        if ($delivery && $delivery->provider !== $transportName) {
+            $delivery->provider = $transportName;
+
+            if ($delivery->id) {
+                $delivery->save();
+            }
+        }
+
+        if ($transportName === 'smtp') {
+            $config = [
+                'host' => self::getEmailSettingFresh('settings::modules:email:smtp:host'),
+                'port' => self::getEmailSettingFresh('settings::modules:email:smtp:port'),
+                'username' => self::getEmailSettingFresh('settings::modules:email:smtp:username'),
+                'password' => self::getEmailSettingFresh('settings::modules:email:smtp:password'),
+                'encryption' => self::getEmailSettingFresh('settings::modules:email:smtp:encryption'),
+            ];
+
+            $from = self::getEmailSettingFresh('settings::modules:email:smtp:from_email');
+            $fromName = self::getEmailSettingFresh('settings::modules:email:smtp:from_name');
+            // Reply-to should stay within the SMTP identity; fall back to the same "from" address
+            $replyTo = self::getEmailSettingFresh('settings::modules:email:smtp:reply_to') ?: $from;
+
+            $requiredMissing = [];
+            if (empty($config['host'])) {
+                $requiredMissing[] = 'host';
+            }
+
+            if ($config['port'] === null || $config['port'] === '') {
+                $requiredMissing[] = 'port';
+            }
+
+            if ($from === null || $from === '') {
+                $requiredMissing[] = 'from';
+            }
+
+            if (!empty($config['username']) && ($config['password'] === null || $config['password'] === '')) {
+                $requiredMissing[] = 'password (set in Admin → Email → SMTP password)';
+            }
+
+            if (!empty($requiredMissing)) {
+                return $this->handleConfigFailure(
+                    tracker: $tracker,
+                    delivery: $delivery,
+                    attemptNumber: $attemptNumber,
+                    message: 'SMTP configuration missing required fields: ' . implode(', ', $requiredMissing)
+                );
+            }
+
+            if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
+                return $this->handleConfigFailure(
+                    tracker: $tracker,
+                    delivery: $delivery,
+                    attemptNumber: $attemptNumber,
+                    message: 'From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.'
+                );
+            }
+
+            return [
+                new SmtpTransport($config),
+                $from,
+                $fromName,
+                $replyTo,
+            ];
+        }
+
+        // Default to Resend
+        $apiKey = self::getEmailSettingFresh('settings::modules:email:resend:api_key');
+        if (empty($apiKey)) {
+            return $this->handleConfigFailure(
+                tracker: $tracker,
+                delivery: $delivery,
+                attemptNumber: $attemptNumber,
+                message: 'Resend API key not configured. Please configure the API key in Admin → Email settings.'
+            );
+        }
+
+        $from = self::getEmailSettingFresh('settings::modules:email:resend:from_email');
+        $fromName = self::getEmailSettingFresh('settings::modules:email:resend:from_name');
+        // Keep reply-to aligned with the Resend identity; fall back to the same "from" address
+        $replyTo = self::getEmailSettingFresh('settings::modules:email:resend:reply_to') ?: $from;
+
+        if (empty($from)) {
+            return $this->handleConfigFailure(
+                tracker: $tracker,
+                delivery: $delivery,
+                attemptNumber: $attemptNumber,
+                message: 'From email address not configured. Please set the "From Email" in Admin → Email settings.'
+            );
+        }
+
+        if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
+            return $this->handleConfigFailure(
+                tracker: $tracker,
+                delivery: $delivery,
+                attemptNumber: $attemptNumber,
+                message: 'From email address has invalid format: ' . $from . '. Please check the "From Email" in Admin → Email settings.'
+            );
+        }
+
+        return [
+            new ResendTransport($apiKey),
+            $from,
+            $fromName,
+            $replyTo,
+        ];
+    }
+
+    private function handleConfigFailure(
+        ?EmailDeliveryTracker $tracker,
+        ?EmailDelivery $delivery,
+        int $attemptNumber,
+        string $message
+    ): EmailResult {
+        Log::error($message);
+
+        if ($tracker && $delivery) {
+            $attempt = $tracker->startAttempt($delivery, $attemptNumber);
+            $tracker->finishAttemptFailure($attempt, $message, 0, null, null, false);
+        }
+
+        return EmailResult::failure($message, null, false);
     }
 
     /**
@@ -504,4 +639,27 @@ class EmailManager
         return in_array($domain, $testDomains, true);
     }
 
+    /**
+     * Read email-related settings directly from the database, bypassing the static cache
+     * to ensure transport/config changes take effect immediately for each send.
+     */
+    private static function getEmailSettingFresh(string $key, mixed $default = null): mixed
+    {
+        /** @var SecretEncryptionService $secrets */
+        $secrets = app(SecretEncryptionService::class);
+        $normalizedKey = $secrets->normalizeKey($key);
+
+        $setting = Setting::query()->where('key', $normalizedKey)->first();
+        if (!$setting) {
+            return value($default);
+        }
+
+        $value = $setting->value;
+
+        if ($secrets->isSecretKey($normalizedKey)) {
+            $value = $secrets->decryptFromStorage($value);
+        }
+
+        return $value;
+    }
 }

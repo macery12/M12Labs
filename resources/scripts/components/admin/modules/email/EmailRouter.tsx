@@ -1,5 +1,4 @@
 import { Route, Routes } from 'react-router-dom';
-import EmailContainer from '@/components/admin/modules/email/EmailContainer';
 import EmailActivityLog from '@/components/admin/modules/email/EmailActivityLog';
 import DeferredQueueViewer from '@/components/admin/modules/email/DeferredQueueViewer';
 import PageContentBlock from '@/elements/PageContentBlock';
@@ -7,7 +6,6 @@ import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import ContentBox from '@/elements/ContentBox';
 import ResendSettings from '@/components/admin/modules/email/ResendSettings';
 import NotificationSettings from '@/components/admin/modules/email/NotificationSettings';
-import SendTestEmail from '@/components/admin/modules/email/SendTestEmail';
 import SendCustomEmail from '@/components/admin/modules/email/SendCustomEmail';
 import VerificationRestrictions from '@/components/admin/modules/email/VerificationRestrictions';
 
@@ -27,12 +25,8 @@ export default () => {
                     path='/'
                     element={
                         <>
-                            <ContentBox title={'Resend Configuration'} showFlashes={'email:resend'}>
+                            <ContentBox title={'Email Configuration'} showFlashes={'email:settings'}>
                                 <ResendSettings />
-                            </ContentBox>
-
-                            <ContentBox title={'Test Email'} showFlashes={'email:test'} css={'mt-8'}>
-                                <SendTestEmail />
                             </ContentBox>
 
                             <ContentBox title={'Send Custom Email'} showFlashes={'email:custom'} css={'mt-8'}>
