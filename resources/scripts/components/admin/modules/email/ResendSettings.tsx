@@ -69,6 +69,9 @@ export default () => {
         email?: TestResult;
     }>({});
     const [testRecipient, setTestRecipient] = useState('');
+    const [clearingApiKey, setClearingApiKey] = useState(false);
+    const [clearingSmtpPassword, setClearingSmtpPassword] = useState(false);
+    const [resettingSmtp, setResettingSmtp] = useState(false);
 
     const pickWithFallback = (
         primary?: string,
@@ -288,6 +291,105 @@ export default () => {
                 clearAndAddHttpError({ key: 'email:settings', error });
             })
             .finally(() => setSaving(false));
+    };
+
+    const handleClearResendApiKey = () => {
+        if (clearingApiKey || !settings?.resend.api_key) return;
+
+        clearFlashes('email:settings:resend');
+        setClearingApiKey(true);
+        setStatus('processing');
+
+        updateSettings({ api_key: '', clear_api_key: true })
+            .then((updated) => {
+                setSettings(updated);
+                setResendKeySet(updated.resend.api_key);
+                setResendApiKeyInput('');
+                addFlash({
+                    key: 'email:settings:resend',
+                    type: 'success',
+                    message: 'Resend API key deleted.',
+                });
+                setStatus('success');
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:resend', error });
+            })
+            .finally(() => setClearingApiKey(false));
+    };
+
+    const handleClearSmtpPassword = () => {
+        if (clearingSmtpPassword || !settings?.smtp.password_set) return;
+
+        clearFlashes('email:settings:smtp');
+        setClearingSmtpPassword(true);
+        setStatus('processing');
+
+        updateSettings({ smtp_password: '', clear_smtp_password: true })
+            .then((updated) => {
+                setSettings(updated);
+                setSmtpPasswordSet(updated.smtp.password_set);
+                setSmtpPasswordInput('');
+                addFlash({
+                    key: 'email:settings:smtp',
+                    type: 'success',
+                    message: 'SMTP password cleared.',
+                });
+                setStatus('success');
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:smtp', error });
+            })
+            .finally(() => setClearingSmtpPassword(false));
+    };
+
+    const handleResetSmtp = () => {
+        if (resettingSmtp) return;
+
+        clearFlashes('email:settings:smtp');
+        setResettingSmtp(true);
+        setStatus('processing');
+
+        const payload: EmailSettingsUpdate = {
+            smtp_host: '',
+            smtp_port: '',
+            smtp_username: '',
+            smtp_encryption: '',
+            smtp_from_email: '',
+            smtp_from_name: '',
+            smtp_reply_to: '',
+            smtp_password: '',
+            clear_smtp_password: true,
+        };
+
+        updateSettings(payload)
+            .then((updated) => {
+                setSettings(updated);
+                setSmtpPasswordSet(false);
+                setSmtpPasswordInput('');
+                setSmtpConfig({
+                    host: '',
+                    port: '',
+                    username: '',
+                    encryption: '',
+                    from_email: '',
+                    from_name: '',
+                    reply_to: '',
+                });
+                addFlash({
+                    key: 'email:settings:smtp',
+                    type: 'success',
+                    message: 'SMTP settings reset and password cleared.',
+                });
+                setStatus('success');
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:smtp', error });
+            })
+            .finally(() => setResettingSmtp(false));
     };
 
     const handleTransportChange = (value: EmailTransport) => {
@@ -567,6 +669,24 @@ export default () => {
                                     <p className={'text-xs text-gray-500'}>
                                         Leave blank to keep the existing password.
                                     </p>
+                                    <div className={'flex flex-wrap gap-2'}>
+                                        <Button.Danger
+                                            size={Button.Sizes.Small}
+                                            onClick={handleClearSmtpPassword}
+                                            disabled={!settings?.smtp.password_set || clearingSmtpPassword}
+                                            loading={clearingSmtpPassword}
+                                        >
+                                            Clear password
+                                        </Button.Danger>
+                                        <Button.Danger
+                                            size={Button.Sizes.Small}
+                                            onClick={handleResetSmtp}
+                                            disabled={resettingSmtp}
+                                            loading={resettingSmtp}
+                                        >
+                                            Reset SMTP settings
+                                        </Button.Danger>
+                                    </div>
                                 </div>
                                 <div className={'space-y-1'}>
                                     <Label>Encryption</Label>
@@ -641,6 +761,16 @@ export default () => {
                                     <p className={'text-xs text-gray-500'}>
                                         Keys are stored securely. Leave blank to keep the existing key.
                                     </p>
+                                    <div className={'flex flex-wrap gap-2'}>
+                                        <Button.Danger
+                                            onClick={handleClearResendApiKey}
+                                            disabled={!resendKeySet || clearingApiKey}
+                                            loading={clearingApiKey}
+                                            size={Button.Sizes.Small}
+                                        >
+                                            Delete saved key
+                                        </Button.Danger>
+                                    </div>
                                 </div>
                             </div>
                         </Card>
