@@ -14,6 +14,8 @@ use Everest\Http\Requests\Api\Application\Email\UpdateUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\ViewEmailActivityRequest;
 use Everest\Models\AdminRole;
 use Everest\Tests\TestCase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class EmailPermissionsRequestTest extends TestCase
 {
@@ -43,5 +45,31 @@ class EmailPermissionsRequestTest extends TestCase
     public function testDeferredQueueActionsUseEmailSendPermission(): void
     {
         $this->assertSame(AdminRole::EMAIL_SEND, (new ManageDeferredEmailRequest())->permission());
+    }
+
+    public function testEmailActivityRequestNormalizesBooleanQueryStrings(): void
+    {
+        $request = TestableGetEmailActivityRequest::createFromBase(
+            Request::create('/api/application/email/logs', 'GET', ['only_failures' => 'false'])
+        );
+        $request->setContainer($this->app);
+
+        $request->runPrepareForValidation();
+
+        $this->assertFalse($request->input('only_failures'));
+        $this->assertTrue(Validator::make($request->all(), $request->rules())->passes());
+    }
+}
+
+class TestableGetEmailActivityRequest extends GetEmailActivityRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function runPrepareForValidation(): void
+    {
+        parent::prepareForValidation();
     }
 }

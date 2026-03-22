@@ -8,6 +8,25 @@ use Everest\Models\EmailDelivery;
 
 class GetEmailActivityRequest extends ApplicationApiRequest
 {
+    protected function prepareForValidation()
+    {
+        if ($this->has('only_failures')) {
+            $value = $this->input('only_failures');
+
+            if (is_string($value)) {
+                $normalized = match (strtolower($value)) {
+                    'true' => true,
+                    'false' => false,
+                    default => $value,
+                };
+
+                $this->merge(['only_failures' => $normalized]);
+            }
+        }
+
+        parent::prepareForValidation();
+    }
+
     public function rules(): array
     {
         return [
