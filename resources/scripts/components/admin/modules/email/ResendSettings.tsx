@@ -28,6 +28,22 @@ import {
     updateSettings,
 } from '@/api/routes/admin/email';
 
+const withAlpha = (hex: string, alpha: number) => {
+    const normalized = hex.replace('#', '');
+    const value =
+        normalized.length === 3
+            ? normalized
+                  .split('')
+                  .map((c) => c + c)
+                  .join('')
+            : normalized;
+    const intVal = parseInt(value, 16);
+    const r = (intVal >> 16) & 255;
+    const g = (intVal >> 8) & 255;
+    const b = intVal & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 type TabKey = 'overview' | 'smtp' | 'resend' | 'testing';
 
 type TestResult = {
@@ -84,22 +100,6 @@ export default () => {
         resendValue?: string,
         defaultValue = ''
     ) => primary || smtpValue || resendValue || defaultValue;
-
-    const withAlpha = (hex: string, alpha: number) => {
-        const normalized = hex.replace('#', '');
-        const value =
-            normalized.length === 3
-                ? normalized
-                      .split('')
-                      .map((c) => c + c)
-                      .join('')
-                : normalized;
-        const intVal = parseInt(value, 16);
-        const r = (intVal >> 16) & 255;
-        const g = (intVal >> 8) & 255;
-        const b = intVal & 255;
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
 
     useEffect(() => {
         setLoading(true);
