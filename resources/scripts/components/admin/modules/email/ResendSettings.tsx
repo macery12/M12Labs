@@ -41,7 +41,7 @@ type TestResult = {
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, addFlash, clearAndAddHttpError } = useFlash();
-    const { secondary } = useStoreState((state) => state.theme.data!.colors);
+    const { primary, secondary } = useStoreState((state) => state.theme.data!.colors);
 
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
     const [loading, setLoading] = useState(true);
@@ -84,6 +84,22 @@ export default () => {
         resendValue?: string,
         defaultValue = ''
     ) => primary || smtpValue || resendValue || defaultValue;
+
+    const withAlpha = (hex: string, alpha: number) => {
+        const normalized = hex.replace('#', '');
+        const value =
+            normalized.length === 3
+                ? normalized
+                      .split('')
+                      .map((c) => c + c)
+                      .join('')
+                : normalized;
+        const intVal = parseInt(value, 16);
+        const r = (intVal >> 16) & 255;
+        const g = (intVal >> 8) & 255;
+        const b = intVal & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -400,23 +416,28 @@ export default () => {
     return (
         <AdminBox title={'Email Settings'} icon={faEnvelope} status={status} byKey={'email:settings'}>
             <div className={'flex flex-col gap-5'}>
-                <TabList active={activeTab} onSelect={setActiveTab} />
+                <TabList active={activeTab} onSelect={setActiveTab} primary={primary} />
 
                 {activeTab === 'overview' && (
                     <div className={'space-y-4'}>
                         <div className={'grid grid-cols-1 gap-4 lg:grid-cols-3'}>
-                            <Card>
-                                <div className={'flex items-center justify-between'}>
-                                    <div className={'space-y-1'}>
-                                        <Label>Email system</Label>
-                                        <p className={'text-sm text-gray-400'}>Toggle delivery for all providers.</p>
-                                    </div>
-                                    <Button.Dark onClick={() => setEnabled((v) => !v)} disabled={saving}>
-                                        {enabled ? 'On' : 'Off'}
-                                    </Button.Dark>
+                        <Card>
+                            <div className={'flex items-center justify-between'}>
+                                <div className={'space-y-1'}>
+                                    <Label>Email system</Label>
+                                    <p className={'text-sm text-gray-400'}>Toggle delivery for all providers.</p>
                                 </div>
-                                <p className={'mt-2 text-xs text-gray-500'}>Changes apply when you save.</p>
-                            </Card>
+                                <div className={'flex items-center gap-2'}>
+                                    <StatusBadge status={enabled ? 'success' : 'warning'} />
+                                    {(enabled ? Button.Danger : Button.Success)({
+                                        children: enabled ? 'Disable' : 'Enable',
+                                        onClick: () => setEnabled((v) => !v),
+                                        disabled: saving,
+                                    })}
+                                </div>
+                            </div>
+                            <p className={'mt-2 text-xs text-gray-500'}>Changes apply when you save.</p>
+                        </Card>
 
                             <Card>
                                 <div className={'space-y-2'}>
@@ -426,11 +447,13 @@ export default () => {
                                             label={'SMTP'}
                                             active={transport === 'smtp'}
                                             onClick={() => handleTransportChange('smtp')}
+                                            primary={primary}
                                         />
                                         <ProviderPill
                                             label={'Resend'}
                                             active={transport === 'resend'}
                                             onClick={() => handleTransportChange('resend')}
+                                            primary={primary}
                                         />
                                     </div>
                                     <p className={'text-xs text-gray-500'}>
@@ -445,12 +468,12 @@ export default () => {
                                         <Label>Current status</Label>
                                         <p className={'text-sm text-gray-300'}>{currentStatus}</p>
                                     </div>
-                                    <StatusBadge status={currentStatus === 'Ready' ? 'success' : 'warning'} />
-                                </div>
-                                <div className={'mt-3 text-xs text-gray-500'}>
-                                    {lastSuccess
-                                        ? `Last successful test: ${new Date(lastSuccess.tested_at).toLocaleString()}`
-                                        : 'No successful tests yet.'}
+                                <StatusBadge status={currentStatus === 'Ready' ? 'success' : 'warning'} />
+                            </div>
+                            <div className={'mt-3 text-xs text-gray-500'}>
+                                {lastSuccess
+                                    ? `Last successful test: ${new Date(lastSuccess.tested_at).toLocaleString()}`
+                                    : 'No successful tests yet.'}
                                 </div>
                             </Card>
                         </div>
@@ -601,7 +624,12 @@ export default () => {
                                         Password set: {smtpPasswordSet ? 'Yes' : 'No'}
                                     </p>
                                 </div>
-                                <Button.Dark onClick={() => handleTestProvider('smtp')} loading={testingProvider === 'smtp'}>
+                                <Button.Dark
+                                    onClick={() => handleTestProvider('smtp')}
+                                    loading={testingProvider === 'smtp'}
+                                    className={'border border-primary-500/50'}
+                                    style={{ borderColor: primary }}
+                                >
                                     Test SMTP Connection
                                 </Button.Dark>
                             </div>
@@ -669,6 +697,8 @@ export default () => {
                                 <Button.Dark
                                     onClick={() => handleTestProvider('resend')}
                                     loading={testingProvider === 'resend'}
+                                    className={'border border-primary-500/50'}
+                                    style={{ borderColor: primary }}
                                 >
                                     Test Resend Connection
                                 </Button.Dark>
@@ -736,7 +766,7 @@ export default () => {
     );
 };
 
-const TabList = ({ active, onSelect }: { active: TabKey; onSelect: (tab: TabKey) => void }) => {
+const TabList = ({ active, onSelect, primary }: { active: TabKey; onSelect: (tab: TabKey) => void; primary: string }) => {
     const tabs: Array<{ key: TabKey; label: string; icon: IconProp }> = [
         { key: 'overview', label: 'Overview', icon: faEnvelope },
         { key: 'smtp', label: 'SMTP', icon: faServer },
@@ -753,9 +783,14 @@ const TabList = ({ active, onSelect }: { active: TabKey; onSelect: (tab: TabKey)
                     onClick={() => onSelect(tab.key)}
                     className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                         active === tab.key
-                            ? 'border-blue-500/70 bg-blue-900/40 text-white'
+                            ? 'text-white'
                             : 'border-neutral-700 bg-neutral-900 text-gray-200 hover:border-neutral-600'
                     }`}
+                    style={
+                        active === tab.key
+                            ? { borderColor: primary, backgroundColor: withAlpha(primary, 0.2), color: '#fff' }
+                            : undefined
+                    }
                 >
                     <FontAwesomeIcon icon={tab.icon} />
                     {tab.label}
@@ -769,15 +804,23 @@ const Card = ({ children }: { children: ReactNode }) => (
     <div className={'rounded-lg border border-neutral-700 bg-neutral-900/60 p-4'}>{children}</div>
 );
 
-const ProviderPill = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+const ProviderPill = ({ label, active, onClick, primary }: { label: string; active: boolean; onClick: () => void; primary: string }) => (
     <button
         type={'button'}
         onClick={onClick}
         className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-            active ? 'border-blue-500/70 bg-blue-900/40 text-white' : 'border-neutral-700 bg-neutral-900 text-gray-200'
+            active ? 'text-white' : 'border-neutral-700 bg-neutral-900 text-gray-200'
         }`}
+        style={
+            active
+                ? { borderColor: primary, backgroundColor: withAlpha(primary, 0.2), color: '#fff' }
+                : undefined
+        }
     >
-        <span className={`h-2 w-2 rounded-full ${active ? 'bg-blue-400' : 'bg-neutral-600'}`} />
+        <span
+            className={`h-2 w-2 rounded-full ${active ? '' : 'bg-neutral-600'}`}
+            style={active ? { backgroundColor: primary } : undefined}
+        />
         {label}
     </button>
 );
