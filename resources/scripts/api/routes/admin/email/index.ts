@@ -40,6 +40,7 @@ export interface EmailSettingsUpdate {
     smtp_port?: string;
     smtp_username?: string;
     smtp_password?: string;
+    clear_smtp_password?: boolean;
     smtp_encryption?: string;
     smtp_from_email?: string;
     smtp_from_name?: string;

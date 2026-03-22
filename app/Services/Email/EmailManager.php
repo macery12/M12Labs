@@ -467,6 +467,10 @@ class EmailManager
                 $requiredMissing[] = 'from';
             }
 
+            if (!empty($config['username']) && ($config['password'] === null || $config['password'] === '')) {
+                $requiredMissing[] = 'password (required when username is set)';
+            }
+
             if (!empty($requiredMissing)) {
                 return $this->handleConfigFailure(
                     tracker: $tracker,

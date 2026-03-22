@@ -79,10 +79,14 @@ class EmailController extends ApplicationApiController
     public function updateSettings(UpdateEmailSettingsRequest $request): JsonResponse
     {
         $shouldClearApiKey = $request->boolean('clear_api_key');
+        $shouldClearSmtpPassword = $request->boolean('clear_smtp_password');
 
         foreach ($request->normalize() as $key => $value) {
             // Avoid overwriting an existing key with empty string unless explicitly clearing.
             if ($key === 'modules:email:resend:api_key' && empty($value) && !$shouldClearApiKey) {
+                continue;
+            }
+            if ($key === 'modules:email:smtp:password' && empty($value) && !$shouldClearSmtpPassword) {
                 continue;
             }
 
@@ -95,6 +99,9 @@ class EmailController extends ApplicationApiController
         }
         if (array_key_exists('clear_api_key', $activitySettings)) {
             $activitySettings['clear_api_key'] = (bool) $activitySettings['clear_api_key'];
+        }
+        if (array_key_exists('clear_smtp_password', $activitySettings)) {
+            $activitySettings['clear_smtp_password'] = (bool) $activitySettings['clear_smtp_password'];
         }
         if (array_key_exists('smtp_password', $activitySettings)) {
             $activitySettings['smtp_password'] = '[REDACTED]';

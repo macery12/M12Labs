@@ -21,6 +21,7 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             'smtp_port' => 'nullable|numeric',
             'smtp_username' => 'nullable|string|max:255',
             'smtp_password' => 'nullable|string|max:255',
+            'clear_smtp_password' => 'boolean',
             // Empty string represents no encryption to match UI dropdown default
             'smtp_encryption' => 'nullable|in:,tls,ssl',
             'smtp_from_email' => 'nullable|email|max:255',
@@ -89,7 +90,10 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             $data['modules:email:smtp:username'] = $this->input('smtp_username', '');
         }
 
-        if ($this->has('smtp_password')) {
+        $shouldClearSmtpPassword = $this->boolean('clear_smtp_password');
+        if ($shouldClearSmtpPassword) {
+            $data['modules:email:smtp:password'] = '';
+        } elseif ($this->has('smtp_password')) {
             $data['modules:email:smtp:password'] = $this->input('smtp_password', '');
         }
 

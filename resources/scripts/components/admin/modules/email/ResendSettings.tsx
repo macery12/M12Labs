@@ -44,7 +44,7 @@ export default () => {
     const [savingTransport, setSavingTransport] = useState(false);
     const [showInactiveResend, setShowInactiveResend] = useState(false);
     const [showInactiveSmtp, setShowInactiveSmtp] = useState(false);
-    const [clearSmtpPassword, setClearSmtpPassword] = useState(false);
+    const [clearingSmtpPassword, setClearingSmtpPassword] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -89,8 +89,7 @@ export default () => {
           smtpFromEmail !== (settings.smtp.from_email || '') ||
           smtpFromName !== (settings.smtp.from_name || '') ||
           smtpReplyTo !== (settings.smtp.reply_to || '') ||
-          smtpPassword.trim().length > 0 ||
-          clearSmtpPassword
+          smtpPassword.trim().length > 0
         : false;
 
     const saveEnabledStatus = (newEnabled: boolean) => {
@@ -200,9 +199,7 @@ export default () => {
             smtp_reply_to: smtpReplyTo,
         };
 
-        if (clearSmtpPassword) {
-            payload.smtp_password = '';
-        } else if (smtpPassword.trim()) {
+        if (smtpPassword.trim()) {
             payload.smtp_password = smtpPassword;
         }
 
@@ -218,7 +215,6 @@ export default () => {
                 setSmtpFromName(updatedSettings.smtp.from_name || '');
                 setSmtpReplyTo(updatedSettings.smtp.reply_to || '');
                 setSmtpPassword('');
-                setClearSmtpPassword(false);
 
                 addFlash({
                     key: 'email:settings:smtp',
@@ -230,6 +226,34 @@ export default () => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'email:settings:smtp', error });
             });
+    };
+
+    const handleClearSmtpPassword = () => {
+        if (clearingSmtpPassword || !settings?.smtp.password_set) {
+            return;
+        }
+
+        clearFlashes();
+        setClearingSmtpPassword(true);
+        setStatus('processing');
+
+        updateSettings({ smtp_password: '', clear_smtp_password: true })
+            .then((updatedSettings) => {
+                setStatus('success');
+                setSettings(updatedSettings);
+                setSmtpPassword('');
+
+                addFlash({
+                    key: 'email:settings:smtp',
+                    type: 'success',
+                    message: 'SMTP password cleared',
+                });
+            })
+            .catch((error) => {
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings:smtp', error });
+            })
+            .finally(() => setClearingSmtpPassword(false));
     };
 
     const handleTransportChange = (value: EmailTransport) => {
@@ -533,17 +557,16 @@ export default () => {
                             />
                             <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
                                 <p className={'text-xs text-gray-400'}>
-                                    Leave blank to keep the existing password, or check “Clear password”.
+                                    Leave blank to keep the existing password, or use the button to clear it.
                                 </p>
-                                <label className={'flex items-center gap-2 text-xs text-gray-300'}>
-                                    <input
-                                        type='checkbox'
-                                        checked={clearSmtpPassword}
-                                        onChange={(e) => setClearSmtpPassword(e.target.checked)}
-                                        disabled={!enabled}
-                                    />
+                                <Button.Danger
+                                    size={Button.Sizes.Small}
+                                    onClick={handleClearSmtpPassword}
+                                    disabled={!enabled || !settings?.smtp.password_set}
+                                    loading={clearingSmtpPassword}
+                                >
                                     Clear password
-                                </label>
+                                </Button.Danger>
                             </div>
                         </div>
                         <div className={'space-y-2'}>
