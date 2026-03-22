@@ -69,6 +69,7 @@ export default () => {
         email?: TestResult;
     }>({});
     const [testRecipient, setTestRecipient] = useState('');
+    const [savingEnabled, setSavingEnabled] = useState(false);
     const [clearingApiKey, setClearingApiKey] = useState(false);
     const [clearingSmtpPassword, setClearingSmtpPassword] = useState(false);
     const [resettingSmtp, setResettingSmtp] = useState(false);
@@ -293,6 +294,35 @@ export default () => {
             .finally(() => setSaving(false));
     };
 
+    const handleToggleEnabled = () => {
+        if (!settings || savingEnabled) return;
+
+        const newEnabled = !enabled;
+        setEnabled(newEnabled);
+        setSavingEnabled(true);
+        clearFlashes('email:settings');
+        setStatus('processing');
+
+        updateSettings({ enabled: newEnabled })
+            .then((updated) => {
+                setSettings(updated);
+                setEnabled(updated.enabled);
+                setTransport(updated.transport);
+                addFlash({
+                    key: 'email:settings',
+                    type: 'success',
+                    message: `Email delivery ${updated.enabled ? 'enabled' : 'disabled'}.`,
+                });
+                setStatus('success');
+            })
+            .catch((error) => {
+                setEnabled(!newEnabled); // revert
+                setStatus('error');
+                clearAndAddHttpError({ key: 'email:settings', error });
+            })
+            .finally(() => setSavingEnabled(false));
+    };
+
     const handleClearResendApiKey = () => {
         if (clearingApiKey || !settings?.resend.api_key) return;
 
@@ -505,12 +535,14 @@ export default () => {
                                             <StatusBadge status={enabled ? 'success' : 'warning'} />
                                             {(enabled ? Button.Danger : Button.Success)({
                                                 children: enabled ? 'Disable' : 'Enable',
-                                                onClick: () => setEnabled((v) => !v),
-                                                disabled: saving,
+                                                onClick: handleToggleEnabled,
+                                                disabled: saving || savingEnabled,
                                             })}
                                         </div>
                                     </div>
-                                    <p className={'text-xs text-gray-500'}>Changes apply when you save.</p>
+                                    <p className={'text-xs text-gray-500'}>
+                                        Applies immediately and affects all providers.
+                                    </p>
                                 </div>
                             </Card>
 
