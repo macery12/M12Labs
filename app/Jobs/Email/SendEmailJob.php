@@ -185,6 +185,17 @@ class SendEmailJob extends Job implements ShouldQueue
         );
 
         if (!$result->success) {
+            if ($result->retryable === false) {
+                Log::warning('SendEmailJob: Non-retryable failure, stopping retries', [
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'error' => $result->error,
+                    'correlation_id' => $this->correlationId,
+                ]);
+
+                return;
+            }
+
             throw new \Exception($result->error ?? 'Unknown error');
         }
 

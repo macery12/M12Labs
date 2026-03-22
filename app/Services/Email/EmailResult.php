@@ -10,7 +10,8 @@ class EmailResult
         public ?string $error = null,
         public ?int $statusCode = null,
         public ?string $status = null,
-        public ?string $reason = null
+        public ?string $reason = null,
+        public ?bool $retryable = null
     ) {
     }
 
@@ -23,7 +24,8 @@ class EmailResult
             success: true,
             messageId: $messageId,
             statusCode: $statusCode,
-            status: 'sent'
+            status: 'sent',
+            retryable: null
         );
     }
 
@@ -35,7 +37,8 @@ class EmailResult
         return new self(
             success: false,
             status: 'skipped',
-            reason: $reason
+            reason: $reason,
+            retryable: false
         );
     }
 
@@ -50,13 +53,14 @@ class EmailResult
     /**
      * Create a failed result.
      */
-    public static function failure(string $error, ?int $statusCode = null): self
+    public static function failure(string $error, ?int $statusCode = null, ?bool $retryable = true): self
     {
         return new self(
             success: false,
             error: $error,
             statusCode: $statusCode,
-            status: 'failed'
+            status: 'failed',
+            retryable: $retryable
         );
     }
 }

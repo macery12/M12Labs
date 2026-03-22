@@ -38,7 +38,7 @@ class EmailManager
                 'subject' => $email->subject(),
             ]);
 
-            return EmailResult::failure($error, 422);
+            return EmailResult::failure($error, 422, false);
         }
         $transportResolution = $this->resolveTransportConfig();
         if ($transportResolution instanceof EmailResult) {
@@ -232,9 +232,9 @@ class EmailManager
             ]);
 
             $attempt = $tracker->startAttempt($delivery, $attemptNumber);
-            $tracker->finishAttemptFailure($attempt, $error, 0, $e);
+            $tracker->finishAttemptFailure($attempt, $error, 0, $e, null, false);
 
-            return EmailResult::failure($error);
+            return EmailResult::failure($error, null, false);
         }
 
         // Generate text content
@@ -304,7 +304,10 @@ class EmailManager
                         $tracker->finishAttemptFailure(
                             attempt: $attempt,
                             error: $result->error ?? 'Unknown error',
-                            statusCode: $result->statusCode
+                            statusCode: $result->statusCode,
+                            exception: null,
+                            responsePayload: null,
+                            retryable: $result->retryable
                         );
                     } catch (\Exception $e) {
                         Log::warning('Failed to update attempt failure', [
@@ -324,7 +327,9 @@ class EmailManager
                         attempt: $attempt,
                         error: $e->getMessage(),
                         statusCode: method_exists($e, 'getCode') ? $e->getCode() : 0,
-                        exception: $e
+                        exception: $e,
+                        responsePayload: null,
+                        retryable: true
                     );
                 } catch (\Exception $logException) {
                     Log::warning('Failed to update attempt exception', [
@@ -549,10 +554,10 @@ class EmailManager
 
         if ($tracker && $delivery) {
             $attempt = $tracker->startAttempt($delivery, $attemptNumber);
-            $tracker->finishAttemptFailure($attempt, $message, 0);
+            $tracker->finishAttemptFailure($attempt, $message, 0, null, null, false);
         }
 
-        return EmailResult::failure($message);
+        return EmailResult::failure($message, null, false);
     }
 
     /**

@@ -31,7 +31,7 @@ class ResendService
             $statusCode = $response['status_code'] ?? null;
 
             if (!$messageId) {
-                return EmailResult::failure('Response missing message ID', $statusCode);
+                return EmailResult::failure('Response missing message ID', $statusCode, true);
             }
 
             return new EmailResult(
@@ -40,7 +40,10 @@ class ResendService
                 statusCode: $statusCode
             );
         } catch (ResendException $e) {
-            return EmailResult::failure($e->getMessage(), $e->getCode());
+            $retryable = !($e instanceof \Everest\Exceptions\Service\Email\ResendAuthenticationException
+                || $e instanceof \Everest\Exceptions\Service\Email\ResendValidationException);
+
+            return EmailResult::failure($e->getMessage(), $e->getCode(), $retryable);
         }
     }
 }

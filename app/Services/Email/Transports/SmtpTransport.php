@@ -73,11 +73,20 @@ class SmtpTransport implements EmailTransport
                 statusCode: 200
             );
         } catch (\Throwable $e) {
+            $errorMessage = $e->getMessage();
+            $retryable = !(
+                stripos($errorMessage, 'authentication') !== false ||
+                stripos($errorMessage, 'username and password not accepted') !== false ||
+                stripos($errorMessage, 'invalid credentials') !== false ||
+                stripos($errorMessage, 'missing credentials') !== false
+            );
+
             Log::error('SMTP send failed', [
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
+                'retryable' => $retryable,
             ]);
 
-            return EmailResult::failure($e->getMessage());
+            return EmailResult::failure($errorMessage, $e->getCode() ?: null, $retryable);
         }
     }
 
