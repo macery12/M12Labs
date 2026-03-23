@@ -6,6 +6,7 @@ use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Everest\Services\Email\EmailRedactor;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
 use Everest\Http\Requests\Api\Application\Mods\GetModsAnalyticsRequest;
@@ -33,8 +34,13 @@ class PluginsController extends ApplicationApiController
 
         \Artisan::call('config:clear');
 
+        $activitySettings = EmailRedactor::redactSensitivePayload(
+            $request->all(),
+            ['api_key', 'token', 'secret', 'password', 'authorization', 'key']
+        );
+
         Activity::event('admin:plugins:update')
-            ->property('settings', $request->all())
+            ->property('settings', $activitySettings)
             ->description('Plugins module settings were updated')
             ->log();
 
