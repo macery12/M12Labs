@@ -21,13 +21,7 @@ class ProcessDeferredEmailsJob extends Job implements ShouldQueue
      */
     public function handle(EmailDeliveryTracker $tracker): void
     {
-        Log::info('ProcessDeferredEmailsJob: Starting');
-
         $pendingEmails = DeferredEmail::getPendingEmails(100);
-
-        Log::info('ProcessDeferredEmailsJob: Found pending emails', [
-            'count' => $pendingEmails->count(),
-        ]);
 
         foreach ($pendingEmails as $deferred) {
             Log::info('ProcessDeferredEmailsJob: Dispatching deferred email', [
@@ -50,7 +44,5 @@ class ProcessDeferredEmailsJob extends Job implements ShouldQueue
 
             $deferred->delete();
         }
-
-        Log::info('ProcessDeferredEmailsJob: Completed');
     }
 }

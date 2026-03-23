@@ -12,6 +12,7 @@ use Everest\Tests\TestCase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ProcessDeferredEmailsJobTest extends TestCase
@@ -114,6 +115,17 @@ class ProcessDeferredEmailsJobTest extends TestCase
         });
 
         $this->assertDatabaseMissing('deferred_emails', ['id' => $deferred->id]);
+    }
+
+    public function testCheckingEmptyDeferredQueueDoesNotWriteRoutineInfoLogs(): void
+    {
+        Bus::fake();
+        Log::spy();
+
+        (new ProcessDeferredEmailsJob())->handle(app(EmailDeliveryTracker::class));
+
+        Bus::assertNothingDispatched();
+        Log::shouldNotHaveReceived('info');
     }
 
     private function setUpEmailTables(): void
