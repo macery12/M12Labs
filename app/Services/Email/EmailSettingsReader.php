@@ -4,6 +4,8 @@ namespace Everest\Services\Email;
 
 use Everest\Models\Setting;
 use Everest\Services\Security\SecretEncryptionService;
+use Everest\Services\Email\ResendPlanResolver;
+use Everest\Services\Email\ResendQuotaService;
 
 class EmailSettingsReader
 {
@@ -54,9 +56,16 @@ class EmailSettingsReader
 
     public function adminSettings(): array
     {
+        $planResolver = app(ResendPlanResolver::class);
+        $quotaService = app(ResendQuotaService::class);
+        $planUsage = $quotaService->usage();
+
         return [
             'transport' => $this->transport(),
             'enabled' => $this->deliveryEnabled(),
+            'resend_plan' => $planUsage['plan'],
+            'resend_plans' => $planResolver->all(),
+            'resend_usage' => $planUsage['usage'],
             'resend' => [
                 'api_key' => !empty($this->get('settings::modules:email:resend:api_key', '')),
                 'from_email' => (string) $this->get('settings::modules:email:resend:from_email', ''),
