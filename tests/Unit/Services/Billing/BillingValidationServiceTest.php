@@ -35,7 +35,7 @@ class BillingValidationServiceTest extends TestCase
         $this->service->validatePriceType(0.0001, true);
         $this->service->validatePriceType(-0.25, true);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidatePriceTypeRejectsPaidFlowForFreeTotals(): void

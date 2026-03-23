@@ -20,6 +20,8 @@ use Everest\Exceptions\Http\Connection\DaemonConnectionException;
  */
 class BillingValidationService
 {
+    private const PRICE_EPSILON = 0.0001;
+
     /**
      * BillingValidationService constructor.
      *
@@ -203,7 +205,7 @@ class BillingValidationService
     {
         // Treat very small residuals as free and clamp negatives to zero
         $normalizedPrice = max(0, (float) $finalPrice);
-        $isFree = $normalizedPrice <= 0.0001;
+        $isFree = $normalizedPrice <= self::PRICE_EPSILON;
 
         if ($expectFree && !$isFree) {
             throw new DisplayException('This product is not free. Please use the payment process.');
