@@ -13,7 +13,8 @@ class EmailResult
         public ?int $statusCode = null,
         public ?string $status = null,
         public ?string $reason = null,
-        public ?bool $retryable = null
+        public ?bool $retryable = null,
+        public array $meta = []
     ) {
     }
 

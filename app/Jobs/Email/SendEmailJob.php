@@ -217,6 +217,36 @@ class SendEmailJob extends Job implements ShouldQueue
             attemptNumber: $this->attempts()
         );
 
+        if (!$result->success && $provider === 'resend' && $result->statusCode === 429) {
+            $reason = $result->reason;
+            if (in_array($reason, ['daily_quota_exceeded', 'monthly_quota_exceeded'], true)) {
+                $reasonKey = $reason === 'daily_quota_exceeded' ? 'resend_daily_quota_reached' : 'resend_monthly_quota_reached';
+                $nextAvailable = isset($result->meta['rate_limit']['reset']) && $result->meta['rate_limit']['reset']
+                    ? now()->addSeconds((int) $result->meta['rate_limit']['reset'])
+                    : now()->addMinutes(15);
+
+                Log::info('SendEmailJob: Resend provider quota exceeded, deferring', [
+                    'reason' => $reasonKey,
+                    'scheduled_at' => $nextAvailable,
+                    'correlation_id' => $this->correlationId,
+                ]);
+
+                $tracker->markDeferred($delivery, $reasonKey, $nextAvailable);
+
+                DeferredEmail::create([
+                    'user_id' => $this->userId,
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'data' => $validData,
+                    'correlation_id' => $this->correlationId,
+                    'reason' => $reasonKey,
+                    'scheduled_at' => $nextAvailable,
+                ]);
+
+                return;
+            }
+        }
+
         if (!$result->success) {
             if ($result->retryable === false) {
                 Log::warning('SendEmailJob: Non-retryable failure, stopping retries', [

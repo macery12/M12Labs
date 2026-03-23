@@ -52,6 +52,15 @@ class EmailSettingsReaderTest extends TestCase
                 'monthly_remaining' => $plan['monthly_limit'],
                 'next_daily_reset' => null,
                 'next_monthly_reset' => null,
+                'source' => 'provider',
+                'synced_at' => null,
+            ],
+            'rate_limit' => [
+                'limit' => '5',
+                'remaining' => '3',
+                'reset' => '15',
+                'retry_after' => '2',
+                'updated_at' => null,
             ],
         ]);
         app()->instance(ResendQuotaService::class, $quotaService);
@@ -82,5 +91,7 @@ class EmailSettingsReaderTest extends TestCase
         $this->assertSame('noreply@example.com', $settings['resend']['from_email']);
         $this->assertSame($plan['key'], $settings['resend_plan']['key']);
         $this->assertSame($plan['daily_limit'], $settings['resend_usage']['daily_limit']);
+        $this->assertSame('provider', $settings['resend_usage']['source']);
+        $this->assertSame('5', $settings['resend_rate_limit']['limit']);
     }
 }

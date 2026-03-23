@@ -4,6 +4,7 @@ namespace Everest\Services\Email;
 
 use Everest\Models\ResendQuota;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class ResendQuotaService
 {
@@ -38,6 +39,40 @@ class ResendQuotaService
         }
     }
 
+    public function syncFromProvider(?int $dailyUsed, ?int $monthlyUsed, array $rateLimit = []): void
+    {
+        try {
+            $plan = $this->plans->activePlan();
+            $quota = ResendQuota::singleton();
+            $quota->resetIfNeeded();
+
+            if ($monthlyUsed !== null) {
+                $quota->monthly_sent = $monthlyUsed;
+            }
+            if ($dailyUsed !== null) {
+                $quota->daily_sent = $dailyUsed;
+            }
+            $quota->save();
+
+            Cache::put($this->usageSourceCacheKey(), [
+                'source' => 'provider',
+                'synced_at' => now()->toIso8601String(),
+            ], 3600);
+
+            if (!empty($rateLimit)) {
+                Cache::put($this->rateLimitCacheKey(), [
+                    'limit' => $rateLimit['limit'] ?? null,
+                    'remaining' => $rateLimit['remaining'] ?? null,
+                    'reset' => $rateLimit['reset'] ?? null,
+                    'retry_after' => $rateLimit['retry_after'] ?? null,
+                    'updated_at' => now()->toIso8601String(),
+                ], 900);
+            }
+        } catch (\Throwable $e) {
+            Log::debug('ResendQuotaService: failed to sync provider usage', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function usage(): array
     {
         try {
@@ -48,7 +83,11 @@ class ResendQuotaService
 
             return [
                 'plan' => $plan,
-                'usage' => $usage,
+                'usage' => array_merge($usage, [
+                    'source' => Cache::get($this->usageSourceCacheKey())['source'] ?? 'internal',
+                    'synced_at' => Cache::get($this->usageSourceCacheKey())['synced_at'] ?? null,
+                ]),
+                'rate_limit' => Cache::get($this->rateLimitCacheKey(), null),
             ];
         } catch (\Throwable $e) {
             Log::debug('ResendQuotaService: Failed to read usage (likely before migrations)', [
@@ -68,8 +107,21 @@ class ResendQuotaService
                     'monthly_remaining' => $plan['enforce_monthly'] ? $plan['monthly_limit'] : null,
                     'next_daily_reset' => null,
                     'next_monthly_reset' => null,
+                    'source' => 'internal',
+                    'synced_at' => null,
                 ],
+                'rate_limit' => Cache::get($this->rateLimitCacheKey(), null),
             ];
         }
+    }
+
+    private function usageSourceCacheKey(): string
+    {
+        return 'resend_usage_source';
+    }
+
+    private function rateLimitCacheKey(): string
+    {
+        return 'resend_rate_limit';
     }
 }

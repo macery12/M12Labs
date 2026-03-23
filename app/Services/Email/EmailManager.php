@@ -240,6 +240,10 @@ class EmailManager
             $result = $transport->send($message);
 
             if ($result->success) {
+                if (isset($result->meta['usage']) || isset($result->meta['rate_limit'])) {
+                    $this->syncResendUsage($result->meta);
+                }
+
                 // Success - update attempt if it was created
                 if ($attempt) {
                     try {
@@ -257,6 +261,9 @@ class EmailManager
                     }
                 }
             } else {
+                if (isset($result->meta['usage']) || isset($result->meta['rate_limit'])) {
+                    $this->syncResendUsage($result->meta);
+                }
                 // Failure - update attempt if it was created
                 if ($attempt) {
                     try {
@@ -349,6 +356,26 @@ class EmailManager
         $text = trim($text);
 
         return $text;
+    }
+
+    private function syncResendUsage(array $meta): void
+    {
+        if (!isset($meta['usage']) && !isset($meta['rate_limit'])) {
+            return;
+        }
+
+        $usage = $meta['usage'] ?? [];
+        $rate = $meta['rate_limit'] ?? [];
+
+        try {
+            app(\Everest\Services\Email\ResendQuotaService::class)->syncFromProvider(
+                $usage['daily_used'] ?? null,
+                $usage['monthly_used'] ?? null,
+                $rate
+            );
+        } catch (\Throwable $e) {
+            Log::debug('EmailManager: failed syncing Resend usage headers', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

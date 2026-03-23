@@ -990,6 +990,15 @@ export default () => {
                                     />
                                 </div>
                                 <p className={'text-xs text-gray-500'}>
+                                    Source: {activeUsage?.source === 'provider' ? 'Provider reported' : 'Internal fallback'}
+                                    {activeUsage?.synced_at ? ` • Updated ${new Date(activeUsage.synced_at).toLocaleString()}` : ''}
+                                </p>
+                                {settings.resend_rate_limit && (
+                                    <p className={'text-xs text-gray-500'}>
+                                        Rate limit — limit: {settings.resend_rate_limit.limit ?? 'n/a'}, remaining: {settings.resend_rate_limit.remaining ?? 'n/a'}, reset: {settings.resend_rate_limit.reset ?? 'n/a'}, retry-after: {settings.resend_rate_limit.retry_after ?? 'n/a'}
+                                    </p>
+                                )}
+                                <p className={'text-xs text-gray-500'}>
                                     Plan quotas are tracked separately from Resend API rate limits (5 requests/second).
                                     When a quota is reached, emails are deferred to the queue until the next reset.
                                 </p>

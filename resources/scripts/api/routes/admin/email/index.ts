@@ -36,6 +36,16 @@ export interface ResendQuotaUsage {
     monthly_remaining: number | null;
     next_daily_reset: string | null;
     next_monthly_reset: string | null;
+    source?: 'provider' | 'internal';
+    synced_at?: string | null;
+}
+
+export interface ResendRateLimitMeta {
+    limit: string | null;
+    remaining: string | null;
+    reset: string | null;
+    retry_after: string | null;
+    updated_at?: string | null;
 }
 
 export interface SmtpSettings {
@@ -57,6 +67,7 @@ export interface EmailSettings {
     resend_plan: ResendPlanDefinition;
     resend_plans: ResendPlanDefinition[];
     resend_usage: ResendQuotaUsage;
+    resend_rate_limit: ResendRateLimitMeta | null;
 }
 
 export interface EmailSettingsUpdate {

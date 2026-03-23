@@ -66,6 +66,7 @@ class EmailSettingsReader
             'resend_plan' => $planUsage['plan'],
             'resend_plans' => $planResolver->all(),
             'resend_usage' => $planUsage['usage'],
+            'resend_rate_limit' => $planUsage['rate_limit'],
             'resend' => [
                 'api_key' => !empty($this->get('settings::modules:email:resend:api_key', '')),
                 'from_email' => (string) $this->get('settings::modules:email:resend:from_email', ''),
