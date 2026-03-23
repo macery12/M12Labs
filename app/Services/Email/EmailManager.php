@@ -424,7 +424,13 @@ class EmailManager
             replyTo: $replyTo
         );
 
-        return $transportInstance->send($message);
+        $result = $transportInstance->send($message);
+
+        if ($transport === 'resend' && isset($result->meta)) {
+            $this->syncResendUsage($result->meta);
+        }
+
+        return $result;
     }
 
     /**
