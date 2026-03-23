@@ -5,12 +5,47 @@ export type EmailTransport = 'resend' | 'smtp';
 export type EmailStatus = 'queued' | 'sending' | 'sent' | 'deferred' | 'skipped' | 'failed';
 export type EmailTestType = 'connection' | 'delivery';
 
+export type ResendPlanKey = 'free' | 'pro' | 'scale' | 'enterprise';
+
+export interface ResendPlanDefinition {
+    key: ResendPlanKey;
+    name: string;
+    daily_limit: number | null;
+    monthly_limit: number | null;
+    enforce_daily: boolean;
+    enforce_monthly: boolean;
+    allows_custom_limits: boolean;
+    custom_daily_limit?: number | null;
+    custom_monthly_limit?: number | null;
+}
+
 export interface ResendSettings {
     api_key: boolean; // true if key exists, false otherwise
     from_email: string;
     from_name: string;
     reply_to: string;
     domain?: string;
+}
+
+export interface ResendQuotaUsage {
+    daily_sent: number;
+    monthly_sent: number;
+    daily_limit: number | null;
+    monthly_limit: number | null;
+    daily_remaining: number | null;
+    monthly_remaining: number | null;
+    next_daily_reset: string | null;
+    next_monthly_reset: string | null;
+    source?: 'provider' | 'internal';
+    synced_at?: string | null;
+}
+
+export interface ResendRateLimitMeta {
+    limit: string | null;
+    remaining: string | null;
+    reset: string | null;
+    retry_after: string | null;
+    updated_at?: string | null;
 }
 
 export interface SmtpSettings {
@@ -29,6 +64,10 @@ export interface EmailSettings {
     transport: EmailTransport;
     resend: ResendSettings;
     smtp: SmtpSettings;
+    resend_plan: ResendPlanDefinition;
+    resend_plans: ResendPlanDefinition[];
+    resend_usage: ResendQuotaUsage;
+    resend_rate_limit: ResendRateLimitMeta | null;
 }
 
 export interface EmailSettingsUpdate {
@@ -48,6 +87,9 @@ export interface EmailSettingsUpdate {
     smtp_from_email?: string;
     smtp_from_name?: string;
     smtp_reply_to?: string;
+    resend_plan?: ResendPlanKey;
+    resend_custom_monthly_limit?: number | null;
+    resend_custom_daily_limit?: number | null;
 }
 
 export interface SendTestEmailRequest {

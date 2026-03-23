@@ -27,6 +27,9 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             'smtp_from_email' => 'nullable|email|max:255',
             'smtp_from_name' => 'nullable|string|max:255',
             'smtp_reply_to' => 'nullable|email|max:255',
+            'resend_plan' => 'nullable|in:free,pro,scale,enterprise',
+            'resend_custom_monthly_limit' => 'nullable|integer|min:0',
+            'resend_custom_daily_limit' => 'nullable|integer|min:0',
         ];
     }
 
@@ -75,6 +78,18 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
 
         if ($this->has('reply_to')) {
             $data['modules:email:resend:reply_to'] = $this->input('reply_to', '');
+        }
+
+        if ($this->has('resend_plan')) {
+            $data['modules:email:resend:plan'] = $this->input('resend_plan');
+        }
+
+        if ($this->has('resend_custom_monthly_limit')) {
+            $data['modules:email:resend:custom_monthly_limit'] = $this->input('resend_custom_monthly_limit', null);
+        }
+
+        if ($this->has('resend_custom_daily_limit')) {
+            $data['modules:email:resend:custom_daily_limit'] = $this->input('resend_custom_daily_limit', null);
         }
 
         // SMTP fields

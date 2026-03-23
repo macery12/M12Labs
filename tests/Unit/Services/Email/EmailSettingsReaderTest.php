@@ -3,6 +3,8 @@
 namespace Everest\Tests\Unit\Services\Email;
 
 use Everest\Services\Email\EmailSettingsReader;
+use Everest\Services\Email\ResendPlanResolver;
+use Everest\Services\Email\ResendQuotaService;
 use Everest\Tests\TestCase;
 use Mockery;
 
@@ -21,6 +23,48 @@ class EmailSettingsReaderTest extends TestCase
 
     public function testItBuildsAdminSettingsPayload(): void
     {
+        $plan = [
+            'key' => 'free',
+            'name' => 'Free',
+            'daily_limit' => 100,
+            'monthly_limit' => 3000,
+            'enforce_daily' => true,
+            'enforce_monthly' => true,
+            'allows_custom_limits' => false,
+            'custom_daily_limit' => null,
+            'custom_monthly_limit' => null,
+        ];
+
+        $planResolver = Mockery::mock(ResendPlanResolver::class);
+        $planResolver->shouldReceive('all')->andReturn([$plan]);
+        $planResolver->shouldReceive('activePlan')->andReturn($plan);
+        app()->instance(ResendPlanResolver::class, $planResolver);
+
+        $quotaService = Mockery::mock(ResendQuotaService::class);
+        $quotaService->shouldReceive('usage')->andReturn([
+            'plan' => $plan,
+            'usage' => [
+                'daily_sent' => 0,
+                'monthly_sent' => 0,
+                'daily_limit' => $plan['daily_limit'],
+                'monthly_limit' => $plan['monthly_limit'],
+                'daily_remaining' => $plan['daily_limit'],
+                'monthly_remaining' => $plan['monthly_limit'],
+                'next_daily_reset' => null,
+                'next_monthly_reset' => null,
+                'source' => 'provider',
+                'synced_at' => null,
+            ],
+            'rate_limit' => [
+                'limit' => '5',
+                'remaining' => '3',
+                'reset' => '15',
+                'retry_after' => '2',
+                'updated_at' => null,
+            ],
+        ]);
+        app()->instance(ResendQuotaService::class, $quotaService);
+
         $reader = Mockery::mock(EmailSettingsReader::class)->makePartial();
         $reader->shouldReceive('transport')->andReturn('smtp');
         $reader->shouldReceive('deliveryEnabled')->andReturn(true);
@@ -45,5 +89,9 @@ class EmailSettingsReaderTest extends TestCase
         $this->assertTrue($settings['resend']['api_key']);
         $this->assertTrue($settings['smtp']['password_set']);
         $this->assertSame('noreply@example.com', $settings['resend']['from_email']);
+        $this->assertSame($plan['key'], $settings['resend_plan']['key']);
+        $this->assertSame($plan['daily_limit'], $settings['resend_usage']['daily_limit']);
+        $this->assertSame('provider', $settings['resend_usage']['source']);
+        $this->assertSame('5', $settings['resend_rate_limit']['limit']);
     }
 }

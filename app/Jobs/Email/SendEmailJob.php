@@ -11,6 +11,7 @@ use Everest\Services\Email\EmailManager;
 use Everest\Services\Email\EmailPolicyService;
 use Everest\Services\Email\EmailDeliveryTracker;
 use Everest\Services\Email\EmailSubjectResolver;
+use Everest\Services\Email\ResendQuotaService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -50,7 +51,7 @@ class SendEmailJob extends Job implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker, EmailPolicyService $policy): void
+    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker, EmailPolicyService $policy, ResendQuotaService $resendQuotaService): void
     {
         if (!$policy->isDeliveryEnabled()) {
             Log::info('SendEmailJob: Email delivery disabled, skipping dispatch', [
@@ -174,6 +175,37 @@ class SendEmailJob extends Job implements ShouldQueue
             throw new \Exception('Variable validation failed: ' . implode(', ', $errors));
         }
 
+        if ($provider === 'resend' && $this->attempts() === 1) {
+            $reservation = $resendQuotaService->reserve();
+
+            if (!$reservation->allowed) {
+                $nextAvailable = $reservation->scheduledAt ?? now()->addMinutes(5);
+                $reason = $reservation->reason ?? 'resend_quota_reached';
+
+                Log::info('SendEmailJob: Resend plan quota exceeded, deferring', [
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'reason' => $reason,
+                    'scheduled_at' => $nextAvailable,
+                    'correlation_id' => $this->correlationId,
+                ]);
+
+                $tracker->markDeferred($delivery, $reason, $nextAvailable);
+
+                DeferredEmail::create([
+                    'user_id' => $this->userId,
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'data' => $validData,
+                    'correlation_id' => $this->correlationId,
+                    'reason' => $reason,
+                    'scheduled_at' => $nextAvailable,
+                ]);
+
+                return;
+            }
+        }
+
         // Send the email - EmailManager will use tracker to log attempts
         $result = $emailManager->sendFromTemplate(
             templateKey: $this->templateKey,
@@ -184,6 +216,36 @@ class SendEmailJob extends Job implements ShouldQueue
             delivery: $delivery,
             attemptNumber: $this->attempts()
         );
+
+        if (!$result->success && $provider === 'resend' && $result->statusCode === 429) {
+            $reason = $result->reason;
+            if (in_array($reason, ['daily_quota_exceeded', 'monthly_quota_exceeded'], true)) {
+                $reasonKey = $reason === 'daily_quota_exceeded' ? 'resend_daily_quota_reached' : 'resend_monthly_quota_reached';
+                $nextAvailable = isset($result->meta['rate_limit']['reset']) && $result->meta['rate_limit']['reset']
+                    ? now()->addSeconds((int) $result->meta['rate_limit']['reset'])
+                    : now()->addMinutes(15);
+
+                Log::info('SendEmailJob: Resend provider quota exceeded, deferring', [
+                    'reason' => $reasonKey,
+                    'scheduled_at' => $nextAvailable,
+                    'correlation_id' => $this->correlationId,
+                ]);
+
+                $tracker->markDeferred($delivery, $reasonKey, $nextAvailable);
+
+                DeferredEmail::create([
+                    'user_id' => $this->userId,
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'data' => $validData,
+                    'correlation_id' => $this->correlationId,
+                    'reason' => $reasonKey,
+                    'scheduled_at' => $nextAvailable,
+                ]);
+
+                return;
+            }
+        }
 
         if (!$result->success) {
             if ($result->retryable === false) {

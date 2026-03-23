@@ -16,6 +16,9 @@ import {
     EmailSettingsUpdate,
     type EmailStatus,
     EmailTransport,
+    ResendPlanDefinition,
+    ResendPlanKey,
+    ResendQuotaUsage,
     getSettings,
     sendTestEmail,
     testResendConnection,
@@ -74,6 +77,11 @@ export default () => {
     const [enabled, setEnabled] = useState(false);
     const [transport, setTransport] = useState<EmailTransport>('smtp');
     const [globalSender, setGlobalSender] = useState({ fromEmail: '', fromName: '', replyTo: '' });
+    const [resendPlan, setResendPlan] = useState<ResendPlanKey>('free');
+    const [resendPlanOptions, setResendPlanOptions] = useState<ResendPlanDefinition[]>([]);
+    const [resendUsage, setResendUsage] = useState<ResendQuotaUsage | null>(null);
+    const [customMonthlyLimit, setCustomMonthlyLimit] = useState('');
+    const [customDailyLimit, setCustomDailyLimit] = useState('');
 
     const [resendApiKeyInput, setResendApiKeyInput] = useState('');
     const [resendKeySet, setResendKeySet] = useState(false);
@@ -113,6 +121,20 @@ export default () => {
                 setTransport(data.transport);
                 setResendKeySet(data.resend.api_key);
                 setSmtpPasswordSet(data.smtp.password_set);
+                setResendPlan(data.resend_plan.key);
+                setResendPlanOptions(data.resend_plans || []);
+                setResendUsage(data.resend_usage);
+                setCustomMonthlyLimit(
+                    data.resend_plan.custom_monthly_limit !== null &&
+                    data.resend_plan.custom_monthly_limit !== undefined
+                        ? String(data.resend_plan.custom_monthly_limit)
+                        : '',
+                );
+                setCustomDailyLimit(
+                    data.resend_plan.custom_daily_limit !== null && data.resend_plan.custom_daily_limit !== undefined
+                        ? String(data.resend_plan.custom_daily_limit)
+                        : '',
+                );
 
                 const derivedFromEmail = pickWithFallback(
                     data.transport === 'smtp' ? data.smtp.from_email : data.resend.from_email,
@@ -177,6 +199,22 @@ export default () => {
         };
     }, [settings]);
 
+    const initialPlan = useMemo(() => settings?.resend_plan, [settings]);
+
+    const activePlan = useMemo(() => {
+        if (resendPlanOptions.length === 0) {
+            return settings?.resend_plan;
+        }
+
+        return (
+            resendPlanOptions.find(plan => plan.key === resendPlan) ||
+            resendPlanOptions[0] ||
+            settings?.resend_plan
+        );
+    }, [resendPlanOptions, resendPlan, settings]);
+
+    const activeUsage = useMemo(() => resendUsage, [resendUsage]);
+
     const hasChanges = useMemo(() => {
         if (!settings) return false;
 
@@ -193,7 +231,18 @@ export default () => {
             smtpConfig.username !== (settings.smtp.username || '') ||
             smtpConfig.encryption !== (settings.smtp.encryption || '') ||
             resendApiKeyInput.trim().length > 0 ||
-            smtpPasswordInput.trim().length > 0
+            smtpPasswordInput.trim().length > 0 ||
+            resendPlan !== settings.resend_plan.key ||
+            (initialPlan &&
+                (customMonthlyLimit || '') !==
+                    (initialPlan.custom_monthly_limit !== null && initialPlan.custom_monthly_limit !== undefined
+                        ? String(initialPlan.custom_monthly_limit)
+                        : '') ) ||
+            (initialPlan &&
+                (customDailyLimit || '') !==
+                    (initialPlan.custom_daily_limit !== null && initialPlan.custom_daily_limit !== undefined
+                        ? String(initialPlan.custom_daily_limit)
+                        : ''))
         );
     }, [
         enabled,
@@ -211,6 +260,10 @@ export default () => {
         initialSender.fromEmail,
         initialSender.fromName,
         initialSender.replyTo,
+        resendPlan,
+        customMonthlyLimit,
+        customDailyLimit,
+        initialPlan,
     ]);
 
     const smtpConfigured = useMemo(() => {
@@ -227,13 +280,21 @@ export default () => {
         if (!enabled) return 'Email delivery is disabled';
         if (transport === 'smtp' && !smtpConfigured) return 'SMTP configuration incomplete';
         if (transport === 'resend' && !resendConfigured) return 'Resend configuration incomplete';
+        if (
+            transport === 'resend' &&
+            resendUsage &&
+            ((resendUsage.monthly_limit !== null && resendUsage.monthly_remaining === 0) ||
+                (resendUsage.daily_limit !== null && resendUsage.daily_remaining === 0))
+        ) {
+            return 'Resend quota reached — sending will be deferred';
+        }
 
         if (testResults.delivery && testResults.delivery.status !== 'sent') {
             return 'Delivery test failed — see details below';
         }
 
         return 'Ready';
-    }, [enabled, transport, smtpConfigured, resendConfigured, testResults.delivery]);
+    }, [enabled, transport, smtpConfigured, resendConfigured, testResults.delivery, resendUsage]);
 
     const lastSuccess =
         (testResults.delivery?.status === 'sent' && testResults.delivery) ||
@@ -258,6 +319,7 @@ export default () => {
             smtp_from_email: globalSender.fromEmail,
             smtp_from_name: globalSender.fromName,
             smtp_reply_to: globalSender.replyTo,
+            resend_plan: resendPlan,
         };
 
         if (resendApiKeyInput.trim()) {
@@ -268,6 +330,17 @@ export default () => {
             payload.smtp_password = smtpPasswordInput.trim();
         }
 
+        const trimmedMonthly = customMonthlyLimit.trim();
+        const trimmedDaily = customDailyLimit.trim();
+
+        if (trimmedMonthly.length || resendPlan === 'enterprise') {
+            payload.resend_custom_monthly_limit = trimmedMonthly.length ? Number(trimmedMonthly) : null;
+        }
+
+        if (trimmedDaily.length || resendPlan === 'enterprise') {
+            payload.resend_custom_daily_limit = trimmedDaily.length ? Number(trimmedDaily) : null;
+        }
+
         updateSettings(payload)
             .then(updated => {
                 setSettings(updated);
@@ -275,6 +348,19 @@ export default () => {
                 setTransport(updated.transport);
                 setResendKeySet(updated.resend.api_key);
                 setSmtpPasswordSet(updated.smtp.password_set);
+                setResendPlan(updated.resend_plan.key);
+                setResendPlanOptions(updated.resend_plans || []);
+                setResendUsage(updated.resend_usage);
+                setCustomMonthlyLimit(
+                    updated.resend_plan.custom_monthly_limit !== null && updated.resend_plan.custom_monthly_limit !== undefined
+                        ? String(updated.resend_plan.custom_monthly_limit)
+                        : ''
+                );
+                setCustomDailyLimit(
+                    updated.resend_plan.custom_daily_limit !== null && updated.resend_plan.custom_daily_limit !== undefined
+                        ? String(updated.resend_plan.custom_daily_limit)
+                        : ''
+                );
                 setResendApiKeyInput('');
                 setSmtpPasswordInput('');
                 setGlobalSender({
@@ -841,6 +927,86 @@ export default () => {
                         </Card>
 
                         <Card>
+                            <div className={'space-y-3'}>
+                                <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                                    <div className={'space-y-1'}>
+                                        <Label>Resend plan</Label>
+                                        <p className={'text-sm text-gray-400'}>
+                                            Select the active Resend tier to enforce daily and monthly quotas.
+                                        </p>
+                                    </div>
+                                    <select
+                                        className={'rounded border px-3 py-2 text-sm text-white'}
+                                        style={{ backgroundColor: secondary, borderColor: headers }}
+                                        value={resendPlan}
+                                        onChange={e => setResendPlan(e.target.value as ResendPlanKey)}
+                                    >
+                                        {resendPlanOptions.map(plan => (
+                                            <option key={plan.key} value={plan.key}>
+                                                {plan.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {activePlan?.allows_custom_limits && (
+                                    <div className={'grid grid-cols-1 gap-3 sm:grid-cols-2'}>
+                                        <InputField
+                                            label={'Monthly limit (leave blank for unlimited)'}
+                                            value={customMonthlyLimit}
+                                            onChange={setCustomMonthlyLimit}
+                                            placeholder={'e.g. 250000'}
+                                            type={'number'}
+                                        />
+                                        <InputField
+                                            label={'Daily limit (optional)'}
+                                            value={customDailyLimit}
+                                            onChange={setCustomDailyLimit}
+                                            placeholder={'e.g. 5000'}
+                                            type={'number'}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className={'grid grid-cols-1 gap-3 sm:grid-cols-2'}>
+                                    <UsageStat
+                                        label={'Daily quota'}
+                                        sent={activeUsage?.daily_sent ?? 0}
+                                        limit={
+                                            activePlan?.enforce_daily
+                                                ? activeUsage?.daily_limit ?? activePlan?.daily_limit ?? null
+                                                : null
+                                        }
+                                        applies={Boolean(activePlan?.enforce_daily && (activePlan?.daily_limit !== null || activeUsage?.daily_limit !== null))}
+                                    />
+                                    <UsageStat
+                                        label={'Monthly quota'}
+                                        sent={activeUsage?.monthly_sent ?? 0}
+                                        limit={
+                                            activePlan?.enforce_monthly
+                                                ? activeUsage?.monthly_limit ?? activePlan?.monthly_limit ?? null
+                                                : null
+                                        }
+                                        applies={Boolean(activePlan?.enforce_monthly && (activePlan?.monthly_limit !== null || activeUsage?.monthly_limit !== null))}
+                                    />
+                                </div>
+                                <p className={'text-xs text-gray-500'}>
+                                    Source: {activeUsage?.source === 'provider' ? 'Provider reported' : 'Internal fallback'}
+                                    {activeUsage?.synced_at ? ` • Updated ${new Date(activeUsage.synced_at).toLocaleString()}` : ''}
+                                </p>
+                                {settings.resend_rate_limit && (
+                                    <p className={'text-xs text-gray-500'}>
+                                        Rate limit — limit: {settings.resend_rate_limit.limit ?? 'n/a'}, remaining: {settings.resend_rate_limit.remaining ?? 'n/a'}, reset: {settings.resend_rate_limit.reset ?? 'n/a'}, retry-after: {settings.resend_rate_limit.retry_after ?? 'n/a'}
+                                    </p>
+                                )}
+                                <p className={'text-xs text-gray-500'}>
+                                    Plan quotas are tracked separately from Resend API rate limits (5 requests/second).
+                                    When a quota is reached, emails are deferred to the queue until the next reset.
+                                </p>
+                            </div>
+                        </Card>
+
+                        <Card>
                             <div className={'flex items-center justify-between'}>
                                 <div className={'space-y-1'}>
                                     <Label>Status</Label>
@@ -1123,4 +1289,45 @@ const extractErrorMessage = (error: unknown, fallback: string) => {
         return message || fallback;
     }
     return fallback;
+};
+
+const UsageStat = ({
+    label,
+    sent,
+    limit,
+    applies,
+}: {
+    label: string;
+    sent: number;
+    limit: number | null;
+    applies: boolean;
+}) => {
+    const { primary, headers, secondary } = useStoreState(state => state.theme.data!.colors);
+    const limitLabel = !applies ? 'No cap' : limit === null ? 'Unlimited' : limit.toLocaleString();
+    const progress = applies && limit ? Math.min(100, Math.round((sent / limit) * 100)) : 0;
+    const remaining = applies && limit !== null ? Math.max(0, limit - sent).toLocaleString() : '—';
+
+    return (
+        <div className={'rounded-md border p-3'} style={{ backgroundColor: secondary, borderColor: headers }}>
+            <div className={'flex items-center justify-between'}>
+                <Label>{label}</Label>
+                <Pill type={applies ? 'info' : 'success'}>{applies ? 'Enforced' : 'Not applied'}</Pill>
+            </div>
+            <p className={'text-sm text-gray-300'}>
+                {sent.toLocaleString()} / {limitLabel}
+            </p>
+            {applies && limit !== null && (
+                <div className={'mt-2 h-2 overflow-hidden rounded'} style={{ backgroundColor: headers }}>
+                    <div
+                        className={'h-full'}
+                        style={{
+                            width: `${progress}%`,
+                            backgroundColor: primary,
+                        }}
+                    />
+                </div>
+            )}
+            <p className={'mt-1 text-xs text-gray-500'}>Remaining: {remaining}</p>
+        </div>
+    );
 };

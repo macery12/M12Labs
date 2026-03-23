@@ -227,7 +227,7 @@ export default () => {
                                         </Td>
                                         <Td>
                                             <span className="text-xs px-2 py-1 rounded bg-yellow-900 text-yellow-300">
-                                                {email.reason.replace('_', ' ')}
+                                                {email.reason.replace(/_/g, ' ')}
                                             </span>
                                         </Td>
                                         <Td>
