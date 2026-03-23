@@ -36,6 +36,7 @@ class ProcessDeferredEmailsJobTest extends TestCase
     public function testDispatchingDeferredEmailDoesNotReserveQuotaAndRemovesDeferredRecord(): void
     {
         Bus::fake();
+        Log::spy();
 
         $quota = EmailQuota::create([
             'user_id' => 1,
@@ -91,6 +92,13 @@ class ProcessDeferredEmailsJobTest extends TestCase
         $delivery->refresh();
         $this->assertSame(EmailDelivery::STATUS_QUEUED, $delivery->status);
         $this->assertNull($delivery->last_error);
+
+        Log::shouldHaveReceived('info')
+            ->with('ProcessDeferredEmailsJob: Dispatching deferred email', \Mockery::on(function (array $context) use ($deferred) {
+                return $context['deferred_id'] === $deferred->id
+                    && $context['template_key'] === 'auth.password_reset'
+                    && $context['user_id'] === 1;
+            }));
     }
 
     public function testDeferredProcessorNoLongerStopsAtThreeAttempts(): void
