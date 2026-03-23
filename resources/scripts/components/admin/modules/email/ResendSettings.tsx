@@ -36,7 +36,7 @@ type TabKey = 'overview' | 'smtp' | 'resend' | 'testing';
 
 type TestResult = {
     status: EmailStatus;
-    provider: EmailTransport;
+    transport: EmailTransport;
     message: string;
     tested_at: string;
     code?: string;
@@ -67,7 +67,7 @@ export default () => {
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [testingProvider, setTestingProvider] = useState<EmailTransport | null>(null);
+    const [testingTransport, setTestingTransport] = useState<EmailTransport | null>(null);
     const [testingSend, setTestingSend] = useState(false);
 
     const [settings, setSettings] = useState<EmailSettings | null>(null);
@@ -437,10 +437,10 @@ export default () => {
         setTransport(value);
     };
 
-    const handleTestProvider = (provider: EmailTransport) => {
-        setTestingProvider(provider);
+    const handleConnectionCheck = (checkedTransport: EmailTransport) => {
+        setTestingTransport(checkedTransport);
         clearFlashes('email:settings:test');
-        const tester = provider === 'smtp' ? testSmtpConnection : testResendConnection;
+        const tester = checkedTransport === 'smtp' ? testSmtpConnection : testResendConnection;
 
         tester()
             .then(response => {
@@ -456,9 +456,9 @@ export default () => {
 
                 setTestResults(prev => ({
                     ...prev,
-                    [provider]: {
+                    [checkedTransport]: {
                         status,
-                        provider,
+                        transport: checkedTransport,
                         message,
                         tested_at: getEmailResponseTimestamp(response),
                         code,
@@ -472,7 +472,7 @@ export default () => {
                 });
             })
             .catch(error => clearAndAddHttpError({ key: 'email:settings:test', error }))
-            .finally(() => setTestingProvider(null));
+            .finally(() => setTestingTransport(null));
     };
 
     const handleSendTestEmail = () => {
@@ -491,7 +491,7 @@ export default () => {
         sendTestEmail({ to: testRecipient })
             .then(response => {
                 const status = resolveEmailResponseStatus(response);
-                const provider = response.provider || transport;
+                const responseTransport = response.transport || response.provider || transport;
 
                 const message =
                     status === 'sent'
@@ -502,7 +502,7 @@ export default () => {
                     ...prev,
                     delivery: {
                         status,
-                        provider,
+                        transport: responseTransport,
                         message,
                         tested_at: getEmailResponseTimestamp(response),
                         code:
@@ -546,7 +546,7 @@ export default () => {
                                         <div className={'space-y-1'}>
                                             <Label>Email system</Label>
                                             <p className={'text-sm text-gray-400'}>
-                                                Toggle delivery for all providers.
+                                                Toggle delivery for all configured transports.
                                             </p>
                                         </div>
                                         <div className={'flex items-center gap-2'}>
@@ -559,7 +559,7 @@ export default () => {
                                         </div>
                                     </div>
                                     <p className={'text-xs text-gray-500'}>
-                                        Applies immediately and affects all providers.
+                                        Applies immediately and affects all transports.
                                     </p>
                                 </div>
                             </Card>
@@ -567,7 +567,7 @@ export default () => {
                             <Card className={'h-full'}>
                                 <div className={'flex h-full flex-col justify-between gap-3'}>
                                     <div className={'space-y-2'}>
-                                        <Label>Active provider</Label>
+                                        <Label>Active transport</Label>
                                         <div className={'grid grid-cols-2 gap-2'}>
                                             <ProviderPill
                                                 label={'SMTP'}
@@ -584,7 +584,7 @@ export default () => {
                                         </div>
                                     </div>
                                     <p className={'text-xs text-gray-500'}>
-                                        Switching providers preserves your saved configuration.
+                                        Switching transports preserves your saved configuration.
                                     </p>
                                 </div>
                             </Card>
@@ -657,16 +657,16 @@ export default () => {
                                 active={transport === 'smtp'}
                                 configured={smtpConfigured}
                                 lastTest={testResults.smtp}
-                                onTest={() => handleTestProvider('smtp')}
-                                testing={testingProvider === 'smtp'}
+                                onTest={() => handleConnectionCheck('smtp')}
+                                testing={testingTransport === 'smtp'}
                             />
                             <StatusCard
                                 title={'Resend'}
                                 active={transport === 'resend'}
                                 configured={resendConfigured}
                                 lastTest={testResults.resend}
-                                onTest={() => handleTestProvider('resend')}
-                                testing={testingProvider === 'resend'}
+                                onTest={() => handleConnectionCheck('resend')}
+                                testing={testingTransport === 'resend'}
                             />
                         </div>
                     </div>
@@ -687,7 +687,7 @@ export default () => {
                                             : 'bg-neutral-800 text-gray-300'
                                     }`}
                                 >
-                                    {transport === 'smtp' ? 'Active provider' : 'Inactive'}
+                                    {transport === 'smtp' ? 'Active transport' : 'Inactive'}
                                 </span>
                             </div>
                             <div
@@ -776,8 +776,8 @@ export default () => {
                                     </p>
                                 </div>
                                 <Button
-                                    onClick={() => handleTestProvider('smtp')}
-                                    loading={testingProvider === 'smtp'}
+                                    onClick={() => handleConnectionCheck('smtp')}
+                                    loading={testingTransport === 'smtp'}
                                     size={Button.Sizes.Small}
                                 >
                                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
@@ -804,7 +804,7 @@ export default () => {
                                             : 'bg-neutral-800 text-gray-300'
                                     }`}
                                 >
-                                    {transport === 'resend' ? 'Active provider' : 'Inactive'}
+                                    {transport === 'resend' ? 'Active transport' : 'Inactive'}
                                 </span>
                             </div>
 
@@ -855,8 +855,8 @@ export default () => {
                                     </p>
                                 </div>
                                 <Button
-                                    onClick={() => handleTestProvider('resend')}
-                                    loading={testingProvider === 'resend'}
+                                    onClick={() => handleConnectionCheck('resend')}
+                                    loading={testingTransport === 'resend'}
                                     size={Button.Sizes.Small}
                                 >
                                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
@@ -899,8 +899,12 @@ export default () => {
                                     <li>Use a monitored inbox for Reply-To to capture responses.</li>
                                     <li>Configure SPF/DKIM for your domain to avoid spam folders.</li>
                                     <li>
-                                        Connection checks validate the saved provider setup before you try a recipient
-                                        delivery test.
+                                        Connection checks validate credentials and transport configuration without
+                                        targeting a test recipient.
+                                    </li>
+                                    <li>
+                                        Delivery tests send a real email so you can verify end-to-end delivery and inbox
+                                        placement.
                                     </li>
                                 </ul>
                             </div>
@@ -1074,7 +1078,7 @@ const StatusCard = ({
                 </div>
                 <Button onClick={onTest} loading={testing} size={Button.Sizes.Small}>
                     <FontAwesomeIcon icon={faVial} className={'mr-1'} />
-                    Check Connection
+                    Check connection
                 </Button>
             </div>
             <div className={'text-sm text-gray-300'}>
@@ -1102,7 +1106,7 @@ const ResultBanner = ({ result }: { result: TestResult }) => (
     >
         <div className={'flex items-center justify-between'}>
             <span className={'font-semibold'}>
-                {getEmailStatusPresentation(result.status).label} — {result.provider.toUpperCase()}
+                {getEmailStatusPresentation(result.status).label} — {result.transport.toUpperCase()}
             </span>
             <span className={'text-xs text-gray-300'}>{formatTestFlowDate(result.tested_at)}</span>
         </div>

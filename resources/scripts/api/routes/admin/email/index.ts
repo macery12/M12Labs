@@ -3,6 +3,7 @@ import { type VerificationRules } from '@/state/everest';
 
 export type EmailTransport = 'resend' | 'smtp';
 export type EmailStatus = 'queued' | 'sending' | 'sent' | 'deferred' | 'skipped' | 'failed';
+export type EmailTestType = 'connection' | 'delivery';
 
 export interface ResendSettings {
     api_key: boolean; // true if key exists, false otherwise
@@ -63,11 +64,13 @@ export interface EmailResponse {
     success: boolean;
     action?: 'connection_test' | 'send_test';
     message_id?: string;
+    transport?: EmailTransport;
     provider?: EmailTransport;
     sent_at?: string;
     tested_at?: string;
     recipient?: string;
     status?: EmailStatus;
+    test_type?: EmailTestType;
     reason?: string;
     error?: EmailError | string;
 }

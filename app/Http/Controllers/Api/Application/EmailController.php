@@ -8,7 +8,6 @@ use Everest\Models\EmailQuota;
 use Everest\Models\User;
 use Everest\Models\EmailDelivery;
 use Everest\Facades\Activity;
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Email\EmailPolicyService;
@@ -71,7 +70,7 @@ class EmailController extends ApplicationApiController
     }
 
     /**
-     * Update the email settings (transport + provider configs).
+     * Update the email transport settings (SMTP or Resend).
      *
      * @throws \Throwable
      */
@@ -138,8 +137,8 @@ class EmailController extends ApplicationApiController
         try {
             $result = $this->emailManager->sendCustom(
                 to: $recipient,
-                subject: 'Email delivery test',
-                html: '<h1>Email Delivery Test</h1><p>This is a real test email sent from the email settings screen. If you received it, your current email delivery provider can reach recipient inboxes.</p>'
+                subject: 'Email Delivery Test',
+                html: '<h1>Email Delivery Test</h1><p>This is a real delivery test message from the email system. If you received it, the active email transport can deliver mail end-to-end.</p>'
             );
 
             Activity::event('admin:email:test')
@@ -304,23 +303,25 @@ class EmailController extends ApplicationApiController
     /**
      * Normalize an EmailResult into a structured JSON response.
      */
-    private function formatEmailResult(EmailResult $result, string $provider, string $action, ?string $recipient = null): JsonResponse
+    private function formatEmailResult(EmailResult $result, string $transport, string $context, ?string $recipient = null): JsonResponse
     {
         if ($result->success) {
             $payload = [
                 'success' => true,
-                'action' => $action,
-                'provider' => $provider,
+                'action' => $context,
+                'transport' => $transport,
+                'provider' => $transport,
                 'message_id' => $result->messageId,
                 'recipient' => $recipient,
                 'status' => $result->status ?? EmailDelivery::STATUS_SENT,
                 'reason' => $result->reason,
             ];
 
-            if ($this->isTestAction($action)) {
+            if ($this->isTestAction($context)) {
                 $payload['tested_at'] = now()->toIso8601String();
+                $payload['test_type'] = $this->getTestType($context);
             }
-            if ($action === self::ACTION_SEND_TEST) {
+            if ($context === self::ACTION_SEND_TEST) {
                 $payload['sent_at'] = now()->toIso8601String();
             }
 
@@ -331,22 +332,27 @@ class EmailController extends ApplicationApiController
 
         return response()->json([
             'success' => false,
-            'action' => $action,
-            'provider' => $provider,
+            'action' => $context,
+            'transport' => $transport,
+            'provider' => $transport,
+            'recipient' => $recipient,
             'status' => $result->status ?? EmailDelivery::STATUS_FAILED,
             'reason' => $result->reason,
             'error' => [
-                'code' => $this->deriveErrorCode($provider, $result, $action),
+                'code' => $this->deriveErrorCode($transport, $result, $context),
                 'status' => $status,
                 'message' => $result->error ?? $result->reason ?? 'Email action failed',
             ],
-        ], $status);
+        ] + ($this->isTestAction($context) ? [
+            'tested_at' => now()->toIso8601String(),
+            'test_type' => $this->getTestType($context),
+        ] : []), $status);
     }
 
     private function formatExceptionError(
         \Throwable $e,
-        string $provider,
-        string $action = self::ACTION_SEND_TEST,
+        string $transport,
+        string $context = self::ACTION_SEND_TEST,
         ?string $recipient = null
     ): JsonResponse
     {
@@ -358,42 +364,46 @@ class EmailController extends ApplicationApiController
 
         return response()->json([
             'success' => false,
-            'action' => $action,
-            'provider' => $provider,
+            'action' => $context,
+            'transport' => $transport,
+            'provider' => $transport,
             'recipient' => $recipient,
             'status' => EmailDelivery::STATUS_FAILED,
             'error' => [
-                'code' => strtoupper($provider) . '_UNEXPECTED_ERROR',
+                'code' => strtoupper($transport) . '_UNEXPECTED_ERROR',
                 'status' => 500,
                 'message' => $message,
             ],
-        ], 500);
+        ] + ($context !== null && $this->isTestAction($context) ? [
+            'tested_at' => now()->toIso8601String(),
+            'test_type' => $this->getTestType($context),
+        ] : []), 500);
     }
 
-    private function deriveErrorCode(string $provider, EmailResult $result, string $action): string
+    private function deriveErrorCode(string $transport, EmailResult $result, string $context): string
     {
         if ($result->status === 'skipped' || $result->reason === 'disabled') {
             return 'EMAIL_DISABLED';
         }
 
         if ($result->retryable === false) {
-            return strtoupper($provider) . '_CONFIG_INVALID';
+            return strtoupper($transport) . '_CONFIG_INVALID';
         }
 
         if ($result->statusCode && $result->statusCode >= 400 && $result->statusCode < 500) {
-            return strtoupper($provider) . '_AUTH_FAILED';
+            return strtoupper($transport) . '_AUTH_FAILED';
         }
 
-        return strtoupper($provider) . '_' . strtoupper($action) . '_FAILED';
+        return strtoupper($transport) . '_' . strtoupper($context) . '_FAILED';
     }
 
-    private function isTestAction(string $action): bool
+    private function isTestAction(string $context): bool
     {
-        return in_array($action, [self::ACTION_SEND_TEST, self::ACTION_CONNECTION_TEST], true);
+        return in_array($context, [self::ACTION_SEND_TEST, self::ACTION_CONNECTION_TEST], true);
     }
 
-    private function isSendAction(string $action): bool
+    private function getTestType(string $context): string
     {
-        return in_array($action, ['custom_send', self::ACTION_SEND_TEST], true);
+        return $context === self::ACTION_CONNECTION_TEST ? 'connection' : 'delivery';
     }
 }

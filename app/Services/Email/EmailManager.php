@@ -30,8 +30,7 @@ class EmailManager
         [$transport, $from, $fromName, $replyTo] = $transportResolution;
 
         Log::info('EmailManager: Using transport', [
-            'provider' => $transport->getName(),
-            'recipient' => $recipient,
+            'transport' => $transport->getName(),
             'subject' => $email->subject(),
             'from' => $from,
             'reply_to' => $replyTo,
@@ -159,8 +158,7 @@ class EmailManager
         [$transport, $from, $fromName, $replyTo] = $transportResolution;
 
         Log::info('EmailManager: Using transport', [
-            'provider' => $transport->getName(),
-            'recipient' => $recipient,
+            'transport' => $transport->getName(),
             'template_key' => $templateKey,
             'correlation_id' => $correlationId,
             'from' => $from,
