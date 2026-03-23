@@ -218,7 +218,6 @@ class CreateServerService
                 'key' => $variable->key,
                 'value' => $variable->value ?? '',
             ])
-            ->filter(fn (array $variable) => $variable['value'] !== null)
             ->values()
             ->all();
     }

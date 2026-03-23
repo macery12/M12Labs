@@ -19,18 +19,20 @@ use Everest\Services\Billing\ServerFulfillmentService;
 
 class CheckoutControllerTest extends TestCase
 {
+    private string $dbPath;
+
     public function setUp(): void
     {
         parent::setUp();
 
-        $dbPath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'checkout_controller_test.sqlite';
+        $dbPath = tempnam(sys_get_temp_dir(), 'checkout_controller_test_');
+        if ($dbPath === false) {
+            throw new \RuntimeException('Failed to create temporary sqlite database for checkout controller test.');
+        }
+        $this->dbPath = $dbPath;
 
         config()->set('database.default', 'sqlite');
         config()->set('database.connections.sqlite.database', $dbPath);
-
-        if (!file_exists($dbPath)) {
-            touch($dbPath);
-        }
 
         Schema::dropIfExists('orders');
         Schema::create('orders', function (Blueprint $table) {
@@ -45,6 +47,7 @@ class CheckoutControllerTest extends TestCase
     public function tearDown(): void
     {
         Mockery::close();
+        @unlink($this->dbPath);
 
         parent::tearDown();
     }
