@@ -143,7 +143,7 @@ export default () => {
                 undefined,
                 variables,
                 undefined,
-                checkoutState.couponId,
+                couponId,
                 checkoutState.selectedEggId,
                 checkoutState.serverName,
             );
