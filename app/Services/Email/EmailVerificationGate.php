@@ -4,7 +4,6 @@ namespace Everest\Services\Email;
 
 use Everest\Models\User;
 use Everest\Models\Setting;
-use Everest\Services\Email\EmailManager;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,6 +38,10 @@ class EmailVerificationGate
             'can_interact' => true,
         ],
     ];
+
+    public function __construct(private EmailSettingsReader $settings)
+    {
+    }
 
     public function canViewArea(?User $user, string $area): bool
     {
@@ -156,6 +159,6 @@ class EmailVerificationGate
             return false;
         }
 
-        return EmailManager::isDeliveryEnabled();
+        return $this->settings->deliveryEnabled();
     }
 }

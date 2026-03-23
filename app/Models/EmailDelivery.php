@@ -32,6 +32,20 @@ class EmailDelivery extends Model
     public const STATUS_SENDING = 'sending';
     public const STATUS_SENT = 'sent';
     public const STATUS_DEFERRED = 'deferred';
+    public const STATUS_SKIPPED = 'skipped';
+    public const STATUS_FAILED = 'failed';
+
+    public static function statuses(): array
+    {
+        return [
+            self::STATUS_QUEUED,
+            self::STATUS_SENDING,
+            self::STATUS_SENT,
+            self::STATUS_DEFERRED,
+            self::STATUS_SKIPPED,
+            self::STATUS_FAILED,
+        ];
+    }
 
     /**
      * The table associated with the model.
@@ -119,7 +133,7 @@ class EmailDelivery extends Model
      */
     public function scopeOnlyFailures($query)
     {
-        return $query->where('status', 'failed');
+        return $query->where('status', self::STATUS_FAILED);
     }
 
     /**
@@ -127,7 +141,7 @@ class EmailDelivery extends Model
      */
     public function scopeOnlySuccessful($query)
     {
-        return $query->where('status', 'sent');
+        return $query->where('status', self::STATUS_SENT);
     }
 
     /**
@@ -143,7 +157,7 @@ class EmailDelivery extends Model
      */
     public function isSuccessful(): bool
     {
-        return $this->status === 'sent';
+        return $this->status === self::STATUS_SENT;
     }
 
     /**
@@ -151,7 +165,7 @@ class EmailDelivery extends Model
      */
     public function isFailed(): bool
     {
-        return $this->status === 'failed';
+        return $this->status === self::STATUS_FAILED;
     }
 
     /**
@@ -159,6 +173,6 @@ class EmailDelivery extends Model
      */
     public function isPending(): bool
     {
-        return in_array($this->status, ['queued', 'sending', 'deferred']);
+        return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_SENDING, self::STATUS_DEFERRED], true);
     }
 }

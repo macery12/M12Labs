@@ -2,6 +2,8 @@ import http from '@/api/http';
 import { type VerificationRules } from '@/state/everest';
 
 export type EmailTransport = 'resend' | 'smtp';
+export type EmailStatus = 'queued' | 'sending' | 'sent' | 'deferred' | 'skipped' | 'failed';
+export type EmailTestType = 'connection' | 'delivery';
 
 export interface ResendSettings {
     api_key: boolean; // true if key exists, false otherwise
@@ -60,10 +62,16 @@ export interface EmailError {
 
 export interface EmailResponse {
     success: boolean;
+    action?: 'connection_test' | 'send_test';
     message_id?: string;
+    transport?: EmailTransport;
     provider?: EmailTransport;
+    sent_at?: string;
     tested_at?: string;
     recipient?: string;
+    status?: EmailStatus;
+    test_type?: EmailTestType;
+    reason?: string;
     error?: EmailError | string;
 }
 
@@ -145,9 +153,15 @@ export const getNotificationSettings = (): Promise<NotificationSettingsResponse>
     });
 };
 
-export const updateNotificationSetting = (id: number, enabled: boolean): Promise<{ success: boolean; setting: EmailNotificationSetting }> => {
+export const updateNotificationSetting = (
+    id: number,
+    enabled: boolean,
+): Promise<{ success: boolean; setting: EmailNotificationSetting }> => {
     return new Promise((resolve, reject) => {
-        http.put<{ success: boolean; setting: EmailNotificationSetting }>(`/api/application/email/notifications/${id}`, { enabled })
+        http.put<{ success: boolean; setting: EmailNotificationSetting }>(
+            `/api/application/email/notifications/${id}`,
+            { enabled },
+        )
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -164,7 +178,7 @@ export interface EmailLog {
     provider: string;
     user_id: number | null;
     success: boolean;
-    status: string;
+    status: EmailStatus;
     attempt_count: number;
     duration_ms: number | null;
     error: string | null;
@@ -185,6 +199,8 @@ export interface EmailLogDetail {
     retry_history: Array<{
         attempt: number;
         timestamp: string;
+        status: EmailStatus;
+        duration_ms?: number | null;
         error?: string;
     }>;
     related_emails: Array<{
@@ -192,13 +208,13 @@ export interface EmailLogDetail {
         to: string;
         subject: string;
         template_key: string | null;
-        status: string;
+        status: EmailStatus;
         created_at: string;
     }>;
 }
 
 export interface EmailLogFilters {
-    status?: string;
+    status?: EmailStatus;
     template_key?: string;
     recipient?: string;
     user_id?: number;
@@ -217,15 +233,6 @@ export interface PaginatedResponse<T> {
     last_page: number;
     per_page: number;
     total: number;
-}
-
-export interface EmailStats {
-    total_sent: number;
-    successful: number;
-    failed: number;
-    by_status: Record<string, number>;
-    by_template: Record<string, number>;
-    deferred_count: number;
 }
 
 export interface DeferredEmail {
@@ -273,22 +280,6 @@ export const getEmailLog = (id: number): Promise<EmailLogDetail> => {
     });
 };
 
-export const resendEmail = (id: number): Promise<{ success: boolean; message: string; message_id?: string; error?: string }> => {
-    return new Promise((resolve, reject) => {
-        http.post<{ success: boolean; message: string; message_id?: string; error?: string }>(`/api/application/email/logs/${id}/resend`)
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
-
-export const getEmailStats = (days?: number): Promise<EmailStats> => {
-    return new Promise((resolve, reject) => {
-        http.get<EmailStats>(`/api/application/email/logs/stats`, { params: { days } })
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
-
 export const getTemplateKeys = (): Promise<{ template_keys: string[] }> => {
     return new Promise((resolve, reject) => {
         http.get<{ template_keys: string[] }>(`/api/application/email/logs/templates`)
@@ -297,7 +288,11 @@ export const getTemplateKeys = (): Promise<{ template_keys: string[] }> => {
     });
 };
 
-export const getDeferredQueue = (filters?: { status?: string; per_page?: number; page?: number }): Promise<DeferredQueueResponse> => {
+export const getDeferredQueue = (filters?: {
+    status?: 'due' | 'pending';
+    per_page?: number;
+    page?: number;
+}): Promise<DeferredQueueResponse> => {
     return new Promise((resolve, reject) => {
         http.get<DeferredQueueResponse>(`/api/application/email/deferred`, { params: filters })
             .then(({ data }) => resolve(data))
@@ -307,7 +302,9 @@ export const getDeferredQueue = (filters?: { status?: string; per_page?: number;
 
 export const sendDeferredNow = (id: number): Promise<{ success: boolean; message: string; error?: string }> => {
     return new Promise((resolve, reject) => {
-        http.post<{ success: boolean; message: string; error?: string }>(`/api/application/email/deferred/${id}/send-now`)
+        http.post<{ success: boolean; message: string; error?: string }>(
+            `/api/application/email/deferred/${id}/send-now`,
+        )
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

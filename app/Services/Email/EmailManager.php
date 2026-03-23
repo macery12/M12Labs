@@ -2,8 +2,6 @@
 
 namespace Everest\Services\Email;
 
-use Everest\Models\EmailNotificationSetting;
-use Everest\Models\Setting;
 use Everest\Models\EmailDelivery;
 use Everest\Services\Email\Emails\BaseEmail;
 use Everest\Services\Email\Emails\CustomMessageEmail;
@@ -13,10 +11,8 @@ use Everest\Exceptions\Service\Email\ResendValidationException;
 use Everest\Services\Email\Transports\EmailTransport;
 use Everest\Services\Email\Transports\ResendTransport;
 use Everest\Services\Email\Transports\SmtpTransport;
-use Everest\Services\Security\SecretEncryptionService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class EmailManager
 {
@@ -27,21 +23,6 @@ class EmailManager
      */
     public function send(BaseEmail $email, string $recipient): EmailResult
     {
-        if ($result = $this->shouldSkipRecipient($recipient)) {
-            return $result;
-        }
-
-        // Check if delivery is enabled
-        if (!$this->isEnabled()) {
-            $error = 'Email sending is currently disabled in Admin → Email settings. Enable email delivery before sending test or custom emails.';
-
-            Log::warning('Email sending is disabled, skipping', [
-                'recipient' => $recipient,
-                'subject' => $email->subject(),
-            ]);
-
-            return EmailResult::failure($error, 422, false);
-        }
         $transportResolution = $this->resolveTransportConfig();
         if ($transportResolution instanceof EmailResult) {
             return $transportResolution;
@@ -49,8 +30,7 @@ class EmailManager
         [$transport, $from, $fromName, $replyTo] = $transportResolution;
 
         Log::info('EmailManager: Using transport', [
-            'provider' => $transport->getName(),
-            'recipient' => $recipient,
+            'transport' => $transport->getName(),
             'subject' => $email->subject(),
             'from' => $from,
             'reply_to' => $replyTo,
@@ -171,37 +151,6 @@ class EmailManager
             }
         }
 
-        // Enforce template-level disable
-        if (!EmailNotificationSetting::isTemplateEnabled($templateKey)) {
-            $reason = "Email type '{$templateKey}' is disabled";
-
-            Log::info('EmailManager: Email type disabled', [
-                'template_key' => $templateKey,
-                'correlation_id' => $correlationId,
-                'reason' => $reason,
-            ]);
-
-            $tracker->markSkipped($delivery, $reason);
-
-            return EmailResult::success($reason);
-        }
-
-        if ($result = $this->shouldSkipRecipient($recipient, $tracker, $delivery)) {
-            return $result;
-        }
-
-        // Check if delivery is enabled
-        if (!$this->isEnabled()) {
-            Log::info('Email sending is disabled, skipping', [
-                'recipient' => $recipient,
-                'template_key' => $templateKey,
-                'correlation_id' => $correlationId,
-            ]);
-
-            $tracker->markSkipped($delivery, 'Email sending is disabled');
-            return EmailResult::skipped('disabled');
-        }
-
         $transportResolution = $this->resolveTransportConfig($tracker, $delivery, $attemptNumber);
         if ($transportResolution instanceof EmailResult) {
             return $transportResolution;
@@ -209,8 +158,7 @@ class EmailManager
         [$transport, $from, $fromName, $replyTo] = $transportResolution;
 
         Log::info('EmailManager: Using transport', [
-            'provider' => $transport->getName(),
-            'recipient' => $recipient,
+            'transport' => $transport->getName(),
             'template_key' => $templateKey,
             'correlation_id' => $correlationId,
             'from' => $from,
@@ -408,34 +356,12 @@ class EmailManager
      */
     public static function isDeliveryEnabled(): bool
     {
-        $raw = self::getEmailSettingFresh('settings::modules:email:enabled', self::getEmailSettingFresh('settings::modules:email:resend:enabled', false));
-
-        if (is_bool($raw)) {
-            return $raw;
-        }
-
-        $value = strtolower((string) $raw);
-
-        return in_array($value, ['1', 'true', 'yes', 'on'], true);
-    }
-
-    private function isEnabled(): bool
-    {
-        return self::isDeliveryEnabled();
+        return app(EmailSettingsReader::class)->deliveryEnabled();
     }
 
     public static function getTransport(): string
     {
-        // Prefer an explicitly selected transport; default to SMTP for first-time setup.
-        $transportSetting = self::getEmailSettingFresh('settings::modules:email:transport', null);
-        // Backwards compatibility: older installs may have stored without the settings:: prefix.
-        if ($transportSetting === null) {
-            $transportSetting = self::getEmailSettingFresh('modules:email:transport', null);
-        }
-
-        $transport = strtolower((string) ($transportSetting ?? 'smtp'));
-
-        return in_array($transport, ['smtp', 'resend'], true) ? $transport : 'smtp';
+        return app(EmailSettingsReader::class)->transport();
     }
 
     /**
@@ -463,9 +389,9 @@ class EmailManager
 
         $message = new EmailMessage(
             to: $from,
-            subject: 'Email connection test',
-            html: '<p>Email connection test successful.</p>',
-            text: 'Email connection test successful.',
+            subject: 'Email provider connection check',
+            html: '<p>This provider connection check reached the configured sender address successfully.</p>',
+            text: 'This provider connection check reached the configured sender address successfully.',
             from: $from,
             fromName: $fromName,
             replyTo: $replyTo
@@ -485,6 +411,7 @@ class EmailManager
         int $attemptNumber = 1,
         ?string $forcedTransport = null
     ): EmailResult|array {
+        $settings = app(EmailSettingsReader::class);
         $transportName = $forcedTransport ?? self::getTransport();
 
         if ($delivery && $delivery->provider !== $transportName) {
@@ -497,17 +424,17 @@ class EmailManager
 
         if ($transportName === 'smtp') {
             $config = [
-                'host' => self::getEmailSettingFresh('settings::modules:email:smtp:host'),
-                'port' => self::getEmailSettingFresh('settings::modules:email:smtp:port'),
-                'username' => self::getEmailSettingFresh('settings::modules:email:smtp:username'),
-                'password' => self::getEmailSettingFresh('settings::modules:email:smtp:password'),
-                'encryption' => self::getEmailSettingFresh('settings::modules:email:smtp:encryption'),
+                'host' => $settings->get('settings::modules:email:smtp:host'),
+                'port' => $settings->get('settings::modules:email:smtp:port'),
+                'username' => $settings->get('settings::modules:email:smtp:username'),
+                'password' => $settings->get('settings::modules:email:smtp:password'),
+                'encryption' => $settings->get('settings::modules:email:smtp:encryption'),
             ];
 
-            $from = self::getEmailSettingFresh('settings::modules:email:smtp:from_email');
-            $fromName = self::getEmailSettingFresh('settings::modules:email:smtp:from_name');
+            $from = $settings->get('settings::modules:email:smtp:from_email');
+            $fromName = $settings->get('settings::modules:email:smtp:from_name');
             // Reply-to should stay within the SMTP identity; fall back to the same "from" address
-            $replyTo = self::getEmailSettingFresh('settings::modules:email:smtp:reply_to') ?: $from;
+            $replyTo = $settings->get('settings::modules:email:smtp:reply_to') ?: $from;
 
             $requiredMissing = [];
             if (empty($config['host'])) {
@@ -553,7 +480,7 @@ class EmailManager
         }
 
         // Default to Resend
-        $apiKey = self::getEmailSettingFresh('settings::modules:email:resend:api_key');
+        $apiKey = $settings->get('settings::modules:email:resend:api_key');
         if (empty($apiKey)) {
             return $this->handleConfigFailure(
                 tracker: $tracker,
@@ -563,10 +490,10 @@ class EmailManager
             );
         }
 
-        $from = self::getEmailSettingFresh('settings::modules:email:resend:from_email');
-        $fromName = self::getEmailSettingFresh('settings::modules:email:resend:from_name');
+        $from = $settings->get('settings::modules:email:resend:from_email');
+        $fromName = $settings->get('settings::modules:email:resend:from_name');
         // Keep reply-to aligned with the Resend identity; fall back to the same "from" address
-        $replyTo = self::getEmailSettingFresh('settings::modules:email:resend:reply_to') ?: $from;
+        $replyTo = $settings->get('settings::modules:email:resend:reply_to') ?: $from;
 
         if (empty($from)) {
             return $this->handleConfigFailure(
@@ -615,88 +542,7 @@ class EmailManager
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
-        $subjects = [
-            'auth.account_created' => 'Welcome to Your Account',
-            'auth.email_verification' => 'Verify Your Email Address',
-            'auth.password_reset' => 'Reset Your Password',
-            'auth.password_changed' => 'Your Password Has Been Changed',
-            'auth.new_login' => 'New Login Detected',
-            'auth.account_locked' => 'Your Account Has Been Suspended',
-            'auth.account_unsuspended' => 'Your Account Has Been Restored',
-            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server.created' => 'Your Server Has Been Created',
-            'server.suspended' => 'Your Server Has Been Suspended',
-            'server.unsuspended' => 'Your Server Has Been Unsuspended',
-            'server.expiring_soon' => 'Your Server Is Expiring Soon',
-            'billing.payment_received' => 'Payment Received - Thank You',
-            'billing.payment_failed' => 'Payment Failed - Action Required',
-            'billing.server_renewal_notice' => 'Server Renewal Notice - Action Required',
-        ];
-
-        return $subjects[$templateKey] ?? 'Notification';
+        return EmailSubjectResolver::forDelivery($templateKey);
     }
 
-    /**
-     * Determine if a recipient should be skipped due to invalid format or test domain.
-     */
-    private function shouldSkipRecipient(
-        string $recipient,
-        ?EmailDeliveryTracker $tracker = null,
-        ?EmailDelivery $delivery = null
-    ): ?EmailResult {
-        if (self::isBlockedRecipient($recipient)) {
-            if ($tracker && $delivery) {
-                try {
-                    $tracker->markSkipped($delivery, 'Blocked recipient email');
-                } catch (\Exception $e) {
-                    // Continue even if tracking fails
-                }
-            }
-
-            return EmailResult::blocked('blocked_invalid_recipient');
-        }
-
-        return null;
-    }
-
-    public static function isBlockedRecipient(string $recipient): bool
-    {
-        if (function_exists('is_blocked_email_recipient')) {
-            return is_blocked_email_recipient($recipient);
-        }
-
-        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-            return true;
-        }
-
-        $domain = Str::lower(Str::afterLast($recipient, '@'));
-        $testDomains = array_map('strtolower', config('email.domain_blacklist', []));
-
-        return in_array($domain, $testDomains, true);
-    }
-
-    /**
-     * Read email-related settings directly from the database, bypassing the static cache
-     * to ensure transport/config changes take effect immediately for each send.
-     */
-    private static function getEmailSettingFresh(string $key, mixed $default = null): mixed
-    {
-        /** @var SecretEncryptionService $secrets */
-        $secrets = app(SecretEncryptionService::class);
-        $normalizedKey = $secrets->normalizeKey($key);
-
-        $setting = Setting::query()->where('key', $normalizedKey)->first();
-        if (!$setting) {
-            return value($default);
-        }
-
-        $value = $setting->value;
-
-        if ($secrets->isSecretKey($normalizedKey)) {
-            $value = $secrets->decryptFromStorage($value);
-        }
-
-        return $value;
-    }
 }

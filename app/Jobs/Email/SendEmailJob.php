@@ -8,8 +8,9 @@ use Everest\Models\EmailQuota;
 use Everest\Models\DeferredEmail;
 use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Email\EmailManager;
-use Everest\Services\Email\EmailTypeRegistry;
+use Everest\Services\Email\EmailPolicyService;
 use Everest\Services\Email\EmailDeliveryTracker;
+use Everest\Services\Email\EmailSubjectResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -49,9 +50,9 @@ class SendEmailJob extends Job implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker): void
+    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker, EmailPolicyService $policy): void
     {
-        if (!EmailManager::isDeliveryEnabled()) {
+        if (!$policy->isDeliveryEnabled()) {
             Log::info('SendEmailJob: Email delivery disabled, skipping dispatch', [
                 'template_key' => $this->templateKey,
                 'recipient' => $this->recipient,
@@ -70,7 +71,7 @@ class SendEmailJob extends Job implements ShouldQueue
         $provider = EmailManager::getTransport();
 
         // Hard block invalid or blacklisted recipients before any processing
-        if (EmailManager::isBlockedRecipient($this->recipient)) {
+        if ($policy->isBlockedRecipient($this->recipient)) {
             $delivery = $tracker->startDelivery(
                 correlationId: $this->correlationId,
                 recipient: $this->recipient,
@@ -112,7 +113,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Check if this email type is enabled (template-level)
-        if (!EmailNotificationSetting::isTemplateEnabled($this->templateKey)) {
+        if (!$policy->isTemplateEnabled($this->templateKey)) {
             $reason = "Email type '{$this->templateKey}' is disabled";
 
             Log::info('SendEmailJob: Email type disabled', [
@@ -161,7 +162,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Validate variables
-        [$validData, $errors] = EmailTypeRegistry::validateVariables($this->templateKey, $this->data);
+        [$validData, $errors] = $policy->validateTemplateData($this->templateKey, $this->data);
         
         if (!empty($errors)) {
             Log::error('SendEmailJob: Variable validation failed', [
@@ -228,25 +229,7 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
-        $subjects = [
-            'auth.account_created' => 'Welcome to ' . config('app.name'),
-            'auth.account_locked' => 'Your Account Has Been Locked',
-            'auth.account_unsuspended' => 'Your Account Has Been Reactivated',
-            'auth.email_verification' => 'Verify Your Email Address',
-            'auth.password_reset' => 'Reset Your Password',
-            'auth.password_changed' => 'Your Password Has Been Changed',
-            'auth.new_login' => 'New Login Detected',
-            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server.created' => 'Your Server Has Been Created',
-            'server.suspended' => 'Server Suspended',
-            'server.unsuspended' => 'Server Reactivated',
-            'billing.payment_received' => 'Payment Received',
-            'billing.payment_failed' => 'Payment Failed',
-            'billing.server_renewal_notice' => 'Server Renewal Notice',
-        ];
-
-        return $subjects[$templateKey] ?? 'Notification from ' . config('app.name');
+        return EmailSubjectResolver::forTracking($templateKey);
     }
 
     /**

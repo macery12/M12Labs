@@ -6,18 +6,26 @@ use Everest\Models\EmailDelivery;
 use Everest\Models\EmailDeliveryAttempt;
 use Everest\Services\Email\EmailDeliveryTracker;
 use Everest\Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class EmailDeliveryTrackerTest extends TestCase
 {
-    use RefreshDatabase;
-
     private EmailDeliveryTracker $tracker;
 
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
+        $this->setUpEmailTables();
         $this->tracker = new EmailDeliveryTracker();
+    }
+
+    protected function tearDown(): void
+    {
+        Schema::dropIfExists('email_delivery_attempts');
+        Schema::dropIfExists('email_deliveries');
+
+        parent::tearDown();
     }
 
     public function testStartDeliveryCreatesRecord(): void
@@ -152,6 +160,27 @@ class EmailDeliveryTrackerTest extends TestCase
         $this->assertStringContainsString('daily_limit', $delivery->last_error);
     }
 
+    public function testMarkQueuedUpdatesStatus(): void
+    {
+        $delivery = $this->tracker->startDelivery(
+            correlationId: 'test-' . uniqid(),
+            recipient: 'test@example.com',
+            subject: 'Test',
+            templateKey: 'test.email'
+        );
+
+        $delivery->update([
+            'status' => 'deferred',
+            'last_error' => 'Rate limit exceeded',
+        ]);
+
+        $this->tracker->markQueued($delivery);
+
+        $delivery->refresh();
+        $this->assertEquals('queued', $delivery->status);
+        $this->assertNull($delivery->last_error);
+    }
+
     public function testMarkSkippedUpdatesStatus(): void
     {
         $delivery = $this->tracker->startDelivery(
@@ -224,5 +253,51 @@ class EmailDeliveryTrackerTest extends TestCase
 
         // Verify all attempts exist
         $this->assertEquals(3, $delivery->deliveryAttempts()->count());
+    }
+
+    private function setUpEmailTables(): void
+    {
+        Schema::dropIfExists('email_delivery_attempts');
+        Schema::dropIfExists('email_deliveries');
+
+        Schema::create('email_deliveries', function (Blueprint $table) {
+            $table->id();
+            $table->uuid('correlation_id')->nullable();
+            $table->string('template_key')->nullable();
+            $table->string('recipient');
+            $table->unsignedInteger('user_id')->nullable();
+            $table->string('subject');
+            $table->string('status')->default('queued');
+            $table->string('provider')->nullable()->default('resend');
+            $table->string('provider_message_id')->nullable();
+            $table->unsignedInteger('attempts')->default(0);
+            $table->timestamp('last_attempt_at')->nullable();
+            $table->timestamp('sent_at')->nullable();
+            $table->string('last_message_id')->nullable();
+            $table->unsignedInteger('last_status_code')->nullable();
+            $table->text('last_error')->nullable();
+            $table->json('tags')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('email_delivery_attempts', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('delivery_id');
+            $table->unsignedInteger('attempt_number');
+            $table->string('status');
+            $table->boolean('success')->default(false);
+            $table->string('provider_message_id')->nullable();
+            $table->unsignedInteger('status_code')->nullable();
+            $table->text('error_message')->nullable();
+            $table->text('error')->nullable();
+            $table->json('request_payload')->nullable();
+            $table->text('response_payload')->nullable();
+            $table->string('exception_class')->nullable();
+            $table->longText('stacktrace')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('finished_at')->nullable();
+            $table->unsignedInteger('duration_ms')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
     }
 }

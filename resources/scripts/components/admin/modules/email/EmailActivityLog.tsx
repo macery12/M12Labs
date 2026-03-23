@@ -1,11 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-    getEmailLogs,
-    getTemplateKeys,
-    type EmailLog,
-    type PaginatedResponse,
-} from '@/api/routes/admin/email';
+import { getEmailLogs, getTemplateKeys, type EmailLog, type PaginatedResponse } from '@/api/routes/admin/email';
 import useFlash from '@/plugins/useFlash';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
@@ -15,16 +10,9 @@ import tw from 'twin.macro';
 import styled from 'styled-components';
 import EmailLogDetailModal from './EmailLogDetailModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faSearch,
-    faFilter,
-    faRedo,
-    faCheckCircle,
-    faTimesCircle,
-    faClock,
-    faBan,
-} from '@fortawesome/free-solid-svg-icons';
+import { faFilter } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
+import { getEmailStatusPresentation } from './status';
 
 const Table = styled.table`
     ${tw`w-full table-auto`}
@@ -38,12 +26,12 @@ const Td = styled.td`
     ${tw`px-4 py-3 text-sm border-b border-neutral-700`}
 `;
 
-const StatusBadge = styled.span<{ success: boolean }>`
+const StatusBadge = styled.span<{ $tone: 'success' | 'danger' | 'warning' | 'neutral' }>`
     ${tw`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium`}
-    ${(props) => props.success 
-        ? tw`bg-green-900 text-green-300`
-        : tw`bg-red-900 text-red-300`
-    }
+    ${props => props.$tone === 'success' && tw`bg-green-900 text-green-300`}
+    ${props => props.$tone === 'danger' && tw`bg-red-900 text-red-300`}
+    ${props => props.$tone === 'warning' && tw`bg-yellow-900 text-yellow-300`}
+    ${props => props.$tone === 'neutral' && tw`bg-neutral-700 text-neutral-200`}
 `;
 
 const FilterContainer = styled.div<{ $background: string }>`
@@ -54,10 +42,6 @@ const FilterContainer = styled.div<{ $background: string }>`
 const FilterGrid = styled.div`
     ${tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4`}
 `;
-
-const getStatusIcon = (success: boolean) => {
-    return success ? faCheckCircle : faTimesCircle;
-};
 
 export default () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -114,12 +98,12 @@ export default () => {
 
     const handleRecipientChange = (value: string) => {
         setRecipientInput(value);
-        
+
         // Clear existing timeout
         if (recipientDebounceRef.current) {
             clearTimeout(recipientDebounceRef.current);
         }
-        
+
         // Set new timeout for 3 seconds
         recipientDebounceRef.current = setTimeout(() => {
             updateFilter('recipient', value);
@@ -171,11 +155,11 @@ export default () => {
     const quickDateRange = (days: number) => {
         const now = new Date();
         const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        const newFilters = { 
-            ...filters, 
+        const newFilters = {
+            ...filters,
             date_from: from.toISOString().split('T')[0],
             date_to: now.toISOString().split('T')[0],
-            page: 1
+            page: 1,
         };
         setFilters(newFilters);
 
@@ -200,41 +184,45 @@ export default () => {
 
     return (
         <div>
-            <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-2xl font-bold'>Email Activity Log</h2>
-                <Button onClick={() => setShowFilters(!showFilters)} variant='secondary' size='sm'>
-                    <FontAwesomeIcon icon={faFilter} className='mr-2' />
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">Email Activity Log</h2>
+                <Button onClick={() => setShowFilters(!showFilters)} variant="secondary" size="sm">
+                    <FontAwesomeIcon icon={faFilter} className="mr-2" />
                     {showFilters ? 'Hide' : 'Show'} Filters
                 </Button>
             </div>
 
             {showFilters && (
                 <FilterContainer $background={colors.secondary}>
-                    <div className='flex items-center justify-between mb-4'>
-                        <h3 className='text-lg font-semibold'>Filters</h3>
-                        <Button onClick={clearFilters} variant='text' size='sm'>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">Filters</h3>
+                        <Button onClick={clearFilters} variant="text" size="sm">
                             Clear All
                         </Button>
                     </div>
 
                     <FilterGrid>
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-neutral-400'>Status</label>
-                            <Select value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
-                                <option value=''>All Statuses</option>
-                                <option value='sent'>Sent (Success)</option>
-                                <option value='failed'>Failed</option>
+                            <label className="block text-sm font-medium mb-1 text-neutral-400">Status</label>
+                            <Select value={filters.status} onChange={e => updateFilter('status', e.target.value)}>
+                                <option value="">All Statuses</option>
+                                <option value="queued">Queued</option>
+                                <option value="sending">Sending</option>
+                                <option value="deferred">Deferred</option>
+                                <option value="skipped">Skipped</option>
+                                <option value="sent">Sent</option>
+                                <option value="failed">Failed</option>
                             </Select>
                         </div>
 
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-gray-400'>Template</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-400">Template</label>
                             <Select
                                 value={filters.template_key}
-                                onChange={(e) => updateFilter('template_key', e.target.value)}
+                                onChange={e => updateFilter('template_key', e.target.value)}
                             >
-                                <option value=''>All Templates</option>
-                                {templateKeys.map((key) => (
+                                <option value="">All Templates</option>
+                                {templateKeys.map(key => (
                                     <option key={key} value={key}>
                                         {key}
                                     </option>
@@ -243,56 +231,58 @@ export default () => {
                         </div>
 
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-neutral-400'>Recipient</label>
+                            <label className="block text-sm font-medium mb-1 text-neutral-400">Recipient</label>
                             <Input
-                                type='text'
-                                placeholder='Search recipient...'
+                                type="text"
+                                placeholder="Search recipient..."
                                 value={recipientInput}
-                                onChange={(e) => handleRecipientChange(e.target.value)}
+                                onChange={e => handleRecipientChange(e.target.value)}
                             />
-                            <p className='text-xs text-neutral-500 mt-1'>Auto-searches 3 seconds after you stop typing</p>
+                            <p className="text-xs text-neutral-500 mt-1">
+                                Auto-searches 3 seconds after you stop typing
+                            </p>
                         </div>
 
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-gray-400'>Quick Date Range</label>
-                            <div className='flex gap-2'>
-                                <Button onClick={() => quickDateRange(1)} variant='secondary' size='sm'>
+                            <label className="block text-sm font-medium mb-1 text-gray-400">Quick Date Range</label>
+                            <div className="flex gap-2">
+                                <Button onClick={() => quickDateRange(1)} variant="secondary" size="sm">
                                     24h
                                 </Button>
-                                <Button onClick={() => quickDateRange(7)} variant='secondary' size='sm'>
+                                <Button onClick={() => quickDateRange(7)} variant="secondary" size="sm">
                                     7d
                                 </Button>
-                                <Button onClick={() => quickDateRange(30)} variant='secondary' size='sm'>
+                                <Button onClick={() => quickDateRange(30)} variant="secondary" size="sm">
                                     30d
                                 </Button>
                             </div>
                         </div>
 
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-gray-400'>Date From</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-400">Date From</label>
                             <Input
-                                type='date'
+                                type="date"
                                 value={filters.date_from}
-                                onChange={(e) => updateFilter('date_from', e.target.value)}
+                                onChange={e => updateFilter('date_from', e.target.value)}
                             />
                         </div>
 
                         <div>
-                            <label className='block text-sm font-medium mb-1 text-gray-400'>Date To</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-400">Date To</label>
                             <Input
-                                type='date'
+                                type="date"
                                 value={filters.date_to}
-                                onChange={(e) => updateFilter('date_to', e.target.value)}
+                                onChange={e => updateFilter('date_to', e.target.value)}
                             />
                         </div>
 
-                        <div className='flex items-end'>
-                            <label className='flex items-center text-sm'>
+                        <div className="flex items-end">
+                            <label className="flex items-center text-sm">
                                 <Input
-                                    type='checkbox'
+                                    type="checkbox"
                                     checked={filters.only_failures}
-                                    onChange={(e) => updateFilter('only_failures', e.target.checked)}
-                                    className='mr-2'
+                                    onChange={e => updateFilter('only_failures', e.target.checked)}
+                                    className="mr-2"
                                 />
                                 Only show failures
                             </label>
@@ -302,16 +292,16 @@ export default () => {
             )}
 
             {loading ? (
-                <div className='flex items-center justify-center py-12'>
-                    <Spinner size='large' />
+                <div className="flex items-center justify-center py-12">
+                    <Spinner size="large" />
                 </div>
             ) : logs && logs.data.length > 0 ? (
                 <>
                     <div
-                        className='bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden'
+                        className="bg-neutral-800 rounded-lg border border-neutral-700 overflow-hidden"
                         style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
                     >
-                        <div className='overflow-x-auto'>
+                        <div className="overflow-x-auto">
                             <Table>
                                 <thead>
                                     <tr>
@@ -325,32 +315,38 @@ export default () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {logs.data.map((log) => (
-                                        <tr key={log.id} className='hover:bg-neutral-800 transition-colors'>
+                                    {logs.data.map(log => (
+                                        <tr key={log.id} className="hover:bg-neutral-800 transition-colors">
                                             <Td>
-                                                <StatusBadge success={log.success}>
-                                                    <FontAwesomeIcon icon={getStatusIcon(log.success)} className='mr-1' />
-                                                    {log.success ? 'SENT' : 'FAILED'}
-                                                </StatusBadge>
+                                                {(() => {
+                                                    const status = getEmailStatusPresentation(log.status);
+
+                                                    return (
+                                                        <StatusBadge $tone={status.tone}>
+                                                            <FontAwesomeIcon icon={status.icon} className="mr-1" />
+                                                            {status.label}
+                                                        </StatusBadge>
+                                                    );
+                                                })()}
                                             </Td>
-                                            <Td className='text-gray-400'>{formatDate(log.created_at)}</Td>
+                                            <Td className="text-gray-400">{formatDate(log.created_at)}</Td>
                                             <Td>
-                                                <div className='flex items-center'>
-                                                    <span className='text-neutral-300'>{log.to}</span>
+                                                <div className="flex items-center">
+                                                    <span className="text-neutral-300">{log.to}</span>
                                                     {log.user && (
-                                                        <span className='ml-2 text-xs text-gray-500'>
+                                                        <span className="ml-2 text-xs text-gray-500">
                                                             ({log.user.username})
                                                         </span>
                                                     )}
                                                 </div>
                                             </Td>
                                             <Td>
-                                                <code className='text-xs bg-neutral-900 px-2 py-1 rounded text-neutral-300'>
+                                                <code className="text-xs bg-neutral-900 px-2 py-1 rounded text-neutral-300">
                                                     {log.template_key || 'custom'}
                                                 </code>
                                             </Td>
                                             <Td>
-                                                <span className='inline-flex items-center rounded-full bg-neutral-800 px-2 py-1 text-xs font-semibold text-neutral-200'>
+                                                <span className="inline-flex items-center rounded-full bg-neutral-800 px-2 py-1 text-xs font-semibold text-neutral-200">
                                                     {log.provider ? log.provider.toUpperCase() : 'UNKNOWN'}
                                                 </span>
                                             </Td>
@@ -366,8 +362,8 @@ export default () => {
                                             <Td>
                                                 <Button
                                                     onClick={() => setSelectedLog(log.id)}
-                                                    variant='secondary'
-                                                    size='sm'
+                                                    variant="secondary"
+                                                    size="sm"
                                                 >
                                                     View Details
                                                 </Button>
@@ -381,23 +377,23 @@ export default () => {
 
                     {/* Pagination */}
                     {logs.last_page > 1 && (
-                        <div className='flex items-center justify-center gap-2 mt-6'>
+                        <div className="flex items-center justify-center gap-2 mt-6">
                             <Button
                                 onClick={() => goToPage(filters.page - 1)}
                                 disabled={filters.page === 1}
-                                variant='secondary'
-                                size='sm'
+                                variant="secondary"
+                                size="sm"
                             >
                                 Previous
                             </Button>
-                            <span className='text-sm text-gray-400'>
+                            <span className="text-sm text-gray-400">
                                 Page {logs.current_page} of {logs.last_page}
                             </span>
                             <Button
                                 onClick={() => goToPage(filters.page + 1)}
                                 disabled={filters.page === logs.last_page}
-                                variant='secondary'
-                                size='sm'
+                                variant="secondary"
+                                size="sm"
                             >
                                 Next
                             </Button>
@@ -406,11 +402,11 @@ export default () => {
                 </>
             ) : (
                 <div
-                    className='bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center'
+                    className="bg-neutral-800 rounded-lg border border-neutral-700 py-12 text-center"
                     style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
                 >
-                    <p className='text-gray-400 text-lg'>No email logs found</p>
-                    <p className='text-gray-500 text-sm mt-2'>Try adjusting your filters</p>
+                    <p className="text-gray-400 text-lg">No email logs found</p>
+                    <p className="text-gray-500 text-sm mt-2">Try adjusting your filters</p>
                 </div>
             )}
 
