@@ -203,7 +203,7 @@ class BillingValidationService
      */
     public function validatePriceType(float $finalPrice, bool $expectFree): void
     {
-        // Treat very small residuals as free and clamp negatives to zero
+        // Treat very small residuals as free (and clamp any negative totals up to zero)
         $normalizedPrice = max(0, (float) $finalPrice);
         $isFree = $normalizedPrice <= self::PRICE_EPSILON;
 
