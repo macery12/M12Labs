@@ -358,7 +358,7 @@ class EmailController extends ApplicationApiController
     {
         report($e);
 
-        $message = $action === self::ACTION_CONNECTION_TEST
+        $message = $context === self::ACTION_CONNECTION_TEST
             ? 'Unexpected email provider error during the connection check. Review the provider settings or server logs.'
             : 'Unexpected email provider error during the delivery test. Review the provider settings or server logs.';
 
