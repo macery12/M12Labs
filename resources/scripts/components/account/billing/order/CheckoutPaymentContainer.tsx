@@ -97,6 +97,13 @@ export default () => {
         if (!product || product.price === 0) return;
         if (!billing.processors?.stripe?.available) return;
 
+        // Skip intent creation if coupon makes order free
+        if (couponData?.total === 0) {
+            setIntent(null);
+            setStripe(null);
+            return;
+        }
+
         const initializeStripe = async () => {
             try {
                 const intentData = await getStripeIntent(product.id, couponId);
@@ -147,7 +154,7 @@ export default () => {
         }
     };
 
-    const totalIsFree = product.price === 0;
+    const totalIsFree = product.price === 0 || couponData?.total === 0;
 
     const handleCouponApplied = (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => {
         if (status === 'invalid') return;

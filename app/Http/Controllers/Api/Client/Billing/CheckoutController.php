@@ -64,11 +64,6 @@ class CheckoutController extends ClientApiController
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
 
-        // Only originally free products can use the free checkout path
-        if ((float) $product->price > 0.0) {
-            throw new DisplayException('This product requires the paid checkout flow.');
-        }
-
         // Get and validate server name
         $serverName = trim((string) $request->input('name', ''));
         if (empty($serverName)) {
@@ -131,11 +126,6 @@ class CheckoutController extends ClientApiController
 
         // Lookup server scoped to the authenticated user
         $server = $user->servers()->findOrFail($serverId);
-
-        // Only originally free products can use the free renewal path
-        if ((float) $product->price > 0.0) {
-            throw new DisplayException('This product requires the paid checkout flow.');
-        }
 
         // Get billing days from request, or use server's existing billing_days, or default to 30
         $billingDays = (int) ($request->input('billing_days') ?? $server->billing_days ?? 30);
