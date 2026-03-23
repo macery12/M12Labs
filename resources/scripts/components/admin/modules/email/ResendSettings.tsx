@@ -445,10 +445,9 @@ export default () => {
         tester()
             .then(response => {
                 const status = resolveEmailResponseStatus(response);
-                const message =
-                    response.success
-                        ? getConnectionCheckSuccessMessage(response)
-                        : extractErrorMessage(response.error, 'Connection check failed');
+                const message = response.success
+                    ? getConnectionCheckSuccessMessage(response)
+                    : extractErrorMessage(response.error, 'Connection check failed');
 
                 const code =
                     !response.success && response.error && typeof response.error !== 'string'
@@ -769,7 +768,7 @@ export default () => {
                                     <p className={'text-sm text-gray-300'}>
                                         {smtpConfigured ? 'Configured' : 'Missing required fields'}
                                     </p>
-                                     <p className={'text-xs text-gray-500'}>
+                                    <p className={'text-xs text-gray-500'}>
                                         Password set: {smtpPasswordSet ? 'Yes' : 'No'}
                                     </p>
                                     <p className={'text-xs text-gray-500'}>
@@ -875,9 +874,7 @@ export default () => {
                             <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
                                 <div>
                                     <Label>Send delivery test email</Label>
-                                    <p className={'text-sm text-gray-400'}>
-                                        {getDeliveryTestDescription(transport)}
-                                    </p>
+                                    <p className={'text-sm text-gray-400'}>{getDeliveryTestDescription(transport)}</p>
                                 </div>
                                 <StatusBadge status={transport === 'smtp' ? 'info' : 'secondary'} />
                             </div>
@@ -901,7 +898,10 @@ export default () => {
                                 <ul className={'list-disc space-y-1 pl-5 text-sm text-gray-400'}>
                                     <li>Use a monitored inbox for Reply-To to capture responses.</li>
                                     <li>Configure SPF/DKIM for your domain to avoid spam folders.</li>
-                                    <li>Connection checks validate the saved provider setup before you try a recipient delivery test.</li>
+                                    <li>
+                                        Connection checks validate the saved provider setup before you try a recipient
+                                        delivery test.
+                                    </li>
                                 </ul>
                             </div>
                         </Card>
@@ -1057,7 +1057,7 @@ const StatusCard = ({
     onTest: () => void;
     testing: boolean;
 }) => {
-    const { headers, secondary } = useStoreState(state => state.theme.data!.colors);
+    const { headers } = useStoreState(state => state.theme.data!.colors);
 
     return (
         <div

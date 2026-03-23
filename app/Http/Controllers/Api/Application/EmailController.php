@@ -350,6 +350,12 @@ class EmailController extends ApplicationApiController
         ?string $recipient = null
     ): JsonResponse
     {
+        report($e);
+
+        $message = $action === self::ACTION_CONNECTION_TEST
+            ? 'Unexpected email provider error during the connection check. Review the provider settings or server logs.'
+            : 'Unexpected email provider error during the delivery test. Review the provider settings or server logs.';
+
         return response()->json([
             'success' => false,
             'action' => $action,
@@ -359,7 +365,7 @@ class EmailController extends ApplicationApiController
             'error' => [
                 'code' => strtoupper($provider) . '_UNEXPECTED_ERROR',
                 'status' => 500,
-                'message' => 'Unexpected email provider error. Check the server logs for details.',
+                'message' => $message,
             ],
         ], 500);
     }

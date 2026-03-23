@@ -3,8 +3,12 @@ import type { EmailResponse, EmailTransport } from '@/api/routes/admin/email';
 export const getConnectionCheckButtonLabel = (provider: EmailTransport): string =>
     provider === 'smtp' ? 'Check SMTP Connection' : 'Check Resend Connection';
 
+export const formatTestFlowDate = (value?: string): string => (value ? new Date(value).toLocaleString() : '');
+
 export const getConnectionCheckSuccessMessage = (response: EmailResponse): string =>
-    response.tested_at ? `Connection check successful (${formatTestFlowDate(response.tested_at)})` : 'Connection check successful';
+    response.tested_at
+        ? `Connection check successful (${formatTestFlowDate(response.tested_at)})`
+        : 'Connection check successful';
 
 export const getDeliveryTestDescription = (provider: EmailTransport): string =>
     `Sends a real email to the recipient using the active provider (${provider.toUpperCase()}).`;
@@ -21,6 +25,4 @@ export const getDeliveryTestSuccessMessage = (response: EmailResponse, fallbackP
 };
 
 export const getEmailResponseTimestamp = (response: EmailResponse): string =>
-    response.sent_at || response.tested_at || new Date().toISOString();
-
-export const formatTestFlowDate = (value?: string): string => (value ? new Date(value).toLocaleString() : '');
+    response.sent_at || response.tested_at || '';
