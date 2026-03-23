@@ -20,6 +20,10 @@ use Everest\Exceptions\Http\Connection\DaemonConnectionException;
  */
 class BillingValidationService
 {
+    /**
+     * Threshold for treating a price as effectively zero, to absorb floating point residuals.
+     * Uses $0.0001 (0.01 cents) so near-zero or negative totals from rounding/coupons are handled as free.
+     */
     private const PRICE_EPSILON = 0.0001;
 
     /**
