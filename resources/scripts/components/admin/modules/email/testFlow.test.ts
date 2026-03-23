@@ -5,6 +5,7 @@ import {
     getDeliveryTestDescription,
     getDeliveryTestSuccessMessage,
     getEmailResponseTimestamp,
+    getFailedDeliveryFollowup,
 } from './testFlow';
 
 describe('email test flow copy', () => {
@@ -43,5 +44,22 @@ describe('email test flow copy', () => {
 
         expect(message).toContain('Connection check successful');
         expect(message).toContain('2026');
+    });
+
+    it('returns provider-specific failed delivery follow-up copy', () => {
+        expect(getFailedDeliveryFollowup('resend')).toEqual({
+            title: 'Resend',
+            message:
+                'Resend for failed deliveries is temporarily unavailable because the original template data needed to rebuild the email is not stored with the delivery record yet.',
+        });
+
+        expect(getFailedDeliveryFollowup('smtp')).toEqual({
+            title: 'SMTP',
+            message:
+                'SMTP retries for failed deliveries are not available from the activity view yet. Review the failure details and your SMTP configuration before retrying manually.',
+        });
+
+        expect(getFailedDeliveryFollowup('mailgun')).toBeNull();
+        expect(getFailedDeliveryFollowup()).toBeNull();
     });
 });

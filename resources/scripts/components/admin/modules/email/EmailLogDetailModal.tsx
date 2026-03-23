@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 import { getEmailStatusPresentation } from './status';
+import { getFailedDeliveryFollowup } from './testFlow';
 
 interface Props {
     logId: number;
@@ -120,6 +121,9 @@ export default ({ logId, onClose }: Props) => {
             message: 'Debug bundle copied to clipboard',
         });
     };
+
+    const failedDeliveryFollowup =
+        detail?.log.status === 'failed' ? getFailedDeliveryFollowup(detail.log.provider) : null;
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleString();
@@ -238,14 +242,10 @@ export default ({ logId, onClose }: Props) => {
                             </Section>
                         )}
 
-                        {detail.log.status === 'failed' && (
+                        {failedDeliveryFollowup && (
                             <Section>
-                                <SectionTitle>Resend</SectionTitle>
-                                <p className="text-sm text-neutral-300">
-                                    Resend for failed deliveries is temporarily unavailable because the original
-                                    template data needed to rebuild the email is not stored with the delivery record
-                                    yet.
-                                </p>
+                                <SectionTitle>{failedDeliveryFollowup.title}</SectionTitle>
+                                <p className="text-sm text-neutral-300">{failedDeliveryFollowup.message}</p>
                             </Section>
                         )}
 

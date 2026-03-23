@@ -26,3 +26,28 @@ export const getDeliveryTestSuccessMessage = (response: EmailResponse, fallbackP
 
 export const getEmailResponseTimestamp = (response: EmailResponse): string =>
     response.sent_at || response.tested_at || '';
+
+export const getFailedDeliveryFollowup = (
+    provider?: string | null,
+): {
+    title: string;
+    message: string;
+} | null => {
+    if (provider === 'resend') {
+        return {
+            title: 'Resend',
+            message:
+                'Resend for failed deliveries is temporarily unavailable because the original template data needed to rebuild the email is not stored with the delivery record yet.',
+        };
+    }
+
+    if (provider === 'smtp') {
+        return {
+            title: 'SMTP',
+            message:
+                'SMTP retries for failed deliveries are not available from the activity view yet. Review the failure details and your SMTP configuration before retrying manually.',
+        };
+    }
+
+    return null;
+};
