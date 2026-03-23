@@ -1301,12 +1301,13 @@ const UsageStat = ({
     limit: number | null;
     applies: boolean;
 }) => {
+    const { primary, headers, secondary } = useStoreState(state => state.theme.data!.colors);
     const limitLabel = !applies ? 'No cap' : limit === null ? 'Unlimited' : limit.toLocaleString();
     const progress = applies && limit ? Math.min(100, Math.round((sent / limit) * 100)) : 0;
     const remaining = applies && limit !== null ? Math.max(0, limit - sent).toLocaleString() : '—';
 
     return (
-        <div className={'rounded-md border border-neutral-800 bg-neutral-900/60 p-3'}>
+        <div className={'rounded-md border p-3'} style={{ backgroundColor: secondary, borderColor: headers }}>
             <div className={'flex items-center justify-between'}>
                 <Label>{label}</Label>
                 <Pill type={applies ? 'info' : 'success'}>{applies ? 'Enforced' : 'Not applied'}</Pill>
@@ -1315,11 +1316,12 @@ const UsageStat = ({
                 {sent.toLocaleString()} / {limitLabel}
             </p>
             {applies && limit !== null && (
-                <div className={'mt-2 h-2 overflow-hidden rounded bg-neutral-800'}>
+                <div className={'mt-2 h-2 overflow-hidden rounded'} style={{ backgroundColor: headers }}>
                     <div
-                        className={'h-full bg-green-500'}
+                        className={'h-full'}
                         style={{
                             width: `${progress}%`,
+                            backgroundColor: primary,
                         }}
                     />
                 </div>
