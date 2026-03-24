@@ -143,7 +143,7 @@ export default () => {
                 undefined,
                 variables,
                 undefined,
-                checkoutState.couponId,
+                couponId,
                 checkoutState.selectedEggId,
                 checkoutState.serverName,
             );
@@ -227,7 +227,7 @@ export default () => {
                         {totalIsFree ? (
                             <div className={'space-y-4'}>
                                 <Alert type={'success'}>
-                                    This order is free based on your selections{checkoutState.couponId ? ' or coupon' : ''}.
+                                    This order is free based on your selections{couponId ? ' or coupon' : ''}.
                                 </Alert>
                                 <Button
                                     size={Button.Sizes.Large}
@@ -245,7 +245,7 @@ export default () => {
                                 vars={vars}
                                 intent={intent}
                                 stripe={stripe}
-                                couponId={checkoutState.couponId}
+                                couponId={couponId}
                                 selectedEggId={checkoutState.selectedEggId}
                                 serverName={checkoutState.serverName}
                             />
