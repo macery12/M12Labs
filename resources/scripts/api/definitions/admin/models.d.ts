@@ -125,7 +125,8 @@ interface DiscountCode extends Model {
 interface Product extends Model {
     id: number;
     uuid: string;
-    categoryUuid: number;
+    categoryId: number;
+    categoryUuid: string;
 
     name: string;
     icon?: string;

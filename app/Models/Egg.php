@@ -43,6 +43,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Database\Eloquent\Collection|\Everest\Models\EggVariable[] $variables
  * @property \Everest\Models\Egg|null $scriptFrom
  * @property \Everest\Models\Egg|null $configFrom
+ *
+ * @method static findOrFail($egg_id)
  */
 class Egg extends Model
 {

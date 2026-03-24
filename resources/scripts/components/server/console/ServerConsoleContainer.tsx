@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircle, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import EditServerDialog from './EditServerDialog';
 import PageContentBlock from '@/elements/PageContentBlock';
+import { timeUntil } from '../billing/ServerBillingContainer';
 
 export type PowerAction = 'start' | 'stop' | 'restart' | 'kill';
 
@@ -46,20 +47,25 @@ function ServerConsoleContainer() {
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
     const settings = useStoreState(state => state.everest.data!.billing);
 
-    // Get configurable renewal settings
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
 
-    // Calculate days until renewal (can be negative if overdue)
-    const daysUntilRenewal = renewalDate ? Math.floor((new Date(renewalDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
-    
-    // Show warning if within grace period (from expiration to grace period end)
-    const showRenewalWarning = billingProductId && daysUntilRenewal !== null && daysUntilRenewal <= 0 && Math.abs(daysUntilRenewal) <= freeGraceDays;
+    const daysUntilRenewal = renewalDate
+        ? Math.floor((new Date(renewalDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+    const showRenewalWarning =
+        billingProductId &&
+        daysUntilRenewal !== null &&
+        daysUntilRenewal <= 0 &&
+        Math.abs(daysUntilRenewal) <= freeGraceDays;
 
     return (
         <PageContentBlock title={'Server Console'} showFlashKey={'console:share'}>
             {showRenewalWarning && (
                 <Alert type={'warning'} className={'mb-4'}>
-                    Your server is {Math.abs(daysUntilRenewal!)} day{Math.abs(daysUntilRenewal!) !== 1 ? 's' : ''} overdue for renewal. Please renew within {freeGraceDays} days to avoid permanent suspension. Your server files and data will be preserved.
+                    Your server is {Math.abs(daysUntilRenewal!)} day{Math.abs(daysUntilRenewal!) !== 1 ? 's' : ''}{' '}
+                    overdue for renewal. Please renew within {freeGraceDays} days to avoid permanent suspension. Your
+                    server files and data will be preserved.
                 </Alert>
             )}
             {(isNodeUnderMaintenance || isInstalling || isTransferring) && (
@@ -100,7 +106,12 @@ function ServerConsoleContainer() {
                         </Pill>
                         <EditServerDialog />
                     </div>
-                    <p className={'text-sm line-clamp-2'}>{description ?? uuid}</p>
+                    <p className={'text-sm line-clamp-2'}>
+                        {description ?? uuid}
+                        {renewalDate && (
+                            <span className={'ml-1'}>&bull; {timeUntil(renewalDate!).days} days until renewal</span>
+                        )}
+                    </p>
                 </div>
                 <div className={'my-auto'}>
                     <Can action={['control.start', 'control.stop', 'control.restart']} matchAny>

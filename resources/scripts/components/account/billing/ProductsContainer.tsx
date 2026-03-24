@@ -60,7 +60,7 @@ export default () => {
         });
     }, [category]);
 
-    if (!settings.keys.publishable) {
+    if (!settings.keys.secret) {
         return (
             <Alert type={'danger'}>
                 Due to a configuration error, the store is currently unavailable. Please try again later, or refresh the

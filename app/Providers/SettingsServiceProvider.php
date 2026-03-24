@@ -48,19 +48,14 @@ class SettingsServiceProvider extends ServiceProvider
 
         // Billing module settings
         'modules:billing:enabled',
-        'modules:billing:paypal',
-        'modules:billing:link',
-        'modules:billing:keys:publishable',
         'modules:billing:keys:secret',
         'modules:billing:currency:code',
         'modules:billing:currency:symbol',
         'modules:billing:links:terms',
         'modules:billing:links:privacy',
         'modules:billing:renewal:days',
-        'modules:billing:renewal:free_renewal_days',
-        'modules:billing:renewal:suspension_threshold',
-        'modules:billing:renewal:free_suspension_days',
-        'modules:billing:renewal:paid_suspension_days',
+        'modules:billing:renewal:threshold',
+        'modules:billing:allow_upgrades',
 
         // Ticket module settings
         'modules:tickets:enabled',

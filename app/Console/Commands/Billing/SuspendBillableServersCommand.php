@@ -5,6 +5,7 @@ namespace Everest\Console\Commands\Billing;
 use Everest\Models\Server;
 use Illuminate\Console\Command;
 use Everest\Services\Servers\SuspensionService;
+use Everest\Services\Servers\ServerDeletionService;
 
 class SuspendBillableServersCommand extends Command
 {
@@ -15,7 +16,7 @@ class SuspendBillableServersCommand extends Command
     /**
      * SuspendBillableServersCommand constructor.
      */
-    public function __construct(private SuspensionService $suspend)
+    public function __construct(private SuspensionService $suspension, private ServerDeletionService $deletion)
     {
         parent::__construct();
     }
@@ -25,35 +26,17 @@ class SuspendBillableServersCommand extends Command
      */
     public function handle()
     {
-        $now = now();
+        foreach (Server::whereNotNull('renewal_date')->get() as $server) {
+            $daysOverdue = $server->renewalDate->diffInDays(now());
+            $threshold = config('modules.billing.renewal.threshold');
 
-        foreach (Server::whereNotNull('billing_product_id')->get() as $server) {
-            $renewalDate = $server->renewal_date;
-
-            if ($renewalDate === null) {
-                continue;
-            }
-
-            if ($renewalDate->isPast()) {
-                $daysOverdue = $renewalDate->diffInDays($now);
-
-                // Get the product to determine if it's free or paid
-                $product = $server->product;
-
-                // Determine suspension threshold based on whether server is free or paid
-                $suspensionThreshold = 0;
-                if ($product && (float) $product->price === 0.0) {
-                    // Free server - use free suspension days
-                    $suspensionThreshold = config('modules.billing.renewal.free_suspension_days', 7);
-                } else {
-                    // Paid server - use paid suspension days
-                    $suspensionThreshold = config('modules.billing.renewal.paid_suspension_days', 30);
-                }
-
-                // Only suspend if overdue by more than the threshold
-                if ($daysOverdue > $suspensionThreshold && !$server->isSuspended()) {
-                    $this->info("suspending server {$server->id}, overdue by {$daysOverdue} day(s)");
-                    $this->suspend->toggle($server, 'suspend');
+            if ($server->renewalDate->isPast()) {
+                if (!$server->isSuspended()) {
+                    $this->info("suspending server {$server->id}, overdue by {$daysOverdue} days");
+                    $this->suspension->toggle($server, 'suspend');
+                } elseif ($daysOverdue > $threshold) {
+                    $this->info("deleting server {$server->id}, overdue by {$daysOverdue} days");
+                    $this->deletion->handle($server)->withForce();
                 }
             }
         }

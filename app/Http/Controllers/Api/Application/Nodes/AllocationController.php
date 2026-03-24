@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Application\Nodes;
 
 use Everest\Models\Node;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\Allocation;
 use Spatie\QueryBuilder\QueryBuilder;

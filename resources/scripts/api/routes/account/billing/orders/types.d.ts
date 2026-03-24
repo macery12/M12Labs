@@ -3,14 +3,6 @@ export type OrderType = 'new' | 'upg' | 'ren';
 
 export interface OrderFilters {
     id?: number;
+    server_id?: number;
     name?: string;
-}
-
-export interface UpdateStripeIntent {
-    id: number;
-    node_id?: number;
-    intent: string;
-    vars?: { key: string; value: string }[];
-    serverId?: number;
-    renewal?: boolean;
 }

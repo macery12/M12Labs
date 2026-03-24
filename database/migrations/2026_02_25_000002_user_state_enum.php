@@ -1,10 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Migrations\Migration;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      */
@@ -25,6 +24,6 @@ return new class extends Migration
     public function down(): void
     {
         // Revert to a varchar allowing nulls.
-        DB::statement("ALTER TABLE `users` MODIFY COLUMN `state` VARCHAR(191) NULL DEFAULT NULL");
+        DB::statement('ALTER TABLE `users` MODIFY COLUMN `state` VARCHAR(191) NULL DEFAULT NULL');
     }
 };

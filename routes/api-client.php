@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Everest\Http\Controllers\Api\Client;
+use Everest\Http\Middleware\BillingEnabled;
 use Everest\Http\Middleware\SuspendedAccount;
 use Everest\Http\Middleware\Activity\ServerSubject;
 use Everest\Http\Middleware\Activity\AccountSubject;
@@ -69,25 +70,25 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::post('/setup', [Client\AccountController::class, 'setup']);
     });
 
-    Route::prefix('/billing')->group(function () {
+    Route::prefix('/billing')->middleware([BillingEnabled::class])->group(function () {
+        // Data for storefront checkout
         Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
         Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
 
+        // Viewing of available categories/products
         Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
         Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
         Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
 
-        Route::get('/products/{id}/key', [Client\Billing\PaymentController::class, 'publicKey']);
-
-        Route::post('/products/{id}/intent', [Client\Billing\PaymentController::class, 'intent']);
-        Route::put('/products/{id}/intent', [Client\Billing\PaymentController::class, 'updateIntent']);
-
-        Route::post('/process', [Client\Billing\PaymentController::class, 'process'])->name('api:client.billing.process');
-        Route::post('/process/free', [Client\Billing\FreeProductController::class, 'process']);
-        Route::post('/renew/free', [Client\Billing\FreeProductController::class, 'renew']);
-
+        // View existing billing orders that have already been created
         Route::get('/orders', [Client\Billing\OrderController::class, 'index']);
         Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
+
+        // Billing controllers and services
+        Route::post('/stripe/create', [Client\Billing\StripeController::class, 'create']);
+        Route::post('/stripe/process', [Client\Billing\StripeController::class, 'process']);
+
+        Route::post('/free/process', [Client\Billing\FreeProductController::class, 'process']);
     });
 
     /*
@@ -187,5 +188,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/reinstall', [Client\Servers\SettingsController::class, 'reinstall']);
             Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
         });
+
+        Route::prefix('/upgrade')
+            ->middleware(BillingEnabled::class)
+            ->group(function () {
+                Route::get('/', [Client\Billing\UpgradeController::class, 'index']);
+                Route::post('/', [Client\Billing\UpgradeController::class, 'create']);
+                Route::post('/charge', [Client\Billing\UpgradeController::class, 'charge']);
+            });
     });
 });

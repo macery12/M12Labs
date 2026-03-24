@@ -19,6 +19,8 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { useGetOrders } from '@/api/routes/account/billing/orders';
 import { Context as OrderContext } from '@/api/routes/account/billing/orders/index';
 import { OrderFilters } from '@/api/routes/account/billing/orders/types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheckCircle, faXmarkCircle } from '@fortawesome/free-solid-svg-icons';
 
 export function format(date: number): string {
     let prefix = 'th';
@@ -57,7 +59,7 @@ export function type(state: string): PillStatus {
     }
 }
 
-function OrderTable() {
+function OrderTable({ server_id }: { server_id?: number }) {
     const { data: orders, error } = useGetOrders();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(OrderContext);
@@ -81,7 +83,101 @@ function OrderTable() {
         }
     }, [error]);
 
+    useEffect(() => {
+        if (server_id) {
+            setFilters({ server_id });
+        }
+    }, []);
+
     return (
+        <AdminTable>
+            <ContentWrapper onSearch={onSearch}>
+                <Pagination data={orders} onPageSelect={setPage}>
+                    <div className={`overflow-x-auto`}>
+                        <table className={`w-full table-auto`}>
+                            <TableHead>
+                                <TableHeader
+                                    name={'ID'}
+                                    direction={sort === 'id' ? (sortDirection ? 1 : 2) : null}
+                                    onClick={() => setSort('id')}
+                                />
+                                <TableHeader
+                                    name={'Total Price'}
+                                    direction={sort === 'total' ? (sortDirection ? 1 : 2) : null}
+                                    onClick={() => setSort('total')}
+                                />
+                                <TableHeader name={'Description'} />
+                                <TableHeader
+                                    name={'Created At'}
+                                    direction={sort === 'created_at' ? (sortDirection ? 1 : 2) : null}
+                                    onClick={() => setSort('created_at')}
+                                />
+                                <TableHeader name={'Payment State'} />
+                                <TableHeader
+                                    name={'Order Type'}
+                                    direction={sort === 'type' ? (sortDirection ? 1 : 2) : null}
+                                    onClick={() => setSort('type')}
+                                />
+                                {!server_id && <TableHeader name={'Active Service'} />}
+                            </TableHead>
+                            <TableBody>
+                                {orders !== undefined &&
+                                    orders.items.length > 0 &&
+                                    orders.items.map(order => (
+                                        <TableRow key={order.id}>
+                                            <td className={`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
+                                                <CopyOnClick text={order.id}>
+                                                    <code className={`font-mono bg-neutral-900 rounded py-1 px-2`}>
+                                                        {order.id}
+                                                    </code>
+                                                </CopyOnClick>
+                                            </td>
+                                            <td className={'px-6 py-4 text-white font-bold'}>${order.total}/mo</td>
+                                            <td className={'px-6 py-4'}>{order.description}</td>
+                                            <td className={'px-6 py-4'}>
+                                                {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
+                                            </td>
+                                            <td className={'px-6 py-4 text-left'}>
+                                                <Pill size={'small'} type={type(order.status)}>
+                                                    {order.status}
+                                                </Pill>
+                                            </td>
+                                            <td className={'pr-12 py-4 text-center'}>
+                                                <Pill size={'small'} type={order.type === 'new' ? 'success' : 'info'}>
+                                                    {order.type.toUpperCase()}
+                                                </Pill>
+                                            </td>
+                                            {!server_id && (
+                                                <td className={'px-6 py-4 text-left ml-4'}>
+                                                    {order.server_id ? (
+                                                        <FontAwesomeIcon
+                                                            icon={faCheckCircle}
+                                                            className={'text-green-400'}
+                                                        />
+                                                    ) : (
+                                                        <FontAwesomeIcon
+                                                            icon={faXmarkCircle}
+                                                            className={'text-red-400'}
+                                                        />
+                                                    )}
+                                                </td>
+                                            )}
+                                        </TableRow>
+                                    ))}
+                            </TableBody>
+                        </table>
+                        {orders === undefined ? <Loading /> : orders.items.length < 1 ? <NoItems /> : null}
+                    </div>
+                </Pagination>
+            </ContentWrapper>
+        </AdminTable>
+    );
+}
+
+export default ({ server_id }: { server_id?: number }) => {
+    const hooks = useTableHooks<OrderFilters>();
+
+    return !server_id ? (
         <PageContentBlock>
             <div className={'text-3xl lg:text-5xl font-bold mt-8 mb-12'}>
                 Billing Activity
@@ -90,88 +186,13 @@ function OrderTable() {
                 </p>
                 <FlashMessageRender byKey={'billing:orders'} className={'mt-4'} />
             </div>
-            <AdminTable>
-                <ContentWrapper onSearch={onSearch}>
-                    <Pagination data={orders} onPageSelect={setPage}>
-                        <div className={`overflow-x-auto`}>
-                            <table className={`w-full table-auto`}>
-                                <TableHead>
-                                    <TableHeader
-                                        name={'ID'}
-                                        direction={sort === 'id' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('id')}
-                                    />
-                                    <TableHeader
-                                        name={'Total Price'}
-                                        direction={sort === 'total' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('total')}
-                                    />
-                                    <TableHeader name={'Description'} />
-                                    <TableHeader
-                                        name={'Created At'}
-                                        direction={sort === 'created_at' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('created_at')}
-                                    />
-                                    <TableHeader name={'Payment State'} />
-                                    <TableHeader
-                                        name={'Order Type'}
-                                        direction={sort === 'type' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('type')}
-                                    />
-                                </TableHead>
-                                <TableBody>
-                                    {orders !== undefined &&
-                                        orders.items.length > 0 &&
-                                        orders.items.map(order => (
-                                            <TableRow key={order.id}>
-                                                <td
-                                                    className={`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}
-                                                >
-                                                    <CopyOnClick text={order.id}>
-                                                        <code className={`font-mono bg-neutral-900 rounded py-1 px-2`}>
-                                                            {order.id}
-                                                        </code>
-                                                    </CopyOnClick>
-                                                </td>
-                                                <td className={'px-6 py-4 text-white font-bold'}>${order.total}/mo</td>
-                                                <td className={'px-6 py-4'}>
-                                                    {order.name.slice(0, 8)} {order.description}
-                                                </td>
-                                                <td className={'px-6 py-4'}>
-                                                    {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}
-                                                </td>
-                                                <td className={'px-6 py-4 text-left'}>
-                                                    <Pill size={'small'} type={type(order.status)}>
-                                                        {order.status}
-                                                    </Pill>
-                                                </td>
-                                                <td className={'pr-12 py-4 text-center'}>
-                                                    <Pill
-                                                        size={'small'}
-                                                        type={order.type === 'new' ? 'success' : 'info'}
-                                                    >
-                                                        {order.type.toUpperCase()}
-                                                    </Pill>
-                                                </td>
-                                            </TableRow>
-                                        ))}
-                                </TableBody>
-                            </table>
-                            {orders === undefined ? <Loading /> : orders.items.length < 1 ? <NoItems /> : null}
-                        </div>
-                    </Pagination>
-                </ContentWrapper>
-            </AdminTable>
+            <OrderContext.Provider value={hooks}>
+                <OrderTable />
+            </OrderContext.Provider>
         </PageContentBlock>
-    );
-}
-
-export default () => {
-    const hooks = useTableHooks<OrderFilters>();
-
-    return (
+    ) : (
         <OrderContext.Provider value={hooks}>
-            <OrderTable />
+            <OrderTable server_id={server_id} />
         </OrderContext.Provider>
     );
 };

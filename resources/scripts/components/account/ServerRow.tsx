@@ -22,6 +22,7 @@ import { type ServerGroup } from '@definitions/server';
 import Pill from '@/elements/Pill';
 import { VisibleDialog } from './groups/ServerGroupDialog';
 import useFlash from '@/plugins/useFlash';
+import { timeUntil } from '../server/billing/ServerBillingContainer';
 
 export function statusToColor(state?: ServerPowerState): string {
     switch (state) {
@@ -144,7 +145,13 @@ export default ({
                 >
                     {server.name}
                     <div className={'text-gray-500 text-xs my-auto'}>
-                        {server.allocations[0]?.ip.toString()}:{server.allocations[0]?.port.toString()}
+                        {server.allocations[0]?.ip.toString()}:{server.allocations[0]?.port.toString()} &bull;{' '}
+                        {server.renewalDate && (
+                            <>
+                                {timeUntil(server.renewalDate).days}d {timeUntil(server.renewalDate).hours}h until
+                                renewal
+                            </>
+                        )}
                     </div>
                 </Link>
                 <div className={'col-span-1 lg:col-span-2 my-auto mr-2'}>

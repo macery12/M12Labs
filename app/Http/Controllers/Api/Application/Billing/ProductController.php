@@ -122,7 +122,7 @@ class ProductController extends ApplicationApiController
     /**
      * View an existing product.
      */
-    public function view(GetBillingProductRequest $request, Category $category, int $productId): array
+    public function view(GetBillingProductRequest $request, int $productId): array
     {
         $product = Product::findOrFail($productId);
 

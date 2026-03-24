@@ -2,11 +2,8 @@ import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import ToggleFeatureButton from './ToggleFeatureButton';
-import { faDollar, faExchange, faGavel, faKey, faPowerOff } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsUpDown, faDollar, faExchange, faGavel, faKey, faPowerOff } from '@fortawesome/free-solid-svg-icons';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import { faPaypal, faStripe } from '@fortawesome/free-brands-svg-icons';
-import SetupPayPal from './guides/SetupPayPal';
-import SetupLink from './guides/SetupLink';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import currencyDictionary from '@/assets/currency';
@@ -17,7 +14,7 @@ import ImportConfigButton from './config/ImportConfigButton';
 import { deleteStripeKeys, updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
-export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'none';
+export type BillingSetupDialog = 'setup' | 'none';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
@@ -47,59 +44,7 @@ export default () => {
 
     return (
         <div className={'grid lg:grid-cols-3 gap-4'}>
-            {open === 'paypal' && <SetupPayPal setOpen={setOpen} />}
-            {open === 'link' && <SetupLink setOpen={setOpen} />}
             {open === 'setup' && <SetupStripe extOpen />}
-            <AdminBox title={'Add PayPal integration'} icon={faPaypal}>
-                Adding PayPal to Jexactyl allows users to purchase products via another channel, improving order success
-                rate and global payment availability.
-                <p className={'text-gray-400 mt-2'}>
-                    PayPal module is currently{' '}
-                    <span className={settings.paypal ? 'text-green-500' : 'text-red-500'}>
-                        {settings.paypal ? 'enabled' : 'disabled'}
-                    </span>
-                    .
-                </p>
-                <div className={'text-right mt-2'}>
-                    {settings.paypal && (
-                        <Button.Text
-                            className={'mr-2'}
-                            onClick={() => setOpen('paypal')}
-                            variant={Button.Variants.Secondary}
-                        >
-                            Setup Instructions
-                        </Button.Text>
-                    )}
-                    <Button.Text onClick={() => submit('paypal', !settings.paypal)}>
-                        {settings.paypal ? 'Disable' : 'Enable'}
-                    </Button.Text>
-                </div>
-            </AdminBox>
-            <AdminBox title={'Add Link integration'} icon={faStripe}>
-                Adding Link to Jexactyl allows users to purchase products via another channel, improving order success
-                rate and global payment availability.
-                <p className={'text-gray-400 mt-2'}>
-                    Link module is currently{' '}
-                    <span className={settings.link ? 'text-green-500' : 'text-red-500'}>
-                        {settings.link ? 'enabled' : 'disabled'}
-                    </span>
-                    .
-                </p>
-                <div className={'text-right mt-2'}>
-                    {settings.link && (
-                        <Button.Text
-                            className={'mr-2'}
-                            onClick={() => setOpen('link')}
-                            variant={Button.Variants.Secondary}
-                        >
-                            Setup Instructions
-                        </Button.Text>
-                    )}
-                    <Button.Text onClick={() => submit('link', !settings.link)}>
-                        {settings.link ? 'Disable' : 'Enable'}
-                    </Button.Text>
-                </div>
-            </AdminBox>
             <AdminBox title={'Primary Currency'} icon={faDollar}>
                 Choose a primary currency to charge users.
                 <div className={'mt-4'}>
@@ -118,6 +63,26 @@ export default () => {
                     </Select>
                 </div>
             </AdminBox>
+            <AdminBox title={'Allow Self Upgrades'} icon={faArrowsUpDown}>
+                <p className={'text-sm'}>
+                    Having this service enabled means users can upgrade and downgrade to different products within their
+                    existing category. A bill will automatically be generated if users with to upgrade before their
+                    renewal is due, to ensure that they will pay for the usage of the upgraded plan. The user will not
+                    be able to then change their plan for another 30 days after a change to prevent abuse.
+                </p>
+                <p className={'text-gray-400 mt-2'}>
+                    This service is currently&nbsp;
+                    <span className={settings.allow_upgrades ? 'text-green-500' : 'text-red-500'}>
+                        {settings.allow_upgrades ? 'enabled' : 'disabled'}
+                    </span>
+                    .
+                </p>
+                <div className={'text-right mt-2'}>
+                    <Button.Text onClick={() => submit('allow_upgrades', !settings.allow_upgrades)}>
+                        {settings.allow_upgrades ? 'Disable' : 'Enable'}
+                    </Button.Text>
+                </div>
+            </AdminBox>
             <AdminBox title={'Import/Export Configuration'} icon={faExchange}>
                 <FlashMessageRender byKey={'billing:config'} className={'mb-2'} />
                 Use the below options to either export your current billing configurations, or use the Import button to
@@ -127,7 +92,7 @@ export default () => {
                     <ImportConfigButton />
                 </div>
             </AdminBox>
-            {!settings.keys.publishable || !settings.keys.secret ? (
+            {!settings.keys.secret ? (
                 <AdminBox title={'Input Stripe API Keys'} icon={faKey}>
                     Without Stripe API authentication, your billing system will not work. Customers may proceed to the
                     checkout area but will be met with errors unless you add valid API keys which can be obtained

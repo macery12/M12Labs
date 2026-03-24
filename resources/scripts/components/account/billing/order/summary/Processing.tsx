@@ -1,61 +1,28 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useStoreState } from '@/state/hooks';
-import PageContentBlock from '@/elements/PageContentBlock';
+import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import useFlash from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
+import PageContentBlock from '@/elements/PageContentBlock';
 import Spinner from '@/elements/Spinner';
-import { processPaidOrder } from '@/api/routes/account/billing/orders/process';
+import { processCheckoutSession } from '@/api/routes/account/billing/orders/process';
+import { useStoreState } from '@/state/hooks';
 
 export default () => {
-    const location = useLocation();
     const navigate = useNavigate();
-    const params = new URLSearchParams(location.search);
-    const { colors } = useStoreState(s => s.theme.data!);
-    const { addFlash, clearFlashes } = useFlash();
+    const { colors } = useStoreState(state => state.theme.data!);
 
-    const intent = params.get('payment_intent');
-    const renewal = params.get('renewal') === 'true';
-    const serverUuid = params.get('server_uuid');
+    const params = new URLSearchParams(window.location.search);
+    const session = params.get('session');
 
     useEffect(() => {
-        clearFlashes();
-
-        if (!intent) {
-            addFlash({
-                key: 'billing:process',
-                type: 'error',
-                message: 'Your order could not be fulfilled. Please contact an administrator.',
-            });
-
-            return;
+        if (session) {
+            processCheckoutSession(session)
+                .then(server => navigate(`/server/${server.id}`))
+                .catch(() => {
+                    navigate('/account/billing/cancel');
+                });
+        } else {
+            navigate('/acccount/billing/cancel');
         }
-
-        processPaidOrder(intent, renewal)
-            .then(() => {
-                // For renewals, redirect back to the server billing page
-                if (renewal && serverUuid) {
-                    // Validate UUID format to prevent path traversal
-                    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-                    if (uuidRegex.test(serverUuid)) {
-                        navigate(`/server/${serverUuid}/billing`);
-                    } else {
-                        // Invalid UUID, redirect to dashboard with error message
-                        addFlash({
-                            key: 'billing:process',
-                            type: 'error',
-                            message: 'Invalid server identifier. Redirecting to dashboard.',
-                        });
-                        setTimeout(() => navigate('/'), 2000);
-                    }
-                } else {
-                    // For new purchases, go to success page
-                    navigate('/account/billing/success');
-                }
-            })
-            .catch(() => {
-                navigate('/account/billing/cancel');
-            });
     }, []);
 
     return (
@@ -73,7 +40,6 @@ export default () => {
                         Our systems are currently working on deploying your server to our systems. Sit tight while your
                         new server is deployed!
                     </p>
-                    <p className={'text-2xs text-neutral-400 mt-8'}>Session {intent ?? 'Unknown'}</p>
                 </div>
             </div>
         </PageContentBlock>

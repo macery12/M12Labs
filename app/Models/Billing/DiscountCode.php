@@ -8,12 +8,10 @@ use Everest\Models\Model;
  * @property int $id
  * @property string $code
  * @property string $description
- * 
  * @property string $type
  * @property int $value
  * @property int|null $uses
  * @property bool $active
- * 
  * @property \Carbon\Carbon $expires_at
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
@@ -60,7 +58,6 @@ class DiscountCode extends Model
         'active' => 'bool|required',
         'expires_at' => 'date|nullable',
     ];
-
 
     /**
      * A function to expire a discount code and instantly invalidate it.
@@ -132,6 +129,6 @@ class DiscountCode extends Model
 
         if ($this->uses === 0) {
             $this->expire();
-        };
+        }
     }
 }

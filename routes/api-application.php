@@ -61,6 +61,8 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         Route::delete('/keys', [Application\Billing\BillingController::class, 'resetKeys']);
 
+        Route::get('/products/{product:id}', [Application\Billing\ProductController::class, 'view']);
+
         Route::group(['prefix' => '/categories'], function () {
             Route::get('/', [Application\Billing\CategoryController::class, 'index']);
             Route::post('/', [Application\Billing\CategoryController::class, 'store']);

@@ -1,11 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Migrations\Migration;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      */
@@ -14,7 +12,7 @@ return new class extends Migration
         // Normalize existing rows first.
         DB::table('users')
             ->whereNull('state')
-            ->orWhere('state', '=','')
+            ->orWhere('state', '=', '')
             ->update(['state' => 'active']);
 
         // Ensure the column is non-null with a default at the database level.

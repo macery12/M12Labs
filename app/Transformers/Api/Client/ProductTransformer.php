@@ -25,6 +25,8 @@ class ProductTransformer extends Transformer
             'name' => $model->name,
             'icon' => $model->icon,
             'price' => $model->price,
+            'category_id' => $model->category->id,
+            'category_uuid' => $model->category->uuid,
             'description' => $model->description,
             'egg_id' => $model->category->egg_id,
             'limits' => [

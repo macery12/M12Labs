@@ -78,7 +78,7 @@ class ServerGroupController extends ClientApiController
 
         if ($group->user_id !== $request->user->id()) {
             throw new DisplayException('You do not have permission to edit this server group.');
-        };
+        }
 
         $group->update([
             'name' => $request['name'] ?? $group->name,
@@ -97,7 +97,7 @@ class ServerGroupController extends ClientApiController
 
         if ($group->user_id !== $request->user->id()) {
             throw new DisplayException('You do not have permission to edit this server group.');
-        };
+        }
 
         $group->delete();
 

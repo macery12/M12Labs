@@ -60,7 +60,6 @@ class BillingController extends ApplicationApiController
      */
     public function resetKeys(DeleteStripeKeysRequest $request): Response
     {
-        Setting::forget('settings::modules:billing:keys:publishable');
         Setting::forget('settings:modules:billing:keys:secret');
 
         Activity::event('admin:billing:reset-keys')

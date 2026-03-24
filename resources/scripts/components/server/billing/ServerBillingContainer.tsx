@@ -8,17 +8,17 @@ import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
-import PaymentContainer from './PaymentContainer';
 import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
-import { format } from 'date-fns';
 import { getProduct } from '@/api/routes/account/billing/products';
 import { Product } from '@definitions/account/billing';
-import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
+import ServerPaymentButton from './ServerPaymentButton';
+import OrdersContainer from '@/components/account/billing/orders/OrdersContainer';
+import { processFreeCheckoutSession } from '@/api/routes/account/billing/orders/process';
 
-function timeUntil(targetDate: Date | string) {
+export function timeUntil(targetDate: Date | string) {
     const date = targetDate instanceof Date ? targetDate : new Date(targetDate);
 
     const now = new Date();
@@ -28,12 +28,6 @@ function timeUntil(targetDate: Date | string) {
         days: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
         hours: Math.floor((diffMs / (1000 * 60 * 60)) % 24),
     };
-}
-
-function addDays(date: Date | string, days: number) {
-    const d = date instanceof Date ? new Date(date) : new Date(date);
-    d.setDate(d.getDate() + days);
-    return d;
 }
 
 export default () => {
@@ -48,12 +42,6 @@ export default () => {
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
-
-    // Get configurable renewal settings
-    const renewalDays = settings.renewal?.days || 30;
-    const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
-    const freeGraceDays = settings.renewal?.free_suspension_days || 7;
-    const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
 
     useEffect(() => {
         clearFlashes();
@@ -75,9 +63,8 @@ export default () => {
         setRenewing(true);
         clearFlashes('server:billing');
 
-        renewFreeServer(billingProductId, serverId)
+        processFreeCheckoutSession(billingProductId, undefined, undefined, Number(serverId))
             .then(() => {
-                // Redirect to server overview after successful renewal
                 navigate(`/server/${serverUuid}`);
             })
             .catch(error => {
@@ -86,14 +73,7 @@ export default () => {
             });
     };
 
-    // Calculate days remaining until renewal (can be negative if overdue)
     const daysRemaining = renewalDate ? timeUntil(renewalDate).days : 0;
-    const daysOverdue = daysRemaining < 0 ? Math.abs(daysRemaining) : 0;
-    
-    // Free servers can only be renewed if:
-    // 1. They're within the threshold period before renewal (e.g., 7 days or less and not yet overdue), OR
-    // 2. They're overdue but still within the grace period
-    const canRenew = (daysRemaining <= suspensionThreshold && daysRemaining > 0) || (daysRemaining <= 0 && daysOverdue <= freeGraceDays);
 
     return (
         <PageContentBlock
@@ -131,7 +111,7 @@ export default () => {
                                 <p className={'text-gray-400 text-sm'}>
                                     {settings.currency.symbol}
                                     {product ? product.price : '...'} {settings.currency.code.toUpperCase()} every{' '}
-                                    {renewalDays} days
+                                    {settings.renewal.days} days
                                 </p>
                                 <Link to={'/account/billing/orders'} className={'text-green-400 text-xs'}>
                                     View order <FontAwesomeIcon icon={faArrowRight} />
@@ -140,7 +120,11 @@ export default () => {
                         </div>
                     </ContentBox>
                 )}
-                <ContentBox title={'Renew Server'} className={'lg:col-span-2'}>
+                <div className={'lg:col-span-2'}>
+                    <h2 className={'text-neutral-300 mb-4 px-4 text-2xl'}>Related Orders</h2>
+                    <OrdersContainer server_id={Number(serverId)} />
+                </div>
+                <ContentBox title={'Renew Server'} className={'mt-6'}>
                     <FlashMessageRender byKey={'server:billing'} className={'mb-4'} />
                     {!product ? (
                         <Alert type={'danger'}>
@@ -151,33 +135,34 @@ export default () => {
                         <>
                             {product.price === 0 ? (
                                 <div>
-                                    <p className={'text-gray-400 text-sm mb-4'}>
-                                        This is a free server. You can renew it for another {freeRenewalDays} days starting {suspensionThreshold} days before it expires, giving you time to renew before expiration. You can also renew within the {freeGraceDays}-day grace period after expiration.
+                                    <p className={'mb-4'}>
+                                        This is a free server. You must renew it before your server expires in{' '}
+                                        {daysRemaining} days to prevent your server from being permenantly deleted.
                                     </p>
-                                    {daysOverdue > freeGraceDays ? (
-                                        <Alert type={'danger'}>
-                                            This server has been overdue for more than {freeGraceDays} days and can no longer be renewed through self-service. Please contact support for assistance.
-                                        </Alert>
-                                    ) : daysRemaining > suspensionThreshold ? (
-                                        <Alert type={'info'}>
-                                            You still have {daysRemaining} days before your server expires. The renew button will become available {suspensionThreshold} days before expiration, allowing you to renew in advance.
-                                        </Alert>
-                                    ) : (
-                                        <Button
-                                            onClick={handleFreeRenewal}
-                                            disabled={renewing}
-                                            size={Button.Sizes.Large}
-                                        >
-                                            {renewing ? 'Renewing...' : 'Renew Server'}
-                                        </Button>
-                                    )}
+                                    <Button onClick={handleFreeRenewal} disabled={renewing} size={Button.Sizes.Large}>
+                                        {renewing ? 'Renewing...' : 'Renew Server'}
+                                    </Button>
                                 </div>
                             ) : (
-                                <PaymentContainer id={Number(product.id)} />
+                                <ServerPaymentButton product={product} />
                             )}
                         </>
                     )}
                 </ContentBox>
+                {settings.allow_upgrades && (
+                    <ContentBox className={'mt-6 lg:col-span-2'} title={'Upgrade Server Package'}>
+                        If you wish to pay extra for more resources for your server, you can use our upgrade system to
+                        choose a new plan to suit your needs. A pro-rata price will be generated to cover the cost
+                        between now and your next renewal date, and the new resources will be added upon payment.
+                        <div className={'text-right'}>
+                            <Link to={`/server/${serverUuid.slice(0, 8)}/billing/upgrade`}>
+                                <Button className={'mt-8'} size={Button.Sizes.Large}>
+                                    View Options <FontAwesomeIcon icon={faArrowRight} className={'ml-2'} />
+                                </Button>
+                            </Link>
+                        </div>
+                    </ContentBox>
+                )}
             </div>
         </PageContentBlock>
     );

@@ -8,6 +8,7 @@ export const Context = createContext<OrderFilters>();
 export const useGetOrders = createPaginatedHook<Order, OrderFilters>({
     url: '/api/client/billing/orders',
     swrKey: 'orders',
+    includes: ['server'],
     context: Context,
     transformer: Transformers.toOrder,
 });

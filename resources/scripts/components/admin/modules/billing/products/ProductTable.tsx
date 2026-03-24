@@ -17,12 +17,12 @@ import { useStoreState } from '@/state/hooks';
 import { useContext, useEffect } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { ShoppingBagIcon } from '@heroicons/react/outline';
-import { getProducts, Context as ProductContext } from '@/api/routes/admin/billing/products';
+import { Context as ProductContext, useGetProducts } from '@/api/routes/admin/billing/products';
 import { ProductFilters } from '@/api/routes/admin/billing/types';
 
 function ProductTable() {
     const params = useParams<'id'>();
-    const { data: products, error } = getProducts(Number(params.id));
+    const { data: products, error } = useGetProducts(Number(params.id));
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { colors } = useStoreState(state => state.theme.data!);
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(ProductContext);

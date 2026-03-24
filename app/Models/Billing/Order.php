@@ -3,6 +3,8 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\Server;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -12,9 +14,10 @@ use Everest\Models\Model;
  * @property float $total
  * @property string $status
  * @property int $product_id
+ * @property int|null $server_id
  * @property string $type
  * @property int $threat_index
- * @property string $payment_intent_id
+ * @property string|null $transaction_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -26,8 +29,8 @@ class Order extends Model
     public const STATUS_PROCESSED = 'processed';
 
     public const TYPE_NEW = 'new';
-    public const TYPE_UPG = 'upg';
-    public const TYPE_REN = 'ren';
+    public const TYPE_UPGRADE = 'upgrade';
+    public const TYPE_RENEWAL = 'renewal';
 
     /**
      * The resource name for this model when it is transformed into an
@@ -44,7 +47,7 @@ class Order extends Model
      * Fields that are mass assignable.
      */
     protected $fillable = [
-        'name', 'user_id', 'description', 'payment_intent_id',
+        'name', 'user_id', 'description', 'transaction_id',
         'total', 'status', 'product_id', 'type', 'threat_index',
     ];
 
@@ -65,8 +68,88 @@ class Order extends Model
         'total' => 'required|min:0',
         'status' => 'required|in:expired,pending,failed,processed',
         'product_id' => 'exists:products,id',
-        'type' => 'required|in:new,upg,ren',
+        'type' => 'required|in:new,upgrade,renewal',
         'threat_index' => 'nullable|int|min:-1|max:100',
-        'payment_intent_id' => 'required|string|unique:orders,payment_intent_id',
+        'transaction_id' => 'nullable|string',
     ];
+
+    /**
+     * Gets the user who this order is assigned to.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(Everest\Models\User::class, 'user_id');
+    }
+
+    /**
+     * Gets the server associated with this order.
+     */
+    public function server(): BelongsTo
+    {
+        return $this->belongsTo(Server::class, 'server_id');
+    }
+
+    /**
+     * Gets the product which this order is assigned to.
+     */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    /**
+     * Return whether a payment must be collected for this order.
+     */
+    public function requiresPayment(): bool
+    {
+        if ($this->total > 0.0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Return whether this order has already been processed.
+     */
+    public function isProcessed(): bool
+    {
+        if ($this->status === Order::STATUS_PROCESSED) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Return whether this order is a renewal or new server.
+     */
+    public function isRenewal(): bool
+    {
+        if ($this->type === Order::TYPE_RENEWAL) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Assign a server ID to this model.
+     */
+    public function assignServer(Server $server): void
+    {
+        $this->server()->associate($server);
+
+        $this->save();
+    }
+
+    /**
+     * A helper function to set the order type.
+     */
+    public function setStatus(string $status): void
+    {
+        $this->status = $status;
+
+        $this->save();
+    }
 }

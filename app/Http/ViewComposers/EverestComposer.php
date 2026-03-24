@@ -46,10 +46,7 @@ class EverestComposer
             ],
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
-                'paypal' => config('modules.billing.paypal'),
-                'link' => config('modules.billing.link'),
                 'keys' => [
-                    'publishable' => boolval(config('modules.billing.keys.publishable')),
                     'secret' => boolval(config('modules.billing.keys.secret')),
                 ],
                 'currency' => [
@@ -61,12 +58,10 @@ class EverestComposer
                     'privacy' => config('modules.billing.links.privacy'),
                 ],
                 'renewal' => [
-                    'days' => config('modules.billing.renewal.days', 30),
-                    'free_renewal_days' => config('modules.billing.renewal.free_renewal_days', 30),
-                    'suspension_threshold' => config('modules.billing.renewal.suspension_threshold', 7),
-                    'free_suspension_days' => config('modules.billing.renewal.free_suspension_days', 7),
-                    'paid_suspension_days' => config('modules.billing.renewal.paid_suspension_days', 30),
+                    'days' => config('modules.billing.renewal.days'),
+                    'threshold' => config('modules.billing.renewal.threshold'),
                 ],
+                'allow_upgrades' => config('modules.billing.allow_upgrades'),
             ],
             'alert' => [
                 'enabled' => boolval(config('modules.alert.enabled', false)),
