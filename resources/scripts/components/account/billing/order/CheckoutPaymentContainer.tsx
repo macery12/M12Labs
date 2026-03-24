@@ -106,7 +106,7 @@ export default () => {
 
         const initializeStripe = async () => {
             try {
-                const intentData = await getStripeIntent(product.id, couponId);
+                const intentData = await getStripeIntent(product.id, couponId, checkoutState.selectedBillingDays);
                 setIntent({ id: intentData.id, secret: intentData.secret });
 
                 const stripePublicKey = await getStripeKey(product.id);
@@ -118,7 +118,7 @@ export default () => {
         };
 
         initializeStripe();
-    }, [product?.id, couponId, couponData?.total]);
+    }, [product?.id, couponId, couponData?.total, checkoutState.selectedBillingDays]);
 
     if (!checkoutState?.productId) {
         return (

@@ -261,6 +261,7 @@ export default (props: Props) => {
                             vars={props.vars}
                             intent={props.intent}
                             couponId={props.couponId}
+                            billingDays={props.billingDays}
                             selectedEggId={props.selectedEggId}
                             serverName={props.serverName}
                         />
