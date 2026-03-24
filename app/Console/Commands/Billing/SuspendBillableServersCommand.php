@@ -34,7 +34,7 @@ class SuspendBillableServersCommand extends Command
                 if (!$server->isSuspended()) {
                     $this->info("suspending server {$server->id}, overdue by {$daysOverdue} days");
                     $this->suspension->toggle($server, 'suspend');
-                } else if ($daysOverdue > $threshold) {
+                } elseif ($daysOverdue > $threshold) {
                     $this->info("deleting server {$server->id}, overdue by {$daysOverdue} days");
                     $this->deletion->handle($server)->withForce();
                 }

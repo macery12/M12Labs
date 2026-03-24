@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Application\Eggs;
 
 use Everest\Models\Egg;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Everest\Models\EggVariable;
 use Illuminate\Database\ConnectionInterface;
@@ -12,7 +11,6 @@ use Everest\Services\Eggs\Variables\VariableCreationService;
 use Everest\Transformers\Api\Application\EggVariableTransformer;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\StoreEggVariableRequest;
-use Everest\Http\Requests\Api\Application\Eggs\Variables\DeleteEggVariablesRequest;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\UpdateEggVariablesRequest;
 
 class EggVariableController extends ApplicationApiController

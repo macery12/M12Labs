@@ -2,23 +2,24 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
-use Stripe\Webhook;
-use Stripe\StripeClient;
 use Everest\Models\Node;
 use Everest\Models\User;
+use Stripe\StripeClient;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
-use Everest\Models\Billing\DiscountCode;
 use Everest\Exceptions\DisplayException;
+use Everest\Models\Billing\DiscountCode;
 use Everest\Models\Billing\BillingException;
+use Everest\Services\Billing\PaymentService;
+use Everest\Services\Billing\UpgradeService;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\ServerRenewalService;
 use Everest\Services\Billing\ServerDeploymentService;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Everest\Transformers\Api\Client\DiscountCodeTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Everest\Transformers\Api\Client\DiscountCodeTransformer;
 use Everest\Http\Requests\Api\Client\Billing\CreateStripePaymentRequest;
 use Everest\Http\Requests\Api\Client\Billing\ProcessStripePaymentRequest;
 use Everest\Http\Requests\Api\Client\Billing\ValidateDiscountCodeRequest;
@@ -26,6 +27,8 @@ use Everest\Http\Requests\Api\Client\Billing\ValidateDiscountCodeRequest;
 class StripeController extends ClientApiController
 {
     public function __construct(
+        private UpgradeService $upgradeService,
+        private PaymentService $paymentService,
         private CreateOrderService $orderService,
         private ServerRenewalService $renewalService,
         private ServerDeploymentService $deploymentService,
@@ -46,7 +49,7 @@ class StripeController extends ClientApiController
 
         if (!$product->isPaid()) {
             throw new DisplayException('You cannot create a checkout session for a free product.');
-        };
+        }
 
         if ($node_id) {
             if (!Node::findOrFail($request->input('node_id'))->deployable) {
@@ -59,41 +62,22 @@ class StripeController extends ClientApiController
                     ->firstOrFail();
             } catch (ModelNotFoundException $exception) {
                 throw new DisplayException('This server ID does not exist on your account.');
-            };
+            }
         }
 
-        // todo(jex): factor in discounts during sales process
-        $price = $product->price;
         $order_type = $server ? Order::TYPE_RENEWAL : Order::TYPE_NEW;
 
-        $transaction = $this->stripe->checkout->sessions->create([
-            'mode' => 'payment',
+        $metadata = [
+            'user_id' => (string) $request->user()->id,
             'customer_email' => $request->user()->email,
+            'product_id' => (string) $product->id,
+            'node_id' => (string) ($node_id ?? ''),
+            'server_id' => (string) ($server?->id ?? 0),
+            'variables' => json_encode($request->input('variables') ?? []),
+            'order_type' => $order_type,
+        ];
 
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => strtolower(config('modules.billing.currency.code')),
-                    'product_data' => [
-                        'name' => $product->name,
-                    ],
-                    'unit_amount' => (int) round($price * 100),
-                ],
-                'quantity' => 1,
-            ]],
-
-            'success_url' => config('app.url') . '/account/billing/processing?session={CHECKOUT_SESSION_ID}',
-            'cancel_url' => config('app.url') . '/account/billing/cancel',
-
-            'metadata' => [
-                'user_id' => (string) $request->user()->id,
-                'customer_email' => $request->user()->email,
-                'product_id' => (string) $product->id,
-                'node_id' => (string) ($node_id ?? ''),
-                'server_id' => (string) ($server?->id ?? 0),
-                'variables' => json_encode($request->input('variables') ?? []),
-                'order_type' => $order_type,
-            ],
-        ]);
+        $transaction = $this->paymentService->create($this->stripe, $request->user(), $product, $metadata);
 
         $order = $this->orderService->create(
             $transaction->id,
@@ -103,9 +87,7 @@ class StripeController extends ClientApiController
             $order_type
         );
 
-        if ($server) {
-            $order->assignServer($server);
-        };
+        if ($server) $order->assignServer($server);
 
         return $transaction->url;
     }
@@ -120,47 +102,52 @@ class StripeController extends ClientApiController
         } catch (DisplayException $ex) {
             throw new DisplayException('Failed to process order: unable to retrieve session');
         }
+        
+        if ($transaction->payment_status !== 'paid') {
+            throw new DisplayException('Payment not completed.');
+        }
 
-            if ($transaction->payment_status !== 'paid') {
-                throw new DisplayException('Payment not completed.');
+        $metadata = $transaction->metadata;
+        $server = Server::find($metadata->server_id);
+        $user = User::findOrFail($metadata->user_id);
+        $product = Product::findOrFail($metadata->product_id);
+        $order = Order::where('transaction_id', $transaction->id)->firstOrFail();
+
+        if ($order->isProcessed()) {
+            throw new DisplayException('This order has already been processed.');
+        }
+
+        try {
+            switch ($order->type) {
+                case Order::TYPE_RENEWAL:
+                    $server = $this->renewalService->handle($server);
+                    break;
+                case Order::TYPE_NEW:
+                    $server = $this->deploymentService->handle($user, $product, $metadata, $order);
+                    $order->assignServer($server);
+                    break;
+                case Order::TYPE_UPGRADE:
+                    $server = $this->upgradeService->handle($server, $product);
+                    break;
+                default:
+                    break;
             }
 
-            $metadata = $transaction->metadata;
+            $order->setStatus(Order::STATUS_PROCESSED);
+        } catch (DisplayException $exception) {
+            $order->setStatus(Order::STATUS_FAILED);
 
-            $user = User::findOrFail($metadata->user_id);
-            $product = Product::findOrFail($metadata->product_id);
-            $order = Order::where('transaction_id', $transaction->id)->firstOrFail();
+            BillingException::create([
+                'order_id' => $order->id,
+                'exception_type' => BillingException::TYPE_DEPLOYMENT,
+                'title' => 'Deployment or renewal of server failed',
+                'description' => $exception->getMessage(),
+            ]);
+        }
 
-            if ($order->isProcessed()) {
-                throw new DisplayException('This order has already been processed.');
-            };
-
-            try {
-                if ($order->isRenewal()) {
-                    $server = Server::findOrFail($metadata->server_id);
-
-                    $new_server = $this->renewalService->handle($server);
-                } else {
-                    $new_server = $this->deploymentService->handle($user, $product, $metadata, $order);
-
-                    $order->assignServer($new_server);
-                };
-
-                $order->update(['status' => Order::STATUS_PROCESSED]);
-            } catch (DisplayException $exception) {
-                $order->update(['status' => Order::STATUS_FAILED]);
-
-                BillingException::create([
-                    'order_id' => $order->id,
-                    'exception_type' => BillingException::TYPE_DEPLOYMENT,
-                    'title' => 'Deployment or renewal of server failed',
-                    'description' => $exception->getMessage(),
-                ]);
-            };
-
-        return $this->fractal->item($new_server)
-            ->transformWith(ServerTransformer::class)
-            ->toArray();
+        return $this->fractal->item($server)
+        ->transformWith(ServerTransformer::class)
+        ->toArray();
     }
 
     /**
@@ -172,7 +159,7 @@ class StripeController extends ClientApiController
 
         if (!$discount_code || !$discount_code->isValid()) {
             throw new DisplayException('The discount code provided is not valid.');
-        };
+        }
 
         return $this->fractal->item($discount_code)
             ->transformWith(DiscountCodeTransformer::class)

@@ -2,12 +2,10 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
-use Carbon\Carbon;
 use Everest\Models\Node;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
-use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\ServerRenewalService;
 use Everest\Transformers\Api\Client\ServerTransformer;
@@ -46,7 +44,7 @@ class FreeProductController extends ClientApiController
             $is_new_order ? Order::TYPE_NEW : Order::TYPE_RENEWAL,
         );
 
-        if ($is_new_order && $node) {    
+        if ($is_new_order && $node) {
             $server = $this->freeDeploymentService->handleFree(
                 $user,
                 $product,

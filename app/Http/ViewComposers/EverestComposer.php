@@ -61,6 +61,7 @@ class EverestComposer
                     'days' => config('modules.billing.renewal.days'),
                     'threshold' => config('modules.billing.renewal.threshold'),
                 ],
+                'allow_upgrades' => config('modules.billing.allow_upgrades'),
             ],
             'alert' => [
                 'enabled' => boolval(config('modules.alert.enabled', false)),

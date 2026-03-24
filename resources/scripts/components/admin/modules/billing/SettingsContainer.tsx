@@ -2,7 +2,7 @@ import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import ToggleFeatureButton from './ToggleFeatureButton';
-import { faDollar, faExchange, faGavel, faKey, faPowerOff } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsUpDown, faDollar, faExchange, faGavel, faKey, faPowerOff } from '@fortawesome/free-solid-svg-icons';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
@@ -61,6 +61,26 @@ export default () => {
                             </option>
                         ))}
                     </Select>
+                </div>
+            </AdminBox>
+            <AdminBox title={'Allow Self Upgrades'} icon={faArrowsUpDown}>
+                <p className={'text-sm'}>
+                    Having this service enabled means users can upgrade and downgrade to different products within their
+                    existing category. A bill will automatically be generated if users with to upgrade before their
+                    renewal is due, to ensure that they will pay for the usage of the upgraded plan. The user will not
+                    be able to then change their plan for another 30 days after a change to prevent abuse.
+                </p>
+                <p className={'text-gray-400 mt-2'}>
+                    This service is currently&nbsp;
+                    <span className={settings.allow_upgrades ? 'text-green-500' : 'text-red-500'}>
+                        {settings.allow_upgrades ? 'enabled' : 'disabled'}
+                    </span>
+                    .
+                </p>
+                <div className={'text-right mt-2'}>
+                    <Button.Text onClick={() => submit('allow_upgrades', !settings.allow_upgrades)}>
+                        {settings.allow_upgrades ? 'Disable' : 'Enable'}
+                    </Button.Text>
                 </div>
             </AdminBox>
             <AdminBox title={'Import/Export Configuration'} icon={faExchange}>

@@ -47,6 +47,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property Mount[]|Collection $mounts
  * @property int[]|\Illuminate\Support\Collection $ports
  * @property Server[]|Collection $servers
+ *
  * @method exists()
  */
 class Node extends Model

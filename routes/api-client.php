@@ -89,7 +89,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::post('/stripe/process', [Client\Billing\StripeController::class, 'process']);
 
         Route::post('/free/process', [Client\Billing\FreeProductController::class, 'process']);
-
     });
 
     /*
@@ -189,5 +188,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::post('/reinstall', [Client\Servers\SettingsController::class, 'reinstall']);
             Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
         });
+
+        Route::prefix('/upgrade')
+            ->middleware(BillingEnabled::class)
+            ->group(function () {
+                Route::get('/', [Client\Billing\UpgradeController::class, 'index']);
+                Route::post('/', [Client\Billing\UpgradeController::class, 'create']);
+                Route::post('/charge', [Client\Billing\UpgradeController::class, 'charge']);
+            });
     });
 });

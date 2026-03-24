@@ -106,9 +106,9 @@ class Order extends Model
             return true;
         } else {
             return false;
-        };
+        }
     }
-    
+
     /**
      * Return whether this order has already been processed.
      */
@@ -118,7 +118,7 @@ class Order extends Model
             return true;
         } else {
             return false;
-        };
+        }
     }
 
     /**
@@ -130,7 +130,7 @@ class Order extends Model
             return true;
         } else {
             return false;
-        };
+        }
     }
 
     /**
@@ -139,6 +139,16 @@ class Order extends Model
     public function assignServer(Server $server): void
     {
         $this->server()->associate($server);
+
+        $this->save();
+    }
+
+    /**
+     * A helper function to set the order type.
+     */
+    public function setStatus(string $status): void
+    {
+        $this->status = $status;
 
         $this->save();
     }

@@ -135,14 +135,13 @@ export default () => {
                         <>
                             {product.price === 0 ? (
                                 <div>
-                                    <p className={'text-gray-400 text-sm mb-4'}>
+                                    <p className={'mb-4'}>
                                         This is a free server. You must renew it before your server expires in{' '}
                                         {daysRemaining} days to prevent your server from being permenantly deleted.
                                     </p>
                                     <Button onClick={handleFreeRenewal} disabled={renewing} size={Button.Sizes.Large}>
                                         {renewing ? 'Renewing...' : 'Renew Server'}
                                     </Button>
-                                    )
                                 </div>
                             ) : (
                                 <ServerPaymentButton product={product} />
@@ -150,6 +149,20 @@ export default () => {
                         </>
                     )}
                 </ContentBox>
+                {settings.allow_upgrades && (
+                    <ContentBox className={'mt-6 lg:col-span-2'} title={'Upgrade Server Package'}>
+                        If you wish to pay extra for more resources for your server, you can use our upgrade system to
+                        choose a new plan to suit your needs. A pro-rata price will be generated to cover the cost
+                        between now and your next renewal date, and the new resources will be added upon payment.
+                        <div className={'text-right'}>
+                            <Link to={`/server/${serverUuid.slice(0, 8)}/billing/upgrade`}>
+                                <Button className={'mt-8'} size={Button.Sizes.Large}>
+                                    View Options <FontAwesomeIcon icon={faArrowRight} className={'ml-2'} />
+                                </Button>
+                            </Link>
+                        </div>
+                    </ContentBox>
+                )}
             </div>
         </PageContentBlock>
     );

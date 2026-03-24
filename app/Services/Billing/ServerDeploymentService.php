@@ -28,6 +28,7 @@ class ServerDeploymentService
 
     /**
      * Process the creation of a server.
+     *
      * @throws NoViableAllocationException
      */
     public function handle(User $user, Product $product, StripeObject $metadata, Order $order): Server

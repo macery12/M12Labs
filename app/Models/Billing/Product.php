@@ -92,7 +92,7 @@ class Product extends Model
     {
         if ($this->price <= 0) {
             return false;
-        };
+        }
 
         return true;
     }

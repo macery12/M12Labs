@@ -7,6 +7,8 @@ import { createCheckoutSession } from '@/api/routes/account/billing/orders/proce
 import { Product } from '@/api/definitions/account/billing';
 import { ServerContext } from '@/state/server';
 import { useStoreState } from '@/state/hooks';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCreditCard } from '@fortawesome/free-solid-svg-icons';
 
 export default ({ product }: { product: Product }) => {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
@@ -33,13 +35,13 @@ export default ({ product }: { product: Product }) => {
         <form onSubmit={handleSubmit}>
             <SpinnerOverlay visible={loading} />
             <FlashMessageRender byKey={'server:billing:payment'} className={'mb-4'} />
-            <p className={'text-gray-400 text-sm mb-4'}>
+            <p className={'mb-4'}>
                 Renewing your server now will add another {days} days to your server, making your renewal date{' '}
                 {new Date(updatedRenewalDate).toLocaleDateString()} (+{days} days).
             </p>
             <div className={'text-right'}>
                 <Button className={'mt-4'} size={Button.Sizes.Large}>
-                    Pay Now
+                    Pay Now <FontAwesomeIcon icon={faCreditCard} className={'ml-2'} />
                 </Button>
             </div>
         </form>

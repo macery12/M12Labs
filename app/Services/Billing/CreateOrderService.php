@@ -11,7 +11,7 @@ class CreateOrderService
     /**
      * Process the creation of an order.
      */
-    public function create(?string $transaction_id, User $user, Product $product, ?string $status, string $type): Order
+    public function create(?string $transaction_id, User $user, Product $product, ?string $status, string $type, ?float $price = null): Order
     {
         $order = new Order();
         $uuid = uuid_create();
@@ -20,7 +20,7 @@ class CreateOrderService
         $order->transaction_id = $transaction_id;
         $order->user_id = $user->id;
         $order->description = $product->name . ' with ID ' . substr($uuid, 0, 8);
-        $order->total = $product->price ?? 0;
+        $order->total = $price ?? $product->price ?? 0;
         $order->status = $status ?? Order::STATUS_EXPIRED;
         $order->product_id = $product->id;
         $order->type = $type;

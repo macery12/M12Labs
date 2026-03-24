@@ -9,7 +9,6 @@ class ServerRenewalService
 {
     public function __construct(private SuspensionService $suspensionService)
     {
-        //
     }
 
     /**

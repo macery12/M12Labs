@@ -14,6 +14,7 @@ const NetworkContainer = lazy(() => import('@server/network/NetworkContainer'));
 const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
+const UpgradeContainer = lazy(() => import('@server/billing/UpgradeContainer'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -72,12 +73,13 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.EyeIcon,
         condition: flags => flags.activityEnabled,
     }),
-    route('billing/*', ServerBillingContainer, {
+    route('billing', ServerBillingContainer, {
         permission: 'billing.*',
         name: 'Billing',
         icon: Icon.CashIcon,
         condition: flags => flags.billable,
     }),
+    route('billing/upgrade', UpgradeContainer, { condition: flags => flags.billable }),
 ];
 
 export default server;

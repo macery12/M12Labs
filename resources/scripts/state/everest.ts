@@ -54,6 +54,7 @@ export interface EverestSettings {
             days: number;
             threshold: number;
         };
+        allow_upgrades: boolean;
     };
     alert: {
         enabled: boolean;

@@ -22,8 +22,7 @@ class DiscountCodeController extends ApplicationApiController
     public function __construct(
         private DiscountCodeCreationService $creationService,
         private DiscountCodeUpdateService $updateService,
-    )
-    {
+    ) {
         parent::__construct();
     }
 

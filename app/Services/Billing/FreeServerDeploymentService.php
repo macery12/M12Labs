@@ -4,23 +4,20 @@ namespace Everest\Services\Billing;
 
 use Carbon\Carbon;
 use Everest\Models\Egg;
-use Everest\Models\User;
 use Everest\Models\Node;
+use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Servers\ServerCreationService;
-use Everest\Exceptions\Repository\RecordNotFoundException;
-use Everest\Exceptions\Service\Deployment\NoViableAllocationException;
 
 class FreeServerDeploymentService extends ServerDeploymentService
 {
     public function __construct(
         protected ServerCreationService $creation,
-    )
-    {
+    ) {
         parent::__construct($creation);
     }
 
@@ -79,22 +76,19 @@ class FreeServerDeploymentService extends ServerDeploymentService
         if ($is_new_order) {
             if (!$node->exists()) {
                 throw new DisplayException('A valid node must be assigned for deployment.');
-            };
+            }
 
             if (!$node->deployable_free) {
                 throw new DisplayException('Free servers cannot be deployed to this node.');
-            };
+            }
 
             if ($user->servers()->where('billing_product_id', $product->id)->count() > 0) {
                 throw new DisplayException('You already own one of this free product and cannot have multiple.');
-            };
-        };
+            }
+        }
 
         if ($product->isPaid()) {
             throw new DisplayException('This package is paid and cannot be deployed for no cost.');
-        };
-        
-
-        return;
+        }
     }
 }
