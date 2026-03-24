@@ -6,8 +6,8 @@ use Stripe\StripeClient;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
-use Everest\Services\Billing\UpgradeService;
 use Everest\Services\Billing\PaymentService;
+use Everest\Services\Billing\UpgradeService;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Transformers\Api\Client\ProductTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -53,7 +53,7 @@ class UpgradeController extends ClientApiController
 
         if ($existing_product->price >= $new_product->price) {
             throw new DisplayException('You cannot upgrade to a cheaper plan.');
-        };
+        }
 
         $charge = $this->upgradeService->charge($server, $existing_product, $new_product);
 
@@ -72,7 +72,7 @@ class UpgradeController extends ClientApiController
 
         if ($existing_product->price >= $new_product->price) {
             throw new DisplayException('You cannot upgrade to a cheaper plan.');
-        };
+        }
 
         $metadata = [
             'user_id' => (string) $request->user()->id,

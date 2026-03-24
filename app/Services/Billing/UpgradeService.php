@@ -13,8 +13,8 @@ class UpgradeService
      */
     public function charge(Server $server, Product $existing, Product $new): float
     {
-    $minutes_left   = now()->diffInMinutes(Carbon::parse($server->renewal_date), false);
-    $renewal_minutes = config('modules.billing.renewal.days') * 24 * 60;
+        $minutes_left = now()->diffInMinutes(Carbon::parse($server->renewal_date), false);
+        $renewal_minutes = config('modules.billing.renewal.days') * 24 * 60;
         $price_diff = $new->price - $existing->price;
 
         if ($minutes_left <= 0 || $price_diff <= 0) {

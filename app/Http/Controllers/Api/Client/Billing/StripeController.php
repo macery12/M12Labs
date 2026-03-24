@@ -87,7 +87,9 @@ class StripeController extends ClientApiController
             $order_type
         );
 
-        if ($server) $order->assignServer($server);
+        if ($server) {
+            $order->assignServer($server);
+        }
 
         return $transaction->url;
     }
@@ -102,7 +104,7 @@ class StripeController extends ClientApiController
         } catch (DisplayException $ex) {
             throw new DisplayException('Failed to process order: unable to retrieve session');
         }
-        
+
         if ($transaction->payment_status !== 'paid') {
             throw new DisplayException('Payment not completed.');
         }
