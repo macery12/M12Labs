@@ -22,7 +22,7 @@ class NestRepository extends EloquentRepository implements NestRepositoryInterfa
      *
      * @throws \Everest\Exceptions\Repository\RecordNotFoundException
      */
-    public function getWithEggs(int $id = null): Collection|Nest
+    public function getWithEggs(?int $id = null): Collection|Nest
     {
         $instance = $this->getBuilder()->with('eggs', 'eggs.variables');
 
@@ -43,7 +43,7 @@ class NestRepository extends EloquentRepository implements NestRepositoryInterfa
      *
      * @throws \Everest\Exceptions\Repository\RecordNotFoundException
      */
-    public function getWithCounts(int $id = null): Collection|Nest
+    public function getWithCounts(?int $id = null): Collection|Nest
     {
         $instance = $this->getBuilder()->withCount(['eggs', 'servers']);
 

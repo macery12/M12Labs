@@ -22,7 +22,7 @@ class DaemonFileRepository extends DaemonRepository
      * @throws \Everest\Exceptions\Http\Server\FileSizeTooLargeException
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function getContent(string $path, int $notLargerThan = null): string
+    public function getContent(string $path, ?int $notLargerThan = null): string
     {
         Assert::isInstanceOf($this->server, Server::class);
 

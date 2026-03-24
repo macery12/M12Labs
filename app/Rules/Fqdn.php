@@ -71,7 +71,7 @@ final class Fqdn implements Rule, DataAwareRule
     /**
      * Returns a new instance of the rule with a defined scheme set.
      */
-    public static function make(string $schemeField = null): self
+    public static function make(?string $schemeField = null): self
     {
         return tap(new static(), function ($fqdn) use ($schemeField) {
             $fqdn->schemeField = $schemeField;

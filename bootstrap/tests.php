@@ -7,6 +7,9 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+$envFile = file_exists(__DIR__ . '/../.env.ci') ? '.env.ci' : '.env';
+\Dotenv\Dotenv::createImmutable(__DIR__ . '/../', $envFile)->safeLoad();
+
 $app = require __DIR__ . '/app.php';
 
 /** @var \Everest\Console\Kernel $kernel */

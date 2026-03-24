@@ -35,7 +35,7 @@ class ToggleTwoFactorService
      * @throws \PragmaRX\Google2FA\Exceptions\SecretKeyTooShortException
      * @throws \Everest\Exceptions\Service\User\TwoFactorAuthenticationTokenInvalid
      */
-    public function handle(User $user, string $token, bool $toggleState = null): array
+    public function handle(User $user, string $token, ?bool $toggleState = null): array
     {
         $secret = $this->encrypter->decrypt($user->totp_secret);
 

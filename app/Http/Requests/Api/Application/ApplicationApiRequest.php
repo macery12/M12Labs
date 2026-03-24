@@ -36,7 +36,7 @@ abstract class ApplicationApiRequest extends ApiRequest
      * Return only the fields that we are interested in from the request.
      * This will include empty fields as a null value.
      */
-    public function normalize(array $only = null): array
+    public function normalize(?array $only = null): array
     {
         return $this->only($only ?? array_keys($this->rules()));
     }

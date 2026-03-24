@@ -104,7 +104,7 @@ abstract class Transformer extends TransformerAbstract
      * Sets the default timezone to use for transformed responses. Pass a null value
      * to return back to the default timezone (UTC).
      */
-    public static function setTimezone(string $tz = null)
+    public static function setTimezone(?string $tz = null)
     {
         static::$timezone = $tz ?? 'UTC';
     }
