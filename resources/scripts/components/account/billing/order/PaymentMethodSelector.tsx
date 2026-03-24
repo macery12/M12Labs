@@ -19,6 +19,7 @@ interface Props {
     intent: StripeIntent | null;
     stripe: Stripe | null;
     couponId?: number;
+    billingDays: number;
     selectedEggId?: number;
     serverName: string;
 }
@@ -272,6 +273,7 @@ export default (props: Props) => {
                         product={props.product}
                         vars={props.vars}
                         couponId={props.couponId}
+                        billingDays={props.billingDays}
                         selectedEggId={props.selectedEggId}
                         serverName={props.serverName}
                     />
@@ -283,6 +285,7 @@ export default (props: Props) => {
                         product={props.product}
                         vars={props.vars}
                         couponId={props.couponId}
+                        billingDays={props.billingDays}
                         selectedEggId={props.selectedEggId}
                         serverName={props.serverName}
                     />

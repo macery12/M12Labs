@@ -246,6 +246,7 @@ export default () => {
                                 intent={intent}
                                 stripe={stripe}
                                 couponId={couponId}
+                                billingDays={checkoutState.selectedBillingDays}
                                 selectedEggId={checkoutState.selectedEggId}
                                 serverName={checkoutState.serverName}
                             />

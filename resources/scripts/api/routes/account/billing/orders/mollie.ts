@@ -20,6 +20,7 @@ export interface MolliePaymentFromToken {
 export const createMolliePayment = (
     id: number,
     couponId?: number,
+    billingDays?: number,
     returnUrl?: string,
     serverId?: number,
     renewal?: boolean,
@@ -27,6 +28,7 @@ export const createMolliePayment = (
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/products/${id}/mollie/payment`, {
             coupon_id: couponId,
+            billing_days: billingDays,
             return_url: returnUrl,
             server_id: serverId,
             renewal,
@@ -45,6 +47,7 @@ export const updateMolliePayment = ({
     renewal,
     couponId,
     eggId,
+    billingDays,
     name,
 }: {
     id: number;
@@ -55,6 +58,7 @@ export const updateMolliePayment = ({
     renewal?: boolean;
     couponId?: number;
     eggId?: number;
+    billingDays?: number;
     name: string;
 }): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -66,6 +70,7 @@ export const updateMolliePayment = ({
             renewal,
             coupon_id: couponId,
             egg_id: eggId,
+            billing_days: billingDays,
             name,
         })
             .then(() => resolve())

@@ -48,6 +48,7 @@ class MollieCheckoutController extends ClientApiController
         // Check if this is a renewal payment
         $isRenewal = $request->boolean('renewal', false);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
 
         // Determine order type and calculate price
         $orderType = $isRenewal ? Order::TYPE_REN : Order::TYPE_NEW;
@@ -56,7 +57,7 @@ class MollieCheckoutController extends ClientApiController
             $product,
             $couponId,
             $isRenewal ? 'ren' : 'new',
-            null, // billing days - use default
+            $billingDays,
             null, // node ID
             $request->user()->id
         );
@@ -95,6 +96,7 @@ class MollieCheckoutController extends ClientApiController
             'name' => $isRenewal ? 'Server Renewal' : 'Pending',
             'node_id' => null,
             'server_id' => $isRenewal ? $serverId : null,
+            'billing_days' => $billingDays,
             'variables' => [],
         ];
 
@@ -171,6 +173,7 @@ class MollieCheckoutController extends ClientApiController
         // For renewals, egg_id is not required
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
         $eggId = $isRenewal ? null : $this->validationService->validateAndGetEggId($product, $requestedEggId);
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
 
         // Determine order type and calculate price with coupon
         $orderType = $this->getOrderType($request);
@@ -191,6 +194,7 @@ class MollieCheckoutController extends ClientApiController
             'egg_id' => $isRenewal ? null : $eggId,
             'type' => $orderType,
             'coupon_id' => $couponId,
+            'billing_days' => $billingDays,
             'variables' => $variables,
         ]);
 
