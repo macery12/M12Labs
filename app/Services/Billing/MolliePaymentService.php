@@ -29,7 +29,7 @@ class MolliePaymentService
      *
      * @throws BillingExceptionClass
      */
-    public function createPayment(Product $product, float $amount, ?int $couponId, string $returnUrl): Payment
+    public function createPayment(Product $product, float $amount, ?int $couponId, string $returnUrl, string $webhookToken): Payment
     {
         $this->ensureMollieInitialized();
 
@@ -41,7 +41,7 @@ class MolliePaymentService
                 ],
                 'description' => 'Order for ' . $product->name,
                 'redirectUrl' => $returnUrl,
-                'webhookUrl' => route('api:client:billing:mollie:webhook'),
+                'webhookUrl' => route('webhook.mollie', ['token' => $webhookToken]),
                 'metadata' => [
                     'product_id' => (string) $product->id,
                     'coupon_id' => (string) ($couponId ?? ''),

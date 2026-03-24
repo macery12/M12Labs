@@ -31,7 +31,7 @@ class MolliePaymentServiceTest extends TestCase
         $this->expectException(BillingException::class);
         $this->expectExceptionMessage('Mollie is not configured');
 
-        $service->createPayment($product, 10.00, null, 'http://return');
+        $service->createPayment($product, 10.00, null, 'http://return', 'cf7a4d44-83cb-4ebc-b151-859d6b26dff5');
     }
 
     /**
@@ -63,7 +63,7 @@ class MolliePaymentServiceTest extends TestCase
         $product = $this->createMockProduct();
 
         try {
-            $service->createPayment($product, 19.99, null, 'http://return');
+            $service->createPayment($product, 19.99, null, 'http://return', 'cf7a4d44-83cb-4ebc-b151-859d6b26dff5');
         } catch (BillingException $e) {
             $this->assertStringContainsString('creating Mollie payment', $e->getMessage());
             $this->assertEquals(BillingExceptionModel::TYPE_PAYMENT, $e->getExceptionType());
@@ -123,7 +123,7 @@ class MolliePaymentServiceTest extends TestCase
         $product = $this->createMockProduct();
 
         try {
-            $service->createPayment($product, 10.00, null, 'http://return');
+            $service->createPayment($product, 10.00, null, 'http://return', 'cf7a4d44-83cb-4ebc-b151-859d6b26dff5');
             $this->fail('Expected BillingException was not thrown');
         } catch (BillingException $e) {
             $this->assertEquals(BillingExceptionModel::TYPE_STOREFRONT, $e->getExceptionType());

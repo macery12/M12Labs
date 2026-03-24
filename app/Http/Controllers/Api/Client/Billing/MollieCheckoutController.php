@@ -77,7 +77,8 @@ class MollieCheckoutController extends ClientApiController
             $product,
             $priceInfo['finalPrice'],
             $couponId,
-            $returnUrl
+            $returnUrl,
+            $token
         );
         $rawCheckoutUrl = $payment->getCheckoutUrl();
         if (!$rawCheckoutUrl) {

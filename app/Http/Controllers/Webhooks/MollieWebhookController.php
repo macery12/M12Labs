@@ -7,6 +7,7 @@ use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\Security\LogSanitizer;
+use Everest\Services\Billing\MollieWebhookVerificationService;
 use Everest\Services\Billing\MolliePaymentService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
@@ -15,6 +16,7 @@ class MollieWebhookController
 {
     public function __construct(
         private MolliePaymentService $mollieService,
+        private MollieWebhookVerificationService $verificationService,
         private BillingValidationService $validationService,
         private ServerFulfillmentService $fulfillmentService,
     ) {
@@ -33,26 +35,19 @@ class MollieWebhookController
     public function handle(Request $request): JsonResponse
     {
         try {
-            $paymentId = $request->input('id');
+            $verification = $this->verificationService->validate($request);
 
-            if (!$paymentId) {
-                // Return 200 to prevent Mollie retries, but log the issue
-                Log::warning('Mollie webhook called without payment ID');
+            if (!$verification['valid']) {
+                Log::warning('Rejected Mollie webhook request', array_merge([
+                    'reason' => $verification['reason'],
+                ], $verification['context'] ?? []));
 
-                return response()->json(['ok' => true], 200);
+                return response()->json(['ok' => false], $verification['status']);
             }
 
-            // Find the order by mollie_payment_id
-            $order = Order::where('mollie_payment_id', $paymentId)->latest()->first();
-
-            if (!$order) {
-                // Return 200 to prevent Mollie retries for non-existent orders
-                Log::warning('Mollie webhook order not found', [
-                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
-                ]);
-
-                return response()->json(['ok' => true], 200);
-            }
+            $paymentId = $verification['payment_id'];
+            /** @var Order $order */
+            $order = $verification['order'];
 
             // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
             // This prevents duplicate processing if webhook is called multiple times

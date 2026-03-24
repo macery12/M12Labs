@@ -7,6 +7,7 @@ use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\Security\LogSanitizer;
+use Everest\Services\Billing\PayPalWebhookVerificationService;
 use Everest\Services\Billing\PayPalPaymentService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
@@ -15,6 +16,7 @@ class PayPalWebhookController
 {
     public function __construct(
         private PayPalPaymentService $paypalService,
+        private PayPalWebhookVerificationService $verificationService,
         private BillingValidationService $validationService,
         private ServerFulfillmentService $fulfillmentService,
     ) {
@@ -33,6 +35,16 @@ class PayPalWebhookController
     public function handle(Request $request): JsonResponse
     {
         try {
+            $verification = $this->verificationService->validate($request);
+
+            if (!$verification['valid']) {
+                Log::warning('Rejected PayPal webhook request', array_merge([
+                    'reason' => $verification['reason'],
+                ], $verification['context'] ?? []));
+
+                return response()->json(['ok' => false], $verification['status']);
+            }
+
             $eventType = $request->input('event_type');
             $resource = $request->input('resource', []);
 
@@ -61,8 +73,6 @@ class PayPalWebhookController
                     break;
 
                 default:
-                    // Unsupported event type - this may be a new PayPal event we haven't implemented yet
-                    // or an event not relevant to our billing flow. Return 200 to acknowledge receipt.
                     Log::warning('Unsupported PayPal webhook event type received', [
                         'event_type' => $eventType,
                         'resource_id' => $resource['id'] ?? null,
@@ -74,7 +84,6 @@ class PayPalWebhookController
             }
 
             if (!$paypalOrderId) {
-                // Return 200 to prevent PayPal retries, but log the issue
                 Log::warning('PayPal webhook: Could not extract order ID from event', [
                     'event_type' => $eventType,
                     'resource_id' => $resource['id'] ?? null,
@@ -84,7 +93,6 @@ class PayPalWebhookController
                 return response()->json(['ok' => true], 200);
             }
 
-            // Find the order by paypal_order_id
             $order = Order::where('paypal_order_id', $paypalOrderId)->latest()->first();
 
             if (!$order) {
