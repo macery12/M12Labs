@@ -4,6 +4,7 @@ namespace Everest\Services\Billing;
 
 use Everest\Models\Billing\Product;
 use Illuminate\Support\Facades\Http;
+use Everest\Services\Security\LogSanitizer;
 use Everest\Models\Billing\BillingException;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Models\Setting;
@@ -62,10 +63,13 @@ class PayPalPaymentService
             if (!$response->successful()) {
                 \Log::error('PayPal authentication failed', [
                     'status' => $response->status(),
-                    'response' => $response->json(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal authentication failed', 'Failed to authenticate with PayPal. Please check your credentials.', BillingException::TYPE_PAYMENT, null, 'paypal', null, ['status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal authentication failed', 'Failed to authenticate with PayPal. Please check your credentials.', BillingException::TYPE_PAYMENT, null, 'paypal', null, [
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             $data = $response->json();
@@ -78,10 +82,7 @@ class PayPalPaymentService
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal authentication exception', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            \Log::error('PayPal authentication exception', LogSanitizer::exceptionContext($e));
 
             throw new BillingExceptionClass('PayPal authentication error', 'An unexpected error occurred while authenticating with PayPal: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', null, ['error' => $e->getMessage()], $e);
         }
@@ -133,23 +134,26 @@ class PayPalPaymentService
 
             if (!$response->successful()) {
                 \Log::error('PayPal order creation failed', [
+                    'product_id' => $product->id,
                     'status' => $response->status(),
-                    'error_response' => $response->json(),
-                    'raw_body' => $response->body(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal order creation failed', 'Failed to create PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', null, ['product_id' => $product->id, 'amount' => $amount, 'status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal order creation failed', 'Failed to create PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', null, [
+                    'product_id' => $product->id,
+                    'amount' => $amount,
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             return $response->json();
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal order creation exception', [
+            \Log::error('PayPal order creation exception', array_merge([
                 'product_id' => $product->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('PayPal order creation error', 'An unexpected error occurred while creating PayPal order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', null, ['product_id' => $product->id, 'error' => $e->getMessage()], $e);
         }
@@ -179,23 +183,24 @@ class PayPalPaymentService
 
             if (!$response->successful()) {
                 \Log::error('PayPal order fetch failed', [
-                    'order_id' => $orderId,
+                    'order_id' => LogSanitizer::maskIdentifier($orderId),
                     'status' => $response->status(),
-                    'error_response' => $response->json(),
-                    'raw_body' => $response->body(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal order fetch failed', 'Failed to fetch PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal order fetch failed', 'Failed to fetch PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, [
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             return $response->json();
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal order fetch exception', [
-                'order_id' => $orderId,
-                'error' => $e->getMessage(),
-            ]);
+            \Log::error('PayPal order fetch exception', array_merge([
+                'order_id' => LogSanitizer::maskIdentifier($orderId),
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('PayPal order fetch error', 'An unexpected error occurred while fetching PayPal order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['error' => $e->getMessage()], $e);
         }
@@ -221,23 +226,24 @@ class PayPalPaymentService
 
             if (!$response->successful()) {
                 \Log::error('PayPal order capture failed', [
-                    'order_id' => $orderId,
+                    'order_id' => LogSanitizer::maskIdentifier($orderId),
                     'status' => $response->status(),
-                    'error_response' => $response->json(),
-                    'raw_body' => $response->body(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal order capture failed', 'Failed to capture PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal order capture failed', 'Failed to capture PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, [
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             return $response->json();
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal order capture exception', [
-                'order_id' => $orderId,
-                'error' => $e->getMessage(),
-            ]);
+            \Log::error('PayPal order capture exception', array_merge([
+                'order_id' => LogSanitizer::maskIdentifier($orderId),
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('PayPal order capture error', 'An unexpected error occurred while capturing PayPal order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['error' => $e->getMessage()], $e);
         }

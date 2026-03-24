@@ -6,6 +6,7 @@ use Everest\Tests\TestCase;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\Billing\BillingException;
 use Everest\Services\Billing\PayPalPaymentService;
 use Everest\Models\Billing\BillingException as BillingExceptionModel;
@@ -20,6 +21,10 @@ class PayPalPaymentServiceTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
+
+        \Mockery::mock('alias:Everest\Models\Setting')
+            ->shouldReceive('get')
+            ->andReturnUsing(static fn (string $key, mixed $default = null) => $default);
 
         // Mock PayPal configuration
         config()->set('modules.billing.paypal_standalone', [
@@ -56,8 +61,13 @@ class PayPalPaymentServiceTest extends TestCase
      */
     public function testAuthenticationFailureThrowsBillingException()
     {
+        Log::spy();
+
         Http::fake([
-            '*/v1/oauth2/token' => Http::response(['error' => 'invalid_client'], 401),
+            '*/v1/oauth2/token' => Http::response([
+                'error' => 'invalid_client',
+                'access_token' => 'should-not-appear-in-logs',
+            ], 401),
         ]);
 
         $product = $this->createMockProduct();
@@ -66,7 +76,21 @@ class PayPalPaymentServiceTest extends TestCase
         $this->expectExceptionMessage('Failed to authenticate with PayPal');
 
         $service = new PayPalPaymentService();
-        $service->createOrder($product, 10.00, null, 'http://return', 'http://cancel');
+        try {
+            $service->createOrder($product, 10.00, null, 'http://return', 'http://cancel');
+        } finally {
+            Log::shouldHaveReceived('error')
+                ->once()
+                ->withArgs(function (string $message, array $context): bool {
+                    $serialized = json_encode($context);
+
+                    return $message === 'PayPal authentication failed'
+                        && isset($context['response_summary'])
+                        && !array_key_exists('response', $context)
+                        && !array_key_exists('raw_body', $context)
+                        && !str_contains((string) $serialized, 'should-not-appear-in-logs');
+                });
+        }
     }
 
     /**
@@ -74,12 +98,17 @@ class PayPalPaymentServiceTest extends TestCase
      */
     public function testOrderCreationFailureThrowsBillingExceptionWithContext()
     {
+        Log::spy();
+
         Http::fake([
             '*/v1/oauth2/token' => Http::response([
                 'access_token' => 'test_token',
                 'expires_in' => 3600,
             ], 200),
-            '*/v2/checkout/orders' => Http::response(['error' => 'invalid_request'], 400),
+            '*/v2/checkout/orders' => Http::response([
+                'error' => 'invalid_request',
+                'token' => 'provider-secret',
+            ], 400),
         ]);
 
         $product = $this->createMockProduct();
@@ -94,7 +123,22 @@ class PayPalPaymentServiceTest extends TestCase
             $this->assertEquals('paypal', $e->getPaymentProcessor());
             $this->assertArrayHasKey('product_id', $e->getContext());
             $this->assertArrayHasKey('amount', $e->getContext());
+            $this->assertArrayHasKey('response_summary', $e->getContext());
+            $this->assertArrayNotHasKey('response', $e->getContext());
+            $this->assertStringNotContainsString('provider-secret', json_encode($e->getContext()));
         }
+
+        Log::shouldHaveReceived('error')
+            ->once()
+            ->withArgs(function (string $message, array $context): bool {
+                $serialized = json_encode($context);
+
+                return $message === 'PayPal order creation failed'
+                    && isset($context['response_summary'])
+                    && !array_key_exists('error_response', $context)
+                    && !array_key_exists('raw_body', $context)
+                    && !str_contains((string) $serialized, 'provider-secret');
+            });
     }
 
     /**
