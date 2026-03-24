@@ -3,10 +3,13 @@
 namespace Everest\Http\Controllers\Api\Application\Billing;
 
 use Everest\Models\Node;
-use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\JsonResponse;
-use Everest\Exceptions\DisplayException;
+use Everest\Http\Requests\Api\Application\Billing\NodePricing\GetNodePricingRequest;
+use Everest\Http\Requests\Api\Application\Billing\NodePricing\ResetNodePricingRequest;
+use Everest\Http\Requests\Api\Application\Billing\NodePricing\UpdateNodePricingRequest;
+use Everest\Http\Requests\Api\Application\Billing\NodePricing\BatchUpdateNodePricingRequest;
+use Everest\Http\Requests\Api\Application\Billing\NodePricing\ResetAllNodePricingRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
 class NodePricingController extends ApplicationApiController
@@ -14,7 +17,7 @@ class NodePricingController extends ApplicationApiController
     /**
      * Get all nodes with their pricing multipliers.
      */
-    public function index(): JsonResponse
+    public function index(GetNodePricingRequest $request): JsonResponse
     {
         $nodes = Node::select('id', 'name', 'price_multiplier', 'price_multiplier_description', 'deployable', 'deployable_free')
             ->orderBy('name')
@@ -37,23 +40,13 @@ class NodePricingController extends ApplicationApiController
     /**
      * Update a node's pricing multiplier.
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateNodePricingRequest $request, int $id): JsonResponse
     {
         $node = Node::findOrFail($id);
+        $data = $request->validated();
 
-        // Validate multiplier
-        $multiplier = $request->input('price_multiplier');
-        $description = $this->normalizeDescription($request->input('price_multiplier_description'));
-
-        if ($multiplier === null) {
-            throw new DisplayException('Price multiplier is required.');
-        }
-
-        $multiplier = (float) $multiplier;
-
-        if ($multiplier < 0.0 || $multiplier > 5.0) {
-            throw new DisplayException('Price multiplier must be between 0.00 and 5.00.');
-        }
+        $multiplier = (float) $data['price_multiplier'];
+        $description = $this->normalizeDescription($data['price_multiplier_description'] ?? null);
 
         $oldMultiplier = $node->price_multiplier;
         $node->price_multiplier = $multiplier;
@@ -81,21 +74,12 @@ class NodePricingController extends ApplicationApiController
     /**
      * Update multiple node pricing multipliers at once.
      */
-    public function batchUpdate(Request $request): JsonResponse
+    public function batchUpdate(BatchUpdateNodePricingRequest $request): JsonResponse
     {
-        $updates = $request->input('nodes', []);
-
-        if (!is_array($updates)) {
-            throw new DisplayException('Invalid request format. Expected array of nodes.');
-        }
-
+        $updates = $request->validated()['nodes'];
         $updatedNodes = [];
 
         foreach ($updates as $update) {
-            if (!isset($update['id']) || !isset($update['price_multiplier'])) {
-                continue;
-            }
-
             $node = Node::find($update['id']);
             if (!$node) {
                 continue;
@@ -105,10 +89,6 @@ class NodePricingController extends ApplicationApiController
             $description = array_key_exists('price_multiplier_description', $update)
                 ? $this->normalizeDescription($update['price_multiplier_description'])
                 : $node->price_multiplier_description;
-
-            if ($multiplier < 0.0 || $multiplier > 5.0) {
-                throw new DisplayException("Price multiplier for node '{$node->name}' must be between 0.00 and 5.00.");
-            }
 
             $oldMultiplier = $node->price_multiplier;
             $oldDescription = $node->price_multiplier_description;
@@ -139,7 +119,7 @@ class NodePricingController extends ApplicationApiController
     /**
      * Reset a node's pricing multiplier to default (1.00).
      */
-    public function reset(int $id): JsonResponse
+    public function reset(ResetNodePricingRequest $request, int $id): JsonResponse
     {
         $node = Node::findOrFail($id);
         $oldMultiplier = $node->price_multiplier;
@@ -166,7 +146,7 @@ class NodePricingController extends ApplicationApiController
     /**
      * Reset all nodes' pricing multipliers to default (1.00).
      */
-    public function resetAll(): JsonResponse
+    public function resetAll(ResetAllNodePricingRequest $request): JsonResponse
     {
         $nodes = Node::all();
         $resetCount = 0;
@@ -200,18 +180,10 @@ class NodePricingController extends ApplicationApiController
             return null;
         }
 
-        if (!is_string($description)) {
-            throw new DisplayException('Price description must be a string.');
-        }
-
         $trimmed = trim($description);
 
         if ($trimmed === '') {
             return null;
-        }
-
-        if (strlen($trimmed) > 500) {
-            throw new DisplayException('Price description must be 500 characters or fewer.');
         }
 
         return $trimmed;
