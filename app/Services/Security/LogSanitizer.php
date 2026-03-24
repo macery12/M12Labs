@@ -70,7 +70,7 @@ class LogSanitizer
         if (!empty($parts['query'])) {
             parse_str($parts['query'], $query);
 
-            if (is_array($query) && $query !== []) {
+            if (!empty($query)) {
                 $query = self::redactSensitivePayload($query);
                 $sanitized .= '?' . http_build_query($query);
             } else {
