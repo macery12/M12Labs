@@ -11,6 +11,7 @@ interface Props {
     product: Product;
     vars: Map<string, string>;
     couponId?: number;
+    billingDays: number;
     selectedEggId?: number;
     serverName: string;
 }
@@ -33,7 +34,7 @@ export default (data: Props) => {
 
         try {
             // Create Mollie payment with return URL
-            const payment = await createMolliePayment(Number(data.product.id), data.couponId, returnUrl);
+            const payment = await createMolliePayment(Number(data.product.id), data.couponId, data.billingDays, returnUrl);
 
             // Update payment with order details
             const variables = Array.from(data.vars, ([key, value]) => ({ key, value }));
@@ -44,6 +45,7 @@ export default (data: Props) => {
                 vars: variables,
                 couponId: data.couponId,
                 eggId: data.selectedEggId,
+                billingDays: data.billingDays,
                 name: data.serverName,
             });
 

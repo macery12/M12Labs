@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Everest\Services\Security\LogSanitizer;
+use Everest\Services\Billing\MollieWebhookVerificationService;
 use Everest\Services\Billing\MolliePaymentService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
@@ -14,6 +16,7 @@ class MollieWebhookController
 {
     public function __construct(
         private MolliePaymentService $mollieService,
+        private MollieWebhookVerificationService $verificationService,
         private BillingValidationService $validationService,
         private ServerFulfillmentService $fulfillmentService,
     ) {
@@ -32,24 +35,19 @@ class MollieWebhookController
     public function handle(Request $request): JsonResponse
     {
         try {
-            $paymentId = $request->input('id');
+            $verification = $this->verificationService->validate($request);
 
-            if (!$paymentId) {
-                // Return 200 to prevent Mollie retries, but log the issue
-                Log::warning('Mollie webhook called without payment ID');
+            if (!$verification['valid']) {
+                Log::warning('Rejected Mollie webhook request', array_merge([
+                    'reason' => $verification['reason'],
+                ], $verification['context'] ?? []));
 
-                return response()->json(['ok' => true], 200);
+                return response()->json(['ok' => false], $verification['status']);
             }
 
-            // Find the order by mollie_payment_id
-            $order = Order::where('mollie_payment_id', $paymentId)->latest()->first();
-
-            if (!$order) {
-                // Return 200 to prevent Mollie retries for non-existent orders
-                Log::warning("Mollie webhook: Order not found for payment ID: {$paymentId}");
-
-                return response()->json(['ok' => true], 200);
-            }
+            $paymentId = $verification['payment_id'];
+            /** @var Order $order */
+            $order = $verification['order'];
 
             // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
             // This prevents duplicate processing if webhook is called multiple times
@@ -71,36 +69,51 @@ class MollieWebhookController
                 $this->fulfillOrder($request, $order, $payment);
             } elseif ($payment->isFailed()) {
                 // FAILED: Payment attempt failed definitively
-                Log::info("Mollie payment {$paymentId} failed for order {$order->id}");
+                Log::info('Mollie webhook marked payment failed', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
             } elseif ($payment->isExpired()) {
                 // EXPIRED: Payment window expired (customer didn't complete in time)
-                Log::info("Mollie payment {$paymentId} expired for order {$order->id}");
+                Log::info('Mollie webhook marked payment expired', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
             } elseif ($payment->isCanceled()) {
                 // CANCELED: Customer actively canceled the payment
-                Log::info("Mollie payment {$paymentId} canceled by customer for order {$order->id}");
+                Log::info('Mollie webhook marked payment canceled', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
             } elseif ($payment->isAuthorized()) {
                 // AUTHORIZED: Payment authorized but not captured yet (Klarna, credit cards)
                 // Keep as pending until captured
-                Log::info("Mollie payment {$paymentId} authorized for order {$order->id}");
+                Log::info('Mollie webhook payment authorized', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_PENDING]);
             } elseif ($payment->isPending() || $payment->isOpen()) {
                 // PENDING/OPEN: Payment in progress or just created - no action needed yet
-                Log::info("Mollie payment {$paymentId} is pending/open for order {$order->id}");
+                Log::info('Mollie webhook payment still pending', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                    'payment_status' => $payment->status,
+                ]);
             // Keep current status
             } else {
                 // Unknown status - log for investigation
-                Log::warning("Mollie payment {$paymentId} has unknown status: {$payment->status}");
+                Log::warning('Mollie webhook returned unknown status', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'payment_status' => $payment->status,
+                ]);
             }
         } catch (\Throwable $e) {
             // Log error but return 200 to prevent infinite Mollie retries
-            Log::error('Mollie webhook error', [
-                'exception' => $e,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('Mollie webhook error', LogSanitizer::exceptionContext($e));
         }
 
         return response()->json(['ok' => true], 200);

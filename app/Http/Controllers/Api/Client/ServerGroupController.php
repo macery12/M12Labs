@@ -6,6 +6,10 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\ServerGroup;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
+use Everest\Http\Requests\Api\Client\ServerGroups\StoreServerGroupRequest;
+use Everest\Http\Requests\Api\Client\ServerGroups\UpdateServerGroupRequest;
+use Everest\Http\Requests\Api\Client\ServerGroups\AssignServerToGroupRequest;
+use Everest\Http\Requests\Api\Client\ServerGroups\RemoveServerFromGroupRequest;
 use Everest\Transformers\Api\Client\ServerGroupTransformer;
 
 class ServerGroupController extends ClientApiController
@@ -23,12 +27,14 @@ class ServerGroupController extends ClientApiController
     /**
      * Create a new server group and store in the database.
      */
-    public function store(ClientApiRequest $request): array
+    public function store(StoreServerGroupRequest $request): array
     {
+        $data = $request->validated();
+
         $group = ServerGroup::create([
             'user_id' => $request->user()->id,
-            'name' => $request->input('name'),
-            'color' => $request->input('color') ?? null,
+            'name' => $data['name'],
+            'color' => $data['color'] ?? null,
         ]);
 
         return $this->fractal->item($group)
@@ -39,10 +45,11 @@ class ServerGroupController extends ClientApiController
     /**
      * Add a server to the selected group.
      */
-    public function add(ClientApiRequest $request, int $id): JsonResponse
+    public function add(AssignServerToGroupRequest $request, int $id): JsonResponse
     {
+        $data = $request->validated();
         $group = $request->user()->serverGroups()->findOrFail($id);
-        $server = $request->user()->servers()->where('uuid', $request->input('server'))->firstOrFail();
+        $server = $request->user()->servers()->where('uuid', $data['server'])->firstOrFail();
 
         try {
             $server->update(['group_id' => $group->id]);
@@ -56,11 +63,12 @@ class ServerGroupController extends ClientApiController
     /**
      * Remove a server from the selected group.
      */
-    public function remove(ClientApiRequest $request, int $id): JsonResponse
+    public function remove(RemoveServerFromGroupRequest $request, int $id): JsonResponse
     {
+        $data = $request->validated();
         // Verify group ownership - findOrFail ensures the group belongs to this user
         $request->user()->serverGroups()->findOrFail($id);
-        $server = $request->user()->servers()->where('uuid', $request->input('server'))->firstOrFail();
+        $server = $request->user()->servers()->where('uuid', $data['server'])->firstOrFail();
 
         $server->update(['group_id' => null]);
 
@@ -70,13 +78,14 @@ class ServerGroupController extends ClientApiController
     /**
      * Update a selected server group.
      */
-    public function update(ClientApiRequest $request, int $id): JsonResponse
+    public function update(UpdateServerGroupRequest $request, int $id): JsonResponse
     {
+        $data = $request->validated();
         $group = $request->user()->serverGroups()->findOrFail($id);
 
         $group->update([
-            'name' => $request['name'] ?? $group->name,
-            'color' => $request['color'] ?? $group->color,
+            'name' => array_key_exists('name', $data) ? $data['name'] : $group->name,
+            'color' => array_key_exists('color', $data) ? $data['color'] : $group->color,
         ]);
 
         return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);

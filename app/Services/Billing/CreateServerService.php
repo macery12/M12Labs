@@ -4,6 +4,7 @@ namespace Everest\Services\Billing;
 
 use Carbon\Carbon;
 use Everest\Models\Egg;
+use Everest\Models\User;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Models\Allocation;
@@ -65,7 +66,10 @@ class CreateServerService
             }
         }
 
-        $environment = $this->getEnvironmentWithCustomVariables($egg->id, $customVariables);
+        $environment = $this->getEnvironmentWithCustomVariables(
+            $egg->id,
+            $this->filterUserEditableVariables($egg->id, $customVariables)
+        );
 
         // Determine the server name: use passed parameter, metadata name, or default
         $finalServerName = $serverName;
@@ -176,6 +180,46 @@ class CreateServerService
         }
 
         return $variables;
+    }
+
+    /**
+     * Restrict billing-supplied variables to known, user-editable egg variables only.
+     */
+    private function filterUserEditableVariables(int $eggId, array $customVariables): array
+    {
+        if (empty($customVariables)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($customVariables as $variable) {
+            if (!is_array($variable) || !array_key_exists('key', $variable) || !array_key_exists('value', $variable)) {
+                continue;
+            }
+
+            $key = trim((string) $variable['key']);
+            if ($key === '') {
+                continue;
+            }
+
+            $normalized[$key] = is_scalar($variable['value']) || $variable['value'] === null
+                ? (string) ($variable['value'] ?? '')
+                : '';
+        }
+
+        if (empty($normalized)) {
+            return [];
+        }
+
+        return $this->variableValidator
+            ->setUserLevel(User::USER_LEVEL_USER)
+            ->handle($eggId, $normalized)
+            ->map(fn ($variable) => [
+                'key' => $variable->key,
+                'value' => $variable->value ?? '',
+            ])
+            ->values()
+            ->all();
     }
 
     /**

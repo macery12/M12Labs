@@ -10,10 +10,11 @@ export const getStripeKey = (id: number): Promise<{ key: string }> => {
     });
 };
 
-export const getStripeIntent = (id: number, couponId?: number): Promise<StripeIntent> => {
+export const getStripeIntent = (id: number, couponId?: number, billingDays?: number): Promise<StripeIntent> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/products/${id}/intent`, {
             coupon_id: couponId,
+            billing_days: billingDays,
         })
             .then(({ data }) => resolve(data))
             .catch(reject);

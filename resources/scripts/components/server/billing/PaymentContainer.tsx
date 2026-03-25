@@ -70,7 +70,7 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
             // Only fetch Stripe data if Stripe is available and selected
             if (id && availableProcessors.includes('stripe')) {
                 try {
-                    const intentData = await getStripeIntent(id, couponId);
+                    const intentData = await getStripeIntent(id, couponId, billingDays);
                     setIntent({ id: intentData.id, secret: intentData.secret });
 
                     const stripePublicKey = await getStripeKey(id);
@@ -83,7 +83,7 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
         };
 
         fetchData();
-    }, [id, couponId]);
+    }, [id, couponId, billingDays]);
 
     if (!id) return <Spinner size={'large'} centered />;
 

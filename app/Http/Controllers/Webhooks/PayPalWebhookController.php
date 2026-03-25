@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Everest\Services\Security\LogSanitizer;
+use Everest\Services\Billing\PayPalWebhookVerificationService;
 use Everest\Services\Billing\PayPalPaymentService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
@@ -14,6 +16,7 @@ class PayPalWebhookController
 {
     public function __construct(
         private PayPalPaymentService $paypalService,
+        private PayPalWebhookVerificationService $verificationService,
         private BillingValidationService $validationService,
         private ServerFulfillmentService $fulfillmentService,
     ) {
@@ -32,6 +35,16 @@ class PayPalWebhookController
     public function handle(Request $request): JsonResponse
     {
         try {
+            $verification = $this->verificationService->validate($request);
+
+            if (!$verification['valid']) {
+                Log::warning('Rejected PayPal webhook request', array_merge([
+                    'reason' => $verification['reason'],
+                ], $verification['context'] ?? []));
+
+                return response()->json(['ok' => false], $verification['status']);
+            }
+
             $eventType = $request->input('event_type');
             $resource = $request->input('resource', []);
 
@@ -60,8 +73,6 @@ class PayPalWebhookController
                     break;
 
                 default:
-                    // Unsupported event type - this may be a new PayPal event we haven't implemented yet
-                    // or an event not relevant to our billing flow. Return 200 to acknowledge receipt.
                     Log::warning('Unsupported PayPal webhook event type received', [
                         'event_type' => $eventType,
                         'resource_id' => $resource['id'] ?? null,
@@ -73,7 +84,6 @@ class PayPalWebhookController
             }
 
             if (!$paypalOrderId) {
-                // Return 200 to prevent PayPal retries, but log the issue
                 Log::warning('PayPal webhook: Could not extract order ID from event', [
                     'event_type' => $eventType,
                     'resource_id' => $resource['id'] ?? null,
@@ -83,12 +93,13 @@ class PayPalWebhookController
                 return response()->json(['ok' => true], 200);
             }
 
-            // Find the order by paypal_order_id
             $order = Order::where('paypal_order_id', $paypalOrderId)->latest()->first();
 
             if (!$order) {
                 // Return 200 to prevent PayPal retries for non-existent orders
-                Log::warning("PayPal webhook: Order not found for PayPal order ID: {$paypalOrderId}");
+                Log::warning('PayPal webhook order not found', [
+                    'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                ]);
 
                 return response()->json(['ok' => true], 200);
             }
@@ -114,7 +125,7 @@ class PayPalWebhookController
 
             Log::info('Processing PayPal webhook', [
                 'event_type' => $eventType,
-                'paypal_order_id' => $paypalOrderId,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                 'order_id' => $order->id,
                 'paypal_status' => $status,
                 'order_status' => $order->status,
@@ -123,20 +134,30 @@ class PayPalWebhookController
             switch ($status) {
                 case 'COMPLETED':
                     // Payment captured successfully - fulfill the order
-                    Log::info("PayPal order {$paypalOrderId} completed for order {$order->id}");
+                    Log::info('PayPal webhook completed order', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                    ]);
                     $this->fulfillOrder($request, $order);
                     break;
 
                 case 'APPROVED':
                     // Order approved but not yet captured
                     // This shouldn't happen if we auto-capture, but keep order as pending
-                    Log::info("PayPal order {$paypalOrderId} approved but not captured for order {$order->id}");
+                    Log::info('PayPal webhook approved order pending capture', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                    ]);
                     break;
 
                 case 'VOIDED':
                 case 'EXPIRED':
                     // Order voided or expired - mark as failed
-                    Log::info("PayPal order {$paypalOrderId} {$status} for order {$order->id}");
+                    Log::info('PayPal webhook marked order failed', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                        'paypal_status' => $status,
+                    ]);
                     $order->update(['status' => Order::STATUS_FAILED]);
                     break;
 
@@ -144,20 +165,23 @@ class PayPalWebhookController
                 case 'SAVED':
                 case 'PAYER_ACTION_REQUIRED':
                     // Order in progress - keep as pending
-                    Log::info("PayPal order {$paypalOrderId} status {$status} for order {$order->id}");
+                    Log::info('PayPal webhook order still pending action', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                        'paypal_status' => $status,
+                    ]);
                     break;
 
                 default:
                     // Unknown status - log for investigation
-                    Log::warning("PayPal order {$paypalOrderId} has unknown status: {$status}");
+                    Log::warning('PayPal webhook returned unknown status', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'paypal_status' => $status,
+                    ]);
             }
         } catch (\Throwable $e) {
             // Log error but return 200 to prevent infinite PayPal retries
-            Log::error('PayPal webhook error', [
-                'exception' => $e,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('PayPal webhook error', LogSanitizer::exceptionContext($e));
         }
 
         return response()->json(['ok' => true], 200);

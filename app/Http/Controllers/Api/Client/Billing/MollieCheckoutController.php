@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
+use Everest\Services\Security\LogSanitizer;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\MolliePaymentService;
@@ -47,6 +48,7 @@ class MollieCheckoutController extends ClientApiController
         // Check if this is a renewal payment
         $isRenewal = $request->boolean('renewal', false);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
 
         // Determine order type and calculate price
         $orderType = $isRenewal ? Order::TYPE_REN : Order::TYPE_NEW;
@@ -55,7 +57,7 @@ class MollieCheckoutController extends ClientApiController
             $product,
             $couponId,
             $isRenewal ? 'ren' : 'new',
-            null, // billing days - use default
+            $billingDays,
             null, // node ID
             $request->user()->id
         );
@@ -76,7 +78,8 @@ class MollieCheckoutController extends ClientApiController
             $product,
             $priceInfo['finalPrice'],
             $couponId,
-            $returnUrl
+            $returnUrl,
+            $token
         );
         $rawCheckoutUrl = $payment->getCheckoutUrl();
         if (!$rawCheckoutUrl) {
@@ -93,6 +96,7 @@ class MollieCheckoutController extends ClientApiController
             'name' => $isRenewal ? 'Server Renewal' : 'Pending',
             'node_id' => null,
             'server_id' => $isRenewal ? $serverId : null,
+            'billing_days' => $billingDays,
             'variables' => [],
         ];
 
@@ -169,6 +173,7 @@ class MollieCheckoutController extends ClientApiController
         // For renewals, egg_id is not required
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
         $eggId = $isRenewal ? null : $this->validationService->validateAndGetEggId($product, $requestedEggId);
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
 
         // Determine order type and calculate price with coupon
         $orderType = $this->getOrderType($request);
@@ -189,6 +194,7 @@ class MollieCheckoutController extends ClientApiController
             'egg_id' => $isRenewal ? null : $eggId,
             'type' => $orderType,
             'coupon_id' => $couponId,
+            'billing_days' => $billingDays,
             'variables' => $variables,
         ]);
 
@@ -220,7 +226,9 @@ class MollieCheckoutController extends ClientApiController
 
         if (!$order) {
             // Return 200 to prevent Mollie retries for non-existent orders
-            \Log::warning("Mollie webhook: Order not found for payment ID: {$paymentId}");
+            \Log::warning('Mollie webhook order not found', [
+                'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+            ]);
 
             return $this->returnNoContent();
         }
@@ -246,36 +254,56 @@ class MollieCheckoutController extends ClientApiController
                 $this->fulfillOrder($request, $order, $payment);
             } elseif ($payment->isFailed()) {
                 // FAILED: Payment attempt failed definitively
-                \Log::info("Mollie payment {$paymentId} failed for order {$order->id}");
+                \Log::info('Mollie webhook marked payment failed', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
                 $this->dispatchPaymentFailedEmail($order, 'Payment failed', 'mollie');
             } elseif ($payment->isExpired()) {
                 // EXPIRED: Payment window expired (customer didn't complete in time)
-                \Log::info("Mollie payment {$paymentId} expired for order {$order->id}");
+                \Log::info('Mollie webhook marked payment expired', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
                 $this->dispatchPaymentFailedEmail($order, 'Payment expired - customer did not complete payment in time', 'mollie');
             } elseif ($payment->isCanceled()) {
                 // CANCELED: Customer actively canceled the payment
-                \Log::info("Mollie payment {$paymentId} canceled by customer for order {$order->id}");
+                \Log::info('Mollie webhook marked payment canceled', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
                 $this->dispatchPaymentFailedEmail($order, 'Payment canceled by customer', 'mollie');
             } elseif ($payment->isAuthorized()) {
                 // AUTHORIZED: Payment authorized but not captured yet (Klarna, credit cards)
                 // Keep as pending until captured
-                \Log::info("Mollie payment {$paymentId} authorized for order {$order->id}");
+                \Log::info('Mollie webhook payment authorized', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                ]);
                 $order->update(['status' => Order::STATUS_PENDING]);
             } elseif ($payment->isPending() || $payment->isOpen()) {
                 // PENDING/OPEN: Payment in progress or just created - no action needed yet
-                \Log::info("Mollie payment {$paymentId} is pending/open for order {$order->id}");
+                \Log::info('Mollie webhook payment still pending', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'order_id' => $order->id,
+                    'payment_status' => $payment->status,
+                ]);
             // Keep current status
             } else {
                 // Unknown status - log for investigation
-                \Log::warning("Mollie payment {$paymentId} has unknown status: {$payment->status}");
+                \Log::warning('Mollie webhook returned unknown status', [
+                    'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+                    'payment_status' => $payment->status,
+                ]);
             }
         } catch (BillingExceptionClass $e) {
             // Log the billing exception but return 200 to prevent Mollie retries
             // The exception is already logged to the database by BillingException
-            \Log::error("Mollie webhook billing exception for payment {$paymentId}", [
+            \Log::error('Mollie webhook billing exception', [
+                'payment_id' => LogSanitizer::maskIdentifier($paymentId),
                 'exception_type' => $e->getExceptionType(),
                 'message' => $e->getMessage(),
                 'order_id' => $e->getOrderId(),
@@ -283,7 +311,9 @@ class MollieCheckoutController extends ClientApiController
         } catch (\Exception $e) {
             // Log error but return 200 to prevent infinite Mollie retries
             // Create a billing exception for admin review
-            \Log::error("Mollie webhook error for payment {$paymentId}: " . $e->getMessage());
+            \Log::error('Mollie webhook error', array_merge([
+                'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+            ], LogSanitizer::exceptionContext($e)));
 
             try {
                 throw new BillingExceptionClass('Mollie webhook processing error', 'Failed to process Mollie webhook: ' . $e->getMessage(), BillingException::TYPE_WEBHOOK, $order->id, 'mollie', $paymentId, ['payment_status' => $payment->status ?? 'unknown', 'error' => $e->getMessage()], $e);
@@ -369,7 +399,9 @@ class MollieCheckoutController extends ClientApiController
                 $paymentStatus = $this->mollieService->getPaymentStatus($order->mollie_payment_id);
             }
         } catch (\Exception $e) {
-            \Log::warning("Failed to fetch Mollie payment status for {$order->mollie_payment_id}: " . $e->getMessage());
+            \Log::warning('Failed to fetch Mollie payment status', array_merge([
+                'payment_id' => LogSanitizer::maskIdentifier($order->mollie_payment_id),
+            ], LogSanitizer::exceptionContext($e)));
         }
 
         // FALLBACK PROCESSING: If payment is paid but order is still pending, process it now

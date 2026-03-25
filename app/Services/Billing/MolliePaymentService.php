@@ -6,6 +6,7 @@ use Mollie\Api\MollieApiClient;
 use Mollie\Api\Resources\Payment;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Security\LogSanitizer;
 use Everest\Models\Billing\BillingException;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
 use Everest\Models\Setting;
@@ -28,7 +29,7 @@ class MolliePaymentService
      *
      * @throws BillingExceptionClass
      */
-    public function createPayment(Product $product, float $amount, ?int $couponId, string $returnUrl): Payment
+    public function createPayment(Product $product, float $amount, ?int $couponId, string $returnUrl, string $webhookToken): Payment
     {
         $this->ensureMollieInitialized();
 
@@ -40,7 +41,7 @@ class MolliePaymentService
                 ],
                 'description' => 'Order for ' . $product->name,
                 'redirectUrl' => $returnUrl,
-                'webhookUrl' => route('api:client:billing:mollie:webhook'),
+                'webhookUrl' => route('webhook.mollie', ['token' => $webhookToken]),
                 'metadata' => [
                     'product_id' => (string) $product->id,
                     'coupon_id' => (string) ($couponId ?? ''),
@@ -49,18 +50,16 @@ class MolliePaymentService
 
             return $payment;
         } catch (\Mollie\Api\Exceptions\ApiException $e) {
-            \Log::error('Mollie payment creation failed', [
+            \Log::error('Mollie payment creation failed', array_merge([
                 'product_id' => $product->id,
                 'amount' => $amount,
-                'error' => $e->getMessage(),
-            ]);
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('Mollie payment creation failed', 'Failed to create Mollie payment: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'mollie', null, ['product_id' => $product->id, 'amount' => $amount, 'error' => $e->getMessage()], $e);
         } catch (\Exception $e) {
-            \Log::error('Mollie payment creation exception', [
+            \Log::error('Mollie payment creation exception', array_merge([
                 'product_id' => $product->id,
-                'error' => $e->getMessage(),
-            ]);
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('Mollie payment creation error', 'An unexpected error occurred while creating Mollie payment: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'mollie', null, ['product_id' => $product->id, 'error' => $e->getMessage()], $e);
         }
@@ -78,17 +77,15 @@ class MolliePaymentService
         try {
             return $this->mollie->payments->get($paymentId);
         } catch (\Mollie\Api\Exceptions\ApiException $e) {
-            \Log::error('Mollie payment fetch failed', [
-                'payment_id' => $paymentId,
-                'error' => $e->getMessage(),
-            ]);
+            \Log::error('Mollie payment fetch failed', array_merge([
+                'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('Mollie payment fetch failed', 'Failed to fetch Mollie payment: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'mollie', $paymentId, ['error' => $e->getMessage()], $e);
         } catch (\Exception $e) {
-            \Log::error('Mollie payment fetch exception', [
-                'payment_id' => $paymentId,
-                'error' => $e->getMessage(),
-            ]);
+            \Log::error('Mollie payment fetch exception', array_merge([
+                'payment_id' => LogSanitizer::maskIdentifier($paymentId),
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('Mollie payment fetch error', 'An unexpected error occurred while fetching Mollie payment: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'mollie', $paymentId, ['error' => $e->getMessage()], $e);
         }
