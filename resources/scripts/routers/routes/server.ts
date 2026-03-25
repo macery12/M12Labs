@@ -16,6 +16,10 @@ const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
 const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
+const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
+const ModpacksContainer = lazy(() => import('@server/modpacks/ModpacksContainer'));
+const ExtensionsRouter = lazy(() => import('@server/extensions/ExtensionsRouter'));
+const CustomDomainsContainer = lazy(() => import('@server/domains/CustomDomainsContainer'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -68,6 +72,12 @@ const server: ServerRouteDefinition[] = [
         icon: Icon.WifiIcon,
         category: 'configuration',
     }),
+    route('custom-domains/*', CustomDomainsContainer, {
+        permission: 'allocation.*',
+        name: 'Custom Domains',
+        icon: Icon.GlobeIcon,
+        category: 'configuration',
+    }),
     route('startup/*', StartupContainer, {
         permission: 'startup.*',
         name: 'Startup',
@@ -91,6 +101,12 @@ const server: ServerRouteDefinition[] = [
         name: 'Billing',
         icon: Icon.CashIcon,
         condition: flags => flags.billable,
+    }),
+    route('extensions/*', ExtensionsRouter, {
+        permission: 'extension.*',
+        name: 'Extensions',
+        icon: Icon.PuzzleIcon,
+        condition: flags => flags.extensionsEnabled,
     }),
 ];
 

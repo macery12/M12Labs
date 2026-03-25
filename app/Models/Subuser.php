@@ -43,6 +43,7 @@ class Subuser extends Model
         'user_id' => 'int',
         'server_id' => 'int',
         'permissions' => 'array',
+        'disabled_extensions' => 'array',
     ];
 
     public static array $validationRules = [

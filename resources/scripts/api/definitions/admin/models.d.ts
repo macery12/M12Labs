@@ -197,6 +197,7 @@ interface Product extends Model {
         backup: number;
         database: number;
         allocation: number;
+        subdomain: number | null;
     };
 
     createdAt: Date;

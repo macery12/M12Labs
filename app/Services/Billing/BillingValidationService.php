@@ -336,6 +336,15 @@ class BillingValidationService
             ];
         }
 
+        $currentSubdomains = $server->customDomains()->count();
+        if (is_null($server->subdomain_limit) && !is_null($newProduct->subdomain_limit) && $currentSubdomains > $newProduct->subdomain_limit) {
+            $violations['subdomains'] = [
+                'current' => $currentSubdomains,
+                'limit' => $newProduct->subdomain_limit,
+                'unit' => 'subdomains',
+            ];
+        }
+
         return $violations;
     }
 }

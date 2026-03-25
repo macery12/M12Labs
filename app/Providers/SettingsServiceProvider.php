@@ -94,6 +94,17 @@ class SettingsServiceProvider extends ServiceProvider
         // Mods module settings
         'modules:mods:enabled',
         'modules:mods:curseforge_api_key',
+
+        // Extensions module settings
+        'modules:extensions:enabled',
+
+        // Custom domains module settings
+        'modules:custom_domains:cloudflare:token',
+        'modules:custom_domains:security:allow_wildcard',
+        'modules:custom_domains:security:max_wildcards_per_user',
+        'modules:custom_domains:rate_limits:create_per_minute',
+        'modules:custom_domains:rate_limits:sync_per_minute',
+        'modules:custom_domains:rate_limits:billing_options_per_minute',
     ];
 
     /**

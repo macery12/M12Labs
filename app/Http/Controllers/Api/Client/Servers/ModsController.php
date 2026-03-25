@@ -8,6 +8,7 @@ use Everest\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -29,6 +30,20 @@ use Everest\Http\Requests\Api\Client\Servers\Mods\GetInstalledAddonsRequest;
 
 class ModsController extends ClientApiController
 {
+    /**
+     * Directories to skip when scanning for installed addons.
+     * These contain internal/remapped files that are not real user plugins.
+     */
+    private const IGNORED_DIRECTORIES = [
+        '.paper-remapped',
+        '.paper-remapped-cp',
+    ];
+
+    /**
+     * Cache TTL for installed addons scan (in seconds).
+     */
+    private const INSTALLED_CACHE_TTL = 300;
+
     /**
      * ModsController constructor.
      */
@@ -130,11 +145,14 @@ class ModsController extends ClientApiController
         $perPage = (int) $request->input('perPage', 50);
         $page = (int) $request->input('page', 1);
 
-        $items = $this->scanJarDirectory(
-            $server,
-            $type === 'plugins' ? '/plugins' : '/mods',
-            $type === 'plugins' ? 'plugin' : 'mod'
-        );
+        $cacheKey = "server:{$server->uuid}:installed:{$type}";
+        $items = Cache::remember($cacheKey, self::INSTALLED_CACHE_TTL, function () use ($server, $type) {
+            return $this->scanJarDirectory(
+                $server,
+                $type === 'plugins' ? '/plugins' : '/mods',
+                $type === 'plugins' ? 'plugin' : 'mod'
+            );
+        });
 
         $filtered = array_values(array_filter($items, function (array $item) use ($status, $search) {
             if ($status === 'enabled' && !$item['enabled']) {
@@ -194,6 +212,9 @@ class ModsController extends ClientApiController
         if ($target !== $from) {
             $this->fileRepository->setServer($server)->renameFiles($root, [['from' => $from, 'to' => $target]]);
         }
+
+        // Invalidate cache after toggle.
+        $this->invalidateInstalledCache($server, $type);
 
         $items = $this->scanJarDirectory($server, $basePath, $type === 'plugins' ? 'plugin' : 'mod');
         $updatedPath = $this->joinPath($root, $target);
@@ -340,6 +361,9 @@ class ModsController extends ClientApiController
             $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
             $type = $resource === 'plugins' || in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
             $result = $this->pluginInstallService->installFromProvider($server, $source, $type, $modId, $fileId);
+
+            // Invalidate cache after successful download.
+            $this->invalidateInstalledCache($server, $type === 'plugin' ? 'plugins' : 'mods');
 
             return response()->json($result);
         } catch (ModsServiceException $e) {
@@ -714,6 +738,9 @@ class ModsController extends ClientApiController
             // Clean up temporary files
             $this->deleteDirectory($tempDir);
 
+            // Invalidate cache after modpack install.
+            $this->invalidateInstalledCache($server, 'mods');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Modpack downloaded and installed successfully.',
@@ -746,49 +773,39 @@ class ModsController extends ClientApiController
     private function scanJarDirectory(Server $server, string $path, string $type): array
     {
         $results = [];
-        $queue = [$this->normalizePath($path)];
+        $normalized = $this->normalizePath($path);
+        $entries = $this->listDirectorySafely($server, $normalized);
 
-        while (!empty($queue)) {
-            $current = array_shift($queue);
-            $entries = $this->listDirectorySafely($server, $current);
+        if ($entries === null) {
+            return $results;
+        }
 
-            if ($entries === null) {
+        foreach ($entries as $entry) {
+            $name = Arr::get($entry, 'name');
+            if (!$name || $name === '.' || $name === '..') {
                 continue;
             }
 
-            foreach ($entries as $entry) {
-                $name = Arr::get($entry, 'name');
-                if (!$name || $name === '.' || $name === '..') {
-                    continue;
-                }
+            $isFile = (bool) Arr::get($entry, 'file', true);
 
-                $isFile = (bool) Arr::get($entry, 'file', true);
-                $isSymlink = (bool) Arr::get($entry, 'symlink', false);
-                $fullPath = $this->joinPath($current, $name);
-
-                if ($isFile && $this->isJarLike($name)) {
-                    $friendlyName = $this->makeFriendlyName($name);
-                    $isEnabled = !$this->isDisabledFile($name);
-                    $results[] = [
-                        'filename' => $name,
-                        'friendly_name' => $friendlyName,
-                        'path' => $fullPath,
-                        'size_bytes' => (int) Arr::get($entry, 'size', 0),
-                        'modified_at' => $this->formatTimestamp(Arr::get($entry, 'modified')),
-                        'type' => $type,
-                        'enabled' => $isEnabled,
-                        // Legacy keys for backward compatibility (can be removed once frontend is migrated)
-                        'name' => $name,
-                        'display_name' => $this->stripDisabledSuffix($name),
-                        'size' => (int) Arr::get($entry, 'size', 0),
-                        'disabled' => !$isEnabled,
-                    ];
-                    continue;
-                }
-
-                if (!$isFile && !$isSymlink) {
-                    $queue[] = $fullPath;
-                }
+            if ($isFile && $this->isJarLike($name)) {
+                $fullPath = $this->joinPath($normalized, $name);
+                $friendlyName = $this->makeFriendlyName($name);
+                $isEnabled = !$this->isDisabledFile($name);
+                $results[] = [
+                    'filename' => $name,
+                    'friendly_name' => $friendlyName,
+                    'path' => $fullPath,
+                    'size_bytes' => (int) Arr::get($entry, 'size', 0),
+                    'modified_at' => $this->formatTimestamp(Arr::get($entry, 'modified')),
+                    'type' => $type,
+                    'enabled' => $isEnabled,
+                    // Legacy keys for backward compatibility (can be removed once frontend is migrated)
+                    'name' => $name,
+                    'display_name' => $this->stripDisabledSuffix($name),
+                    'size' => (int) Arr::get($entry, 'size', 0),
+                    'disabled' => !$isEnabled,
+                ];
             }
         }
 
@@ -832,6 +849,14 @@ class ModsController extends ClientApiController
     private function friendlyNameValue(array $item): string
     {
         return $item['friendly_name'] ?: $item['filename'];
+    }
+
+    /**
+     * Invalidate the installed addons cache for a server.
+     */
+    private function invalidateInstalledCache(Server $server, string $type): void
+    {
+        Cache::forget("server:{$server->uuid}:installed:{$type}");
     }
 
     private function listDirectorySafely(Server $server, string $path): ?array

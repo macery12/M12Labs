@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Client\Servers;
 
+use Everest\Exceptions\DisplayException;
 use Everest\Models\Server;
 use Carbon\CarbonImmutable;
 use Everest\Facades\Activity;
@@ -27,6 +28,66 @@ use Everest\Http\Requests\Api\Client\Servers\Files\WriteFileWithDiffRequest;
 
 class FileController extends ClientApiController
 {
+    private function isArchivePathSegment(string $segment): bool
+    {
+        $lower = strtolower($segment);
+
+        foreach ([
+            '.zip',
+            '.7z',
+            '.ddup',
+            '.tar',
+            '.tar.gz',
+            '.tgz',
+            '.tar.xz',
+            '.txz',
+            '.tar.zst',
+            '.tzst',
+            '.tar.lz4',
+            '.tlz4',
+            '.tar.bz2',
+            '.tbz2',
+            '.gz',
+            '.xz',
+            '.zst',
+            '.lz4',
+            '.bz2',
+        ] as $extension) {
+            if (str_ends_with($lower, $extension)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isArchiveReadOnlyPath(string $path): bool
+    {
+        $segments = array_values(array_filter(explode('/', str_replace('\\\\', '/', trim($path))), fn (string $segment) => $segment !== ''));
+
+        if (count($segments) === 0) {
+            return false;
+        }
+
+        foreach ($segments as $segment) {
+            if ($this->isArchivePathSegment($segment)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @throws \Everest\Exceptions\DisplayException
+     */
+    private function guardArchiveWritePath(string $path): void
+    {
+        if ($this->isArchiveReadOnlyPath($path)) {
+            throw new DisplayException('You cannot write to a file inside an archive. Extract it first.');
+        }
+    }
+
     /**
      * FileController constructor.
      */
@@ -109,6 +170,8 @@ class FileController extends ClientApiController
      */
     public function write(WriteFileContentRequest $request, Server $server): JsonResponse
     {
+        $this->guardArchiveWritePath($request->get('file'));
+
         $this->fileRepository->setServer($server)->putContent($request->get('file'), $request->getContent());
 
         Activity::event('server:file.write')->property('file', $request->get('file'))->log();
@@ -127,6 +190,8 @@ class FileController extends ClientApiController
         $file = $request->input('file');
         $content = $request->input('content');
         $originalContent = $request->input('original_content', '');
+
+        $this->guardArchiveWritePath($file);
 
         // Write the new content to the file
         $this->fileRepository->setServer($server)->putContent($file, $content);

@@ -51,6 +51,7 @@ const isMarketplaceType = (type: ContentTab | null): type is ContentType =>
 
 const ModsAndPluginsPage = () => {
     const modSettings = useStoreState(state => state.everest?.data?.mods);
+    const { colors } = useStoreState(state => state.theme.data!);
     const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
     const uuidFallback = useStoreState(state => state.server?.data?.uuid);
     const uuid = serverUuid ?? uuidFallback;
@@ -251,10 +252,9 @@ const ModsAndPluginsPage = () => {
                                 key={type}
                                 css={[
                                     tw`px-4 py-2 font-medium transition-colors rounded-t`,
-                                    active
-                                        ? tw`text-blue-400 border-b-2 border-blue-400`
-                                        : tw`text-neutral-400 hover:text-neutral-200`,
+                                    !active && tw`text-neutral-400 hover:text-neutral-200`,
                                 ]}
+                                style={active ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
                                 onClick={() => setActiveType(type)}
                                 type="button"
                             >

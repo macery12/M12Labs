@@ -27,6 +27,9 @@ import {
 } from '@/api/routes/account/billing/products';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
+import Input from '@/elements/Input';
+import Select from '@/elements/Select';
 import classNames from 'classnames';
 
 const getResponseStatus = (reason: unknown): number | undefined => {
@@ -61,6 +64,28 @@ export default () => {
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
+    const reviewStep = hasEditableVariables ? 5 : 4;
+
+    const [customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
+    const [domainMappings, setDomainMappings] = useState<
+        Array<{
+            domain_id: number;
+            domain: string;
+            subdomain: string;
+            record_type: 'srv' | 'cname';
+        }>
+    >([]);
+    const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
+    const [mappingSubdomain, setMappingSubdomain] = useState<string>('');
+    const [mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
+
+    const selectedDomainOption = customDomainOptions.find(option => option.id === selectedDomainId);
+    const effectiveRecordType: 'srv' | 'cname' = selectedDomainOption?.allow_record_type_selection
+        ? mappingRecordType
+        : (selectedDomainOption?.forced_record_type ?? selectedDomainOption?.recommended_record_type ?? 'cname');
+
+    // Wizard step state
+    const [currentStep, setCurrentStep] = useState<number>(1);
 
     const { colors } = useStoreState(state => state.theme.data!);
 
@@ -93,6 +118,69 @@ export default () => {
     const handleCouponApplied = (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => {
         if (status === 'invalid') return;
         setCouponData(data);
+
+        // Only regenerate intent if the final total is not zero and using Stripe
+        if (product && product.price !== 0 && billing.processors?.stripe?.available) {
+            const finalTotal = data ? data.total : product.price;
+
+            // If coupon makes it free, don't fetch intent
+            if (finalTotal === 0) {
+                setIntent(null);
+            } else {
+                // Regenerate intent with new amount for paid products
+                getStripeIntent(Number(params.id), data?.coupon.id)
+                    .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
+                    .catch(error => console.error('Error updating payment intent:', error));
+            }
+        }
+    };
+
+    const getDomainPayload = () =>
+        domainMappings.map(mapping => ({
+            domain_id: mapping.domain_id,
+            subdomain: mapping.subdomain,
+            record_type: mapping.record_type,
+        }));
+
+    const addDomainMapping = () => {
+        const selected = customDomainOptions.find(domain => domain.id === selectedDomainId);
+        if (!selected || !mappingSubdomain.trim()) {
+            return;
+        }
+
+        setDomainMappings(current =>
+            current.concat({
+                domain_id: selected.id,
+                domain: selected.domain,
+                subdomain: mappingSubdomain.trim().toLowerCase(),
+                record_type: effectiveRecordType,
+            }),
+        );
+
+        setMappingSubdomain('');
+    };
+
+    const removeDomainMapping = (index: number) => {
+        setDomainMappings(current => current.filter((_, idx) => idx !== index));
+    };
+
+    const createFree = () => {
+        if (product && serverName.trim()) {
+            const variables = Array.from(vars, ([key, value]) => ({ key, value }));
+            processUnpaidOrder(
+                product.id,
+                selectedNode,
+                undefined,
+                variables,
+                undefined,
+                couponData?.coupon.id,
+                selectedEggId,
+                serverName.trim(),
+                getDomainPayload(),
+            )
+                .then(() => navigate('/'))
+                .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
+        }
     };
 
     useEffect(() => {
@@ -159,8 +247,41 @@ export default () => {
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
                 setNodes(nodesData);
-                const firstNodeId = nodesData.length > 0 ? Number(nodesData[0].id) : 0;
+                const firstNodeId = Number(nodesData.at(0)?.id ?? 0);
                 setSelectedNode(Number.isInteger(firstNodeId) && firstNodeId > 0 ? firstNodeId : 0);
+                setSelectedNode(Number(nodesData[0]?.id) ?? 0);
+
+                const domainsData = await getAvailableCustomDomains(allowedEggs[0]);
+                setCustomDomainOptions(domainsData);
+                const firstDomain = domainsData[0];
+                if (firstDomain) {
+                    setSelectedDomainId(firstDomain.id);
+                    setMappingRecordType(firstDomain.recommended_record_type);
+                }
+                  
+                if (productData.price !== 0) {
+                    // Check which processors are available and fetch resources accordingly
+                    const stripeAvailable = billing.processors?.stripe?.available ?? false;
+
+                    // Fetch Stripe resources if Stripe is available
+                    if (stripeAvailable) {
+                        try {
+                            // Fetch payment intent
+                            const intentData = await getStripeIntent(Number(params.id));
+                            setIntent({ id: intentData.id, secret: intentData.secret });
+
+                            // Fetch Stripe public key and initialize Stripe
+                            const stripePublicKey = await getStripeKey(Number(params.id));
+                            const stripeInstance = await loadStripeOnce(stripePublicKey.key);
+                            setStripe(stripeInstance);
+                        } catch (error) {
+                            console.error('Error initializing Stripe:', error);
+                        }
+                    }
+
+                    // Mollie doesn't need pre-initialization like Stripe
+                    // Payment is created when user clicks the button
+                }
 
             } catch (error: unknown) {
                 console.error('Error fetching billing order data:', error);
@@ -185,6 +306,31 @@ export default () => {
             .then(data => setEggs(data))
             .catch(error => console.error(error));
     }, [product, selectedEggId]);
+
+    useEffect(() => {
+        if (!selectedEggId) {
+            return;
+        }
+
+        getAvailableCustomDomains(selectedEggId)
+            .then(domains => {
+                setCustomDomainOptions(domains);
+
+                const currentlySelected = domains.find(option => option.id === selectedDomainId);
+                const nextSelected = currentlySelected ?? domains[0];
+
+                if (nextSelected) {
+                    if (!currentlySelected) {
+                        setSelectedDomainId(nextSelected.id);
+                    }
+
+                    setMappingRecordType(nextSelected.recommended_record_type);
+                } else {
+                    setSelectedDomainId(0);
+                }
+            })
+            .catch(error => console.error(error));
+    }, [selectedEggId]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
@@ -457,6 +603,23 @@ export default () => {
                                         <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
                                             ✓ Accepted
                                         </p>
+                                        <Button onClick={createFree} size={Button.Sizes.Large} className={'w-full'}>
+                                            Create Server
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <PaymentMethodSelector
+                                        selectedNode={selectedNode}
+                                        product={product}
+                                        vars={vars}
+                                        intent={intent}
+                                        stripe={stripe}
+                                        couponId={couponData?.coupon.id}
+                                        selectedEggId={selectedEggId}
+                                        serverName={serverName}
+                                        domainPayload={getDomainPayload()}
+                                    />
+                                )}
                                     )}
                                 </div>
                             </div>

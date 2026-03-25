@@ -79,6 +79,32 @@ class DaemonFileRepository extends DaemonRepository
 
         try {
             $response = $this->getHttpClient()->get(
+                sprintf('/api/servers/%s/files/list', $this->server->uuid),
+                [
+                    'query' => [
+                        'directory' => $path,
+                        'ignored' => [],
+                        'per_page' => 10000,
+                        'page' => 1,
+                    ],
+                ]
+            );
+
+            $data = json_decode($response->getBody()->__toString(), true);
+
+            if (is_array($data) && isset($data['entries']) && is_array($data['entries'])) {
+                return $data['entries'];
+            }
+
+            if (is_array($data)) {
+                return $data;
+            }
+        } catch (TransferException) {
+            // Fallback for legacy Wings versions that don't support /files/list.
+        }
+
+        try {
+            $response = $this->getHttpClient()->get(
                 sprintf('/api/servers/%s/files/list-directory', $this->server->uuid),
                 [
                     'query' => ['directory' => $path],

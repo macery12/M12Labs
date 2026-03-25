@@ -14,11 +14,14 @@ import Input from '@/elements/Input';
 import Pagination from '@/elements/Pagination';
 import { Button } from '@/elements/button';
 import useFlash, { useFlashKey } from '@/plugins/useFlash';
+import { useStoreState } from '@/state/hooks';
 import { httpErrorToHuman, PaginatedResult } from '@/api/http';
 
 interface Props {
     serverUuid?: string | null;
 }
+
+const useThemeColors = () => useStoreState(state => state.theme.data!.colors);
 
 const badgeStyle = (enabled: boolean) =>
     enabled ? tw`bg-green-500/20 text-green-200` : tw`bg-yellow-500/20 text-yellow-200`;
@@ -38,6 +41,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 const InstalledAddonsList = ({ serverUuid }: Props) => {
     const { clearFlashes } = useFlash();
     const { addError } = useFlashKey('plugins');
+    const colors = useThemeColors();
     const [activeType, setActiveType] = useState<InstalledContentType>('mods');
     const [status, setStatus] = useState<InstalledStatusFilter>('all');
     const [search, setSearch] = useState('');
@@ -112,10 +116,9 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
                             key={type}
                             css={[
                                 tw`px-4 py-2 rounded-md text-sm font-semibold transition-colors`,
-                                active
-                                    ? tw`bg-blue-600 text-white`
-                                    : tw`bg-neutral-800 text-neutral-200 hover:bg-neutral-700`,
+                                !active && tw`bg-neutral-800 text-neutral-200 hover:bg-neutral-700`,
                             ]}
+                            style={active ? { backgroundColor: colors.primary, color: '#fff' } : undefined}
                             onClick={() => setActiveType(type)}
                             type="button"
                         >
@@ -139,10 +142,9 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
                                 key={filter}
                                 css={[
                                     tw`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide transition-colors`,
-                                    active
-                                        ? tw`bg-blue-600 text-white`
-                                        : tw`bg-neutral-800 text-neutral-300 hover:bg-neutral-700`,
+                                    !active && tw`bg-neutral-800 text-neutral-300 hover:bg-neutral-700`,
                                 ]}
+                                style={active ? { backgroundColor: colors.primary, color: '#fff' } : undefined}
                                 onClick={() => setStatus(filter)}
                                 type="button"
                             >
@@ -167,7 +169,8 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
     const renderItem = (item: InstalledAddon) => (
         <div
             key={item.path}
-            css={tw`rounded border border-neutral-700 px-3 py-3 sm:px-4 bg-neutral-800/40 flex flex-col gap-2`}
+            css={tw`rounded border border-neutral-700 px-3 py-3 sm:px-4 flex flex-col gap-2`}
+            style={{ backgroundColor: colors.secondary }}
         >
             <div css={tw`flex items-start gap-3`}>
                 <div css={tw`flex-1 min-w-0`}>

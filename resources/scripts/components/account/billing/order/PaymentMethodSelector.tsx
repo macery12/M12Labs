@@ -22,6 +22,11 @@ interface Props {
     billingDays: number;
     selectedEggId?: number;
     serverName: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        record_type?: 'srv' | 'cname';
+    }>;
 }
 
 type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
@@ -264,6 +269,7 @@ export default (props: Props) => {
                             billingDays={props.billingDays}
                             selectedEggId={props.selectedEggId}
                             serverName={props.serverName}
+                            domainPayload={props.domainPayload}
                         />
                     </Elements>
                 </div>
@@ -277,6 +283,7 @@ export default (props: Props) => {
                         billingDays={props.billingDays}
                         selectedEggId={props.selectedEggId}
                         serverName={props.serverName}
+                        domainPayload={props.domainPayload}
                     />
                 </div>
             ) : selectedMethod === 'paypal' ? (
@@ -289,6 +296,7 @@ export default (props: Props) => {
                         billingDays={props.billingDays}
                         selectedEggId={props.selectedEggId}
                         serverName={props.serverName}
+                        domainPayload={props.domainPayload}
                     />
                 </div>
             ) : null}

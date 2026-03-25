@@ -96,6 +96,7 @@ class PayPalCheckoutController extends ClientApiController
             'server_id' => $isRenewal ? $serverId : null,
             'billing_days' => $billingDays,
             'variables' => [],
+            'domain_payload' => [],
         ];
 
         $this->orderService->create(
@@ -184,6 +185,7 @@ class PayPalCheckoutController extends ClientApiController
         $orderType = $this->getOrderType($request);
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $variables = $request->input('variables', []);
+        $domainPayload = $request->input('domain_payload', []);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
 
         // Find the existing pending order and update it
@@ -201,6 +203,7 @@ class PayPalCheckoutController extends ClientApiController
             'coupon_id' => $couponId,
             'billing_days' => $billingDays,
             'variables' => $variables,
+            'domain_payload' => is_array($domainPayload) ? $domainPayload : [],
         ]);
 
         Log::info('PayPal order updated successfully', [

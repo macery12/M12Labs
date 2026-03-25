@@ -9,6 +9,7 @@ import { httpErrorToHuman } from '@/api/http';
 import useFlash from '@/plugins/useFlash';
 import ModDownloadButton from './ModDownloadButton';
 import FadeTransition from '@/elements/transitions/FadeTransition';
+import { useStoreState } from '@/state/hooks';
 
 interface Props {
     mod: CurseForgeMod;
@@ -70,8 +71,9 @@ const FileList = styled.div`
     ${tw`space-y-2`}
 `;
 
-const FileItem = styled.div`
-    ${tw`bg-neutral-700 rounded p-3 flex items-center justify-between`}
+const FileItem = styled.div<{ $backgroundColor?: string }>`
+    ${tw`rounded p-3 flex items-center justify-between`}
+    background-color: ${props => props.$backgroundColor || '#404040'};
 `;
 
 const FileInfo = styled.div`
@@ -115,6 +117,7 @@ const getReleaseTypeColor = (type: number) => {
 export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType = 'mods', platform }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
+    const { colors } = useStoreState(state => state.theme.data!);
 
     const [files, setFiles] = useState<CurseForgeFile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -312,7 +315,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                         <FadeTransition duration="duration-150" show>
                             <FileList>
                                 {displayFiles.map(file => (
-                                    <FileItem key={file.id}>
+                                    <FileItem key={file.id} $backgroundColor={colors.secondary}>
                                         <FileInfo>
                                             <FileName>{file.displayName}</FileName>
                                              <FileDetails>

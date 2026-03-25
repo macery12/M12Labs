@@ -182,6 +182,7 @@ export default ({ product }: { product?: Product }) => {
                         backup: product?.limits.backup ?? 0,
                         database: product?.limits.database ?? 0,
                         allocation: product?.limits.allocation ?? 1,
+                        subdomain: product?.limits.subdomain ?? 1,
                     },
                 }}
                 validationSchema={object().shape({
@@ -201,6 +202,7 @@ export default ({ product }: { product?: Product }) => {
                         backup: number().required().min(0),
                         database: number().required().min(0),
                         allocation: number().required().min(1),
+                        subdomain: number().nullable().min(0),
                     }),
                 })}
             >
@@ -342,6 +344,13 @@ export default ({ product }: { product?: Product }) => {
                                             type={'text'}
                                             label={'Allocation (Port) Limit'}
                                             description={'The amount of ports this product can have.'}
+                                        />
+                                        <Field
+                                            id={'limits.subdomain'}
+                                            name={'limits.subdomain'}
+                                            type={'text'}
+                                            label={'Subdomain Limit'}
+                                            description={'The amount of custom subdomains this product can have.'}
                                         />
                                     </FieldRow>
                                 </AdminBox>

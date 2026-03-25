@@ -22,6 +22,7 @@ use Everest\Models\Model;
  * @property int|null $node_id
  * @property int|null $server_id
  * @property array|null $variables
+ * @property array|null $domain_payload
  * @property string $type
  * @property int $threat_index
  * @property string $payment_intent_id
@@ -67,6 +68,7 @@ class Order extends Model
         'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id',
         'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
         'payment_token', 'total', 'status', 'product_id', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
+        'domain_payload',
         'coupon_id', 'subtotal', 'discount',
     ];
 
@@ -85,6 +87,7 @@ class Order extends Model
         'node_id' => 'int',
         'server_id' => 'int',
         'variables' => 'array',
+        'domain_payload' => 'array',
         'threat_index' => 'int',
         'coupon_id' => 'int',
         'subtotal' => 'float',
@@ -101,6 +104,7 @@ class Order extends Model
         'status' => 'required|in:expired,pending,failed,processed',
         'product_id' => 'exists:products,id',
         'egg_id' => 'nullable|exists:eggs,id',
+        'domain_payload' => 'nullable|array',
         'type' => 'required|in:new,upg,ren',
         'threat_index' => 'nullable|int|min:-1|max:100',
         'payment_intent_id' => 'required|string|unique:orders,payment_intent_id',

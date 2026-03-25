@@ -63,6 +63,7 @@ export interface Server {
         allocations: number;
         backups: number;
         subusers: number;
+        subdomains: number | null;
     };
 
     ownerId: number;
@@ -114,6 +115,7 @@ export const rawDataToServer = ({ attributes }: FractalResponseData): Server =>
             allocations: attributes.feature_limits.allocations,
             backups: attributes.feature_limits.backups,
             subusers: attributes.feature_limits.subusers,
+            subdomains: attributes.feature_limits.subdomains ?? null,
         },
 
         ownerId: attributes.owner_id,

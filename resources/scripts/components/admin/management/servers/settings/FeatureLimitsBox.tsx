@@ -39,6 +39,13 @@ export default () => {
                     type={'number'}
                     description={'The total number of subusers that can be added to this server.'}
                 />
+                <Field
+                    id={'featureLimits.subdomains'}
+                    name={'featureLimits.subdomains'}
+                    label={'Subdomain Limit'}
+                    type={'number'}
+                    description={'The total number of custom subdomains that can be created for this server.'}
+                />
             </div>
         </AdminBox>
     );

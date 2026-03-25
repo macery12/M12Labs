@@ -49,6 +49,7 @@ export const updateMolliePayment = ({
     eggId,
     billingDays,
     name,
+    domainPayload,
 }: {
     id: number;
     paymentId: string;
@@ -60,6 +61,11 @@ export const updateMolliePayment = ({
     eggId?: number;
     billingDays?: number;
     name: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        record_type?: 'srv' | 'cname';
+    }>;
 }): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.put(`/api/client/billing/products/${id}/mollie/payment`, {
@@ -72,6 +78,7 @@ export const updateMolliePayment = ({
             egg_id: eggId,
             billing_days: billingDays,
             name,
+            domain_payload: domainPayload,
         })
             .then(() => resolve())
             .catch(reject);

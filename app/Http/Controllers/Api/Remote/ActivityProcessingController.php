@@ -82,6 +82,8 @@ class ActivityProcessingController extends Controller
         foreach ($logs as $key => $data) {
             Assert::isInstanceOf($server = $servers->get($key), Server::class);
 
+            $data = $this->coalesceSftpEvents($data);
+
             $batch = [];
             foreach ($data as $datum) {
                 $id = ActivityLog::insertGetId($datum);
@@ -94,5 +96,104 @@ class ActivityProcessingController extends Controller
 
             ActivityLogSubject::insert($batch);
         }
+    }
+
+    /**
+     * Coalesce rapid SFTP create+write+rename sequences into single upload events.
+     *
+     * SFTP clients typically upload a file by: creating a temp file, writing to it,
+     * then renaming it to the final name. This produces 3 activity log entries for
+     * what the user perceives as a single upload.  We collapse these sequences into
+     * a single "sftp.create" event carrying the final filename.
+     */
+    private function coalesceSftpEvents(array $events): array
+    {
+        // Group SFTP events by actor within a tight time window.
+        // Rename events referencing a temp-created file absorb the create+write.
+        $sftpCreate = [];
+        $sftpWrite = [];
+        $absorbed = [];
+
+        foreach ($events as $idx => $event) {
+            $e = $event['event'] ?? '';
+            $actorId = $event['actor_id'] ?? null;
+
+            $props = is_string($event['properties'] ?? null)
+                ? json_decode($event['properties'], true)
+                : ($event['properties'] ?? []);
+
+            $files = $props['files'] ?? [];
+
+            if ($e === 'server:sftp.create' && $actorId !== null) {
+                foreach ((array) $files as $file) {
+                    $name = is_array($file) ? ($file['to'] ?? $file[0] ?? '') : (string) $file;
+                    if ($name !== '') {
+                        $sftpCreate[$actorId . ':' . $name] = $idx;
+                    }
+                }
+            }
+
+            if ($e === 'server:sftp.write' && $actorId !== null) {
+                foreach ((array) $files as $file) {
+                    $name = is_array($file) ? ($file['to'] ?? $file[0] ?? '') : (string) $file;
+                    if ($name !== '') {
+                        $sftpWrite[$actorId . ':' . $name] = $idx;
+                    }
+                }
+            }
+        }
+
+        // Now scan rename events: if a rename's "from" matches a created temp file,
+        // rewrite the create event with the final name and drop the write + rename.
+        foreach ($events as $idx => $event) {
+            $e = $event['event'] ?? '';
+            $actorId = $event['actor_id'] ?? null;
+
+            if ($e !== 'server:sftp.rename' || $actorId === null) {
+                continue;
+            }
+
+            $props = is_string($event['properties'] ?? null)
+                ? json_decode($event['properties'], true)
+                : ($event['properties'] ?? []);
+
+            $files = $props['files'] ?? [];
+
+            foreach ((array) $files as $file) {
+                $from = is_array($file) ? ($file['from'] ?? '') : '';
+                $to = is_array($file) ? ($file['to'] ?? '') : '';
+
+                if ($from === '' || $to === '') {
+                    continue;
+                }
+
+                $createKey = $actorId . ':' . $from;
+                $writeKey = $actorId . ':' . $from;
+
+                if (isset($sftpCreate[$createKey])) {
+                    $createIdx = $sftpCreate[$createKey];
+
+                    // Rewrite the create event to reference the final filename.
+                    $createProps = is_string($events[$createIdx]['properties'] ?? null)
+                        ? json_decode($events[$createIdx]['properties'], true)
+                        : ($events[$createIdx]['properties'] ?? []);
+
+                    $createProps['files'] = [$to];
+                    $events[$createIdx]['properties'] = json_encode($createProps);
+
+                    // Mark write and rename events for removal.
+                    if (isset($sftpWrite[$writeKey])) {
+                        $absorbed[$sftpWrite[$writeKey]] = true;
+                    }
+                    $absorbed[$idx] = true;
+                }
+            }
+        }
+
+        if (empty($absorbed)) {
+            return $events;
+        }
+
+        return array_values(array_filter($events, fn ($_, $i) => !isset($absorbed[$i]), ARRAY_FILTER_USE_BOTH));
     }
 }

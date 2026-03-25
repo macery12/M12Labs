@@ -69,6 +69,9 @@ class Permission extends Model
     public const ACTION_BILLING_RENEW = 'billing.renew';
     public const ACTION_BILLING_UPDATE = 'billing.update';
 
+    public const ACTION_EXTENSION_READ = 'extension.read';
+    public const ACTION_EXTENSION_MANAGE = 'extension.manage';
+
     /**
      * Should timestamps be used on this model.
      */
@@ -219,6 +222,14 @@ class Permission extends Model
                 'update' => 'Update general billing settings for the server.',
             ],
         ],
+
+        'extension' => [
+            'description' => 'Permissions that control a user\'s access to server extensions like player managers.',
+            'keys' => [
+                'read' => 'Allows a user to view and access enabled extensions for the server.',
+                'manage' => 'Allows a user to use extension features like player management (kick, ban, whitelist, etc.). Includes read access.',
+            ],
+        ],
     ];
 
     /**
@@ -228,5 +239,19 @@ class Permission extends Model
     public static function permissions(): Collection
     {
         return Collection::make(self::$permissions);
+    }
+
+    /**
+     * Expands a permissions list with implied permissions.
+     */
+    public static function expandPermissions(array $permissions): array
+    {
+        $expanded = $permissions;
+
+        if (in_array(self::ACTION_EXTENSION_MANAGE, $expanded, true)) {
+            $expanded[] = self::ACTION_EXTENSION_READ;
+        }
+
+        return array_values(array_unique($expanded));
     }
 }

@@ -14,6 +14,11 @@ interface Props {
     billingDays: number;
     selectedEggId?: number;
     serverName: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        record_type?: 'srv' | 'cname';
+    }>;
 }
 
 export default (data: Props) => {
@@ -47,6 +52,7 @@ export default (data: Props) => {
                 eggId: data.selectedEggId,
                 billingDays: data.billingDays,
                 name: data.serverName,
+                domainPayload: data.domainPayload,
             });
 
             // Redirect to Mollie checkout

@@ -15,9 +15,10 @@ import NodeAboutContainer from '@admin/management/nodes/NodeAboutContainer';
 import NodeConfigurationContainer from '@admin/management/nodes/NodeConfigurationContainer';
 import NodeAllocationContainer from '@admin/management/nodes/NodeAllocationContainer';
 import NodeServers from '@admin/management/nodes/NodeServers';
+import NodeWingsRsContainer from '@admin/management/nodes/NodeWingsRsContainer';
 import type { ApplicationStore } from '@/state';
 import NodeStatus from './NodeStatus';
-import { CodeIcon, OfficeBuildingIcon, ServerIcon, WifiIcon } from '@heroicons/react/outline';
+import { CodeIcon, LightningBoltIcon, OfficeBuildingIcon, ServerIcon, WifiIcon } from '@heroicons/react/outline';
 import { CogIcon } from '@heroicons/react/solid';
 
 interface ctx {
@@ -105,6 +106,10 @@ const NodeRouter = () => {
                 <SubNavigationLink to={`/admin/nodes/${node.id}/servers`} name={'Servers'}>
                     <ServerIcon />
                 </SubNavigationLink>
+
+                <SubNavigationLink to={`/admin/nodes/${node.id}/wings-rs`} name={'Wings-RS'}>
+                    <LightningBoltIcon />
+                </SubNavigationLink>
             </SubNavigation>
 
             <Routes>
@@ -113,6 +118,7 @@ const NodeRouter = () => {
                 <Route path="configuration" element={<NodeConfigurationContainer />} />
                 <Route path="allocations" element={<NodeAllocationContainer />} />
                 <Route path="servers" element={<NodeServers />} />
+                <Route path="wings-rs" element={<NodeWingsRsContainer />} />
             </Routes>
         </AdminContentBlock>
     );

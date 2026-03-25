@@ -20,6 +20,7 @@ interface Props {
 
 export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
+    const { colors } = useStoreState(state => state.theme.data!);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
     const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
     const spigotEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
@@ -171,10 +172,9 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                         <button
                             css={[
                                 tw`px-4 py-2 font-medium transition-colors`,
-                                activeSource === 'modrinth'
-                                ? tw`text-blue-400 border-b-2 border-blue-400`
-                                : tw`text-neutral-400 hover:text-neutral-300`,
+                                activeSource !== 'modrinth' && tw`text-neutral-400 hover:text-neutral-300`,
                         ]}
+                        style={activeSource === 'modrinth' ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
                         onClick={() => handleSourceChange('modrinth')}
                         >
                             Modrinth
@@ -183,10 +183,9 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                             <button
                             css={[
                                 tw`px-4 py-2 font-medium transition-colors`,
-                                activeSource === 'curseforge'
-                                    ? tw`text-blue-400 border-b-2 border-blue-400`
-                                    : tw`text-neutral-400 hover:text-neutral-300`,
+                                activeSource !== 'curseforge' && tw`text-neutral-400 hover:text-neutral-300`,
                             ]}
+                            style={activeSource === 'curseforge' ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
                             onClick={() => handleSourceChange('curseforge')}
                             >
                                 CurseForge
@@ -196,10 +195,9 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                             <button
                                 css={[
                                     tw`px-4 py-2 font-medium transition-colors`,
-                                    activeSource === 'spigot'
-                                        ? tw`text-blue-400 border-b-2 border-blue-400`
-                                        : tw`text-neutral-400 hover:text-neutral-300`,
+                                    activeSource !== 'spigot' && tw`text-neutral-400 hover:text-neutral-300`,
                                 ]}
+                                style={activeSource === 'spigot' ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
                                 onClick={() => handleSourceChange('spigot')}
                             >
                                 Spigot

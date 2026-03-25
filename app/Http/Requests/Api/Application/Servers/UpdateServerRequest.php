@@ -33,6 +33,7 @@ class UpdateServerRequest extends ApplicationApiRequest
             'feature_limits.backups' => $rules['backup_limit'],
             'feature_limits.databases' => $rules['database_limit'],
             'feature_limits.subusers' => $rules['subuser_limit'],
+            'feature_limits.subdomains' => $rules['subdomain_limit'],
 
             'renewal_date' => $rules['renewal_date'],
             'billing_product_id' => $rules['billing_product_id'],
@@ -82,6 +83,10 @@ class UpdateServerRequest extends ApplicationApiRequest
             'add_allocations' => array_get($data, 'add_allocations'),
             'remove_allocations' => array_get($data, 'remove_allocations'),
         ];
+
+        if (Arr::has($data, 'feature_limits.subdomains')) {
+            $response['subdomain_limit'] = array_get($data, 'feature_limits.subdomains');
+        }
 
         return is_null($key) ? $response : Arr::get($response, $key, $default);
     }

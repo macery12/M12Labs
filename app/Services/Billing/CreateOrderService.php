@@ -58,6 +58,7 @@ class CreateOrderService
         $order->node_id = $nodeId;
         $order->server_id = $additionalData['server_id'] ?? null;
         $order->variables = $additionalData['variables'] ?? null;
+        $order->domain_payload = $additionalData['domain_payload'] ?? null;
         $order->type = $type;
         $order->payment_processor = $additionalData['payment_processor'] ?? 'stripe';
         $order->mollie_payment_id = $additionalData['mollie_payment_id'] ?? null;

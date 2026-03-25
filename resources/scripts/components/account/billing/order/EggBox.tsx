@@ -26,7 +26,7 @@ export default ({ egg, selected, setSelected, onEggChange }: Props) => {
         <div
             onClick={handleClick}
             className={classNames(
-                'relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:scale-[1.02]',
+                'relative cursor-pointer rounded-lg border-2 p-4 transition-all',
                 isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
             style={

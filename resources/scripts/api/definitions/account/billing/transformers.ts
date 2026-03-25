@@ -55,6 +55,7 @@ export default class Transformers {
             backup: data.limits.backup,
             database: data.limits.database,
             allocation: data.limits.allocation,
+            subdomain: data.limits.subdomain ?? null,
         },
     });
 

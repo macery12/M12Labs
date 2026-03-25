@@ -92,6 +92,13 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::get('/', [Application\Billing\OrderController::class, 'index']);
         });
 
+        Route::group(['prefix' => '/custom-domains'], function () {
+            Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
+            Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
+            Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
+            Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
+        });
+
         Route::group(['prefix' => '/coupons'], function () {
             Route::get('/', [Application\Billing\CouponController::class, 'index']);
             Route::post('/', [Application\Billing\CouponController::class, 'store']);
@@ -128,6 +135,30 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         // Get suggested multiplier ranges
         Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Domains Module Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/custom-domains
+    |
+    */
+    Route::group(['prefix' => '/custom-domains'], function () {
+        Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
+        Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
+        Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
+        Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
+
+        Route::get('/options', [Application\Billing\CustomDomainController::class, 'options']);
+        Route::get('/api-keys', [Application\Billing\CustomDomainController::class, 'apiKeys']);
+        Route::post('/api-keys', [Application\Billing\CustomDomainController::class, 'storeApiKey']);
+        Route::patch('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'updateApiKey']);
+        Route::delete('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'deleteApiKey']);
+
+        Route::get('/settings', [Application\CustomDomains\SettingsController::class, 'index']);
+        Route::put('/settings', [Application\CustomDomains\SettingsController::class, 'update']);
     });
 
     /*
@@ -253,6 +284,24 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         Route::post('/message', [Application\Tickets\TicketMessageController::class, 'store']);
         Route::get('/{ticket:id}/messages', [Application\Tickets\TicketMessageController::class, 'index']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Extensions Controller Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/extensions
+    |
+    */
+    Route::group(['prefix' => '/extensions'], function () {
+        Route::get('/', [Application\Extensions\ExtensionsController::class, 'index']);
+        Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
+        Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
+
+        Route::get('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'view']);
+        Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);
+        Route::post('/{extensionId}/toggle', [Application\Extensions\ExtensionsController::class, 'toggle']);
     });
 
     /*
@@ -397,6 +446,16 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::delete('/', [Application\Nodes\AllocationController::class, 'deleteAll']);
             Route::delete('/{allocation:id}', [Application\Nodes\AllocationController::class, 'delete']);
         });
+
+        // Wings-RS (Supercharged) endpoints
+        Route::group(['prefix' => '/{node:id}/wings-rs'], function () {
+            Route::post('/detect', [Application\Nodes\NodeWingsRsController::class, 'detect']);
+            Route::get('/overview', [Application\Nodes\NodeWingsRsController::class, 'overview']);
+            Route::get('/stats', [Application\Nodes\NodeWingsRsController::class, 'stats']);
+            Route::get('/logs', [Application\Nodes\NodeWingsRsController::class, 'logs']);
+            Route::get('/logs/{file}', [Application\Nodes\NodeWingsRsController::class, 'logContents'])->where('file', '[a-zA-Z0-9._-]+');
+            Route::post('/upgrade', [Application\Nodes\NodeWingsRsController::class, 'upgrade']);
+        });
     });
 
     /*
@@ -432,6 +491,12 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{server:id}/unsuspend', [Application\Servers\ServerManagementController::class, 'unsuspend']);
         Route::post('/{server:id}/reinstall', [Application\Servers\ServerManagementController::class, 'reinstall']);
         Route::post('/{server:id}/transfer', [Application\Servers\ServerManagementController::class, 'transfer']);
+
+        Route::group(['prefix' => '/{server:id}/wings-rs'], function () {
+            Route::get('/status', [Application\Servers\ServerWingsRsController::class, 'status']);
+            Route::get('/stats', [Application\Servers\ServerWingsRsController::class, 'stats']);
+            Route::get('/install-logs', [Application\Servers\ServerWingsRsController::class, 'installLogs']);
+        });
 
         Route::post('/{server:id}/delete', [Application\Servers\ServerController::class, 'delete']);
 

@@ -10,6 +10,8 @@ use Everest\Models\Billing\Product;
 use Illuminate\Support\Facades\Log;
 use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
+use Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob;
+use Everest\Services\CustomDomains\CustomDomainProvisioningService;
 
 /**
  * Central server fulfillment service for paid orders.
@@ -28,6 +30,7 @@ class ServerFulfillmentService
     public function __construct(
         private CreateServerService $serverCreation,
         private OrderProcessorService $processorService,
+        private CustomDomainProvisioningService $customDomainProvisioning,
     ) {
     }
 
@@ -185,6 +188,9 @@ class ServerFulfillmentService
 
         // Create the server using the centralized creation service
         $server = $this->serverCreation->process($request, $product, $metadata, $order);
+
+        $this->customDomainProvisioning->syncFromOrder($server, $order);
+        ProvisionServerCustomDomainsJob::dispatch($server->id);
 
         Log::info("Created new server {$server->id} for order {$order->id}");
 

@@ -4,6 +4,7 @@ namespace Everest\Services\Servers;
 
 use Everest\Models\User;
 use Everest\Models\Server;
+use Everest\Models\Permission;
 
 class GetUserPermissionsService
 {
@@ -29,6 +30,6 @@ class GetUserPermissionsService
         /** @var \Everest\Models\Subuser|null $subuserPermissions */
         $subuserPermissions = $server->subusers()->where('user_id', $user->id)->first();
 
-        return $subuserPermissions ? $subuserPermissions->permissions : [];
+        return $subuserPermissions ? Permission::expandPermissions($subuserPermissions->permissions ?? []) : [];
     }
 }

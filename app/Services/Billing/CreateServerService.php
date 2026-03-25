@@ -116,6 +116,7 @@ class CreateServerService
                 'backup_limit' => $product->backup_limit,
                 'allocation_limit' => $product->allocation_limit,
                 'subuser_limit' => 3,
+                'subdomain_limit' => null,
             ]);
         } catch (BillingExceptionClass $e) {
             // Re-throw billing exceptions as-is

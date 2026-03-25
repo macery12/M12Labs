@@ -3,6 +3,7 @@ import { type SubuserPermission } from '@/state/server/subusers';
 import { ServerStatus } from '@/api/routes/server';
 
 interface Server {
+    serverOwner?: boolean;
     id: string;
     internalId: number | string;
     uuid: string;
@@ -11,6 +12,7 @@ interface Server {
     name: string;
     node: string;
     isNodeUnderMaintenance: boolean;
+    isNodeSupercharged: boolean;
     status: ServerStatus;
     sftpDetails: {
         ip: string;
@@ -30,6 +32,7 @@ interface Server {
     };
     eggFeatures: string[];
     modpacksSupported: boolean;
+    extensionsEnabled: boolean;
     billingProductId?: number;
     billingDays?: number;
     renewalDate?: Date | undefined;
@@ -42,6 +45,7 @@ interface Server {
         allocations: number;
         backups: number;
         subusers: number;
+        subdomains: number | null;
     };
     isTransferring: boolean;
     variables: EggVariable[];

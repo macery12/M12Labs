@@ -36,7 +36,7 @@ export default ({ cycle, selected, setSelected }: Props) => {
         <div
             onClick={() => setSelected(cycle.days)}
             className={classNames(
-                'relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:scale-[1.02]',
+                'relative cursor-pointer rounded-lg border-2 p-4 transition-all',
                 isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
             style={
@@ -45,25 +45,28 @@ export default ({ cycle, selected, setSelected }: Props) => {
                     : { backgroundColor: colors.secondary, borderColor: '#374151' }
             }
         >
-            <div className={'flex items-center justify-between gap-3'}>
-                <div className={'flex items-center gap-3'}>
-                    <CalendarIcon className={'h-6 w-6 flex-shrink-0'} style={{ color: colors.primary }} />
-                    <div>
-                        <div className={'flex items-center gap-2'}>
-                            <p className={'font-semibold text-gray-200'}>
-                                {cycle.days} {cycle.days === 1 ? 'Day' : 'Days'}
-                            </p>
-                            {cycle.isDefault && (
-                                <span
-                                    className={'rounded px-1.5 py-0.5 text-xs font-medium'}
-                                    style={{ backgroundColor: `${colors.primary}25`, color: colors.primary }}
-                                >
-                                    Default
-                                </span>
-                            )}
-                        </div>
-                        {getDiscountLabel()}
+            <div className={'flex items-start gap-3'}>
+                <CalendarIcon className={'h-8 w-8 flex-shrink-0'} style={{ color: colors.primary }} />
+                <div className={'flex-1 min-w-0'}>
+                    <div className={'flex items-baseline gap-2'}>
+                        <p className={'font-semibold text-gray-200'}>
+                            {cycle.days} {cycle.days === 1 ? 'Day' : 'Days'}
+                        </p>
+                        {cycle.isDefault && (
+                            <span
+                                className={'rounded px-1.5 py-0.5 text-xs font-medium'}
+                                style={{ backgroundColor: `${colors.primary}25`, color: colors.primary }}
+                            >
+                                Default
+                            </span>
+                        )}
                     </div>
+                    <div className={'mt-1 flex items-baseline gap-1'}>
+                        <span className={'text-lg font-bold'} style={{ color: colors.primary }}>
+                            ${cycle.price.toFixed(2)}
+                        </span>
+                    </div>
+                    {getDiscountLabel()}
                 </div>
                 <div className={'flex items-center gap-3'}>
                     <span className={'text-xl font-bold whitespace-nowrap'} style={{ color: colors.primary }}>
