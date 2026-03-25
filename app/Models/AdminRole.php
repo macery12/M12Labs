@@ -9,7 +9,6 @@ use Illuminate\Support\Collection;
  * @property string $name
  * @property string|null $description
  * @property int $sort_id
- * @property array $permissions
  */
 class AdminRole extends Model
 {

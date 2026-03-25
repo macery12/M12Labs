@@ -295,14 +295,9 @@ class Node extends Model
             ? ($diskUsed / $this->disk) * 100
             : 0;
 
-        $allocationsPercent = $sums->total_allocations > 0
-            ? ($sums->used_allocations / $sums->total_allocations) * 100
-            : 0;
-
         return [
             'memory' => round($memoryPercent, 1),
             'disk' => round($diskPercent, 1),
-            'allocations' => round($allocationsPercent, 1),
         ];
     }
 }

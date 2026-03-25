@@ -11,6 +11,7 @@ use Everest\Services\Eggs\Variables\VariableCreationService;
 use Everest\Transformers\Api\Application\EggVariableTransformer;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\StoreEggVariableRequest;
+use Everest\Http\Requests\Api\Application\Eggs\Variables\DeleteEggVariableRequest;
 use Everest\Http\Requests\Api\Application\Eggs\Variables\UpdateEggVariablesRequest;
 
 class EggVariableController extends ApplicationApiController

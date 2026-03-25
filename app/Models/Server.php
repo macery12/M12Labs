@@ -389,14 +389,6 @@ class Server extends Model
     }
 
     /**
-     * Finds out whether a server is billable.
-     */
-    public function billable(): bool
-    {
-        return $this->order_id ? true : false;
-    }
-
-    /**
      * Checks if the server is currently in a user-accessible state. If not, an
      * exception is raised. This should be called whenever something needs to make
      * sure the server is not in a weird state that should block user access.

@@ -42,8 +42,6 @@ class OrderTransformer extends Transformer
      */
     public function includeServer(Order $model): Item|NullResource
     {
-        dd($model->server);
-
         return $this->item($model->server, new ServerTransformer());
     }
 }

@@ -23,6 +23,7 @@ abstract class AbstractLoginController extends Controller
     use AuthenticatesUsers;
 
     protected AuthManager $auth;
+    protected UserCreationService $creation;
 
     /**
      * Lockout time for failed login requests.
@@ -99,7 +100,7 @@ abstract class AbstractLoginController extends Controller
      */
     public function createAccount(array $data): User
     {
-        $delay = (int) config('modules.auth.jguard.delay') ?? 0;
+        $delay = (int) config('modules.auth.jguard.delay');
         $guard = config('modules.auth.jguard.enabled') ?? false;
         $enabled = config('modules.auth.registration.enabled') ?? false;
 

@@ -2,6 +2,7 @@
 
 namespace Everest\Models\Billing;
 
+use Everest\Models\User;
 use Everest\Models\Model;
 use Everest\Models\Server;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -78,7 +79,7 @@ class Order extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(Everest\Models\User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**

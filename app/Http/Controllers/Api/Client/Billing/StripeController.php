@@ -26,6 +26,8 @@ use Everest\Http\Requests\Api\Client\Billing\ValidateDiscountCodeRequest;
 
 class StripeController extends ClientApiController
 {
+    private StripeClient $stripe;
+
     public function __construct(
         private UpgradeService $upgradeService,
         private PaymentService $paymentService,

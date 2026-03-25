@@ -6,6 +6,7 @@ use Stripe\StripeClient;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
+use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\PaymentService;
 use Everest\Services\Billing\UpgradeService;
 use Everest\Services\Billing\CreateOrderService;
@@ -17,6 +18,8 @@ use Everest\Http\Requests\Api\Client\Billing\GetUpgradeOptionsRequest;
 
 class UpgradeController extends ClientApiController
 {
+    private StripeClient $stripe;
+
     public function __construct(
         private UpgradeService $upgradeService,
         private PaymentService $paymentService,
@@ -91,7 +94,9 @@ class UpgradeController extends ClientApiController
             Order::STATUS_PENDING,
             Order::TYPE_UPGRADE,
             $price,
-        )->assignServer($server);
+        );
+
+        $order->assignServer($server);
 
         return $transaction->url;
     }

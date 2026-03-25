@@ -27,16 +27,16 @@ class SuspendBillableServersCommand extends Command
     public function handle()
     {
         foreach (Server::whereNotNull('renewal_date')->get() as $server) {
-            $daysOverdue = $server->renewalDate->diffInDays(now());
+            $daysOverdue = $server->renewal_date->diffInDays(now());
             $threshold = config('modules.billing.renewal.threshold');
 
-            if ($server->renewalDate->isPast()) {
+            if ($server->renewal_date->isPast()) {
                 if (!$server->isSuspended()) {
                     $this->info("suspending server {$server->id}, overdue by {$daysOverdue} days");
                     $this->suspension->toggle($server, 'suspend');
                 } elseif ($daysOverdue > $threshold) {
                     $this->info("deleting server {$server->id}, overdue by {$daysOverdue} days");
-                    $this->deletion->handle($server)->withForce();
+                    $this->deletion->withForce(true)->handle($server);
                 }
             }
         }

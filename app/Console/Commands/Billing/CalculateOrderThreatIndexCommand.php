@@ -55,7 +55,7 @@ class CalculateOrderThreatIndexCommand extends Command
                 $index += 30;
             }
 
-            if (!$order->is_renewal) {
+            if ($order->type === Order::TYPE_NEW) {
                 $index += 10;
             }
 

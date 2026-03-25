@@ -6,19 +6,14 @@ use Everest\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
-use Everest\Services\Users\UserCreationService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
-use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
 class DiscordLoginController extends AbstractLoginController
 {
     /**
      * DiscordLoginController constructor.
      */
-    public function __construct(
-        private UserCreationService $creationService,
-        private SettingsRepositoryInterface $settings,
-    ) {
+    public function __construct() {
         parent::__construct();
     }
 
@@ -76,8 +71,6 @@ class DiscordLoginController extends AbstractLoginController
 
             return redirect('/account/setup');
         }
-
-        return redirect()->route('auth.login');
     }
 
     /**

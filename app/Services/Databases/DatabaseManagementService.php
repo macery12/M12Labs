@@ -96,6 +96,7 @@ class DatabaseManagementService
             ),
         ]);
 
+        /** @var Database|null $database */
         $database = null;
 
         try {

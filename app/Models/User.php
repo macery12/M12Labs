@@ -81,7 +81,6 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  * @method static Builder|User whereUsername($value)
  * @method static Builder|User whereUuid($value)
  *
- * @mixin \Barryvdh\LaravelIdeHelper\Eloquent
  * @mixin \Illuminate\Database\Query\Builder
  * @mixin \Illuminate\Database\Eloquent\Builder
  */

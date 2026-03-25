@@ -9,9 +9,17 @@ parameters:
     # Level 9 is the highest level
     level: 4
 
+    treatPhpDocTypesAsCertain: false
+
     ignoreErrors:
         # Ignore repository interface missing methods
         - '#Call to an undefined method Everest\\Repositories\\Wings\\DaemonRepository::(\w+)\(\)#'
+
+        # Ignore magic StripeObject calls
+        - '#Access to an undefined property Stripe\\StripeObject::\$\w+#'
+
+        # Ignore magic Socialite calls
+        - '#Access to an undefined property Laravel\\Socialite\\Contracts\\User::\$\w+#'
 
         # Ignore magic spatie calls
         - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::allowed(\w+)\(\)#'

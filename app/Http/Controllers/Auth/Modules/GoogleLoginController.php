@@ -6,17 +6,17 @@ use Everest\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Socialite\Facades\Socialite;
-use Everest\Services\Users\UserCreationService;
+use Laravel\Socialite\Two\GoogleProvider;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
 
 class GoogleLoginController extends AbstractLoginController
 {
+    protected array $config;
+
     /**
      * GoogleLoginController constructor.
      */
-    public function __construct(
-        private UserCreationService $creationService,
-    ) {
+    public function __construct() {
         parent::__construct();
 
         $this->config = [
@@ -39,7 +39,7 @@ class GoogleLoginController extends AbstractLoginController
             $this->sendLockoutResponse($request);
         }
 
-        return Socialite::buildProvider(\Laravel\Socialite\Two\GoogleProvider::class, $this->config)
+        return Socialite::buildProvider(GoogleProvider::class, $this->config)
             ->redirect()
             ->getTargetUrl();
     }
@@ -49,7 +49,7 @@ class GoogleLoginController extends AbstractLoginController
      */
     public function authenticate(Request $request): RedirectResponse
     {
-        $response = Socialite::buildProvider(\Laravel\Socialite\Two\GoogleProvider::class, $this->config)->user();
+        $response = Socialite::buildProvider(GoogleProvider::class, $this->config)->user();
 
         if (User::where('email', $response->email)->exists()) {
             $user = User::where('email', $response->email)->first();
@@ -64,8 +64,6 @@ class GoogleLoginController extends AbstractLoginController
 
             return redirect('/account/setup');
         }
-
-        return redirect()->route('auth.login');
     }
 
     /**

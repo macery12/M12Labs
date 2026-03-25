@@ -102,8 +102,6 @@ class RoleController extends ApplicationApiController
      */
     public function updatePermissions(UpdateRoleRequest $request, AdminRole $role): array
     {
-        dd($request->input('permissions'));
-
         return $this->fractal->item($role)
             ->transformWith(AdminRoleTransformer::class)
             ->toArray();
