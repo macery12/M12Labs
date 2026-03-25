@@ -4,6 +4,7 @@ namespace Everest\Models;
 
 use Everest\Rules\Username;
 use Everest\Facades\Activity;
+use Everest\Models\Billing\Order;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Auth\Authenticatable;
@@ -300,6 +301,11 @@ class User extends Model implements
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     /**
