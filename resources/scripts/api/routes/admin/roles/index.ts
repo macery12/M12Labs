@@ -26,7 +26,7 @@ const createRole = (
 ): Promise<UserRole> => {
     return new Promise((resolve, reject) => {
         http.post(
-            '/api/application/roles',
+            '/api/application/users/roles',
             {
                 name,
                 description,
@@ -41,7 +41,7 @@ const createRole = (
 
 const deleteRole = (id: number): Promise<void> => {
     return new Promise((resolve, reject) => {
-        http.delete(`/api/application/roles/${id}`)
+        http.delete(`/api/application/users/roles/${id}`)
             .then(() => resolve())
             .catch(reject);
     });
@@ -49,7 +49,7 @@ const deleteRole = (id: number): Promise<void> => {
 
 const getRole = (id: number, include: string[] = []): Promise<UserRole> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/application/roles/${id}`, { params: { include: include.join(',') } })
+        http.get(`/api/application/users/roles/${id}`, { params: { include: include.join(',') } })
             .then(({ data }) => resolve(Transformers.toUserRole(data)))
             .catch(reject);
     });
@@ -62,7 +62,7 @@ const getRolePermisisons = (): Promise<{
     };
 }> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/application/roles/permissions`)
+        http.get(`/api/application/users/roles/permissions`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -78,7 +78,7 @@ const searchRoles = (filters?: { name?: string }): Promise<UserRole[]> => {
     }
 
     return new Promise((resolve, reject) => {
-        http.get('/api/application/roles', { params })
+        http.get('/api/application/users/roles', { params })
             .then(response => resolve((response.data.data || []).map(Transformers.toUserRole)))
             .catch(reject);
     });
@@ -94,7 +94,7 @@ const updateRole = (
 ): Promise<UserRole> => {
     return new Promise((resolve, reject) => {
         http.patch(
-            `/api/application/roles/${id}`,
+            `/api/application/users/roles/${id}`,
             {
                 name,
                 description,
@@ -127,7 +127,7 @@ const getRoles = (include: string[] = []) => {
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     return useSWR<PaginatedResult<UserRole>>(['roles', page, filters, sort, sortDirection], async () => {
-        const { data } = await http.get('/api/application/roles', {
+        const { data } = await http.get('/api/application/users/roles', {
             params: { include: include.join(','), page, ...params },
         });
 

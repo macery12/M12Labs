@@ -7,7 +7,7 @@ import { getRole, updateRole } from '@/api/routes/admin/roles';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import AdminBox from '@/elements/AdminBox';
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import RoleDeleteButton from '@/components/admin/management/roles/RoleDeleteButton';
+import RoleDeleteButton from '@/components/admin/management/users/roles/RoleDeleteButton';
 import { Button } from '@/elements/button';
 import Field from '@/elements/Field';
 import Spinner from '@/elements/Spinner';

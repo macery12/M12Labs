@@ -360,6 +360,20 @@ Route::middleware([AdminSubject::class])->group(function () {
     */
     Route::group(['prefix' => '/users'], function () {
         Route::get('/', [Application\Users\UserController::class, 'index']);
+
+        Route::group(['prefix' => '/roles'], function () {
+            Route::get('/', [Application\Roles\RoleController::class, 'index']);
+            Route::get('/permissions', [Application\Roles\RoleController::class, 'permissions']);
+            Route::get('/{role:id}', [Application\Roles\RoleController::class, 'view']);
+
+            Route::post('/', [Application\Roles\RoleController::class, 'store']);
+
+            Route::patch('/{role:id}', [Application\Roles\RoleController::class, 'update']);
+            Route::patch('/{role:id}/permissions', [Application\Roles\RoleController::class, 'updatePermissions']);
+
+            Route::delete('/{role:id}', [Application\Roles\RoleController::class, 'delete']);
+        });
+
         Route::get('/{user:id}', [Application\Users\UserController::class, 'view']);
         Route::get('/external/{external_id}', [Application\Users\ExternalUserController::class, 'index']);
 
@@ -369,26 +383,5 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::patch('/{user:id}', [Application\Users\UserController::class, 'update']);
 
         Route::delete('/{user:id}', [Application\Users\UserController::class, 'delete']);
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Role Controller Routes
-    |--------------------------------------------------------------------------
-    |
-    | Endpoint: /api/application/roles
-    |
-    */
-    Route::group(['prefix' => '/roles'], function () {
-        Route::get('/', [Application\Roles\RoleController::class, 'index']);
-        Route::get('/permissions', [Application\Roles\RoleController::class, 'permissions']);
-        Route::get('/{role:id}', [Application\Roles\RoleController::class, 'view']);
-
-        Route::post('/', [Application\Roles\RoleController::class, 'store']);
-
-        Route::patch('/{role:id}', [Application\Roles\RoleController::class, 'update']);
-        Route::patch('/{role:id}/permissions', [Application\Roles\RoleController::class, 'updatePermissions']);
-
-        Route::delete('/{role:id}', [Application\Roles\RoleController::class, 'delete']);
     });
 });

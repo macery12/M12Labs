@@ -21,17 +21,21 @@ const AlertRouter = lazy(() => import('@/components/admin/modules/alert/AlertRou
 const NodeRouter = lazy(() => import('@/components/admin/management/nodes/NodeRouter'));
 const NodesContainer = lazy(() => import('@/components/admin/management/nodes/NodesContainer'));
 const NewNodeContainer = lazy(() => import('@/components/admin/management/nodes/NewNodeContainer'));
+
 const DatabaseEditContainer = lazy(() => import('@/components/admin/management/databases/DatabaseEditContainer'));
 const DatabasesContainer = lazy(() => import('@/components/admin/management/databases/DatabasesContainer'));
+
 const LinksContainer = lazy(() => import('@/components/admin/modules/links/LinksContainer'));
+
 const ServersContainer = lazy(() => import('@/components/admin/management/servers/ServersContainer'));
 const NewServerContainer = lazy(() => import('@/components/admin/management/servers/NewServerContainer'));
 const ServerRouter = lazy(() => import('@/components/admin/management/servers/ServerRouter'));
+
 const AdminUsersContainer = lazy(() => import('@/components/admin/management/users/UsersContainer'));
 const NewUserContainer = lazy(() => import('@/components/admin/management/users/NewUserContainer'));
 const UserRouter = lazy(() => import('@/components/admin/management/users/UserRouter'));
-const RolesContainer = lazy(() => import('@/components/admin/management/roles/RolesContainer'));
-const RoleEditContainer = lazy(() => import('@/components/admin/management/roles/RoleEditContainer'));
+const RolesContainer = lazy(() => import('@/components/admin/management/users/roles/RolesContainer'));
+const RoleEditContainer = lazy(() => import('@/components/admin/management/users/roles/RoleEditContainer'));
 
 const NestsContainer = lazy(() => import('@/components/admin/service/nests/NestsContainer'));
 const NestEditContainer = lazy(() => import('@/components/admin/service/nests/NestEditContainer'));
@@ -80,16 +84,18 @@ const admin: AdminRouteDefinition[] = [
     route('nodes/*', NodesContainer, { name: 'Nodes', icon: Icon.ServerIcon, category: 'management' }),
     route('nodes/new', NewNodeContainer),
     route('nodes/:id/*', NodeRouter),
+
     route('servers', ServersContainer, { name: 'Servers', icon: Icon.TerminalIcon, category: 'management' }),
     route('servers/new', NewServerContainer),
     route('servers/presets', ServerPresetContainer),
     route('servers/presets/:id/*', ServerPresetViewContainer),
     route('servers/:id/*', ServerRouter),
+
     route('users', AdminUsersContainer, { name: 'Users', icon: Icon.UserIcon, category: 'management' }),
     route('users/new', NewUserContainer),
     route('users/:id/*', UserRouter),
-    route('roles', RolesContainer, { name: 'Roles', icon: Icon.UserGroupIcon, category: 'management' }),
-    route('roles/:id', RoleEditContainer),
+    route('users/roles', RolesContainer),
+    route('users/roles/:id', RoleEditContainer),
 
     /**
      * Admin - Service Routes

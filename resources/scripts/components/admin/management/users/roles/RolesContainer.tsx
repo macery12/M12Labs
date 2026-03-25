@@ -1,7 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { getRoles, Context as RolesContext, Filters } from '@/api/routes/admin/roles';
 import { AdminContext } from '@/state/admin';
-import NewRoleButton from '@/components/admin/management/roles/NewRoleButton';
+import NewRoleButton from '@/components/admin/management/users/roles/NewRoleButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import { NavLink } from 'react-router-dom';
@@ -19,14 +19,13 @@ import AdminTable, {
     useTableHooks,
 } from '@/elements/AdminTable';
 import CopyOnClick from '@/elements/CopyOnClick';
-import { useStoreState } from '@/state/hooks';
+import { UsersIcon, UserAddIcon } from '@heroicons/react/outline';
+import { SubNavigation, SubNavigationLink } from '../../../SubNavigation';
 
 const RolesContainer = () => {
     const { page, setPage, setFilters, sort, setSort, sortDirection } = useContext(RolesContext);
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { data: roles, error, isValidating } = getRoles();
-
-    const { colors } = useStoreState(state => state.theme.data!);
 
     useEffect(() => {
         if (!error) {
@@ -73,6 +72,15 @@ const RolesContainer = () => {
 
             <FlashMessageRender byKey={'roles'} css={tw`mb-4`} />
 
+            <SubNavigation>
+                <SubNavigationLink to={`/admin/users`} name={'Users'} base>
+                    <UsersIcon />
+                </SubNavigationLink>
+                <SubNavigationLink to={`/admin/users/roles`} name={'Administrator Roles'}>
+                    <UserAddIcon />
+                </SubNavigationLink>
+            </SubNavigation>
+
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>
                     <Pagination data={roles} onPageSelect={setPage}>
@@ -111,7 +119,7 @@ const RolesContainer = () => {
                                                 <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                     <NavLink
                                                         to={`${window.location.pathname}/${role.id}`}
-                                                        style={{ color: role.color ?? colors.primary }}
+                                                        style={{ color: role.color ?? '#fff' }}
                                                         className={'hover:brightness-125 duration-300'}
                                                     >
                                                         {role.name}
