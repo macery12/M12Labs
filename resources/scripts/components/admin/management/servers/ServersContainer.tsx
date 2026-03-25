@@ -4,7 +4,7 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import ServersTable from '@admin/management/servers/ServersTable';
 import { Button } from '@/elements/button';
-import { AdjustmentsIcon, TerminalIcon } from '@heroicons/react/outline';
+import { AdjustmentsIcon, ArchiveIcon, TerminalIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import PresetCreationDialog from './PresetCreationDialog';
 
@@ -38,6 +38,9 @@ export default () => (
             </SubNavigationLink>
             <SubNavigationLink to="/admin/servers/presets" name="Presets">
                 <AdjustmentsIcon />
+            </SubNavigationLink>
+            <SubNavigationLink to="/admin/nests" name="Nests">
+                <ArchiveIcon />
             </SubNavigationLink>
         </SubNavigation>
 

@@ -8,7 +8,6 @@ import ServerPresetViewContainer from '@/components/admin/management/servers/pre
 
 const OverviewContainer = lazy(() => import('@/components/admin/general/overview/OverviewContainer'));
 const SettingsRouter = lazy(() => import('@/components/admin/general/settings/SettingsRouter'));
-const ActivityContainer = lazy(() => import('@/components/admin/general/ActivityContainer'));
 const ApplicationApiRouter = lazy(() => import('@/components/admin/general/api/ApplicationApiRouter'));
 
 const AuthContainer = lazy(() => import('@/components/admin/modules/auth/AuthContainer'));
@@ -45,12 +44,6 @@ const admin: AdminRouteDefinition[] = [
      */
     route('', OverviewContainer, { name: 'Overview', end: true, icon: Icon.OfficeBuildingIcon, category: 'general' }),
     route('settings/*', SettingsRouter, { name: 'Settings', icon: Icon.CogIcon, category: 'general' }),
-    route('activity', ActivityContainer, {
-        name: 'Activity',
-        icon: Icon.EyeIcon,
-        category: 'general',
-        condition: flags => flags.activityEnabled,
-    }),
     route('api/*', ApplicationApiRouter, { name: 'API', icon: Icon.CodeIcon, category: 'general', advanced: true }),
 
     /**
@@ -101,7 +94,7 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - Service Routes
      */
-    route('nests', NestsContainer, { name: 'Nests', icon: Icon.ViewGridIcon, category: 'services' }),
+    route('nests', NestsContainer),
     route('nests/:nestId', NestEditContainer),
     route('nests/:nestId/new', NewEggContainer),
     route('nests/:nestId/eggs/:id/*', EggRouter),

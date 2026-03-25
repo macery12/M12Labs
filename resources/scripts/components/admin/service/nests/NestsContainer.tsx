@@ -20,6 +20,8 @@ import NewNestButton from '@admin/service/nests/NewNestButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
+import { TerminalIcon, AdjustmentsIcon, ArchiveIcon } from '@heroicons/react/outline';
+import { SubNavigation, SubNavigationLink } from '../../SubNavigation';
 
 const NestsContainer = () => {
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(NestsContext);
@@ -65,6 +67,18 @@ const NestsContainer = () => {
                     <NewNestButton />
                 </div>
             </div>
+
+            <SubNavigation>
+                <SubNavigationLink to="/admin/servers" name="All Servers" base>
+                    <TerminalIcon />
+                </SubNavigationLink>
+                <SubNavigationLink to="/admin/servers/presets" name="Presets">
+                    <AdjustmentsIcon />
+                </SubNavigationLink>
+                <SubNavigationLink to="/admin/nests" name="Nests">
+                    <ArchiveIcon />
+                </SubNavigationLink>
+            </SubNavigation>
 
             <FlashMessageRender byKey={'nests'} css={tw`mb-4`} />
 

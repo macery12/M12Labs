@@ -1,4 +1,3 @@
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { useEffect, useState } from 'react';
 import { useFlashKey } from '@/plugins/useFlash';
@@ -36,20 +35,8 @@ export default () => {
     }, [error]);
 
     return (
-        <AdminContentBlock title={'Admin Activity'}>
+        <div>
             <FlashMessageRender byKey={'admin:activity'} className={'mb-4'} />
-            <div className={'w-full flex flex-row items-center mb-8'}>
-                <div className={'flex flex-col flex-shrink'} style={{ minWidth: '0' }}>
-                    <h2 className={'text-2xl text-neutral-50 font-header font-medium'}>Admin Activity</h2>
-                    <p
-                        className={
-                            'hidden lg:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden'
-                        }
-                    >
-                        Get detailed insights into what actions administrators are performing.
-                    </p>
-                </div>
-            </div>
             {(filters.filters?.event || filters.filters?.ip) && (
                 <div className={'mb-2 flex justify-end'}>
                     <Link
@@ -90,6 +77,6 @@ export default () => {
                     onPageSelect={page => setFilters(value => ({ ...value, page }))}
                 />
             )}
-        </AdminContentBlock>
+        </div>
     );
 };

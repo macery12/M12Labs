@@ -1,6 +1,6 @@
 import { SubNavigation, SubNavigationLink } from '@/components/admin/SubNavigation';
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import { AdjustmentsIcon, TerminalIcon } from '@heroicons/react/outline';
+import { AdjustmentsIcon, ArchiveIcon, TerminalIcon } from '@heroicons/react/outline';
 import ServerPresetsTable from './ServerPresetsTable';
 import ServerPresetDialog from './ServerPresetDialog';
 
@@ -26,6 +26,9 @@ export default () => (
             </SubNavigationLink>
             <SubNavigationLink to="/admin/servers/presets" name="Presets">
                 <AdjustmentsIcon />
+            </SubNavigationLink>
+            <SubNavigationLink to="/admin/nests" name="Nests">
+                <ArchiveIcon />
             </SubNavigationLink>
         </SubNavigation>
 

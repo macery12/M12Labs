@@ -3,7 +3,7 @@ import { action, createContextStore, useStoreActions } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Form, Formik } from 'formik';
 import { useEffect, useState } from 'react';
-import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 
@@ -25,6 +25,8 @@ import Label from '@/elements/Label';
 import NestDeleteButton from '@admin/service/nests/NestDeleteButton';
 import NestEggTable from '@admin/service/nests/NestEggTable';
 import type { ApplicationStore } from '@/state';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 interface ctx {
     nest: Nest | undefined;
@@ -222,6 +224,11 @@ const NestEditContainer = () => {
                 </div>
 
                 <div css={tw`flex flex-row ml-auto pl-4`}>
+                    <Link to={'/admin/nests'} className={'mr-4'}>
+                        <Button.Text>
+                            <FontAwesomeIcon icon={faArrowLeft} className={'mr-2'} /> Go Back
+                        </Button.Text>
+                    </Link>
                     <ImportEggButton css={tw`mr-4`} />
 
                     <NavLink to={`/admin/nests/${params.nestId}/new`}>

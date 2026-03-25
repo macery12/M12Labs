@@ -7,6 +7,7 @@ import useFlash from '@/plugins/useFlash';
 import {
     faArrowRight,
     faDesktop,
+    faEye,
     faHeart,
     faLayerGroup,
     faQuestionCircle,
@@ -25,6 +26,7 @@ import { Link } from 'react-router-dom';
 import { Alert } from '@/elements/alert';
 import getMetrics, { MetricData } from '@/api/routes/admin/getMetrics';
 import getVersion, { VersionData } from '@/api/routes/admin/getVersion';
+import ActivityContainer from './ActivityContainer';
 
 interface SuggestionProps {
     icon: IconDefinition;
@@ -193,6 +195,9 @@ export default () => {
                         }
                     />
                 </div>
+            </AdminBox>
+            <AdminBox title={'Administrator Activity'} className={'mt-6'} icon={faEye}>
+                <ActivityContainer />
             </AdminBox>
         </AdminContentBlock>
     );

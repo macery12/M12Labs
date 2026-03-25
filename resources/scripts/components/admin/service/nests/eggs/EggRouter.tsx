@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Route, Routes, useParams } from 'react-router-dom';
+import { Link, Route, Routes, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 
 import { useEggFromRoute } from '@/api/routes/admin/egg';
@@ -11,6 +11,9 @@ import Spinner from '@/elements/Spinner';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import EggSettingsContainer from '@admin/service/nests/eggs/EggSettingsContainer';
+import { Button } from '@/elements/button';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const EggRouter = () => {
     const { id, nestId } = useParams<'nestId' | 'id'>();
@@ -45,6 +48,13 @@ const EggRouter = () => {
                     >
                         {egg.uuid}
                     </p>
+                </div>
+                <div css={tw`flex flex-row ml-auto pl-4`}>
+                    <Link to={`/admin/nests/${egg.nestId}`} className={'mr-4'}>
+                        <Button.Text>
+                            <FontAwesomeIcon icon={faArrowLeft} className={'mr-2'} /> Go Back
+                        </Button.Text>
+                    </Link>
                 </div>
             </div>
 
