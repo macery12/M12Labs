@@ -7,6 +7,7 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\AI\OpenAIService;
+use Everest\Services\Email\EmailRedactor;
 use Everest\Http\Requests\Api\Application\Intelligence;
 
 class IntelligenceController extends ApplicationApiController
@@ -34,8 +35,13 @@ class IntelligenceController extends ApplicationApiController
             Setting::set('settings::modules:ai:' . $key, $value);
         }
 
+        $activitySettings = EmailRedactor::redactSensitivePayload(
+            $request->all(),
+            ['api_key', 'token', 'secret', 'password', 'authorization', 'key']
+        );
+
         Activity::event('admin:ai:update')
-            ->property('settings', $request->all())
+            ->property('settings', $activitySettings)
             ->description('Jexactyl AI settings were updated')
             ->log();
 

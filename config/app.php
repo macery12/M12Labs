@@ -11,7 +11,7 @@ return [
     | change this value if you are not maintaining your own internal versions.
     */
 
-    'version' => '2.0.0-Rc2.1',
+    'version' => '2.0.0-Rc2.6',
 
     /*
     |--------------------------------------------------------------------------
@@ -213,6 +213,7 @@ return [
         Illuminate\Redis\RedisServiceProvider::class,
         Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
         Illuminate\Session\SessionServiceProvider::class,
+        Illuminate\Mail\MailServiceProvider::class,
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,

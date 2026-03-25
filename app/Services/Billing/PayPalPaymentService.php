@@ -4,8 +4,11 @@ namespace Everest\Services\Billing;
 
 use Everest\Models\Billing\Product;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Everest\Services\Security\LogSanitizer;
 use Everest\Models\Billing\BillingException;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
+use Everest\Models\Setting;
 
 class PayPalPaymentService
 {
@@ -14,13 +17,20 @@ class PayPalPaymentService
     private string $mode;
     private ?string $accessToken = null;
     private ?int $tokenExpiresAt = null;
+    private ?string $webhookId = null;
 
     public function __construct()
     {
-        $config = config('modules.billing.paypal_standalone');
+        $config = [
+            'client_id' => Setting::get('settings::modules:billing:paypal_standalone:client_id', config('modules.billing.paypal_standalone.client_id')),
+            'client_secret' => Setting::get('settings::modules:billing:paypal_standalone:client_secret', config('modules.billing.paypal_standalone.client_secret')),
+            'mode' => Setting::get('settings::modules:billing:paypal_standalone:mode', config('modules.billing.paypal_standalone.mode')),
+            'webhook_id' => Setting::get('settings::modules:billing:paypal_standalone:webhook_id', config('modules.billing.paypal_standalone.webhook_id')),
+        ];
         $this->clientId = $config['client_id'] ?? null;
         $this->clientSecret = $config['client_secret'] ?? null;
         $this->mode = $config['mode'] ?? 'sandbox';
+        $this->webhookId = $config['webhook_id'] ?? null;
     }
 
     /**
@@ -57,10 +67,13 @@ class PayPalPaymentService
             if (!$response->successful()) {
                 \Log::error('PayPal authentication failed', [
                     'status' => $response->status(),
-                    'response' => $response->json(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal authentication failed', 'Failed to authenticate with PayPal. Please check your credentials.', BillingException::TYPE_PAYMENT, null, 'paypal', null, ['status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal authentication failed', 'Failed to authenticate with PayPal. Please check your credentials.', BillingException::TYPE_PAYMENT, null, 'paypal', null, [
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             $data = $response->json();
@@ -73,10 +86,7 @@ class PayPalPaymentService
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal authentication exception', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            \Log::error('PayPal authentication exception', LogSanitizer::exceptionContext($e));
 
             throw new BillingExceptionClass('PayPal authentication error', 'An unexpected error occurred while authenticating with PayPal: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', null, ['error' => $e->getMessage()], $e);
         }
@@ -128,23 +138,26 @@ class PayPalPaymentService
 
             if (!$response->successful()) {
                 \Log::error('PayPal order creation failed', [
+                    'product_id' => $product->id,
                     'status' => $response->status(),
-                    'error_response' => $response->json(),
-                    'raw_body' => $response->body(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal order creation failed', 'Failed to create PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', null, ['product_id' => $product->id, 'amount' => $amount, 'status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal order creation failed', 'Failed to create PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', null, [
+                    'product_id' => $product->id,
+                    'amount' => $amount,
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             return $response->json();
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal order creation exception', [
+            \Log::error('PayPal order creation exception', array_merge([
                 'product_id' => $product->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('PayPal order creation error', 'An unexpected error occurred while creating PayPal order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', null, ['product_id' => $product->id, 'error' => $e->getMessage()], $e);
         }
@@ -174,23 +187,24 @@ class PayPalPaymentService
 
             if (!$response->successful()) {
                 \Log::error('PayPal order fetch failed', [
-                    'order_id' => $orderId,
+                    'order_id' => LogSanitizer::maskIdentifier($orderId),
                     'status' => $response->status(),
-                    'error_response' => $response->json(),
-                    'raw_body' => $response->body(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal order fetch failed', 'Failed to fetch PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal order fetch failed', 'Failed to fetch PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, [
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             return $response->json();
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal order fetch exception', [
-                'order_id' => $orderId,
-                'error' => $e->getMessage(),
-            ]);
+            \Log::error('PayPal order fetch exception', array_merge([
+                'order_id' => LogSanitizer::maskIdentifier($orderId),
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('PayPal order fetch error', 'An unexpected error occurred while fetching PayPal order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['error' => $e->getMessage()], $e);
         }
@@ -216,23 +230,24 @@ class PayPalPaymentService
 
             if (!$response->successful()) {
                 \Log::error('PayPal order capture failed', [
-                    'order_id' => $orderId,
+                    'order_id' => LogSanitizer::maskIdentifier($orderId),
                     'status' => $response->status(),
-                    'error_response' => $response->json(),
-                    'raw_body' => $response->body(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
                 ]);
 
-                throw new BillingExceptionClass('PayPal order capture failed', 'Failed to capture PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['status' => $response->status(), 'response' => $response->json()]);
+                throw new BillingExceptionClass('PayPal order capture failed', 'Failed to capture PayPal order. Please try again or contact support.', BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, [
+                    'status' => $response->status(),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
             }
 
             return $response->json();
         } catch (BillingExceptionClass $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('PayPal order capture exception', [
-                'order_id' => $orderId,
-                'error' => $e->getMessage(),
-            ]);
+            \Log::error('PayPal order capture exception', array_merge([
+                'order_id' => LogSanitizer::maskIdentifier($orderId),
+            ], LogSanitizer::exceptionContext($e)));
 
             throw new BillingExceptionClass('PayPal order capture error', 'An unexpected error occurred while capturing PayPal order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, null, 'paypal', $orderId, ['error' => $e->getMessage()], $e);
         }
@@ -283,6 +298,51 @@ class PayPalPaymentService
         return $order['status'] ?? 'UNKNOWN';
     }
 
+    public function verifyWebhookSignature(array $headers, array $webhookEvent): bool
+    {
+        $webhookId = $this->getWebhookId();
+        if (!$webhookId) {
+            \Log::warning('PayPal webhook verification skipped because webhook ID could not be resolved');
+
+            return false;
+        }
+
+        try {
+            $token = $this->getAccessToken();
+
+            $response = Http::withToken($token)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->post($this->getApiUrl() . '/v1/notifications/verify-webhook-signature', [
+                    'auth_algo' => $headers['auth_algo'],
+                    'cert_url' => $headers['cert_url'],
+                    'transmission_id' => $headers['transmission_id'],
+                    'transmission_sig' => $headers['transmission_sig'],
+                    'transmission_time' => $headers['transmission_time'],
+                    'webhook_id' => $webhookId,
+                    'webhook_event' => $webhookEvent,
+                ]);
+
+            if (!$response->successful()) {
+                \Log::warning('PayPal webhook verification request failed', [
+                    'status' => $response->status(),
+                    'transmission_id' => LogSanitizer::maskIdentifier($headers['transmission_id'] ?? null),
+                    'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                ]);
+
+                return false;
+            }
+
+            return ($response->json('verification_status') ?? 'FAILURE') === 'SUCCESS';
+        } catch (\Throwable $e) {
+            \Log::error('PayPal webhook verification exception', LogSanitizer::exceptionContext($e));
+
+            return false;
+        }
+    }
+
     /**
      * Extract custom data from PayPal order.
      */
@@ -306,5 +366,49 @@ class PayPalPaymentService
         if (!$this->clientId || !$this->clientSecret) {
             throw new BillingExceptionClass('PayPal credentials are missing', 'PayPal is not configured. Please add your PayPal credentials.', BillingException::TYPE_STOREFRONT, null, 'paypal', null, ['configured' => false]);
         }
+    }
+
+    private function getWebhookId(): ?string
+    {
+        if (!empty($this->webhookId)) {
+            return $this->webhookId;
+        }
+
+        $cacheKey = 'billing:paypal:webhook-id:' . $this->mode;
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () {
+            try {
+                $token = $this->getAccessToken();
+                $response = Http::withToken($token)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'application/json',
+                    ])
+                    ->get($this->getApiUrl() . '/v1/notifications/webhooks');
+
+                if (!$response->successful()) {
+                    \Log::warning('PayPal webhook ID lookup failed', [
+                        'status' => $response->status(),
+                        'response_summary' => LogSanitizer::summarizeProviderPayload($response->json()),
+                    ]);
+
+                    return null;
+                }
+
+                $configuredUrl = rtrim(route('webhook.paypal'), '/');
+
+                foreach ($response->json('webhooks', []) as $webhook) {
+                    if (rtrim((string) ($webhook['url'] ?? ''), '/') === $configuredUrl) {
+                        $this->webhookId = $webhook['id'] ?? null;
+
+                        return $this->webhookId;
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Log::error('PayPal webhook ID lookup exception', LogSanitizer::exceptionContext($e));
+            }
+
+            return null;
+        });
     }
 }

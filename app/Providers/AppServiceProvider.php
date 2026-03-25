@@ -96,6 +96,39 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // If no APP_KEY is defined, provide a null encrypter so console commands
+        // like key:generate can still execute without crashing during boot.
+        if (blank(config('app.key')) && $this->app->runningInConsole()) {
+            $this->app->singleton('encrypter', function () {
+                return new class implements \Illuminate\Contracts\Encryption\Encrypter {
+                    public function encrypt($value, $serialize = true)
+                    {
+                        return $value;
+                    }
+
+                    public function decrypt($payload, $unserialize = true)
+                    {
+                        return $payload;
+                    }
+
+                    public function encryptString($value)
+                    {
+                        return $value;
+                    }
+
+                    public function decryptString($payload)
+                    {
+                        return $payload;
+                    }
+
+                    public function getKey()
+                    {
+                        return null;
+                    }
+                };
+            });
+        }
+
         // Only load the settings / theme service provider if the environment
         // is configured to allow it.
         if (!config('everest.load_environment_only', false) && $this->app->environment() !== 'testing') {

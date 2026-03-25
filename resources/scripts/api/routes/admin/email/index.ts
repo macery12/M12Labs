@@ -1,50 +1,133 @@
 import http from '@/api/http';
 import { type VerificationRules } from '@/state/everest';
 
+export type EmailTransport = 'resend' | 'smtp';
+export type EmailStatus = 'queued' | 'sending' | 'sent' | 'deferred' | 'skipped' | 'failed';
+export type EmailTestType = 'connection' | 'delivery';
+
+export type ResendPlanKey = 'free' | 'pro' | 'scale' | 'enterprise';
+
+export interface ResendPlanDefinition {
+    key: ResendPlanKey;
+    name: string;
+    daily_limit: number | null;
+    monthly_limit: number | null;
+    enforce_daily: boolean;
+    enforce_monthly: boolean;
+    allows_custom_limits: boolean;
+    custom_daily_limit?: number | null;
+    custom_monthly_limit?: number | null;
+}
+
 export interface ResendSettings {
-    enabled: boolean;
     api_key: boolean; // true if key exists, false otherwise
+    from_email: string;
+    from_name: string;
+    reply_to: string;
+    domain?: string;
+}
+
+export interface ResendQuotaUsage {
+    daily_sent: number;
+    monthly_sent: number;
+    daily_limit: number | null;
+    monthly_limit: number | null;
+    daily_remaining: number | null;
+    monthly_remaining: number | null;
+    next_daily_reset: string | null;
+    next_monthly_reset: string | null;
+    source?: 'provider' | 'internal';
+    synced_at?: string | null;
+}
+
+export interface ResendRateLimitMeta {
+    limit: string | null;
+    remaining: string | null;
+    reset: string | null;
+    retry_after: string | null;
+    updated_at?: string | null;
+}
+
+export interface SmtpSettings {
+    host: string;
+    port: string;
+    username: string;
+    password_set: boolean;
+    encryption: string;
     from_email: string;
     from_name: string;
     reply_to: string;
 }
 
-export interface ResendSettingsUpdate {
+export interface EmailSettings {
+    enabled: boolean;
+    transport: EmailTransport;
+    resend: ResendSettings;
+    smtp: SmtpSettings;
+    resend_plan: ResendPlanDefinition;
+    resend_plans: ResendPlanDefinition[];
+    resend_usage: ResendQuotaUsage;
+    resend_rate_limit: ResendRateLimitMeta | null;
+}
+
+export interface EmailSettingsUpdate {
     enabled?: boolean;
+    transport?: EmailTransport;
     api_key?: string;
+    clear_api_key?: boolean;
     from_email?: string;
     from_name?: string;
     reply_to?: string;
+    smtp_host?: string;
+    smtp_port?: string;
+    smtp_username?: string;
+    smtp_password?: string;
+    clear_smtp_password?: boolean;
+    smtp_encryption?: string;
+    smtp_from_email?: string;
+    smtp_from_name?: string;
+    smtp_reply_to?: string;
+    resend_plan?: ResendPlanKey;
+    resend_custom_monthly_limit?: number | null;
+    resend_custom_daily_limit?: number | null;
 }
 
 export interface SendTestEmailRequest {
     to: string;
 }
 
-export interface SendCustomEmailRequest {
-    to: string;
-    subject: string;
-    html: string;
-    text?: string;
+export interface EmailError {
+    code: string;
+    status: number;
+    message: string;
 }
 
 export interface EmailResponse {
     success: boolean;
+    action?: 'connection_test' | 'send_test';
     message_id?: string;
-    error?: string;
+    transport?: EmailTransport;
+    provider?: EmailTransport;
+    sent_at?: string;
+    tested_at?: string;
+    recipient?: string;
+    status?: EmailStatus;
+    test_type?: EmailTestType;
+    reason?: string;
+    error?: EmailError | string;
 }
 
-export const getSettings = (): Promise<ResendSettings> => {
+export const getSettings = (): Promise<EmailSettings> => {
     return new Promise((resolve, reject) => {
-        http.get<ResendSettings>(`/api/application/email/settings`)
+        http.get<EmailSettings>(`/api/application/email/settings`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const updateSettings = (settings: ResendSettingsUpdate): Promise<ResendSettings> => {
+export const updateSettings = (settings: EmailSettingsUpdate): Promise<EmailSettings> => {
     return new Promise((resolve, reject) => {
-        http.put<ResendSettings>(`/api/application/email/settings`, settings)
+        http.put<EmailSettings>(`/api/application/email/settings`, settings)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -66,17 +149,25 @@ export const updateVerificationRules = (rules: VerificationRules): Promise<Verif
     });
 };
 
-export const sendTestEmail = (data: SendTestEmailRequest): Promise<EmailResponse> => {
+export const testSmtpConnection = (): Promise<EmailResponse> => {
     return new Promise((resolve, reject) => {
-        http.post<EmailResponse>(`/api/application/email/test`, data)
+        http.post<EmailResponse>(`/api/application/email/test-smtp`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const sendCustomEmail = (data: SendCustomEmailRequest): Promise<EmailResponse> => {
+export const testResendConnection = (): Promise<EmailResponse> => {
     return new Promise((resolve, reject) => {
-        http.post<EmailResponse>(`/api/application/email/send`, data)
+        http.post<EmailResponse>(`/api/application/email/test-resend`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const sendTestEmail = (data: SendTestEmailRequest): Promise<EmailResponse> => {
+    return new Promise((resolve, reject) => {
+        http.post<EmailResponse>(`/api/application/email/test`, data)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -104,9 +195,15 @@ export const getNotificationSettings = (): Promise<NotificationSettingsResponse>
     });
 };
 
-export const updateNotificationSetting = (id: number, enabled: boolean): Promise<{ success: boolean; setting: EmailNotificationSetting }> => {
+export const updateNotificationSetting = (
+    id: number,
+    enabled: boolean,
+): Promise<{ success: boolean; setting: EmailNotificationSetting }> => {
     return new Promise((resolve, reject) => {
-        http.put<{ success: boolean; setting: EmailNotificationSetting }>(`/api/application/email/notifications/${id}`, { enabled })
+        http.put<{ success: boolean; setting: EmailNotificationSetting }>(
+            `/api/application/email/notifications/${id}`,
+            { enabled },
+        )
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -123,7 +220,7 @@ export interface EmailLog {
     provider: string;
     user_id: number | null;
     success: boolean;
-    status: string;
+    status: EmailStatus;
     attempt_count: number;
     duration_ms: number | null;
     error: string | null;
@@ -144,6 +241,8 @@ export interface EmailLogDetail {
     retry_history: Array<{
         attempt: number;
         timestamp: string;
+        status: EmailStatus;
+        duration_ms?: number | null;
         error?: string;
     }>;
     related_emails: Array<{
@@ -151,13 +250,13 @@ export interface EmailLogDetail {
         to: string;
         subject: string;
         template_key: string | null;
-        status: string;
+        status: EmailStatus;
         created_at: string;
     }>;
 }
 
 export interface EmailLogFilters {
-    status?: string;
+    status?: EmailStatus;
     template_key?: string;
     recipient?: string;
     user_id?: number;
@@ -176,15 +275,6 @@ export interface PaginatedResponse<T> {
     last_page: number;
     per_page: number;
     total: number;
-}
-
-export interface EmailStats {
-    total_sent: number;
-    successful: number;
-    failed: number;
-    by_status: Record<string, number>;
-    by_template: Record<string, number>;
-    deferred_count: number;
 }
 
 export interface DeferredEmail {
@@ -232,22 +322,6 @@ export const getEmailLog = (id: number): Promise<EmailLogDetail> => {
     });
 };
 
-export const resendEmail = (id: number): Promise<{ success: boolean; message: string; message_id?: string; error?: string }> => {
-    return new Promise((resolve, reject) => {
-        http.post<{ success: boolean; message: string; message_id?: string; error?: string }>(`/api/application/email/logs/${id}/resend`)
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
-
-export const getEmailStats = (days?: number): Promise<EmailStats> => {
-    return new Promise((resolve, reject) => {
-        http.get<EmailStats>(`/api/application/email/logs/stats`, { params: { days } })
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
-
 export const getTemplateKeys = (): Promise<{ template_keys: string[] }> => {
     return new Promise((resolve, reject) => {
         http.get<{ template_keys: string[] }>(`/api/application/email/logs/templates`)
@@ -256,7 +330,11 @@ export const getTemplateKeys = (): Promise<{ template_keys: string[] }> => {
     });
 };
 
-export const getDeferredQueue = (filters?: { status?: string; per_page?: number; page?: number }): Promise<DeferredQueueResponse> => {
+export const getDeferredQueue = (filters?: {
+    status?: 'due' | 'pending';
+    per_page?: number;
+    page?: number;
+}): Promise<DeferredQueueResponse> => {
     return new Promise((resolve, reject) => {
         http.get<DeferredQueueResponse>(`/api/application/email/deferred`, { params: filters })
             .then(({ data }) => resolve(data))
@@ -266,7 +344,9 @@ export const getDeferredQueue = (filters?: { status?: string; per_page?: number;
 
 export const sendDeferredNow = (id: number): Promise<{ success: boolean; message: string; error?: string }> => {
     return new Promise((resolve, reject) => {
-        http.post<{ success: boolean; message: string; error?: string }>(`/api/application/email/deferred/${id}/send-now`)
+        http.post<{ success: boolean; message: string; error?: string }>(
+            `/api/application/email/deferred/${id}/send-now`,
+        )
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

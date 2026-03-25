@@ -49,7 +49,6 @@ class DeferredEmail extends Model
     {
         return static::whereNull('sent_at')
             ->where('scheduled_at', '<=', now())
-            ->where('attempts', '<', 3) // Max 3 attempts
             ->orderBy('scheduled_at')
             ->limit($limit)
             ->get();

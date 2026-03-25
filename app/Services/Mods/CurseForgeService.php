@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Everest\Models\CurseForgeRequestLog;
 use GuzzleHttp\Exception\GuzzleException;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
+use Everest\Models\Setting;
 
 class CurseForgeService
 {
@@ -27,7 +28,7 @@ class CurseForgeService
      */
     public function __construct()
     {
-        $this->apiKey = config('modules.mods.curseforge_api_key') ?: '';
+        $this->apiKey = Setting::get('settings::modules:mods:curseforge_api_key', config('modules.mods.curseforge_api_key')) ?: '';
         $this->endpoint = config('modules.mods.curseforge_api_url') ?: 'https://api.curseforge.com/v1';
         $this->cacheEnabled = config('modules.mods.cache.enabled', true);
 

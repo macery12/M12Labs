@@ -11,6 +11,7 @@ use Everest\Models\Billing\Product;
 use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
+use Everest\Services\Security\LogSanitizer;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\PayPalPaymentService;
@@ -48,6 +49,7 @@ class PayPalCheckoutController extends ClientApiController
         // Check if this is a renewal payment
         $isRenewal = $request->boolean('renewal', false);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
 
         // Determine order type and calculate price
         $orderType = $isRenewal ? Order::TYPE_REN : Order::TYPE_NEW;
@@ -56,7 +58,7 @@ class PayPalCheckoutController extends ClientApiController
             $product,
             $couponId,
             $isRenewal ? 'ren' : 'new',
-            null, // billing days - use default
+            $billingDays,
             null, // node ID
             $request->user()->id
         );
@@ -92,6 +94,7 @@ class PayPalCheckoutController extends ClientApiController
             'name' => $isRenewal ? 'Server Renewal' : 'Pending',
             'node_id' => null,
             'server_id' => $isRenewal ? $serverId : null,
+            'billing_days' => $billingDays,
             'variables' => [],
             'domain_payload' => [],
         ];
@@ -176,6 +179,7 @@ class PayPalCheckoutController extends ClientApiController
         // For renewals, egg_id is not required
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
         $eggId = $isRenewal ? null : $this->validationService->validateAndGetEggId($product, $requestedEggId);
+        $billingDays = (int) ($request->input('billing_days') ?? 30);
 
         // Determine order type
         $orderType = $this->getOrderType($request);
@@ -197,19 +201,14 @@ class PayPalCheckoutController extends ClientApiController
             'egg_id' => $isRenewal ? null : $eggId,
             'type' => $orderType,
             'coupon_id' => $couponId,
+            'billing_days' => $billingDays,
             'variables' => $variables,
             'domain_payload' => is_array($domainPayload) ? $domainPayload : [],
         ]);
 
         Log::info('PayPal order updated successfully', [
             'order_id' => $order->id,
-            'paypal_order_id' => $paypalOrderId,
-            'updated_data' => [
-                'name' => $serverName,
-                'node_id' => $nodeId,
-                'egg_id' => $eggId,
-                'variables' => $variables,
-            ],
+            'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
         ]);
 
         return $this->returnNoContent();
@@ -222,18 +221,10 @@ class PayPalCheckoutController extends ClientApiController
      */
     public function captureOrder(Request $request): JsonResponse
     {
-        // IMMEDIATE TEST LOG - This should ALWAYS appear if endpoint is hit
-        Log::info('=== PAYPAL CAPTURE ENDPOINT HIT ===', [
-            'method' => $request->method(),
-            'url' => $request->fullUrl(),
-            'user_id' => $request->user()->id ?? 'not authenticated',
-            'all_input' => $request->all(),
-        ]);
-
         $paypalOrderId = $request->input('order_id');
 
         Log::info('PayPal capture requested', [
-            'paypal_order_id' => $paypalOrderId,
+            'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
             'user_id' => $request->user()->id,
         ]);
 
@@ -251,7 +242,7 @@ class PayPalCheckoutController extends ClientApiController
             Log::info('Found order for capture', [
                 'order_id' => $order->id,
                 'order_status' => $order->status,
-                'paypal_order_id' => $paypalOrderId,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
             ]);
 
             // Check idempotency - already processed?
@@ -268,35 +259,38 @@ class PayPalCheckoutController extends ClientApiController
             // Verify the PayPal order is approved
             $isApproved = $this->paypalService->isOrderApproved($paypalOrderId);
             Log::info('PayPal order approval status', [
-                'paypal_order_id' => $paypalOrderId,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                 'is_approved' => $isApproved,
             ]);
 
             if (!$isApproved) {
-                Log::warning('PayPal order not approved yet', ['paypal_order_id' => $paypalOrderId]);
+                Log::warning('PayPal order not approved yet', ['paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId)]);
                 throw new BillingExceptionClass('PayPal order not approved', 'PayPal order is not approved yet. Please complete the payment on PayPal.', BillingException::TYPE_PAYMENT, $order->id, 'paypal', $paypalOrderId, ['order_status' => 'not_approved']);
             }
 
             // Capture the payment
-            Log::info('Attempting to capture PayPal payment', ['paypal_order_id' => $paypalOrderId]);
+            Log::info('Attempting to capture PayPal payment', ['paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId)]);
             $captureResult = $this->paypalService->captureOrder($paypalOrderId);
 
             // Verify capture was successful
             $captureStatus = $captureResult['status'] ?? '';
             Log::info('PayPal capture result', [
-                'paypal_order_id' => $paypalOrderId,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                 'capture_status' => $captureStatus,
             ]);
 
             if ($captureStatus !== 'COMPLETED') {
                 Log::error('PayPal capture failed', [
-                    'paypal_order_id' => $paypalOrderId,
+                    'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                     'expected_status' => 'COMPLETED',
                     'actual_status' => $captureStatus,
                 ]);
                 // Dispatch PaymentFailed email
                 $this->dispatchPaymentFailedEmail($order, 'PayPal capture failed. Status: ' . $captureStatus, 'paypal');
-                throw new BillingExceptionClass('PayPal capture failed', 'Failed to capture PayPal payment. Status: ' . $captureStatus . '. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order->id, 'paypal', $paypalOrderId, ['capture_status' => $captureStatus, 'capture_result' => $captureResult]);
+                throw new BillingExceptionClass('PayPal capture failed', 'Failed to capture PayPal payment. Status: ' . $captureStatus . '. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order->id, 'paypal', $paypalOrderId, [
+                    'capture_status' => $captureStatus,
+                    'capture_summary' => LogSanitizer::summarizeProviderPayload($captureResult),
+                ]);
             }
 
             // Extract and save PayPal transaction details
@@ -321,8 +315,7 @@ class PayPalCheckoutController extends ClientApiController
 
             Log::info('Saved PayPal transaction details', [
                 'order_id' => $order->id,
-                'capture_id' => $order->paypal_capture_id,
-                'payer_email' => $order->paypal_payer_email,
+                'capture_id' => LogSanitizer::maskIdentifier($order->paypal_capture_id),
                 'amount' => $order->paypal_amount,
                 'currency' => $order->paypal_currency,
             ]);
@@ -333,11 +326,9 @@ class PayPalCheckoutController extends ClientApiController
                 $this->fulfillOrder($request, $order);
                 Log::info('Order fulfillment completed successfully', ['order_id' => $order->id]);
             } catch (\Exception $e) {
-                Log::error('Order fulfillment failed', [
+                Log::error('Order fulfillment failed', array_merge([
                     'order_id' => $order->id,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
+                ], LogSanitizer::exceptionContext($e)));
                 throw $e;
             }
 
@@ -357,11 +348,9 @@ class PayPalCheckoutController extends ClientApiController
             // Re-throw billing exceptions to display to user
             throw $e;
         } catch (\Exception $e) {
-            Log::error('PayPal capture exception', [
-                'paypal_order_id' => $paypalOrderId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('PayPal capture exception', array_merge([
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+            ], LogSanitizer::exceptionContext($e)));
 
             $order = Order::where('paypal_order_id', $paypalOrderId)
                 ->where('user_id', $request->user()->id)
@@ -379,7 +368,7 @@ class PayPalCheckoutController extends ClientApiController
         $paypalOrderId = $request->input('order_id');
 
         Log::info('PayPal order status check requested', [
-            'paypal_order_id' => $paypalOrderId,
+            'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
             'user_id' => $request->user()->id,
         ]);
 
@@ -398,7 +387,7 @@ class PayPalCheckoutController extends ClientApiController
 
         if (!$order) {
             Log::warning('PayPal status check: Order not found', [
-                'paypal_order_id' => $paypalOrderId,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                 'user_id' => $request->user()->id,
             ]);
 
@@ -418,7 +407,9 @@ class PayPalCheckoutController extends ClientApiController
                 $orderStatus = $this->paypalService->getOrderStatus($order->paypal_order_id);
             }
         } catch (\Exception $e) {
-            Log::warning("Failed to fetch PayPal order status for {$order->paypal_order_id}: " . $e->getMessage());
+            Log::warning('Failed to fetch PayPal order status', array_merge([
+                'paypal_order_id' => LogSanitizer::maskIdentifier($order->paypal_order_id),
+            ], LogSanitizer::exceptionContext($e)));
         }
 
         // Map order status
@@ -428,7 +419,7 @@ class PayPalCheckoutController extends ClientApiController
 
         Log::info('PayPal order status check result', [
             'order_id' => $order->id,
-            'paypal_order_id' => $order->paypal_order_id,
+            'paypal_order_id' => LogSanitizer::maskIdentifier($order->paypal_order_id),
             'internal_status' => $order->status,
             'paypal_status' => $orderStatus,
             'processed' => $processed,
@@ -551,7 +542,9 @@ class PayPalCheckoutController extends ClientApiController
 
         if (!$order) {
             // Return 200 to prevent PayPal retries for non-existent orders
-            Log::warning("PayPal webhook: Order not found for PayPal order ID: {$paypalOrderId}");
+            Log::warning('PayPal webhook order not found', [
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+            ]);
 
             return $this->returnNoContent();
         }
@@ -578,7 +571,7 @@ class PayPalCheckoutController extends ClientApiController
 
             Log::info('Processing PayPal webhook', [
                 'event_type' => $eventType,
-                'paypal_order_id' => $paypalOrderId,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                 'order_id' => $order->id,
                 'paypal_status' => $status,
                 'order_status' => $order->status,
@@ -587,20 +580,30 @@ class PayPalCheckoutController extends ClientApiController
             switch ($status) {
                 case 'COMPLETED':
                     // Payment captured successfully - fulfill the order
-                    Log::info("PayPal order {$paypalOrderId} completed for order {$order->id}");
+                    Log::info('PayPal webhook completed order', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                    ]);
                     $this->fulfillOrder($request, $order);
                     break;
 
                 case 'APPROVED':
                     // Order approved but not yet captured
                     // This shouldn't happen if we auto-capture, but keep order as pending
-                    Log::info("PayPal order {$paypalOrderId} approved but not captured for order {$order->id}");
+                    Log::info('PayPal webhook approved order pending capture', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                    ]);
                     break;
 
                 case 'VOIDED':
                 case 'EXPIRED':
                     // Order voided or expired - mark as failed
-                    Log::info("PayPal order {$paypalOrderId} {$status} for order {$order->id}");
+                    Log::info('PayPal webhook marked order failed', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                        'paypal_status' => $status,
+                    ]);
                     $order->update(['status' => Order::STATUS_FAILED]);
                     break;
 
@@ -608,17 +611,25 @@ class PayPalCheckoutController extends ClientApiController
                 case 'SAVED':
                 case 'PAYER_ACTION_REQUIRED':
                     // Order in progress - keep as pending
-                    Log::info("PayPal order {$paypalOrderId} status {$status} for order {$order->id}");
+                    Log::info('PayPal webhook order still pending action', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'order_id' => $order->id,
+                        'paypal_status' => $status,
+                    ]);
                     break;
 
                 default:
                     // Unknown status - log for investigation
-                    Log::warning("PayPal order {$paypalOrderId} has unknown status: {$status}");
+                    Log::warning('PayPal webhook returned unknown status', [
+                        'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                        'paypal_status' => $status,
+                    ]);
             }
         } catch (BillingExceptionClass $e) {
             // Log the billing exception but return 200 to prevent PayPal retries
             // The exception is already logged to the database by BillingException
-            Log::error("PayPal webhook billing exception for order {$paypalOrderId}", [
+            Log::error('PayPal webhook billing exception', [
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                 'exception_type' => $e->getExceptionType(),
                 'message' => $e->getMessage(),
                 'order_id' => $e->getOrderId(),
@@ -626,10 +637,9 @@ class PayPalCheckoutController extends ClientApiController
         } catch (\Exception $e) {
             // Log error but return 200 to prevent infinite PayPal retries
             // Create a billing exception for admin review
-            Log::error("PayPal webhook error for order {$paypalOrderId}: " . $e->getMessage(), [
-                'exception' => get_class($e),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('PayPal webhook error', array_merge([
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+            ], LogSanitizer::exceptionContext($e)));
 
             try {
                 throw new BillingExceptionClass('PayPal webhook processing error', 'Failed to process PayPal webhook: ' . $e->getMessage(), BillingException::TYPE_WEBHOOK, $order->id, 'paypal', $paypalOrderId, ['event_type' => $eventType, 'error' => $e->getMessage()], $e);

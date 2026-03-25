@@ -2,6 +2,8 @@
 
 namespace Everest\Services\Email;
 
+use Everest\Models\EmailDelivery;
+
 class EmailResult
 {
     public function __construct(
@@ -10,7 +12,9 @@ class EmailResult
         public ?string $error = null,
         public ?int $statusCode = null,
         public ?string $status = null,
-        public ?string $reason = null
+        public ?string $reason = null,
+        public ?bool $retryable = null,
+        public array $meta = []
     ) {
     }
 
@@ -23,7 +27,8 @@ class EmailResult
             success: true,
             messageId: $messageId,
             statusCode: $statusCode,
-            status: 'sent'
+            status: EmailDelivery::STATUS_SENT,
+            retryable: null
         );
     }
 
@@ -34,8 +39,9 @@ class EmailResult
     {
         return new self(
             success: false,
-            status: 'skipped',
-            reason: $reason
+            status: EmailDelivery::STATUS_SKIPPED,
+            reason: $reason,
+            retryable: false
         );
     }
 
@@ -50,13 +56,14 @@ class EmailResult
     /**
      * Create a failed result.
      */
-    public static function failure(string $error, ?int $statusCode = null): self
+    public static function failure(string $error, ?int $statusCode = null, ?bool $retryable = true): self
     {
         return new self(
             success: false,
             error: $error,
             statusCode: $statusCode,
-            status: 'failed'
+            status: EmailDelivery::STATUS_FAILED,
+            retryable: $retryable
         );
     }
 }

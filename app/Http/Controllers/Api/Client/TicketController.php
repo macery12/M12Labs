@@ -3,12 +3,13 @@
 namespace Everest\Http\Controllers\Api\Client;
 
 use Everest\Models\Ticket;
-use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Everest\Models\TicketMessage;
 use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
+use Everest\Http\Requests\Api\Client\Tickets\StoreTicketRequest;
+use Everest\Http\Requests\Api\Client\Tickets\StoreTicketMessageRequest;
 use Everest\Transformers\Api\Client\TicketTransformer;
 
 class TicketController extends ClientApiController
@@ -32,8 +33,9 @@ class TicketController extends ClientApiController
     /**
      * Stores a new Ticket for the authenticated user's account.
      */
-    public function store(Request $request): array
+    public function store(StoreTicketRequest $request): array
     {
+        $data = $request->validated();
         $enabled = config('modules.tickets.enabled');
         $max_count = (int) config('modules.tickets.max_count') ?? 0;
 
@@ -46,13 +48,13 @@ class TicketController extends ClientApiController
         }
 
         $ticket = $request->user()->tickets()->create([
-            'title' => $request->input('title'),
+            'title' => $data['title'],
         ]);
 
         TicketMessage::create([
             'ticket_id' => $ticket->id,
             'user_id' => $request->user()->id,
-            'message' => $request->input('message'),
+            'message' => $data['message'],
         ]);
 
         Activity::event('user:ticket.create')
@@ -67,7 +69,7 @@ class TicketController extends ClientApiController
     /**
      * View a ticket and its associated messages.
      */
-    public function view(Ticket $ticket, Request $request): array
+    public function view(Ticket $ticket, ClientApiRequest $request): array
     {
         if ($request->user()->id !== $ticket->user_id) {
             throw new DisplayException('You do not own this ticket.');
@@ -81,8 +83,9 @@ class TicketController extends ClientApiController
     /**
      * Add a message to a ticket.
      */
-    public function message(Ticket $ticket, Request $request): array
+    public function message(Ticket $ticket, StoreTicketMessageRequest $request): array
     {
+        $data = $request->validated();
         if ($request->user()->id !== $ticket->user_id) {
             throw new DisplayException('You do not own this ticket.');
         }
@@ -90,7 +93,7 @@ class TicketController extends ClientApiController
         TicketMessage::create([
             'ticket_id' => $ticket->id,
             'user_id' => $request->user()->id,
-            'message' => $request->input('message'),
+            'message' => $data['message'],
         ]);
 
         return $this->fractal->item($ticket)

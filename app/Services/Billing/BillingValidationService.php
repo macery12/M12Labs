@@ -21,6 +21,12 @@ use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 class BillingValidationService
 {
     /**
+     * Threshold for treating a price as effectively zero, to absorb floating point residuals.
+     * Uses $0.0001 (0.01 cents) so near-zero or negative totals from rounding/coupons are handled as free.
+     */
+    private const PRICE_EPSILON = 0.0001;
+
+    /**
      * BillingValidationService constructor.
      *
      * @param DaemonServerRepository $daemonRepository Repository for interacting with Wings daemon
@@ -146,7 +152,7 @@ class BillingValidationService
         $priceInfo = $product->calculatePrice($days, $nodeId);
         $basePrice = $priceInfo['price'];
 
-        $finalPrice = $basePrice;
+        $finalPrice = round($basePrice, 2);
         $discount = 0.0;
 
         if ($couponId) {
@@ -177,8 +183,8 @@ class BillingValidationService
                 throw new DisplayException("This coupon is only valid for {$allowed}.");
             }
 
-            $discount = $coupon->calculateDiscount($basePrice);
-            $finalPrice = max(0, $basePrice - $discount);
+            $discount = round($coupon->calculateDiscount($basePrice), 2);
+            $finalPrice = max(0, round($basePrice - $discount, 2));
         }
 
         return [
@@ -201,7 +207,9 @@ class BillingValidationService
      */
     public function validatePriceType(float $finalPrice, bool $expectFree): void
     {
-        $isFree = (float) $finalPrice === 0.0;
+        // Treat very small residuals as free (and clamp any negative totals up to zero)
+        $normalizedPrice = max(0, (float) $finalPrice);
+        $isFree = $normalizedPrice <= self::PRICE_EPSILON;
 
         if ($expectFree && !$isFree) {
             throw new DisplayException('This product is not free. Please use the payment process.');

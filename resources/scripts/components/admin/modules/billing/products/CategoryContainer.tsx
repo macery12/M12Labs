@@ -14,7 +14,7 @@ export default () => {
 
     return (
         <>
-            <div css={tw`w-full flex flex-row items-center mb-8`}>
+            <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 {data.icon ? (
                     <img src={data.icon} className={'mr-4 h-8 w-8'} alt={data.name} />
                 ) : (
@@ -31,7 +31,7 @@ export default () => {
             </div>
             <CategoryForm category={data} />
             <div css={tw`mt-12 mb-8`}>
-                <div css={tw`w-full flex flex-row items-center mb-4`}>
+                <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-4`}>
                     <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                         <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>Products</h2>
                         <p

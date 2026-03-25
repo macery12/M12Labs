@@ -2,8 +2,8 @@
 
 namespace Everest\Services\Email;
 
-use Everest\Models\Setting;
 use Everest\Models\User;
+use Everest\Models\Setting;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,6 +38,10 @@ class EmailVerificationGate
             'can_interact' => true,
         ],
     ];
+
+    public function __construct(private EmailSettingsReader $settings)
+    {
+    }
 
     public function canViewArea(?User $user, string $area): bool
     {
@@ -155,13 +159,6 @@ class EmailVerificationGate
             return false;
         }
 
-        $raw = Setting::get('settings::modules:email:resend:enabled', config('modules.email.enabled', false));
-        if (is_bool($raw)) {
-            return $raw;
-        }
-
-        $value = strtolower((string) $raw);
-
-        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+        return $this->settings->deliveryEnabled();
     }
 }

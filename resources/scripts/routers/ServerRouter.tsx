@@ -11,7 +11,7 @@ import InstallListener from '@server/InstallListener';
 import ErrorBoundary from '@/elements/ErrorBoundary';
 import { useLocation } from 'react-router-dom';
 import ConflictStateRenderer from '@server/ConflictStateRenderer';
-import MobileSidebar from '@/elements/MobileSidebar';
+import MobileDrawer from '@/elements/MobileDrawer';
 import PermissionRoute from '@/elements/PermissionRoute';
 import routes from '@/routers/routes';
 import Sidebar from '@/elements/Sidebar';
@@ -202,18 +202,21 @@ function ServerRouter() {
             {/* Global server alerts - slide-out and center popups only */}
             <ScopedAlert scope="server" position="slide-out" />
             <ScopedAlert scope="server" position="center" />
+            <MobileDrawer>
             <div className={'flex h-screen'}>
-                <MobileSidebar>
-                    <MobileSidebar.Home />
+                <MobileDrawer.Panel>
+                    <MobileDrawer.Home />
+                    <MobileDrawer.Section>Server {server?.uuid?.slice(0, 8)}</MobileDrawer.Section>
                     {routes.server
                         .filter(
                             route =>
+                                !route.category &&
                                 route.name &&
                                 (!route.condition ||
                                     route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged })),
                         )
                         .map(route => (
-                            <MobileSidebar.Link
+                            <MobileDrawer.Link
                                 key={route.route}
                                 icon={route.icon ?? PuzzleIcon}
                                 text={route.name}
@@ -221,10 +224,34 @@ function ServerRouter() {
                                 end={route.end}
                             />
                         ))}
+                    {categories.map(category => {
+                        const categoryRoutes = routes.server.filter(
+                            route =>
+                                route.category === category &&
+                                route.name &&
+                                (!route.condition || route.condition({ billable, activityEnabled })),
+                        );
+                        if (categoryRoutes.length === 0) return null;
+
+                        return (
+                            <Fragment key={category}>
+                                <MobileDrawer.Section>{category[0]!.toUpperCase() + category.slice(1)}</MobileDrawer.Section>
+                                {categoryRoutes.map(route => (
+                                    <MobileDrawer.Link
+                                        key={route.route}
+                                        icon={route.icon ?? PuzzleIcon}
+                                        text={route.name}
+                                        linkTo={route.path}
+                                        end={route.end}
+                                    />
+                                ))}
+                            </Fragment>
+                        );
+                    })}
                     {(user.rootAdmin || user.admin_role_id) && (
-                        <MobileSidebar.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
+                        <MobileDrawer.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
                     )}
-                </MobileSidebar>
+                </MobileDrawer.Panel>
                 <Sidebar className={'flex-none'} $collapsed={collapsed} theme={theme}>
                     <div
                         className={
@@ -343,6 +370,7 @@ function ServerRouter() {
                     </div>
                 )}
             </div>
+            </MobileDrawer>
         </Fragment>
     );
 }

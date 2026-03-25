@@ -3,17 +3,22 @@
 namespace Everest\Listeners\Email;
 
 use Everest\Jobs\Email\SendEmailJob;
+use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Email\EmailTypeRegistry;
 use Illuminate\Support\Facades\Log;
 
 class EmailNotificationListener
 {
+    public function __construct(private EmailSettingsReader $settings)
+    {
+    }
+
     /**
      * Handle email notification events.
      */
     public function handle(object $event): void
     {
-        if (!\Everest\Services\Email\EmailManager::isDeliveryEnabled()) {
+        if (!$this->settings->deliveryEnabled()) {
             Log::info('EmailNotificationListener: Skipping dispatch because email delivery is disabled', [
                 'event' => get_class($event),
             ]);

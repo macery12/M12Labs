@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Exception\GuzzleException;
 use Everest\Exceptions\Service\AI\AIServiceException;
+use Everest\Models\Setting;
 
 class OpenAIService
 {
@@ -21,7 +22,7 @@ class OpenAIService
      */
     public function __construct()
     {
-        $this->apiKey = config('modules.ai.key') ?: '';
+        $this->apiKey = Setting::get('settings::modules:ai:key', config('modules.ai.key')) ?: '';
         $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
         $this->model = config('modules.ai.model') ?: 'gpt-4.1-mini';
         $this->mode = config('modules.ai.mode') ?: 'openai';

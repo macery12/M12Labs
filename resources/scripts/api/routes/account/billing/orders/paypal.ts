@@ -29,6 +29,7 @@ export interface PayPalCaptureResponse {
 export const createPayPalOrder = (
     id: number,
     couponId?: number,
+    billingDays?: number,
     returnUrl?: string,
     serverId?: number,
     renewal?: boolean,
@@ -36,6 +37,7 @@ export const createPayPalOrder = (
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/products/${id}/paypal/order`, {
             coupon_id: couponId,
+            billing_days: billingDays,
             return_url: returnUrl,
             server_id: serverId,
             renewal,
@@ -54,6 +56,7 @@ export const updatePayPalOrder = ({
     renewal,
     couponId,
     eggId,
+    billingDays,
     name,
     domainPayload,
 }: {
@@ -65,6 +68,7 @@ export const updatePayPalOrder = ({
     renewal?: boolean;
     couponId?: number;
     eggId?: number;
+    billingDays?: number;
     name: string;
     domainPayload?: Array<{
         domain_id: number;
@@ -81,6 +85,7 @@ export const updatePayPalOrder = ({
             renewal,
             coupon_id: couponId,
             egg_id: eggId,
+            billing_days: billingDays,
             name,
             domain_payload: domainPayload,
         })

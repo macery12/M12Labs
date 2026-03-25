@@ -49,7 +49,7 @@ function CouponsContainer() {
 
     return (
         <>
-            <div className={'my-8 flex w-full flex-row items-center px-8'}>
+            <div className={'my-8 flex w-full flex-col items-start gap-2 px-4 sm:flex-row sm:items-center sm:px-8'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Coupons</h2>
                     <p className={'hidden overflow-hidden whitespace-nowrap text-base text-neutral-400 lg:block'}>

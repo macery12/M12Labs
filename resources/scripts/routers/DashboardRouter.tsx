@@ -8,7 +8,7 @@ import { usePersistedState } from '@/plugins/usePersistedState';
 import Sidebar from '@/elements/Sidebar';
 import { CogIcon, DesktopComputerIcon, ExternalLinkIcon, LogoutIcon, PuzzleIcon } from '@heroicons/react/outline';
 import Avatar from '@/elements/Avatar';
-import MobileSidebar from '@/elements/MobileSidebar';
+import MobileDrawer from '@/elements/MobileDrawer';
 import { CustomLink } from '@/api/routes/admin/links';
 import { getLinks } from '@/api/getLinks';
 import http from '@/api/http';
@@ -94,15 +94,21 @@ function DashboardRouter() {
         }
     };
 
+    const prefixAccountPath = (route: string) => {
+        if (route.startsWith('/')) return route;
+        return `/account/${route}`.replace(/\/$/, '');
+    };
+
     return (
+        <MobileDrawer>
         <div className={'flex h-screen'}>
             {' '}
-            <MobileSidebar>
-                <MobileSidebar.Home />
+            <MobileDrawer.Panel>
+                <MobileDrawer.Home />
                 {routes.account
                     .filter(route => route.name && (!route.condition || route.condition(flags)))
                         .map(route => (
-                            <MobileSidebar.Link
+                            <MobileDrawer.Link
                                 key={route.route}
                                 icon={route.icon ?? PuzzleIcon}
                                 text={route.name}
@@ -112,9 +118,9 @@ function DashboardRouter() {
                             />
                         ))}
                 {(user.rootAdmin || user.admin_role_id) && (
-                    <MobileSidebar.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
+                    <MobileDrawer.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
                 )}
-            </MobileSidebar>
+            </MobileDrawer.Panel>
             <Sidebar className={'flex-none'} $collapsed={collapsed} theme={theme}>
                 <div
                     className={
@@ -199,7 +205,7 @@ function DashboardRouter() {
                             .map(({ route, component: Component, path }) => (
                                 <Route
                                     key={route}
-                                    path={`/account/${route}`.replace(/\/$/, '')}
+                                    path={prefixAccountPath(route)}
                                     element={
                                         (() => {
                                             const area = getAreaForPath(path);
@@ -252,6 +258,7 @@ function DashboardRouter() {
                 </Dialog.Confirm>
             </div>
         </div>
+        </MobileDrawer>
     );
 }
 

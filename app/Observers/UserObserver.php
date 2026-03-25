@@ -5,7 +5,7 @@ namespace Everest\Observers;
 use Everest\Events;
 use Everest\Models\User;
 use Illuminate\Support\Str;
-use Everest\Models\Setting;
+use Everest\Services\Email\EmailManager;
 use Everest\Services\Auth\EmailVerificationService;
 
 class UserObserver
@@ -57,14 +57,6 @@ class UserObserver
 
     private function emailSendingEnabled(): bool
     {
-        $raw = Setting::get('settings::modules:email:resend:enabled', false);
-
-        if (is_bool($raw)) {
-            return $raw;
-        }
-
-        $value = strtolower((string) $raw);
-
-        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+        return EmailManager::isDeliveryEnabled();
     }
 }

@@ -227,8 +227,9 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::put('/settings', [Application\EmailController::class, 'updateSettings']);
         Route::get('/verification-rules', [Application\EmailController::class, 'getVerificationRules']);
         Route::put('/verification-rules', [Application\EmailController::class, 'updateVerificationRules']);
+        Route::post('/test-smtp', [Application\EmailController::class, 'testSmtpConnection']);
+        Route::post('/test-resend', [Application\EmailController::class, 'testResendConnection']);
         Route::post('/test', [Application\EmailController::class, 'sendTest']);
-        Route::post('/send', [Application\EmailController::class, 'sendCustom']);
         
         // Email notification settings
         Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
@@ -241,11 +242,8 @@ Route::middleware([AdminSubject::class])->group(function () {
         
         // Email activity logs
         Route::get('/logs', [Application\EmailActivityController::class, 'index']);
-        Route::get('/logs/stats', [Application\EmailActivityController::class, 'getStats']);
         Route::get('/logs/templates', [Application\EmailActivityController::class, 'getTemplateKeys']);
         Route::get('/logs/{id}', [Application\EmailActivityController::class, 'show']);
-        Route::get('/logs/{id}/debug-bundle', [Application\EmailActivityController::class, 'debugBundle']);
-        Route::post('/logs/{id}/resend', [Application\EmailActivityController::class, 'resend']);
         
         // Deferred email queue
         Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);

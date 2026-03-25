@@ -5,6 +5,7 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 use Stripe\StripeClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Everest\Models\Billing\Order;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
@@ -15,6 +16,7 @@ use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
+use Everest\Models\Setting;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
@@ -40,7 +42,7 @@ class CheckoutController extends ClientApiController
         parent::__construct();
 
         // Initialize Stripe client if secret key is configured
-        $stripeSecret = config('modules.billing.keys.secret');
+        $stripeSecret = Setting::get('settings::modules:billing:keys:secret', config('modules.billing.keys.secret'));
         if ($stripeSecret) {
             try {
                 $this->stripe = new StripeClient($stripeSecret);
@@ -158,7 +160,7 @@ class CheckoutController extends ClientApiController
      */
     public function getStripeKey(Request $request, int $id): JsonResponse
     {
-        $publicKey = (string) config('modules.billing.keys.publishable') ?? null;
+        $publicKey = (string) Setting::get('settings::modules:billing:keys:publishable', config('modules.billing.keys.publishable')) ?? null;
 
         if (!$publicKey) {
             throw new BillingExceptionClass('The Stripe Public API key is missing', 'Add the Stripe \'publishable\' key to your billing panel', BillingException::TYPE_STOREFRONT, null, 'stripe', null, ['key_missing' => true]);
@@ -391,14 +393,21 @@ class CheckoutController extends ClientApiController
         $this->ensureStripeInitialized();
 
         try {
-            $order = Order::where('user_id', $request->user()->id)->latest()->first();
-            $intent = $this->stripe->paymentIntents->retrieve($request->input('intent'));
+            $intentId = (string) $request->input('intent');
+            $order = DB::transaction(function () use ($request, $intentId) {
+                return Order::query()
+                    ->where('user_id', $request->user()->id)
+                    ->where('payment_intent_id', $intentId)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            });
+            $intent = $this->stripe->paymentIntents->retrieve($intentId);
 
             // Validate billing is enabled
             $this->validationService->validateBillingEnabled();
 
             if (!$intent) {
-                throw new BillingExceptionClass('Unable to fetch PaymentIntent', 'Unable to fetch payment intent from Stripe. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order?->id, 'stripe', $request->input('intent'), ['intent_id' => $request->input('intent')]);
+                throw new BillingExceptionClass('Unable to fetch PaymentIntent', 'Unable to fetch payment intent from Stripe. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order->id, 'stripe', $intentId, ['intent_id' => $intentId]);
             }
 
             // Check if order has already been processed
@@ -411,7 +420,11 @@ class CheckoutController extends ClientApiController
 
             // If the payment wasn't successful, mark the order as failed
             if ($intent->status !== 'requires_capture') {
-                $order->update(['status' => Order::STATUS_FAILED]);
+                DB::transaction(function () use ($order) {
+                    $lockedOrder = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                    $lockedOrder->update(['status' => Order::STATUS_FAILED]);
+                });
+
                 throw new BillingExceptionClass('Payment not ready for capture', 'The payment was not successful or is not ready to be captured. Status: ' . $intent->status, BillingException::TYPE_PAYMENT, $order->id, 'stripe', $intent->id, ['intent_status' => $intent->status]);
             }
 

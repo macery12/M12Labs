@@ -2,12 +2,14 @@
 
 namespace Everest\Http\Controllers\Api\Application\Billing;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\BillingCycle;
 use Everest\Services\Billing\BillingCycleService;
+use Everest\Http\Requests\Api\Application\Billing\BillingCycles\GetBillingCyclesRequest;
+use Everest\Http\Requests\Api\Application\Billing\BillingCycles\SyncBillingCyclesRequest;
+use Everest\Http\Requests\Api\Application\Billing\BillingCycles\DeleteBillingCycleRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
 class BillingCycleController extends ApplicationApiController
@@ -20,7 +22,7 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Get all billing cycles for a product with calculated prices.
      */
-    public function index(Request $request, int $category, int $product): JsonResponse
+    public function index(GetBillingCyclesRequest $request, int $category, int $product): JsonResponse
     {
         \Log::info('BillingCycleController::index called', [
             'category_param' => $category,
@@ -37,7 +39,7 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Sync billing cycles for a product.
      */
-    public function sync(Request $request, int $category, int $product): Response
+    public function sync(SyncBillingCyclesRequest $request, int $category, int $product): Response
     {
         \Log::info('BillingCycleController::sync called', [
             'category_param' => $category,
@@ -54,13 +56,7 @@ class BillingCycleController extends ApplicationApiController
             'product_name' => $productModel->name,
         ]);
 
-        $validated = $request->validate([
-            'cycles' => 'required|array',
-            'cycles.*.days' => 'required|integer|min:1|max:365',
-            'cycles.*.is_enabled' => 'boolean',
-        ]);
-
-        $this->billingCycleService->syncBillingCycles($productModel, $validated['cycles']);
+        $this->billingCycleService->syncBillingCycles($productModel, $request->validated()['cycles']);
 
         return $this->returnNoContent();
     }
@@ -68,7 +64,7 @@ class BillingCycleController extends ApplicationApiController
     /**
      * Delete a specific billing cycle.
      */
-    public function delete(int $category, int $product, int $cycle): Response
+    public function delete(DeleteBillingCycleRequest $request, int $category, int $product, int $cycle): Response
     {
         \Log::info('BillingCycleController::delete called', [
             'category_param' => $category,

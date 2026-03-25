@@ -6,9 +6,9 @@ use Illuminate\Support\Arr;
 use Psr\Log\LoggerInterface as Log;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Encryption\Encrypter;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Everest\Services\Security\SecretEncryptionService;
 
 class SettingsServiceProvider extends ServiceProvider
 {
@@ -120,10 +120,11 @@ class SettingsServiceProvider extends ServiceProvider
 
     public function boot(
         ConfigRepository $config,
-        Encrypter $encrypter,
         Log $log,
         SettingsRepositoryInterface $settings
     ): void {
+        $secrets = app(SecretEncryptionService::class);
+
         try {
             $values = $settings->all()
                 ->mapWithKeys(fn ($setting) => [$setting->key => $setting->value])
@@ -141,6 +142,12 @@ class SettingsServiceProvider extends ServiceProvider
             $dotKey = str_replace(':', '.', $key);
 
             $value = Arr::get($values, 'settings::' . $key, $config->get($dotKey));
+
+            if ($secrets->isSecretKey('settings::' . $key)) {
+                // Never decrypt secrets during boot; only surface whether a value exists.
+                $config->set($dotKey, !empty($value));
+                continue;
+            }
 
             $lower = is_string($value) ? strtolower($value) : $value;
 

@@ -11,6 +11,7 @@ interface Props {
     product: Product;
     vars: Map<string, string>;
     couponId?: number;
+    billingDays: number;
     selectedEggId?: number;
     serverName: string;
     domainPayload?: Array<{
@@ -48,7 +49,7 @@ export default (data: Props) => {
         try {
             // Create PayPal order with return URL
             console.log('[PayPal] Step 1: Creating PayPal order...');
-            const order = await createPayPalOrder(Number(data.product.id), data.couponId, returnUrl);
+            const order = await createPayPalOrder(Number(data.product.id), data.couponId, data.billingDays, returnUrl);
             console.log('[PayPal] Order created:', order);
 
             // Update order with order details
@@ -65,6 +66,7 @@ export default (data: Props) => {
                 vars: variables,
                 couponId: data.couponId,
                 eggId: data.selectedEggId,
+                billingDays: data.billingDays,
                 name: data.serverName,
                 domainPayload: data.domainPayload,
             });

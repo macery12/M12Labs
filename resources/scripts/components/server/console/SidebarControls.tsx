@@ -51,7 +51,7 @@ export default ({ className }: PowerButtonProps) => {
                 Forcibly stopping a server can lead to data corruption.
             </Dialog.Confirm>
             <div className={'mx-6'}>
-                <div className={'grid grid-cols-3 gap-4'}>
+                <div className={'grid grid-cols-3 gap-2 sm:gap-4'}>
                     <Can action={'control.start'}>
                         <Button.Success disabled={status !== 'offline'} onClick={onButtonClick.bind(this, 'start')}>
                             <PlayIcon className={'w-8'} />

@@ -28,6 +28,16 @@ class DiscordLoginController extends AbstractLoginController
         parent::__construct();
     }
 
+    private function getClientId(): ?string
+    {
+        return $this->settings->get('settings::modules:auth:discord:client_id', config('modules.auth.discord.client_id'));
+    }
+
+    private function getClientSecret(): ?string
+    {
+        return $this->settings->get('settings::modules:auth:discord:client_secret', config('modules.auth.discord.client_secret'));
+    }
+
     /**
      * Get the user's Discord token in order to access the account.
      *
@@ -45,7 +55,7 @@ class DiscordLoginController extends AbstractLoginController
         $request->session()->put('discord_oauth_state', $state);
 
         return 'https://discord.com/api/oauth2/authorize?'
-            . 'client_id=' . config('modules.auth.discord.client_id')
+            . 'client_id=' . $this->getClientId()
             . '&redirect_uri=' . route('auth.modules.discord.authenticate')
             . '&response_type=code&scope=identify%20email'
             . '&state=' . $state;
@@ -185,8 +195,8 @@ class DiscordLoginController extends AbstractLoginController
         }
 
         $response = Http::asForm()->post('https://discord.com/api/oauth2/token', [
-            'client_id' => config('modules.auth.discord.client_id'),
-            'client_secret' => config('modules.auth.discord.client_secret'),
+            'client_id' => $this->getClientId(),
+            'client_secret' => $this->getClientSecret(),
             'grant_type' => 'authorization_code',
             'code' => $request->input('code'),
             'redirect_uri' => route('auth.modules.discord.authenticate'),

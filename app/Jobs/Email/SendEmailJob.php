@@ -8,8 +8,10 @@ use Everest\Models\EmailQuota;
 use Everest\Models\DeferredEmail;
 use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Email\EmailManager;
-use Everest\Services\Email\EmailTypeRegistry;
+use Everest\Services\Email\EmailPolicyService;
 use Everest\Services\Email\EmailDeliveryTracker;
+use Everest\Services\Email\EmailSubjectResolver;
+use Everest\Services\Email\ResendQuotaService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -49,9 +51,9 @@ class SendEmailJob extends Job implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker): void
+    public function handle(EmailManager $emailManager, EmailDeliveryTracker $tracker, EmailPolicyService $policy, ResendQuotaService $resendQuotaService): void
     {
-        if (!EmailManager::isDeliveryEnabled()) {
+        if (!$policy->isDeliveryEnabled()) {
             Log::info('SendEmailJob: Email delivery disabled, skipping dispatch', [
                 'template_key' => $this->templateKey,
                 'recipient' => $this->recipient,
@@ -67,15 +69,18 @@ class SendEmailJob extends Job implements ShouldQueue
             'attempt' => $this->attempts(),
         ]);
 
+        $provider = EmailManager::getTransport();
+
         // Hard block invalid or blacklisted recipients before any processing
-        if (EmailManager::isBlockedRecipient($this->recipient)) {
+        if ($policy->isBlockedRecipient($this->recipient)) {
             $delivery = $tracker->startDelivery(
                 correlationId: $this->correlationId,
                 recipient: $this->recipient,
                 subject: $this->getSubjectForTemplate($this->templateKey),
                 templateKey: $this->templateKey,
                 userId: $this->userId,
-                tags: $this->buildTags()
+                tags: $this->buildTags(),
+                provider: $provider
             );
 
             $tracker->markSkipped($delivery, 'Blocked recipient email');
@@ -103,12 +108,13 @@ class SendEmailJob extends Job implements ShouldQueue
                 subject: $subject,
                 templateKey: $this->templateKey,
                 userId: $this->userId,
-                tags: $this->buildTags()
+                tags: $this->buildTags(),
+                provider: $provider
             );
         }
 
         // Check if this email type is enabled (template-level)
-        if (!EmailNotificationSetting::isTemplateEnabled($this->templateKey)) {
+        if (!$policy->isTemplateEnabled($this->templateKey)) {
             $reason = "Email type '{$this->templateKey}' is disabled";
 
             Log::info('SendEmailJob: Email type disabled', [
@@ -157,7 +163,7 @@ class SendEmailJob extends Job implements ShouldQueue
         }
 
         // Validate variables
-        [$validData, $errors] = EmailTypeRegistry::validateVariables($this->templateKey, $this->data);
+        [$validData, $errors] = $policy->validateTemplateData($this->templateKey, $this->data);
         
         if (!empty($errors)) {
             Log::error('SendEmailJob: Variable validation failed', [
@@ -167,6 +173,37 @@ class SendEmailJob extends Job implements ShouldQueue
             ]);
 
             throw new \Exception('Variable validation failed: ' . implode(', ', $errors));
+        }
+
+        if ($provider === 'resend' && $this->attempts() === 1) {
+            $reservation = $resendQuotaService->reserve();
+
+            if (!$reservation->allowed) {
+                $nextAvailable = $reservation->scheduledAt ?? now()->addMinutes(5);
+                $reason = $reservation->reason ?? 'resend_quota_reached';
+
+                Log::info('SendEmailJob: Resend plan quota exceeded, deferring', [
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'reason' => $reason,
+                    'scheduled_at' => $nextAvailable,
+                    'correlation_id' => $this->correlationId,
+                ]);
+
+                $tracker->markDeferred($delivery, $reason, $nextAvailable);
+
+                DeferredEmail::create([
+                    'user_id' => $this->userId,
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'data' => $validData,
+                    'correlation_id' => $this->correlationId,
+                    'reason' => $reason,
+                    'scheduled_at' => $nextAvailable,
+                ]);
+
+                return;
+            }
         }
 
         // Send the email - EmailManager will use tracker to log attempts
@@ -180,7 +217,48 @@ class SendEmailJob extends Job implements ShouldQueue
             attemptNumber: $this->attempts()
         );
 
+        if (!$result->success && $provider === 'resend' && $result->statusCode === 429) {
+            $reason = $result->reason;
+            if (in_array($reason, ['daily_quota_exceeded', 'monthly_quota_exceeded'], true)) {
+                $reasonKey = $reason === 'daily_quota_exceeded' ? 'resend_daily_quota_reached' : 'resend_monthly_quota_reached';
+                $nextAvailable = isset($result->meta['rate_limit']['reset']) && $result->meta['rate_limit']['reset']
+                    ? now()->addSeconds((int) $result->meta['rate_limit']['reset'])
+                    : now()->addMinutes(15);
+
+                Log::info('SendEmailJob: Resend provider quota exceeded, deferring', [
+                    'reason' => $reasonKey,
+                    'scheduled_at' => $nextAvailable,
+                    'correlation_id' => $this->correlationId,
+                ]);
+
+                $tracker->markDeferred($delivery, $reasonKey, $nextAvailable);
+
+                DeferredEmail::create([
+                    'user_id' => $this->userId,
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'data' => $validData,
+                    'correlation_id' => $this->correlationId,
+                    'reason' => $reasonKey,
+                    'scheduled_at' => $nextAvailable,
+                ]);
+
+                return;
+            }
+        }
+
         if (!$result->success) {
+            if ($result->retryable === false) {
+                Log::warning('SendEmailJob: Non-retryable failure, stopping retries', [
+                    'template_key' => $this->templateKey,
+                    'recipient' => $this->recipient,
+                    'error' => $result->error,
+                    'correlation_id' => $this->correlationId,
+                ]);
+
+                return;
+            }
+
             throw new \Exception($result->error ?? 'Unknown error');
         }
 
@@ -213,25 +291,7 @@ class SendEmailJob extends Job implements ShouldQueue
      */
     private function getSubjectForTemplate(string $templateKey): string
     {
-        $subjects = [
-            'auth.account_created' => 'Welcome to ' . config('app.name'),
-            'auth.account_locked' => 'Your Account Has Been Locked',
-            'auth.account_unsuspended' => 'Your Account Has Been Reactivated',
-            'auth.email_verification' => 'Verify Your Email Address',
-            'auth.password_reset' => 'Reset Your Password',
-            'auth.password_changed' => 'Your Password Has Been Changed',
-            'auth.new_login' => 'New Login Detected',
-            'auth.2fa_enabled' => 'Two-Factor Authentication Enabled',
-            'auth.2fa_disabled' => 'Two-Factor Authentication Disabled',
-            'server.created' => 'Your Server Has Been Created',
-            'server.suspended' => 'Server Suspended',
-            'server.unsuspended' => 'Server Reactivated',
-            'billing.payment_received' => 'Payment Received',
-            'billing.payment_failed' => 'Payment Failed',
-            'billing.server_renewal_notice' => 'Server Renewal Notice',
-        ];
-
-        return $subjects[$templateKey] ?? 'Notification from ' . config('app.name');
+        return EmailSubjectResolver::forTracking($templateKey);
     }
 
     /**

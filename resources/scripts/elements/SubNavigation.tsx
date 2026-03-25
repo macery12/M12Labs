@@ -4,9 +4,10 @@ import styled from 'styled-components/macro';
 
 const SubNavigation = styled.div<{ theme: SiteTheme }>`
     ${tw`bg-zinc-800 mt-6 mb-3 rounded-full mx-auto px-3 max-w-5xl lg:w-[fit-content] overflow-x-auto container-snap`};
+    -webkit-overflow-scrolling: touch;
 
     & > div {
-        ${tw`flex justify-center items-center text-sm mx-auto px-2`};
+        ${tw`flex items-center text-sm mx-auto px-2`};
 
         & > a,
         & > div {

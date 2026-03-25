@@ -6,9 +6,11 @@ import { validateCoupon, ValidateCouponResponse } from '@/api/routes/account/bil
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
 
+type CouponApplyStatus = 'applied' | 'removed' | 'invalid';
+
 interface Props {
     subtotal: number;
-    onCouponApplied: (couponData: ValidateCouponResponse | null) => void;
+    onCouponApplied: (couponData: ValidateCouponResponse | null, status: CouponApplyStatus) => void;
     orderType?: 'new' | 'ren' | 'upg';
 }
 
@@ -27,7 +29,7 @@ export default ({ subtotal, onCouponApplied, orderType = 'new' }: Props) => {
         validateCoupon(code.trim(), subtotal, orderType)
             .then(data => {
                 setApplied(data);
-                onCouponApplied(data);
+                onCouponApplied(data, 'applied');
                 addFlash({
                     key: 'coupon',
                     type: 'success',
@@ -37,7 +39,7 @@ export default ({ subtotal, onCouponApplied, orderType = 'new' }: Props) => {
             .catch(error => {
                 clearAndAddHttpError({ key: 'coupon', error });
                 setApplied(null);
-                onCouponApplied(null);
+                onCouponApplied(null, 'invalid');
             })
             .finally(() => setLoading(false));
     };
@@ -45,7 +47,7 @@ export default ({ subtotal, onCouponApplied, orderType = 'new' }: Props) => {
     const handleRemove = () => {
         setCode('');
         setApplied(null);
-        onCouponApplied(null);
+        onCouponApplied(null, 'removed');
         clearFlashes('coupon');
     };
 

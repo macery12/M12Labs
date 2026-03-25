@@ -19,6 +19,7 @@ interface Props {
     intent: StripeIntent | null;
     stripe: Stripe | null;
     couponId?: number;
+    billingDays: number;
     selectedEggId?: number;
     serverName: string;
     domainPayload?: Array<{
@@ -109,14 +110,12 @@ export default (props: Props) => {
                                     getProcessor('stripe')?.available
                                         ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
                                         : 'cursor-not-allowed opacity-50',
-                                    selectedMethod === 'stripe'
-                                        ? 'border-primary bg-opacity-20'
-                                        : 'border-gray-600 bg-transparent',
+                                    selectedMethod === 'stripe' ? 'border-primary' : 'border-gray-700',
                                 )}
                                 style={
                                     selectedMethod === 'stripe'
                                         ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                        : {}
+                                        : { backgroundColor: colors.background, borderColor: '#374151' }
                                 }
                             >
                                 <div
@@ -163,14 +162,12 @@ export default (props: Props) => {
                                     getProcessor('mollie')?.available
                                         ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
                                         : 'cursor-not-allowed opacity-50',
-                                    selectedMethod === 'mollie'
-                                        ? 'border-primary bg-opacity-20'
-                                        : 'border-gray-600 bg-transparent',
+                                    selectedMethod === 'mollie' ? 'border-primary' : 'border-gray-700',
                                 )}
                                 style={
                                     selectedMethod === 'mollie'
                                         ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                        : {}
+                                        : { backgroundColor: colors.background, borderColor: '#374151' }
                                 }
                             >
                                 <div
@@ -215,14 +212,12 @@ export default (props: Props) => {
                                     getProcessor('paypal')?.available
                                         ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
                                         : 'cursor-not-allowed opacity-50',
-                                    selectedMethod === 'paypal'
-                                        ? 'border-primary bg-opacity-20'
-                                        : 'border-gray-600 bg-transparent',
+                                    selectedMethod === 'paypal' ? 'border-primary' : 'border-gray-700',
                                 )}
                                 style={
                                     selectedMethod === 'paypal'
                                         ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
-                                        : {}
+                                        : { backgroundColor: colors.background, borderColor: '#374151' }
                                 }
                             >
                                 <div
@@ -271,6 +266,7 @@ export default (props: Props) => {
                             vars={props.vars}
                             intent={props.intent}
                             couponId={props.couponId}
+                            billingDays={props.billingDays}
                             selectedEggId={props.selectedEggId}
                             serverName={props.serverName}
                             domainPayload={props.domainPayload}
@@ -284,6 +280,7 @@ export default (props: Props) => {
                         product={props.product}
                         vars={props.vars}
                         couponId={props.couponId}
+                        billingDays={props.billingDays}
                         selectedEggId={props.selectedEggId}
                         serverName={props.serverName}
                         domainPayload={props.domainPayload}
@@ -296,6 +293,7 @@ export default (props: Props) => {
                         product={props.product}
                         vars={props.vars}
                         couponId={props.couponId}
+                        billingDays={props.billingDays}
                         selectedEggId={props.selectedEggId}
                         serverName={props.serverName}
                         domainPayload={props.domainPayload}

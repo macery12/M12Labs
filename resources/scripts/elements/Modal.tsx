@@ -32,7 +32,8 @@ export const ModalMask = styled.div`
 
 const ModalContainer = styled.div<{ alignTop?: boolean }>`
     max-width: 95%;
-    max-height: calc(100vh - 8rem);
+    max-height: calc(100vh - 4rem);
+    ${breakpoint('sm')`max-height: calc(100vh - 8rem)`};
     ${breakpoint('md')`max-width: 75%`};
     ${breakpoint('lg')`max-width: 50%`};
 

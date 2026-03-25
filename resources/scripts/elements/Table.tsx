@@ -50,14 +50,14 @@ const PaginatedFooter = ({
             style={{ backgroundColor: !noBackground ? colors.secondary : 'transparent' }}
             className={'rounded-b-lg py-2 px-4'}
         >
-            <div className={'flex justify-between space-x-2'}>
-                <p className={'my-auto text-xs font-bold text-gray-400'}>
+            <div className={'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'}>
+                <p className={'text-xs font-bold text-gray-400'}>
                     Showing <span className={'text-white'}>{pagination.startIndex + 1}</span> to{' '}
                     <span className={'text-white'}>{pagination.endIndex}</span> of{' '}
                     <span className={'text-white'}>{pagination.totalItems}</span> results
                 </p>
-                <div className={'inline-flex'}>
-                    <p className={'my-auto mr-2 text-xs font-bold text-gray-400'}>
+                <div className={'inline-flex items-center'}>
+                    <p className={'mr-2 text-xs font-bold text-gray-400'}>
                         Page <span className={'text-white'}>{pagination.currentPage}</span> of{' '}
                         <span className={'text-white'}>{pagination.totalPages}</span>
                     </p>

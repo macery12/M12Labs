@@ -88,7 +88,7 @@ export default () => {
 
     return (
         <AdminContentBlock title={'Overview'}>
-            <div css={tw`w-full flex flex-row items-center mb-8`}>
+            <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>Overview</h2>
                     <p
@@ -133,7 +133,7 @@ export default () => {
                 )}
             </AdminBox>
             <AdminBox title={'Suggested Actions'} className={'mt-6'} icon={faQuestionCircle}>
-                <div className={'grid gap-4 lg:grid-cols-3'}>
+                <div className={'grid gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
                     {!everest.auth.registration.enabled && (
                         <SuggestionCard
                             icon={faUserPlus}

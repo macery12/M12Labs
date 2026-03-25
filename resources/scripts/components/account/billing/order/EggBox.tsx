@@ -29,7 +29,11 @@ export default ({ egg, selected, setSelected, onEggChange }: Props) => {
                 'relative cursor-pointer rounded-lg border-2 p-4 transition-all',
                 isSelected ? 'border-gray-600 hover:border-gray-500' : 'border-gray-700 hover:border-gray-600',
             )}
-            style={isSelected ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` } : {}}
+            style={
+                isSelected
+                    ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                    : { backgroundColor: colors.secondary, borderColor: '#374151' }
+            }
         >
             <div className={'flex items-start gap-3'}>
                 <CubeIcon className={'h-8 w-8 flex-shrink-0'} style={{ color: colors.primary }} />

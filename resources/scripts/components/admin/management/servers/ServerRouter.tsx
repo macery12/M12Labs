@@ -56,7 +56,7 @@ export default () => {
     return (
         <AdminContentBlock title={'Server - ' + server.name}>
             <FlashMessageRender byKey={'backups'} css={tw`mb-4`} />
-            <div css={tw`w-full flex flex-row items-center mb-4`}>
+            <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-4`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>{server.name}</h2>
                     <p

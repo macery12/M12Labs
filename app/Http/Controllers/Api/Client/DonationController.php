@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
+use Everest\Models\Setting;
 
 /**
  * Donation Controller.
@@ -24,7 +25,7 @@ class DonationController extends ClientApiController
         parent::__construct();
 
         // Initialize Stripe client if secret key is configured
-        $stripeSecret = config('modules.billing.keys.secret');
+        $stripeSecret = Setting::get('settings::modules:billing:keys:secret', config('modules.billing.keys.secret'));
         if ($stripeSecret) {
             $this->stripe = new StripeClient($stripeSecret);
         }
@@ -40,7 +41,7 @@ class DonationController extends ClientApiController
      */
     public function getStripeKey(): JsonResponse
     {
-        $publicKey = config('modules.billing.keys.publishable');
+        $publicKey = Setting::get('settings::modules:billing:keys:publishable', config('modules.billing.keys.publishable'));
 
         if (empty($publicKey)) {
             throw new DisplayException('Stripe is not configured. Please contact an administrator.');

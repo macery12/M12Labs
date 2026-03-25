@@ -29,18 +29,38 @@ class ResendService
 
             $messageId = $response['body']['id'] ?? null;
             $statusCode = $response['status_code'] ?? null;
+            $meta = $response['meta'] ?? [];
+            $errorFromResponse = $response['error'] ?? ($response['body']['message'] ?? null);
+            $reason = $response['body']['name'] ?? $response['body']['type'] ?? null;
 
             if (!$messageId) {
-                return EmailResult::failure('Response missing message ID', $statusCode);
+                return new EmailResult(
+                    success: false,
+                    error: $errorFromResponse ?? 'Response missing message ID',
+                    statusCode: $statusCode,
+                    reason: $reason,
+                    // 429 quota / rate limit should not be retried automatically here
+                    retryable: $statusCode !== 429,
+                    meta: $meta
+                );
             }
 
             return new EmailResult(
                 success: true,
                 messageId: $messageId,
-                statusCode: $statusCode
+                statusCode: $statusCode,
+                meta: $meta
             );
         } catch (ResendException $e) {
-            return EmailResult::failure($e->getMessage(), $e->getCode());
+            $retryable = !($e instanceof \Everest\Exceptions\Service\Email\ResendAuthenticationException
+                || $e instanceof \Everest\Exceptions\Service\Email\ResendValidationException);
+
+            return new EmailResult(
+                success: false,
+                error: $e->getMessage(),
+                statusCode: $e->getCode(),
+                retryable: $retryable
+            );
         }
     }
 }

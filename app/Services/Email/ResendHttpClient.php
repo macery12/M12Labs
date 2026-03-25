@@ -17,6 +17,8 @@ class ResendHttpClient
     private const API_URL = 'https://api.resend.com/emails';
     private const MAX_RETRIES = 3;
     private const INITIAL_RETRY_DELAY = 1000; // milliseconds
+    private const HEADER_DAILY_QUOTA = 'x-resend-daily-quota';
+    private const HEADER_MONTHLY_QUOTA = 'x-resend-monthly-quota';
 
     private Client $client;
     private string $apiKey;
@@ -52,11 +54,13 @@ class ResendHttpClient
 
                 $statusCode = $response->getStatusCode();
                 $body = json_decode($response->getBody()->getContents(), true);
+                $headersMeta = $this->parseHeaders($response->getHeaders());
 
                 if ($statusCode === 200 || $statusCode === 201) {
                     return [
                         'body' => $body,
                         'status_code' => $statusCode,
+                        'meta' => $headersMeta,
                     ];
                 }
 
@@ -65,6 +69,7 @@ class ResendHttpClient
                 $lastException = $e;
                 $statusCode = $e->getResponse()?->getStatusCode();
                 $responseBody = $e->getResponse()?->getBody()->getContents();
+                $headersMeta = $this->parseHeaders($e->getResponse()?->getHeaders() ?? []);
                 $errorData = $responseBody ? json_decode($responseBody, true) : null;
                 $errorMessage = $errorData['message'] ?? $e->getMessage();
 
@@ -85,7 +90,12 @@ class ResendHttpClient
                 }
 
                 if ($statusCode === 429) {
-                    throw new ResendRateLimitException($errorMessage, $statusCode);
+                    return [
+                        'body' => $errorData ?? [],
+                        'status_code' => $statusCode,
+                        'error' => $errorMessage,
+                        'meta' => $headersMeta,
+                    ];
                 }
 
                 // Handle 5xx errors with exponential backoff
@@ -113,5 +123,37 @@ class ResendHttpClient
         }
 
         throw new ResendServerException('Maximum retry attempts exceeded', 500);
+    }
+
+    /**
+    * Parse usage and rate-limit headers from the response.
+    */
+    private function parseHeaders(array $headers): array
+    {
+        $getHeader = function (string $key) use ($headers): ?string {
+            foreach ($headers as $name => $values) {
+                if (strtolower($name) === strtolower($key)) {
+                    return is_array($values) ? ($values[0] ?? null) : $values;
+                }
+            }
+
+            return null;
+        };
+
+        $dailyUsed = $getHeader(self::HEADER_DAILY_QUOTA);
+        $monthlyUsed = $getHeader(self::HEADER_MONTHLY_QUOTA);
+
+        return [
+            'usage' => [
+                'daily_used' => $dailyUsed !== null ? (int) $dailyUsed : null,
+                'monthly_used' => $monthlyUsed !== null ? (int) $monthlyUsed : null,
+            ],
+            'rate_limit' => [
+                'limit' => $getHeader('ratelimit-limit'),
+                'remaining' => $getHeader('ratelimit-remaining'),
+                'reset' => $getHeader('ratelimit-reset'),
+                'retry_after' => $getHeader('retry-after'),
+            ],
+        ];
     }
 }

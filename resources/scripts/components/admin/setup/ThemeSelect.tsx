@@ -39,7 +39,7 @@ export default ({ defaultColor }: { defaultColor: string }) => {
 
     return (
         <div>
-            <div className={'mb-8 flex w-full flex-row items-center'}>
+            <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Theme Preferences</h2>
                     <p
@@ -52,7 +52,7 @@ export default ({ defaultColor }: { defaultColor: string }) => {
                 </div>
             </div>
             <AdminBox status={status} title={'Set Primary Color'}>
-                <div className={'grid grid-cols-4 gap-4 lg:grid-cols-8 lg:gap-8'}>
+                <div className={'grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6 xl:grid-cols-8 lg:gap-6'}>
                     {colorOptions.map(option => (
                         <div
                             className={'relative text-center'}
