@@ -13,6 +13,7 @@ use Everest\Models\Billing\DiscountCode;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Billing\PaymentService;
 use Everest\Services\Billing\UpgradeService;
+use Everest\Services\Billing\DiscountService;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\ServerRenewalService;
 use Everest\Services\Billing\ServerDeploymentService;
@@ -31,6 +32,7 @@ class StripeController extends ClientApiController
     public function __construct(
         private UpgradeService $upgradeService,
         private PaymentService $paymentService,
+        private DiscountService $discountService,
         private CreateOrderService $orderService,
         private ServerRenewalService $renewalService,
         private ServerDeploymentService $deploymentService,
@@ -45,6 +47,7 @@ class StripeController extends ClientApiController
      */
     public function create(CreateStripePaymentRequest $request): string
     {
+        $price = null;
         $server = null;
         $node_id = $request->input('node_id') ?? null;
         $product = Product::findOrFail($request->input('product_id'));
@@ -79,14 +82,19 @@ class StripeController extends ClientApiController
             'order_type' => $order_type,
         ];
 
-        $transaction = $this->paymentService->create($this->stripe, $request->user(), $product, $metadata);
+        if ($request->exists('discount_code')) {
+            $price = $this->discountService->handle($product, $request->input('discount_code'));
+        };
+
+        $transaction = $this->paymentService->create($this->stripe, $request->user(), $product, $metadata, $price);
 
         $order = $this->orderService->create(
             $transaction->id,
             $request->user(),
             $product,
             Order::STATUS_PENDING,
-            $order_type
+            $order_type,
+            $price
         );
 
         if ($server) {

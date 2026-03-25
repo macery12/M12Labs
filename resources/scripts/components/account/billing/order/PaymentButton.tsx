@@ -11,6 +11,7 @@ interface Props {
     node: number;
     product: Product;
     vars: Map<string, string>;
+    discount_code?: string | undefined;
 }
 
 export interface BillingServerVariables {
@@ -29,7 +30,7 @@ export default (data: Props) => {
 
         const variables: BillingServerVariables[] = Array.from(data.vars, ([key, value]) => ({ key, value }));
 
-        createCheckoutSession(data.product.id, data.node, undefined, variables)
+        createCheckoutSession(data.product.id, data.node, undefined, variables, data.discount_code)
             .then(url => {
                 window.location.assign(url);
             })
@@ -45,7 +46,7 @@ export default (data: Props) => {
                 <Alert type={'warning'}>A valid node must be selected to continue with your order.</Alert>
             ) : (
                 <div className={'text-right'}>
-                    <Button disabled={isNaN(data.node)} className={'mt-4'} size={Button.Sizes.Large}>
+                    <Button disabled={isNaN(data.node)} size={Button.Sizes.Large}>
                         Pay Now
                     </Button>
                 </div>

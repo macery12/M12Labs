@@ -19,6 +19,13 @@ interface Order extends Model {
     };
 }
 
+interface DiscountCode extends Model {
+    code: string;
+    description: string;
+    type: 'percentage' | 'numeric';
+    value: number;
+}
+
 interface Category extends Model {
     id: string;
     name: string;

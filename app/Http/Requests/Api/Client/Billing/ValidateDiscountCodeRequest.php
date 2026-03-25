@@ -9,7 +9,7 @@ class ValidateDiscountCodeRequest extends ClientApiRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|string|min:4|max:16',
+            'discount_code' => 'required|string|min:4|max:16',
         ];
     }
 }

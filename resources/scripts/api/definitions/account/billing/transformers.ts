@@ -55,4 +55,11 @@ export default class Transformers {
         name: data.name,
         fqdn: data.fqdn,
     });
+
+    static toDiscountCode = ({ attributes: data }: FractalResponseData): Models.DiscountCode => ({
+        code: data.code,
+        description: data.description,
+        type: data.type,
+        value: data.value,
+    });
 }

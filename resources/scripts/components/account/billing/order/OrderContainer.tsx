@@ -24,11 +24,12 @@ import PaymentButton from './PaymentButton';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { Product, type Node } from '@definitions/account/billing';
+import { DiscountCode, Product, type Node } from '@definitions/account/billing';
 import { getProduct, getProductVariables, getViableNodes } from '@/api/routes/account/billing/products';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { processFreeCheckoutSession } from '@/api/routes/account/billing/orders/process';
+import DiscountCodeDialog from './DiscountCodeDialog';
 
 const LimitBox = ({ icon, content }: { icon: IconDefinition; content: string }) => {
     return (
@@ -52,6 +53,7 @@ export default () => {
     const [selectedNode, setSelectedNode] = useState<number>(0);
     const [product, setProduct] = useState<Product | undefined>();
     const [eggs, setEggs] = useState<EggVariable[] | undefined>();
+    const [discountCode, setDiscountCode] = useState<DiscountCode | undefined>();
 
     const [termsAgreed, setTermsAgreed] = useState<boolean>(false);
     const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
@@ -97,6 +99,14 @@ export default () => {
 
     if (!product) return <Spinner centered />;
 
+    const finalPrice = (() => {
+        if (!discountCode) return product.price;
+        if (discountCode.type === 'percentage') {
+            return Math.max(0, product.price - (product.price * discountCode.value) / 100).toFixed(2);
+        }
+        return Math.max(0, product.price - discountCode.value).toFixed(2);
+    })();
+
     return (
         <PageContentBlock title={'Your Order'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
@@ -116,7 +126,8 @@ export default () => {
                     <div className={'font-semibold text-gray-400 text-lg my-1'}>
                         <FontAwesomeIcon icon={faCreditCard} className={'w-4 h-4 inline-flex mr-2 '} />
                         <span style={{ color: colors.primary }} className={'mr-1'}>
-                            ${product.price}
+                            {billing.currency.symbol}
+                            {finalPrice} {billing.currency.code.toUpperCase()}
                         </span>
                         <span className={'text-sm'}>/ mo</span>
                     </div>
@@ -235,9 +246,34 @@ export default () => {
                             </Alert>
                         ) : (
                             <>
-                                {product.price !== 0 ? (
-                                    <div className={'w-full mt-8'}>
-                                        <PaymentButton node={selectedNode} product={product} vars={vars} />
+                                {finalPrice !== 0 ? (
+                                    <div className={'mt-10'}>
+                                        <div className={'text-xl lg:text-3xl font-semibold mb-4'}>
+                                            Due Today: {billing.currency.symbol}
+                                            {finalPrice} {billing.currency.code.toUpperCase()}
+                                            {discountCode && (
+                                                <span className={'text-green-400 text-base font-normal ml-3'}>
+                                                    ({discountCode.code} discount applied)
+                                                </span>
+                                            )}
+                                            <p className={'text-gray-400 font-normal text-sm mt-1'}>
+                                                Press Pay Now to checkout via your preferred payment method.
+                                            </p>
+                                        </div>
+                                        <div className={'flex justify-between w-full mt-8'}>
+                                            <DiscountCodeDialog
+                                                discountCode={discountCode}
+                                                setDiscountCode={setDiscountCode}
+                                            />
+                                            <div className={'ml-auto'}>
+                                                <PaymentButton
+                                                    node={selectedNode}
+                                                    product={product}
+                                                    vars={vars}
+                                                    discount_code={discountCode?.code}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className={'flex w-full mt-8'}>

@@ -8,9 +8,10 @@ export const createCheckoutSession = (
     node_id?: number,
     server_id?: number,
     variables?: BillingServerVariables[],
+    discount_code?: string,
 ): Promise<string> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/billing/stripe/create`, { node_id, server_id, product_id, variables })
+        http.post(`/api/client/billing/stripe/create`, { node_id, server_id, product_id, variables, discount_code })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

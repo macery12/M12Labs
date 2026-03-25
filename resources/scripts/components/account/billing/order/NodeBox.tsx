@@ -24,7 +24,12 @@ export default ({ node, selected, setSelected }: Props) => {
                     )}
                 />
                 <ServerIcon className={'mr-2 w-8 h-8'} style={{ color: colors.primary }} />
-                <p className={'text-gray-200 font-semibold'}>{node.name}</p>
+                <p className={'text-gray-200 font-semibold'}>
+                    {node.name}{' '}
+                    <span className={'font-medium ml-2 text-gray-400 italic text-sm'}>
+                        <code>{node.fqdn}</code> - available
+                    </span>
+                </p>
             </GreyRowBox>
         </div>
     );

@@ -76,6 +76,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
         Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
 
+        // Discount code checking
+        Route::post('/discount-codes', [Client\Billing\DiscountCodeController::class, 'index']);
+
         // Viewing of available categories/products
         Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
         Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);

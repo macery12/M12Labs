@@ -13,6 +13,7 @@ class CreateStripePaymentRequest extends ClientApiRequest
             'node_id' => 'nullable|int|exists:nodes,id',
             'server_id' => 'nullable|int|exists:servers,id',
             'variables' => 'nullable|array',
+            'discount_code' => 'nullable|string|exists:discount_codes,code',
         ];
     }
 }
