@@ -2,6 +2,7 @@
 
 namespace Everest\Tests\Integration\Api\Remote;
 
+use phpseclib3\Crypt\EC;
 use Everest\Models\Node;
 use Everest\Models\User;
 use Everest\Models\Server;
@@ -119,7 +120,7 @@ class SftpAuthenticationControllerTest extends IntegrationTestCase
             $this->postJson('/api/remote/sftp/auth', [
                 'type' => 'public_key',
                 'username' => $this->getUsername(),
-                'password' => PrivateKey::createKey('Ed25519')->getPublicKey()->toString('OpenSSH'),
+                'password' => EC::createKey('Ed25519')->getPublicKey()->toString('OpenSSH'),
             ])
                 ->assertForbidden();
         }
@@ -241,7 +242,7 @@ class SftpAuthenticationControllerTest extends IntegrationTestCase
     /**
      * Sets the authorization header for the rest of the test.
      */
-    protected function setAuthorization(Node $node = null): void
+    protected function setAuthorization(?Node $node = null): void
     {
         $node = $node ?? $this->server->node;
 

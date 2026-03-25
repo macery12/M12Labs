@@ -51,7 +51,7 @@ class NestSeeder extends Seeder
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
      */
-    private function createMinecraftNest(array $nest = null)
+    private function createMinecraftNest(?array $nest = null)
     {
         if (is_null($nest)) {
             $this->creationService->handle([
@@ -66,7 +66,7 @@ class NestSeeder extends Seeder
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
      */
-    private function createSourceEngineNest(array $nest = null)
+    private function createSourceEngineNest(?array $nest = null)
     {
         if (is_null($nest)) {
             $this->creationService->handle([
@@ -81,7 +81,7 @@ class NestSeeder extends Seeder
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
      */
-    private function createVoiceServersNest(array $nest = null)
+    private function createVoiceServersNest(?array $nest = null)
     {
         if (is_null($nest)) {
             $this->creationService->handle([
@@ -96,7 +96,7 @@ class NestSeeder extends Seeder
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
      */
-    private function createRustNest(array $nest = null)
+    private function createRustNest(?array $nest = null)
     {
         if (is_null($nest)) {
             $this->creationService->handle([

@@ -5,8 +5,8 @@ namespace Everest\Tests\Integration\Api\Client;
 use Carbon\Carbon;
 use Everest\Models\User;
 use Illuminate\Http\Response;
-use Everest\Models\RecoveryToken;
 use PragmaRX\Google2FA\Google2FA;
+use Everest\Models\RecoveryToken;
 use PHPUnit\Framework\ExpectationFailedException;
 
 class TwoFactorControllerTest extends ClientApiIntegrationTestCase
@@ -101,12 +101,12 @@ class TwoFactorControllerTest extends ClientApiIntegrationTestCase
 
         $tokens = RecoveryToken::query()->where('user_id', $user->id)->get();
         $this->assertCount(10, $tokens);
-        $this->assertStringStartsWith('$2y$10$', $tokens[0]->token);
+        $this->assertStringStartsWith('$2y$12$', $tokens[0]->token);
         // Ensure the recovery tokens that were created include a "created_at" timestamp
         // value on them.
         //
         // @see https://github.com/pterodactyl/panel/issues/3163
-        $this->assertNotNull($tokens[0]->created_at->toIso8601String());
+        $this->assertNotNull($tokens[0]->created_at);
 
         $tokens = $tokens->pluck('token')->toArray();
 
@@ -149,7 +149,7 @@ class TwoFactorControllerTest extends ClientApiIntegrationTestCase
         $user = $user->refresh();
         $this->assertFalse($user->use_totp);
         $this->assertNotNull($user->totp_authenticated_at);
-        $this->assertSame(Carbon::now(), $user->totp_authenticated_at);
+        $this->assertSame(Carbon::now()->toAtomString(), $user->totp_authenticated_at->toAtomString());
     }
 
     /**
