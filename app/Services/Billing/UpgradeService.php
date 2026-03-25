@@ -27,6 +27,23 @@ class UpgradeService
     }
 
     /**
+     * Validate that an upgrade can be processed according to limits.
+     */
+    public function validate(User $user): bool
+    {
+        $renewal_days = config('modules.billing.renewal.days');
+        $order = $user->orders()->where(['type' => Order::TYPE_UPGRADE])->latest()->first();
+
+        if (!$order) return true;
+
+        if ($order->created_at->diffInDays(now()) < $renewal_days) {
+            throw new DisplayException("You must wait {$renewal_days} between server upgrades.");
+        }
+
+        return true;
+    }
+
+    /**
      * Assign the new product to this server and add the additional resources.
      */
     public function handle(Server $server, Product $product): Server
