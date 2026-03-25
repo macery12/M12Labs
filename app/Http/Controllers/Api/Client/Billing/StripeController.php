@@ -84,7 +84,7 @@ class StripeController extends ClientApiController
 
         if ($request->exists('discount_code')) {
             $price = $this->discountService->handle($product, $request->input('discount_code'));
-        };
+        }
 
         $transaction = $this->paymentService->create($this->stripe, $request->user(), $product, $metadata, $price);
 

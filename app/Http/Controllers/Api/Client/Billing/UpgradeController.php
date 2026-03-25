@@ -73,7 +73,7 @@ class UpgradeController extends ClientApiController
 
         if (!$validated) {
             throw new DisplayException('This server cannot be upgraded at this time.');
-        };
+        }
 
         $existing_product = Product::findOrFail($server->billing_product_id);
         $new_product = Product::findOrFail($request->input('product_id'));

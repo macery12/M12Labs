@@ -3,8 +3,11 @@
 namespace Everest\Services\Billing;
 
 use Carbon\Carbon;
+use Everest\Models\User;
 use Everest\Models\Server;
+use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
+use Everest\Exceptions\DisplayException;
 
 class UpgradeService
 {
@@ -34,7 +37,9 @@ class UpgradeService
         $renewal_days = config('modules.billing.renewal.days');
         $order = $user->orders()->where(['type' => Order::TYPE_UPGRADE])->latest()->first();
 
-        if (!$order) return true;
+        if (!$order) {
+            return true;
+        }
 
         if ($order->created_at->diffInDays(now()) < $renewal_days) {
             throw new DisplayException("You must wait {$renewal_days} between server upgrades.");

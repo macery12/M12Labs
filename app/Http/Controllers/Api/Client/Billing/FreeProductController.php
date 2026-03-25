@@ -6,6 +6,7 @@ use Everest\Models\Node;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
+use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\ServerRenewalService;
 use Everest\Transformers\Api\Client\ServerTransformer;
