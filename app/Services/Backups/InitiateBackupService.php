@@ -28,7 +28,7 @@ class InitiateBackupService
         private ConnectionInterface $connection,
         private DaemonBackupRepository $daemonBackupRepository,
         private DeleteBackupService $deleteBackupService,
-        private BackupManager $backupManager
+        private BackupManager $backupManager,
     ) {
     }
 
@@ -70,8 +70,8 @@ class InitiateBackupService
      * Initiates the backup process for a server on Wings.
      *
      * @throws \Throwable
-     * @throws \Everest\Exceptions\Service\Backup\TooManyBackupsException
-     * @throws \Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException
+     * @throws TooManyBackupsException
+     * @throws TooManyRequestsHttpException
      */
     public function handle(Server $server, ?string $name = null, bool $override = false): Backup
     {

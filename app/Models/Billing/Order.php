@@ -105,9 +105,10 @@ class Order extends Model
     {
         if ($this->total > 0.0) {
             return true;
-        } else {
-            return false;
         }
+
+        return false;
+
     }
 
     /**
@@ -117,9 +118,10 @@ class Order extends Model
     {
         if ($this->status === Order::STATUS_PROCESSED) {
             return true;
-        } else {
-            return false;
         }
+
+        return false;
+
     }
 
     /**
@@ -129,9 +131,10 @@ class Order extends Model
     {
         if ($this->type === Order::TYPE_RENEWAL) {
             return true;
-        } else {
-            return false;
         }
+
+        return false;
+
     }
 
     /**

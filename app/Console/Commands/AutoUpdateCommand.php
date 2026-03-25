@@ -77,7 +77,7 @@ class AutoUpdateCommand extends Command
 
         /** @var \Illuminate\Foundation\Application $app */
         $app = require __DIR__ . '/../../../bootstrap/app.php';
-        /** @var \Everest\Console\Kernel $kernel */
+        /** @var Kernel $kernel */
         $kernel = $app->make(Kernel::class);
         $kernel->bootstrap();
         $this->setLaravel($app);

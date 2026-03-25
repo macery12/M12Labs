@@ -6,7 +6,7 @@ use Everest\Models\ApiKey;
 use Laravel\Sanctum\NewAccessToken as SanctumAccessToken;
 
 /**
- * @property \Everest\Models\ApiKey $accessToken
+ * @property ApiKey $accessToken
  */
 class NewAccessToken extends SanctumAccessToken
 {

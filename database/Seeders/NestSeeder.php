@@ -9,12 +9,12 @@ use Everest\Contracts\Repository\NestRepositoryInterface;
 class NestSeeder extends Seeder
 {
     /**
-     * @var \Everest\Services\Nests\NestCreationService
+     * @var NestCreationService
      */
     private $creationService;
 
     /**
-     * @var \Everest\Contracts\Repository\NestRepositoryInterface
+     * @var NestRepositoryInterface
      */
     private $repository;
 
@@ -23,7 +23,7 @@ class NestSeeder extends Seeder
      */
     public function __construct(
         NestCreationService $creationService,
-        NestRepositoryInterface $repository
+        NestRepositoryInterface $repository,
     ) {
         $this->creationService = $creationService;
         $this->repository = $repository;

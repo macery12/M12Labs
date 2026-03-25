@@ -1,10 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Migrations\Migration;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      */
@@ -16,7 +15,6 @@ return new class extends Migration
         DB::statement('ALTER TABLE servers MODIFY service INT UNSIGNED');
         DB::statement('ALTER TABLE servers MODIFY `option` INT UNSIGNED');
     }
-
 
     /**
      * Reverse the migrations.

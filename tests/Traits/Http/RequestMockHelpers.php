@@ -37,7 +37,7 @@ trait RequestMockHelpers
      */
     public function generateRequestUserModel(array $args = []): User
     {
-        /** @var \Everest\Models\User $user */
+        /** @var User $user */
         $user = User::factory()->make($args);
         $this->setRequestUserModel($user);
 

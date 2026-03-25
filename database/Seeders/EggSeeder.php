@@ -26,7 +26,7 @@ class EggSeeder extends Seeder
      */
     public function __construct(
         private EggImporterService $importerService,
-        private EggUpdateImporterService $updateImporterService
+        private EggUpdateImporterService $updateImporterService,
     ) {
     }
 

@@ -2,13 +2,12 @@
 
 namespace Everest\Tests\Integration\Api\Remote;
 
-use phpseclib3\Crypt\EC;
 use Everest\Models\Node;
 use Everest\Models\User;
+use phpseclib3\Crypt\EC;
 use Everest\Models\Server;
 use Everest\Models\Permission;
 use Everest\Models\UserSSHKey;
-use phpseclib3\Crypt\EC\PrivateKey;
 use Everest\Tests\Integration\IntegrationTestCase;
 
 class SftpAuthenticationControllerTest extends IntegrationTestCase

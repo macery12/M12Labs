@@ -10,9 +10,6 @@ use League\Fractal\Resource\NullResource;
 
 class OrderTransformer extends Transformer
 {
-    /**
-     * {@inheritdoc}
-     */
     public function getResourceName(): string
     {
         return Order::RESOURCE_NAME;

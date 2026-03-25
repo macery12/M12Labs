@@ -7,6 +7,7 @@ use Everest\Http\Middleware\SuspendedAccount;
 use Everest\Http\Middleware\Activity\ServerSubject;
 use Everest\Http\Middleware\Activity\AccountSubject;
 use Everest\Http\Middleware\RequireTwoFactorAuthentication;
+use Everest\Http\Middleware\Api\Client\Server\BillingUpgradesEnabled;
 use Everest\Http\Middleware\Api\Client\Server\ResourceBelongsToServer;
 use Everest\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 
@@ -190,7 +191,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         });
 
         Route::prefix('/upgrade')
-            ->middleware(BillingEnabled::class)
+            ->middleware([BillingEnabled::class, BillingUpgradesEnabled::class])
             ->group(function () {
                 Route::get('/', [Client\Billing\UpgradeController::class, 'index']);
                 Route::post('/', [Client\Billing\UpgradeController::class, 'create']);

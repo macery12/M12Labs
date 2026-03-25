@@ -106,7 +106,7 @@ class TicketController extends ClientApiController
         if ($request->user()->id !== $ticket->user_id) {
             throw new DisplayException('You do not own this ticket.');
         }
-        
+
         $ticket->delete();
         TicketMessage::where('ticket_id', $ticket->id)->delete();
 

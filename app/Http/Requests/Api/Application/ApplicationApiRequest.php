@@ -27,9 +27,10 @@ abstract class ApplicationApiRequest extends ApiRequest
             }
 
             return true;
-        } else {
-            return false;
         }
+
+        return false;
+
     }
 
     /**

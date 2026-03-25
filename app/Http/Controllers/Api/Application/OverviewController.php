@@ -15,7 +15,7 @@ class OverviewController extends ApplicationApiController
      * OverviewController constructor.
      */
     public function __construct(
-        private SoftwareVersionService $softwareVersionService
+        private SoftwareVersionService $softwareVersionService,
     ) {
         parent::__construct();
     }

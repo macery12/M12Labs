@@ -42,8 +42,9 @@ class ForgotPasswordController extends AbstractLoginController
 
         if (!$user->use_totp) {
             return $this->sendLoginResponse($user, $request);
-        } else {
-            return redirect()->route('auth.login');
         }
+
+        return redirect()->route('auth.login');
+
     }
 }

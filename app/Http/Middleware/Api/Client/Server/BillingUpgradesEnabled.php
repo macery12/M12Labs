@@ -1,11 +1,11 @@
 <?php
 
-namespace Everest\Http\Middleware;
+namespace Everest\Http\Middleware\Api\Client\Server;
 
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
-class AdminAuthenticate
+class BillingUpgradesEnabled
 {
     /**
      * Handle an incoming request.
@@ -14,13 +14,7 @@ class AdminAuthenticate
      */
     public function handle(Request $request, \Closure $next): mixed
     {
-        $user = $request->user();
-
-        if (!$user) {
-            throw new AccessDeniedHttpException();
-        }
-
-        if (!$user->root_admin && empty($user->admin_role_id)) {
+        if (!config('modules.billing.allow_upgrades')) {
             throw new AccessDeniedHttpException();
         }
 

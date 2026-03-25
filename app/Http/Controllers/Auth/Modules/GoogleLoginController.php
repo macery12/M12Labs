@@ -16,7 +16,8 @@ class GoogleLoginController extends AbstractLoginController
     /**
      * GoogleLoginController constructor.
      */
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
 
         $this->config = [
@@ -57,13 +58,13 @@ class GoogleLoginController extends AbstractLoginController
             $this->sendLoginResponse($user, $request);
 
             return redirect('/');
-        } else {
-            $user = $this->createAccount(['email' => $response->email, 'username' => 'null_user_' . $this->randStr(16)]);
-
-            $this->sendLoginResponse($user, $request);
-
-            return redirect('/account/setup');
         }
+        $user = $this->createAccount(['email' => $response->email, 'username' => 'null_user_' . $this->randStr(16)]);
+
+        $this->sendLoginResponse($user, $request);
+
+        return redirect('/account/setup');
+
     }
 
     /**

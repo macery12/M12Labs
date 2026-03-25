@@ -23,7 +23,7 @@ class UpgradeController extends ClientApiController
     public function __construct(
         private UpgradeService $upgradeService,
         private PaymentService $paymentService,
-        private CreateOrderService $orderService
+        private CreateOrderService $orderService,
     ) {
         parent::__construct();
 

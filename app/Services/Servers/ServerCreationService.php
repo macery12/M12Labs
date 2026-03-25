@@ -32,7 +32,7 @@ class ServerCreationService
         private ServerRepository $repository,
         private ServerDeletionService $serverDeletionService,
         private ServerVariableRepository $serverVariableRepository,
-        private VariableValidatorService $validatorService
+        private VariableValidatorService $validatorService,
     ) {
     }
 

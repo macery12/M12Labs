@@ -13,7 +13,8 @@ class DiscordLoginController extends AbstractLoginController
     /**
      * DiscordLoginController constructor.
      */
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
     }
 
@@ -64,13 +65,13 @@ class DiscordLoginController extends AbstractLoginController
             $this->sendLoginResponse($user, $request);
 
             return redirect('/');
-        } else {
-            $user = $this->createAccount(['email' => $account->email, 'username' => 'null_user_' . $this->randStr(16)]);
-
-            $this->sendLoginResponse($user, $request);
-
-            return redirect('/account/setup');
         }
+        $user = $this->createAccount(['email' => $account->email, 'username' => 'null_user_' . $this->randStr(16)]);
+
+        $this->sendLoginResponse($user, $request);
+
+        return redirect('/account/setup');
+
     }
 
     /**

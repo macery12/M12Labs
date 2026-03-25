@@ -19,7 +19,7 @@ class EggVariableController extends ApplicationApiController
     public function __construct(
         private ConnectionInterface $connection,
         private VariableCreationService $variableCreationService,
-        private VariableUpdateService $variableUpdateService
+        private VariableUpdateService $variableUpdateService,
     ) {
         parent::__construct();
     }

@@ -48,7 +48,7 @@ class AppServiceProvider extends ServiceProvider
             'ticket' => Models\Ticket::class,
             'task' => Models\Task::class,
             'link' => Models\CustomLink::class,
-            'user' => Models\User::class,
+            'user' => User::class,
         ]);
 
         Carbon::serializeUsing(fn ($carbon) => $carbon->utc()->toIso8601ZuluString());

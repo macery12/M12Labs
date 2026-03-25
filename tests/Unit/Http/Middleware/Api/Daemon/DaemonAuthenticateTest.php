@@ -85,7 +85,7 @@ class DaemonAuthenticateTest extends MiddlewareTestCase
     {
         $this->expectException(AccessDeniedHttpException::class);
 
-        /** @var \Everest\Models\Node $model */
+        /** @var Node $model */
         $model = Node::factory()->make();
 
         $this->request->expects('route->getName')->withNoArgs()->andReturn('random.route');
@@ -118,7 +118,7 @@ class DaemonAuthenticateTest extends MiddlewareTestCase
      */
     public function testSuccessfulMiddlewareProcess()
     {
-        /** @var \Everest\Models\Node $model */
+        /** @var Node $model */
         $model = Node::factory()->make();
 
         $this->request->expects('route->getName')->withNoArgs()->andReturn('random.route');
@@ -136,7 +136,7 @@ class DaemonAuthenticateTest extends MiddlewareTestCase
      * Provides different tokens that should trigger a bad request exception due to
      * their formatting.
      *
-     * @return array|\string[][]
+     * @return array|string[][]
      */
     public static function badTokenDataProvider(): array
     {

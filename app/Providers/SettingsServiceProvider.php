@@ -93,7 +93,7 @@ class SettingsServiceProvider extends ServiceProvider
         ConfigRepository $config,
         Encrypter $encrypter,
         Log $log,
-        SettingsRepositoryInterface $settings
+        SettingsRepositoryInterface $settings,
     ): void {
         try {
             $values = $settings->all()

@@ -22,7 +22,7 @@ class SubuserCreationService
         private ConnectionInterface $connection,
         private SubuserRepository $subuserRepository,
         private UserCreationService $userCreationService,
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
     ) {
     }
 
@@ -32,8 +32,8 @@ class SubuserCreationService
      * be created.
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
-     * @throws \Everest\Exceptions\Service\Subuser\ServerSubuserExistsException
-     * @throws \Everest\Exceptions\Service\Subuser\UserIsServerOwnerException
+     * @throws ServerSubuserExistsException
+     * @throws UserIsServerOwnerException
      * @throws \Throwable
      */
     public function handle(Server $server, string $email, array $permissions): Subuser

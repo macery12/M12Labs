@@ -67,7 +67,7 @@ class ServerRepository extends EloquentRepository implements ServerRepositoryInt
     /**
      * Return a server model and all variables associated with the server.
      *
-     * @throws \Everest\Exceptions\Repository\RecordNotFoundException
+     * @throws RecordNotFoundException
      */
     public function findWithVariables(int $id): Server
     {
@@ -139,12 +139,12 @@ class ServerRepository extends EloquentRepository implements ServerRepositoryInt
     /**
      * Return a server by UUID.
      *
-     * @throws \Everest\Exceptions\Repository\RecordNotFoundException
+     * @throws RecordNotFoundException
      */
     public function getByUuid(string $uuid): Server
     {
         try {
-            /** @var \Everest\Models\Server $model */
+            /** @var Server $model */
             $model = $this->getBuilder()
                 ->with('nest', 'node')
                 ->where(function (Builder $query) use ($uuid) {

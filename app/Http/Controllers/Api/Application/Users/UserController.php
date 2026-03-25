@@ -31,7 +31,7 @@ class UserController extends ApplicationApiController
     public function __construct(
         private UserCreationService $creationService,
         private UserDeletionService $deletionService,
-        private UserUpdateService $updateService
+        private UserUpdateService $updateService,
     ) {
         parent::__construct();
     }
@@ -102,10 +102,10 @@ class UserController extends ApplicationApiController
     public function update(UpdateUserRequest $request, User $user): array
     {
         if (
-            !$request->user()->root_admin &&
-            (
-                $request->input('root_admin') ||
-                $request->input('admin_role_id') !== $user->admin_role_id
+            !$request->user()->root_admin
+            && (
+                $request->input('root_admin')
+                || $request->input('admin_role_id') !== $user->admin_role_id
             )
         ) {
             throw new DisplayException('You must be a root administrator to grant another user permissions.');
@@ -175,7 +175,7 @@ class UserController extends ApplicationApiController
      * Handle a request to delete a user from the Panel. Returns a HTTP/204 response
      * on successful deletion.
      *
-     * @throws \Everest\Exceptions\DisplayException
+     * @throws DisplayException
      */
     public function delete(DeleteUserRequest $request, User $user): Response
     {

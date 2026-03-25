@@ -17,7 +17,7 @@ class SettingsControllerTest extends ClientApiIntegrationTestCase
      */
     public function testServerNameCanBeChanged(array $permissions)
     {
-        /** @var \Everest\Models\Server $server */
+        /** @var Server $server */
         [$user, $server] = $this->generateTestAccount($permissions);
         $originalName = $server->name;
         $originalDescription = $server->description;
@@ -73,7 +73,7 @@ class SettingsControllerTest extends ClientApiIntegrationTestCase
      */
     public function testServerCanBeReinstalled(array $permissions)
     {
-        /** @var \Everest\Models\Server $server */
+        /** @var Server $server */
         [$user, $server] = $this->generateTestAccount($permissions);
         $this->assertTrue($server->isInstalled());
 

@@ -12,7 +12,7 @@ class UpdateEmailRequest extends ClientApiRequest
 {
     /**
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     * @throws \Everest\Exceptions\Http\Base\InvalidPasswordProvidedException
+     * @throws InvalidPasswordProvidedException
      */
     public function authorize(): bool
     {
