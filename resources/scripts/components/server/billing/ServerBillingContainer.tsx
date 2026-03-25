@@ -139,9 +139,21 @@ export default () => {
                                         This is a free server. You must renew it before your server expires in{' '}
                                         {daysRemaining} days to prevent your server from being permenantly deleted.
                                     </p>
-                                    <Button onClick={handleFreeRenewal} disabled={renewing} size={Button.Sizes.Large}>
-                                        {renewing ? 'Renewing...' : 'Renew Server'}
-                                    </Button>
+                                    {!(daysRemaining - 7 <= 0) && (
+                                        <p className={'mb-4 text-sm text-gray-400'}>
+                                            You can renew your server within 7 days of the expiration date (in{' '}
+                                            {daysRemaining - 7} days)
+                                        </p>
+                                    )}
+                                    {daysRemaining - 7 <= 0 && (
+                                        <Button
+                                            onClick={handleFreeRenewal}
+                                            disabled={renewing}
+                                            size={Button.Sizes.Large}
+                                        >
+                                            {renewing ? 'Renewing...' : 'Renew Server'}
+                                        </Button>
+                                    )}
                                 </div>
                             ) : (
                                 <ServerPaymentButton product={product} />
