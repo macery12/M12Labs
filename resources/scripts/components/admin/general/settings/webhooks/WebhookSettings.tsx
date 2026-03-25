@@ -53,7 +53,7 @@ export default () => {
         >
             <Form>
                 <FlashMessageRender byKey={'admin:webhooks'} className={'mb-2'} />
-                <div css={tw`grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6`}>
+                <div>
                     <AdminBox title={'Webhook URL'} icon={faLink}>
                         <div>
                             <div>

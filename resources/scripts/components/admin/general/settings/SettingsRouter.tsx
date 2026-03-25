@@ -1,4 +1,4 @@
-import { AdjustmentsIcon, ChipIcon } from '@heroicons/react/outline';
+import { AdjustmentsIcon, ChipIcon, LinkIcon } from '@heroicons/react/outline';
 import { Route, Routes } from 'react-router-dom';
 import tw from 'twin.macro';
 
@@ -33,6 +33,9 @@ const SettingsRouter = () => {
                 </SubNavigationLink>
                 <SubNavigationLink to="/admin/settings/mode" name="Modes">
                     <AdjustmentsIcon />
+                </SubNavigationLink>
+                <SubNavigationLink to="/admin/settings/webhooks" name="Webhooks">
+                    <LinkIcon />
                 </SubNavigationLink>
             </SubNavigation>
 

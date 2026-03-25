@@ -6,6 +6,7 @@ import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
 import useFlash from '@/plugins/useFlash';
 import Input from '@/elements/Input';
+import WebhookSettings from '../WebhookSettings';
 
 export default () => {
     const { colors } = useStoreState(s => s.theme.data!);
@@ -57,6 +58,8 @@ export default () => {
 
     return (
         <>
+            <WebhookSettings />
+            <div className={'w-full h-px bg-white/50 rounded-full my-10'} />
             <div className={'flex grid lg:grid-cols-2 mb-6'}>
                 <Input
                     placeholder={'Search for a webhook event...'}
