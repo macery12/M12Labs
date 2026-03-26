@@ -110,6 +110,9 @@ export default () => {
         return selectedCycle ? selectedCycle.price : product?.price ?? 0;
     };
 
+    const calculatedOrderTotal = couponData ? couponData.total : getCurrentPrice();
+    const totalIsFree = calculatedOrderTotal === 0;
+
     const pricingComplete = hasValidSelectedNode && !!selectedBillingDays;
     const softwareComplete = availableEggs.length > 0 && selectedEggId !== undefined;
     const configurationComplete = serverName.trim() !== '';
@@ -603,26 +606,33 @@ export default () => {
                                         <p className={'mt-1 text-xs'} style={{ color: colors.primary }}>
                                             ✓ Accepted
                                         </p>
-                                        <Button onClick={createFree} size={Button.Sizes.Large} className={'w-full'}>
-                                            Create Server
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <PaymentMethodSelector
-                                        selectedNode={selectedNode}
-                                        product={product}
-                                        vars={vars}
-                                        intent={intent}
-                                        stripe={stripe}
-                                        couponId={couponData?.coupon.id}
-                                        selectedEggId={selectedEggId}
-                                        serverName={serverName}
-                                        domainPayload={getDomainPayload()}
-                                    />
-                                )}
                                     )}
                                 </div>
                             </div>
+
+                            {totalIsFree ? (
+                                <Button
+                                    onClick={createFree}
+                                    size={Button.Sizes.Large}
+                                    className={'w-full'}
+                                    disabled={!legalAgreed}
+                                >
+                                    Create Server
+                                </Button>
+                            ) : (
+                                <PaymentMethodSelector
+                                    selectedNode={selectedNode}
+                                    product={product}
+                                    vars={vars}
+                                    intent={intent}
+                                    stripe={stripe}
+                                    couponId={couponData?.coupon.id}
+                                    billingDays={selectedBillingDays}
+                                    selectedEggId={selectedEggId}
+                                    serverName={serverName}
+                                    domainPayload={getDomainPayload()}
+                                />
+                            )}
 
                             <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
                                 <div className={'text-sm text-gray-400'}>
