@@ -3,8 +3,8 @@ x-common:
     &db-environment
     # Do not remove the "&db-password" from the end of the line below, it is important
     # for Panel functionality.
-    MYSQL_PASSWORD: &db-password "CHANGE_ME"
-    MYSQL_ROOT_PASSWORD: "CHANGE_ME_TOO"
+    MYSQL_PASSWORD: &db-password "change_me"
+    MYSQL_ROOT_PASSWORD: "change_me_root"
   panel:
     &panel-environment
     APP_URL: "http://example.com"
@@ -36,32 +36,56 @@ services:
     image: mariadb:11
     restart: always
     command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - jexpanel
     volumes:
       - "/srv/jexpanel/database:/var/lib/mysql"
     environment:
       <<: *db-environment
-      MYSQL_DATABASE: "panel"
-      MYSQL_USER: "jexpanel"
+      MYSQL_DATABASE: "jexpanel_docker"
+      MYSQL_USER: "jexpanel_docker"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   cache:
     image: redis:alpine
     restart: always
+    networks:
+      - jexpanel
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   panel:
-    image: ghcr.io/jexactyl/jexactyl:latest
+    image: ghcr.io/jexactyl/jexactyl:develop
     restart: always
+    networks:
+      - jexpanel
     ports:
       - "80:80"
       - "443:443"
-    links:
-      - database
-      - cache
+    depends_on:
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
     volumes:
       - "/srv/jexpanel/var/:/app/var/"
       - "/srv/jexpanel/nginx/:/etc/nginx/http.d/"
       - "/srv/jexpanel/certs/:/etc/letsencrypt/"
       - "/srv/jexpanel/logs/:/app/storage/logs"
+      - "./.github/docker/supervisord.conf:/etc/supervisord.conf"
+      - "./.github/docker/entrypoint.sh:/entrypoint.sh"
     environment:
       <<: [*panel-environment, *mail-environment]
       DB_PASSWORD: *db-password
+      DB_USERNAME: "jexpanel_docker"
+      DB_DATABASE: "jexpanel_docker"
       APP_ENV: "production"
       APP_ENVIRONMENT_ONLY: "false"
       CACHE_DRIVER: "redis"
@@ -71,8 +95,9 @@ services:
       DB_HOST: "database"
       DB_PORT: "3306"
       HASHIDS_LENGTH: 8
+
 networks:
-  default:
+  jexpanel:
     ipam:
       config:
         - subnet: 172.20.0.0/16
