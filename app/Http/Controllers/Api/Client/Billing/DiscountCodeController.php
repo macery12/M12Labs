@@ -30,8 +30,6 @@ class DiscountCodeController extends ClientApiController
             throw new DisplayException('The selected discount code is invalid.');
         }
 
-        return $this->fractal->item($discount_code)
-            ->transformWith(DiscountCodeTransformer::class)
-            ->toArray();
+        return $this->transform($discount_code, DiscountCodeTransformer::class);
     }
 }

@@ -5,7 +5,6 @@ namespace Everest\Http\Controllers\Api\Application\Roles;
 use Everest\Models\User;
 use Everest\Models\AdminRole;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
@@ -42,9 +41,7 @@ class RoleController extends ApplicationApiController
             ->allowedSorts(['id', 'name'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($roles)
-            ->transformWith(AdminRoleTransformer::class)
-            ->toArray();
+        return $this->transform($roles, AdminRoleTransformer::class);
     }
 
     /**
@@ -52,9 +49,7 @@ class RoleController extends ApplicationApiController
      */
     public function view(GetRoleRequest $request, AdminRole $role): array
     {
-        return $this->fractal->item($role)
-            ->transformWith(AdminRoleTransformer::class)
-            ->toArray();
+        return $this->transform($role, AdminRoleTransformer::class);
     }
 
     /**
@@ -73,16 +68,14 @@ class RoleController extends ApplicationApiController
     /**
      * Creates a new role.
      */
-    public function store(StoreRoleRequest $request): JsonResponse
+    public function store(StoreRoleRequest $request): array
     {
         $data = array_merge($request->validated(), [
             'sort_id' => 99,
         ]);
         $role = AdminRole::query()->create($data);
 
-        return $this->fractal->item($role)
-            ->transformWith(AdminRoleTransformer::class)
-            ->respond(JsonResponse::HTTP_CREATED);
+        return $this->transform($role, AdminRoleTransformer::class);
     }
 
     /**
@@ -92,9 +85,7 @@ class RoleController extends ApplicationApiController
     {
         $role->update($request->validated());
 
-        return $this->fractal->item($role)
-            ->transformWith(AdminRoleTransformer::class)
-            ->toArray();
+        return $this->transform($role, AdminRoleTransformer::class);
     }
 
     /**
@@ -102,9 +93,7 @@ class RoleController extends ApplicationApiController
      */
     public function updatePermissions(UpdateRoleRequest $request, AdminRole $role): array
     {
-        return $this->fractal->item($role)
-            ->transformWith(AdminRoleTransformer::class)
-            ->toArray();
+        return $this->transform($role, AdminRoleTransformer::class);
     }
 
     /**
@@ -114,7 +103,6 @@ class RoleController extends ApplicationApiController
      */
     public function delete(DeleteRoleRequest $request, AdminRole $role): Response
     {
-        // Use DB::transaction to ensure both changes happen successfully, or not at all.
         DB::transaction(function () use ($role) {
             User::where('admin_role_id', $role->id)->update(['admin_role_id' => null, 'root_admin' => false]);
 

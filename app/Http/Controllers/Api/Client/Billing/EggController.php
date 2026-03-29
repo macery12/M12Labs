@@ -22,8 +22,6 @@ class EggController extends ClientApiController
             ->where('user_viewable', true)
             ->get();
 
-        return $this->fractal->collection($variables)
-            ->transformWith(EggVariableTransformer::class)
-            ->toArray();
+        return $this->transform($variables, EggVariableTransformer::class);
     }
 }

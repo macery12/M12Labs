@@ -8,7 +8,6 @@ use Everest\Models\Schedule;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Models\Permission;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Repositories\Eloquent\TaskRepository;
 use Everest\Exceptions\Http\HttpForbiddenException;
@@ -87,9 +86,7 @@ class ScheduleTaskController extends ClientApiController
             ->property(['name' => $schedule->name, 'action' => $task->action, 'payload' => $task->payload])
             ->log();
 
-        return $this->fractal->item($task)
-            ->transformWith(TaskTransformer::class)
-            ->toArray();
+        return $this->transform($task, TaskTransformer::class);
     }
 
     /**
@@ -142,9 +139,7 @@ class ScheduleTaskController extends ClientApiController
             ->property(['name' => $schedule->name, 'action' => $task->action, 'payload' => $task->payload])
             ->log();
 
-        return $this->fractal->item($task->refresh())
-            ->transformWith(TaskTransformer::class)
-            ->toArray();
+        return $this->transform($task->refresh(), TaskTransformer::class);
     }
 
     /**
@@ -153,7 +148,7 @@ class ScheduleTaskController extends ClientApiController
      *
      * @throws \Exception
      */
-    public function delete(ClientApiRequest $request, Server $server, Schedule $schedule, Task $task): JsonResponse
+    public function delete(ClientApiRequest $request, Server $server, Schedule $schedule, Task $task): Response
     {
         if ($task->schedule_id !== $schedule->id || $schedule->server_id !== $server->id) {
             throw new NotFoundHttpException();
@@ -170,6 +165,6 @@ class ScheduleTaskController extends ClientApiController
 
         Activity::event('server:task.delete')->subject($schedule, $task)->property('name', $schedule->name)->log();
 
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

@@ -32,14 +32,12 @@ class BillingExceptionController extends ApplicationApiController
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
         }
 
-        $categories = QueryBuilder::for(BillingException::query())
+        $exceptions = QueryBuilder::for(BillingException::query())
             ->allowedFilters(['id', 'title'])
             ->allowedSorts(['id', 'title', 'exception_type', 'created_at'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($categories)
-            ->transformWith(BillingExceptionTransformer::class)
-            ->toArray();
+        return $this->transform($exceptions, BillingExceptionTransformer::class);
     }
 
     /**

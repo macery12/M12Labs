@@ -4,7 +4,7 @@ namespace Everest\Http\Controllers\Api\Client;
 
 use Everest\Models\ApiKey;
 use Everest\Facades\Activity;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Transformers\Api\Client\ApiKeyTransformer;
@@ -17,9 +17,7 @@ class ApiKeyController extends ClientApiController
      */
     public function index(ClientApiRequest $request): array
     {
-        return $this->fractal->collection($request->user()->apiKeys)
-            ->transformWith(ApiKeyTransformer::class)
-            ->toArray();
+        return $this->transform($request->user()->apiKeys, ApiKeyTransformer::class);
     }
 
     /**
@@ -52,7 +50,7 @@ class ApiKeyController extends ClientApiController
     /**
      * Deletes a given API key.
      */
-    public function delete(ClientApiRequest $request, string $identifier): JsonResponse
+    public function delete(ClientApiRequest $request, string $identifier): Response
     {
         /** @var ApiKey $key */
         $key = $request->user()->apiKeys()
@@ -66,6 +64,6 @@ class ApiKeyController extends ClientApiController
 
         $key->delete();
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

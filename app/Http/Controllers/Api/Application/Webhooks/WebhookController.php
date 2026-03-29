@@ -30,9 +30,7 @@ class WebhookController extends ApplicationApiController
             ->allowedFilters(['key'])
             ->get();
 
-        return $this->fractal->collection($events)
-            ->transformWith(WebhookEventTransformer::class)
-            ->toArray();
+        return $this->transform($events, WebhookEventTransformer::class);
     }
 
     /**

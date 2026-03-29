@@ -5,8 +5,8 @@ namespace Everest\Http\Controllers\Api\Client\Servers;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
+use Illuminate\Http\Response;
 use Everest\Models\Permission;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Everest\Repositories\Eloquent\SubuserRepository;
@@ -38,9 +38,7 @@ class SubuserController extends ClientApiController
      */
     public function index(GetSubuserRequest $request, Server $server): array
     {
-        return $this->fractal->collection($server->subusers)
-            ->transformWith(SubuserTransformer::class)
-            ->toArray();
+        return $this->transform($server->subusers, SubuserTransformer::class);
     }
 
     /**
@@ -48,11 +46,7 @@ class SubuserController extends ClientApiController
      */
     public function view(GetSubuserRequest $request): array
     {
-        $subuser = $request->attributes->get('subuser');
-
-        return $this->fractal->item($subuser)
-            ->transformWith(SubuserTransformer::class)
-            ->toArray();
+        return $this->transform($request->attributes->get('subuser'), SubuserTransformer::class);
     }
 
     /**
@@ -80,9 +74,7 @@ class SubuserController extends ClientApiController
             ->property(['email' => $request->input('email'), 'permissions' => $this->getDefaultPermissions($request)])
             ->log();
 
-        return $this->fractal->item($response)
-            ->transformWith(SubuserTransformer::class)
-            ->toArray();
+        return $this->transform($response, SubuserTransformer::class);
     }
 
     /**
@@ -136,15 +128,13 @@ class SubuserController extends ClientApiController
 
         $log->reset();
 
-        return $this->fractal->item($subuser->refresh())
-            ->transformWith(SubuserTransformer::class)
-            ->toArray();
+        return $this->transform($subuser->refresh(), SubuserTransformer::class);
     }
 
     /**
      * Removes a subusers from a server's assignment.
      */
-    public function delete(DeleteSubuserRequest $request, Server $server): JsonResponse
+    public function delete(DeleteSubuserRequest $request, Server $server): Response
     {
         /** @var \Everest\Models\Subuser $subuser */
         $subuser = $request->attributes->get('subuser');
@@ -170,7 +160,7 @@ class SubuserController extends ClientApiController
             }
         });
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**

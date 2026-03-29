@@ -9,6 +9,8 @@ use Illuminate\Container\Container;
 use Everest\Http\Controllers\Controller;
 use Everest\Extensions\Spatie\Fractalistic\Fractal;
 use Everest\Services\Permission\AdminPermissionService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 
 abstract class ApplicationApiController extends Controller
 {
@@ -58,7 +60,7 @@ abstract class ApplicationApiController extends Controller
      */
     protected function returnNoContent(): Response
     {
-        return new Response('', Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -72,5 +74,28 @@ abstract class ApplicationApiController extends Controller
                 'permissions' => $this->permissionService->handle($request->user()),
             ],
         ];
+    }
+
+    protected function transform(mixed $data, string $transformer): array
+    {
+        $transformerInstance = is_string($transformer)
+            ? app($transformer)
+            : $transformer;
+
+        if ($data instanceof LengthAwarePaginator) {
+            return $this->fractal
+                ->collection($data->items())
+                ->transformWith($transformerInstance)
+                ->paginateWith(new IlluminatePaginatorAdapter($data))
+                ->toArray();
+        }
+
+        $resource = is_iterable($data)
+            ? $this->fractal->collection($data)
+            : $this->fractal->item($data);
+
+        return $resource
+            ->transformWith($transformerInstance)
+            ->toArray();
     }
 }

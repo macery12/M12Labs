@@ -5,7 +5,6 @@ namespace Everest\Http\Controllers\Api\Application\Nodes;
 use Everest\Models\Node;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Services\Nodes\NodeUpdateService;
 use Everest\Services\Nodes\NodeCreationService;
@@ -47,9 +46,7 @@ class NodeController extends ApplicationApiController
             ->allowedSorts(['id', 'uuid', 'name', 'fqdn', 'memory', 'disk'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($nodes)
-            ->transformWith(NodeTransformer::class)
-            ->toArray();
+        return $this->transform($nodes, NodeTransformer::class);
     }
 
     /**
@@ -69,7 +66,7 @@ class NodeController extends ApplicationApiController
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
      */
-    public function store(StoreNodeRequest $request): JsonResponse
+    public function store(StoreNodeRequest $request): array
     {
         $node = $this->creationService->handle($request->validated());
 
@@ -78,9 +75,7 @@ class NodeController extends ApplicationApiController
             ->description('A node was created')
             ->log();
 
-        return $this->fractal->item($node)
-            ->transformWith(NodeTransformer::class)
-            ->respond(201);
+        return $this->transform($node, NodeTransformer::class);
     }
 
     /**
@@ -101,9 +96,7 @@ class NodeController extends ApplicationApiController
             ->description('A node was updated')
             ->log();
 
-        return $this->fractal->item($node)
-            ->transformWith(NodeTransformer::class)
-            ->toArray();
+        return $this->transform($node, NodeTransformer::class);
     }
 
     /**

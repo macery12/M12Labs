@@ -5,7 +5,6 @@ namespace Everest\Http\Controllers\Api\Application\Servers;
 use Everest\Models\Server;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Services\Servers\ServerCreationService;
 use Everest\Services\Servers\ServerDeletionService;
@@ -52,9 +51,7 @@ class ServerController extends ApplicationApiController
             ->allowedSorts(['id', 'uuid', 'uuidShort', 'name', 'owner_id', 'node_id', 'status'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($servers)
-            ->transformWith(ServerTransformer::class)
-            ->toArray();
+        return $this->transform($servers, ServerTransformer::class);
     }
 
     /**
@@ -67,7 +64,7 @@ class ServerController extends ApplicationApiController
      * @throws \Everest\Exceptions\Service\Deployment\NoViableAllocationException
      * @throws \Everest\Exceptions\Service\Deployment\NoViableNodeException
      */
-    public function store(StoreServerRequest $request): JsonResponse
+    public function store(StoreServerRequest $request): array
     {
         $server = $this->creationService->handle($request->validated());
 
@@ -76,9 +73,7 @@ class ServerController extends ApplicationApiController
             ->description('A server was created')
             ->log();
 
-        return $this->fractal->item($server)
-            ->transformWith(ServerTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($server, ServerTransformer::class);
     }
 
     /**
@@ -91,7 +86,7 @@ class ServerController extends ApplicationApiController
      * @throws \Everest\Exceptions\Service\Deployment\NoViableAllocationException
      * @throws \Everest\Exceptions\Service\Deployment\NoViableNodeException
      */
-    public function storeWithPreset(StoreServerWithPresetRequest $request): JsonResponse
+    public function storeWithPreset(StoreServerWithPresetRequest $request): array
     {
         $server = $this->presetCreationService->handle($request->user(), $request->normalize());
 
@@ -101,9 +96,7 @@ class ServerController extends ApplicationApiController
             ->description('A server was created via a server preset')
             ->log();
 
-        return $this->fractal->item($server)
-            ->transformWith(ServerTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($server, ServerTransformer::class);
     }
 
     /**
@@ -111,9 +104,7 @@ class ServerController extends ApplicationApiController
      */
     public function view(GetServerRequest $request, Server $server): array
     {
-        return $this->fractal->item($server)
-            ->transformWith(ServerTransformer::class)
-            ->toArray();
+        return $this->transform($server, ServerTransformer::class);
     }
 
     /**
@@ -155,8 +146,6 @@ class ServerController extends ApplicationApiController
             ->description('A server was updated')
             ->log();
 
-        return $this->fractal->item($server)
-            ->transformWith(ServerTransformer::class)
-            ->toArray();
+        return $this->transform($server, ServerTransformer::class);
     }
 }

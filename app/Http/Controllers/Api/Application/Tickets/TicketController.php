@@ -6,7 +6,6 @@ use Everest\Models\Ticket;
 use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Http\Requests\Api\Application\Tickets;
 use Everest\Transformers\Api\Application\TicketTransformer;
@@ -38,15 +37,13 @@ class TicketController extends ApplicationApiController
             ->allowedSorts(['id', 'title', 'status', 'created_at'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($tickets)
-            ->transformWith(TicketTransformer::class)
-            ->toArray();
+        return $this->transform($tickets, TicketTransformer::class);
     }
 
     /**
      * Add a new ticket to the Panel.
      */
-    public function store(Tickets\StoreTicketRequest $request): JsonResponse
+    public function store(Tickets\StoreTicketRequest $request): array
     {
         $ticket = Ticket::create([
             'title' => $request['title'],
@@ -60,9 +57,7 @@ class TicketController extends ApplicationApiController
             ->description('A ticket was created')
             ->log();
 
-        return $this->fractal->item($ticket)
-            ->transformWith(TicketTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($ticket, TicketTransformer::class);
     }
 
     /**
@@ -70,9 +65,7 @@ class TicketController extends ApplicationApiController
      */
     public function view(Tickets\ViewTicketRequest $request, Ticket $ticket): array
     {
-        return $this->fractal->item($ticket)
-            ->transformWith(TicketTransformer::class)
-            ->toArray();
+        return $this->transform($ticket, TicketTransformer::class);
     }
 
     /**
@@ -88,9 +81,7 @@ class TicketController extends ApplicationApiController
             ->description('A ticket was updated')
             ->log();
 
-        return $this->fractal->item($ticket)
-            ->transformWith(TicketTransformer::class)
-            ->toArray();
+        return $this->transform($ticket, TicketTransformer::class);
     }
 
     /**

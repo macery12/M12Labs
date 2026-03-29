@@ -7,11 +7,11 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use Everest\Http\Controllers\Controller;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Http\Requests\Api\Remote\InstallationDataRequest;
+use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
-class ServerInstallController extends Controller
+class ServerInstallController extends ApplicationApiController
 {
     /**
      * ServerInstallController constructor.
@@ -43,7 +43,7 @@ class ServerInstallController extends Controller
      * @throws \Everest\Exceptions\Repository\RecordNotFoundException
      * @throws \Everest\Exceptions\Model\DataValidationException
      */
-    public function store(InstallationDataRequest $request, string $uuid): JsonResponse
+    public function store(InstallationDataRequest $request, string $uuid): Response
     {
         $server = $this->repository->getByUuid($uuid);
         $status = null;
@@ -64,6 +64,6 @@ class ServerInstallController extends Controller
 
         $this->repository->update($server->id, ['status' => $status, 'installed_at' => CarbonImmutable::now()], true, true);
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

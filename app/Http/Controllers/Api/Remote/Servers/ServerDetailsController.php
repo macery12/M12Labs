@@ -6,15 +6,16 @@ use Everest\Models\Backup;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
+use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use Everest\Http\Controllers\Controller;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Services\Eggs\EggConfigurationService;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Http\Resources\Wings\ServerConfigurationCollection;
 use Everest\Services\Servers\ServerConfigurationStructureService;
+use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
-class ServerDetailsController extends Controller
+class ServerDetailsController extends ApplicationApiController
 {
     /**
      * ServerConfigurationController constructor.
@@ -70,7 +71,7 @@ class ServerDetailsController extends Controller
      *
      * @throws \Throwable
      */
-    public function resetState(Request $request): JsonResponse
+    public function resetState(Request $request): Response
     {
         $node = $request->attributes->get('node');
 
@@ -116,6 +117,6 @@ class ServerDetailsController extends Controller
                 ->update(['status' => null]);
         });
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

@@ -31,9 +31,7 @@ class ProductController extends ClientApiController
             ]);
         }
 
-        return $this->fractal->collection($products)
-            ->transformWith(ProductTransformer::class)
-            ->toArray();
+        return $this->transform($products, ProductTransformer::class);
     }
 
     /**
@@ -43,8 +41,6 @@ class ProductController extends ClientApiController
     {
         $product = Product::findOrFail($id);
 
-        return $this->fractal->item($product)
-            ->transformWith(ProductTransformer::class)
-            ->toArray();
+        return $this->transform($product, ProductTransformer::class);
     }
 }

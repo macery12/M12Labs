@@ -80,7 +80,7 @@ class TwoFactorController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request): Response
     {
         if (!password_verify($request->input('password') ?? '', $request->user()->password)) {
             throw new BadRequestHttpException('The password provided was not valid.');
@@ -96,6 +96,6 @@ class TwoFactorController extends ClientApiController
 
         Activity::event('user:two-factor.delete')->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

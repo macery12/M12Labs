@@ -32,8 +32,6 @@ class NodeDeploymentController extends ApplicationApiController
             ->setDisk($data['disk'])
             ->handle($request->query('per_page'), $request->query('page'));
 
-        return $this->fractal->collection($nodes)
-            ->transformWith(NodeTransformer::class)
-            ->toArray();
+        return $this->transform($nodes, NodeTransformer::class);
     }
 }

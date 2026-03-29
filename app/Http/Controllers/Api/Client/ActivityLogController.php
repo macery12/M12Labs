@@ -25,8 +25,6 @@ class ActivityLogController extends ClientApiController
             ->paginate(min($request->query('per_page', 5), 100))
             ->appends($request->query());
 
-        return $this->fractal->collection($activity)
-            ->transformWith(ActivityLogTransformer::class)
-            ->toArray();
+        return $this->transform($activity, ActivityLogTransformer::class);
     }
 }

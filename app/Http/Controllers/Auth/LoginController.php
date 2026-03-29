@@ -86,7 +86,7 @@ class LoginController extends AbstractLoginController
     /**
      * Handle a user registration request.
      */
-    public function register(Request $request): JsonResponse
+    public function register(Request $request): Response
     {
         if ($this->hasTooManyLoginAttempts($request)) {
             $this->fireLockoutEvent($request);
@@ -108,6 +108,6 @@ class LoginController extends AbstractLoginController
 
         $this->createAccount(['email' => $email, 'username' => $username, 'password' => $password]);
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

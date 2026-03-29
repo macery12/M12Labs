@@ -4,8 +4,8 @@ namespace Everest\Http\Controllers\Api\Client\Servers;
 
 use Everest\Models\Server;
 use Everest\Facades\Activity;
+use Illuminate\Http\Response;
 use Everest\Models\Allocation;
-use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Transformers\Api\Client\AllocationTransformer;
@@ -35,9 +35,8 @@ class NetworkAllocationController extends ClientApiController
      */
     public function index(GetNetworkRequest $request, Server $server): array
     {
-        return $this->fractal->collection($server->allocations)
-            ->transformWith(AllocationTransformer::class)
-            ->toArray();
+        return $this->transform($server->allocations, AllocationTransformer::class);
+
     }
 
     /**
@@ -59,9 +58,7 @@ class NetworkAllocationController extends ClientApiController
                 ->log();
         }
 
-        return $this->fractal->item($allocation)
-            ->transformWith(AllocationTransformer::class)
-            ->toArray();
+        return $this->transform($allocation, AllocationTransformer::class);
     }
 
     /**
@@ -79,9 +76,7 @@ class NetworkAllocationController extends ClientApiController
             ->property('allocation', $allocation->toString())
             ->log();
 
-        return $this->fractal->item($allocation)
-            ->transformWith(AllocationTransformer::class)
-            ->toArray();
+        return $this->transform($allocation, AllocationTransformer::class);
     }
 
     /**
@@ -103,9 +98,7 @@ class NetworkAllocationController extends ClientApiController
             ->property('allocation', $allocation->toString())
             ->log();
 
-        return $this->fractal->item($allocation)
-            ->transformWith(AllocationTransformer::class)
-            ->toArray();
+        return $this->transform($allocation, AllocationTransformer::class);
     }
 
     /**
@@ -113,7 +106,7 @@ class NetworkAllocationController extends ClientApiController
      *
      * @throws DisplayException
      */
-    public function delete(DeleteAllocationRequest $request, Server $server, Allocation $allocation): JsonResponse
+    public function delete(DeleteAllocationRequest $request, Server $server, Allocation $allocation): Response
     {
         // Don't allow the deletion of allocations if the server does not have an
         // allocation limit set.
@@ -135,6 +128,6 @@ class NetworkAllocationController extends ClientApiController
             ->property('allocation', $allocation->toString())
             ->log();
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

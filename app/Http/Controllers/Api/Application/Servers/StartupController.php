@@ -30,8 +30,7 @@ class StartupController extends ApplicationApiController
             ->setUserLevel(User::USER_LEVEL_ADMIN)
             ->handle($server, $request->validated());
 
-        return $this->fractal->item($server)
-            ->transformWith(ServerTransformer::class)
-            ->toArray();
+        return $this->transform($server, ServerTransformer::class);
+
     }
 }

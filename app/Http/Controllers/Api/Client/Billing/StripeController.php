@@ -164,9 +164,7 @@ class StripeController extends ClientApiController
             $discount_code->use();
         }
 
-        return $this->fractal->item($server)
-        ->transformWith(ServerTransformer::class)
-        ->toArray();
+        return $this->transform($server, ServerTransformer::class);
     }
 
     /**
@@ -180,8 +178,6 @@ class StripeController extends ClientApiController
             throw new DisplayException('The discount code provided is not valid.');
         }
 
-        return $this->fractal->item($discount_code)
-            ->transformWith(DiscountCodeTransformer::class)
-            ->toArray();
+        return $this->transform($discount_code, DiscountCodeTransformer::class);
     }
 }

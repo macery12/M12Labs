@@ -52,9 +52,7 @@ class NestController extends ApplicationApiController
             $nests = $nests->paginate($perPage);
         }
 
-        return $this->fractal->collection($nests)
-            ->transformWith(NestTransformer::class)
-            ->toArray();
+        return $this->transform($nests, NestTransformer::class);
     }
 
     /**
@@ -62,9 +60,7 @@ class NestController extends ApplicationApiController
      */
     public function view(GetNestRequest $request, Nest $nest): array
     {
-        return $this->fractal->item($nest)
-            ->transformWith(NestTransformer::class)
-            ->toArray();
+        return $this->transform($nest, NestTransformer::class);
     }
 
     /**
@@ -81,9 +77,7 @@ class NestController extends ApplicationApiController
             ->description('A nest was created')
             ->log();
 
-        return $this->fractal->item($nest)
-            ->transformWith(NestTransformer::class)
-            ->toArray();
+        return $this->transform($nest, NestTransformer::class);
     }
 
     /**
@@ -103,9 +97,7 @@ class NestController extends ApplicationApiController
             ->description('An egg was imported to a nest')
             ->log();
 
-        return $this->fractal->item($egg)
-            ->transformWith(EggTransformer::class)
-            ->toArray();
+        return $this->transform($egg, EggTransformer::class);
     }
 
     /**
@@ -124,9 +116,7 @@ class NestController extends ApplicationApiController
             ->description('A nest was updated')
             ->log();
 
-        return $this->fractal->item($nest)
-            ->transformWith(NestTransformer::class)
-            ->toArray();
+        return $this->transform($nest, NestTransformer::class);
     }
 
     /**

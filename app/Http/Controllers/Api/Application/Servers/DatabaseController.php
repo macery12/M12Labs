@@ -5,7 +5,6 @@ namespace Everest\Http\Controllers\Api\Application\Servers;
 use Everest\Models\Server;
 use Everest\Models\Database;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Everest\Services\Databases\DatabasePasswordService;
 use Everest\Services\Databases\DatabaseManagementService;
 use Everest\Transformers\Api\Application\ServerDatabaseTransformer;
@@ -33,9 +32,7 @@ class DatabaseController extends ApplicationApiController
      */
     public function index(GetServerDatabasesRequest $request, Server $server): array
     {
-        return $this->fractal->collection($server->databases)
-            ->transformWith(ServerDatabaseTransformer::class)
-            ->toArray();
+        return $this->transform($server->databases, ServerDatabaseTransformer::class);
     }
 
     /**
@@ -43,9 +40,7 @@ class DatabaseController extends ApplicationApiController
      */
     public function view(GetServerDatabaseRequest $request, Server $server, Database $database): array
     {
-        return $this->fractal->item($database)
-            ->transformWith(ServerDatabaseTransformer::class)
-            ->toArray();
+        return $this->transform($database, ServerDatabaseTransformer::class);
     }
 
     /**
@@ -65,15 +60,13 @@ class DatabaseController extends ApplicationApiController
      *
      * @throws \Throwable
      */
-    public function store(StoreServerDatabaseRequest $request, Server $server): JsonResponse
+    public function store(StoreServerDatabaseRequest $request, Server $server): array
     {
         $database = $this->databaseManagementService->create($server, array_merge($request->validated(), [
             'database' => $request->databaseName(),
         ]));
 
-        return $this->fractal->item($database)
-            ->transformWith(ServerDatabaseTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($database, ServerDatabaseTransformer::class);
     }
 
     /**

@@ -6,7 +6,6 @@ use Ramsey\Uuid\Uuid;
 use Everest\Models\Egg;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\Billing\Category;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -44,15 +43,13 @@ class CategoryController extends ApplicationApiController
             ->allowedSorts(['id', 'name', 'created_at', 'visible'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($categories)
-            ->transformWith(CategoryTransformer::class)
-            ->toArray();
+        return $this->transform($categories, CategoryTransformer::class);
     }
 
     /**
      * Store a new product category in the database.
      */
-    public function store(StoreBillingCategoryRequest $request): JsonResponse
+    public function store(StoreBillingCategoryRequest $request): array
     {
         $egg = Egg::query()->findOrFail($request->input('eggId'));
 
@@ -75,9 +72,7 @@ class CategoryController extends ApplicationApiController
             ->description('A billing category was created')
             ->log();
 
-        return $this->fractal->item($category)
-            ->transformWith(CategoryTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($category, CategoryTransformer::class);
     }
 
     /**
@@ -114,9 +109,7 @@ class CategoryController extends ApplicationApiController
      */
     public function view(GetBillingCategoryRequest $request, Category $category): array
     {
-        return $this->fractal->item($category)
-            ->transformWith(CategoryTransformer::class)
-            ->toArray();
+        return $this->transform($category, CategoryTransformer::class);
     }
 
     /**

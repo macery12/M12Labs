@@ -5,8 +5,8 @@ namespace Everest\Http\Controllers\Api\Client;
 use Everest\Models\Ticket;
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
+use Illuminate\Http\Response;
 use Everest\Models\TicketMessage;
-use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Transformers\Api\Client\TicketTransformer;
@@ -24,9 +24,7 @@ class TicketController extends ClientApiController
      */
     public function index(ClientApiRequest $request): array
     {
-        return $this->fractal->collection($request->user()->tickets)
-            ->transformWith(TicketTransformer::class)
-            ->toArray();
+        return $this->transform($request->user()->tickets, TicketTransformer::class);
     }
 
     /**
@@ -59,9 +57,7 @@ class TicketController extends ClientApiController
             ->subject($ticket)
             ->log();
 
-        return $this->fractal->item($ticket)
-            ->transformWith(TicketTransformer::class)
-            ->toArray();
+        return $this->transform($ticket, TicketTransformer::class);
     }
 
     /**
@@ -73,9 +69,7 @@ class TicketController extends ClientApiController
             throw new DisplayException('You do not own this ticket.');
         }
 
-        return $this->fractal->item($ticket)
-            ->transformWith(TicketTransformer::class)
-            ->toArray();
+        return $this->transform($ticket, TicketTransformer::class);
     }
 
     /**
@@ -93,15 +87,13 @@ class TicketController extends ClientApiController
             'message' => $request->input('message'),
         ]);
 
-        return $this->fractal->item($ticket)
-            ->transformWith(TicketTransformer::class)
-            ->toArray();
+        return $this->transform($ticket, TicketTransformer::class);
     }
 
     /**
      * Deletes an Ticket from the user's account.
      */
-    public function delete(Ticket $ticket, ClientApiRequest $request): JsonResponse
+    public function delete(Ticket $ticket, ClientApiRequest $request): Response
     {
         if ($request->user()->id !== $ticket->user_id) {
             throw new DisplayException('You do not own this ticket.');
@@ -114,6 +106,6 @@ class TicketController extends ClientApiController
             ->property('identifier', $ticket->id)
             ->log();
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

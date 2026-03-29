@@ -3,9 +3,7 @@
 namespace Everest\Http\Controllers\Api\Application\Tickets;
 
 use Everest\Models\Ticket;
-use Illuminate\Http\Response;
 use Everest\Models\TicketMessage;
-use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Http\Requests\Api\Application\Tickets;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
@@ -38,15 +36,13 @@ class TicketMessageController extends ApplicationApiController
             ->where('ticket_id', $ticket->id)
             ->paginate($perPage);
 
-        return $this->fractal->collection($messages)
-            ->transformWith(TicketMessageTransformer::class)
-            ->toArray();
+        return $this->transform($messages, TicketMessageTransformer::class);
     }
 
     /**
      * Add a new message to a ticket.
      */
-    public function store(Tickets\StoreTicketMessageRequest $request): JsonResponse
+    public function store(Tickets\StoreTicketMessageRequest $request): array
     {
         $ticket = Ticket::findOrFail($request['ticket_id']);
 
@@ -56,8 +52,6 @@ class TicketMessageController extends ApplicationApiController
             'message' => $request->input('message'),
         ]);
 
-        return $this->fractal->item($message)
-            ->transformWith(TicketMessageTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($message, TicketMessageTransformer::class);
     }
 }

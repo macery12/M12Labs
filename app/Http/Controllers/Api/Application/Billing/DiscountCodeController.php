@@ -42,9 +42,7 @@ class DiscountCodeController extends ApplicationApiController
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        return $this->fractal->collection($discount_codes)
-            ->transformWith(DiscountCodeTransformer::class)
-            ->toArray();
+        return $this->transform($discount_codes, DiscountCodeTransformer::class);
     }
 
     /**
@@ -54,9 +52,7 @@ class DiscountCodeController extends ApplicationApiController
     {
         $discount_code = $this->creationService->handle($request->validated());
 
-        return $this->fractal->item($discount_code)
-            ->transformWith(DiscountCodeTransformer::class)
-            ->toArray();
+        return $this->transform($discount_code, DiscountCodeTransformer::class);
     }
 
     /**
@@ -67,9 +63,7 @@ class DiscountCodeController extends ApplicationApiController
         $discount_code = DiscountCode::findOrFail($id);
         $new_discount_code = $this->updateService->handle($discount_code, $request->validated());
 
-        return $this->fractal->item($new_discount_code)
-            ->transformWith(DiscountCodeTransformer::class)
-            ->toArray();
+        return $this->transform($new_discount_code, DiscountCodeTransformer::class);
     }
 
     /**

@@ -6,7 +6,6 @@ use Everest\Models\User;
 use Illuminate\Support\Arr;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Everest\Exceptions\DisplayException;
@@ -71,9 +70,7 @@ class UserController extends ApplicationApiController
             ->allowedSorts(['id', 'uuid', 'username', 'email', 'admin_role_id', 'use_totp', 'root_admin', 'state', 'created_at'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($users)
-            ->transformWith(UserTransformer::class)
-            ->toArray();
+        return $this->transform($users, UserTransformer::class);
     }
 
     /**
@@ -84,9 +81,7 @@ class UserController extends ApplicationApiController
      */
     public function view(GetUserRequest $request, User $user): array
     {
-        return $this->fractal->item($user)
-            ->transformWith(UserTransformer::class)
-            ->toArray();
+        return $this->transform($user, UserTransformer::class);
     }
 
     /**
@@ -124,9 +119,7 @@ class UserController extends ApplicationApiController
             ->description('A user was updated')
             ->log();
 
-        return $this->fractal->item($user)
-            ->transformWith(UserTransformer::class)
-            ->toArray();
+        return $this->transform($user, UserTransformer::class);
     }
 
     /**
@@ -136,7 +129,7 @@ class UserController extends ApplicationApiController
      * @throws \Exception
      * @throws \Everest\Exceptions\Model\DataValidationException
      */
-    public function store(StoreUserRequest $request): JsonResponse
+    public function store(StoreUserRequest $request): array
     {
         $user = $this->creationService->handle($request->validated());
 
@@ -145,9 +138,7 @@ class UserController extends ApplicationApiController
             ->description('A user was created')
             ->log();
 
-        return $this->fractal->item($user)
-            ->transformWith(UserTransformer::class)
-            ->respond(201);
+        return $this->transform($user, UserTransformer::class);
     }
 
     /**

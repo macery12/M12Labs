@@ -16,8 +16,7 @@ class ExternalServerController extends ApplicationApiController
     {
         $server = Server::query()->where('external_id', $external_id)->firstOrFail();
 
-        return $this->fractal->item($server)
-            ->transformWith(ServerTransformer::class)
-            ->toArray();
+        return $this->transform($server, ServerTransformer::class);
+
     }
 }

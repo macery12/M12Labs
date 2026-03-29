@@ -42,9 +42,7 @@ class LinkController extends ApplicationApiController
             ->allowedSorts(['id', 'visible', 'name'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($links)
-            ->transformWith(LinkTransformer::class)
-            ->toArray();
+        return $this->transform($links, LinkTransformer::class);
     }
 
     /**
@@ -64,23 +62,15 @@ class LinkController extends ApplicationApiController
             ->description('New custom link for client UI was made')
             ->log();
 
-        return $this->fractal->item($link)
-            ->transformWith(LinkTransformer::class)
-            ->toArray();
+        return $this->transform($link, LinkTransformer::class);
     }
 
     /**
      * Update a selected link.
      */
-    public function update(Links\UpdateLinkRequest $request, int $id): Response
+    public function update(Links\UpdateLinkRequest $request, int $id): array
     {
         $link = CustomLink::findOrFail($id);
-
-        Activity::event('admin:link:update')
-            ->property('name', $link->name . ' => ' . $request['name'])
-            ->property('url', $link->url . ' => ' . $request['url'])
-            ->description('An existing custom link was updated')
-            ->log();
 
         $link->update([
             'url' => $request['url'],
@@ -88,7 +78,13 @@ class LinkController extends ApplicationApiController
             'visible' => (bool) $request['visible'],
         ]);
 
-        return $this->returnNoContent();
+        Activity::event('admin:link:update')
+            ->property('name', $link->name . ' => ' . $request['name'])
+            ->property('url', $link->url . ' => ' . $request['url'])
+            ->description('An existing custom link was updated')
+            ->log();
+
+        return $this->transform($link, LinkTransformer::class);
     }
 
     /**

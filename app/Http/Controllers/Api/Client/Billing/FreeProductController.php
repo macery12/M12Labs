@@ -70,8 +70,6 @@ class FreeProductController extends ClientApiController
 
         $order->update(['status' => Order::STATUS_PROCESSED]);
 
-        return $this->fractal->item($server)
-            ->transformWith(ServerTransformer::class)
-            ->toArray();
+        return $this->transform($server, ServerTransformer::class);
     }
 }

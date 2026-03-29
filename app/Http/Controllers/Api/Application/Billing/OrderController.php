@@ -34,8 +34,6 @@ class OrderController extends ApplicationApiController
             ->allowedSorts(['id', 'name', 'total', 'is_renewal', 'created_at', 'threat_index'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($orders)
-            ->transformWith(OrderTransformer::class)
-            ->toArray();
+        return $this->transform($orders, OrderTransformer::class);
     }
 }

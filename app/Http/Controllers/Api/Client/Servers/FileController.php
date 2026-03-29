@@ -6,7 +6,6 @@ use Everest\Models\Server;
 use Carbon\CarbonImmutable;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Everest\Services\Nodes\NodeJWTService;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Transformers\Api\Client\FileObjectTransformer;
@@ -46,9 +45,7 @@ class FileController extends ClientApiController
             ->setServer($server)
             ->getDirectory($request->get('directory') ?? '/');
 
-        return $this->fractal->collection($contents)
-            ->transformWith(FileObjectTransformer::class)
-            ->toArray();
+        return $this->transform($contents, FileObjectTransformer::class);
     }
 
     /**
@@ -104,13 +101,13 @@ class FileController extends ClientApiController
      *
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function write(WriteFileContentRequest $request, Server $server): JsonResponse
+    public function write(WriteFileContentRequest $request, Server $server): Response
     {
         $this->fileRepository->setServer($server)->putContent($request->get('file'), $request->getContent());
 
         Activity::event('server:file.write')->property('file', $request->get('file'))->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -118,7 +115,7 @@ class FileController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function create(CreateFolderRequest $request, Server $server): JsonResponse
+    public function create(CreateFolderRequest $request, Server $server): Response
     {
         $this->fileRepository
             ->setServer($server)
@@ -129,7 +126,7 @@ class FileController extends ClientApiController
             ->property('directory', $request->input('root'))
             ->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -137,7 +134,7 @@ class FileController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function rename(RenameFileRequest $request, Server $server): JsonResponse
+    public function rename(RenameFileRequest $request, Server $server): Response
     {
         $this->fileRepository
             ->setServer($server)
@@ -148,7 +145,7 @@ class FileController extends ClientApiController
             ->property('files', $request->input('files'))
             ->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -156,7 +153,7 @@ class FileController extends ClientApiController
      *
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function copy(CopyFileRequest $request, Server $server): JsonResponse
+    public function copy(CopyFileRequest $request, Server $server): Response
     {
         $this->fileRepository
             ->setServer($server)
@@ -164,7 +161,7 @@ class FileController extends ClientApiController
 
         Activity::event('server:file.copy')->property('file', $request->input('location'))->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -182,15 +179,13 @@ class FileController extends ClientApiController
             ->property('files', $request->input('files'))
             ->log();
 
-        return $this->fractal->item($file)
-            ->transformWith(FileObjectTransformer::class)
-            ->toArray();
+        return $this->transform($file, FileObjectTransformer::class);
     }
 
     /**
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function decompress(DecompressFilesRequest $request, Server $server): JsonResponse
+    public function decompress(DecompressFilesRequest $request, Server $server): Response
     {
         set_time_limit(300);
 
@@ -204,7 +199,7 @@ class FileController extends ClientApiController
             ->property('files', $request->input('file'))
             ->log();
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -212,7 +207,7 @@ class FileController extends ClientApiController
      *
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function delete(DeleteFileRequest $request, Server $server): JsonResponse
+    public function delete(DeleteFileRequest $request, Server $server): Response
     {
         $this->fileRepository->setServer($server)->deleteFiles(
             $request->input('root'),
@@ -224,7 +219,7 @@ class FileController extends ClientApiController
             ->property('files', $request->input('files'))
             ->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -232,14 +227,14 @@ class FileController extends ClientApiController
      *
      * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
      */
-    public function chmod(ChmodFilesRequest $request, Server $server): JsonResponse
+    public function chmod(ChmodFilesRequest $request, Server $server): Response
     {
         $this->fileRepository->setServer($server)->chmodFiles(
             $request->input('root'),
             $request->input('files')
         );
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -247,7 +242,7 @@ class FileController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function pull(PullFileRequest $request, Server $server): JsonResponse
+    public function pull(PullFileRequest $request, Server $server): Response
     {
         $this->fileRepository->setServer($server)->pull(
             $request->input('url'),
@@ -260,6 +255,6 @@ class FileController extends ClientApiController
             ->property('url', $request->input('url'))
             ->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

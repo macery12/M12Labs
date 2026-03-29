@@ -42,9 +42,7 @@ class ApiController extends ApplicationApiController
             ->allowedSorts(['id', 'identifier', 'last_used_at'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($apiKeys)
-            ->transformWith(ApiKeyTransformer::class)
-            ->toArray();
+        return $this->transform($apiKeys, ApiKeyTransformer::class);
     }
 
     /**

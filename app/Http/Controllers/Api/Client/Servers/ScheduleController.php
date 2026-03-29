@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Helpers\Utilities;
-use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Repositories\Eloquent\ScheduleRepository;
 use Everest\Services\Schedules\ProcessScheduleService;
@@ -37,11 +36,7 @@ class ScheduleController extends ClientApiController
      */
     public function index(ViewScheduleRequest $request, Server $server): array
     {
-        $schedules = $server->schedules->loadMissing('tasks');
-
-        return $this->fractal->collection($schedules)
-            ->transformWith(ScheduleTransformer::class)
-            ->toArray();
+        return $this->transform($server->schedules->loadMissing('tasks'), ScheduleTransformer::class);
     }
 
     /**
@@ -52,8 +47,8 @@ class ScheduleController extends ClientApiController
      */
     public function store(StoreScheduleRequest $request, Server $server): array
     {
-        /** @var Schedule $model */
-        $model = $this->repository->create([
+        /** @var Schedule $schedule */
+        $schedule = $this->repository->create([
             'server_id' => $server->id,
             'name' => $request->input('name'),
             'cron_day_of_week' => $request->input('day_of_week'),
@@ -67,13 +62,12 @@ class ScheduleController extends ClientApiController
         ]);
 
         Activity::event('server:schedule.create')
-            ->subject($model)
-            ->property('name', $model->name)
+            ->subject($schedule)
+            ->property('name', $schedule->name)
             ->log();
 
-        return $this->fractal->item($model)
-            ->transformWith(ScheduleTransformer::class)
-            ->toArray();
+        return $this->transform($schedule, ScheduleTransformer::class);
+
     }
 
     /**
@@ -87,9 +81,7 @@ class ScheduleController extends ClientApiController
 
         $schedule->loadMissing('tasks');
 
-        return $this->fractal->item($schedule)
-            ->transformWith(ScheduleTransformer::class)
-            ->toArray();
+        return $this->transform($schedule, ScheduleTransformer::class);
     }
 
     /**
@@ -130,9 +122,7 @@ class ScheduleController extends ClientApiController
             ->property(['name' => $schedule->name, 'active' => $active])
             ->log();
 
-        return $this->fractal->item($schedule->refresh())
-            ->transformWith(ScheduleTransformer::class)
-            ->toArray();
+        return $this->transform($schedule->refresh(), ScheduleTransformer::class);
     }
 
     /**
@@ -141,25 +131,25 @@ class ScheduleController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function execute(TriggerScheduleRequest $request, Server $server, Schedule $schedule): JsonResponse
+    public function execute(TriggerScheduleRequest $request, Server $server, Schedule $schedule): Response
     {
         $this->service->handle($schedule, true);
 
         Activity::event('server:schedule.execute')->subject($schedule)->property('name', $schedule->name)->log();
 
-        return new JsonResponse([], JsonResponse::HTTP_ACCEPTED);
+        return $this->returnNoContent();
     }
 
     /**
      * Deletes a schedule and it's associated tasks.
      */
-    public function delete(DeleteScheduleRequest $request, Server $server, Schedule $schedule): JsonResponse
+    public function delete(DeleteScheduleRequest $request, Server $server, Schedule $schedule): Response
     {
         $this->repository->delete($schedule->id);
 
         Activity::event('server:schedule.delete')->subject($schedule)->property('name', $schedule->name)->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**

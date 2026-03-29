@@ -16,8 +16,6 @@ class ExternalUserController extends ApplicationApiController
     {
         $user = User::query()->where('external_id', $external_id)->firstOrFail();
 
-        return $this->fractal->item($user)
-            ->transformWith(UserTransformer::class)
-            ->toArray();
+        return $this->transform($user, UserTransformer::class);
     }
 }

@@ -3,8 +3,8 @@
 namespace Everest\Http\Controllers\Api\Client;
 
 use Everest\Models\Server;
+use Illuminate\Http\Response;
 use Everest\Models\ServerGroup;
-use Illuminate\Http\JsonResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Transformers\Api\Client\ServerGroupTransformer;
@@ -16,9 +16,7 @@ class ServerGroupController extends ClientApiController
      */
     public function index(ClientApiRequest $request): array
     {
-        return $this->fractal->collection($request->user()->serverGroups)
-            ->transformWith(ServerGroupTransformer::class)
-            ->toArray();
+        return $this->transform($request->user()->serverGroups, ServerGroupTransformer::class);
     }
 
     /**
@@ -32,15 +30,13 @@ class ServerGroupController extends ClientApiController
             'color' => $request->input('color') ?? null,
         ]);
 
-        return $this->fractal->item($group)
-            ->transformWith(ServerGroupTransformer::class)
-            ->toArray();
+        return $this->transform($group, ServerGroupTransformer::class);
     }
 
     /**
      * Add a server to the selected group.
      */
-    public function add(ClientApiRequest $request, int $id): JsonResponse
+    public function add(ClientApiRequest $request, int $id): Response
     {
         $server = Server::where('uuid', $request->input('server'))
             ->where('owner_id', $request->user()->id)
@@ -52,13 +48,13 @@ class ServerGroupController extends ClientApiController
             throw new DisplayException('Unable to assign group to server.');
         }
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
      * Remove a server from the selected group.
      */
-    public function remove(ClientApiRequest $request, int $id): JsonResponse
+    public function remove(ClientApiRequest $request, int $id): Response
     {
         $server = Server::where('uuid', $request->input('server'))
             ->where('owner_id', $request->user()->id)
@@ -66,13 +62,13 @@ class ServerGroupController extends ClientApiController
 
         $server->update(['group_id' => null]);
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
      * Update a selected server group.
      */
-    public function update(ClientApiRequest $request, int $id): JsonResponse
+    public function update(ClientApiRequest $request, int $id): Response
     {
         $group = ServerGroup::findOrFail($id);
 
@@ -85,13 +81,13 @@ class ServerGroupController extends ClientApiController
             'color' => $request['color'] ?? $group->color,
         ]);
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
      * Delete a selected server group.
      */
-    public function delete(ClientApiRequest $request, int $id): JsonResponse
+    public function delete(ClientApiRequest $request, int $id): Response
     {
         $group = ServerGroup::findOrFail($id);
 
@@ -101,6 +97,6 @@ class ServerGroupController extends ClientApiController
 
         $group->delete();
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

@@ -35,9 +35,7 @@ class EggVariableController extends ApplicationApiController
     {
         $variable = $this->variableCreationService->handle($egg->id, $request->validated());
 
-        return $this->fractal->item($variable)
-            ->transformWith(EggVariableTransformer::class)
-            ->toArray();
+        return $this->transform($variable, EggVariableTransformer::class);
     }
 
     /**
@@ -55,9 +53,7 @@ class EggVariableController extends ApplicationApiController
             }
         });
 
-        return $this->fractal->collection($egg->refresh()->variables)
-            ->transformWith(EggVariableTransformer::class)
-            ->toArray();
+        return $this->transform($egg->refresh()->variables, EggVariableTransformer::class);
     }
 
     /**

@@ -41,9 +41,7 @@ class UpgradeController extends ClientApiController
             ->where('price', '>', $existing_product->price)
             ->get();
 
-        return $this->fractal->collection($products)
-            ->transformWith(ProductTransformer::class)
-            ->toArray();
+        return $this->transform($products, ProductTransformer::class);
     }
 
     /**

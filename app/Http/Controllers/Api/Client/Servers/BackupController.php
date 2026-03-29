@@ -6,6 +6,7 @@ use Everest\Models\Backup;
 use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
+use Illuminate\Http\Response;
 use Everest\Models\Permission;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Backups\DeleteBackupService;
@@ -84,9 +85,7 @@ class BackupController extends ClientApiController
             ->property(['name' => $backup->name, 'locked' => (bool) $request->input('is_locked')])
             ->log();
 
-        return $this->fractal->item($backup)
-            ->transformWith(BackupTransformer::class)
-            ->toArray();
+        return $this->transform($backup, BackupTransformer::class);
     }
 
     /**
@@ -107,9 +106,7 @@ class BackupController extends ClientApiController
 
         Activity::event($action)->subject($backup)->property('name', $backup->name)->log();
 
-        return $this->fractal->item($backup)
-            ->transformWith(BackupTransformer::class)
-            ->toArray();
+        return $this->transform($backup, BackupTransformer::class);
     }
 
     /**
@@ -123,9 +120,7 @@ class BackupController extends ClientApiController
             throw new AuthorizationException();
         }
 
-        return $this->fractal->item($backup)
-            ->transformWith(BackupTransformer::class)
-            ->toArray();
+        return $this->transform($backup, BackupTransformer::class);
     }
 
     /**
@@ -134,7 +129,7 @@ class BackupController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function delete(Request $request, Server $server, Backup $backup): JsonResponse
+    public function delete(Request $request, Server $server, Backup $backup): Response
     {
         if (!$request->user()->can(Permission::ACTION_BACKUP_DELETE, $server)) {
             throw new AuthorizationException();
@@ -147,7 +142,7 @@ class BackupController extends ClientApiController
             ->property(['name' => $backup->name, 'failed' => !$backup->is_successful])
             ->log();
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -189,7 +184,7 @@ class BackupController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function restore(RestoreBackupRequest $request, Server $server, Backup $backup): JsonResponse
+    public function restore(RestoreBackupRequest $request, Server $server, Backup $backup): Response
     {
         // Cannot restore a backup unless a server is fully installed and not currently
         // processing a different backup restoration request.
@@ -219,6 +214,6 @@ class BackupController extends ClientApiController
             $this->daemonRepository->setServer($server)->restore($backup, $url ?? null, $request->input('truncate'));
         });
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

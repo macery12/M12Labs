@@ -40,9 +40,7 @@ class ServerPresetController extends ApplicationApiController
             ->allowedSorts(['id', 'uuid', 'name', 'cpu', 'memory', 'disk', 'nest_id', 'egg_id'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($presets)
-            ->transformWith(ServerPresetTransformer::class)
-            ->toArray();
+        return $this->transform($presets, ServerPresetTransformer::class);
     }
 
     /**
@@ -52,9 +50,7 @@ class ServerPresetController extends ApplicationApiController
     {
         $preset = ServerPreset::findOrFail($id);
 
-        return $this->fractal->item($preset)
-            ->transformWith(ServerPresetTransformer::class)
-            ->toArray();
+        return $this->transform($preset, ServerPresetTransformer::class);
     }
 
     /**
@@ -69,9 +65,7 @@ class ServerPresetController extends ApplicationApiController
             ->description('A server preset was created')
             ->log();
 
-        return $this->fractal->item($preset)
-            ->transformWith(ServerPresetTransformer::class)
-            ->toArray();
+        return $this->transform($preset, ServerPresetTransformer::class);
     }
 
     /**
@@ -88,9 +82,7 @@ class ServerPresetController extends ApplicationApiController
             ->description('A server preset was updated')
             ->log();
 
-        return $this->fractal->item($preset)
-            ->transformWith(ServerPresetTransformer::class)
-            ->toArray();
+        return $this->transform($preset, ServerPresetTransformer::class);
     }
 
     /**

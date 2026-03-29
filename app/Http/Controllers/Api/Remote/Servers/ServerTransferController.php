@@ -4,17 +4,16 @@ namespace Everest\Http\Controllers\Api\Remote\Servers;
 
 use Illuminate\Http\Response;
 use Everest\Models\Allocation;
-use Illuminate\Http\JsonResponse;
 use Everest\Models\ServerTransfer;
 use Illuminate\Support\Facades\Log;
-use Everest\Http\Controllers\Controller;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Repositories\Eloquent\ServerRepository;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
-class ServerTransferController extends Controller
+class ServerTransferController extends ApplicationApiController
 {
     /**
      * ServerTransferController constructor.
@@ -31,7 +30,7 @@ class ServerTransferController extends Controller
      *
      * @throws \Throwable
      */
-    public function failure(string $uuid): JsonResponse
+    public function failure(string $uuid): Response
     {
         $server = $this->repository->getByUuid($uuid);
         $transfer = $server->transfer;
@@ -47,7 +46,7 @@ class ServerTransferController extends Controller
      *
      * @throws \Throwable
      */
-    public function success(string $uuid): JsonResponse
+    public function success(string $uuid): Response
     {
         $server = $this->repository->getByUuid($uuid);
         $transfer = $server->transfer;
@@ -89,7 +88,7 @@ class ServerTransferController extends Controller
             Log::warning($exception, ['transfer_id' => $server->transfer->id]);
         }
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -98,7 +97,7 @@ class ServerTransferController extends Controller
      *
      * @throws \Throwable
      */
-    protected function processFailedTransfer(ServerTransfer $transfer): JsonResponse
+    protected function processFailedTransfer(ServerTransfer $transfer): Response
     {
         $this->connection->transaction(function () use (&$transfer) {
             $transfer->forceFill(['successful' => false])->saveOrFail();
@@ -107,6 +106,6 @@ class ServerTransferController extends Controller
             Allocation::query()->whereIn('id', $allocations)->update(['server_id' => null]);
         });
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

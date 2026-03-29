@@ -33,9 +33,7 @@ class NodesController extends ClientApiController
                 'description' => 'Ensure at least one node has the "deployable" box checked',
             ]);
 
-            return $this->fractal->collection(collect())
-                ->transformWith(NodeTransformer::class)
-                ->toArray();
+            return $this->transform(collect(), NodeTransformer::class);
         }
 
         $availableNodes = collect();
@@ -63,8 +61,6 @@ class NodesController extends ClientApiController
             ]);
         }
 
-        return $this->fractal->collection($availableNodes)
-            ->transformWith(NodeTransformer::class)
-            ->toArray();
+        return $this->transform($availableNodes, NodeTransformer::class);
     }
 }

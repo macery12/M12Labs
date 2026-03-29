@@ -3,7 +3,7 @@
 namespace Everest\Http\Controllers\Api\Client;
 
 use Everest\Facades\Activity;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Transformers\Api\Client\UserSSHKeyTransformer;
 use Everest\Http\Requests\Api\Client\Account\StoreSSHKeyRequest;
@@ -16,9 +16,7 @@ class SSHKeyController extends ClientApiController
      */
     public function index(ClientApiRequest $request): array
     {
-        return $this->fractal->collection($request->user()->sshKeys)
-            ->transformWith(UserSSHKeyTransformer::class)
-            ->toArray();
+        return $this->transform($request->user()->sshKeys, UserSSHKeyTransformer::class);
     }
 
     /**
@@ -37,15 +35,13 @@ class SSHKeyController extends ClientApiController
             ->property('fingerprint', $request->getKeyFingerprint())
             ->log();
 
-        return $this->fractal->item($model)
-            ->transformWith(UserSSHKeyTransformer::class)
-            ->toArray();
+        return $this->transform($model, UserSSHKeyTransformer::class);
     }
 
     /**
      * Deletes an SSH key from the user's account.
      */
-    public function delete(ClientApiRequest $request): JsonResponse
+    public function delete(ClientApiRequest $request): Response
     {
         $this->validate($request, ['fingerprint' => ['required', 'string']]);
 
@@ -62,6 +58,6 @@ class SSHKeyController extends ClientApiController
                 ->log();
         }
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

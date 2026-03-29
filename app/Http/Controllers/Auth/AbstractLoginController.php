@@ -13,12 +13,12 @@ use Illuminate\Container\Container;
 use Everest\Events\Auth\DirectLogin;
 use Illuminate\Support\Facades\Event;
 use Everest\Exceptions\DisplayException;
-use Everest\Http\Controllers\Controller;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Everest\Services\Users\UserCreationService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
-abstract class AbstractLoginController extends Controller
+abstract class AbstractLoginController extends ApplicationApiController
 {
     use AuthenticatesUsers;
 

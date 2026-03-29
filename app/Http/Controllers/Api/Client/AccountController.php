@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Auth\AuthManager;
-use Illuminate\Http\JsonResponse;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Transformers\Api\Client\AccountTransformer;
 use Everest\Http\Requests\Api\Client\Account\SetupUserRequest;
@@ -33,7 +32,7 @@ class AccountController extends ClientApiController
     /**
      * Update the authenticated user's email address.
      */
-    public function updateEmail(UpdateEmailRequest $request): JsonResponse
+    public function updateEmail(UpdateEmailRequest $request): Response
     {
         $original = $request->user()->email;
         $this->updateService->handle($request->user(), $request->validated());
@@ -44,7 +43,7 @@ class AccountController extends ClientApiController
                 ->log();
         }
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -53,7 +52,7 @@ class AccountController extends ClientApiController
      *
      * @throws \Throwable
      */
-    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    public function updatePassword(UpdatePasswordRequest $request): Response
     {
         $user = $this->updateService->handle($request->user(), $request->validated());
 
@@ -71,16 +70,16 @@ class AccountController extends ClientApiController
 
         Activity::event('user:account.password-changed')->log();
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
      * Set up an account when registered with OAuth2.
      */
-    public function setup(SetupUserRequest $request): JsonResponse
+    public function setup(SetupUserRequest $request): Response
     {
         $user = $this->updateService->handle($request->user(), $request->validated());
 
-        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 }

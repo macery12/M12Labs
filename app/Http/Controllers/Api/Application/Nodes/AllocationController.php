@@ -60,9 +60,7 @@ class AllocationController extends ApplicationApiController
             ->allowedSorts(['id', 'ip', 'port', 'server_id'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($allocations)
-            ->transformWith(AllocationTransformer::class)
-            ->toArray();
+        return $this->transform($allocations, AllocationTransformer::class);
     }
 
     /**

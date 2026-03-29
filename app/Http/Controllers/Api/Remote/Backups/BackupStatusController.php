@@ -6,15 +6,15 @@ use Everest\Models\Backup;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Everest\Exceptions\DisplayException;
-use Everest\Http\Controllers\Controller;
 use Everest\Extensions\Backups\BackupManager;
 use Everest\Extensions\Filesystem\S3Filesystem;
 use Everest\Http\Requests\Api\Remote\ReportBackupCompleteRequest;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
-class BackupStatusController extends Controller
+class BackupStatusController extends ApplicationApiController
 {
     /**
      * BackupStatusController constructor.
@@ -28,7 +28,7 @@ class BackupStatusController extends Controller
      *
      * @throws \Throwable
      */
-    public function index(ReportBackupCompleteRequest $request, string $backup): JsonResponse
+    public function index(ReportBackupCompleteRequest $request, string $backup): Response
     {
         /** @var Backup $model */
         $model = Backup::query()->where('uuid', $backup)->firstOrFail();
@@ -62,7 +62,7 @@ class BackupStatusController extends Controller
             }
         });
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**
@@ -75,7 +75,7 @@ class BackupStatusController extends Controller
      *
      * @throws \Throwable
      */
-    public function restore(Request $request, string $backup): JsonResponse
+    public function restore(Request $request, string $backup): Response
     {
         /** @var Backup $model */
         $model = Backup::query()->where('uuid', $backup)->firstOrFail();
@@ -87,7 +87,7 @@ class BackupStatusController extends Controller
             ->property('name', $model->name)
             ->log();
 
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->returnNoContent();
     }
 
     /**

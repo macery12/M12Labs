@@ -5,7 +5,6 @@ namespace Everest\Http\Controllers\Api\Application\Billing;
 use Ramsey\Uuid\Uuid;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -46,17 +45,15 @@ class ProductController extends ApplicationApiController
             ->allowedSorts(['id', 'name', 'price'])
             ->paginate($perPage);
 
-        return $this->fractal->collection($products)
-            ->transformWith(ProductTransformer::class)
-            ->toArray();
+        return $this->transform($products, ProductTransformer::class);
+
     }
 
     /**
      * Store a new product category in the database.
      */
-    public function store(StoreBillingProductRequest $request, Category $category): JsonResponse
+    public function store(StoreBillingProductRequest $request, Category $category): array
     {
-        // TODO(jex): clean this up, make a service or somethin'
         try {
             $product = Product::create([
                 'uuid' => Uuid::uuid4()->toString(),
@@ -81,15 +78,13 @@ class ProductController extends ApplicationApiController
             ->description('A new billing product was created')
             ->log();
 
-        return $this->fractal->item($product)
-            ->transformWith(ProductTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($product, ProductTransformer::class);
     }
 
     /**
      * Update an existing product.
      */
-    public function update(UpdateBillingProductRequest $request, Category $category, int $productId): Response
+    public function update(UpdateBillingProductRequest $request, Category $category, int $productId): array
     {
         $product = Product::findOrFail($productId);
 
@@ -116,7 +111,7 @@ class ProductController extends ApplicationApiController
             ->description('A billing product has been updated')
             ->log();
 
-        return $this->returnNoContent();
+        return $this->transform($product, ProductTransformer::class);
     }
 
     /**
@@ -126,9 +121,7 @@ class ProductController extends ApplicationApiController
     {
         $product = Product::findOrFail($productId);
 
-        return $this->fractal->item($product)
-            ->transformWith(ProductTransformer::class)
-            ->toArray();
+        return $this->transform($product, ProductTransformer::class);
     }
 
     /**

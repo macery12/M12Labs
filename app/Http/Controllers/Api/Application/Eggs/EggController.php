@@ -49,9 +49,8 @@ class EggController extends ApplicationApiController
             $eggs = $eggs->paginate($perPage);
         }
 
-        return $this->fractal->collection($eggs)
-            ->transformWith(EggTransformer::class)
-            ->toArray();
+        return $this->transform($eggs, EggTransformer::class);
+
     }
 
     /**
@@ -59,20 +58,17 @@ class EggController extends ApplicationApiController
      */
     public function view(GetEggRequest $request, Egg $egg): array
     {
-        return $this->fractal->item($egg)
-            ->transformWith(EggTransformer::class)
-            ->toArray();
+        return $this->transform($egg, EggTransformer::class);
     }
 
     /**
      * Creates a new egg.
      */
-    public function store(StoreEggRequest $request): JsonResponse
+    public function store(StoreEggRequest $request): array
     {
         $validated = $request->validated();
         $merged = array_merge($validated, [
             'uuid' => Uuid::uuid4()->toString(),
-            // TODO: allow this to be set in the request, and default to config value if null or not present.
             'author' => config('everest.service.author'),
         ]);
 
@@ -83,9 +79,7 @@ class EggController extends ApplicationApiController
             ->description('An egg was created')
             ->log();
 
-        return $this->fractal->item($egg)
-            ->transformWith(EggTransformer::class)
-            ->respond(Response::HTTP_CREATED);
+        return $this->transform($egg, EggTransformer::class);
     }
 
     /**
@@ -101,9 +95,7 @@ class EggController extends ApplicationApiController
             ->description('An egg was updated')
             ->log();
 
-        return $this->fractal->item($egg)
-            ->transformWith(EggTransformer::class)
-            ->toArray();
+        return $this->transform($egg, EggTransformer::class);
     }
 
     /**

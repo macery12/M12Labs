@@ -35,9 +35,7 @@ class OrderController extends ClientApiController
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        return $this->fractal->collection($orders)
-            ->transformWith(OrderTransformer::class)
-            ->toArray();
+        return $this->transform($orders, OrderTransformer::class);
     }
 
     /**
@@ -49,8 +47,6 @@ class OrderController extends ClientApiController
             ->where('id', $id)
             ->first();
 
-        return $this->fractal->item($order)
-            ->transformWith(OrderTransformer::class)
-            ->toArray();
+        return $this->transform($order, OrderTransformer::class);
     }
 }
