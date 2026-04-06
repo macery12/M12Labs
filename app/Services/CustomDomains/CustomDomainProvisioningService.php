@@ -84,9 +84,14 @@ class CustomDomainProvisioningService
                 }
 
                 $this->validateSubdomain($subdomain, $domain);
+                $effectiveSubdomain = $this->applyConfiguredSubdomainSuffix($subdomain);
 
                 $allocation = $server->allocations()->where('port', $port)->first();
-                $fullDomain = $subdomain . '.' . $domain->domain;
+                $fullDomain = $effectiveSubdomain . '.' . $domain->domain;
+
+                if (strlen($fullDomain) > 191) {
+                    throw new DisplayException('The generated full domain exceeds the maximum allowed length.');
+                }
 
                 $this->assertServerSubdomainLimitNotReached($server, $fullDomain, $port, $protocol);
 
@@ -160,28 +165,32 @@ class CustomDomainProvisioningService
             $recordType = $this->resolveRecordTypeForServer($mapping->server, $mapping->record_type);
             $useSrv = $recordType === 'srv';
 
-            $target = $useSrv
-                ? $this->resolveTarget($mapping)
-                : $this->resolveSrvTargetHostname($mapping);
             $records = [];
 
             $existingRecords = (array) ($mapping->dns_records ?? []);
 
-            $hostRecord = $this->cloudflare->createOrUpdateAOrCnameRecord(
-                $zoneId,
-                $mapping->full_domain,
-                $target,
-                $token,
-                $useSrv ? null : 'CNAME'
-            );
-            $records[] = [
-                'kind' => 'host',
-                'id' => $hostRecord['id'] ?? null,
-                'type' => $hostRecord['type'] ?? null,
-            ];
+            if (!$useSrv) {
+                $target = $this->resolvePreferredCnameTarget($mapping);
+                $hostRecord = $this->cloudflare->createOrUpdateAOrCnameRecord(
+                    $zoneId,
+                    $mapping->full_domain,
+                    $target,
+                    $token,
+                    filter_var($target, FILTER_VALIDATE_IP) ? null : 'CNAME'
+                );
+                $records[] = [
+                    'kind' => 'host',
+                    'id' => $hostRecord['id'] ?? null,
+                    'type' => $hostRecord['type'] ?? null,
+                ];
+            }
 
             $service = $this->resolveServiceTag($mapping);
             $protocols = ['tcp', 'udp'];
+
+            if ($useSrv && $service === null) {
+                throw new DisplayException('SRV record type requires a valid service tag.');
+            }
 
             if ($useSrv && $mapping->subdomain !== '*' && $service !== null) {
                 $srvTarget = $this->resolveSrvTargetHostname($mapping);
@@ -273,9 +282,70 @@ class CustomDomainProvisioningService
             throw new DisplayException('Wildcard subdomains are not supported.');
         }
 
-        if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i', $subdomain)) {
+        if (!$this->isValidSubdomainValue($subdomain)) {
             throw new DisplayException('Invalid subdomain value: ' . $subdomain);
         }
+    }
+
+    public function getConfiguredSubdomainSuffix(): ?string
+    {
+        $raw = (string) config('modules.custom_domains.subdomain_suffix', '');
+
+        return $this->normalizeConfiguredSubdomainSuffix($raw);
+    }
+
+    private function applyConfiguredSubdomainSuffix(string $subdomain): string
+    {
+        $suffix = $this->getConfiguredSubdomainSuffix();
+        if ($suffix === null) {
+            return $subdomain;
+        }
+
+        if (str_ends_with($subdomain, '-' . $suffix)) {
+            return $subdomain;
+        }
+
+        $candidate = $subdomain . '-' . $suffix;
+        if (!$this->isValidSubdomainValue($candidate)) {
+            throw new DisplayException('Configured subdomain suffix results in an invalid hostname.');
+        }
+
+        return $candidate;
+    }
+
+    private function normalizeConfiguredSubdomainSuffix(?string $suffix): ?string
+    {
+        $value = strtolower(trim((string) $suffix));
+        if ($value === '') {
+            return null;
+        }
+
+        $value = trim($value, " .-");
+        if ($value === '') {
+            return null;
+        }
+
+        if (!$this->isValidSubdomainValue($value)) {
+            throw new DisplayException('Configured custom domain suffix is invalid.');
+        }
+
+        return $value;
+    }
+
+    private function isValidSubdomainValue(string $subdomain): bool
+    {
+        if ($subdomain === '' || strlen($subdomain) > 191) {
+            return false;
+        }
+
+        $labels = explode('.', strtolower($subdomain));
+        foreach ($labels as $label) {
+            if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/', $label)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function assertSubdomainAvailable(CustomDomain $domain, string $fullDomain): void
@@ -431,12 +501,17 @@ class CustomDomainProvisioningService
         $mode = $this->getDnsModeForServer($server);
         $requested = strtolower(trim((string) $requestedRecordType));
 
+        // Always honor an explicit request from payload/API.
+        if (in_array($requested, ['srv', 'cname'], true)) {
+            return $requested;
+        }
+
         if ($mode === 'minecraft') {
-            return $requested === 'cname' ? 'cname' : 'srv';
+            return 'srv';
         }
 
         if ($mode === 'rust') {
-            return $requested === 'srv' ? 'srv' : 'cname';
+            return 'cname';
         }
 
         return 'cname';
@@ -533,7 +608,33 @@ class CustomDomainProvisioningService
             return '_rust._';
         }
 
-        return $this->resolveSuggestedServiceTag($mapping->server, $mapping->customDomain);
+        $suggested = $this->resolveSuggestedServiceTag($mapping->server, $mapping->customDomain);
+        if ($suggested !== null) {
+            return $suggested;
+        }
+
+        if ($this->getDnsModeForServer($mapping->server) === 'minecraft') {
+            return '_minecraft._';
+        }
+
+        // If SRV is selected but no specific hint/tag is available, default to
+        // minecraft service for broad client compatibility.
+        return '_minecraft._';
+    }
+
+    private function resolvePreferredCnameTarget(ServerCustomDomain $mapping): string
+    {
+        $allocationAlias = trim((string) ($mapping->allocation?->ip_alias ?? $mapping->server->allocation?->ip_alias ?? ''));
+        if ($allocationAlias !== '') {
+            return $allocationAlias;
+        }
+
+        try {
+            return $this->resolveSrvTargetHostname($mapping);
+        } catch (DisplayException $exception) {
+            // Fall back to the resolved node/allocation target so provisioning still succeeds.
+            return $this->resolveTarget($mapping);
+        }
     }
 
     private function normalizeServiceTagPrefix(?string $serviceTag): ?string
