@@ -1,7 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 class AddForeignNodes extends Migration
@@ -11,10 +11,24 @@ class AddForeignNodes extends Migration
      */
     public function up(): void
     {
-        Schema::table('nodes', function (Blueprint $table) {
-            $table->integer('location', false, true)->nullable(false)->change();
-            $table->foreign('location')->references('id')->on('locations');
-        });
+        if (!Schema::hasTable('nodes')) {
+            return;
+        }
+
+        $column = $this->resolveColumn('nodes', ['location', 'location_id']);
+        if ($column === null || $this->hasForeignKeyOnColumn('nodes', $column)) {
+            return;
+        }
+
+        $this->ensureIndex('nodes', $column);
+
+        DB::statement(sprintf(
+            'ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (`id`)',
+            $this->wrap('nodes'),
+            $this->wrap($this->foreignName('nodes', $column)),
+            $this->wrap($column),
+            $this->wrap('locations')
+        ));
     }
 
     /**
@@ -22,11 +36,109 @@ class AddForeignNodes extends Migration
      */
     public function down(): void
     {
-        Schema::table('nodes', function (Blueprint $table) {
-            $table->dropForeign(['location']);
-            $table->dropIndex(['location']);
+        if (!Schema::hasTable('nodes')) {
+            return;
+        }
 
-            $table->mediumInteger('location', false, true)->nullable(false)->change();
-        });
+        $column = $this->resolveColumn('nodes', ['location', 'location_id']);
+        if ($column === null) {
+            return;
+        }
+
+        foreach ($this->foreignKeysForColumn('nodes', $column) as $foreignKey) {
+            DB::statement(sprintf(
+                'ALTER TABLE %s DROP FOREIGN KEY %s',
+                $this->wrap('nodes'),
+                $this->wrap($foreignKey)
+            ));
+        }
+
+        $indexName = $this->indexName('nodes', $column);
+        if ($this->hasIndexByName('nodes', $indexName)) {
+            DB::statement(sprintf(
+                'ALTER TABLE %s DROP INDEX %s',
+                $this->wrap('nodes'),
+                $this->wrap($indexName)
+            ));
+        }
+    }
+
+    private function resolveColumn(string $table, array $candidates): ?string
+    {
+        foreach ($candidates as $candidate) {
+            if (Schema::hasColumn($table, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function ensureIndex(string $table, string $column): void
+    {
+        if ($this->hasIndexOnColumn($table, $column)) {
+            return;
+        }
+
+        DB::statement(sprintf(
+            'ALTER TABLE %s ADD INDEX %s (%s)',
+            $this->wrap($table),
+            $this->wrap($this->indexName($table, $column)),
+            $this->wrap($column)
+        ));
+    }
+
+    private function hasForeignKeyOnColumn(string $table, string $column): bool
+    {
+        return (bool) DB::table('information_schema.KEY_COLUMN_USAGE')
+            ->where('TABLE_SCHEMA', DB::getDatabaseName())
+            ->where('TABLE_NAME', $table)
+            ->where('COLUMN_NAME', $column)
+            ->whereNotNull('REFERENCED_TABLE_NAME')
+            ->exists();
+    }
+
+    private function foreignKeysForColumn(string $table, string $column): array
+    {
+        return DB::table('information_schema.KEY_COLUMN_USAGE')
+            ->where('TABLE_SCHEMA', DB::getDatabaseName())
+            ->where('TABLE_NAME', $table)
+            ->where('COLUMN_NAME', $column)
+            ->whereNotNull('REFERENCED_TABLE_NAME')
+            ->pluck('CONSTRAINT_NAME')
+            ->all();
+    }
+
+    private function hasIndexOnColumn(string $table, string $column): bool
+    {
+        return (bool) DB::table('information_schema.STATISTICS')
+            ->where('TABLE_SCHEMA', DB::getDatabaseName())
+            ->where('TABLE_NAME', $table)
+            ->where('COLUMN_NAME', $column)
+            ->exists();
+    }
+
+    private function hasIndexByName(string $table, string $index): bool
+    {
+        return (bool) DB::table('information_schema.STATISTICS')
+            ->where('TABLE_SCHEMA', DB::getDatabaseName())
+            ->where('TABLE_NAME', $table)
+            ->where('INDEX_NAME', $index)
+            ->exists();
+    }
+
+    private function foreignName(string $table, string $column): string
+    {
+        return sprintf('%s_%s_foreign', $table, $column);
+    }
+
+    private function indexName(string $table, string $column): string
+    {
+        return sprintf('%s_%s_foreign_index', $table, $column);
+    }
+
+    private function wrap(string $identifier): string
+    {
+        return '`' . str_replace('`', '``', $identifier) . '`';
     }
 }
