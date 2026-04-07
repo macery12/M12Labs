@@ -72,6 +72,7 @@ Not included:
 - Introduce parity assertions before removing old registration paths.
 - Keep fallback behavior until all extensions are migrated.
 - Validate extension visibility and permissions after each migration step.
+- Consider using the TypeScript `satisfies` operator for extension registry entries so the registry gets strong type checking without losing inferred types; this is a good fit for the frontend registry cleanup work in this phase.
 
 ## Exit Criteria / Definition of Done
 
