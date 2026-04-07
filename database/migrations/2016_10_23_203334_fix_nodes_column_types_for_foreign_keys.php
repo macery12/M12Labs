@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Migrations\Migration;
 
 return new class () extends Migration {
@@ -9,7 +10,15 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        DB::statement('ALTER TABLE nodes MODIFY location INT UNSIGNED NOT NULL');
+        if (!Schema::hasTable('nodes')) {
+            return;
+        }
+
+        if (Schema::hasColumn('nodes', 'location')) {
+            DB::statement('ALTER TABLE nodes MODIFY `location` INT UNSIGNED NOT NULL');
+        } elseif (Schema::hasColumn('nodes', 'location_id')) {
+            DB::statement('ALTER TABLE nodes MODIFY `location_id` INT UNSIGNED NOT NULL');
+        }
     }
 
     /**
@@ -17,6 +26,14 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        DB::statement('ALTER TABLE nodes MODIFY location INT NOT NULL');
+        if (!Schema::hasTable('nodes')) {
+            return;
+        }
+
+        if (Schema::hasColumn('nodes', 'location')) {
+            DB::statement('ALTER TABLE nodes MODIFY `location` INT NOT NULL');
+        } elseif (Schema::hasColumn('nodes', 'location_id')) {
+            DB::statement('ALTER TABLE nodes MODIFY `location_id` INT NOT NULL');
+        }
     }
 };

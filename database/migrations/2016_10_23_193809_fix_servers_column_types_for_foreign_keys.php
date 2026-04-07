@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Migrations\Migration;
 
 return new class () extends Migration {
@@ -9,11 +10,27 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        DB::statement('ALTER TABLE servers MODIFY node INT UNSIGNED');
-        DB::statement('ALTER TABLE servers MODIFY owner INT UNSIGNED');
-        DB::statement('ALTER TABLE servers MODIFY allocation INT UNSIGNED');
-        DB::statement('ALTER TABLE servers MODIFY service INT UNSIGNED');
-        DB::statement('ALTER TABLE servers MODIFY `option` INT UNSIGNED');
+        if (!Schema::hasTable('servers')) {
+            return;
+        }
+
+        $columns = [
+            ['legacy' => 'node', 'current' => 'node_id'],
+            ['legacy' => 'owner', 'current' => 'owner_id'],
+            ['legacy' => 'allocation', 'current' => 'allocation_id'],
+            ['legacy' => 'service', 'current' => 'service_id'],
+            ['legacy' => 'option', 'current' => 'option_id'],
+        ];
+
+        foreach ($columns as $column) {
+            $target = Schema::hasColumn('servers', $column['legacy'])
+                ? $column['legacy']
+                : (Schema::hasColumn('servers', $column['current']) ? $column['current'] : null);
+
+            if ($target !== null) {
+                DB::statement(sprintf('ALTER TABLE servers MODIFY `%s` INT UNSIGNED', $target));
+            }
+        }
     }
 
     /**
@@ -21,10 +38,26 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        DB::statement('ALTER TABLE servers MODIFY node INT');
-        DB::statement('ALTER TABLE servers MODIFY owner INT');
-        DB::statement('ALTER TABLE servers MODIFY allocation INT');
-        DB::statement('ALTER TABLE servers MODIFY service INT');
-        DB::statement('ALTER TABLE servers MODIFY `option` INT');
+        if (!Schema::hasTable('servers')) {
+            return;
+        }
+
+        $columns = [
+            ['legacy' => 'node', 'current' => 'node_id'],
+            ['legacy' => 'owner', 'current' => 'owner_id'],
+            ['legacy' => 'allocation', 'current' => 'allocation_id'],
+            ['legacy' => 'service', 'current' => 'service_id'],
+            ['legacy' => 'option', 'current' => 'option_id'],
+        ];
+
+        foreach ($columns as $column) {
+            $target = Schema::hasColumn('servers', $column['legacy'])
+                ? $column['legacy']
+                : (Schema::hasColumn('servers', $column['current']) ? $column['current'] : null);
+
+            if ($target !== null) {
+                DB::statement(sprintf('ALTER TABLE servers MODIFY `%s` INT', $target));
+            }
+        }
     }
 };
