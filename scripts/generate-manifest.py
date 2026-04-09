@@ -50,7 +50,7 @@ def sha256_file(path: str) -> str:
 
 
 def collect_files(root: str) -> dict:
-    hashes: dict[str, str] = {}
+    file_hashes: dict[str, str] = {}
     for dirpath, dirnames, filenames in os.walk(root):
         # Prune excluded directories in-place so os.walk skips them.
         dirnames[:] = sorted(
@@ -63,8 +63,8 @@ def collect_files(root: str) -> dict:
             rel_path = os.path.relpath(abs_path, root).replace(os.sep, "/")
             if rel_path in EXCLUDED_PATHS:
                 continue
-            hashes[rel_path] = sha256_file(abs_path)
-    return hashes
+            file_hashes[rel_path] = sha256_file(abs_path)
+    return file_hashes
 
 
 def main() -> None:

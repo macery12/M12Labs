@@ -17,7 +17,7 @@ jobs:
       - name: Code checkout
         uses: actions/checkout@v4
         with:
-          # Fetch the full history so the auto-commit doesn't skip CI
+          # Full history is required so the auto-commit has the correct base
           fetch-depth: 0
 
       - name: Generate release manifest
