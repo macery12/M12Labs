@@ -1,0 +1,36 @@
+name: Release Manifest
+
+on:
+  push:
+    branches:
+      - "develop"
+      - "3.x-develop"
+
+jobs:
+  manifest:
+    name: Generate manifest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          # Fetch the full history so the auto-commit doesn't skip CI
+          fetch-depth: 0
+
+      - name: Generate release manifest
+        run: python3 scripts/generate-manifest.py
+
+      - name: Commit manifest if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add release-manifest.json
+          if git diff --cached --quiet; then
+            echo "Manifest unchanged, nothing to commit."
+          else
+            git commit -m "chore: update release-manifest.json [skip ci]"
+            git push
+          fi
