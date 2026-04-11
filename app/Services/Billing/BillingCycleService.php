@@ -148,15 +148,19 @@ class BillingCycleService
             return;
         }
 
-        $products = Product::all();
+        $products = Product::with('billingCycles')->get();
 
         foreach ($products as $product) {
-            $cycles = BillingCycle::where('product_id', $product->id)->get();
+            $cycles = $product->billingCycles;
 
             // Only update products with exactly one cycle that matches the old default.
             // Multi-cycle products have manually configured billing options; leave them alone.
-            if ($cycles->count() === 1 && $cycles->first()->days === $oldDefault) {
-                $cycles->first()->update(['days' => $newDefault]);
+            if ($cycles->count() === 1) {
+                $cycle = $cycles->first();
+
+                if ($cycle->days === $oldDefault) {
+                    $cycle->update(['days' => $newDefault]);
+                }
             }
         }
     }
