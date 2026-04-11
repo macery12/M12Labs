@@ -2,12 +2,12 @@
 
 namespace Everest\Tests\Unit\Services\Billing;
 
+use Everest\Tests\TestCase;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Billing\BillingCycleService;
+use Everest\Services\Billing\NodeAvailabilityService;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Services\Billing\BillingValidationService;
-use Everest\Services\Billing\NodeAvailabilityService;
-use Everest\Tests\TestCase;
-use Mockery;
 
 class BillingValidationServiceTest extends TestCase
 {
@@ -18,14 +18,15 @@ class BillingValidationServiceTest extends TestCase
         parent::setUp();
 
         $this->service = new BillingValidationService(
-            Mockery::mock(DaemonServerRepository::class),
-            Mockery::mock(NodeAvailabilityService::class),
+            \Mockery::mock(DaemonServerRepository::class),
+            \Mockery::mock(NodeAvailabilityService::class),
+            \Mockery::mock(BillingCycleService::class),
         );
     }
 
     protected function tearDown(): void
     {
-        Mockery::close();
+        \Mockery::close();
 
         parent::tearDown();
     }
