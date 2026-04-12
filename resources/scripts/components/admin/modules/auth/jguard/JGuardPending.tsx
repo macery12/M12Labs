@@ -100,11 +100,10 @@ export default () => {
                                 <th className={'px-4 py-3'}>Email</th>
                                 <th className={'px-4 py-3'}>Mode</th>
                                 <th className={'px-4 py-3'}>Registered</th>
-                                <th className={'px-4 py-3'}>Activates</th>
+                                <th className={'px-4 py-3'}>Auto-Activates At</th>
                                 <th className={'px-4 py-3 text-right'}>Actions</th>
                             </tr>
-                        </thead>
-                        <tbody>
+                        </thead>                        <tbody>
                             {entries.map(entry => (
                                 <tr key={entry.id} className={'border-b border-neutral-700 hover:bg-neutral-800/30'}>
                                     <td className={'px-4 py-3 font-medium'}>{entry.username}</td>
