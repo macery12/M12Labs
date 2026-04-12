@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use Everest\Models\JGuardEntry;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
@@ -124,16 +124,23 @@ class DiscordLoginController extends AbstractLoginController
         ];
 
         // Create user directly via UserCreationService, bypassing registration.enabled check
-        $user = $this->creationService->handle($userData);
+        $jguardEnabled = config('modules.auth.jguard.enabled') ?? false;
+        $approvalMode = config('modules.auth.jguard.approval_mode', JGuardEntry::MODE_MANUAL);
+        $delay = (int) (config('modules.auth.jguard.delay') ?? 60);
+        $isPending = $jguardEnabled && $approvalMode !== JGuardEntry::MODE_IMMEDIATE;
 
-        // Apply jguard delay if configured
-        $delay = (int) config('modules.auth.jguard.delay') ?? 0;
-        $guard = config('modules.auth.jguard.enabled') ?? false;
+        $user = $this->creationService->handle(array_merge($userData, [
+            'state' => $isPending ? 'pending' : null,
+        ]));
 
-        if ($guard || $delay > 0) {
-            DB::table('jguard_delay')->insert([
+        if ($isPending) {
+            JGuardEntry::create([
                 'user_id' => $user->id,
-                'expires_at' => Carbon::now()->add($delay, 'minute'),
+                'status' => JGuardEntry::STATUS_PENDING,
+                'approval_mode' => $approvalMode,
+                'expires_at' => $approvalMode === JGuardEntry::MODE_DELAYED
+                    ? Carbon::now()->addMinutes($delay)
+                    : null,
             ]);
         }
 

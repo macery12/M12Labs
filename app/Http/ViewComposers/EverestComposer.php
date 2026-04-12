@@ -52,6 +52,8 @@ class EverestComposer
                     ],
                     'jguard' => [
                         'enabled' => boolval(config('modules.auth.jguard.enabled', false)),
+                        'approval_mode' => config('modules.auth.jguard.approval_mode', 'manual'),
+                        'delay' => (int) config('modules.auth.jguard.delay', 60),
                     ],
                 ],
             ],

@@ -43,6 +43,7 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:auth:onboarding:content',
 
         'modules:auth:jguard:enabled',
+        'modules:auth:jguard:approval_mode',
         'modules:auth:jguard:delay',
 
         // Billing module settings
