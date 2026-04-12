@@ -35,7 +35,7 @@ class EmailVerificationService
             absolute: false,
         );
 
-        $verificationUrl = rtrim(config('app.url'), '/') . $signedPath;
+        $verificationUrl = rtrim(config('app.url'), '/') . '/' . ltrim($signedPath, '/');
 
         event(new EmailVerificationRequested(
             user: $user,
