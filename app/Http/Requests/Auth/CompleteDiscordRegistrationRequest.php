@@ -19,7 +19,7 @@ class CompleteDiscordRegistrationRequest extends FormRequest
             'password' => [
                 'required',
                 'string',
-                'confirmed',
+                'same:confirm_password',
                 Password::min(8)
                     ->mixedCase()
                     ->numbers()
