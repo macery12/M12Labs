@@ -29,7 +29,7 @@ import { getCategory } from '@/api/routes/admin/billing/categories';
 import { Product } from '@definitions/admin';
 import { ProductValues } from '@/api/routes/admin/billing/types';
 import { Alert } from '@/elements/alert';
-import { getBillingCycles, syncBillingCycles, getMultiplierRanges } from '@/api/routes/admin/billing/billingCycles';
+import { getBillingCycles, syncBillingCycles } from '@/api/routes/admin/billing/billingCycles';
 
 export default ({ product }: { product?: Product }) => {
     const navigate = useNavigate();
