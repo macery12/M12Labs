@@ -68,7 +68,6 @@ Route::middleware(['throttle:authentication'])->group(function () {
 Route::post('/password/reset', Auth\ResetPasswordController::class)->name('auth.reset-password');
 
 Route::get('/email/verify/{id}/{hash}', Auth\VerifyEmailController::class)
-    ->middleware('signed')
     ->withoutMiddleware('guest')
     ->name('auth.verification.verify');
 

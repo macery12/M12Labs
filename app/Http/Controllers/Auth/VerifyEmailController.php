@@ -17,7 +17,7 @@ class VerifyEmailController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if (!hash_equals(sha1($user->email), $hash) || !$request->hasValidSignature()) {
+        if (!hash_equals(sha1($user->email), $hash) || !$request->hasValidSignature(false)) {
             abort(Response::HTTP_FORBIDDEN, 'Invalid or expired verification link.');
         }
 
