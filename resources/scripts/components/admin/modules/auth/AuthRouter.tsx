@@ -18,7 +18,7 @@ export default () => {
                 <SubNavigationLink to='/admin/auth' name='Modules' base />
                 {jguardEnabled && (
                     <>
-                        <SubNavigationLink to='/admin/auth/jguard' name='jGuard Settings' />
+                        <SubNavigationLink to='/admin/auth/jguard' name='jGuard Settings' base />
                         <SubNavigationLink to='/admin/auth/jguard/pending' name='Pending Accounts' />
                     </>
                 )}
