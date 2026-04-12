@@ -29,7 +29,6 @@ function DiscordLinkChoiceContainer() {
                 setLoading(false);
             })
             .catch(error => {
-                console.error(error);
                 clearAndAddHttpError({ error });
                 setTimeout(() => navigate('/auth/login'), 2000);
                 setLoading(false);

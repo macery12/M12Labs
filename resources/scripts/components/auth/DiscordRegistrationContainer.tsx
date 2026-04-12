@@ -26,21 +26,6 @@ interface Values {
 }
 
 const passwordValidation = string()
-    .required('Please enter your account password.')
-    .min(8, 'Password must be at least 8 characters long.')
-    .matches(/[A-Z]/, 'Password must include at least one uppercase letter.')
-    .matches(/[a-z]/, 'Password must include at least one lowercase letter.')
-    .matches(/[0-9]/, 'Password must include at least one number.')
-    .matches(
-        /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
-        'Password must include at least one special character.',
-    );
-
-interface Values {
-    username: string;
-    password: string;
-    confirm_password: string;
-}
 
 function DiscordRegistrationContainer() {
     const navigate = useNavigate();
