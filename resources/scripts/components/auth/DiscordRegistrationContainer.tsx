@@ -8,6 +8,7 @@ import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
+import PendingApprovalBlock from '@/components/auth/PendingApprovalBlock';
 import {
     getDiscordRegistrationData,
     completeDiscordRegistration,
@@ -32,6 +33,7 @@ function DiscordRegistrationContainer() {
         discord_id: string;
     } | null>(null);
     const [loading, setLoading] = useState(true);
+    const [pendingApproval, setPendingApproval] = useState(false);
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -93,7 +95,11 @@ function DiscordRegistrationContainer() {
             password: values.password,
             confirm_password: values.confirm_password,
         })
-            .then(() => {
+            .then(({ userState }) => {
+                if (userState === 'pending') {
+                    setPendingApproval(true);
+                    return;
+                }
                 window.location.href = '/';
             })
             .catch(error => {
@@ -102,6 +108,10 @@ function DiscordRegistrationContainer() {
                 clearAndAddHttpError({ error });
             });
     };
+
+    if (pendingApproval) {
+        return <PendingApprovalBlock />;
+    }
 
     if (loading || !discordData) {
         return (

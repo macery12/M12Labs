@@ -33,7 +33,7 @@ export const checkUsernameAvailability = (username: string): Promise<UsernameChe
     });
 };
 
-export const completeDiscordRegistration = (data: CompleteDiscordRegistrationData): Promise<void> => {
+export const completeDiscordRegistration = (data: CompleteDiscordRegistrationData): Promise<{ userState: string | null }> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>
@@ -43,7 +43,7 @@ export const completeDiscordRegistration = (data: CompleteDiscordRegistrationDat
                     confirm_password: data.confirm_password,
                 }),
             )
-            .then(() => resolve())
+            .then(response => resolve({ userState: response.data?.data?.user?.state ?? null }))
             .catch(reject);
     });
 };
