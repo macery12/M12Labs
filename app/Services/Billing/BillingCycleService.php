@@ -34,6 +34,22 @@ class BillingCycleService
             ->orderBy('days')
             ->get();
 
+        // If no billing cycles defined, return default cycle based on global setting
+        if ($cycles->isEmpty()) {
+            $priceInfo = $this->calculatePrice($product, $defaultBillingDays);
+
+            return [
+                [
+                    'days' => $defaultBillingDays,
+                    'price' => $priceInfo['price'],
+                    'multiplier' => $priceInfo['multiplier'],
+                    'discount_percent' => $priceInfo['discount_percent'],
+                    'is_default' => true,
+                    'is_enabled' => true,
+                ],
+            ];
+        }
+
         $result = [];
         foreach ($cycles as $cycle) {
             $priceInfo = $this->calculatePrice($product, $cycle->days);
