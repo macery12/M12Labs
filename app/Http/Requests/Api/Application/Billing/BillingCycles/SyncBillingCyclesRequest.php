@@ -15,7 +15,7 @@ class SyncBillingCyclesRequest extends ApplicationApiRequest
     public function rules(): array
     {
         return [
-            'cycles' => ['required', 'array'],
+            'cycles' => ['present', 'array'],
             'cycles.*.days' => ['required', 'integer', 'min:1', 'max:365'],
             'cycles.*.is_enabled' => ['sometimes', 'boolean'],
         ];
