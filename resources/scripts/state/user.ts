@@ -16,6 +16,7 @@ export interface UserData {
     emailVerifiedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
+    discordLinked: boolean;
 }
 
 export interface UserStore {

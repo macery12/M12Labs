@@ -2,6 +2,7 @@ import ContentBox from '@/elements/ContentBox';
 import UpdatePasswordForm from '@account/forms/UpdatePasswordForm';
 import UpdateEmailAddressForm from '@account/forms/UpdateEmailAddressForm';
 import ConfigureTwoFactorForm from '@account/forms/ConfigureTwoFactorForm';
+import DiscordLinkForm from '@account/forms/DiscordLinkForm';
 import PageContentBlock from '@/elements/PageContentBlock';
 import tw from 'twin.macro';
 import { breakpoint } from '@/assets/theme';
@@ -10,6 +11,7 @@ import MessageBox from '@/elements/MessageBox';
 import { useLocation } from 'react-router-dom';
 import ScopedAlert from '@/components/account/ScopedAlert';
 import EmailVerificationNotice from '@account/EmailVerificationNotice';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import Pill from '@/elements/Pill';
 import { useStoreState } from '@/state/hooks';
 
@@ -35,6 +37,7 @@ export default () => {
     const emailEnabled = useStoreState(
         s => Boolean(s.everest.data?.email?.enabled ?? s.everest.data?.email?.resend?.enabled ?? s.everest.data?.email?.resend),
     );
+    const discordEnabled = useStoreState(s => Boolean(s.everest.data?.auth?.modules?.discord?.enabled));
 
     return (
         <PageContentBlock title="Account Overview" header description={'Update your email, password, or setup 2-FA.'}>
@@ -71,6 +74,15 @@ export default () => {
                     <ConfigureTwoFactorForm />
                 </ContentBox>
             </Container>
+
+            {discordEnabled && (
+                <div css={tw`mb-10`}>
+                    <FlashMessageRender byKey={'account:discord'} css={tw`mb-4`} />
+                    <ContentBox title="Connected Accounts">
+                        <DiscordLinkForm />
+                    </ContentBox>
+                </div>
+            )}
         </PageContentBlock>
     );
 };

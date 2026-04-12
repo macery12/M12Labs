@@ -203,6 +203,7 @@ class User extends Model implements
     {
         return Collection::make($this->append(['avatar_url', 'admin_role_name', 'email_verified'])->toArray())
             ->except(['id', 'external_id', 'admin_role'])
+            ->merge(['discord_linked' => !empty($this->external_id)])
             ->toArray();
     }
 
