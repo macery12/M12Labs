@@ -34,6 +34,12 @@ class UserUpdateService
             unset($data['password']);
         }
 
+        // If the email address is being changed, revoke the verified status so the
+        // new address must be independently verified before gated features unlock.
+        if (isset($data['email']) && $data['email'] !== $user->email) {
+            $data['email_verified_at'] = null;
+        }
+
         $user->forceFill($data)->saveOrFail();
 
         $user = $user->refresh();

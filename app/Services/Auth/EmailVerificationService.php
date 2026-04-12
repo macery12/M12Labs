@@ -22,14 +22,20 @@ class EmailVerificationService
             return;
         }
 
-        $verificationUrl = URL::temporarySignedRoute(
+        // Generate a relative signed path (signature covers only the path, not scheme/domain).
+        // This prevents 403 errors caused by scheme mismatches (e.g. http APP_URL vs https
+        // access) that occur when the application sits behind a TLS-terminating proxy.
+        $signedPath = URL::temporarySignedRoute(
             name: 'auth.verification.verify',
             expiration: now()->addMinutes($this->expiryMinutes),
             parameters: [
                 'id' => $user->id,
-                'hash' => sha1($user->email),
+                'hash' => hash('sha256', $user->email),
             ],
+            absolute: false,
         );
+
+        $verificationUrl = rtrim(config('app.url'), '/') . '/' . ltrim($signedPath, '/');
 
         event(new EmailVerificationRequested(
             user: $user,
