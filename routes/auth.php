@@ -51,8 +51,6 @@ Route::middleware(['throttle:authentication'])->group(function () {
     Route::post('/modules/discord/complete', [Auth\Modules\DiscordLoginController::class, 'completeRegistration'])
         ->middleware('captcha')
         ->name('auth.modules.discord.complete');
-    Route::get('/modules/discord/finish', [Auth\Modules\DiscordLoginController::class, 'finishRegistration'])
-        ->name('auth.modules.discord.finish');
 
     Route::post('/modules/google', [Auth\Modules\GoogleLoginController::class, 'requestToken'])->middleware('captcha');
     Route::get('/modules/google/authenticate', [Auth\Modules\GoogleLoginController::class, 'authenticate'])

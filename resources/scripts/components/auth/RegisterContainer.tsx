@@ -12,9 +12,9 @@ import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import register, { checkUsernameAvailability } from '@/api/routes/auth/register';
+import http from '@/api/http';
 import { useNavigate } from 'react-router-dom';
 import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
-import PendingApprovalBlock from '@/components/auth/PendingApprovalBlock';
 import {
     faAt,
     faIdBadge,
@@ -36,7 +36,6 @@ interface Values {
 function RegisterContainer() {
     const token = useRef('');
     const navigate = useNavigate();
-    const [pendingApproval, setPendingApproval] = useState(false);
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [usernameMessage, setUsernameMessage] = useState('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -82,7 +81,10 @@ function RegisterContainer() {
         register({ ...values, 'cf-turnstile-response': token.current })
             .then(response => {
                 if (response.userState === 'pending') {
-                    setPendingApproval(true);
+                    window.alert('Your registration is awaiting approval by an administrator. You will be notified once your account is approved.');
+                    http.post('/auth/logout').finally(() => {
+                        window.location.href = '/auth/login';
+                    });
                     return;
                 }
 
@@ -103,10 +105,6 @@ function RegisterContainer() {
                 clearAndAddHttpError({ error });
             });
     };
-
-    if (pendingApproval) {
-        return <PendingApprovalBlock />;
-    }
 
     return (
         <Formik

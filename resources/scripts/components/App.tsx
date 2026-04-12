@@ -16,7 +16,7 @@ import { EverestSettings } from '@/state/everest';
 import Onboarding from '@account/Onboarding';
 import SpeedDial from '@/elements/SpeedDial';
 import SetupContainer from './admin/setup/SetupContainer';
-import PendingApprovalBlock from '@/components/auth/PendingApprovalBlock';
+import http from '@/api/http';
 
 const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
@@ -88,7 +88,11 @@ function App() {
     }
 
     if (PterodactylUser?.state === 'pending') {
-        return <PendingApprovalBlock />;
+        window.alert('Your registration is awaiting approval by an administrator. You will be notified once your account is approved.');
+        http.post('/auth/logout').finally(() => {
+            window.location.href = '/auth/login';
+        });
+        return null;
     }
 
     const hasAdminRole: boolean = (PterodactylUser?.root_admin || Boolean(PterodactylUser?.admin_role_id)) ?? false;
