@@ -1,7 +1,12 @@
 @php
     $appName = config('app.name');
     $currentYear = date('Y');
-    $supportEmail = config('mail.from.address') ?? 'support@example.com';
+    /** @var \Everest\Services\Email\EmailSettingsReader $emailSettings */
+    $emailSettings = app(\Everest\Services\Email\EmailSettingsReader::class);
+    $emailTransport = $emailSettings->transport();
+    $supportEmail = $emailSettings->get("settings::modules:email:{$emailTransport}:reply_to")
+        ?: $emailSettings->get("settings::modules:email:{$emailTransport}:from_email")
+        ?: (config('mail.from.address') ?: 'support@example.com');
 @endphp
 @include('emails.partials.divider')
 <p style="margin:0 0 16px; color:#111827; font-size:14px; line-height:1.6;">
