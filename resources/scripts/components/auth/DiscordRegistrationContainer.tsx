@@ -8,6 +8,7 @@ import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
+import http from '@/api/http';
 import {
     getDiscordRegistrationData,
     completeDiscordRegistration,
@@ -93,7 +94,14 @@ function DiscordRegistrationContainer() {
             password: values.password,
             confirm_password: values.confirm_password,
         })
-            .then(() => {
+            .then(({ userState }) => {
+                if (userState === 'pending') {
+                    window.alert('Your registration is awaiting approval by an administrator. You will be notified once your account is approved.');
+                    http.post('/auth/logout').finally(() => {
+                        window.location.href = '/auth/login';
+                    });
+                    return;
+                }
                 window.location.href = '/';
             })
             .catch(error => {

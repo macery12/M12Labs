@@ -12,6 +12,7 @@ import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import register, { checkUsernameAvailability } from '@/api/routes/auth/register';
+import http from '@/api/http';
 import { useNavigate } from 'react-router-dom';
 import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import {
@@ -79,6 +80,14 @@ function RegisterContainer() {
 
         register({ ...values, 'cf-turnstile-response': token.current })
             .then(response => {
+                if (response.userState === 'pending') {
+                    window.alert('Your registration is awaiting approval by an administrator. You will be notified once your account is approved.');
+                    http.post('/auth/logout').finally(() => {
+                        window.location.href = '/auth/login';
+                    });
+                    return;
+                }
+
                 if (response.complete) {
                     // @ts-expect-error this is valid
                     window.location = response.intended || '/';

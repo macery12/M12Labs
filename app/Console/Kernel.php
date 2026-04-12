@@ -7,6 +7,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
 use Everest\Console\Commands\Billing\CleanupOrdersCommand;
 use Everest\Console\Commands\Billing\ExpireCouponsCommand;
+use Everest\Console\Commands\Auth\ProcessJGuardActivationsCommand;
 use Everest\Console\Commands\Email\ProcessDeferredEmailsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
@@ -58,6 +59,9 @@ class Kernel extends ConsoleKernel
 
         // Process deferred emails every 5 minutes
         $schedule->command(ProcessDeferredEmailsCommand::class)->everyFiveMinutes();
+
+        // Process jGuard delayed activations every minute
+        $schedule->command(ProcessJGuardActivationsCommand::class)->everyMinute();
 
         // Send server renewal notices (run daily - checks for servers expiring in 7, 3, and 1 day)
         if (config('modules.billing.enabled')) {

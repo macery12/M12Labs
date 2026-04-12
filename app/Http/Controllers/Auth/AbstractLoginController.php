@@ -5,20 +5,21 @@ namespace Everest\Http\Controllers\Auth;
 use Carbon\Carbon;
 use Everest\Models\User;
 use Illuminate\Http\Request;
+use Everest\Models\JGuardEntry;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Auth\Events\Failed;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Container\Container;
+use Illuminate\Support\Facades\Log;
 use Everest\Events\Auth\DirectLogin;
 use Illuminate\Support\Facades\Event;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Controllers\Controller;
+use Everest\Services\Auth\UserSessionService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Everest\Services\Users\UserCreationService;
+use Everest\Services\Webhooks\WebhookEventService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use Everest\Services\Auth\UserSessionService;
-use Illuminate\Support\Facades\Log;
 
 abstract class AbstractLoginController extends Controller
 {
@@ -67,7 +68,7 @@ abstract class AbstractLoginController extends Controller
     protected function sendFailedLoginResponse(Request $request, Authenticatable $user = null, string $message = null)
     {
         $this->incrementLoginAttempts($request);
-        
+
         // Fire failed login event if user was found
         if ($user) {
             $this->fireFailedLoginEvent($user, [
@@ -137,11 +138,11 @@ abstract class AbstractLoginController extends Controller
 
     /**
      * Create an account on the Panel if the details do not exist.
+     * When jGuard is enabled, the account is created in a pending state
+     * until an admin approves it (manual mode) or the delay elapses (delayed mode).
      */
     public function createAccount(array $data): User
     {
-        $delay = (int) config('modules.auth.jguard.delay') ?? 0;
-        $guard = config('modules.auth.jguard.enabled') ?? false;
         $enabled = config('modules.auth.registration.enabled') ?? false;
 
         if (!$enabled) {
@@ -152,13 +153,31 @@ abstract class AbstractLoginController extends Controller
             throw new DisplayException('This username is already in use by another user.');
         }
 
-        $user = $this->creation->handle($data);
+        $jguardEnabled = config('modules.auth.jguard.enabled') ?? false;
+        $approvalMode = config('modules.auth.jguard.approval_mode', JGuardEntry::MODE_MANUAL);
+        $delay = (int) (config('modules.auth.jguard.delay') ?? 60);
 
-        if ($guard || $delay > 0) {
-            DB::table('jguard_delay')->insert([
+        // When jGuard is active and the mode is not immediate, hold the account pending.
+        $isPending = $jguardEnabled && $approvalMode !== JGuardEntry::MODE_IMMEDIATE;
+
+        $user = $this->creation->handle(array_merge($data, [
+            'state' => $isPending ? 'pending' : null,
+        ]));
+
+        if ($isPending) {
+            $expiresAt = $approvalMode === JGuardEntry::MODE_DELAYED
+                ? Carbon::now()->addMinutes($delay)
+                : null;
+
+            JGuardEntry::create([
                 'user_id' => $user->id,
-                'expires_at' => Carbon::now()->add($delay, 'minute'),
+                'status' => JGuardEntry::STATUS_PENDING,
+                'approval_mode' => $approvalMode,
+                'expires_at' => $expiresAt,
             ]);
+
+            Container::getInstance()->make(WebhookEventService::class)
+                ->notifyJGuardRegistered($user, $approvalMode, $expiresAt);
         }
 
         return $user;

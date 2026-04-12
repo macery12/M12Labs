@@ -30,6 +30,11 @@ class WebhookSeeder extends Seeder
             'admin:auth:module:enable',
             'admin:auth:module:disable',
 
+            'admin:jguard:approve',
+            'admin:jguard:reject',
+            'admin:jguard:settings',
+            'admin:jguard:registered',
+
             'admin:billing:update',
             'admin:billing:reset-keys',
             'admin:billing:exception-resolve',
