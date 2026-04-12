@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Everest\Http\Controllers\Api\Client;
 use Everest\Http\Middleware\SuspendedAccount;
+use Everest\Http\Middleware\JGuardPendingAccount;
 use Everest\Http\Middleware\Activity\ServerSubject;
 use Everest\Http\Middleware\Activity\AccountSubject;
 use Everest\Http\Middleware\RequireTwoFactorAuthentication;
@@ -18,7 +19,7 @@ use Everest\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 |
 */
 
-Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
+Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
     Route::get('links', [Client\LinkController::class, 'index']);

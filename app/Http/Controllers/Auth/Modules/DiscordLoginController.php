@@ -4,15 +4,16 @@ namespace Everest\Http\Controllers\Auth\Modules;
 
 use Carbon\Carbon;
 use Everest\Models\User;
-use Illuminate\Support\Str;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Everest\Models\JGuardEntry;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserCreationService;
+use Everest\Services\Webhooks\WebhookEventService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
@@ -24,6 +25,7 @@ class DiscordLoginController extends AbstractLoginController
     public function __construct(
         private UserCreationService $creationService,
         private SettingsRepositoryInterface $settings,
+        private WebhookEventService $webhookEventService,
     ) {
         parent::__construct();
     }
@@ -124,17 +126,28 @@ class DiscordLoginController extends AbstractLoginController
         ];
 
         // Create user directly via UserCreationService, bypassing registration.enabled check
-        $user = $this->creationService->handle($userData);
+        $jguardEnabled = config('modules.auth.jguard.enabled') ?? false;
+        $approvalMode = config('modules.auth.jguard.approval_mode', JGuardEntry::MODE_MANUAL);
+        $delay = (int) (config('modules.auth.jguard.delay') ?? 60);
+        $isPending = $jguardEnabled && $approvalMode !== JGuardEntry::MODE_IMMEDIATE;
 
-        // Apply jguard delay if configured
-        $delay = (int) config('modules.auth.jguard.delay') ?? 0;
-        $guard = config('modules.auth.jguard.enabled') ?? false;
+        $user = $this->creationService->handle(array_merge($userData, [
+            'state' => $isPending ? 'pending' : null,
+        ]));
 
-        if ($guard || $delay > 0) {
-            DB::table('jguard_delay')->insert([
+        if ($isPending) {
+            $expiresAt = $approvalMode === JGuardEntry::MODE_DELAYED
+                ? Carbon::now()->addMinutes($delay)
+                : null;
+
+            JGuardEntry::create([
                 'user_id' => $user->id,
-                'expires_at' => Carbon::now()->add($delay, 'minute'),
+                'status' => JGuardEntry::STATUS_PENDING,
+                'approval_mode' => $approvalMode,
+                'expires_at' => $expiresAt,
             ]);
+
+            $this->webhookEventService->notifyJGuardRegistered($user, $approvalMode, $expiresAt);
         }
 
         // Clear the session data

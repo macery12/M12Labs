@@ -13,6 +13,7 @@ const ApplicationApiRouter = lazy(() => import('@/components/admin/general/api/A
 const ApiDocsContainer = lazy(() => import('@/components/admin/developers/ApiDocsContainer'));
 
 const AuthContainer = lazy(() => import('@/components/admin/modules/auth/AuthContainer'));
+const AuthRouter = lazy(() => import('@/components/admin/modules/auth/AuthRouter'));
 const BillingRouter = lazy(() => import('@/components/admin/modules/billing/BillingRouter'));
 const CustomDomainsRouter = lazy(() => import('@/components/admin/modules/customDomains/CustomDomainsRouter'));
 const TicketRouter = lazy(() => import('@/components/admin/modules/tickets/TicketRouter'));
@@ -71,7 +72,7 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - Module Routes
      */
-    route('auth', AuthContainer, { name: 'Auth', icon: Icon.KeyIcon, category: 'modules', advanced: true }),
+    route('auth/*', AuthRouter, { name: 'Auth', icon: Icon.KeyIcon, category: 'modules', advanced: true }),
     route('billing/*', BillingRouter, { name: 'Billing', icon: Icon.CashIcon, category: 'modules', advanced: true }),
     route('custom-domains/*', CustomDomainsRouter, {
         name: 'Custom Domains',

@@ -42,6 +42,7 @@ export default ({ username, email, password, password_confirmation, ...rest }: L
                     complete: response.data.data.complete,
                     intended: response.data.data.intended || undefined,
                     confirmationToken: response.data.data.confirmation_token || undefined,
+                    userState: response.data.data.user?.state ?? null,
                 });
             })
             .catch(reject);

@@ -47,6 +47,13 @@ Route::middleware([AdminSubject::class])->group(function () {
 
             Route::put('/', [Application\Auth\ModuleController::class, 'update']);
         });
+
+        Route::group(['prefix' => '/jguard'], function () {
+            Route::get('/pending', [Application\Auth\JGuardController::class, 'index']);
+            Route::post('/approve/{userId}', [Application\Auth\JGuardController::class, 'approve']);
+            Route::post('/reject/{userId}', [Application\Auth\JGuardController::class, 'reject']);
+            Route::patch('/settings', [Application\Auth\JGuardController::class, 'settings']);
+        });
     });
 
     /*

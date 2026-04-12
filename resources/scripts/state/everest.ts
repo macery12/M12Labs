@@ -19,7 +19,8 @@ export interface EverestSettings {
         modules: {
             jguard: {
                 enabled: boolean;
-                delay?: number;
+                approval_mode: 'manual' | 'delayed' | 'immediate';
+                delay: number;
             };
             discord: {
                 enabled: boolean;
