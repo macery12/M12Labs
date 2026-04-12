@@ -78,9 +78,11 @@ export default () => {
             {discordEnabled && (
                 <div css={tw`mb-10`}>
                     <FlashMessageRender byKey={'account:discord'} css={tw`mb-4`} />
-                    <ContentBox title="Connected Accounts">
-                        <DiscordLinkForm />
-                    </ContentBox>
+                    <div css={tw`lg:w-1/3`}>
+                        <ContentBox title="Connected Accounts">
+                            <DiscordLinkForm />
+                        </ContentBox>
+                    </div>
                 </div>
             )}
         </PageContentBlock>
