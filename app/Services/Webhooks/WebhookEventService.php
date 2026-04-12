@@ -36,7 +36,6 @@ class WebhookEventService
 
     /**
      * Fire the admin:jguard:registered webhook for a newly queued account.
-     * Silently skips if webhooks are disabled or the event row is missing/disabled.
      */
     public function notifyJGuardRegistered(User $user, string $approvalMode, ?\Carbon\Carbon $expiresAt): void
     {
@@ -64,7 +63,7 @@ class WebhookEventService
         try {
             $this->send($user, $event, $fields);
         } catch (\Exception) {
-            // Fire-and-forget; never block registration
+            // Silently ignored — webhook failure must never block registration.
         }
     }
 

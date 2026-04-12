@@ -2,9 +2,8 @@
 
 namespace Everest\Console\Commands\Auth;
 
-use Everest\Models\User;
-use Illuminate\Console\Command;
 use Everest\Models\JGuardEntry;
+use Illuminate\Console\Command;
 
 class ProcessJGuardActivationsCommand extends Command
 {
@@ -27,7 +26,8 @@ class ProcessJGuardActivationsCommand extends Command
         foreach ($entries as $entry) {
             $user = $entry->user;
             if (!$user) {
-                $entry->update(['status' => JGuardEntry::STATUS_APPROVED]);
+                $entry->delete();
+                $this->warn("Removed orphaned jGuard entry #{$entry->id} (user #{$entry->user_id} no longer exists).");
                 continue;
             }
 

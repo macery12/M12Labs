@@ -4,11 +4,11 @@ namespace Everest\Http\Controllers\Api\Application\Auth;
 
 use Everest\Models\User;
 use Everest\Models\Setting;
+use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Everest\Models\JGuardEntry;
+use Illuminate\Http\JsonResponse;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Auth\UpdateAuthModuleRequest;
 
@@ -29,19 +29,29 @@ class JGuardController extends ApplicationApiController
         $entries = JGuardEntry::with('user')
             ->where('status', $status)
             ->orderByDesc('created_at')
-            ->get()
+            ->get();
+
+        // Remove entries whose user has been deleted.
+        $orphanIds = $entries->filter(fn (JGuardEntry $e) => $e->user === null)->pluck('id');
+        if ($orphanIds->isNotEmpty()) {
+            JGuardEntry::whereIn('id', $orphanIds)->delete();
+        }
+
+        $data = $entries
+            ->filter(fn (JGuardEntry $e) => $e->user !== null)
             ->map(fn (JGuardEntry $entry) => [
                 'id' => $entry->id,
                 'user_id' => $entry->user_id,
-                'username' => $entry->user?->username,
-                'email' => $entry->user?->email,
+                'username' => $entry->user->username,
+                'email' => $entry->user->email,
                 'status' => $entry->status,
                 'approval_mode' => $entry->approval_mode,
                 'expires_at' => $entry->expires_at?->toIso8601String(),
                 'created_at' => $entry->created_at?->toIso8601String(),
-            ]);
+            ])
+            ->values();
 
-        return response()->json(['data' => $entries]);
+        return response()->json(['data' => $data]);
     }
 
     /**
@@ -49,7 +59,13 @@ class JGuardController extends ApplicationApiController
      */
     public function approve(UpdateAuthModuleRequest $request, int $userId): Response
     {
-        $user = User::findOrFail($userId);
+        $user = User::find($userId);
+
+        if (!$user) {
+            JGuardEntry::where('user_id', $userId)->delete();
+
+            abort(404, 'User no longer exists; the pending entry has been removed.');
+        }
 
         JGuardEntry::where('user_id', $user->id)
             ->where('status', JGuardEntry::STATUS_PENDING)
@@ -70,7 +86,13 @@ class JGuardController extends ApplicationApiController
      */
     public function reject(UpdateAuthModuleRequest $request, int $userId): Response
     {
-        $user = User::findOrFail($userId);
+        $user = User::find($userId);
+
+        if (!$user) {
+            JGuardEntry::where('user_id', $userId)->delete();
+
+            abort(404, 'User no longer exists; the pending entry has been removed.');
+        }
 
         JGuardEntry::where('user_id', $user->id)
             ->where('status', JGuardEntry::STATUS_PENDING)
