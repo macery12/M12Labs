@@ -34,6 +34,22 @@ class BillingCycleService
             ->orderBy('days')
             ->get();
 
+        // If no billing cycles defined, return default cycle based on global setting
+        if ($cycles->isEmpty()) {
+            $priceInfo = $this->calculatePrice($product, $defaultBillingDays);
+
+            return [
+                [
+                    'days' => $defaultBillingDays,
+                    'price' => $priceInfo['price'],
+                    'multiplier' => $priceInfo['multiplier'],
+                    'discount_percent' => $priceInfo['discount_percent'],
+                    'is_default' => true,
+                    'is_enabled' => true,
+                ],
+            ];
+        }
+
         $result = [];
         foreach ($cycles as $cycle) {
             $priceInfo = $this->calculatePrice($product, $cycle->days);
@@ -100,28 +116,67 @@ class BillingCycleService
     }
 
     /**
-     * Validate that a billing cycle is enabled for a product.
+     * Validate that a billing cycle is available for a product.
+     *
+     * When the product has custom billing cycles, only enabled cycles are accepted.
+     * When the product has no custom cycles, only the current global default is accepted.
      *
      * @throws DisplayException
      */
     public function validateBillingCycle(Product $product, int $billingDays): void
     {
-        $cycle = $product->billingCycles()
-            ->where('days', $billingDays)
-            ->where('is_enabled', true)
-            ->first();
+        $hasCycles = $product->billingCycles()->exists();
 
-        if (!$cycle) {
-            // Check if product has any billing cycles defined
-            $hasCycles = $product->billingCycles()->exists();
+        if ($hasCycles) {
+            $cycle = $product->billingCycles()
+                ->where('days', $billingDays)
+                ->where('is_enabled', true)
+                ->first();
 
-            if ($hasCycles) {
+            if (!$cycle) {
                 throw new DisplayException("The selected billing cycle ({$billingDays} days) is not available for this product.");
             }
 
-            // If no billing cycles defined, allow any reasonable value as fallback
-            if ($billingDays < 1 || $billingDays > 365) {
-                throw new DisplayException('Billing cycle must be between 1 and 365 days.');
+            return;
+        }
+
+        // No custom cycles: only the current global default is accepted.
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
+        if ($billingDays !== $defaultBillingDays) {
+            throw new DisplayException("The selected billing cycle ({$billingDays} days) is not available for this product. The default billing cycle is {$defaultBillingDays} days.");
+        }
+    }
+
+    /**
+     * Update billing cycle records across all products when the global default changes.
+     *
+     * Products that have exactly one billing cycle matching $oldDefault are treated as
+     * using the system default and are updated to $newDefault. Products with no billing
+     * cycles rely on the synthetic fallback and are unaffected. Products with multiple
+     * billing cycles have manually configured cycles and are left unchanged.
+     *
+     * @param int $oldDefault The previous default billing days value
+     * @param int $newDefault The new default billing days value
+     */
+    public function reseedDefaultBillingCycle(int $oldDefault, int $newDefault): void
+    {
+        if ($oldDefault === $newDefault) {
+            return;
+        }
+
+        $products = Product::with('billingCycles')->get();
+
+        foreach ($products as $product) {
+            $cycles = $product->billingCycles;
+
+            // Only update products with exactly one cycle that matches the old default.
+            // Multi-cycle products have manually configured billing options; leave them alone.
+            if ($cycles->count() === 1) {
+                $cycle = $cycles->first();
+
+                if ($cycle->days === $oldDefault) {
+                    $cycle->update(['days' => $newDefault]);
+                }
             }
         }
     }
