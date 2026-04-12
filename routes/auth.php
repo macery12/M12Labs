@@ -18,7 +18,9 @@ Route::get('/login', [Auth\LoginController::class, 'index'])->name('auth.login')
 Route::get('/password', [Auth\LoginController::class, 'index'])->name('auth.forgot-password');
 Route::get('/password/reset/{token}', [Auth\LoginController::class, 'index'])->name('auth.reset');
 Route::prefix('/password-reset')->group(function () {
-    Route::get('/method', [Auth\ForgotPasswordController::class, 'method'])->name('auth.password-reset.method');
+    Route::get('/method', [Auth\ForgotPasswordController::class, 'method'])
+        ->middleware('throttle:10,1') // prevent automated config-probing
+        ->name('auth.password-reset.method');
     Route::post('/email', [Auth\ForgotPasswordController::class, 'requestEmailReset'])
         ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email', 'captcha'])
         ->name('auth.password-reset.email');
@@ -65,10 +67,13 @@ Route::middleware(['throttle:authentication'])->group(function () {
 // Password reset routes. This endpoint is hit after going through
 // the forgot password routes to acquire a token (or after an account
 // is created).
-Route::post('/password/reset', Auth\ResetPasswordController::class)->name('auth.reset-password');
+Route::post('/password/reset', Auth\ResetPasswordController::class)
+    ->middleware(['throttle:password-reset-ip', 'throttle:password-reset-email'])
+    ->name('auth.reset-password');
 
 Route::get('/email/verify/{id}/{hash}', Auth\VerifyEmailController::class)
     ->withoutMiddleware('guest')
+    ->middleware('throttle:6,1') // prevent brute-force replay of captured links
     ->name('auth.verification.verify');
 
 // Remove the guest middleware and apply the authenticated middleware to this endpoint,

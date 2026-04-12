@@ -30,7 +30,7 @@ class EmailVerificationService
             expiration: now()->addMinutes($this->expiryMinutes),
             parameters: [
                 'id' => $user->id,
-                'hash' => sha1($user->email),
+                'hash' => hash('sha256', $user->email),
             ],
             absolute: false,
         );

@@ -11,7 +11,10 @@ use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Services\Auth\PasswordResetService;
 use Everest\Services\Email\EmailManager;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class ForgotPasswordController extends AbstractLoginController
@@ -32,21 +35,44 @@ class ForgotPasswordController extends AbstractLoginController
      */
     public function verify(Request $request): JsonResponse|RedirectResponse
     {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string',
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised(),
+            ],
+        ]);
+
         try {
             $user = User::where('email', $request->input('email'))->firstOrFail();
         } catch (ModelNotFoundException $ex) {
             throw new DisplayException('The information provided was incorrect.');
         }
 
-        if (!$user->recovery_code || !password_verify($request->input('code'), $user->recovery_code)) {
+        // The recovery code is stored encrypted (not hashed); decrypt it and compare
+        // using hash_equals to prevent timing attacks.
+        try {
+            $storedCode = Crypt::decryptString($user->recovery_code ?? '');
+        } catch (DecryptException $e) {
             throw new DisplayException('The information provided was incorrect.');
         }
 
-        if ($request->input('password') !== $request->input('password_confirm')) {
-            throw new DisplayException('The passwords entered do not match.');
+        if (!hash_equals($storedCode, (string) $request->input('code'))) {
+            throw new DisplayException('The information provided was incorrect.');
         }
 
-        $user = $this->updateService->handle($user, ['password' => $request->input('password')]);
+        // Rotate the recovery code immediately so it cannot be replayed.
+        $user = $this->updateService->handle($user, [
+            'password' => $request->input('password'),
+            'recovery_code' => Crypt::encryptString(Str::random(32)),
+        ]);
 
         if (!$user->use_totp) {
             return $this->sendLoginResponse($user, $request);
