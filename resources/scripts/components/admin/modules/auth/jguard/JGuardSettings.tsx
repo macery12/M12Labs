@@ -18,8 +18,12 @@ export default () => {
     const jguard = useStoreState(state => state.everest.data!.auth.modules.jguard);
     const [confirmDisable, setConfirmDisable] = useState(false);
 
-    const updateSetting = async (values: { approval_mode?: string; delay?: number }) => {
-        clearFlashes();
+    // Local controlled state — initialized from page-load store, updated immediately on change.
+    const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed' | 'immediate'>(jguard.approval_mode);
+    const [delay, setDelay] = useState<number>(jguard.delay);
+
+    const saveSetting = (values: { approval_mode?: string; delay?: number }) => {
+        clearFlashes('auth:jguard:settings');
         setStatus('loading');
         updateJGuardSettings(values)
             .then(() => setStatus('success'))
@@ -27,6 +31,17 @@ export default () => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'auth:jguard:settings', error });
             });
+    };
+
+    const handleModeChange = (value: 'manual' | 'delayed' | 'immediate') => {
+        setApprovalMode(value);
+        saveSetting({ approval_mode: value });
+    };
+
+    const handleDelayBlur = (raw: string) => {
+        const parsed = Math.max(0, parseInt(raw, 10) || 0);
+        setDelay(parsed);
+        saveSetting({ delay: parsed });
     };
 
     const doDisable = () => {
@@ -55,8 +70,8 @@ export default () => {
                     <Select
                         id={'approval_mode'}
                         name={'approval_mode'}
-                        defaultValue={jguard.approval_mode}
-                        onChange={e => updateSetting({ approval_mode: e.target.value })}
+                        value={approvalMode}
+                        onChange={e => handleModeChange(e.target.value as 'manual' | 'delayed' | 'immediate')}
                         autoComplete={'off'}
                     >
                         <option value={'manual'}>Manual — Admin must approve each account</option>
@@ -68,7 +83,7 @@ export default () => {
                     </p>
                 </div>
 
-                {jguard.approval_mode === 'delayed' && (
+                {approvalMode === 'delayed' && (
                     <div className={'mt-6'}>
                         <Label>Activation Delay (minutes)</Label>
                         <Input
@@ -76,11 +91,24 @@ export default () => {
                             id={'delay'}
                             type={'number'}
                             name={'delay'}
-                            defaultValue={jguard.delay}
-                            onBlur={e => updateSetting({ delay: parseInt(e.target.value) })}
+                            min={0}
+                            value={delay}
+                            onChange={e => setDelay(parseInt(e.target.value, 10) || 0)}
+                            onBlur={e => handleDelayBlur(e.target.value)}
                         />
                         <p className={'mt-1 text-xs text-gray-400'}>
-                            How many minutes a new account must wait before it is automatically activated.
+                            How many minutes a newly registered account must wait before it is automatically activated.
+                            Currently set to{' '}
+                            <strong>
+                                {delay === 0
+                                    ? '0 minutes (instant)'
+                                    : delay < 60
+                                    ? `${delay} minute${delay !== 1 ? 's' : ''}`
+                                    : delay % 60 === 0
+                                    ? `${delay / 60} hour${delay / 60 !== 1 ? 's' : ''}`
+                                    : `${Math.floor(delay / 60)}h ${delay % 60}m`}
+                            </strong>
+                            .
                         </p>
                     </div>
                 )}
@@ -97,11 +125,38 @@ export default () => {
                 </div>
             </AdminBox>
 
-            {jguard.approval_mode === 'manual' && (
+            {approvalMode === 'manual' && (
                 <Alert type={'info'}>
                     <span className={'text-xs'}>
                         Manual approval mode is active. New registrations will be held until you approve them from
                         the <strong>Pending Accounts</strong> tab.
+                    </span>
+                </Alert>
+            )}
+
+            {approvalMode === 'delayed' && (
+                <Alert type={'info'}>
+                    <span className={'text-xs'}>
+                        Delayed activation mode is active. New accounts are held for{' '}
+                        <strong>
+                            {delay === 0
+                                ? '0 minutes'
+                                : delay < 60
+                                ? `${delay} minute${delay !== 1 ? 's' : ''}`
+                                : delay % 60 === 0
+                                ? `${delay / 60} hour${delay / 60 !== 1 ? 's' : ''}`
+                                : `${Math.floor(delay / 60)}h ${delay % 60}m`}
+                        </strong>{' '}
+                        before they automatically gain access.
+                    </span>
+                </Alert>
+            )}
+
+            {approvalMode === 'immediate' && (
+                <Alert type={'warning'}>
+                    <span className={'text-xs'}>
+                        Immediate mode is active — jGuard gating is effectively disabled. New registrations gain full
+                        access without any delay or approval.
                     </span>
                 </Alert>
             )}
