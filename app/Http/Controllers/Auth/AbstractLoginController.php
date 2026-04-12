@@ -5,20 +5,21 @@ namespace Everest\Http\Controllers\Auth;
 use Carbon\Carbon;
 use Everest\Models\User;
 use Illuminate\Http\Request;
+use Everest\Models\JGuardEntry;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Container\Container;
+use Illuminate\Support\Facades\Log;
 use Everest\Events\Auth\DirectLogin;
 use Illuminate\Support\Facades\Event;
 use Everest\Exceptions\DisplayException;
 use Everest\Http\Controllers\Controller;
-use Everest\Models\JGuardEntry;
+use Everest\Services\Auth\UserSessionService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Everest\Services\Users\UserCreationService;
+use Everest\Services\Webhooks\WebhookEventService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use Everest\Services\Auth\UserSessionService;
-use Illuminate\Support\Facades\Log;
 
 abstract class AbstractLoginController extends Controller
 {
@@ -164,14 +165,19 @@ abstract class AbstractLoginController extends Controller
         ]));
 
         if ($isPending) {
+            $expiresAt = $approvalMode === JGuardEntry::MODE_DELAYED
+                ? Carbon::now()->addMinutes($delay)
+                : null;
+
             JGuardEntry::create([
                 'user_id' => $user->id,
                 'status' => JGuardEntry::STATUS_PENDING,
                 'approval_mode' => $approvalMode,
-                'expires_at' => $approvalMode === JGuardEntry::MODE_DELAYED
-                    ? Carbon::now()->addMinutes($delay)
-                    : null,
+                'expires_at' => $expiresAt,
             ]);
+
+            Container::getInstance()->make(WebhookEventService::class)
+                ->notifyJGuardRegistered($user, $approvalMode, $expiresAt);
         }
 
         return $user;

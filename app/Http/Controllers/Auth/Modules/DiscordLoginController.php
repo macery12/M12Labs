@@ -4,15 +4,16 @@ namespace Everest\Http\Controllers\Auth\Modules;
 
 use Carbon\Carbon;
 use Everest\Models\User;
-use Illuminate\Support\Str;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Everest\Models\JGuardEntry;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Users\UserCreationService;
+use Everest\Services\Webhooks\WebhookEventService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
@@ -24,6 +25,7 @@ class DiscordLoginController extends AbstractLoginController
     public function __construct(
         private UserCreationService $creationService,
         private SettingsRepositoryInterface $settings,
+        private WebhookEventService $webhookEventService,
     ) {
         parent::__construct();
     }
@@ -134,14 +136,18 @@ class DiscordLoginController extends AbstractLoginController
         ]));
 
         if ($isPending) {
+            $expiresAt = $approvalMode === JGuardEntry::MODE_DELAYED
+                ? Carbon::now()->addMinutes($delay)
+                : null;
+
             JGuardEntry::create([
                 'user_id' => $user->id,
                 'status' => JGuardEntry::STATUS_PENDING,
                 'approval_mode' => $approvalMode,
-                'expires_at' => $approvalMode === JGuardEntry::MODE_DELAYED
-                    ? Carbon::now()->addMinutes($delay)
-                    : null,
+                'expires_at' => $expiresAt,
             ]);
+
+            $this->webhookEventService->notifyJGuardRegistered($user, $approvalMode, $expiresAt);
         }
 
         // Clear the session data

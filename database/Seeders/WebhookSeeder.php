@@ -33,6 +33,7 @@ class WebhookSeeder extends Seeder
             'admin:jguard:approve',
             'admin:jguard:reject',
             'admin:jguard:settings',
+            'admin:jguard:registered',
 
             'admin:billing:update',
             'admin:billing:reset-keys',
