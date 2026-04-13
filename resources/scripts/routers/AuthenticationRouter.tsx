@@ -1,13 +1,16 @@
+import { lazy } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import LoginContainer from '@/components/auth/LoginContainer';
-import ForgotPasswordContainer from '@/components/auth/ForgotPasswordContainer';
-import ResetPasswordWithTokenContainer from '@/components/auth/ResetPasswordWithTokenContainer';
 import LoginCheckpointContainer from '@/components/auth/LoginCheckpointContainer';
-import DiscordRegistrationContainer from '@/components/auth/DiscordRegistrationContainer';
 import { NotFound } from '@/elements/ScreenBlock';
 import tw, { styled } from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
-import RegisterContainer from '@/components/auth/RegisterContainer';
+import Spinner from '@/elements/Spinner';
+
+const ForgotPasswordContainer = lazy(() => import('@/components/auth/ForgotPasswordContainer'));
+const ResetPasswordWithTokenContainer = lazy(() => import('@/components/auth/ResetPasswordWithTokenContainer'));
+const DiscordRegistrationContainer = lazy(() => import('@/components/auth/DiscordRegistrationContainer'));
+const RegisterContainer = lazy(() => import('@/components/auth/RegisterContainer'));
 
 const Container = styled.div`
     ${tw`min-h-screen bg-login bg-cover`};
@@ -30,10 +33,40 @@ export default () => {
                 <Routes>
                     <Route path="login" element={<LoginContainer />} />
                     <Route path="login/checkpoint/*" element={<LoginCheckpointContainer />} />
-                    {registration && <Route path={'register'} element={<RegisterContainer />} />}
-                    <Route path="discord/register" element={<DiscordRegistrationContainer />} />
-                    <Route path="password" element={<ForgotPasswordContainer />} />
-                    <Route path="password/reset/:token" element={<ResetPasswordWithTokenContainer />} />
+                    {registration && (
+                        <Route
+                            path={'register'}
+                            element={
+                                <Spinner.Suspense>
+                                    <RegisterContainer />
+                                </Spinner.Suspense>
+                            }
+                        />
+                    )}
+                    <Route
+                        path="discord/register"
+                        element={
+                            <Spinner.Suspense>
+                                <DiscordRegistrationContainer />
+                            </Spinner.Suspense>
+                        }
+                    />
+                    <Route
+                        path="password"
+                        element={
+                            <Spinner.Suspense>
+                                <ForgotPasswordContainer />
+                            </Spinner.Suspense>
+                        }
+                    />
+                    <Route
+                        path="password/reset/:token"
+                        element={
+                            <Spinner.Suspense>
+                                <ResetPasswordWithTokenContainer />
+                            </Spinner.Suspense>
+                        }
+                    />
                     <Route path="*" element={<NotFound onBack={() => navigate('/auth/login')} />} />
                 </Routes>
             </div>

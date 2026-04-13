@@ -34,6 +34,41 @@ export default defineConfig({
 
     plugins,
 
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return;
+                    // CodeMirror editor and Lezer parser stack
+                    if (id.includes('@codemirror') || id.includes('@lezer')) return 'vendor-editor';
+                    // xterm terminal emulator and addons
+                    if (id.includes('xterm')) return 'vendor-terminal';
+                    // Chart.js and react-chartjs-2
+                    if (id.includes('chart.js') || id.includes('react-chartjs-2')) return 'vendor-charts';
+                    // Stripe payment libraries
+                    if (id.includes('@stripe')) return 'vendor-stripe';
+                    // FontAwesome icon packages
+                    if (id.includes('@fortawesome')) return 'vendor-fa';
+                    // State management: easy-peasy wraps immer + redux
+                    if (
+                        id.includes('easy-peasy') ||
+                        id.includes('/immer/') ||
+                        id.includes('/redux/') ||
+                        id.includes('/redux-thunk/')
+                    )
+                        return 'vendor-state';
+                    // Framer Motion animation runtime
+                    if (id.includes('framer-motion')) return 'vendor-motion';
+                    // CSS-in-JS runtime (styled-components)
+                    if (id.includes('styled-components')) return 'vendor-styled';
+                    // Preact/compat (react alias) and React Router
+                    if (id.includes('preact') || id.includes('react-router') || id.includes('@remix-run'))
+                        return 'vendor-react';
+                },
+            },
+        },
+    },
+
     server: {
         cors: {
             origin: '*',
