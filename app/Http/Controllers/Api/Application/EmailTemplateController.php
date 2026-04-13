@@ -4,9 +4,11 @@ namespace Everest\Http\Controllers\Api\Application;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Everest\Http\Requests\Api\Application\Email\GetEmailTemplateKeysRequest;
 use Everest\Http\Requests\Api\Application\Email\PreviewEmailTemplateRequest;
+use Everest\Http\Requests\Api\Application\Email\RevertEmailTemplateRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailTemplateSourceRequest;
 
 class EmailTemplateController extends ApplicationApiController
@@ -339,11 +341,13 @@ class EmailTemplateController extends ApplicationApiController
     {
         $templates = [];
         foreach (self::TEMPLATES as $key => $meta) {
+            $customPath = $this->customViewPath($meta['view']);
             $templates[] = [
-                'key'       => $key,
-                'label'     => $meta['label'],
-                'category'  => $meta['category'],
-                'variables' => $meta['variables'] ?? [],
+                'key'           => $key,
+                'label'         => $meta['label'],
+                'category'      => $meta['category'],
+                'variables'     => $meta['variables'] ?? [],
+                'is_customized' => file_exists($customPath),
             ];
         }
 
@@ -353,6 +357,7 @@ class EmailTemplateController extends ApplicationApiController
     /**
      * Render a single template with sample data and return raw HTML.
      * No email is sent — this is a read-only preview.
+     * Uses the custom override file when one exists.
      */
     public function preview(PreviewEmailTemplateRequest $request, string $key): Response
     {
@@ -364,7 +369,14 @@ class EmailTemplateController extends ApplicationApiController
 
         $data = self::SAMPLE_DATA[$key] ?? [];
 
-        $html = view($meta['view'], $data)->render();
+        $customPath = $this->customViewPath($meta['view']);
+
+        if (file_exists($customPath)) {
+            $customSource = file_get_contents($customPath);
+            $html = Blade::render($customSource, $data, deleteCachedView: true);
+        } else {
+            $html = view($meta['view'], $data)->render();
+        }
 
         return response($html, 200, [
             'Content-Type'           => 'text/html; charset=UTF-8',
@@ -376,6 +388,7 @@ class EmailTemplateController extends ApplicationApiController
 
     /**
      * Return the raw Blade source of a template file.
+     * Returns the custom override if one exists, otherwise the default.
      */
     public function source(PreviewEmailTemplateRequest $request, string $key): JsonResponse
     {
@@ -385,6 +398,16 @@ class EmailTemplateController extends ApplicationApiController
             abort(404, 'Template not found.');
         }
 
+        $customPath = $this->customViewPath($meta['view']);
+
+        if (file_exists($customPath)) {
+            return response()->json([
+                'key'           => $key,
+                'content'       => file_get_contents($customPath),
+                'is_customized' => true,
+            ]);
+        }
+
         $path = $this->viewPath($meta['view']);
 
         if (!file_exists($path)) {
@@ -392,14 +415,15 @@ class EmailTemplateController extends ApplicationApiController
         }
 
         return response()->json([
-            'key'     => $key,
-            'content' => file_get_contents($path),
+            'key'           => $key,
+            'content'       => file_get_contents($path),
+            'is_customized' => false,
         ]);
     }
 
     /**
-     * Overwrite the Blade source of a template file.
-     * A backup copy is written alongside the file before overwriting.
+     * Save edits as a custom override file alongside the original Blade template.
+     * The original file is never modified.
      */
     public function update(UpdateEmailTemplateSourceRequest $request, string $key): JsonResponse
     {
@@ -409,45 +433,82 @@ class EmailTemplateController extends ApplicationApiController
             abort(404, 'Template not found.');
         }
 
-        $path = $this->viewPath($meta['view']);
+        $defaultPath = $this->viewPath($meta['view']);
 
-        if (!file_exists($path)) {
+        if (!file_exists($defaultPath)) {
             abort(404, 'Template file not found on disk.');
         }
 
-        if (!is_writable($path)) {
-            abort(403, 'Template file is not writable. Check server file permissions.');
+        $customPath = $this->customViewPath($meta['view']);
+        $customDir  = dirname($customPath);
+
+        if (!is_dir($customDir)) {
+            $parentPerms = fileperms(dirname($customDir));
+            $dirPerms    = ($parentPerms !== false) ? ($parentPerms & 0777) : 0755;
+            if (!mkdir($customDir, $dirPerms, true)) {
+                abort(500, 'Failed to create directory for custom template.');
+            }
+        }
+
+        if (!is_writable($customDir)) {
+            abort(403, 'Custom template directory is not writable. Check server file permissions.');
+        }
+
+        if (file_exists($customPath) && !is_writable($customPath)) {
+            abort(403, 'Custom template file is not writable. Check server file permissions.');
         }
 
         $content = $request->input('content');
 
-        // Write a timestamped backup before overwriting.
-        $backupPath = $path . '.bak.' . date('Ymd_His');
-        if (!copy($path, $backupPath)) {
-            Log::warning('Email template backup failed; proceeding without backup.', [
-                'key'    => $key,
-                'backup' => $backupPath,
-            ]);
+        if (file_put_contents($customPath, $content, LOCK_EX) === false) {
+            abort(500, 'Failed to write custom template file.');
         }
 
-        if (file_put_contents($path, $content, LOCK_EX) === false) {
-            abort(500, 'Failed to write template file.');
-        }
-
-        // Flush the Blade view cache so the next preview reflects the saved changes.
         if (function_exists('opcache_invalidate')) {
-            opcache_invalidate($path, true);
+            opcache_invalidate($customPath, true);
         }
 
-        Log::info('Email template updated by admin.', [
-            'key'        => $key,
-            'admin_id'   => $request->user()?->id,
-            'backup'     => basename($backupPath),
+        Log::info('Email template custom override saved by admin.', [
+            'key'      => $key,
+            'admin_id' => $request->user()?->id,
+            'file'     => basename($customPath),
         ]);
 
         return response()->json([
-            'success' => true,
-            'key'     => $key,
+            'success'       => true,
+            'key'           => $key,
+            'is_customized' => true,
+        ]);
+    }
+
+    /**
+     * Remove the custom override and revert to the original Blade template.
+     */
+    public function revert(RevertEmailTemplateRequest $request, string $key): JsonResponse
+    {
+        $meta = self::TEMPLATES[$key] ?? null;
+
+        if ($meta === null) {
+            abort(404, 'Template not found.');
+        }
+
+        $customPath = $this->customViewPath($meta['view']);
+
+        if (file_exists($customPath)) {
+            if (!unlink($customPath)) {
+                abort(500, 'Failed to remove custom template file.');
+            }
+
+            Log::info('Email template reverted to default by admin.', [
+                'key'      => $key,
+                'admin_id' => $request->user()?->id,
+            ]);
+        }
+
+        return response()->json([
+            'success'       => true,
+            'key'           => $key,
+            'is_customized' => false,
         ]);
     }
 
@@ -457,5 +518,17 @@ class EmailTemplateController extends ApplicationApiController
     private function viewPath(string $viewName): string
     {
         return resource_path('views/' . str_replace('.', '/', $viewName) . '.blade.php');
+    }
+
+    /**
+     * Derive the custom override path from a Blade view name.
+     * The custom file is stored next to the original with a ".custom" suffix, e.g.
+     * "account-created.blade.php.custom".  This suffix is not recognised by Laravel's
+     * view resolver, so it will never be loaded automatically and cannot be overwritten
+     * by normal template updates or deploys.
+     */
+    private function customViewPath(string $viewName): string
+    {
+        return $this->viewPath($viewName) . '.custom';
     }
 }
