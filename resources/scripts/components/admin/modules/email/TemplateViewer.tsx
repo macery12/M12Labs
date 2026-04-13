@@ -3,6 +3,7 @@ import {
     getEmailTemplates,
     getEmailTemplateSource,
     previewEmailTemplate,
+    revertEmailTemplate,
     saveEmailTemplateSource,
     type EmailTemplate,
     type TemplateVariable,
@@ -25,6 +26,7 @@ import {
     faCode,
     faEye,
     faTableColumns,
+    faRotateLeft,
 } from '@fortawesome/free-solid-svg-icons';
 import { LanguageDescription } from '@codemirror/language';
 import { html } from '@codemirror/lang-html';
@@ -133,6 +135,15 @@ const TemplateItem = styled.button<{ $active: boolean; $activeBg: string }>`
     }
 `;
 
+const CustomBadge = styled.span`
+    ${tw`inline-block rounded px-1 ml-1.5`}
+    font-size: 0.6rem;
+    line-height: 1.4;
+    background-color: rgba(37, 99, 235, 0.25);
+    color: #93c5fd;
+    vertical-align: middle;
+`;
+
 // Variable docs footer inside sidebar
 const VarsDivider = styled.div`
     ${tw`mt-auto border-t border-neutral-700`}
@@ -207,6 +218,8 @@ export default () => {
     const [savedContent, setSavedContent] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+    const [isCustomized, setIsCustomized] = useState(false);
+    const [reverting, setReverting] = useState(false);
 
     // Variable docs panel open/closed
     const [varsOpen, setVarsOpen] = useState(false);
@@ -239,6 +252,7 @@ export default () => {
         setSourceContent(null);
         setSavedContent(null);
         setSaveStatus(null);
+        setIsCustomized(tpl.is_customized);
 
         // Load preview
         setPreviewHtml(null);
@@ -253,9 +267,10 @@ export default () => {
         // Load source
         setSourceLoading(true);
         getEmailTemplateSource(tpl.key)
-            .then(({ content }) => {
+            .then(({ content, is_customized }) => {
                 setSourceContent(content);
                 setSavedContent(content);
+                setIsCustomized(is_customized);
             })
             .catch(() =>
                 addFlash({ key: 'email:templates', type: 'error', message: `Failed to load source for "${tpl.label}".` }),
@@ -286,10 +301,15 @@ export default () => {
         setSaving(true);
         setSaveStatus(null);
         saveEmailTemplateSource(selected.key, content)
-            .then(() => {
+            .then(({ is_customized: customized }) => {
                 setSaveStatus({ ok: true, msg: 'Saved.' });
                 setSavedContent(content);
                 setSourceContent(content);
+                setIsCustomized(customized);
+                // Update the template list entry so the sidebar badge refreshes
+                setTemplates((prev) =>
+                    prev.map((t) => (t.key === selected.key ? { ...t, is_customized: customized } : t)),
+                );
                 // Refresh preview to reflect saved changes
                 setPreviewHtml(null);
                 setPreviewLoading(true);
@@ -299,6 +319,38 @@ export default () => {
             })
             .catch(() => setSaveStatus({ ok: false, msg: 'Save failed — check file permissions.' }))
             .finally(() => setSaving(false));
+    }, [selected]);
+
+    const handleRevert = useCallback(() => {
+        if (!selected) return;
+        setReverting(true);
+        setSaveStatus(null);
+        revertEmailTemplate(selected.key)
+            .then(() => {
+                setIsCustomized(false);
+                setTemplates((prev) =>
+                    prev.map((t) => (t.key === selected.key ? { ...t, is_customized: false } : t)),
+                );
+                // Reload the default source and refresh preview
+                setSourceLoading(true);
+                getEmailTemplateSource(selected.key)
+                    .then(({ content, is_customized }) => {
+                        setSourceContent(content);
+                        setSavedContent(content);
+                        setIsCustomized(is_customized);
+                    })
+                    .finally(() => setSourceLoading(false));
+
+                setPreviewHtml(null);
+                setPreviewLoading(true);
+                previewEmailTemplate(selected.key)
+                    .then((rendered) => setPreviewHtml(rendered))
+                    .finally(() => setPreviewLoading(false));
+
+                setSaveStatus({ ok: true, msg: 'Reverted to default.' });
+            })
+            .catch(() => setSaveStatus({ ok: false, msg: 'Revert failed — check file permissions.' }))
+            .finally(() => setReverting(false));
     }, [selected]);
 
     const switchViewMode = (mode: ViewMode) => {
@@ -353,6 +405,11 @@ export default () => {
                         <TemplateName>
                             {selected.label}
                             <span>({selected.key})</span>
+                            {isCustomized ? (
+                                <CustomBadge>custom</CustomBadge>
+                            ) : (
+                                <CustomBadge style={{ background: 'rgba(75,85,99,0.3)', color: '#9ca3af' }}>default</CustomBadge>
+                            )}
                         </TemplateName>
                     )}
                 </ToolbarLeft>
@@ -364,6 +421,19 @@ export default () => {
                             <FontAwesomeIcon icon={saveStatus.ok ? faCheck : faExclamationTriangle} />
                             {saveStatus.msg}
                         </SaveFeedback>
+                    )}
+
+                    {/* Revert to default */}
+                    {selected && isCustomized && (
+                        <ActionButton
+                            $variant='danger'
+                            onClick={handleRevert}
+                            disabled={reverting}
+                            title='Revert to default template'
+                        >
+                            {reverting ? <Spinner size='tiny' /> : <FontAwesomeIcon icon={faRotateLeft} />}
+                            Revert to Default
+                        </ActionButton>
                     )}
 
                     {/* Refresh preview */}
@@ -400,6 +470,7 @@ export default () => {
                                         onClick={() => loadTemplate(tpl)}
                                     >
                                         {tpl.label}
+                                        {tpl.is_customized && <CustomBadge>custom</CustomBadge>}
                                     </TemplateItem>
                                 ))}
                             </div>
