@@ -39,8 +39,30 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (!id.includes('node_modules')) return;
-                    // CodeMirror editor and Lezer parser stack
-                    if (id.includes('@codemirror') || id.includes('@lezer')) return 'vendor-editor';
+                    // CodeMirror view — largest single core package, split out to keep core chunk small
+                    if (id.includes('@codemirror/view')) return 'vendor-editor-view';
+                    // CodeMirror core runtime + Lezer parser runtime — always needed when editor is open.
+                    // language-data is metadata only (each language's load() uses a dynamic import),
+                    // so it belongs here rather than inflating a lang chunk.
+                    if (
+                        id.includes('@codemirror/state') ||
+                        id.includes('@codemirror/commands') ||
+                        id.includes('@codemirror/autocomplete') ||
+                        id.includes('@codemirror/language/') ||   // base package, not language-data
+                        id.includes('@codemirror/language-data') ||
+                        id.includes('@codemirror/lint') ||
+                        id.includes('@codemirror/search') ||
+                        id.includes('@lezer/common') ||
+                        id.includes('@lezer/lr') ||
+                        id.includes('@lezer/highlight')
+                    ) return 'vendor-editor-core';
+                    // @codemirror/legacy-modes, @codemirror/lang-*, and @lezer/* language parsers are
+                    // intentionally NOT assigned to a manual chunk.
+                    // - legacy-modes is only statically imported for the `shell` mode inside the lazy
+                    //   EggInstallContainer chunk, so it costs nothing on the initial page load.
+                    // - @codemirror/language-data references every other language via a dynamic import()
+                    //   inside its load() method, so Rollup creates small per-language async chunks that
+                    //   are fetched on demand when the user opens a file of that type.
                     // xterm terminal emulator and addons
                     if (id.includes('xterm')) return 'vendor-terminal';
                     // Chart.js and react-chartjs-2
