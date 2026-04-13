@@ -37,7 +37,7 @@ class EmailManager
         ]);
 
         // Render HTML content
-        $html = $this->renderHtml($email);
+        $html = $this->renderHtml($email, ['replyTo' => $replyTo]);
         
         // Get or generate text content
         $text = $email->text() ?? $this->htmlToText($html);
@@ -181,7 +181,7 @@ class EmailManager
 
         // Render HTML content from template
         try {
-            $html = View::make($viewPath, $data)->render();
+            $html = View::make($viewPath, array_merge($data, ['replyTo' => $replyTo]))->render();
         } catch (\Exception $e) {
             $error = 'Failed to render email template: ' . $e->getMessage();
             Log::error($error, [
@@ -314,15 +314,15 @@ class EmailManager
     /**
      * Render HTML from email template.
      */
-    private function renderHtml(BaseEmail $email): string
+    private function renderHtml(BaseEmail $email, array $extraData = []): string
     {
         // CustomMessageEmail uses direct HTML
         if ($email instanceof CustomMessageEmail) {
             return $email->getHtml();
         }
 
-        // Render Blade view
-        return View::make($email->view(), $email->data())->render();
+        // Render Blade view, merging any extra data (e.g. resolved replyTo for the footer)
+        return View::make($email->view(), array_merge($email->data(), $extraData))->render();
     }
 
     /**
