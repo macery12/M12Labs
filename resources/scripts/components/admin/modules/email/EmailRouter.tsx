@@ -7,6 +7,7 @@ import ContentBox from '@/elements/ContentBox';
 import ResendSettings from '@/components/admin/modules/email/ResendSettings';
 import NotificationSettings from '@/components/admin/modules/email/NotificationSettings';
 import VerificationRestrictions from '@/components/admin/modules/email/VerificationRestrictions';
+import TemplateViewer from '@/components/admin/modules/email/TemplateViewer';
 
 export default () => {
     return (
@@ -17,6 +18,7 @@ export default () => {
                 <SubNavigationLink to='/admin/email/activity' name='Activity Log' />
                 <SubNavigationLink to='/admin/email/queue' name='Deferred Queue' />
                 <SubNavigationLink to='/admin/email/verification' name='Verification Restrictions' />
+                <SubNavigationLink to='/admin/email/templates' name='Template Viewer' />
             </SubNavigation>
 
             <Routes>
@@ -60,6 +62,14 @@ export default () => {
                     element={
                         <ContentBox title={'Verification Restrictions'} showFlashes={'email:verification'}>
                             <VerificationRestrictions />
+                        </ContentBox>
+                    }
+                />
+                <Route
+                    path='/templates'
+                    element={
+                        <ContentBox title={'Email Template Viewer'} showFlashes={'email:templates'}>
+                            <TemplateViewer />
                         </ContentBox>
                     }
                 />
