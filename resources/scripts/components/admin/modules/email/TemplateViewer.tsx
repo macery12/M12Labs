@@ -157,7 +157,7 @@ const VarRow = styled.div<{ $required: boolean }>`
 // Center editor pane
 const EditorPane = styled.div<{ $hidden: boolean; $full: boolean }>`
     ${tw`flex flex-col overflow-hidden border-r border-neutral-700`}
-    flex: ${({ $full }) => ($full ? '1 1 0' : '0 0 65%')};
+    flex: ${({ $full }) => ($full ? '1 1 0' : '0 0 50%')};
     display: ${({ $hidden }) => ($hidden ? 'none' : 'flex')};
 `;
 
@@ -171,7 +171,7 @@ const PaneSubHeader = styled.div`
 // Right preview pane
 const PreviewPane = styled.div<{ $hidden: boolean; $full: boolean }>`
     ${tw`flex flex-col overflow-hidden`}
-    flex: ${({ $full }) => ($full ? '1 1 0' : '0 0 35%')};
+    flex: ${({ $full }) => ($full ? '1 1 0' : '0 0 50%')};
     display: ${({ $hidden }) => ($hidden ? 'none' : 'flex')};
 `;
 
