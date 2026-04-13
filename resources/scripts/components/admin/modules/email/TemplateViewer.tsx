@@ -156,7 +156,7 @@ export default () => {
                 ) : previewHtml !== null ? (
                     // srcdoc sets iframe content declaratively — no script execution is needed,
                     // unlike document.write(). sandbox without allow-scripts blocks any JS in the HTML.
-                    <StyledIframe srcdoc={previewHtml} title={`Preview: ${selected?.label}`} sandbox='allow-same-origin' />
+                    <StyledIframe srcDoc={previewHtml ?? ''} title={`Preview: ${selected?.label}`} sandbox='allow-same-origin' />
                 ) : (
                     <EmptyPane>
                         <FontAwesomeIcon icon={faEnvelopeOpenText} size='2x' />
