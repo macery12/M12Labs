@@ -256,6 +256,10 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);
         Route::post('/deferred/{id}/send-now', [Application\EmailActivityController::class, 'sendDeferredNow']);
         Route::delete('/deferred/{id}', [Application\EmailActivityController::class, 'cancelDeferred']);
+
+        // Email template viewer (read-only preview — no email is sent)
+        Route::get('/templates', [Application\EmailTemplateController::class, 'index']);
+        Route::get('/templates/{key}/preview', [Application\EmailTemplateController::class, 'preview'])->where('key', '[a-z0-9_.]+');
     });
 
     /*

@@ -359,3 +359,29 @@ export const cancelDeferred = (id: number): Promise<{ success: boolean; message:
             .catch(reject);
     });
 };
+
+// Email template viewer
+export interface EmailTemplate {
+    key: string;
+    label: string;
+    category: string;
+}
+
+export const getEmailTemplates = (): Promise<{ templates: EmailTemplate[] }> => {
+    return new Promise((resolve, reject) => {
+        http.get<{ templates: EmailTemplate[] }>(`/api/application/email/templates`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const previewEmailTemplate = (key: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        http.get<string>(`/api/application/email/templates/${encodeURIComponent(key)}/preview`, {
+            responseType: 'text',
+            transformResponse: [(data) => data],
+        })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
