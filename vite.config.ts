@@ -69,8 +69,6 @@ export default defineConfig({
                     if (id.includes('chart.js') || id.includes('react-chartjs-2')) return 'vendor-charts';
                     // Stripe payment libraries
                     if (id.includes('@stripe')) return 'vendor-stripe';
-                    // FontAwesome icon packages
-                    if (id.includes('@fortawesome')) return 'vendor-fa';
                     // State management: easy-peasy wraps immer + redux
                     if (
                         id.includes('easy-peasy') ||
@@ -83,8 +81,15 @@ export default defineConfig({
                     if (id.includes('framer-motion')) return 'vendor-motion';
                     // CSS-in-JS runtime (styled-components)
                     if (id.includes('styled-components')) return 'vendor-styled';
-                    // Preact/compat (react alias) and React Router
-                    if (id.includes('preact') || id.includes('react-router') || id.includes('@remix-run'))
+                    // Preact/compat (react alias), React Router, and FontAwesome.
+                    // FontAwesome calls React.forwardRef() at module evaluation time (top-level), so it
+                    // MUST be in the same chunk as preact/compat to guarantee correct init order.
+                    if (
+                        id.includes('preact') ||
+                        id.includes('react-router') ||
+                        id.includes('@remix-run') ||
+                        id.includes('@fortawesome')
+                    )
                         return 'vendor-react';
                 },
             },
