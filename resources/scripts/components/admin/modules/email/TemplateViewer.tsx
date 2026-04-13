@@ -47,8 +47,8 @@ function readStoredViewMode(): ViewMode {
 // ─── Styled components ────────────────────────────────────────────────────────
 
 const Root = styled.div`
-    ${tw`flex flex-col`}
-    min-height: 680px;
+    ${tw`flex flex-col overflow-hidden`}
+    height: 720px;
 `;
 
 // Top toolbar: view mode toggles + template name + action buttons
@@ -177,7 +177,6 @@ const PreviewPane = styled.div<{ $hidden: boolean; $full: boolean }>`
 
 const StyledIframe = styled.iframe`
     ${tw`flex-1 w-full border-0`}
-    min-height: 200px;
 `;
 
 const EmptyPane = styled.div`
