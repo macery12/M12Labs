@@ -144,6 +144,15 @@ const CustomBadge = styled.span`
     vertical-align: middle;
 `;
 
+const DefaultBadge = styled.span`
+    ${tw`inline-block rounded px-1 ml-1.5`}
+    font-size: 0.6rem;
+    line-height: 1.4;
+    background-color: rgba(75, 85, 99, 0.3);
+    color: #9ca3af;
+    vertical-align: middle;
+`;
+
 // Variable docs footer inside sidebar
 const VarsDivider = styled.div`
     ${tw`mt-auto border-t border-neutral-700`}
@@ -339,6 +348,9 @@ export default () => {
                         setSavedContent(content);
                         setIsCustomized(is_customized);
                     })
+                    .catch(() =>
+                        addFlash({ key: 'email:templates', type: 'error', message: 'Failed to reload template source after revert.' }),
+                    )
                     .finally(() => setSourceLoading(false));
 
                 setPreviewHtml(null);
@@ -408,7 +420,7 @@ export default () => {
                             {isCustomized ? (
                                 <CustomBadge>custom</CustomBadge>
                             ) : (
-                                <CustomBadge style={{ background: 'rgba(75,85,99,0.3)', color: '#9ca3af' }}>default</CustomBadge>
+                                <DefaultBadge>default</DefaultBadge>
                             )}
                         </TemplateName>
                     )}

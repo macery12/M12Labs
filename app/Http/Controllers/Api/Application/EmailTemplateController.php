@@ -441,8 +441,16 @@ class EmailTemplateController extends ApplicationApiController
         $customPath = $this->customViewPath($meta['view']);
         $customDir  = dirname($customPath);
 
-        if (!is_dir($customDir) && !mkdir($customDir, 0755, true)) {
-            abort(500, 'Failed to create directory for custom template.');
+        if (!is_dir($customDir)) {
+            $parentPerms = fileperms(dirname($customDir));
+            $dirPerms    = ($parentPerms !== false) ? ($parentPerms & 0777) : 0755;
+            if (!mkdir($customDir, $dirPerms, true)) {
+                abort(500, 'Failed to create directory for custom template.');
+            }
+        }
+
+        if (!is_writable($customDir)) {
+            abort(403, 'Custom template directory is not writable. Check server file permissions.');
         }
 
         if (file_exists($customPath) && !is_writable($customPath)) {
