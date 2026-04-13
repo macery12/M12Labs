@@ -4,99 +4,216 @@ namespace Everest\Http\Controllers\Api\Application;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Everest\Http\Requests\Api\Application\Email\GetEmailTemplateKeysRequest;
 use Everest\Http\Requests\Api\Application\Email\PreviewEmailTemplateRequest;
+use Everest\Http\Requests\Api\Application\Email\UpdateEmailTemplateSourceRequest;
 
 class EmailTemplateController extends ApplicationApiController
 {
     /**
-     * All available email templates with their display metadata and Blade view path.
+     * All available email templates with their display metadata, Blade view path, and variable docs.
+     *
+     * Each entry in 'variables' has:
+     *   name        – the variable reference used in the template
+     *   description – human-readable purpose
+     *   example     – sample value shown in the variable panel
+     *   required    – whether the template requires this variable to render
      */
     private const TEMPLATES = [
         'auth.account_created' => [
             'label'    => 'Account Created',
             'category' => 'Auth',
             'view'     => 'emails.auth.account-created',
+            'variables' => [
+                ['name' => '$userName',  'description' => "Recipient's display name",   'example' => 'Jane Smith',           'required' => true],
+                ['name' => '$userEmail', 'description' => "Recipient's email address",  'example' => 'jane@example.com',     'required' => false],
+                ['name' => '$loginUrl',  'description' => 'Link to the login page',     'example' => 'https://example.com/login', 'required' => true],
+            ],
         ],
         'auth.account_locked' => [
             'label'    => 'Account Locked / Suspended',
             'category' => 'Auth',
             'view'     => 'emails.auth.account-locked',
+            'variables' => [
+                ['name' => '$userName',    'description' => "Recipient's display name",          'example' => 'Jane Smith',                          'required' => true],
+                ['name' => '$reason',      'description' => 'Reason the account was locked',     'example' => 'Multiple failed login attempts',       'required' => false],
+                ['name' => '$suspendedAt', 'description' => 'Date/time the account was locked',  'example' => 'April 13, 2026 10:30 AM',             'required' => false],
+                ['name' => '$supportUrl',  'description' => 'Link to the support page',          'example' => 'https://example.com/support',         'required' => false],
+            ],
         ],
         'auth.account_unsuspended' => [
             'label'    => 'Account Unsuspended',
             'category' => 'Auth',
             'view'     => 'emails.auth.account-unsuspended',
+            'variables' => [
+                ['name' => '$userName',      'description' => "Recipient's display name",              'example' => 'Jane Smith',              'required' => true],
+                ['name' => '$unsuspendedAt', 'description' => 'Date/time the account was unsuspended', 'example' => 'April 13, 2026 2:15 PM', 'required' => false],
+            ],
         ],
         'auth.email_verification' => [
             'label'    => 'Email Verification',
             'category' => 'Auth',
             'view'     => 'emails.auth.email-verification',
+            'variables' => [
+                ['name' => '$userName',        'description' => "Recipient's display name",            'example' => 'Jane Smith',                              'required' => true],
+                ['name' => '$verificationUrl', 'description' => 'Email verification link',             'example' => 'https://example.com/verify?token=abc123', 'required' => true],
+                ['name' => '$expiresIn',       'description' => 'How long the link is valid',          'example' => '60 minutes',                              'required' => false],
+            ],
         ],
         'auth.password_reset' => [
             'label'    => 'Password Reset',
             'category' => 'Auth',
             'view'     => 'emails.auth.password-reset',
+            'variables' => [
+                ['name' => '$userName',  'description' => "Recipient's display name",       'example' => 'Jane Smith',                           'required' => true],
+                ['name' => '$resetUrl',  'description' => 'Password reset link',            'example' => 'https://example.com/reset?token=abc', 'required' => true],
+                ['name' => '$expiresIn', 'description' => 'How long the reset link is valid', 'example' => '60 minutes',                         'required' => false],
+            ],
         ],
         'auth.password_changed' => [
             'label'    => 'Password Changed',
             'category' => 'Auth',
             'view'     => 'emails.auth.password-changed',
+            'variables' => [
+                ['name' => '$userName',  'description' => "Recipient's display name",     'example' => 'Jane Smith',             'required' => true],
+                ['name' => '$changedAt', 'description' => 'Date/time password was changed', 'example' => 'April 13, 2026 11:45 AM', 'required' => false],
+                ['name' => '$ipAddress', 'description' => 'IP address of the request',    'example' => '192.0.2.42',             'required' => false],
+            ],
         ],
         'auth.new_login' => [
             'label'    => 'New Login Detected',
             'category' => 'Auth',
             'view'     => 'emails.auth.new-login',
+            'variables' => [
+                ['name' => '$userName',  'description' => "Recipient's display name",      'example' => 'Jane Smith',                    'required' => true],
+                ['name' => '$ipAddress', 'description' => 'IP address of the login',       'example' => '192.0.2.42',                    'required' => false],
+                ['name' => '$userAgent', 'description' => 'Browser/device string',         'example' => 'Chrome 124 on macOS Sonoma',    'required' => false],
+                ['name' => '$location',  'description' => 'Approximate geographic location', 'example' => 'San Francisco, CA, US',       'required' => false],
+                ['name' => '$loginTime', 'description' => 'Date/time of the login',        'example' => 'April 13, 2026 9:00 AM UTC',   'required' => false],
+            ],
         ],
         'auth.2fa_enabled' => [
             'label'    => 'Two-Factor Auth Enabled',
             'category' => 'Auth',
             'view'     => 'emails.auth.2fa-enabled',
+            'variables' => [
+                ['name' => '$userName',  'description' => "Recipient's display name",    'example' => 'Jane Smith',             'required' => true],
+                ['name' => '$enabledAt', 'description' => 'Date/time 2FA was enabled',   'example' => 'April 13, 2026 8:55 AM', 'required' => false],
+            ],
         ],
         'auth.2fa_disabled' => [
             'label'    => 'Two-Factor Auth Disabled',
             'category' => 'Auth',
             'view'     => 'emails.auth.2fa-disabled',
+            'variables' => [
+                ['name' => '$userName',   'description' => "Recipient's display name",    'example' => 'Jane Smith',             'required' => true],
+                ['name' => '$disabledAt', 'description' => 'Date/time 2FA was disabled',  'example' => 'April 13, 2026 8:55 AM', 'required' => false],
+                ['name' => '$ipAddress',  'description' => 'IP address of the request',   'example' => '192.0.2.42',             'required' => false],
+            ],
         ],
         'server.created' => [
             'label'    => 'Server Created',
             'category' => 'Server',
             'view'     => 'emails.server.created',
+            'variables' => [
+                ['name' => '$userName',     'description' => "Recipient's display name",     'example' => 'Jane Smith',             'required' => true],
+                ['name' => '$serverName',   'description' => 'Name of the created server',   'example' => 'Survival-Minecraft',     'required' => true],
+                ['name' => '$serverId',     'description' => 'Short server identifier',       'example' => 'a1b2c3d4',               'required' => false],
+                ['name' => '$serverUrl',    'description' => 'Link to the server panel',      'example' => 'https://example.com/server/a1b2c3d4', 'required' => false],
+                ['name' => '$nodeLocation', 'description' => 'Node/datacenter location',      'example' => 'US East (New York)',     'required' => false],
+            ],
         ],
         'server.suspended' => [
             'label'    => 'Server Suspended',
             'category' => 'Server',
             'view'     => 'emails.server.suspended',
+            'variables' => [
+                ['name' => '$userName',    'description' => "Recipient's display name",          'example' => 'Jane Smith',              'required' => true],
+                ['name' => '$serverName',  'description' => 'Name of the suspended server',      'example' => 'Survival-Minecraft',      'required' => true],
+                ['name' => '$reason',      'description' => 'Reason for suspension',             'example' => 'Payment overdue',         'required' => false],
+                ['name' => '$suspendedAt', 'description' => 'Date/time the server was suspended', 'example' => 'April 13, 2026 12:00 PM', 'required' => false],
+            ],
         ],
         'server.unsuspended' => [
             'label'    => 'Server Unsuspended',
             'category' => 'Server',
             'view'     => 'emails.server.unsuspended',
+            'variables' => [
+                ['name' => '$userName',      'description' => "Recipient's display name",              'example' => 'Jane Smith',              'required' => true],
+                ['name' => '$serverName',    'description' => 'Name of the unsuspended server',        'example' => 'Survival-Minecraft',      'required' => true],
+                ['name' => '$unsuspendedAt', 'description' => 'Date/time the server was unsuspended',  'example' => 'April 13, 2026 3:30 PM',  'required' => false],
+            ],
         ],
         'server.expiring_soon' => [
             'label'    => 'Server Expiring Soon',
             'category' => 'Server',
             'view'     => 'emails.server.expiring-soon',
+            'variables' => [
+                ['name' => '$userName',      'description' => "Recipient's display name",       'example' => 'Jane Smith',                  'required' => true],
+                ['name' => '$serverName',    'description' => 'Name of the expiring server',    'example' => 'Survival-Minecraft',          'required' => true],
+                ['name' => '$expiresAt',     'description' => 'Expiration date/time',           'example' => 'April 16, 2026 12:00 PM',    'required' => false],
+                ['name' => '$daysRemaining', 'description' => 'Days remaining before expiry',   'example' => '3',                          'required' => false],
+            ],
         ],
         'billing.payment_received' => [
             'label'    => 'Payment Received',
             'category' => 'Billing',
             'view'     => 'emails.billing.payment-received',
+            'variables' => [
+                ['name' => '$userName',        'description' => "Recipient's display name",        'example' => 'Jane Smith',                'required' => true],
+                ['name' => '$amount',          'description' => 'Payment amount (numeric string)', 'example' => '9.99',                      'required' => true],
+                ['name' => '$currency',        'description' => 'Currency code',                   'example' => 'USD',                       'required' => true],
+                ['name' => '$paymentMethod',   'description' => 'Payment method description',      'example' => 'Visa •••• 4242',            'required' => false],
+                ['name' => '$invoiceId',       'description' => 'Invoice identifier',              'example' => 'INV-2026-04289',            'required' => false],
+                ['name' => '$transactionDate', 'description' => 'Date/time of the transaction',   'example' => 'April 13, 2026 10:00 AM',  'required' => false],
+                ['name' => '$isRenewal',       'description' => 'Whether this is a renewal payment', 'example' => 'true',                  'required' => false],
+                ['name' => '$originalAmount',  'description' => 'Pre-discount amount (if applicable)', 'example' => '12.99',               'required' => false],
+                ['name' => '$discountAmount',  'description' => 'Discount amount applied',         'example' => '3.00',                    'required' => false],
+                ['name' => '$couponCode',      'description' => 'Coupon code used',                'example' => 'SAVE3',                   'required' => false],
+                ['name' => '$billingDays',     'description' => 'Number of days in billing cycle', 'example' => '30',                      'required' => false],
+                ['name' => '$billingCycle',    'description' => 'Billing cycle label',             'example' => 'Monthly',                 'required' => false],
+            ],
         ],
         'billing.payment_failed' => [
             'label'    => 'Payment Failed',
             'category' => 'Billing',
             'view'     => 'emails.billing.payment-failed',
+            'variables' => [
+                ['name' => '$userName',      'description' => "Recipient's display name",       'example' => 'Jane Smith',        'required' => true],
+                ['name' => '$amount',        'description' => 'Payment amount attempted',       'example' => '9.99',              'required' => true],
+                ['name' => '$currency',      'description' => 'Currency code',                  'example' => 'USD',               'required' => true],
+                ['name' => '$reason',        'description' => 'Reason the payment failed',      'example' => 'Card declined',     'required' => false],
+                ['name' => '$invoiceId',     'description' => 'Invoice identifier',             'example' => 'INV-2026-04289',   'required' => false],
+                ['name' => '$retryUrl',      'description' => 'Link to retry or update billing', 'example' => 'https://example.com/billing', 'required' => false],
+                ['name' => '$paymentMethod', 'description' => 'Payment method that failed',     'example' => 'Visa •••• 4242',   'required' => false],
+                ['name' => '$isRenewal',     'description' => 'Whether this was a renewal attempt', 'example' => 'false',        'required' => false],
+            ],
         ],
         'billing.server_renewal_notice' => [
             'label'    => 'Server Renewal Notice',
             'category' => 'Billing',
             'view'     => 'emails.billing.server-renewal-notice',
+            'variables' => [
+                ['name' => '$userName',       'description' => "Recipient's display name",         'example' => 'Jane Smith',                    'required' => true],
+                ['name' => '$serverName',     'description' => 'Name of the server to be renewed', 'example' => 'Survival-Minecraft',            'required' => true],
+                ['name' => '$renewalUrl',     'description' => 'Link to the renewal/billing page', 'example' => 'https://example.com/billing',  'required' => false],
+                ['name' => '$renewalDate',    'description' => 'Scheduled renewal date',           'example' => 'April 16, 2026',               'required' => false],
+                ['name' => '$suspensionTime', 'description' => 'When server will be suspended if unpaid', 'example' => 'April 16, 2026 12:00 PM UTC', 'required' => false],
+                ['name' => '$renewalAmount',  'description' => 'Amount due for renewal',           'example' => '9.99',                         'required' => false],
+                ['name' => '$currency',       'description' => 'Currency code',                    'example' => 'USD',                          'required' => false],
+                ['name' => '$billingDays',    'description' => 'Number of days in billing cycle',  'example' => '30',                           'required' => false],
+                ['name' => '$billingCycle',   'description' => 'Billing cycle label',              'example' => 'Monthly',                      'required' => false],
+            ],
         ],
         'admin.broadcast' => [
             'label'    => 'Admin Broadcast',
             'category' => 'Admin',
             'view'     => 'emails.admin-broadcast',
+            'variables' => [
+                ['name' => '$adminName', 'description' => 'Name of the admin sending the message', 'example' => 'Admin',                       'required' => false],
+                ['name' => '$message',   'description' => 'Broadcast message body',                'example' => 'Scheduled maintenance tonight.', 'required' => true],
+            ],
         ],
     ];
 
@@ -223,9 +340,10 @@ class EmailTemplateController extends ApplicationApiController
         $templates = [];
         foreach (self::TEMPLATES as $key => $meta) {
             $templates[] = [
-                'key'      => $key,
-                'label'    => $meta['label'],
-                'category' => $meta['category'],
+                'key'       => $key,
+                'label'     => $meta['label'],
+                'category'  => $meta['category'],
+                'variables' => $meta['variables'] ?? [],
             ];
         }
 
@@ -254,5 +372,90 @@ class EmailTemplateController extends ApplicationApiController
             'X-Content-Type-Options' => 'nosniff',
             'X-Frame-Options'        => 'SAMEORIGIN',
         ]);
+    }
+
+    /**
+     * Return the raw Blade source of a template file.
+     */
+    public function source(PreviewEmailTemplateRequest $request, string $key): JsonResponse
+    {
+        $meta = self::TEMPLATES[$key] ?? null;
+
+        if ($meta === null) {
+            abort(404, 'Template not found.');
+        }
+
+        $path = $this->viewPath($meta['view']);
+
+        if (!file_exists($path)) {
+            abort(404, 'Template file not found on disk.');
+        }
+
+        return response()->json([
+            'key'     => $key,
+            'content' => file_get_contents($path),
+        ]);
+    }
+
+    /**
+     * Overwrite the Blade source of a template file.
+     * A backup copy is written alongside the file before overwriting.
+     */
+    public function update(UpdateEmailTemplateSourceRequest $request, string $key): JsonResponse
+    {
+        $meta = self::TEMPLATES[$key] ?? null;
+
+        if ($meta === null) {
+            abort(404, 'Template not found.');
+        }
+
+        $path = $this->viewPath($meta['view']);
+
+        if (!file_exists($path)) {
+            abort(404, 'Template file not found on disk.');
+        }
+
+        if (!is_writable($path)) {
+            abort(403, 'Template file is not writable. Check server file permissions.');
+        }
+
+        $content = $request->input('content');
+
+        // Write a timestamped backup before overwriting.
+        $backupPath = $path . '.bak.' . date('Ymd_His');
+        if (!copy($path, $backupPath)) {
+            Log::warning('Email template backup failed; proceeding without backup.', [
+                'key'    => $key,
+                'backup' => $backupPath,
+            ]);
+        }
+
+        if (file_put_contents($path, $content, LOCK_EX) === false) {
+            abort(500, 'Failed to write template file.');
+        }
+
+        // Flush the Blade view cache so the next preview reflects the saved changes.
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($path, true);
+        }
+
+        Log::info('Email template updated by admin.', [
+            'key'        => $key,
+            'admin_id'   => $request->user()?->id,
+            'backup'     => basename($backupPath),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'key'     => $key,
+        ]);
+    }
+
+    /**
+     * Convert a Blade view name (e.g. "emails.auth.account-created") to an absolute file path.
+     */
+    private function viewPath(string $viewName): string
+    {
+        return resource_path('views/' . str_replace('.', '/', $viewName) . '.blade.php');
     }
 }
