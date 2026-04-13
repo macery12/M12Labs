@@ -4,7 +4,6 @@ import Select from '@/elements/Select';
 import AdminBox from '@/elements/AdminBox';
 import { faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
-import { Alert } from '@/elements/alert';
 import useStatus from '@/plugins/useStatus';
 import { updateModule } from '@/api/routes/admin/auth/module';
 
@@ -30,7 +29,7 @@ export default () => {
     return (
         <AdminBox title={'Registration Module'} icon={faUserPlus} byKey={'auth:registration'} status={status}>
             <div>
-                <Label>Allow User Registration</Label>
+                <Label>Allow Email Registration</Label>
                 <Select
                     id={'enabled'}
                     name={'enabled'}
@@ -45,17 +44,9 @@ export default () => {
                     </option>
                 </Select>
                 <p className={'mt-1 text-xs text-gray-400'}>
-                    Toggle whether users can register using the built-in pages.
+                    Toggle whether users can register using the built-in email/password pages.
                 </p>
             </div>
-            {!settings.enabled && (
-                <Alert type={'warning'} className={'mt-6'}>
-                    <span className={'text-xs'}>
-                        Since registration is disabled, OAuth modules like Discord will only allow users to login - not
-                        register.
-                    </span>
-                </Alert>
-            )}
         </AdminBox>
     );
 };
