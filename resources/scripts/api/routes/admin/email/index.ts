@@ -360,11 +360,19 @@ export const cancelDeferred = (id: number): Promise<{ success: boolean; message:
     });
 };
 
-// Email template viewer
+// Email template viewer/editor
+export interface TemplateVariable {
+    name: string;
+    description: string;
+    example: string;
+    required: boolean;
+}
+
 export interface EmailTemplate {
     key: string;
     label: string;
     category: string;
+    variables: TemplateVariable[];
 }
 
 export const getEmailTemplates = (): Promise<{ templates: EmailTemplate[] }> => {
@@ -381,6 +389,25 @@ export const previewEmailTemplate = (key: string): Promise<string> => {
             responseType: 'text',
             transformResponse: [(data) => data],
         })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const getEmailTemplateSource = (key: string): Promise<{ key: string; content: string }> => {
+    return new Promise((resolve, reject) => {
+        http.get<{ key: string; content: string }>(`/api/application/email/templates/${encodeURIComponent(key)}/source`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const saveEmailTemplateSource = (key: string, content: string): Promise<{ success: boolean; key: string }> => {
+    return new Promise((resolve, reject) => {
+        http.put<{ success: boolean; key: string }>(
+            `/api/application/email/templates/${encodeURIComponent(key)}/source`,
+            { content },
+        )
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

@@ -18,7 +18,7 @@ export default () => {
                 <SubNavigationLink to='/admin/email/activity' name='Activity Log' />
                 <SubNavigationLink to='/admin/email/queue' name='Deferred Queue' />
                 <SubNavigationLink to='/admin/email/verification' name='Verification Restrictions' />
-                <SubNavigationLink to='/admin/email/templates' name='Template Viewer' />
+                <SubNavigationLink to='/admin/email/templates' name='Template Editor' />
             </SubNavigation>
 
             <Routes>
@@ -68,7 +68,7 @@ export default () => {
                 <Route
                     path='/templates'
                     element={
-                        <ContentBox title={'Email Template Viewer'} showFlashes={'email:templates'}>
+                        <ContentBox title={'Email Template Editor'} showFlashes={'email:templates'}>
                             <TemplateViewer />
                         </ContentBox>
                     }
