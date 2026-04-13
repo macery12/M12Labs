@@ -165,6 +165,8 @@ export default () => {
                         <Spinner size='large' />
                     </EmptyPane>
                 ) : previewHtml !== null ? (
+                    // sandbox='allow-same-origin' is intentional: email templates are static HTML
+                    // with no JavaScript. Keeping scripts blocked prevents any unintended execution.
                     <StyledIframe ref={iframeRef} title={`Preview: ${selected?.label}`} sandbox='allow-same-origin' />
                 ) : (
                     <EmptyPane>
