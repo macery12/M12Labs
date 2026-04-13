@@ -157,7 +157,7 @@ const VarRow = styled.div<{ $required: boolean }>`
 // Center editor pane
 const EditorPane = styled.div<{ $hidden: boolean; $full: boolean }>`
     ${tw`flex flex-col overflow-hidden border-r border-neutral-700`}
-    flex: ${({ $full }) => ($full ? '1 1 0' : '1 1 0')};
+    flex: ${({ $full }) => ($full ? '1 1 0' : '3 3 0')};
     min-width: 0;
     display: ${({ $hidden }) => ($hidden ? 'none' : 'flex')};
 `;
@@ -172,7 +172,7 @@ const PaneSubHeader = styled.div`
 // Right preview pane
 const PreviewPane = styled.div<{ $hidden: boolean; $full: boolean }>`
     ${tw`flex flex-col overflow-hidden`}
-    flex: ${({ $full }) => ($full ? '1 1 0' : '3 3 0')};
+    flex: ${({ $full }) => ($full ? '1 1 0' : '7 7 0')};
     min-width: 0;
     display: ${({ $hidden }) => ($hidden ? 'none' : 'flex')};
 `;
@@ -371,14 +371,6 @@ export default () => {
                         <ActionButton onClick={refreshPreview} disabled={previewLoading} title='Refresh preview'>
                             <FontAwesomeIcon icon={faRedo} />
                             Refresh
-                        </ActionButton>
-                    )}
-
-                    {/* Discard */}
-                    {selected && savedContent !== null && (
-                        <ActionButton onClick={discardChanges} title='Revert to last saved version'>
-                            <FontAwesomeIcon icon={faTimes} />
-                            Discard
                         </ActionButton>
                     )}
 
