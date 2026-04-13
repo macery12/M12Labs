@@ -39,12 +39,14 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (!id.includes('node_modules')) return;
-                    // CodeMirror view — largest single core package, split out to keep core chunk small
-                    if (id.includes('@codemirror/view')) return 'vendor-editor-view';
-                    // CodeMirror core runtime + Lezer parser runtime — always needed when editor is open.
+                    // CodeMirror core runtime + @codemirror/view + Lezer parser runtime.
+                    // @codemirror/view MUST be in the same chunk as @codemirror/state: they share
+                    // circular file-level dependencies, so splitting them across chunks causes a TDZ
+                    // crash ("Cannot access 'x' before initialization") at module evaluation time.
                     // language-data is metadata only (each language's load() uses a dynamic import),
                     // so it belongs here rather than inflating a lang chunk.
                     if (
+                        id.includes('@codemirror/view') ||
                         id.includes('@codemirror/state') ||
                         id.includes('@codemirror/commands') ||
                         id.includes('@codemirror/autocomplete') ||
