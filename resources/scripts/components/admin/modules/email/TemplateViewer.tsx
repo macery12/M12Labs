@@ -23,7 +23,6 @@ import {
     faChevronUp,
     faCheck,
     faExclamationTriangle,
-    faUndo,
 } from '@fortawesome/free-solid-svg-icons';
 import { LanguageDescription } from '@codemirror/language';
 import { html } from '@codemirror/lang-html';
@@ -305,12 +304,9 @@ export default () => {
                         )}
                         {selected && editMode && (
                             <>
-                                <ActionButton onClick={cancelEdit} title='Discard changes'>
-                                    <FontAwesomeIcon icon={faUndo} />
-                                    Discard
-                                </ActionButton>
-                                <ActionButton $variant='danger' onClick={cancelEdit} title='Close editor'>
+                                <ActionButton onClick={cancelEdit} title='Discard changes and close editor'>
                                     <FontAwesomeIcon icon={faTimes} />
+                                    Discard
                                 </ActionButton>
                                 <ActionButton $variant='primary' onClick={handleSave} disabled={saving} title='Save template'>
                                     {saving ? <Spinner size='tiny' /> : <FontAwesomeIcon icon={faSave} />}

@@ -423,7 +423,12 @@ class EmailTemplateController extends ApplicationApiController
 
         // Write a timestamped backup before overwriting.
         $backupPath = $path . '.bak.' . date('Ymd_His');
-        @copy($path, $backupPath);
+        if (!copy($path, $backupPath)) {
+            Log::warning('Email template backup failed; proceeding without backup.', [
+                'key'    => $key,
+                'backup' => $backupPath,
+            ]);
+        }
 
         if (file_put_contents($path, $content, LOCK_EX) === false) {
             abort(500, 'Failed to write template file.');
