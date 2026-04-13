@@ -1,5 +1,13 @@
 import { lazy } from 'react';
-import * as Icon from '@heroicons/react/outline';
+import {
+    CashIcon,
+    ClipboardListIcon,
+    HeartIcon,
+    KeyIcon,
+    ShieldCheckIcon,
+    TicketIcon,
+    UserIcon,
+} from '@heroicons/react/outline';
 import { route, type RouteDefinition } from '@/routers/routes/utils';
 
 const CredentialsContainer = lazy(() => import('@account/CredentialsContainer'));
@@ -24,16 +32,16 @@ const account: RouteDefinition[] = [
     /**
      * Account - General Routes
      */
-    route('', AccountOverviewContainer, { name: 'Account', end: true, icon: Icon.UserIcon }),
-    route('credentials', CredentialsContainer, { name: 'Credentials', icon: Icon.KeyIcon }),
-    route('security', SecurityContainer, { name: 'Security', icon: Icon.ShieldCheckIcon }),
+    route('', AccountOverviewContainer, { name: 'Account', end: true, icon: UserIcon }),
+    route('credentials', CredentialsContainer, { name: 'Credentials', icon: KeyIcon }),
+    route('security', SecurityContainer, { name: 'Security', icon: ShieldCheckIcon }),
 
     /**
      * Account - Ticket Routes
      */
     route('tickets', TicketContainer, {
         name: 'Tickets',
-        icon: Icon.TicketIcon,
+        icon: TicketIcon,
         condition: flags => flags.tickets.enabled,
     }),
     route('tickets/:id', ViewTicketContainer, { condition: flags => flags.tickets.enabled }),
@@ -43,7 +51,7 @@ const account: RouteDefinition[] = [
      */
     route('billing/order', ProductsContainer, {
         name: 'Billing',
-        icon: Icon.CashIcon,
+        icon: CashIcon,
         condition: flags => flags.billing.enabled,
     }),
     route('/checkout/configure/:id', OrderContainer),
@@ -51,7 +59,7 @@ const account: RouteDefinition[] = [
     route('billing/order/:id', OrderContainer),
     route('billing/orders', OrdersContainer, {
         name: 'Orders',
-        icon: Icon.ClipboardListIcon,
+        icon: ClipboardListIcon,
         condition: flags => flags.billing.enabled,
     }),
     route('billing/processing', Processing),
@@ -63,7 +71,7 @@ const account: RouteDefinition[] = [
      */
     route('donations', DonationContainer, {
         name: 'Donate',
-        icon: Icon.HeartIcon,
+        icon: HeartIcon,
         condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
     }),
     route('donations/history', DonationHistoryContainer, {
