@@ -226,9 +226,11 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/deferred/{id}/send-now', [Application\EmailActivityController::class, 'sendDeferredNow']);
         Route::delete('/deferred/{id}', [Application\EmailActivityController::class, 'cancelDeferred']);
 
-        // Email template viewer (read-only preview — no email is sent)
+        // Email template viewer/editor
         Route::get('/templates', [Application\EmailTemplateController::class, 'index']);
         Route::get('/templates/{key}/preview', [Application\EmailTemplateController::class, 'preview'])->where('key', '[a-z0-9_.]+');
+        Route::get('/templates/{key}/source', [Application\EmailTemplateController::class, 'source'])->where('key', '[a-z0-9_.]+');
+        Route::put('/templates/{key}/source', [Application\EmailTemplateController::class, 'update'])->where('key', '[a-z0-9_.]+');
     });
 
     /*
