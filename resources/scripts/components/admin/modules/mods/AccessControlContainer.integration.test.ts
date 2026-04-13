@@ -49,7 +49,7 @@ describe('saveAllProviders', () => {
     });
 
     afterEach(() => {
-        vi.restoreAllMocks();
+        vi.clearAllMocks();
     });
 
     it('updates every provider and returns refreshed rules', async () => {
