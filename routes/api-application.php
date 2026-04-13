@@ -262,6 +262,7 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/templates/{key}/preview', [Application\EmailTemplateController::class, 'preview'])->where('key', '[a-z0-9_.]+');
         Route::get('/templates/{key}/source', [Application\EmailTemplateController::class, 'source'])->where('key', '[a-z0-9_.]+');
         Route::put('/templates/{key}/source', [Application\EmailTemplateController::class, 'update'])->where('key', '[a-z0-9_.]+');
+        Route::delete('/templates/{key}/source', [Application\EmailTemplateController::class, 'revert'])->where('key', '[a-z0-9_.]+');
     });
 
     /*
