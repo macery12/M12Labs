@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getEmailTemplates, previewEmailTemplate, type EmailTemplate } from '@/api/routes/admin/email';
 import useFlash from '@/plugins/useFlash';
 import Spinner from '@/elements/Spinner';
@@ -58,7 +58,6 @@ export default () => {
     const [selected, setSelected] = useState<EmailTemplate | null>(null);
     const [previewHtml, setPreviewHtml] = useState<string | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
     const { clearFlashes, addFlash } = useFlash();
     const { colors } = useStoreState((state) => state.theme.data!);
 
@@ -88,16 +87,6 @@ export default () => {
             )
             .finally(() => setPreviewLoading(false));
     };
-
-    // Write the preview HTML into the iframe document for isolated rendering.
-    useEffect(() => {
-        if (!iframeRef.current || previewHtml === null) return;
-        const doc = iframeRef.current.contentDocument;
-        if (!doc) return;
-        doc.open();
-        doc.write(previewHtml);
-        doc.close();
-    }, [previewHtml]);
 
     // Group templates by category for sidebar display.
     const grouped = templates.reduce<Record<string, EmailTemplate[]>>((acc, tpl) => {
@@ -165,9 +154,9 @@ export default () => {
                         <Spinner size='large' />
                     </EmptyPane>
                 ) : previewHtml !== null ? (
-                    // sandbox='allow-same-origin' is intentional: email templates are static HTML
-                    // with no JavaScript. Keeping scripts blocked prevents any unintended execution.
-                    <StyledIframe ref={iframeRef} title={`Preview: ${selected?.label}`} sandbox='allow-same-origin' />
+                    // srcdoc sets iframe content declaratively — no script execution is needed,
+                    // unlike document.write(). sandbox without allow-scripts blocks any JS in the HTML.
+                    <StyledIframe srcdoc={previewHtml} title={`Preview: ${selected?.label}`} sandbox='allow-same-origin' />
                 ) : (
                     <EmptyPane>
                         <FontAwesomeIcon icon={faEnvelopeOpenText} size='2x' />

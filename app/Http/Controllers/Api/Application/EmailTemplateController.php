@@ -250,6 +250,7 @@ class EmailTemplateController extends ApplicationApiController
 
         return response($html, 200, [
             'Content-Type'           => 'text/html; charset=UTF-8',
+            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'",
             'X-Content-Type-Options' => 'nosniff',
             'X-Frame-Options'        => 'SAMEORIGIN',
         ]);
