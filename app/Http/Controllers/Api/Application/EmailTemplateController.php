@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Everest\Http\Requests\Api\Application\Email\GetEmailTemplateKeysRequest;
 use Everest\Http\Requests\Api\Application\Email\PreviewEmailTemplateRequest;
+use Everest\Http\Requests\Api\Application\Email\RevertEmailTemplateRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailTemplateSourceRequest;
 
 class EmailTemplateController extends ApplicationApiController
@@ -483,7 +484,7 @@ class EmailTemplateController extends ApplicationApiController
     /**
      * Remove the custom override and revert to the original Blade template.
      */
-    public function revert(UpdateEmailTemplateSourceRequest $request, string $key): JsonResponse
+    public function revert(RevertEmailTemplateRequest $request, string $key): JsonResponse
     {
         $meta = self::TEMPLATES[$key] ?? null;
 
