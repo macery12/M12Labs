@@ -82,9 +82,45 @@ function App() {
     }
 
     if (PterodactylUser?.state === 'suspended') {
+        const handleLogout = () => {
+            http.post('/auth/logout').finally(() => {
+                window.location.href = '/auth/login';
+            });
+        };
+
         return (
-            <div style={{ color: 'white', fontWeight: 'bold', marginTop: '10px', marginLeft: '10px' }}>
-                Your account has been suspended and blocked by an administrator.
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '100vh',
+                    backgroundColor: '#111',
+                    color: 'white',
+                    textAlign: 'center',
+                    padding: '2rem',
+                }}
+            >
+                <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Account Suspended</h1>
+                <p style={{ color: '#aaa', marginBottom: '2rem', maxWidth: '400px' }}>
+                    Your account has been suspended and blocked by an administrator.
+                </p>
+                <button
+                    onClick={handleLogout}
+                    style={{
+                        backgroundColor: '#e53e3e',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        padding: '0.625rem 1.5rem',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Logout
+                </button>
             </div>
         );
     }
