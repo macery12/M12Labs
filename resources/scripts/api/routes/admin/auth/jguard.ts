@@ -28,6 +28,7 @@ export const rejectJGuardUser = (userId: number): Promise<void> => {
 export interface JGuardSettingsValues {
     approval_mode?: 'manual' | 'delayed' | 'immediate';
     delay?: number;
+    pending_message?: string;
 }
 
 export const updateJGuardSettings = (values: JGuardSettingsValues): Promise<void> => {

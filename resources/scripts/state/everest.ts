@@ -21,6 +21,7 @@ export interface EverestSettings {
                 enabled: boolean;
                 approval_mode: 'manual' | 'delayed' | 'immediate';
                 delay: number;
+                pending_message: string;
             };
             discord: {
                 enabled: boolean;

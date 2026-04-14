@@ -23,8 +23,9 @@ export default () => {
     // Local controlled state — initialized from page-load store, updated immediately on change.
     const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed' | 'immediate'>(jguard.approval_mode);
     const [delay, setDelay] = useState<number>(jguard.delay);
+    const [pendingMessage, setPendingMessage] = useState<string>(jguard.pending_message ?? '');
 
-    const saveSetting = (values: { approval_mode?: string; delay?: number }) => {
+    const saveSetting = (values: { approval_mode?: string; delay?: number; pending_message?: string }) => {
         clearFlashes('auth:jguard:settings');
         setStatus('loading');
         updateJGuardSettings(values)
@@ -41,6 +42,7 @@ export default () => {
                                     approval_mode: values.approval_mode as 'manual' | 'delayed' | 'immediate',
                                 }),
                                 ...(values.delay != null && { delay: values.delay }),
+                                ...(values.pending_message != null && { pending_message: values.pending_message }),
                             },
                         },
                     },
@@ -61,6 +63,10 @@ export default () => {
         const parsed = Math.max(0, parseInt(raw, 10) || 0);
         setDelay(parsed);
         saveSetting({ delay: parsed });
+    };
+
+    const handlePendingMessageBlur = (value: string) => {
+        saveSetting({ pending_message: value });
     };
 
     const doDisable = () => {
@@ -131,6 +137,29 @@ export default () => {
                         </p>
                     </div>
                 )}
+
+                <div className={'mt-6'}>
+                    <Label>Pending Approval Message</Label>
+                    <textarea
+                        id={'pending_message'}
+                        name={'pending_message'}
+                        className={
+                            'w-full rounded border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-500 focus:border-primary-400 focus:outline-none resize-none'
+                        }
+                        rows={3}
+                        maxLength={500}
+                        placeholder={
+                            'Your account is pending approval. An administrator will review your registration shortly.'
+                        }
+                        value={pendingMessage}
+                        onChange={e => setPendingMessage(e.target.value)}
+                        onBlur={e => handlePendingMessageBlur(e.target.value)}
+                    />
+                    <p className={'mt-1 text-xs text-gray-400'}>
+                        The message shown to users whose accounts are awaiting approval. Leave blank to use the default
+                        message.
+                    </p>
+                </div>
 
                 <div className={'mt-6'}>
                     <button

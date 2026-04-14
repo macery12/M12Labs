@@ -12,11 +12,12 @@ import GlobalStylesheet from '@/assets/css/GlobalStylesheet';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AuthenticatedRoute from '@/elements/AuthenticatedRoute';
 import { NotFound } from '@/elements/ScreenBlock';
+import ScreenBlock from '@/elements/ScreenBlock';
 import { EverestSettings } from '@/state/everest';
 import Onboarding from '@account/Onboarding';
 import SpeedDial from '@/elements/SpeedDial';
 import SetupContainer from './admin/setup/SetupContainer';
-import http from '@/api/http';
+import ServerErrorSvg from '@/assets/images/server_error.svg';
 
 const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
@@ -83,18 +84,30 @@ function App() {
 
     if (PterodactylUser?.state === 'suspended') {
         return (
-            <div style={{ color: 'white', fontWeight: 'bold', marginTop: '10px', marginLeft: '10px' }}>
-                Your account has been suspended and blocked by an administrator.
-            </div>
+            <StoreProvider store={store}>
+                <GlobalStylesheet />
+                <ScreenBlock
+                    title={'Account Blocked'}
+                    image={ServerErrorSvg}
+                    message={
+                        'Your account has been blocked by an administrator. Please contact support if you believe this is an error.'
+                    }
+                />
+            </StoreProvider>
         );
     }
 
     if (PterodactylUser?.state === 'pending') {
-        window.alert('Your registration is awaiting approval by an administrator. You will be notified once your account is approved.');
-        http.post('/auth/logout').finally(() => {
-            window.location.href = '/auth/login';
-        });
-        return null;
+        const pendingMessage =
+            EverestConfiguration?.auth.modules.jguard.pending_message ||
+            'Your account is pending approval. An administrator will review your registration shortly.';
+
+        return (
+            <StoreProvider store={store}>
+                <GlobalStylesheet />
+                <ScreenBlock title={'Awaiting Approval'} image={ServerErrorSvg} message={pendingMessage} />
+            </StoreProvider>
+        );
     }
 
     const hasAdminRole: boolean = (PterodactylUser?.root_admin || Boolean(PterodactylUser?.admin_role_id)) ?? false;
