@@ -54,6 +54,11 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             ->name('api:client.account.email-verification')
             ->middleware('throttle:email-verification');
 
+        Route::post('/discord/link', [\Everest\Http\Controllers\Auth\Modules\DiscordLoginController::class, 'requestLinkToken'])
+            ->name('api:client.account.discord.link');
+        Route::post('/discord/unlink', [\Everest\Http\Controllers\Auth\Modules\DiscordLoginController::class, 'unlinkDiscord'])
+            ->name('api:client.account.discord.unlink');
+
         Route::get('/activity', Client\ActivityLogController::class)
             ->middleware('verified.view:credentials')
             ->name('api:client.account.activity');

@@ -16,6 +16,7 @@ use Everest\Services\Users\UserCreationService;
 use Everest\Services\Webhooks\WebhookEventService;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
+use Everest\Http\Requests\Auth\CompleteDiscordRegistrationRequest;
 
 class DiscordLoginController extends AbstractLoginController
 {
@@ -80,10 +81,8 @@ class DiscordLoginController extends AbstractLoginController
 
     /**
      * Complete the Discord registration with user-provided details.
-     *
-     * @throws \Everest\Exceptions\DisplayException
      */
-    public function completeRegistration(Request $request): JsonResponse
+    public function completeRegistration(CompleteDiscordRegistrationRequest $request): JsonResponse
     {
         $discordData = $request->session()->get('discord_registration_data');
 
@@ -96,33 +95,12 @@ class DiscordLoginController extends AbstractLoginController
             throw new DisplayException('Discord authentication is currently disabled.');
         }
 
-        $username = $request->input('username');
-        $password = $request->input('password');
-        $passwordConfirm = $request->input('confirm_password');
-
-        if (!$username) {
-            throw new DisplayException('Username is required.');
-        }
-
-        // Password is always required for SFTP access
-        if (!$password || !$passwordConfirm) {
-            throw new DisplayException('Password and password confirmation are required.');
-        }
-
-        if ($password !== $passwordConfirm) {
-            throw new DisplayException('The passwords entered do not match.');
-        }
-
-        if (User::where('username', $username)->exists()) {
-            throw new DisplayException('This username is already in use.');
-        }
-
         // Create the user with Discord data (bypassing regular registration check)
         $userData = [
-            'username' => $username,
+            'username' => $request->input('username'),
             'email' => $discordData['discord_email'],
             'external_id' => $discordData['discord_id'],
-            'password' => $password,
+            'password' => $request->input('password'),
         ];
 
         // Create user directly via UserCreationService, bypassing registration.enabled check
@@ -195,6 +173,40 @@ class DiscordLoginController extends AbstractLoginController
     }
 
     /**
+     * Initiate a Discord OAuth flow for linking to an existing authenticated account.
+     */
+    public function requestLinkToken(Request $request): JsonResponse
+    {
+        $state = Str::random(40);
+        $request->session()->put('discord_oauth_state', $state);
+        $request->session()->put('discord_link_user_id', $request->user()->id);
+
+        $url = 'https://discord.com/api/oauth2/authorize?'
+            . 'client_id=' . $this->getClientId()
+            . '&redirect_uri=' . route('auth.modules.discord.authenticate')
+            . '&response_type=code&scope=identify%20email'
+            . '&state=' . $state;
+
+        return response()->json(['url' => $url]);
+    }
+
+    /**
+     * Unlink Discord SSO from the authenticated user's account.
+     */
+    public function unlinkDiscord(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->external_id) {
+            throw new DisplayException('No Discord account is linked to your account.');
+        }
+
+        $user->update(['external_id' => null]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Authenticate with the Discord OAuth2 service.
      */
     public function authenticate(Request $request): RedirectResponse
@@ -231,6 +243,12 @@ class DiscordLoginController extends AbstractLoginController
             return redirect()->route('auth.login')->with('error', 'Failed to retrieve Discord account information.');
         }
 
+        // Handle account-linking mode for authenticated users
+        $linkUserId = $request->session()->pull('discord_link_user_id');
+        if ($linkUserId) {
+            return $this->handleAccountLinking($request, $account, (int) $linkUserId);
+        }
+
         // Check if user exists with this Discord ID (external_id)
         $user = User::where('external_id', $account->id)->first();
 
@@ -251,19 +269,7 @@ class DiscordLoginController extends AbstractLoginController
             return $redirect;
         }
 
-        // Check if user exists with the same email
-        $existingEmailUser = User::where('email', $account->email)->first();
-
-        if ($existingEmailUser) {
-            // Email exists but not linked to Discord
-            // For security, we don't auto-link - user should manually link in account settings
-            return redirect()->route('auth.login')->with(
-                'error',
-                'An account with this email already exists. Please login with your password to link your Discord account.'
-            );
-        }
-
-        // New user - store Discord data in session and redirect to registration
+        // No user found by Discord ID — store Discord data and show choice page
         $request->session()->put('discord_registration_data', [
             'discord_id' => $account->id,
             'discord_username' => $account->username,
@@ -271,7 +277,32 @@ class DiscordLoginController extends AbstractLoginController
             'discord_avatar' => $account->avatar ?? null,
         ]);
 
-        return redirect('/auth/discord/register');
+        return redirect('/auth/discord/link-choice');
+    }
+
+    /**
+     * Handle linking a Discord account to an existing authenticated user.
+     */
+    protected function handleAccountLinking(Request $request, object $account, int $userId): RedirectResponse
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect('/account')->with('error', 'Your session expired. Please try linking again.');
+        }
+
+        // Ensure this Discord account is not already linked to a different user
+        $existingLinked = User::where('external_id', $account->id)
+            ->where('id', '!=', $userId)
+            ->first();
+
+        if ($existingLinked) {
+            return redirect('/account')->with('error', 'This Discord account is already linked to a different user.');
+        }
+
+        $user->update(['external_id' => $account->id]);
+
+        return redirect('/account')->with('success', 'Your Discord account has been linked successfully.');
     }
 
     /**

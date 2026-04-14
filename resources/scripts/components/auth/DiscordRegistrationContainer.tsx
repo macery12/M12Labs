@@ -17,12 +17,15 @@ import {
 import { faIdBadge, faKey, faUnlockKeyhole, faCheck, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 
 interface Values {
     username: string;
     password: string;
     confirm_password: string;
 }
+
+const passwordValidation = string()
 
 function DiscordRegistrationContainer() {
     const navigate = useNavigate();
@@ -142,13 +145,13 @@ function DiscordRegistrationContainer() {
             }}
             validationSchema={object().shape({
                 username: string().required('A username must be provided.'),
-                password: string().required('Please enter your account password.'),
+                password: passwordValidation,
                 confirm_password: string()
                     .required('Please enter the password confirmation.')
                     .oneOf([ref('password')], 'The passwords entered do not match.'),
             })}
         >
-            {({ isSubmitting, setFieldValue }) => (
+            {({ isSubmitting, setFieldValue, values }) => (
                 <LoginFormContainer title={'Complete Your Discord Registration'}>
                     <div css={tw`mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded`}>
                         <div css={tw`flex items-center mb-2`}>
@@ -216,8 +219,9 @@ function DiscordRegistrationContainer() {
                             name={'password'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
-                            description={'Required for SFTP access to your servers'}
+                            description={'Must use 8+ characters with uppercase, lowercase, number, and special character, and cannot be a known compromised password.'}
                         />
+                        <PasswordStrengthIndicator password={values.password} />
                     </div>
                     <div css={tw`mt-6`}>
                         <Field

@@ -4,6 +4,7 @@ import ForgotPasswordContainer from '@/components/auth/ForgotPasswordContainer';
 import ResetPasswordWithTokenContainer from '@/components/auth/ResetPasswordWithTokenContainer';
 import LoginCheckpointContainer from '@/components/auth/LoginCheckpointContainer';
 import DiscordRegistrationContainer from '@/components/auth/DiscordRegistrationContainer';
+import DiscordLinkChoiceContainer from '@/components/auth/DiscordLinkChoiceContainer';
 import { NotFound } from '@/elements/ScreenBlock';
 import tw, { styled } from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
@@ -32,6 +33,7 @@ export default () => {
                     <Route path="login/checkpoint/*" element={<LoginCheckpointContainer />} />
                     {registration && <Route path={'register'} element={<RegisterContainer />} />}
                     <Route path="discord/register" element={<DiscordRegistrationContainer />} />
+                    <Route path="discord/link-choice" element={<DiscordLinkChoiceContainer />} />
                     <Route path="password" element={<ForgotPasswordContainer />} />
                     <Route path="password/reset/:token" element={<ResetPasswordWithTokenContainer />} />
                     <Route path="*" element={<NotFound onBack={() => navigate('/auth/login')} />} />
