@@ -4,7 +4,7 @@ import Select from '@/elements/Select';
 import AdminBox from '@/elements/AdminBox';
 import Input from '@/elements/Input';
 import useFlash from '@/plugins/useFlash';
-import { useStoreState } from '@/state/hooks';
+import { useStoreActions, useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
 import { faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { toggleModule } from '@/api/routes/admin/auth/module';
@@ -15,7 +15,9 @@ import { Dialog } from '@/elements/dialog';
 export default () => {
     const { status, setStatus } = useStatus();
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const jguard = useStoreState(state => state.everest.data!.auth.modules.jguard);
+    const auth = useStoreState(state => state.everest.data!.auth);
+    const jguard = auth.modules.jguard;
+    const updateEverest = useStoreActions(actions => actions.everest.updateEverest);
     const [confirmDisable, setConfirmDisable] = useState(false);
 
     // Local controlled state — initialized from page-load store, updated immediately on change.
@@ -26,7 +28,24 @@ export default () => {
         clearFlashes('auth:jguard:settings');
         setStatus('loading');
         updateJGuardSettings(values)
-            .then(() => setStatus('success'))
+            .then(() => {
+                setStatus('success');
+                updateEverest({
+                    auth: {
+                        ...auth,
+                        modules: {
+                            ...auth.modules,
+                            jguard: {
+                                ...jguard,
+                                ...(values.approval_mode != null && {
+                                    approval_mode: values.approval_mode as 'manual' | 'delayed' | 'immediate',
+                                }),
+                                ...(values.delay != null && { delay: values.delay }),
+                            },
+                        },
+                    },
+                });
+            })
             .catch(error => {
                 setStatus('error');
                 clearAndAddHttpError({ key: 'auth:jguard:settings', error });
