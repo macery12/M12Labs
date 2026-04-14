@@ -157,10 +157,10 @@ export default () => {
                     </p>
                 </div>
 
-                <div className={'mt-6'}>
+                <div className={'mt-6 border-t border-neutral-700 pt-5'}>
                     <button
                         className={
-                            'text-xs text-red-400 hover:text-red-300 transition-colors underline underline-offset-2'
+                            'inline-flex items-center gap-1.5 rounded border border-red-500/60 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-500/20 hover:text-red-300'
                         }
                         onClick={() => setConfirmDisable(true)}
                     >
