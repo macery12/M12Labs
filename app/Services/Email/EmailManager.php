@@ -344,7 +344,8 @@ class EmailManager
     {
         // Guard: only allow view paths that consist of safe characters so no
         // path-traversal sequences (../, %2F, null bytes, etc.) can sneak in.
-        if (!preg_match('/^[a-z0-9][a-z0-9._-]*$/i', $viewPath)) {
+        // Consecutive dots are also rejected to prevent '..'-based traversal.
+        if (!preg_match('/^[a-z0-9][a-z0-9_-]*(\.[a-z0-9][a-z0-9_-]*)*$/i', $viewPath)) {
             return View::make($viewPath, $data)->render();
         }
 
