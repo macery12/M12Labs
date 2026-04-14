@@ -12,69 +12,78 @@ use Illuminate\Support\Str;
 
 class ExtensionPackageUninstallService
 {
-    public function __construct(private ExtensionPanelRebuildService $rebuildService)
+    public function __construct(
+        private ExtensionPanelRebuildService $rebuildService,
+        private ExtensionOperationLockService $operationLockService,
+        private ExtensionFilesystemOwnershipService $ownershipService
+    )
     {
     }
 
     public function uninstall(string $extensionId): void
     {
-        $package = ExtensionPackage::query()->with('files')->where('extension_id', $extensionId)->first();
-        if (!$package) {
-            throw new DisplayException('That extension is not installed through the repository system.');
-        }
-
-        $files = $package->files->sortByDesc(fn (ExtensionPackageFile $file) => substr_count($file->path, '/'))->values();
-        $rollbackRoot = storage_path('app/extensions/tmp-uninstall/' . Str::uuid()->toString());
-        File::ensureDirectoryExists($rollbackRoot);
-
-        $this->assertFilesAreUnmodified($files->all());
-        $this->createRollbackSnapshot($files->all(), $rollbackRoot);
-
-        try {
-            foreach ($files as $file) {
-                $targetPath = base_path($file->path);
-
-                if ($file->operation === 'updated') {
-                    if (!$file->backup_path || !is_file($file->backup_path)) {
-                        throw new DisplayException(sprintf('The backup for "%s" is missing, so the extension cannot be uninstalled safely.', $file->path));
-                    }
-
-                    File::ensureDirectoryExists(dirname($targetPath));
-                    File::copy($file->backup_path, $targetPath);
-
-                    continue;
-                }
-
-                if (is_file($targetPath)) {
-                    File::delete($targetPath);
-                }
+        $this->operationLockService->withinLock('uninstall', $extensionId, function () use ($extensionId) {
+            $package = ExtensionPackage::query()->with('files')->where('extension_id', $extensionId)->first();
+            if (!$package) {
+                throw new DisplayException('That extension is not installed through the repository system.');
             }
 
-            $this->rebuildService->rebuild(sprintf('Uninstall extension %s', $extensionId));
+            $files = $package->files->sortByDesc(fn (ExtensionPackageFile $file) => substr_count($file->path, '/'))->values();
+            $rollbackRoot = storage_path('app/extensions/tmp-uninstall/' . Str::uuid()->toString());
+            File::ensureDirectoryExists($rollbackRoot);
+            $this->ownershipService->repairStandardPaths($extensionId);
 
-            DB::transaction(function () use ($package, $files, $extensionId) {
+            $this->assertFilesAreUnmodified($files->all());
+            $this->createRollbackSnapshot($files->all(), $rollbackRoot);
+            $this->assertWritableUninstallTargets($files->all());
+
+            try {
                 foreach ($files as $file) {
-                    if ($file->backup_path && is_file($file->backup_path)) {
-                        File::delete($file->backup_path);
+                    $targetPath = base_path($file->path);
+
+                    if ($file->operation === 'updated') {
+                        if (!$file->backup_path || !is_file($file->backup_path)) {
+                            throw new DisplayException(sprintf('The backup for "%s" is missing, so the extension cannot be uninstalled safely.', $file->path));
+                        }
+
+                        File::ensureDirectoryExists(dirname($targetPath));
+                        File::copy($file->backup_path, $targetPath);
+
+                        continue;
+                    }
+
+                    if (is_file($targetPath)) {
+                        File::delete($targetPath);
                     }
                 }
 
-                $package->delete();
+                $this->rebuildService->rebuild(sprintf('Uninstall extension %s', $extensionId));
 
-                ExtensionConfig::query()->where('extension_id', $extensionId)->update(['enabled' => false]);
-            });
-        } catch (\Throwable $exception) {
-            $this->restoreRollbackSnapshot($files->all(), $rollbackRoot);
-            $this->attemptRollbackRebuild($extensionId, 'uninstall rollback');
+                DB::transaction(function () use ($package, $files, $extensionId) {
+                    foreach ($files as $file) {
+                        if ($file->backup_path && is_file($file->backup_path)) {
+                            File::delete($file->backup_path);
+                        }
+                    }
 
-            if ($exception instanceof DisplayException) {
-                throw $exception;
+                    $package->delete();
+
+                    ExtensionConfig::query()->where('extension_id', $extensionId)->update(['enabled' => false]);
+                });
+            } catch (\Throwable $exception) {
+                $this->restoreRollbackSnapshot($files->all(), $rollbackRoot);
+                $this->attemptRollbackRebuild($extensionId, 'uninstall rollback');
+
+                if ($exception instanceof DisplayException) {
+                    throw $exception;
+                }
+
+                throw new DisplayException('Failed to uninstall the selected extension package.', $exception);
+            } finally {
+                $this->ownershipService->repairStandardPaths($extensionId);
+                File::deleteDirectory($rollbackRoot);
             }
-
-            throw new DisplayException('Failed to uninstall the selected extension package.', $exception);
-        } finally {
-            File::deleteDirectory($rollbackRoot);
-        }
+        });
     }
 
     /**
@@ -140,8 +149,27 @@ class ExtensionPackageUninstallService
                 continue;
             }
 
+            $this->ownershipService->ensureWritablePath($targetPath, $file->path);
             File::ensureDirectoryExists(dirname($targetPath));
             File::copy($rollbackPath, $targetPath);
+        }
+    }
+
+    /**
+     * @param array<int, ExtensionPackageFile> $files
+     */
+    private function assertWritableUninstallTargets(array $files): void
+    {
+        foreach ($files as $file) {
+            $targetPath = base_path($file->path);
+
+            if ($file->operation === 'updated') {
+                $this->ownershipService->ensureWritablePath($targetPath, $file->path);
+
+                continue;
+            }
+
+            $this->ownershipService->ensureRemovablePath($targetPath, $file->path);
         }
     }
 

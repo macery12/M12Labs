@@ -51,10 +51,21 @@ import {
     updateExtension,
 } from '@/api/routes/admin/extensions';
 
+type PackageActionType = 'install' | 'uninstall';
+
+interface PackageActionState {
+    extensionId: string;
+    extensionName: string;
+    type: PackageActionType;
+}
+
 interface Props {
     extension: ExtensionData;
     currentPanelVersion?: string;
+    activePackageAction: PackageActionState | null;
     onRefresh: () => void;
+    onPackageActionStart: (action: PackageActionState) => void;
+    onPackageActionEnd: (extensionId: string) => void;
 }
 
 const iconMap: Record<string, typeof faPuzzlePiece> = {
@@ -83,7 +94,14 @@ const iconMap: Record<string, typeof faPuzzlePiece> = {
     scroll: faScroll,
 };
 
-export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
+export default ({
+    extension,
+    currentPanelVersion,
+    activePackageAction,
+    onRefresh,
+    onPackageActionStart,
+    onPackageActionEnd,
+}: Props) => {
     const { colors } = useStoreState(state => state.theme.data!);
     const primary = colors.primary;
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
@@ -142,6 +160,11 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
     const compatibilityBoxStyle = installBlockedByPanelVersion
         ? { ...accentSurfaceStyle, borderStyle: 'dashed' }
         : surfaceStyle;
+    const anotherPackageActionInProgress =
+        activePackageAction !== null && activePackageAction.extensionId !== extension.id;
+    const packageActionNotice = anotherPackageActionInProgress
+        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
+        : null;
 
     useEffect(() => {
         if (!configOpen || nestsAndEggs) {
@@ -191,6 +214,17 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
     };
 
     const handleInstall = () => {
+        if (packageActionNotice) {
+            clearFlashes('admin:extensions');
+            addFlash({
+                key: 'admin:extensions',
+                type: 'warning',
+                message: packageActionNotice,
+            });
+
+            return;
+        }
+
         if (!extension.source?.repositoryId) {
             return;
         }
@@ -207,6 +241,7 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
 
         setLoading(true);
         clearFlashes('admin:extensions');
+        onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'install' });
 
         installExtension(extension.id, extension.source.repositoryId)
             .then(() => {
@@ -218,10 +253,24 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
                 onRefresh();
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
-            .finally(() => setLoading(false));
+            .finally(() => {
+                setLoading(false);
+                onPackageActionEnd(extension.id);
+            });
     };
 
     const handleUninstall = () => {
+        if (packageActionNotice) {
+            clearFlashes('admin:extensions');
+            addFlash({
+                key: 'admin:extensions',
+                type: 'warning',
+                message: packageActionNotice,
+            });
+
+            return;
+        }
+
         if (!extension.canUninstall) {
             return;
         }
@@ -236,6 +285,7 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
 
         setLoading(true);
         clearFlashes('admin:extensions');
+        onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'uninstall' });
 
         uninstallExtension(extension.id)
             .then(() => {
@@ -247,7 +297,10 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
                 onRefresh();
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
-            .finally(() => setLoading(false));
+            .finally(() => {
+                setLoading(false);
+                onPackageActionEnd(extension.id);
+            });
     };
 
     const handleSaveConfig = () => {
@@ -444,7 +497,7 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
                         <Button
                             onClick={handleInstall}
                             loading={loading}
-                            disabled={loading || installBlockedByPanelVersion}
+                            disabled={loading || installBlockedByPanelVersion || anotherPackageActionInProgress}
                             icon={() => <FontAwesomeIcon icon={faDownload} />}
                         >
                             {installBlockedByPanelVersion ? 'Unsupported panel' : 'Install'}
@@ -462,7 +515,11 @@ export default ({ extension, currentPanelVersion, onRefresh }: Props) => {
                     </Button.Text>
 
                     {extension.canUninstall && (
-                        <Button.Danger onClick={handleUninstall} loading={loading} disabled={loading}>
+                        <Button.Danger
+                            onClick={handleUninstall}
+                            loading={loading}
+                            disabled={loading || anotherPackageActionInProgress}
+                        >
                             <FontAwesomeIcon icon={faTrash} className={'mr-2'} />
                             Uninstall
                         </Button.Danger>

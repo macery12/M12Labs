@@ -2,6 +2,7 @@
 
 namespace Everest\Services\Extensions;
 
+use Everest\Exceptions\DisplayException;
 use Illuminate\Support\Str;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -52,6 +53,32 @@ class ExtensionFilesystemOwnershipService
             'sourcePath' => $ownership['sourcePath'],
             'paths' => $repaired,
         ];
+    }
+
+    public function ensureWritablePath(string $path, string $label): void
+    {
+        $probe = file_exists($path) ? $path : $this->findClosestExistingPath(dirname($path));
+        if ($probe !== null && is_writable($probe)) {
+            return;
+        }
+
+        throw new DisplayException(sprintf(
+            'M12Labs cannot write to "%s". Repair the panel file ownership and permissions, then try again. Files created by a root-run extension install or uninstall should belong to the panel user (for example www-data).',
+            $label
+        ));
+    }
+
+    public function ensureRemovablePath(string $path, string $label): void
+    {
+        $probe = $this->findClosestExistingPath(dirname($path));
+        if ($probe !== null && is_writable($probe)) {
+            return;
+        }
+
+        throw new DisplayException(sprintf(
+            'M12Labs cannot remove "%s". Repair the panel file ownership and permissions, then try again. Files created by a root-run extension install or uninstall should belong to the panel user (for example www-data).',
+            $label
+        ));
     }
 
     public function isRunningAsRoot(): bool
@@ -171,6 +198,22 @@ class ExtensionFilesystemOwnershipService
         if (is_file($path)) {
             @chmod($path, 0644);
         }
+    }
+
+    private function findClosestExistingPath(string $path): ?string
+    {
+        $candidate = $path;
+
+        while ($candidate !== '' && $candidate !== DIRECTORY_SEPARATOR && !file_exists($candidate)) {
+            $parent = dirname($candidate);
+            if ($parent === $candidate) {
+                return null;
+            }
+
+            $candidate = $parent;
+        }
+
+        return file_exists($candidate) ? $candidate : null;
     }
 
     private function resolveUserName(int $uid): string

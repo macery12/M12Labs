@@ -20,27 +20,31 @@ class ExtensionPackageInstallService
 
     public function __construct(
         private ExtensionCatalogService $catalogService,
-        private ExtensionPanelRebuildService $rebuildService
+        private ExtensionPanelRebuildService $rebuildService,
+        private ExtensionOperationLockService $operationLockService,
+        private ExtensionFilesystemOwnershipService $ownershipService
     ) {
     }
 
     public function install(string $extensionId, int $repositoryId, ?string $version = null): ExtensionPackage
     {
-        $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
-        $release = $package['latestRelease'];
+        return $this->operationLockService->withinLock('install', $extensionId, function () use ($extensionId, $repositoryId, $version) {
+            $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
+            $release = $package['latestRelease'];
 
-        return $this->installFromSource(
-            archiveLocation: $release['archiveUrl'],
-            expectedExtensionId: $extensionId,
-            expectedVersion: $release['version'],
-            expectedArchiveChecksum: $release['archiveChecksum'],
-            compatiblePanelVersions: $release['compatiblePanelVersions'] ?? [],
-            sourceRepositoryId: $package['repository']->id,
-            sourceRepositoryName: $package['repository']->name,
-            sourceRegistryUrl: $package['repository']->manifest_url,
-            sourceArchiveUrl: $release['archiveUrl'],
-            fallbackPackageMetadata: $package,
-        );
+            return $this->installFromSource(
+                archiveLocation: $release['archiveUrl'],
+                expectedExtensionId: $extensionId,
+                expectedVersion: $release['version'],
+                expectedArchiveChecksum: $release['archiveChecksum'],
+                compatiblePanelVersions: $release['compatiblePanelVersions'] ?? [],
+                sourceRepositoryId: $package['repository']->id,
+                sourceRepositoryName: $package['repository']->name,
+                sourceRegistryUrl: $package['repository']->manifest_url,
+                sourceArchiveUrl: $release['archiveUrl'],
+                fallbackPackageMetadata: $package,
+            );
+        });
     }
 
     public function installFromArchive(string $archivePath, ?string $sourceLabel = null): ExtensionPackage
@@ -48,18 +52,20 @@ class ExtensionPackageInstallService
         $resolvedArchivePath = $this->resolveLocalArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedArchivePath);
 
-        return $this->installFromSource(
-            archiveLocation: $resolvedArchivePath,
-            expectedExtensionId: null,
-            expectedVersion: null,
-            expectedArchiveChecksum: null,
-            compatiblePanelVersions: [],
-            sourceRepositoryId: null,
-            sourceRepositoryName: $sourceLabel ?: 'Manual package file',
-            sourceRegistryUrl: null,
-            sourceArchiveUrl: 'file://' . $resolvedArchivePath,
-            fallbackPackageMetadata: [],
-        );
+        return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel) {
+            return $this->installFromSource(
+                archiveLocation: $resolvedArchivePath,
+                expectedExtensionId: null,
+                expectedVersion: null,
+                expectedArchiveChecksum: null,
+                compatiblePanelVersions: [],
+                sourceRepositoryId: null,
+                sourceRepositoryName: $sourceLabel ?: 'Manual package file',
+                sourceRegistryUrl: null,
+                sourceArchiveUrl: 'file://' . $resolvedArchivePath,
+                fallbackPackageMetadata: [],
+            );
+        });
     }
 
     /**
@@ -82,7 +88,7 @@ class ExtensionPackageInstallService
         $archivePath = $tempRoot . '/' . self::PACKAGE_ARTIFACT_FILENAME;
         $extractPath = $tempRoot . '/extract';
         $appliedFiles = [];
-        $rollbackExtensionId = $expectedExtensionId ?? 'extension-package';
+        $resolvedExtensionId = $expectedExtensionId;
 
         File::ensureDirectoryExists($tempRoot);
         File::ensureDirectoryExists($extractPath);
@@ -99,14 +105,16 @@ class ExtensionPackageInstallService
             $manifest = $this->readPackageManifest($extractPath);
             $normalizedManifest = $this->normalizeManifest($manifest, $expectedExtensionId, $expectedVersion);
             $extensionId = (string) Arr::get($normalizedManifest, 'extension.id');
-            $rollbackExtensionId = $extensionId;
+            $resolvedExtensionId = $extensionId;
             $backupRoot = storage_path('app/extensions/backups/' . $extensionId . '/' . Str::uuid()->toString());
 
             $this->assertExtensionNotInstalled($extensionId);
             $this->assertCompatiblePanelVersions($compatiblePanelVersions);
             $this->assertCompatiblePanelVersions(Arr::get($normalizedManifest, 'compatiblePanelVersions', []));
+            $this->ownershipService->repairStandardPaths($extensionId);
 
             $filePlans = $this->prepareFilePlans($extractPath, $normalizedManifest, $backupRoot, $extensionId);
+            $this->assertWritableInstallTargets($filePlans);
 
             foreach ($filePlans as $plan) {
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
@@ -143,7 +151,7 @@ class ExtensionPackageInstallService
             return $packageModel->fresh(['repository', 'files']);
         } catch (\Throwable $exception) {
             $this->rollbackAppliedFiles($appliedFiles);
-            $this->attemptRollbackRebuild($rollbackExtensionId, 'install rollback');
+            $this->attemptRollbackRebuild($resolvedExtensionId ?? 'extension-package', 'install rollback');
 
             if ($exception instanceof DisplayException) {
                 throw $exception;
@@ -151,6 +159,7 @@ class ExtensionPackageInstallService
 
             throw new DisplayException('Failed to install the selected extension package.', $exception);
         } finally {
+            $this->ownershipService->repairStandardPaths($resolvedExtensionId);
             File::deleteDirectory($tempRoot);
         }
     }
@@ -442,6 +451,16 @@ class ExtensionPackageInstallService
                 implode(', ', $versions),
                 $currentVersion
             ));
+        }
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $filePlans
+     */
+    private function assertWritableInstallTargets(array $filePlans): void
+    {
+        foreach ($filePlans as $plan) {
+            $this->ownershipService->ensureWritablePath($plan['targetPath'], $plan['path']);
         }
     }
 

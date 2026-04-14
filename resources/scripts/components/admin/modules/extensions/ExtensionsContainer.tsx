@@ -8,12 +8,19 @@ import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 
+type PackageActionState = {
+    extensionId: string;
+    extensionName: string;
+    type: 'install' | 'uninstall';
+};
+
 export default () => {
     const { colors } = useStoreState(state => state.theme.data!);
     const [extensions, setExtensions] = useState<ExtensionData[]>([]);
     const [currentPanelVersion, setCurrentPanelVersion] = useState<string | undefined>(undefined);
     const [catalogFilter, setCatalogFilter] = useState('all');
     const [panelSupportFilter, setPanelSupportFilter] = useState('all');
+    const [activePackageAction, setActivePackageAction] = useState<PackageActionState | null>(null);
     const [loading, setLoading] = useState(true);
     const { clearAndAddHttpError } = useFlash();
 
@@ -172,6 +179,17 @@ export default () => {
     );
 
     const hasActiveFilters = catalogFilter !== 'all' || panelSupportFilter !== 'all';
+    const activePackageActionMessage = activePackageAction
+        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
+        : null;
+
+    const handlePackageActionStart = (action: PackageActionState) => {
+        setActivePackageAction(action);
+    };
+
+    const handlePackageActionEnd = (extensionId: string) => {
+        setActivePackageAction(current => (current?.extensionId === extensionId ? null : current));
+    };
 
     if (loading) {
         return (
@@ -209,6 +227,18 @@ export default () => {
                     against the selected repository manifest, but they do not make third-party code safe by themselves.
                 </p>
             </div>
+
+            {activePackageActionMessage && (
+                <div
+                    className={'rounded-lg border p-4'}
+                    style={{ backgroundColor: withAlpha(colors.primary, '10'), borderColor: colors.primary }}
+                >
+                    <p className={'text-sm font-semibold'} style={{ color: colors.primary }}>
+                        Extension action in progress
+                    </p>
+                    <p className={'mt-2 text-sm text-neutral-300'}>{activePackageActionMessage}</p>
+                </div>
+            )}
 
             <div
                 className={'rounded-xl border p-5'}
@@ -290,7 +320,10 @@ export default () => {
                             key={extension.id}
                             extension={extension}
                             currentPanelVersion={currentPanelVersion}
+                            activePackageAction={activePackageAction}
                             onRefresh={fetchExtensions}
+                            onPackageActionStart={handlePackageActionStart}
+                            onPackageActionEnd={handlePackageActionEnd}
                         />
                     ))}
                 </div>
