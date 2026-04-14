@@ -41,7 +41,7 @@
         "forceConsistentCasingInFileNames": true,
         "inlineSources": false,
         "isolatedModules": true,
-        "moduleResolution": "Node",
+        "moduleResolution": "bundler",
         "newLine": "lf",
         "noEmit": true,
         "noFallthroughCasesInSwitch": true,
@@ -59,6 +59,6 @@
         "stripInternal": true,
         "useDefineForClassFields": true
     },
-    "include": ["./resources/scripts/**/*", "vite.config.ts"],
+    "include": ["./resources/scripts/**/*", "vite.config.mts"],
     "exclude": ["node_modules"]
 }
