@@ -11,6 +11,7 @@ use Everest\Exceptions\Service\Email\ResendValidationException;
 use Everest\Services\Email\Transports\EmailTransport;
 use Everest\Services\Email\Transports\ResendTransport;
 use Everest\Services\Email\Transports\SmtpTransport;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
 
@@ -181,7 +182,7 @@ class EmailManager
 
         // Render HTML content from template
         try {
-            $html = View::make($viewPath, array_merge($data, ['replyTo' => $replyTo]))->render();
+            $html = $this->renderViewWithCustomOverride($viewPath, array_merge($data, ['replyTo' => $replyTo]));
         } catch (\Exception $e) {
             $error = 'Failed to render email template: ' . $e->getMessage();
             Log::error($error, [
@@ -322,7 +323,44 @@ class EmailManager
         }
 
         // Render Blade view, merging any extra data (e.g. resolved replyTo for the footer)
-        return View::make($email->view(), array_merge($email->data(), $extraData))->render();
+        return $this->renderViewWithCustomOverride($email->view(), array_merge($email->data(), $extraData));
+    }
+
+    /**
+     * Render a Blade view, using the admin-saved custom override file when one exists.
+     *
+     * Custom overrides are stored as "<original>.blade.php.custom" files by
+     * EmailTemplateController and are not picked up by Laravel's view loader,
+     * so we must detect and render them manually.
+     */
+    private function renderViewWithCustomOverride(string $viewPath, array $data): string
+    {
+        // Guard: only allow view paths that consist of safe characters so no
+        // path-traversal sequences (../, %2F, null bytes, etc.) can sneak in.
+        // Consecutive dots are also rejected to prevent '..'-based traversal.
+        if (!preg_match('/^[a-z0-9][a-z0-9_-]*(\.[a-z0-9][a-z0-9_-]*)*$/i', $viewPath)) {
+            return View::make($viewPath, $data)->render();
+        }
+
+        $viewsDir = realpath(resource_path('views'));
+        if (!$viewsDir) {
+            return View::make($viewPath, $data)->render();
+        }
+
+        $customFile = $viewsDir . DIRECTORY_SEPARATOR
+            . str_replace('.', DIRECTORY_SEPARATOR, $viewPath)
+            . '.blade.php.custom';
+
+        if (is_file($customFile)) {
+            // Belt-and-suspenders: confirm the resolved path is still inside the views directory.
+            $resolvedFile = realpath($customFile);
+            if ($resolvedFile !== false && str_starts_with($resolvedFile, $viewsDir . DIRECTORY_SEPARATOR)) {
+                $source = file_get_contents($resolvedFile);
+                return Blade::render($source, $data, deleteCachedView: true);
+            }
+        }
+
+        return View::make($viewPath, $data)->render();
     }
 
     /**
