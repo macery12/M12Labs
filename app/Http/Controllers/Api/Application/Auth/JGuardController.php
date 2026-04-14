@@ -114,8 +114,9 @@ class JGuardController extends ApplicationApiController
     public function settings(UpdateAuthModuleRequest $request): Response
     {
         $validated = $request->validate([
-            'approval_mode' => 'sometimes|string|in:manual,delayed,immediate',
+            'approval_mode' => 'sometimes|string|in:manual,delayed',
             'delay' => 'sometimes|integer|min:0',
+            'pending_message' => 'sometimes|nullable|string|max:500',
         ]);
 
         foreach ($validated as $key => $value) {
