@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import AdminBox from '@/elements/AdminBox';
-import Input from '@/elements/Input';
+import Input, { Textarea } from '@/elements/Input';
 import useFlash from '@/plugins/useFlash';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
@@ -21,7 +21,7 @@ export default () => {
     const [confirmDisable, setConfirmDisable] = useState(false);
 
     // Local controlled state — initialized from page-load store, updated immediately on change.
-    const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed' | 'immediate'>(jguard.approval_mode);
+    const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed'>(jguard.approval_mode === 'immediate' ? 'manual' : jguard.approval_mode as 'manual' | 'delayed');
     const [delay, setDelay] = useState<number>(jguard.delay);
     const [pendingMessage, setPendingMessage] = useState<string>(jguard.pending_message ?? '');
 
@@ -39,7 +39,7 @@ export default () => {
                             jguard: {
                                 ...jguard,
                                 ...(values.approval_mode != null && {
-                                    approval_mode: values.approval_mode as 'manual' | 'delayed' | 'immediate',
+                                    approval_mode: values.approval_mode as 'manual' | 'delayed',
                                 }),
                                 ...(values.delay != null && { delay: values.delay }),
                                 ...(values.pending_message != null && { pending_message: values.pending_message }),
@@ -54,7 +54,7 @@ export default () => {
             });
     };
 
-    const handleModeChange = (value: 'manual' | 'delayed' | 'immediate') => {
+    const handleModeChange = (value: 'manual' | 'delayed') => {
         setApprovalMode(value);
         saveSetting({ approval_mode: value });
     };
@@ -96,12 +96,11 @@ export default () => {
                         id={'approval_mode'}
                         name={'approval_mode'}
                         value={approvalMode}
-                        onChange={e => handleModeChange(e.target.value as 'manual' | 'delayed' | 'immediate')}
+                        onChange={e => handleModeChange(e.target.value as 'manual' | 'delayed')}
                         autoComplete={'off'}
                     >
                         <option value={'manual'}>Manual — Admin must approve each account</option>
                         <option value={'delayed'}>Delayed — Accounts activate after a set time</option>
-                        <option value={'immediate'}>Immediate — Accounts activate instantly (gating disabled)</option>
                     </Select>
                     <p className={'mt-1 text-xs text-gray-400'}>
                         Controls how new registrations are processed when jGuard is enabled.
@@ -140,12 +139,9 @@ export default () => {
 
                 <div className={'mt-6'}>
                     <Label>Pending Approval Message</Label>
-                    <textarea
+                    <Textarea
                         id={'pending_message'}
                         name={'pending_message'}
-                        className={
-                            'w-full rounded border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-500 focus:border-primary-400 focus:outline-none resize-none'
-                        }
                         rows={3}
                         maxLength={500}
                         placeholder={
@@ -196,15 +192,6 @@ export default () => {
                                 : `${Math.floor(delay / 60)}h ${delay % 60}m`}
                         </strong>{' '}
                         before they automatically gain access.
-                    </span>
-                </Alert>
-            )}
-
-            {approvalMode === 'immediate' && (
-                <Alert type={'warning'}>
-                    <span className={'text-xs'}>
-                        Immediate mode is active — jGuard gating is effectively disabled. New registrations gain full
-                        access without any delay or approval.
                     </span>
                 </Alert>
             )}

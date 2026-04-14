@@ -19,7 +19,7 @@ export interface EverestSettings {
         modules: {
             jguard: {
                 enabled: boolean;
-                approval_mode: 'manual' | 'delayed' | 'immediate';
+                approval_mode: 'manual' | 'delayed';
                 delay: number;
                 pending_message: string;
             };

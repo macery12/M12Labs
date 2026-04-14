@@ -11,7 +11,6 @@ return [
      *
      * - 'manual'   Admin must manually approve each new account.
      * - 'delayed'  Accounts activate automatically after the configured delay.
-     * - 'immediate' Accounts are activated as soon as they register (effectively disables gating).
      */
     'approval_mode' => env('JGUARD_APPROVAL_MODE', 'manual'),
 

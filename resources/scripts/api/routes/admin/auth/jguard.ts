@@ -6,7 +6,7 @@ export interface JGuardPendingUser {
     username: string;
     email: string;
     status: 'pending' | 'approved' | 'rejected';
-    approval_mode: 'manual' | 'delayed' | 'immediate';
+    approval_mode: 'manual' | 'delayed';
     expires_at: string | null;
     created_at: string;
 }
@@ -26,7 +26,7 @@ export const rejectJGuardUser = (userId: number): Promise<void> => {
 };
 
 export interface JGuardSettingsValues {
-    approval_mode?: 'manual' | 'delayed' | 'immediate';
+    approval_mode?: 'manual' | 'delayed';
     delay?: number;
     pending_message?: string;
 }
