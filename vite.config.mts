@@ -1,9 +1,8 @@
-/// <reference types="vitest" />
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { dirname, resolve } from 'pathe';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 const plugins = [
     react({
@@ -35,6 +34,7 @@ export default defineConfig({
     plugins,
 
     build: {
+        target: 'es2019',
         rollupOptions: {
             output: {
                 manualChunks(id) {
