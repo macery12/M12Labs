@@ -7,6 +7,13 @@ return [
     'enabled' => env('BILLING_ENABLED', false),
 
     /*
+     * Select the payment processor: 'stripe' or 'mollie'.
+     * NOTE: This is deprecated. Payment processors are now managed via
+     * the integrations system in the admin panel at /admin/billing/integrations.
+     * Kept for backward compatibility.
+     */
+    'processor' => env('BILLING_PROCESSOR', 'stripe'),
+    /*
      * Enable or disable donations feature.
      */
     'donations_enabled' => env('BILLING_DONATIONS_ENABLED', true),
@@ -20,9 +27,27 @@ return [
     ],
 
     /*
-     * Choose whether to add PayPal integration to the Panel.
+     * Configure the Mollie API key.
+     */
+    'mollie' => [
+        'api_key' => env('MOLLIE_API_KEY', ''),
+    ],
+
+    /*
+     * Choose whether to add PayPal integration to the Panel (via Stripe).
+     * This is for PayPal integration through Stripe's payment methods.
      */
     'paypal' => env('BILLING_PAYPAL', false),
+
+    /*
+     * Configure standalone PayPal integration.
+     * Credentials are stored in database via Settings model.
+     */
+    'paypal_standalone' => [
+        'client_id' => '',
+        'client_secret' => '',
+        'mode' => 'sandbox', // 'sandbox' or 'live'
+    ],
 
     /*
      * Choose whether to add Link integration to the Panel.
@@ -47,13 +72,50 @@ return [
 
     /*
      * Configure renewal and suspension settings.
+     * NOTE: The billing cycle system uses a capped percentage-based model.
+     * Grace period is 20% of billing cycle, with minimum 3 days and maximum 7 days.
+     *
+     * Examples:
+     * - 7-day cycle: 7 × 20% = 1.4 → 3 days (minimum applied)
+     * - 30-day cycle: 30 × 20% = 6 days
+     * - 90-day cycle: 90 × 20% = 18 → 7 days (maximum applied)
+     * - 180-day cycle: 180 × 20% = 36 → 7 days (maximum applied)
      */
     'renewal' => [
+        // Default renewal period for paid servers (in days)
         'days' => env('BILLING_RENEWAL_DAYS', 30),
+
+        // Default renewal period for free servers (in days)
         'free_renewal_days' => env('BILLING_FREE_RENEWAL_DAYS', 30),
+
+        // Suspension threshold as percentage of billing cycle (0.20 = 20%)
+        'suspension_threshold_percentage' => env('BILLING_SUSPENSION_THRESHOLD_PCT', 0.20),
+
+        // Minimum suspension threshold in days (floor)
+        'min_suspension_threshold_days' => env('BILLING_MIN_SUSPENSION_DAYS', 3),
+
+        // Maximum suspension threshold in days (cap at 7 days for all cycles)
+        'max_suspension_threshold_days' => env('BILLING_MAX_SUSPENSION_DAYS', 7),
+
+        // Legacy suspension threshold for backward compatibility
         'suspension_threshold' => env('BILLING_SUSPENSION_THRESHOLD', 7),
+
+        // Free products get shorter grace period
         'free_suspension_days' => env('BILLING_FREE_SUSPENSION_DAYS', 7),
+
+        // Paid products suspension based on billing cycle
         'paid_suspension_days' => env('BILLING_PAID_SUSPENSION_DAYS', 30),
+
+        'default_billing_days' => env('BILLING_DEFAULT_BILLING_DAYS', 30),
+        'multiplier_steps' => env('BILLING_MULTIPLIER_STEPS', json_encode([
+            ['maxDays' => 10, 'multiplier' => 1.30],
+            ['maxDays' => 20, 'multiplier' => 1.20],
+            ['maxDays' => 29, 'multiplier' => 1.10],
+            ['maxDays' => 30, 'multiplier' => 1.00],
+            ['maxDays' => 59, 'multiplier' => 0.95],
+            ['maxDays' => 89, 'multiplier' => 0.90],
+            ['maxDays' => 999, 'multiplier' => 0.85],
+        ])),
     ],
 
     /*

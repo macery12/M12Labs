@@ -9,28 +9,39 @@ import EnableAI from '@admin/modules/ai/EnableAI';
 import OverviewContainer from '@admin/modules/ai/OverviewContainer';
 import ConfigureAI from '@admin/modules/ai/ConfigureAI';
 import SettingsContainer from './SettingsContainer';
-import { useState } from 'react';
+import { updateSettings } from '@/api/routes/admin/ai/settings';
 
 export default () => {
     const settings = useStoreState(state => state.everest.data!.ai);
-    const [configDismissed, setConfigDismissed] = useState(false);
 
     if (!settings.enabled) return <EnableAI />;
-    
+
     // For Ollama mode, key is not required, only check for endpoint and model
     // For OpenAI mode, key is required
-    const needsConfiguration = settings.mode === 'ollama' 
-        ? !settings.endpoint || !settings.model
-        : !settings.key || !settings.endpoint || !settings.model;
-    
-    if (settings.enabled && needsConfiguration && !configDismissed) {
-        return <ConfigureAI onDismiss={() => setConfigDismissed(true)} />;
-    }
+    const needsConfiguration =
+        settings.mode === 'ollama'
+            ? !settings.endpoint || !settings.model
+            : !settings.key || !settings.endpoint || !settings.model;
+
+    const handleDismissConfiguration = () => {
+        // Disable AI when user dismisses configuration dialog
+        updateSettings({ enabled: false })
+            .catch(error => {
+                console.error('Failed to disable AI:', error);
+            })
+            .finally(() => {
+                // Reload page to refresh everest state and return to EnableAI screen
+                // @ts-expect-error this is fine
+                window.location = '/admin/ai';
+            });
+    };
+
+    if (settings.enabled && needsConfiguration) return <ConfigureAI onDismiss={handleDismissConfiguration} />;
 
     return (
         <AdminContentBlock title={'Jexactyl AI'}>
             <FlashMessageRender byKey={'admin:ai'} className={'mb-4'} />
-            <div className={'mb-8 flex w-full flex-row items-center'}>
+            <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Jexactyl AI</h2>
                     <p

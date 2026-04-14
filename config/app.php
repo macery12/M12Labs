@@ -11,16 +11,7 @@ return [
     | change this value if you are not maintaining your own internal versions.
     */
 
-    'version' => '1.0.0-M12',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Automatic Updates
-    |--------------------------------------------------------------------------
-    | Allow Jexactyl to update itself in the background in line with the latest
-    | GitHub software release. This feature is off by default.
-    */
-    'auto_update' => false,
+    'version' => '2.0.0-Rc2.6',
 
     /*
     |--------------------------------------------------------------------------
@@ -30,15 +21,6 @@ return [
     | when certain Jexactyl features are toggled to 'on'.
     */
     'indicators' => false,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Is Setup
-    |--------------------------------------------------------------------------
-    | This variable toggles whether Jexactyl has been configured and is ready
-    | for use. This should ideally be done via the UI.
-    */
-    'auto_update' => false,
 
     /*
     |--------------------------------------------------------------------------
@@ -231,6 +213,7 @@ return [
         Illuminate\Redis\RedisServiceProvider::class,
         Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
         Illuminate\Session\SessionServiceProvider::class,
+        Illuminate\Mail\MailServiceProvider::class,
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,

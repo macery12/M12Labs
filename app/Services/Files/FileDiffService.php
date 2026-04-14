@@ -76,9 +76,9 @@ class FileDiffService
         foreach ($hunks as $hunk) {
             foreach ($hunk['changes'] as $change) {
                 if ($change['type'] === 'addition') {
-                    $additions++;
+                    ++$additions;
                 } elseif ($change['type'] === 'deletion') {
-                    $deletions++;
+                    ++$deletions;
                 }
             }
         }
@@ -119,7 +119,7 @@ class FileDiffService
     {
         $lcs = $this->longestCommonSubsequence($oldLines, $newLines);
         $changes = $this->buildChangeList($oldLines, $newLines, $lcs);
-        
+
         return $this->groupChangesIntoHunks($changes, $oldLines, $newLines);
     }
 
@@ -130,12 +130,12 @@ class FileDiffService
     {
         $oldLen = count($old);
         $newLen = count($new);
-        
+
         // Build LCS length table
         $lengths = array_fill(0, $oldLen + 1, array_fill(0, $newLen + 1, 0));
-        
-        for ($i = 1; $i <= $oldLen; $i++) {
-            for ($j = 1; $j <= $newLen; $j++) {
+
+        for ($i = 1; $i <= $oldLen; ++$i) {
+            for ($j = 1; $j <= $newLen; ++$j) {
                 if ($old[$i - 1] === $new[$j - 1]) {
                     $lengths[$i][$j] = $lengths[$i - 1][$j - 1] + 1;
                 } else {
@@ -148,16 +148,16 @@ class FileDiffService
         $lcs = [];
         $i = $oldLen;
         $j = $newLen;
-        
+
         while ($i > 0 && $j > 0) {
             if ($old[$i - 1] === $new[$j - 1]) {
                 array_unshift($lcs, ['old' => $i - 1, 'new' => $j - 1, 'line' => $old[$i - 1]]);
-                $i--;
-                $j--;
+                --$i;
+                --$j;
             } elseif ($lengths[$i - 1][$j] > $lengths[$i][$j - 1]) {
-                $i--;
+                --$i;
             } else {
-                $j--;
+                --$j;
             }
         }
 
@@ -177,7 +177,7 @@ class FileDiffService
         while ($oldIdx < count($oldLines) || $newIdx < count($newLines)) {
             if ($lcsIdx < count($lcs)) {
                 $lcsItem = $lcs[$lcsIdx];
-                
+
                 // Add deletions (lines in old but not in LCS)
                 while ($oldIdx < $lcsItem['old']) {
                     $changes[] = [
@@ -186,9 +186,9 @@ class FileDiffService
                         'old_line' => $oldIdx + 1,
                         'new_line' => null,
                     ];
-                    $oldIdx++;
+                    ++$oldIdx;
                 }
-                
+
                 // Add additions (lines in new but not in LCS)
                 while ($newIdx < $lcsItem['new']) {
                     $changes[] = [
@@ -197,9 +197,9 @@ class FileDiffService
                         'old_line' => null,
                         'new_line' => $newIdx + 1,
                     ];
-                    $newIdx++;
+                    ++$newIdx;
                 }
-                
+
                 // Add unchanged line
                 $changes[] = [
                     'type' => 'context',
@@ -207,9 +207,9 @@ class FileDiffService
                     'old_line' => $oldIdx + 1,
                     'new_line' => $newIdx + 1,
                 ];
-                $oldIdx++;
-                $newIdx++;
-                $lcsIdx++;
+                ++$oldIdx;
+                ++$newIdx;
+                ++$lcsIdx;
             } else {
                 // Handle remaining lines after LCS is exhausted
                 while ($oldIdx < count($oldLines)) {
@@ -219,7 +219,7 @@ class FileDiffService
                         'old_line' => $oldIdx + 1,
                         'new_line' => null,
                     ];
-                    $oldIdx++;
+                    ++$oldIdx;
                 }
                 while ($newIdx < count($newLines)) {
                     $changes[] = [
@@ -228,7 +228,7 @@ class FileDiffService
                         'old_line' => null,
                         'new_line' => $newIdx + 1,
                     ];
-                    $newIdx++;
+                    ++$newIdx;
                 }
             }
         }
@@ -251,7 +251,7 @@ class FileDiffService
 
         foreach ($changes as $idx => $change) {
             $isChange = $change['type'] !== 'context';
-            
+
             if ($isChange) {
                 if ($currentHunk === null) {
                     // Start new hunk with context before
@@ -264,9 +264,9 @@ class FileDiffService
                         'context' => '',
                         'changes' => [],
                     ];
-                    
+
                     // Add context lines before the change
-                    for ($i = $contextStart; $i < $idx; $i++) {
+                    for ($i = $contextStart; $i < $idx; ++$i) {
                         $ctx = $changes[$i];
                         if ($currentHunk['old_start'] === null && $ctx['old_line'] !== null) {
                             $currentHunk['old_start'] = $ctx['old_line'];
@@ -278,11 +278,15 @@ class FileDiffService
                             'type' => 'context',
                             'content' => $ctx['content'],
                         ];
-                        if ($ctx['old_line'] !== null) $currentHunk['old_lines']++;
-                        if ($ctx['new_line'] !== null) $currentHunk['new_lines']++;
+                        if ($ctx['old_line'] !== null) {
+                            ++$currentHunk['old_lines'];
+                        }
+                        if ($ctx['new_line'] !== null) {
+                            ++$currentHunk['new_lines'];
+                        }
                     }
                 }
-                
+
                 // Set start positions if not set
                 if ($currentHunk['old_start'] === null) {
                     $currentHunk['old_start'] = $change['old_line'] ?? 1;
@@ -290,31 +294,31 @@ class FileDiffService
                 if ($currentHunk['new_start'] === null) {
                     $currentHunk['new_start'] = $change['new_line'] ?? 1;
                 }
-                
+
                 // Add the change
                 $currentHunk['changes'][] = [
                     'type' => $change['type'],
                     'content' => $change['content'],
                 ];
                 if ($change['type'] === 'deletion') {
-                    $currentHunk['old_lines']++;
+                    ++$currentHunk['old_lines'];
                 } elseif ($change['type'] === 'addition') {
-                    $currentHunk['new_lines']++;
+                    ++$currentHunk['new_lines'];
                 }
-                
+
                 $lastChangeIdx = $idx;
             } elseif ($currentHunk !== null) {
                 // Context line after a change
                 $distanceFromLastChange = $idx - $lastChangeIdx;
-                
+
                 if ($distanceFromLastChange <= $contextLines * 2) {
                     // Within context range, add to current hunk
                     $currentHunk['changes'][] = [
                         'type' => 'context',
                         'content' => $change['content'],
                     ];
-                    $currentHunk['old_lines']++;
-                    $currentHunk['new_lines']++;
+                    ++$currentHunk['old_lines'];
+                    ++$currentHunk['new_lines'];
                 } else {
                     // Too far from last change, close current hunk
                     // But first add trailing context
@@ -331,8 +335,12 @@ class FileDiffService
 
         // Ensure all hunks have valid start positions
         foreach ($hunks as &$hunk) {
-            if ($hunk['old_start'] === null) $hunk['old_start'] = 1;
-            if ($hunk['new_start'] === null) $hunk['new_start'] = 1;
+            if ($hunk['old_start'] === null) {
+                $hunk['old_start'] = 1;
+            }
+            if ($hunk['new_start'] === null) {
+                $hunk['new_start'] = 1;
+            }
         }
 
         return $hunks;

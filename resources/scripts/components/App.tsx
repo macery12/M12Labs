@@ -18,6 +18,7 @@ import Onboarding from '@account/Onboarding';
 import SpeedDial from '@/elements/SpeedDial';
 import SetupContainer from './admin/setup/SetupContainer';
 import ServerErrorSvg from '@/assets/images/server_error.svg';
+import http from '@/api/http';
 
 const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
@@ -83,6 +84,12 @@ function App() {
     }
 
     if (PterodactylUser?.state === 'suspended') {
+        const handleLogout = () => {
+            http.post('/auth/logout').finally(() => {
+                window.location.href = '/auth/login';
+            });
+        };
+
         return (
             <StoreProvider store={store}>
                 <GlobalStylesheet />
@@ -92,7 +99,14 @@ function App() {
                     message={
                         'Your account has been blocked by an administrator. Please contact support if you believe this is an error.'
                     }
-                />
+                >
+                    <button
+                        onClick={handleLogout}
+                        className={'mt-6 px-6 py-2 rounded-full border border-red-500/60 bg-red-500/10 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition-colors cursor-pointer'}
+                    >
+                        Logout
+                    </button>
+                </ScreenBlock>
             </StoreProvider>
         );
     }

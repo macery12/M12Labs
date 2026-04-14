@@ -1,16 +1,25 @@
 import { lazy } from 'react';
-import * as Icon from '@heroicons/react/outline';
+import {
+    CashIcon,
+    ClipboardListIcon,
+    HeartIcon,
+    KeyIcon,
+    ShieldCheckIcon,
+    TicketIcon,
+    UserIcon,
+} from '@heroicons/react/outline';
 import { route, type RouteDefinition } from '@/routers/routes/utils';
 
-const AccountApiContainer = lazy(() => import('@account/AccountApiContainer'));
-const AccountSSHContainer = lazy(() => import('@account/ssh/AccountSSHContainer'));
+const CredentialsContainer = lazy(() => import('@account/CredentialsContainer'));
 const AccountOverviewContainer = lazy(() => import('@account/AccountOverviewContainer'));
+const SecurityContainer = lazy(() => import('@account/SecurityContainer'));
 
 const TicketContainer = lazy(() => import('@account/tickets/TicketContainer'));
 const ViewTicketContainer = lazy(() => import('@account/tickets/view/ViewTicketContainer'));
 
 const ProductsContainer = lazy(() => import('@account/billing/ProductsContainer'));
 const OrderContainer = lazy(() => import('@account/billing/order/OrderContainer'));
+const CheckoutPaymentContainer = lazy(() => import('@account/billing/order/CheckoutPaymentContainer'));
 const OrdersContainer = lazy(() => import('@account/billing/orders/OrdersContainer'));
 const Processing = lazy(() => import('@account/billing/order/summary/Processing'));
 const Success = lazy(() => import('@account/billing/order/summary/Success'));
@@ -23,16 +32,16 @@ const account: RouteDefinition[] = [
     /**
      * Account - General Routes
      */
-    route('', AccountOverviewContainer, { name: 'Account', end: true, icon: Icon.UserIcon }),
-    route('api', AccountApiContainer, { name: 'API Credentials', icon: Icon.CodeIcon }),
-    route('ssh', AccountSSHContainer, { name: 'SSH Keys', icon: Icon.TerminalIcon }),
+    route('', AccountOverviewContainer, { name: 'Account', end: true, icon: UserIcon }),
+    route('credentials', CredentialsContainer, { name: 'Credentials', icon: KeyIcon }),
+    route('security', SecurityContainer, { name: 'Security', icon: ShieldCheckIcon }),
 
     /**
      * Account - Ticket Routes
      */
     route('tickets', TicketContainer, {
         name: 'Tickets',
-        icon: Icon.TicketIcon,
+        icon: TicketIcon,
         condition: flags => flags.tickets.enabled,
     }),
     route('tickets/:id', ViewTicketContainer, { condition: flags => flags.tickets.enabled }),
@@ -42,13 +51,15 @@ const account: RouteDefinition[] = [
      */
     route('billing/order', ProductsContainer, {
         name: 'Billing',
-        icon: Icon.CashIcon,
+        icon: CashIcon,
         condition: flags => flags.billing.enabled,
     }),
+    route('/checkout/configure/:id', OrderContainer),
+    route('/checkout/payment', CheckoutPaymentContainer),
     route('billing/order/:id', OrderContainer),
     route('billing/orders', OrdersContainer, {
         name: 'Orders',
-        icon: Icon.ClipboardListIcon,
+        icon: ClipboardListIcon,
         condition: flags => flags.billing.enabled,
     }),
     route('billing/processing', Processing),
@@ -60,7 +71,7 @@ const account: RouteDefinition[] = [
      */
     route('donations', DonationContainer, {
         name: 'Donate',
-        icon: Icon.HeartIcon,
+        icon: HeartIcon,
         condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
     }),
     route('donations/history', DonationHistoryContainer, {

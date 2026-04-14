@@ -28,18 +28,27 @@ interface Props {
     visible: boolean;
     allowEggChanges: boolean;
     allowPlanChanges: boolean;
-    selectedEggIds: number[];
     category?: Category;
     setVisible: Dispatch<SetStateAction<boolean>>;
     setAllowEggChanges: Dispatch<SetStateAction<boolean>>;
     setAllowPlanChanges: Dispatch<SetStateAction<boolean>>;
-    setSelectedEggIds: Dispatch<SetStateAction<number[]>>;
 }
 
-function InternalForm({ category, visible, setVisible, allowEggChanges, setAllowEggChanges, allowPlanChanges, setAllowPlanChanges, selectedEggIds, setSelectedEggIds }: Props) {
+function InternalForm({
+    category,
+    visible,
+    setVisible,
+    allowEggChanges,
+    setAllowEggChanges,
+    allowPlanChanges,
+    setAllowPlanChanges,
+}: Props) {
     const { isSubmitting } = useFormikContext<CategoryValues>();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const [nestId, setNestId] = useState<number>(category?.nestId ?? 0);
+    const [selectedEggIds, setSelectedEggIds] = useState<number[]>(
+        category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []),
+    );
 
     return (
         <Form>
@@ -167,17 +176,13 @@ export default ({ category }: { category?: Category }) => {
     const [visible, setVisible] = useState<boolean>(category?.visible ?? false);
     const [allowEggChanges, setAllowEggChanges] = useState<boolean>(category?.allowEggChanges ?? true);
     const [allowPlanChanges, setAllowPlanChanges] = useState<boolean>(category?.allowPlanChanges ?? true);
-    const [selectedEggIds, setSelectedEggIds] = useState<number[]>(
-        category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []),
-    );
 
     // Sync state when category data changes from server
     useEffect(() => {
         setVisible(category?.visible ?? false);
         setAllowEggChanges(category?.allowEggChanges ?? true);
         setAllowPlanChanges(category?.allowPlanChanges ?? true);
-        setSelectedEggIds(category?.allowedEggs ?? (category?.eggId ? [category.eggId] : []));
-    }, [category?.id, category?.visible, category?.allowEggChanges, category?.allowPlanChanges, category?.allowedEggs, category?.eggId]);
+    }, [category?.id, category?.visible, category?.allowEggChanges, category?.allowPlanChanges]);
 
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
@@ -251,8 +256,6 @@ export default ({ category }: { category?: Category }) => {
                 setAllowEggChanges={setAllowEggChanges}
                 allowPlanChanges={allowPlanChanges}
                 setAllowPlanChanges={setAllowPlanChanges}
-                selectedEggIds={selectedEggIds}
-                setSelectedEggIds={setSelectedEggIds}
             />
         </Formik>
     );
@@ -265,7 +268,7 @@ export default ({ category }: { category?: Category }) => {
     // When creating a new category, return form with header (parent BillingRouter provides AdminContentBlock)
     return (
         <>
-            <div css={tw`w-full flex flex-row items-center mb-8`}>
+            <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <ShoppingCartIcon className={'mr-4 h-8 w-8'} />
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>New Product Category</h2>
