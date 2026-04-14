@@ -113,6 +113,14 @@ const suspendUser = (id: number): Promise<void> => {
     });
 };
 
+const verifyUserEmail = (id: number, verified: boolean): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.post(`/api/application/users/${id}/verify-email`, { verified })
+            .then(() => resolve())
+            .catch(reject);
+    });
+};
+
 const deleteUser = (id: number): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.delete(`/api/application/users/${id}`)
@@ -121,4 +129,4 @@ const deleteUser = (id: number): Promise<void> => {
     });
 };
 
-export { useGetUsers, getUser, searchUserAccounts, createUser, updateUser, suspendUser, deleteUser };
+export { useGetUsers, getUser, searchUserAccounts, createUser, updateUser, suspendUser, verifyUserEmail, deleteUser };
