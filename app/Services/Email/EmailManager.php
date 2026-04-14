@@ -332,13 +332,6 @@ class EmailManager
      * Custom overrides are stored as "<original>.blade.php.custom" files by
      * EmailTemplateController and are not picked up by Laravel's view loader,
      * so we must detect and render them manually.
-     *
-     * IMPORTANT: We call clearstatcache() before the existence check so that
-     * long-running queue workers (which maintain a per-process realpath/stat
-     * cache) always see the current filesystem state after an admin saves or
-     * reverts a custom template.  Without this, a worker that checked for the
-     * file before it was created would continue to believe the file doesn't
-     * exist for up to realpath_cache_ttl seconds (default 120 s).
      */
     private function renderViewWithCustomOverride(string $viewPath, array $data): string
     {
@@ -357,10 +350,6 @@ class EmailManager
         $customFile = $viewsDir . DIRECTORY_SEPARATOR
             . str_replace('.', DIRECTORY_SEPARATOR, $viewPath)
             . '.blade.php.custom';
-
-        // Clear PHP's per-process stat/realpath cache for this path so the
-        // worker always reflects the live filesystem (see docblock above).
-        clearstatcache(true, $customFile);
 
         if (is_file($customFile)) {
             // Belt-and-suspenders: confirm the resolved path is still inside the views directory.

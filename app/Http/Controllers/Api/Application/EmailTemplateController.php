@@ -464,10 +464,6 @@ class EmailTemplateController extends ApplicationApiController
             abort(500, 'Failed to write custom template file.');
         }
 
-        // Invalidate PHP's per-process stat/realpath cache so that any in-process
-        // checks (e.g. index() checking file_exists) immediately reflect the new file.
-        clearstatcache(true, $customPath);
-
         if (function_exists('opcache_invalidate')) {
             opcache_invalidate($customPath, true);
         }
@@ -502,9 +498,6 @@ class EmailTemplateController extends ApplicationApiController
             if (!unlink($customPath)) {
                 abort(500, 'Failed to remove custom template file.');
             }
-
-            // Invalidate PHP's per-process stat/realpath cache after deletion.
-            clearstatcache(true, $customPath);
 
             Log::info('Email template reverted to default by admin.', [
                 'key'      => $key,
