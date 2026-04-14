@@ -37,6 +37,11 @@ class ExtensionRepository extends Model
         'risk_acknowledged_at' => 'datetime',
     ];
 
+    public function getRouteKeyName(): string
+    {
+        return $this->getKeyName();
+    }
+
     public function packages(): HasMany
     {
         return $this->hasMany(ExtensionPackage::class, 'source_repository_id');

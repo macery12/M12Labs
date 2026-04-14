@@ -307,8 +307,8 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
         Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
         Route::post('/repositories', [Application\Extensions\ExtensionsController::class, 'storeRepository']);
-        Route::patch('/repositories/{repository}', [Application\Extensions\ExtensionsController::class, 'updateRepository']);
-        Route::delete('/repositories/{repository}', [Application\Extensions\ExtensionsController::class, 'deleteRepository']);
+        Route::patch('/repositories/{repository:id}', [Application\Extensions\ExtensionsController::class, 'updateRepository']);
+        Route::delete('/repositories/{repository:id}', [Application\Extensions\ExtensionsController::class, 'deleteRepository']);
 
         Route::get('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'view']);
         Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);
