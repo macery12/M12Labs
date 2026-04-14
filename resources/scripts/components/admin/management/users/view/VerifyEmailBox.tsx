@@ -54,9 +54,15 @@ export default () => {
             </Dialog.Confirm>
             <div css={tw`h-auto flex flex-col`}>
                 <AdminBox icon={faEnvelope} title={'Email Verification'} css={tw`relative w-full`}>
-                    <Button size={Button.Sizes.Large} css={tw`w-full capitalize`} onClick={() => setVisible(true)}>
-                        {action} Email
-                    </Button>
+                    {isVerified ? (
+                        <Button.Warn size={Button.Sizes.Large} css={tw`w-full capitalize`} onClick={() => setVisible(true)}>
+                            Unverify Email
+                        </Button.Warn>
+                    ) : (
+                        <Button size={Button.Sizes.Large} css={tw`w-full capitalize`} onClick={() => setVisible(true)}>
+                            Verify Email
+                        </Button>
+                    )}
                     <p css={tw`text-xs text-neutral-400 mt-2`}>
                         Email Verified:&nbsp;<strong>{isVerified ? 'true' : 'false'}</strong>. Use this to manually
                         override email verification without sending a verification link.
