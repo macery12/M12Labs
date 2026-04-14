@@ -33,57 +33,83 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
             .then(_eggs => {
                 setEggs(_eggs);
 
-                const validEggIds = new Set(_eggs.map(egg => egg.id));
-                const initialSelection = selectedEggIds.filter(id => validEggIds.has(id));
+                // Get available egg IDs to filter out deleted eggs
+                const availableEggIds = _eggs.map(egg => egg.id);
 
-                let nextSelected = initialSelection;
-                if (nextSelected.length === 0 && _eggs.length > 0) {
-                    nextSelected = [_eggs[0].id];
-                }
-
-                setSelected(nextSelected);
-                if (nextSelected.length > 0) {
-                    setEggIdValue(nextSelected[0]);
+                // If we have previously selected eggs, filter out any that no longer exist
+                if (selectedEggIds.length > 0) {
+                    // Filter to only include eggs that still exist in the database
+                    const validSelectedEggs = selectedEggIds.filter(id => availableEggIds.includes(id));
+                    
+                    // If no valid eggs remain but eggs are available, default to first egg
+                    const finalSelection = validSelectedEggs.length > 0 ? validSelectedEggs : 
+                                          (_eggs.length > 0 ? [_eggs[0].id] : []);
+                    
+                    setSelected(finalSelection);
+                    if (finalSelection.length > 0) {
+                        // Set the primary egg (first in the list)
+                        setEggIdValue(finalSelection[0]);
+                        setEggIdTouched(true);
+                        setAllowedEggsValue(finalSelection);
+                        setAllowedEggsTouched(true);
+                        
+                        // Notify parent if the selection changed due to filtering
+                        if (finalSelection.length !== selectedEggIds.length) {
+                            onEggSelectionChange(finalSelection);
+                        }
+                    }
+                } else if (_eggs.length > 0) {
+                    // Default to first egg if none selected
+                    const defaultEggId = _eggs[0].id;
+                    setSelected([defaultEggId]);
+                    setEggIdValue(defaultEggId);
                     setEggIdTouched(true);
-                    setAllowedEggsValue(nextSelected);
+                    setAllowedEggsValue([defaultEggId]);
                     setAllowedEggsTouched(true);
-                    onEggSelectionChange(nextSelected);
+                    onEggSelectionChange([defaultEggId]);
                 }
             })
             .catch(error => console.error(error));
     }, [nestId]);
 
+    // Sync selected eggs when selectedEggIds prop changes (e.g., after form reinitialization)
+    // Note: We intentionally don't include 'selected' in dependencies to avoid infinite loops.
+    // We only update when selectedEggIds changes externally, using selected for comparison only.
+    // Array order matters: the first egg is the primary egg for the category.
     useEffect(() => {
+        // If we don't have eggs loaded yet, skip syncing
         if (!eggs) {
             return;
         }
 
-        const validEggIds = new Set(eggs.map(egg => egg.id));
-        let filtered = selectedEggIds.filter(id => validEggIds.has(id));
-
-        if (filtered.length === 0 && eggs.length > 0) {
-            filtered = [eggs[0].id];
-        }
-
-        const isSameSelection =
-            filtered.length === selectedEggIds.length && filtered.every((id, index) => id === selectedEggIds[index]);
-
-        if (filtered.length > 0 && !isSameSelection) {
-            setSelected(filtered);
-            setEggIdValue(filtered[0]);
-            setEggIdTouched(true);
-            setAllowedEggsValue(filtered);
+        // Get available egg IDs to filter out deleted eggs
+        const availableEggIds = eggs.map(egg => egg.id);
+        
+        // Filter to only include eggs that still exist in the database
+        const validSelectedEggs = selectedEggIds.filter(id => availableEggIds.includes(id));
+        
+        // If no valid eggs remain but eggs are available, default to first egg
+        const finalSelection = validSelectedEggs.length > 0 ? validSelectedEggs : 
+                              (eggs.length > 0 ? [eggs[0].id] : []);
+        
+        // Compare arrays: check length and all elements in order
+        const arraysEqual = selected.length === finalSelection.length && 
+            selected.every((id, index) => id === finalSelection[index]);
+        
+        if (!arraysEqual) {
+            setSelected(finalSelection);
+            if (finalSelection.length > 0) {
+                setEggIdValue(finalSelection[0]);
+                setEggIdTouched(true);
+            }
+            setAllowedEggsValue(finalSelection);
             setAllowedEggsTouched(true);
-            onEggSelectionChange(filtered);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedEggIds, eggs]);
 
     const handleEggToggle = (eggId: number, checked: boolean) => {
         let newSelected: number[];
-
-        if (!eggs?.some(egg => egg.id === eggId)) {
-            return;
-        }
 
         if (checked) {
             // Add egg to selection

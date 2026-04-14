@@ -32,6 +32,12 @@ class IntelligenceController extends ApplicationApiController
                 continue;
             }
 
+            // If the key field is an empty string, delete the API key setting
+            if ($key == 'key' && $value === '') {
+                Setting::forget('settings::modules:ai:key');
+                continue;
+            }
+
             Setting::set('settings::modules:ai:' . $key, $value);
         }
 

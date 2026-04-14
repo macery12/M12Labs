@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import tw from 'twin.macro';
 import { Elements } from '@stripe/react-stripe-js';
-import { StripeElementsOptions } from '@stripe/stripe-js';
+import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
 import PageContentBlock from '@/elements/PageContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { Button } from '@/elements/button';
@@ -18,7 +18,6 @@ import TitledGreyBox from '@/elements/TitledGreyBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faDollarSign, faInfoCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
-import { loadStripeOnce } from '@/lib/stripe';
 
 interface FormValues {
     amount: string;
@@ -49,7 +48,7 @@ export default () => {
 
         try {
             const { key } = await getStripeKey();
-            const stripe = await loadStripeOnce(key);
+            const stripe = await loadStripe(key);
             setStripePromise(stripe);
 
             const amount = parseFloat(values.amount);
@@ -176,17 +175,11 @@ export default () => {
                                             {values.amount && !errors.amount && (
                                                 <div
                                                     css={tw`mt-3 p-3 rounded-lg border-2`}
-                                                    style={{
-                                                        borderColor: colors.primary,
-                                                        backgroundColor: colors.secondary,
-                                                    }}
+                                                    style={{ borderColor: colors.primary, backgroundColor: colors.secondary }}
                                                 >
                                                     <p css={tw`text-sm text-gray-300`}>
                                                         You are donating:{' '}
-                                                        <span
-                                                            css={tw`text-xl font-bold`}
-                                                            style={{ color: colors.primary }}
-                                                        >
+                                                        <span css={tw`text-xl font-bold`} style={{ color: colors.primary }}>
                                                             ${parseFloat(values.amount).toFixed(2)}
                                                         </span>
                                                     </p>
@@ -201,15 +194,11 @@ export default () => {
                                                 name={'message'}
                                                 placeholder={'Leave a message with your donation (optional)'}
                                                 css={tw`shadow-md border border-neutral-700 rounded p-3 w-full text-sm text-neutral-200`}
-                                                style={
-                                                    {
-                                                        '--tw-ring-color': colors.primary,
-                                                        backgroundColor: colors.secondary,
-                                                    } as React.CSSProperties
-                                                }
-                                                className={
-                                                    'focus:border-[var(--tw-ring-color)] focus:ring-1 focus:ring-[var(--tw-ring-color)]'
-                                                }
+                                                style={{
+                                                    '--tw-ring-color': colors.primary,
+                                                    backgroundColor: colors.secondary,
+                                                } as React.CSSProperties}
+                                                className={'focus:border-[var(--tw-ring-color)] focus:ring-1 focus:ring-[var(--tw-ring-color)]'}
                                                 rows={4}
                                             />
                                             {errors.message && touched.message ? (

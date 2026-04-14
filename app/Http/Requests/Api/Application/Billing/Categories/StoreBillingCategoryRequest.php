@@ -11,4 +11,19 @@ class StoreBillingCategoryRequest extends ApplicationApiRequest
     {
         return AdminRole::BILLING_CATEGORIES_CREATE;
     }
+
+    public function rules(): array
+    {
+        return [
+            'name' => 'required|string|min:3|max:191',
+            'icon' => 'nullable|string|max:300',
+            'description' => 'nullable|string|max:300',
+            'visible' => 'nullable|boolean',
+            'eggId' => 'required|integer|exists:eggs,id',
+            'allowedEggs' => 'nullable|array',
+            'allowedEggs.*' => 'integer|exists:eggs,id',
+            'allowEggChanges' => 'nullable|boolean',
+            'allowPlanChanges' => 'nullable|boolean',
+        ];
+    }
 }

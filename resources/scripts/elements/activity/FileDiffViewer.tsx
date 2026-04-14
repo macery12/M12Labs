@@ -76,7 +76,7 @@ const DiffLine = ({ change, lineNumber }: DiffLineProps) => {
                     'w-6 text-center text-xs font-mono select-none',
                     change.type === 'addition' && 'text-green-400',
                     change.type === 'deletion' && 'text-red-400',
-                    change.type === 'context' && 'text-slate-500',
+                    change.type === 'context' && 'text-slate-500'
                 )}
             >
                 {getLinePrefix()}
@@ -100,7 +100,11 @@ const DiffHunkView = ({ hunk, index }: { hunk: DiffHunk; index: number }) => {
                 className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-sm text-slate-400 font-mono"
                 onClick={() => setExpanded(!expanded)}
             >
-                {expanded ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+                {expanded ? (
+                    <ChevronDownIcon className="h-4 w-4" />
+                ) : (
+                    <ChevronRightIcon className="h-4 w-4" />
+                )}
                 <span>
                     @@ -{hunk.old_start},{hunk.old_lines} +{hunk.new_start},{hunk.new_lines} @@
                 </span>

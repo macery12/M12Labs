@@ -2,8 +2,8 @@
 
 namespace Everest\Http\ViewComposers;
 
-use Illuminate\View\View;
 use Everest\Models\Setting;
+use Illuminate\View\View;
 use Everest\Services\Billing\PaymentProcessorConfigService;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Email\EmailManager;
@@ -64,8 +64,6 @@ class EverestComposer
             ],
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
-                'processor' => config('modules.billing.processor', 'stripe'),
-                'processors' => $processorConfig,
                 'donations_enabled' => boolval(Setting::get('settings::modules:billing:donations_enabled', config('modules.billing.donations_enabled', true))),
                 'paypal' => config('modules.billing.paypal'),
                 'link' => config('modules.billing.link'),

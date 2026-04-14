@@ -3,16 +3,7 @@ import Label from '@/elements/Label';
 import { Form, Formik } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
-import {
-    faKey,
-    faUser,
-    faLink,
-    faCog,
-    faServer,
-    faHashtag,
-    faComment,
-    faTrash,
-} from '@fortawesome/free-solid-svg-icons';
+import { faKey, faUser, faLink, faCog, faServer, faHashtag, faComment, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
@@ -25,16 +16,27 @@ export default () => {
     const ai = useStoreState(s => s.everest.data!.ai);
     const [deletingKey, setDeletingKey] = useState(false);
 
-    // Small Ollama models that are solid for debugging/log-reading (Minecraft, server consoles, stack traces)
-    const ollamaSmallModelExamples = [
-        'phi3:mini',
-        'phi3:small',
-        'gemma2:2b',
-        'qwen2.5:1.5b',
-        'qwen2.5:3b',
-        'deepseek-coder:1.3b',
-        'starcoder2:3b',
-    ];
+    const getEndpointError = (m: string, e: string): string | undefined => {
+        if (!e || !e.trim()) return 'Invalid URL: endpoint is required.';
+
+        let url: URL;
+        try {
+            url = new URL(e);
+        } catch {
+            return 'Invalid URL: must be a valid URL (example: https://api.openai.com/v1).';
+        }
+
+        if (m === 'openai') {
+            if (url.protocol !== 'https:') {
+                return 'Invalid URL: OpenAI mode requires HTTPS (example: https://api.openai.com/v1).';
+            }
+            if (url.hostname === 'localhost' && url.port === '11434') {
+                return 'Invalid URL: that looks like an Ollama endpoint. Switch mode to Ollama or use an OpenAI HTTPS endpoint.';
+            }
+        }
+
+        return undefined;
+    };
 
     const submit = (values: AISettings) => {
         clearFlashes();
@@ -58,11 +60,7 @@ export default () => {
     };
 
     const deleteApiKey = () => {
-        if (
-            !confirm(
-                'Are you sure you want to delete the API key? This will disable AI functionality until a new key is configured.',
-            )
-        ) {
+        if (!confirm('Are you sure you want to delete the API key? This will disable AI functionality until a new key is configured.')) {
             return;
         }
 
@@ -93,17 +91,20 @@ export default () => {
             onSubmit={submit}
             initialValues={{
                 user_access: ai.user_access,
-                endpoint:
-                    ai.endpoint || (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
-                model: ai.model || (ai.mode === 'ollama' ? 'phi3:mini' : 'gpt-3.5-turbo'),
+                endpoint: ai.endpoint || 'https://api.openai.com/v1',
+                model: ai.model || 'gpt-3.5-turbo',
                 mode: ai.mode || 'openai',
                 max_tokens: ai.max_tokens || 200,
-                system_prompt:
-                    ai.system_prompt ||
-                    'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
+                system_prompt: ai.system_prompt || 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
+            }}
+            validate={(values: any) => {
+                const errors: Record<string, string> = {};
+                const err = getEndpointError(values.mode, values.endpoint);
+                if (err) errors.endpoint = err;
+                return errors;
             }}
         >
-            {({ values }) => (
+            {({ values, errors }) => (
                 <Form>
                     <div className={'grid gap-4 lg:grid-cols-4'}>
                         <AdminBox title={'AI Provider Mode'} icon={faServer}>
@@ -141,12 +142,7 @@ export default () => {
                         {values.mode === 'openai' && (
                             <AdminBox title={'Modify API Key'} icon={faKey}>
                                 <div>
-                                    <Field
-                                        id={'key'}
-                                        name={'key'}
-                                        type={'input'}
-                                        placeholder="Enter new API key to update"
-                                    />
+                                    <Field id={'key'} name={'key'} type={'input'} placeholder="Enter new API key to update" />
                                     <p className={'mt-1.5 text-xs text-gray-400'}>
                                         Enter your OpenAI API key or a compatible API key from another provider.
                                     </p>
@@ -155,9 +151,7 @@ export default () => {
                                             type="button"
                                             onClick={deleteApiKey}
                                             disabled={deletingKey}
-                                            className={
-                                                'mt-2 inline-flex items-center rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                                            }
+                                            className={'mt-2 inline-flex items-center rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'}
                                         >
                                             <FontAwesomeIcon icon={faTrash} className={'mr-1.5 h-3 w-3'} />
                                             {deletingKey ? 'Deleting...' : 'Delete API Key'}
@@ -175,6 +169,7 @@ export default () => {
                                         ? 'Ollama endpoint (default: http://localhost:11434/v1). Can use HTTP for local or HTTPS for remote.'
                                         : 'The base URL for the OpenAI-compatible API endpoint. Must use HTTPS. Example: https://api.openai.com/v1'}
                                 </p>
+                                {errors.endpoint && <p className={'mt-1.5 text-xs text-red-400'}>{errors.endpoint}</p>}
                             </div>
                         </AdminBox>
 
@@ -183,9 +178,7 @@ export default () => {
                                 <Field id={'model'} name={'model'} type={'input'} />
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     {values.mode === 'ollama'
-                                        ? `Ollama model name (smaller models recommended for Minecraft log reading / debugging). Examples: ${ollamaSmallModelExamples.join(
-                                              ', ',
-                                          )}`
+                                        ? 'Ollama model name (smaller models recommended for Minecraft log reading / debugging). Examples: phi3:mini, phi3:small, gemma2:2b, qwen2.5:1.5b, qwen2.5:3b, deepseek-coder:1.3b, starcoder2:3b'
                                         : 'The AI model to use (e.g., gpt-3.5-turbo, gpt-4, or any compatible model).'}
                                 </p>
                             </div>
@@ -195,8 +188,7 @@ export default () => {
                             <div>
                                 <Field id={'max_tokens'} name={'max_tokens'} type={'number'} min={50} max={4000} />
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Maximum number of tokens in the AI response (50-4000). Default: 200. Lower values =
-                                    shorter responses, less cost.
+                                    Maximum number of tokens in the AI response (50-4000). Default: 200. Lower values = shorter responses, less cost.
                                 </p>
                             </div>
                         </AdminBox>
@@ -211,8 +203,7 @@ export default () => {
                                     placeholder="You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses."
                                 />
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Customize the AI's behavior and response style. This message is sent with every
-                                    query to define the AI's role and tone. (10-1000 characters)
+                                    Customize the AI's behavior and response style. This message is sent with every query to define the AI's role and tone. (10-1000 characters)
                                 </p>
                             </div>
                         </AdminBox>
