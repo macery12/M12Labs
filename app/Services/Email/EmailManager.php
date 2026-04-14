@@ -335,10 +335,19 @@ class EmailManager
      */
     private function renderViewWithCustomOverride(string $viewPath, array $data): string
     {
+        $viewsDir = realpath(resource_path('views'));
         $customFile = resource_path('views/' . str_replace('.', '/', $viewPath) . '.blade.php.custom');
 
-        if (file_exists($customFile)) {
-            $source = file_get_contents($customFile);
+        // Resolve the real path (may return false if the file does not exist yet)
+        $resolvedFile = realpath($customFile);
+
+        // Guard against path traversal: the resolved path must stay inside the views directory.
+        $withinViews = ($resolvedFile !== false)
+            ? str_starts_with($resolvedFile, $viewsDir . DIRECTORY_SEPARATOR)
+            : str_starts_with(realpath(dirname($customFile)) . DIRECTORY_SEPARATOR . basename($customFile), $viewsDir . DIRECTORY_SEPARATOR);
+
+        if ($withinViews && $resolvedFile !== false && file_exists($resolvedFile)) {
+            $source = file_get_contents($resolvedFile);
             return Blade::render($source, $data, deleteCachedView: true);
         }
 
