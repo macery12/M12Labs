@@ -347,7 +347,10 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
 
             // Extension-specific routes (must come before the wildcard route)
-            foreach (glob(__DIR__ . '/extensions/client/*.php') as $extensionRoutes) {
+            foreach ((glob(__DIR__ . '/extensions/client/*.php') ?: []) as $extensionRoutes) {
+                require $extensionRoutes;
+            }
+            foreach ((glob(app_path('Extensions/Packages/*/routes/client.php')) ?: []) as $extensionRoutes) {
                 require $extensionRoutes;
             }
 

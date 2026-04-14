@@ -2,24 +2,33 @@
 
 namespace Everest\Http\Controllers\Api\Application\Extensions;
 
-use Everest\Models\Egg;
+use Everest\Facades\Activity;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Everest\Models\Nest;
 use Everest\Models\Setting;
-use Everest\Facades\Activity;
-use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Everest\Models\ExtensionConfig;
+use Everest\Models\ExtensionRepository;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Extensions\GetExtensionsRequest;
+use Everest\Http\Requests\Api\Application\Extensions\InstallExtensionRequest;
+use Everest\Http\Requests\Api\Application\Extensions\StoreExtensionRepositoryRequest;
+use Everest\Http\Requests\Api\Application\Extensions\UninstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionRequest;
+use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionRepositoryRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionSettingsRequest;
+use Everest\Services\Extensions\ExtensionCatalogService;
+use Everest\Services\Extensions\ExtensionPackageInstallService;
+use Everest\Services\Extensions\ExtensionPackageUninstallService;
 
 class ExtensionsController extends ApplicationApiController
 {
-    /**
-     * ExtensionsController constructor.
-     */
-    public function __construct()
+    public function __construct(
+        private ExtensionCatalogService $catalogService,
+        private ExtensionPackageInstallService $installService,
+        private ExtensionPackageUninstallService $uninstallService
+    )
     {
         parent::__construct();
     }
@@ -29,30 +38,20 @@ class ExtensionsController extends ApplicationApiController
      */
     public function index(GetExtensionsRequest $request): JsonResponse
     {
-        $availableExtensions = config('modules.extensions.available', []);
-        $extensions = [];
-
-        foreach ($availableExtensions as $extensionId => $extensionConfig) {
-            $dbConfig = ExtensionConfig::getByExtensionId($extensionId);
-
-            $extensions[] = [
-                'id' => $extensionId,
-                'name' => $extensionConfig['name'],
-                'description' => $extensionConfig['description'],
-                'version' => $extensionConfig['version'],
-                'author' => $extensionConfig['author'],
-                'icon' => $extensionConfig['icon'],
-                'enabled' => $dbConfig ? $dbConfig->enabled : false,
-                'allowedNests' => $dbConfig && $dbConfig->allowed_nests ? $dbConfig->allowed_nests : [],
-                'allowedEggs' => $dbConfig && $dbConfig->allowed_eggs ? $dbConfig->allowed_eggs : [],
-                'settings' => $dbConfig && $dbConfig->settings ? $dbConfig->settings : [],
-                'settingsSchema' => $extensionConfig['settings_schema'] ?? [],
-            ];
-        }
-
         return new JsonResponse([
             'object' => 'list',
-            'data' => $extensions,
+            'data' => $this->catalogService->getCatalog()['extensions'],
+        ]);
+    }
+
+    /**
+     * Get all configured repositories and their current health.
+     */
+    public function repositories(GetExtensionsRequest $request): JsonResponse
+    {
+        return new JsonResponse([
+            'object' => 'list',
+            'data' => $this->catalogService->getRepositories(),
         ]);
     }
 
@@ -61,30 +60,14 @@ class ExtensionsController extends ApplicationApiController
      */
     public function view(GetExtensionsRequest $request, string $extensionId): JsonResponse
     {
-        $availableExtensions = config('modules.extensions.available', []);
-
-        if (!isset($availableExtensions[$extensionId])) {
+        $extension = $this->catalogService->getExtension($extensionId);
+        if (!$extension) {
             return new JsonResponse(['error' => 'Extension not found'], 404);
         }
 
-        $extensionConfig = $availableExtensions[$extensionId];
-        $dbConfig = ExtensionConfig::getByExtensionId($extensionId);
-
         return new JsonResponse([
             'object' => 'extension',
-            'attributes' => [
-                'id' => $extensionId,
-                'name' => $extensionConfig['name'],
-                'description' => $extensionConfig['description'],
-                'version' => $extensionConfig['version'],
-                'author' => $extensionConfig['author'],
-                'icon' => $extensionConfig['icon'],
-                'enabled' => $dbConfig ? $dbConfig->enabled : false,
-                'allowedNests' => $dbConfig && $dbConfig->allowed_nests ? $dbConfig->allowed_nests : [],
-                'allowedEggs' => $dbConfig && $dbConfig->allowed_eggs ? $dbConfig->allowed_eggs : [],
-                'settings' => $dbConfig && $dbConfig->settings ? $dbConfig->settings : [],
-                'settingsSchema' => $extensionConfig['settings_schema'] ?? [],
-            ],
+            'attributes' => $extension,
         ]);
     }
 
@@ -93,9 +76,8 @@ class ExtensionsController extends ApplicationApiController
      */
     public function update(UpdateExtensionRequest $request, string $extensionId): JsonResponse
     {
-        $availableExtensions = config('modules.extensions.available', []);
-
-        if (!isset($availableExtensions[$extensionId])) {
+        $extension = $this->getManageableExtension($extensionId);
+        if (!$extension) {
             return new JsonResponse(['error' => 'Extension not found'], 404);
         }
 
@@ -122,18 +104,7 @@ class ExtensionsController extends ApplicationApiController
 
         return new JsonResponse([
             'object' => 'extension',
-            'attributes' => [
-                'id' => $extensionId,
-                'name' => $availableExtensions[$extensionId]['name'],
-                'description' => $availableExtensions[$extensionId]['description'],
-                'version' => $availableExtensions[$extensionId]['version'],
-                'author' => $availableExtensions[$extensionId]['author'],
-                'icon' => $availableExtensions[$extensionId]['icon'],
-                'enabled' => $config->enabled,
-                'allowedNests' => $config->allowed_nests ?? [],
-                'allowedEggs' => $config->allowed_eggs ?? [],
-                'settings' => $config->settings ?? [],
-            ],
+            'attributes' => $this->catalogService->getExtension($extensionId, true),
         ]);
     }
 
@@ -142,9 +113,8 @@ class ExtensionsController extends ApplicationApiController
      */
     public function toggle(UpdateExtensionRequest $request, string $extensionId): JsonResponse
     {
-        $availableExtensions = config('modules.extensions.available', []);
-
-        if (!isset($availableExtensions[$extensionId])) {
+        $extension = $this->getManageableExtension($extensionId);
+        if (!$extension) {
             return new JsonResponse(['error' => 'Extension not found'], 404);
         }
 
@@ -162,9 +132,49 @@ class ExtensionsController extends ApplicationApiController
 
         return new JsonResponse([
             'object' => 'extension',
-            'attributes' => [
+            'attributes' => $this->catalogService->getExtension($extensionId, true),
+        ]);
+    }
+
+    /**
+     * Install a repository-backed extension package.
+     */
+    public function install(InstallExtensionRequest $request, string $extensionId): JsonResponse
+    {
+        $package = $this->installService->install(
+            $extensionId,
+            (int) $request->input('repository_id'),
+            $request->input('version')
+        );
+
+        Activity::event('admin:extensions:install')
+            ->property('extension_id', $extensionId)
+            ->property('version', $package->installed_version)
+            ->property('repository', $package->source_repository_name)
+            ->log();
+
+        return new JsonResponse([
+            'object' => 'extension',
+            'attributes' => $this->catalogService->getExtension($extensionId, true),
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Remove an installed repository-backed extension package.
+     */
+    public function uninstall(UninstallExtensionRequest $request, string $extensionId): JsonResponse
+    {
+        $this->uninstallService->uninstall($extensionId);
+
+        Activity::event('admin:extensions:uninstall')
+            ->property('extension_id', $extensionId)
+            ->log();
+
+        return new JsonResponse([
+            'object' => 'extension',
+            'attributes' => $this->catalogService->getExtension($extensionId, true) ?? [
                 'id' => $extensionId,
-                'enabled' => $config->enabled,
+                'installed' => false,
             ],
         ]);
     }
@@ -179,6 +189,113 @@ class ExtensionsController extends ApplicationApiController
         Activity::event('admin:extensions:settings')
             ->property('key', $request->input('key'))
             ->property('value', $request->input('value'))
+            ->log();
+
+        return $this->returnNoContent();
+    }
+
+    /**
+     * Add a new extension repository.
+     */
+    public function storeRepository(StoreExtensionRepositoryRequest $request): JsonResponse
+    {
+        if (ExtensionRepository::query()->where('manifest_url', trim($request->input('manifest_url')))->exists()) {
+            return new JsonResponse(['error' => 'A repository with that manifest location already exists.'], 422);
+        }
+
+        $repository = ExtensionRepository::query()->create([
+            'slug' => $this->generateRepositorySlug($request->input('name')),
+            'name' => trim($request->input('name')),
+            'manifest_url' => trim($request->input('manifest_url')),
+            'homepage_url' => $request->filled('homepage_url') ? trim((string) $request->input('homepage_url')) : null,
+            'enabled' => $request->boolean('enabled', true),
+            'is_official' => false,
+            'risk_acknowledged_at' => now(),
+        ]);
+
+        try {
+            $this->catalogService->validateRepository($repository);
+        } catch (\Throwable $exception) {
+            $repository->delete();
+            throw $exception;
+        }
+
+        Activity::event('admin:extensions:repository:create')
+            ->property('repository', $repository->name)
+            ->property('manifest_url', $repository->manifest_url)
+            ->log();
+
+        return new JsonResponse([
+            'object' => 'extension_repository',
+            'attributes' => $this->findRepositorySummary($repository->id),
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Update an existing extension repository.
+     */
+    public function updateRepository(UpdateExtensionRepositoryRequest $request, ExtensionRepository $repository): JsonResponse
+    {
+        $previous = $repository->replicate();
+
+        if ($request->filled('manifest_url')) {
+            $duplicate = ExtensionRepository::query()
+                ->where('id', '!=', $repository->id)
+                ->where('manifest_url', trim((string) $request->input('manifest_url')))
+                ->exists();
+
+            if ($duplicate) {
+                return new JsonResponse(['error' => 'A repository with that manifest location already exists.'], 422);
+            }
+        }
+
+        $repository->fill([
+            'name' => $request->filled('name') ? trim((string) $request->input('name')) : $repository->name,
+            'manifest_url' => $request->filled('manifest_url') ? trim((string) $request->input('manifest_url')) : $repository->manifest_url,
+            'homepage_url' => $request->exists('homepage_url')
+                ? ($request->filled('homepage_url') ? trim((string) $request->input('homepage_url')) : null)
+                : $repository->homepage_url,
+        ]);
+
+        if ($request->has('enabled')) {
+            $repository->enabled = $request->boolean('enabled');
+        }
+
+        $repository->save();
+
+        try {
+            $this->catalogService->validateRepository($repository);
+        } catch (\Throwable $exception) {
+            $repository->forceFill($previous->getAttributes())->save();
+            throw $exception;
+        }
+
+        Activity::event('admin:extensions:repository:update')
+            ->property('repository', $repository->name)
+            ->property('manifest_url', $repository->manifest_url)
+            ->property('enabled', $repository->enabled)
+            ->log();
+
+        return new JsonResponse([
+            'object' => 'extension_repository',
+            'attributes' => $this->findRepositorySummary($repository->id),
+        ]);
+    }
+
+    /**
+     * Delete a custom extension repository.
+     */
+    public function deleteRepository(GetExtensionsRequest $request, ExtensionRepository $repository): Response
+    {
+        if ($repository->is_official) {
+            return new JsonResponse(['error' => 'The official M12Labs repository cannot be deleted. Disable it instead.'], 422);
+        }
+
+        $repositoryName = $repository->name;
+        $repository->delete();
+
+        Activity::event('admin:extensions:repository:delete')
+            ->property('repository', $repositoryName)
             ->log();
 
         return $this->returnNoContent();
@@ -218,5 +335,47 @@ class ExtensionsController extends ApplicationApiController
             'nests' => $nestsData,
             'eggs' => $eggsData,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function getManageableExtension(string $extensionId): ?array
+    {
+        foreach ($this->catalogService->getLocalExtensions() as $extension) {
+            if ($extension['id'] === $extensionId) {
+                return $extension;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function findRepositorySummary(int $repositoryId): array
+    {
+        foreach ($this->catalogService->getRepositories(true) as $repository) {
+            if ($repository['id'] === $repositoryId) {
+                return $repository;
+            }
+        }
+
+        return [
+            'id' => $repositoryId,
+        ];
+    }
+
+    private function generateRepositorySlug(string $name): string
+    {
+        $baseSlug = Str::slug($name);
+        $slug = $baseSlug === '' ? 'repository' : $baseSlug;
+
+        while (ExtensionRepository::query()->where('slug', $slug)->exists()) {
+            $slug = sprintf('%s-%s', $baseSlug === '' ? 'repository' : $baseSlug, Str::lower(Str::random(4)));
+        }
+
+        return $slug;
     }
 }

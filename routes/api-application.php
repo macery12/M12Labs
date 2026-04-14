@@ -303,12 +303,18 @@ Route::middleware([AdminSubject::class])->group(function () {
     */
     Route::group(['prefix' => '/extensions'], function () {
         Route::get('/', [Application\Extensions\ExtensionsController::class, 'index']);
+        Route::get('/repositories', [Application\Extensions\ExtensionsController::class, 'repositories']);
         Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
         Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
+        Route::post('/repositories', [Application\Extensions\ExtensionsController::class, 'storeRepository']);
+        Route::patch('/repositories/{repository}', [Application\Extensions\ExtensionsController::class, 'updateRepository']);
+        Route::delete('/repositories/{repository}', [Application\Extensions\ExtensionsController::class, 'deleteRepository']);
 
         Route::get('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'view']);
         Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);
         Route::post('/{extensionId}/toggle', [Application\Extensions\ExtensionsController::class, 'toggle']);
+        Route::post('/{extensionId}/install', [Application\Extensions\ExtensionsController::class, 'install']);
+        Route::post('/{extensionId}/uninstall', [Application\Extensions\ExtensionsController::class, 'uninstall']);
     });
 
     /*

@@ -16,18 +16,51 @@ export interface ExtensionSettingField {
     options?: ExtensionSettingOption[];
 }
 
+export interface ExtensionSourceInfo {
+    type: 'core' | 'repository';
+    label: string;
+    official: boolean;
+    repositoryId: number | null;
+    repositoryName: string | null;
+    homepageUrl: string | null;
+    securityWarning: string | null;
+}
+
 export interface ExtensionData {
     id: string;
     name: string;
     description: string;
     version: string;
+    latestVersion?: string;
     author: string;
     icon: string;
+    route?: string;
     enabled: boolean;
     allowedNests: number[];
     allowedEggs: number[];
     settings: Record<string, unknown>;
     settingsSchema?: ExtensionSettingField[];
+    installed?: boolean;
+    installable?: boolean;
+    canUninstall?: boolean;
+    status?: 'core' | 'installed' | 'available';
+    updateAvailable?: boolean;
+    compatiblePanelVersions?: string[];
+    source?: ExtensionSourceInfo;
+}
+
+export interface ExtensionRepositoryData {
+    id: number;
+    slug: string;
+    name: string;
+    manifestUrl: string;
+    homepageUrl: string | null;
+    enabled: boolean;
+    official: boolean;
+    packagesCount: number;
+    securityWarning: string;
+    status?: 'ok' | 'error' | 'disabled';
+    error?: string;
 }
 
 export interface NestOption {
@@ -58,7 +91,7 @@ export const getExtensions = async (): Promise<ExtensionData[]> => {
 
 export const getExtension = async (extensionId: string): Promise<ExtensionData> => {
     const { data } = await http.get(`/api/application/extensions/${extensionId}`);
-    return data;
+    return data.attributes ?? data;
 };
 
 export const updateExtension = async (
@@ -72,12 +105,31 @@ export const updateExtension = async (
         allowed_eggs: allowedEggs,
         settings,
     });
-    return data;
+    return data.attributes ?? data;
 };
 
 export const toggleExtension = async (extensionId: string): Promise<ExtensionData> => {
     const { data } = await http.post(`/api/application/extensions/${extensionId}/toggle`);
-    return data;
+    return data.attributes ?? data;
+};
+
+export const installExtension = async (
+    extensionId: string,
+    repositoryId: number,
+    version?: string
+): Promise<ExtensionData> => {
+    const { data } = await http.post(`/api/application/extensions/${extensionId}/install`, {
+        repository_id: repositoryId,
+        version,
+    });
+
+    return data.attributes ?? data;
+};
+
+export const uninstallExtension = async (extensionId: string): Promise<ExtensionData> => {
+    const { data } = await http.post(`/api/application/extensions/${extensionId}/uninstall`);
+
+    return data.attributes ?? data;
 };
 
 export const updateModuleSettings = async (enabled: boolean): Promise<void> => {
@@ -87,4 +139,45 @@ export const updateModuleSettings = async (enabled: boolean): Promise<void> => {
 export const getNestsAndEggs = async (): Promise<NestsAndEggs> => {
     const { data } = await http.get('/api/application/extensions/nests-eggs');
     return data;
+};
+
+export const getRepositories = async (): Promise<ExtensionRepositoryData[]> => {
+    const { data } = await http.get('/api/application/extensions/repositories');
+    return data.data;
+};
+
+export const createRepository = async (payload: {
+    name: string;
+    manifestUrl: string;
+    homepageUrl?: string;
+    enabled?: boolean;
+    acknowledgeRisk: boolean;
+}): Promise<ExtensionRepositoryData> => {
+    const { data } = await http.post('/api/application/extensions/repositories', {
+        name: payload.name,
+        manifest_url: payload.manifestUrl,
+        homepage_url: payload.homepageUrl,
+        enabled: payload.enabled ?? true,
+        acknowledge_risk: payload.acknowledgeRisk,
+    });
+
+    return data.attributes ?? data;
+};
+
+export const updateRepository = async (
+    repositoryId: number,
+    payload: Partial<{ name: string; manifestUrl: string; homepageUrl: string | null; enabled: boolean }>
+): Promise<ExtensionRepositoryData> => {
+    const { data } = await http.patch(`/api/application/extensions/repositories/${repositoryId}`, {
+        name: payload.name,
+        manifest_url: payload.manifestUrl,
+        homepage_url: payload.homepageUrl,
+        enabled: payload.enabled,
+    });
+
+    return data.attributes ?? data;
+};
+
+export const deleteRepository = async (repositoryId: number): Promise<void> => {
+    await http.delete(`/api/application/extensions/repositories/${repositoryId}`);
 };
