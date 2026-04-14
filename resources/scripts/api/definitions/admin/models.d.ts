@@ -18,6 +18,7 @@ interface User extends ModelWithRelationships {
     isUsingTwoFactor: boolean;
     avatarUrl: string;
     state: string;
+    emailVerified: boolean;
     createdAt: Date;
     updatedAt: Date;
     relationships: {

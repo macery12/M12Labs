@@ -274,6 +274,7 @@ export default class Transformers {
             isRootAdmin: attributes.root_admin,
             isUsingTwoFactor: attributes['2fa'] || false,
             avatarUrl: attributes.avatar_url,
+            emailVerified: attributes.email_verified ?? false,
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
             relationships: {

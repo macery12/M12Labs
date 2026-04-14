@@ -25,6 +25,7 @@ use Everest\Http\Requests\Api\Application\Users\StoreUserRequest;
 use Everest\Http\Requests\Api\Application\Users\DeleteUserRequest;
 use Everest\Http\Requests\Api\Application\Users\UpdateUserRequest;
 use Everest\Http\Requests\Api\Application\Users\SuspendUserRequest;
+use Everest\Http\Requests\Api\Application\Users\VerifyUserEmailRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
 class UserController extends ApplicationApiController
@@ -181,6 +182,26 @@ class UserController extends ApplicationApiController
         Activity::event('admin:users:suspend')
             ->property('user', $user)
             ->description('A user was suspended')
+            ->log();
+
+        return $this->returnNoContent();
+    }
+
+    /**
+     * Manually sets (or clears) a user's email verification status.
+     */
+    public function verifyEmail(VerifyUserEmailRequest $request, User $user): Response
+    {
+        $verified = (bool) $request->input('verified');
+
+        $user->forceFill([
+            'email_verified_at' => $verified ? now() : null,
+        ])->save();
+
+        Activity::event('admin:users:verify-email')
+            ->property('user', $user)
+            ->property('verified', $verified)
+            ->description('Admin manually ' . ($verified ? 'verified' : 'unverified') . ' user email')
             ->log();
 
         return $this->returnNoContent();

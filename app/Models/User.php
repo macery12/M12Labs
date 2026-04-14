@@ -134,6 +134,7 @@ class User extends Model implements
         'state',
         'root_admin',
         'recovery_code',
+        'email_verified_at',
     ];
 
     /**
