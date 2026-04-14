@@ -192,7 +192,7 @@ class UserController extends ApplicationApiController
      */
     public function verifyEmail(VerifyUserEmailRequest $request, User $user): Response
     {
-        $verified = (bool) $request->input('verified', true);
+        $verified = (bool) $request->input('verified');
 
         $user->forceFill([
             'email_verified_at' => $verified ? now() : null,

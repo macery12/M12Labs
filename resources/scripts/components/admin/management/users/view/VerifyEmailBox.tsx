@@ -28,7 +28,7 @@ export default () => {
                 addFlash({
                     key: 'user:manage',
                     type: 'success',
-                    message: `This user's email has been ${action}d.`,
+                    message: `This user's email has been marked as ${isVerified ? 'unverified' : 'verified'}.`,
                 });
             })
             .catch(error => {

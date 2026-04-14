@@ -15,7 +15,7 @@ class VerifyUserEmailRequest extends ApplicationApiRequest
     public function rules(): array
     {
         return [
-            'verified' => 'sometimes|boolean',
+            'verified' => 'required|boolean',
         ];
     }
 }
