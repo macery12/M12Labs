@@ -47,3 +47,19 @@ export const completeDiscordRegistration = (data: CompleteDiscordRegistrationDat
             .catch(reject);
     });
 };
+
+export const getDiscordLinkUrl = (): Promise<{ url: string }> => {
+    return new Promise((resolve, reject) => {
+        http.post('/api/client/account/discord/link')
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const unlinkDiscordAccount = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.post('/api/client/account/discord/unlink')
+            .then(() => resolve())
+            .catch(reject);
+    });
+};

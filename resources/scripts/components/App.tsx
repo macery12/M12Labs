@@ -42,6 +42,7 @@ interface ExtendedWindow extends Window {
         email_verified_at?: string | null;
         updated_at: string;
         created_at: string;
+        discord_linked?: boolean;
     };
 }
 
@@ -64,6 +65,7 @@ function App() {
             emailVerifiedAt: PterodactylUser.email_verified_at ? new Date(PterodactylUser.email_verified_at) : undefined,
             createdAt: new Date(PterodactylUser.created_at),
             updatedAt: new Date(PterodactylUser.updated_at),
+            discordLinked: Boolean(PterodactylUser.discord_linked),
         });
     }
 
