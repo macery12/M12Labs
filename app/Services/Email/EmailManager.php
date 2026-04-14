@@ -332,23 +332,42 @@ class EmailManager
      * Custom overrides are stored as "<original>.blade.php.custom" files by
      * EmailTemplateController and are not picked up by Laravel's view loader,
      * so we must detect and render them manually.
+     *
+     * IMPORTANT: We call clearstatcache() before the existence check so that
+     * long-running queue workers (which maintain a per-process realpath/stat
+     * cache) always see the current filesystem state after an admin saves or
+     * reverts a custom template.  Without this, a worker that checked for the
+     * file before it was created would continue to believe the file doesn't
+     * exist for up to realpath_cache_ttl seconds (default 120 s).
      */
     private function renderViewWithCustomOverride(string $viewPath, array $data): string
     {
+        // Guard: only allow view paths that consist of safe characters so no
+        // path-traversal sequences (../, %2F, null bytes, etc.) can sneak in.
+        if (!preg_match('/^[a-z0-9][a-z0-9._-]*$/i', $viewPath)) {
+            return View::make($viewPath, $data)->render();
+        }
+
         $viewsDir = realpath(resource_path('views'));
-        $customFile = resource_path('views/' . str_replace('.', '/', $viewPath) . '.blade.php.custom');
+        if (!$viewsDir) {
+            return View::make($viewPath, $data)->render();
+        }
 
-        // Resolve the real path (may return false if the file does not exist yet)
-        $resolvedFile = realpath($customFile);
+        $customFile = $viewsDir . DIRECTORY_SEPARATOR
+            . str_replace('.', DIRECTORY_SEPARATOR, $viewPath)
+            . '.blade.php.custom';
 
-        // Guard against path traversal: the resolved path must stay inside the views directory.
-        $withinViews = ($resolvedFile !== false)
-            ? str_starts_with($resolvedFile, $viewsDir . DIRECTORY_SEPARATOR)
-            : str_starts_with(realpath(dirname($customFile)) . DIRECTORY_SEPARATOR . basename($customFile), $viewsDir . DIRECTORY_SEPARATOR);
+        // Clear PHP's per-process stat/realpath cache for this path so the
+        // worker always reflects the live filesystem (see docblock above).
+        clearstatcache(true, $customFile);
 
-        if ($withinViews && $resolvedFile !== false && file_exists($resolvedFile)) {
-            $source = file_get_contents($resolvedFile);
-            return Blade::render($source, $data, deleteCachedView: true);
+        if (is_file($customFile)) {
+            // Belt-and-suspenders: confirm the resolved path is still inside the views directory.
+            $resolvedFile = realpath($customFile);
+            if ($resolvedFile !== false && str_starts_with($resolvedFile, $viewsDir . DIRECTORY_SEPARATOR)) {
+                $source = file_get_contents($resolvedFile);
+                return Blade::render($source, $data, deleteCachedView: true);
+            }
         }
 
         return View::make($viewPath, $data)->render();
