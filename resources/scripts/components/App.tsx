@@ -12,10 +12,12 @@ import GlobalStylesheet from '@/assets/css/GlobalStylesheet';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AuthenticatedRoute from '@/elements/AuthenticatedRoute';
 import { NotFound } from '@/elements/ScreenBlock';
+import ScreenBlock from '@/elements/ScreenBlock';
 import { EverestSettings } from '@/state/everest';
 import Onboarding from '@account/Onboarding';
 import SpeedDial from '@/elements/SpeedDial';
 import SetupContainer from './admin/setup/SetupContainer';
+import ServerErrorSvg from '@/assets/images/server_error.svg';
 import http from '@/api/http';
 
 const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
@@ -89,48 +91,37 @@ function App() {
         };
 
         return (
-            <div
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: '100vh',
-                    backgroundColor: '#111',
-                    color: 'white',
-                    textAlign: 'center',
-                    padding: '2rem',
-                }}
-            >
-                <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Account Suspended</h1>
-                <p style={{ color: '#aaa', marginBottom: '2rem', maxWidth: '400px' }}>
-                    Your account has been suspended and blocked by an administrator.
-                </p>
-                <button
-                    onClick={handleLogout}
-                    style={{
-                        backgroundColor: '#e53e3e',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        padding: '0.625rem 1.5rem',
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                    }}
+            <StoreProvider store={store}>
+                <GlobalStylesheet />
+                <ScreenBlock
+                    title={'Account Blocked'}
+                    image={ServerErrorSvg}
+                    message={
+                        'Your account has been blocked by an administrator. Please contact support if you believe this is an error.'
+                    }
                 >
-                    Logout
-                </button>
-            </div>
+                    <button
+                        onClick={handleLogout}
+                        className={'mt-6 px-6 py-2 rounded-full border border-red-500/60 bg-red-500/10 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition-colors cursor-pointer'}
+                    >
+                        Logout
+                    </button>
+                </ScreenBlock>
+            </StoreProvider>
         );
     }
 
     if (PterodactylUser?.state === 'pending') {
-        window.alert('Your registration is awaiting approval by an administrator. You will be notified once your account is approved.');
-        http.post('/auth/logout').finally(() => {
-            window.location.href = '/auth/login';
-        });
-        return null;
+        const pendingMessage =
+            EverestConfiguration?.auth.modules.jguard.pending_message ||
+            'Your account is pending approval. An administrator will review your registration shortly.';
+
+        return (
+            <StoreProvider store={store}>
+                <GlobalStylesheet />
+                <ScreenBlock title={'Awaiting Approval'} image={ServerErrorSvg} message={pendingMessage} />
+            </StoreProvider>
+        );
     }
 
     const hasAdminRole: boolean = (PterodactylUser?.root_admin || Boolean(PterodactylUser?.admin_role_id)) ?? false;

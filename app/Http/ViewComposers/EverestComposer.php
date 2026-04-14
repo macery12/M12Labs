@@ -54,6 +54,7 @@ class EverestComposer
                         'enabled' => boolval(config('modules.auth.jguard.enabled', false)),
                         'approval_mode' => config('modules.auth.jguard.approval_mode', 'manual'),
                         'delay' => (int) config('modules.auth.jguard.delay', 60),
+                        'pending_message' => Setting::get('settings::modules:auth:jguard:pending_message', config('modules.auth.jguard.pending_message', '')),
                     ],
                 ],
             ],
