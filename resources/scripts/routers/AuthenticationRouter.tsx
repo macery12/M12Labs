@@ -10,6 +10,7 @@ import Spinner from '@/elements/Spinner';
 const ForgotPasswordContainer = lazy(() => import('@/components/auth/ForgotPasswordContainer'));
 const ResetPasswordWithTokenContainer = lazy(() => import('@/components/auth/ResetPasswordWithTokenContainer'));
 const DiscordRegistrationContainer = lazy(() => import('@/components/auth/DiscordRegistrationContainer'));
+const DiscordLinkChoiceContainer = lazy(() => import('@/components/auth/DiscordLinkChoiceContainer'));
 const RegisterContainer = lazy(() => import('@/components/auth/RegisterContainer'));
 
 const Container = styled.div`
@@ -43,6 +44,14 @@ export default () => {
                             }
                         />
                     )}
+                    <Route
+                        path="discord/link-choice"
+                        element={
+                            <Spinner.Suspense>
+                                <DiscordLinkChoiceContainer />
+                            </Spinner.Suspense>
+                        }
+                    />
                     <Route
                         path="discord/register"
                         element={
