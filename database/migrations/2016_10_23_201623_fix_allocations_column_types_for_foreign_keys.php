@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Migrations\Migration;
 
 return new class () extends Migration {
@@ -9,8 +10,15 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        DB::statement('ALTER TABLE allocations MODIFY assigned_to INT UNSIGNED NULL');
-        DB::statement('ALTER TABLE allocations MODIFY node INT UNSIGNED NOT NULL');
+        // On existing installations these columns may already have been renamed
+        // (assigned_to → server_id, node → node_id) by a later migration.
+        if (Schema::hasColumn('allocations', 'assigned_to')) {
+            DB::statement('ALTER TABLE allocations MODIFY assigned_to INT UNSIGNED NULL');
+        }
+
+        if (Schema::hasColumn('allocations', 'node')) {
+            DB::statement('ALTER TABLE allocations MODIFY node INT UNSIGNED NOT NULL');
+        }
     }
 
     /**
@@ -18,7 +26,12 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        DB::statement('ALTER TABLE allocations MODIFY assigned_to INT NULL');
-        DB::statement('ALTER TABLE allocations MODIFY node INT NOT NULL');
+        if (Schema::hasColumn('allocations', 'assigned_to')) {
+            DB::statement('ALTER TABLE allocations MODIFY assigned_to INT NULL');
+        }
+
+        if (Schema::hasColumn('allocations', 'node')) {
+            DB::statement('ALTER TABLE allocations MODIFY node INT NOT NULL');
+        }
     }
 };
