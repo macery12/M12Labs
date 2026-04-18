@@ -11,7 +11,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('jguard_delay', function (Blueprint $table) {
-            $table->string('status', 16)->default('pending')->after('user_id');
+            $table->string('status', 16)->default('approved')->after('user_id');
             $table->string('approval_mode', 16)->default('manual')->after('status');
             $table->dateTime('expires_at')->nullable()->change();
         });
