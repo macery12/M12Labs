@@ -7,6 +7,7 @@ import {
     DatabaseIcon,
     EyeIcon,
     FolderOpenIcon,
+    GlobeIcon,
     PlayIcon,
     PuzzleIcon,
     TerminalIcon,
@@ -88,7 +89,7 @@ const server: ServerRouteDefinition[] = [
     route('custom-domains/*', CustomDomainsContainer, {
         permission: 'allocation.*',
         name: 'Custom Domains',
-        icon: Icon.GlobeIcon,
+        icon: GlobeIcon,
         category: 'configuration',
     }),
     route('startup/*', StartupContainer, {
@@ -118,7 +119,7 @@ const server: ServerRouteDefinition[] = [
     route('extensions/*', ExtensionsRouter, {
         permission: 'extension.*',
         name: 'Extensions',
-        icon: Icon.PuzzleIcon,
+        icon: PuzzleIcon,
         condition: flags => flags.extensionsEnabled,
     }),
 ];
