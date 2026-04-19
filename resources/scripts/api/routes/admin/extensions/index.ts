@@ -118,16 +118,21 @@ export const installExtension = async (
     repositoryId: number,
     version?: string
 ): Promise<ExtensionData> => {
-    const { data } = await http.post(`/api/application/extensions/${extensionId}/install`, {
-        repository_id: repositoryId,
-        version,
-    });
+    const { data } = await http.post(
+        `/api/application/extensions/${extensionId}/install`,
+        { repository_id: repositoryId, version },
+        { timeout: 300000 }
+    );
 
     return data.attributes ?? data;
 };
 
 export const uninstallExtension = async (extensionId: string): Promise<ExtensionData> => {
-    const { data } = await http.post(`/api/application/extensions/${extensionId}/uninstall`);
+    const { data } = await http.post(
+        `/api/application/extensions/${extensionId}/uninstall`,
+        {},
+        { timeout: 300000 }
+    );
 
     return data.attributes ?? data;
 };
