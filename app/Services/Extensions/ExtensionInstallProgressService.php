@@ -2,16 +2,16 @@
 
 namespace Everest\Services\Extensions;
 
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 
 /**
  * Tracks the real-time installation/uninstallation progress of an extension
- * using a short-lived Cache entry so that the frontend can poll for status.
+ * using a JSON file in storage so that the progress survives cache clears
+ * (e.g. the `php artisan optimize:clear` step inside the rebuild pipeline).
  */
 class ExtensionInstallProgressService
 {
-    private const PROGRESS_KEY = 'm12labs:extensions:install-progress';
-    private const PROGRESS_TTL_SECONDS = 1800;
+    private const PROGRESS_FILE = 'extensions/.progress.json';
 
     /**
      * Valid stage identifiers emitted during an install.
@@ -44,12 +44,16 @@ class ExtensionInstallProgressService
      */
     public function report(string $action, string $extensionId, string $stage): void
     {
-        Cache::put(self::PROGRESS_KEY, [
+        $path = storage_path('app/' . self::PROGRESS_FILE);
+
+        File::ensureDirectoryExists(dirname($path));
+
+        File::put($path, json_encode([
             'action' => $action,
             'extension_id' => $extensionId,
             'stage' => $stage,
             'updated_at' => now()->toIso8601String(),
-        ], self::PROGRESS_TTL_SECONDS);
+        ], JSON_UNESCAPED_SLASHES));
     }
 
     /**
@@ -59,9 +63,16 @@ class ExtensionInstallProgressService
      */
     public function current(): ?array
     {
-        $value = Cache::get(self::PROGRESS_KEY);
+        $path = storage_path('app/' . self::PROGRESS_FILE);
 
-        return is_array($value) ? $value : null;
+        if (!File::exists($path)) {
+            return null;
+        }
+
+        $contents = File::get($path);
+        $data = json_decode($contents, true);
+
+        return is_array($data) ? $data : null;
     }
 
     /**
@@ -69,6 +80,10 @@ class ExtensionInstallProgressService
      */
     public function clear(): void
     {
-        Cache::forget(self::PROGRESS_KEY);
+        $path = storage_path('app/' . self::PROGRESS_FILE);
+
+        if (File::exists($path)) {
+            File::delete($path);
+        }
     }
 }

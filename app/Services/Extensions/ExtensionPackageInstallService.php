@@ -127,9 +127,19 @@ class ExtensionPackageInstallService
                 $appliedFiles[] = $plan;
             }
 
-            $this->progressService->report('install', $extensionId, 'optimizing');
-            $this->progressService->report('install', $extensionId, 'building');
-            $this->rebuildService->rebuild(sprintf('Install extension %s', $extensionId));
+            // Report 'optimizing' before optimize:clear and 'building' before pnpm/npm.
+            // The callback fires just before each sub-command so the file-based progress
+            // is written after optimize:clear has already cleared the application cache.
+            $this->rebuildService->rebuild(
+                sprintf('Install extension %s', $extensionId),
+                function (int $index) use ($extensionId): void {
+                    $this->progressService->report(
+                        'install',
+                        $extensionId,
+                        $index === 0 ? 'optimizing' : 'building'
+                    );
+                }
+            );
 
             $this->progressService->report('install', $extensionId, 'registering');
             $packageModel = DB::transaction(function () use (

@@ -60,9 +60,17 @@ class ExtensionPackageUninstallService
                     }
                 }
 
-                $this->progressService->report('uninstall', $extensionId, 'optimizing');
-                $this->progressService->report('uninstall', $extensionId, 'building');
-                $this->rebuildService->rebuild(sprintf('Uninstall extension %s', $extensionId));
+                // Report 'optimizing' before optimize:clear and 'building' before pnpm/npm.
+                $this->rebuildService->rebuild(
+                    sprintf('Uninstall extension %s', $extensionId),
+                    function (int $index) use ($extensionId): void {
+                        $this->progressService->report(
+                            'uninstall',
+                            $extensionId,
+                            $index === 0 ? 'optimizing' : 'building'
+                        );
+                    }
+                );
 
                 $this->progressService->report('uninstall', $extensionId, 'registering');
                 DB::transaction(function () use ($package, $files, $extensionId) {

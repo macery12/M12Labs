@@ -12,9 +12,14 @@ class ExtensionPanelRebuildService
     /**
      * Run the fixed rebuild hooks required after filesystem changes.
      *
+     * An optional callback receives the zero-based command index just before
+     * each command runs, allowing callers to report progress stages at the
+     * correct moment (e.g. 'optimizing' before optimize:clear, 'building'
+     * before the frontend build).
+     *
      * @return array<int, array{command: string, output: string}>
      */
-    public function rebuild(string $reason): array
+    public function rebuild(string $reason, ?callable $onCommandStart = null): array
     {
         $commands = [
             ['php', 'artisan', 'optimize:clear'],
@@ -24,7 +29,11 @@ class ExtensionPanelRebuildService
         $output = [];
         $environment = $this->getProcessEnvironment($reason);
 
-        foreach ($commands as $command) {
+        foreach ($commands as $index => $command) {
+            if ($onCommandStart !== null) {
+                $onCommandStart($index);
+            }
+
             $process = new Process($command, base_path(), $environment);
             $process->setTimeout(1800);
             $process->run();
