@@ -46,6 +46,7 @@ import {
     ExtensionData,
     ExtensionSettingField,
     NestOption,
+    getInstallProgress,
     getNestsAndEggs,
     installExtension,
     toggleExtension,
@@ -55,28 +56,57 @@ import {
 
 type PackageActionType = 'install' | 'uninstall';
 
-type InstallStep = 'queued' | 'downloading' | 'installing' | 'registering' | 'finalizing' | 'completed' | 'failed';
-type UninstallStep = 'queued' | 'removing' | 'rebuilding' | 'finalizing' | 'completed' | 'failed';
-type PackageStep = InstallStep | UninstallStep;
+type PackageStep =
+    | 'queued'
+    | 'downloading'
+    | 'extracting'
+    | 'validating'
+    | 'copying'
+    | 'optimizing'
+    | 'building'
+    | 'registering'
+    | 'removing'
+    | 'completed'
+    | 'failed';
 
-const INSTALL_STEP_SEQUENCE: InstallStep[] = ['queued', 'downloading', 'installing', 'registering', 'finalizing'];
-const UNINSTALL_STEP_SEQUENCE: UninstallStep[] = ['queued', 'removing', 'rebuilding', 'finalizing'];
+const INSTALL_STEP_SEQUENCE: PackageStep[] = [
+    'queued',
+    'downloading',
+    'extracting',
+    'validating',
+    'copying',
+    'optimizing',
+    'building',
+    'registering',
+    'completed',
+];
 
-// Delay (ms) before each step becomes active, relative to the previous step
-const INSTALL_STEP_DELAYS: number[] = [0, 800, 14000, 16000, 12000];
-const UNINSTALL_STEP_DELAYS: number[] = [0, 800, 5000, 16000];
+const UNINSTALL_STEP_SEQUENCE: PackageStep[] = [
+    'queued',
+    'validating',
+    'removing',
+    'optimizing',
+    'building',
+    'registering',
+    'completed',
+];
 
 /** How long (ms) to display the completed/failed state before clearing the indicator. */
 const COMPLETION_DISPLAY_DURATION = 6000;
 
+/** How often (ms) to poll the /progress endpoint while an operation is running. */
+const POLL_INTERVAL_MS = 1500;
+
 const STEP_LABELS: Record<PackageStep, string> = {
     queued: 'Queued',
     downloading: 'Downloading',
-    installing: 'Installing',
+    extracting: 'Extracting',
+    validating: 'Validating',
+    copying: 'Copying files',
+    optimizing: 'Optimizing',
+    building: 'Building panel',
     registering: 'Registering',
     removing: 'Removing files',
-    rebuilding: 'Rebuilding panel',
-    finalizing: 'Finalizing',
     completed: 'Completed',
     failed: 'Failed',
 };
@@ -141,36 +171,52 @@ export default ({
     const [selectedEggs, setSelectedEggs] = useState<number[]>(extension.allowedEggs || []);
     const [settings, setSettings] = useState<Record<string, unknown>>(extension.settings || {});
     const [packageStep, setPackageStep] = useState<PackageStep | null>(null);
-    const stepTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const [activeActionType, setActiveActionType] = useState<PackageActionType | null>(null);
+    const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const clearStepTimeouts = () => {
-        stepTimeoutsRef.current.forEach(clearTimeout);
-        stepTimeoutsRef.current = [];
+    const stopPolling = () => {
+        if (pollIntervalRef.current !== null) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+        }
     };
 
-    const startPackageProgress = (type: PackageActionType) => {
-        clearStepTimeouts();
-        setPackageStep('queued');
-
-        const steps = type === 'install' ? INSTALL_STEP_SEQUENCE : UNINSTALL_STEP_SEQUENCE;
-        const delays = type === 'install' ? INSTALL_STEP_DELAYS : UNINSTALL_STEP_DELAYS;
-        let cumulative = 0;
-
-        steps.forEach((step, index) => {
-            cumulative += delays[index];
-            const t = setTimeout(() => setPackageStep(step), cumulative);
-            stepTimeoutsRef.current.push(t);
-        });
+    const startPolling = () => {
+        stopPolling();
+        pollIntervalRef.current = setInterval(() => {
+            getInstallProgress()
+                .then(progress => {
+                    if (progress && (progress.action === 'install' || progress.action === 'uninstall')) {
+                        const stage = progress.stage as PackageStep;
+                        setPackageStep(stage);
+                    }
+                })
+                .catch(() => {
+                    // Polling errors are non-fatal; the main request will report completion
+                });
+        }, POLL_INTERVAL_MS);
     };
 
     const finishPackageProgress = (success: boolean) => {
-        clearStepTimeouts();
+        stopPolling();
         setPackageStep(success ? 'completed' : 'failed');
-        const t = setTimeout(() => setPackageStep(null), COMPLETION_DISPLAY_DURATION);
-        stepTimeoutsRef.current.push(t);
+        completionTimeoutRef.current = setTimeout(() => {
+            setPackageStep(null);
+            setActiveActionType(null);
+            completionTimeoutRef.current = null;
+        }, COMPLETION_DISPLAY_DURATION);
     };
 
-    useEffect(() => () => clearStepTimeouts(), []);
+    useEffect(
+        () => () => {
+            stopPolling();
+            if (completionTimeoutRef.current !== null) {
+                clearTimeout(completionTimeoutRef.current);
+            }
+        },
+        []
+    );
 
     const icon = iconMap[extension.icon] || faPuzzlePiece;
     const manageable = Boolean(extension.installed) || extension.status === 'core';
@@ -301,7 +347,9 @@ export default ({
         setLoading(true);
         clearFlashes('admin:extensions');
         onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'install' });
-        startPackageProgress('install');
+        setActiveActionType('install');
+        setPackageStep('queued');
+        startPolling();
 
         installExtension(extension.id, extension.source.repositoryId)
             .then(() => {
@@ -350,7 +398,9 @@ export default ({
         setLoading(true);
         clearFlashes('admin:extensions');
         onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'uninstall' });
-        startPackageProgress('uninstall');
+        setActiveActionType('uninstall');
+        setPackageStep('queued');
+        startPolling();
 
         uninstallExtension(extension.id)
             .then(() => {
@@ -618,16 +668,16 @@ export default ({
                             </span>
                         </div>
                         <div className={'mt-2 flex flex-wrap items-center gap-1'}>
-                            {(activePackageAction?.type === 'uninstall'
+                            {(activeActionType === 'uninstall'
                                 ? UNINSTALL_STEP_SEQUENCE
                                 : INSTALL_STEP_SEQUENCE
                             ).map(step => {
                                 const isTerminal = packageStep === 'completed' || packageStep === 'failed';
-                                const sequence = activePackageAction?.type === 'uninstall'
+                                const sequence = activeActionType === 'uninstall'
                                     ? UNINSTALL_STEP_SEQUENCE
                                     : INSTALL_STEP_SEQUENCE;
-                                const currentIndex = isTerminal ? sequence.length : sequence.indexOf(packageStep as never);
-                                const stepIndex = sequence.indexOf(step as never);
+                                const currentIndex = isTerminal ? sequence.length : sequence.indexOf(packageStep);
+                                const stepIndex = sequence.indexOf(step);
                                 const isDone = isTerminal || stepIndex < currentIndex;
                                 const isActive = step === packageStep;
 

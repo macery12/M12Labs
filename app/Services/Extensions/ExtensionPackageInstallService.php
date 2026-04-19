@@ -22,7 +22,8 @@ class ExtensionPackageInstallService
         private ExtensionCatalogService $catalogService,
         private ExtensionPanelRebuildService $rebuildService,
         private ExtensionOperationLockService $operationLockService,
-        private ExtensionFilesystemOwnershipService $ownershipService
+        private ExtensionFilesystemOwnershipService $ownershipService,
+        private ExtensionInstallProgressService $progressService
     ) {
     }
 
@@ -94,14 +95,17 @@ class ExtensionPackageInstallService
         File::ensureDirectoryExists($extractPath);
 
         try {
+            $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'downloading');
             $this->downloadArchive($archiveLocation, $archivePath);
+
+            $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'extracting');
             $archiveChecksum = hash_file('sha256', $archivePath);
             if ($expectedArchiveChecksum !== null) {
                 $this->verifyChecksum($archivePath, $expectedArchiveChecksum, 'archive');
             }
-
             $this->extractArchive($archivePath, $extractPath);
 
+            $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'validating');
             $manifest = $this->readPackageManifest($extractPath);
             $normalizedManifest = $this->normalizeManifest($manifest, $expectedExtensionId, $expectedVersion);
             $extensionId = (string) Arr::get($normalizedManifest, 'extension.id');
@@ -116,14 +120,18 @@ class ExtensionPackageInstallService
             $filePlans = $this->prepareFilePlans($extractPath, $normalizedManifest, $backupRoot, $extensionId);
             $this->assertWritableInstallTargets($filePlans);
 
+            $this->progressService->report('install', $extensionId, 'copying');
             foreach ($filePlans as $plan) {
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
                 File::copy($plan['sourcePath'], $plan['targetPath']);
                 $appliedFiles[] = $plan;
             }
 
+            $this->progressService->report('install', $extensionId, 'optimizing');
+            $this->progressService->report('install', $extensionId, 'building');
             $this->rebuildService->rebuild(sprintf('Install extension %s', $extensionId));
 
+            $this->progressService->report('install', $extensionId, 'registering');
             $packageModel = DB::transaction(function () use (
                 $archiveChecksum,
                 $extensionId,
@@ -148,6 +156,8 @@ class ExtensionPackageInstallService
                 );
             });
 
+            $this->progressService->report('install', $extensionId, 'completed');
+
             return $packageModel->fresh(['repository', 'files']);
         } catch (\Throwable $exception) {
             $this->rollbackAppliedFiles($appliedFiles);
@@ -159,6 +169,7 @@ class ExtensionPackageInstallService
 
             throw new DisplayException('Failed to install the selected extension package.', $exception);
         } finally {
+            $this->progressService->clear();
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
             File::deleteDirectory($tempRoot);
         }

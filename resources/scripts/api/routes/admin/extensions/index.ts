@@ -113,6 +113,18 @@ export const toggleExtension = async (extensionId: string): Promise<ExtensionDat
     return data.attributes ?? data;
 };
 
+export interface InstallProgress {
+    action: 'install' | 'uninstall';
+    extension_id: string;
+    stage: string;
+    updated_at: string;
+}
+
+export const getInstallProgress = async (): Promise<InstallProgress | null> => {
+    const { data } = await http.get('/api/application/extensions/progress');
+    return data.progress ?? null;
+};
+
 export const installExtension = async (
     extensionId: string,
     repositoryId: number,

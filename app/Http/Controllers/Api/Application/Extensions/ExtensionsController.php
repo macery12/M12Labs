@@ -19,6 +19,7 @@ use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionRepositoryRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionSettingsRequest;
 use Everest\Services\Extensions\ExtensionCatalogService;
+use Everest\Services\Extensions\ExtensionInstallProgressService;
 use Everest\Services\Extensions\ExtensionPackageInstallService;
 use Everest\Services\Extensions\ExtensionPackageUninstallService;
 
@@ -27,7 +28,8 @@ class ExtensionsController extends ApplicationApiController
     public function __construct(
         private ExtensionCatalogService $catalogService,
         private ExtensionPackageInstallService $installService,
-        private ExtensionPackageUninstallService $uninstallService
+        private ExtensionPackageUninstallService $uninstallService,
+        private ExtensionInstallProgressService $progressService
     )
     {
         parent::__construct();
@@ -176,6 +178,17 @@ class ExtensionsController extends ApplicationApiController
                 'id' => $extensionId,
                 'installed' => false,
             ],
+        ]);
+    }
+
+    /**
+     * Return the current install/uninstall progress stage for polling by the frontend.
+     * Returns null when no operation is in progress.
+     */
+    public function progress(GetExtensionsRequest $request): JsonResponse
+    {
+        return new JsonResponse([
+            'progress' => $this->progressService->current(),
         ]);
     }
 

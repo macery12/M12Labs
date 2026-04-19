@@ -15,7 +15,8 @@ class ExtensionPackageUninstallService
     public function __construct(
         private ExtensionPanelRebuildService $rebuildService,
         private ExtensionOperationLockService $operationLockService,
-        private ExtensionFilesystemOwnershipService $ownershipService
+        private ExtensionFilesystemOwnershipService $ownershipService,
+        private ExtensionInstallProgressService $progressService
     )
     {
     }
@@ -33,11 +34,13 @@ class ExtensionPackageUninstallService
             File::ensureDirectoryExists($rollbackRoot);
             $this->ownershipService->repairStandardPaths($extensionId);
 
+            $this->progressService->report('uninstall', $extensionId, 'validating');
             $this->assertFilesAreUnmodified($files->all());
             $this->createRollbackSnapshot($files->all(), $rollbackRoot);
             $this->assertWritableUninstallTargets($files->all());
 
             try {
+                $this->progressService->report('uninstall', $extensionId, 'removing');
                 foreach ($files as $file) {
                     $targetPath = base_path($file->path);
 
@@ -57,8 +60,11 @@ class ExtensionPackageUninstallService
                     }
                 }
 
+                $this->progressService->report('uninstall', $extensionId, 'optimizing');
+                $this->progressService->report('uninstall', $extensionId, 'building');
                 $this->rebuildService->rebuild(sprintf('Uninstall extension %s', $extensionId));
 
+                $this->progressService->report('uninstall', $extensionId, 'registering');
                 DB::transaction(function () use ($package, $files, $extensionId) {
                     foreach ($files as $file) {
                         if ($file->backup_path && is_file($file->backup_path)) {
@@ -70,6 +76,8 @@ class ExtensionPackageUninstallService
 
                     ExtensionConfig::query()->where('extension_id', $extensionId)->update(['enabled' => false]);
                 });
+
+                $this->progressService->report('uninstall', $extensionId, 'completed');
             } catch (\Throwable $exception) {
                 $this->restoreRollbackSnapshot($files->all(), $rollbackRoot);
                 $this->attemptRollbackRebuild($extensionId, 'uninstall rollback');
@@ -80,6 +88,7 @@ class ExtensionPackageUninstallService
 
                 throw new DisplayException('Failed to uninstall the selected extension package.', $exception);
             } finally {
+                $this->progressService->clear();
                 $this->ownershipService->repairStandardPaths($extensionId);
                 File::deleteDirectory($rollbackRoot);
             }
