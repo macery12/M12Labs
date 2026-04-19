@@ -66,6 +66,9 @@ const UNINSTALL_STEP_SEQUENCE: UninstallStep[] = ['queued', 'removing', 'rebuild
 const INSTALL_STEP_DELAYS: number[] = [0, 800, 14000, 16000, 12000];
 const UNINSTALL_STEP_DELAYS: number[] = [0, 800, 5000, 16000];
 
+/** How long (ms) to display the completed/failed state before clearing the indicator. */
+const COMPLETION_DISPLAY_DURATION = 6000;
+
 const STEP_LABELS: Record<PackageStep, string> = {
     queued: 'Queued',
     downloading: 'Downloading',
@@ -163,7 +166,7 @@ export default ({
     const finishPackageProgress = (success: boolean) => {
         clearStepTimeouts();
         setPackageStep(success ? 'completed' : 'failed');
-        const t = setTimeout(() => setPackageStep(null), 6000);
+        const t = setTimeout(() => setPackageStep(null), COMPLETION_DISPLAY_DURATION);
         stepTimeoutsRef.current.push(t);
     };
 
@@ -619,18 +622,13 @@ export default ({
                                 ? UNINSTALL_STEP_SEQUENCE
                                 : INSTALL_STEP_SEQUENCE
                             ).map(step => {
-                                const terminalStep = packageStep === 'completed' || packageStep === 'failed';
-                                const currentIndex = terminalStep
-                                    ? Infinity
-                                    : (activePackageAction?.type === 'uninstall'
-                                          ? UNINSTALL_STEP_SEQUENCE
-                                          : INSTALL_STEP_SEQUENCE
-                                      ).indexOf(packageStep as never);
-                                const stepIndex = (activePackageAction?.type === 'uninstall'
+                                const isTerminal = packageStep === 'completed' || packageStep === 'failed';
+                                const sequence = activePackageAction?.type === 'uninstall'
                                     ? UNINSTALL_STEP_SEQUENCE
-                                    : INSTALL_STEP_SEQUENCE
-                                ).indexOf(step as never);
-                                const isDone = stepIndex < currentIndex || terminalStep;
+                                    : INSTALL_STEP_SEQUENCE;
+                                const currentIndex = isTerminal ? sequence.length : sequence.indexOf(packageStep as never);
+                                const stepIndex = sequence.indexOf(step as never);
+                                const isDone = isTerminal || stepIndex < currentIndex;
                                 const isActive = step === packageStep;
 
                                 return (
