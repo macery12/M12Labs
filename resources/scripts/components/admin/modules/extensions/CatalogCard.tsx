@@ -187,7 +187,11 @@ export default ({
         pollIntervalRef.current = setInterval(() => {
             getInstallProgress()
                 .then(progress => {
-                    if (progress && (progress.action === 'install' || progress.action === 'uninstall')) {
+                    if (
+                        progress &&
+                        progress.extension_id === extension.id &&
+                        (progress.action === 'install' || progress.action === 'uninstall')
+                    ) {
                         const stage = progress.stage as PackageStep;
                         setPackageStep(stage);
                     }
@@ -668,42 +672,42 @@ export default ({
                             </span>
                         </div>
                         <div className={'mt-2 flex flex-wrap items-center gap-1'}>
-                            {(activeActionType === 'uninstall'
-                                ? UNINSTALL_STEP_SEQUENCE
-                                : INSTALL_STEP_SEQUENCE
-                            ).map(step => {
-                                const isTerminal = packageStep === 'completed' || packageStep === 'failed';
+                            {(() => {
                                 const sequence = activeActionType === 'uninstall'
                                     ? UNINSTALL_STEP_SEQUENCE
                                     : INSTALL_STEP_SEQUENCE;
+                                const isTerminal = packageStep === 'completed' || packageStep === 'failed';
                                 const currentIndex = isTerminal ? sequence.length : sequence.indexOf(packageStep);
-                                const stepIndex = sequence.indexOf(step);
-                                const isDone = isTerminal || stepIndex < currentIndex;
-                                const isActive = step === packageStep;
 
-                                return (
-                                    <span key={step} className={'flex items-center gap-1'}>
-                                        <span
-                                            className={classNames(
-                                                'inline-block h-1.5 w-1.5 rounded-full transition-colors duration-300',
-                                                isActive && 'bg-white',
-                                                isDone && !isActive && 'bg-neutral-500',
-                                                !isDone && !isActive && 'bg-neutral-700'
-                                            )}
-                                        />
-                                        <span
-                                            className={classNames(
-                                                'transition-colors duration-300',
-                                                isActive && 'text-neutral-100',
-                                                isDone && !isActive && 'text-neutral-500',
-                                                !isDone && !isActive && 'text-neutral-700'
-                                            )}
-                                        >
-                                            {STEP_LABELS[step]}
+                                return sequence.map(step => {
+                                    const stepIndex = sequence.indexOf(step);
+                                    const isDone = isTerminal || stepIndex < currentIndex;
+                                    const isActive = step === packageStep;
+
+                                    return (
+                                        <span key={step} className={'flex items-center gap-1'}>
+                                            <span
+                                                className={classNames(
+                                                    'inline-block h-1.5 w-1.5 rounded-full transition-colors duration-300',
+                                                    isActive && 'bg-white',
+                                                    isDone && !isActive && 'bg-neutral-500',
+                                                    !isDone && !isActive && 'bg-neutral-700'
+                                                )}
+                                            />
+                                            <span
+                                                className={classNames(
+                                                    'transition-colors duration-300',
+                                                    isActive && 'text-neutral-100',
+                                                    isDone && !isActive && 'text-neutral-500',
+                                                    !isDone && !isActive && 'text-neutral-700'
+                                                )}
+                                            >
+                                                {STEP_LABELS[step]}
+                                            </span>
                                         </span>
-                                    </span>
-                                );
-                            })}
+                                    );
+                                });
+                            })()}
                         </div>
                     </div>
                 )}
