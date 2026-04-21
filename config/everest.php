@@ -79,6 +79,11 @@ return [
     'guzzle' => [
         'timeout' => env('GUZZLE_TIMEOUT', 15),
         'connect_timeout' => env('GUZZLE_CONNECT_TIMEOUT', 5),
+        // TLS certificate verification is always enabled by default. Set
+        // GUZZLE_VERIFY=false only in local development environments where
+        // self-signed certificates are used. Disabling this in production
+        // exposes all daemon communication to MITM attacks.
+        'verify' => env('GUZZLE_VERIFY', true),
     ],
 
     /*

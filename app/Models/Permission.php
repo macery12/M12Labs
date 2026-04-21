@@ -72,6 +72,8 @@ class Permission extends Model
     public const ACTION_EXTENSION_READ = 'extension.read';
     public const ACTION_EXTENSION_MANAGE = 'extension.manage';
 
+    public const ACTION_SCRIPT_RUN = 'script.run';
+
     /**
      * Should timestamps be used on this model.
      */
@@ -228,6 +230,13 @@ class Permission extends Model
             'keys' => [
                 'read' => 'Allows a user to view and access enabled extensions for the server.',
                 'manage' => 'Allows a user to use extension features like player management (kick, ban, whitelist, etc.). Includes read access.',
+            ],
+        ],
+
+        'script' => [
+            'description' => 'Permissions that control a user\'s ability to run async scripts on a Supercharged (Wings-RS) node.',
+            'keys' => [
+                'run' => 'Allows a user to execute an async script inside a container on a Supercharged node. This is a powerful permission and should only be granted to trusted users.',
             ],
         ],
     ];

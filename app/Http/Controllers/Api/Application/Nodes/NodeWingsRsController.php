@@ -3,11 +3,12 @@
 namespace Everest\Http\Controllers\Api\Application\Nodes;
 
 use Everest\Models\Node;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Nodes\WingsDetectionService;
 use Everest\Repositories\Wings\DaemonWingsRsRepository;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
+use Everest\Http\Requests\Api\Application\Nodes\WingsRsNodeReadRequest;
+use Everest\Http\Requests\Api\Application\Nodes\WingsRsNodeUpdateRequest;
 
 class NodeWingsRsController extends ApplicationApiController
 {
@@ -21,7 +22,7 @@ class NodeWingsRsController extends ApplicationApiController
     /**
      * POST /api/application/nodes/{node}/detect — Detect Wings-RS and update node type.
      */
-    public function detect(Request $request, Node $node): JsonResponse
+    public function detect(WingsRsNodeReadRequest $request, Node $node): JsonResponse
     {
         $isSupercharged = $this->detectionService->detect($node);
         $node->refresh();
@@ -38,7 +39,7 @@ class NodeWingsRsController extends ApplicationApiController
     /**
      * GET /api/application/nodes/{node}/overview — Wings-RS system overview.
      */
-    public function overview(Request $request, Node $node): JsonResponse
+    public function overview(WingsRsNodeReadRequest $request, Node $node): JsonResponse
     {
         if (!$node->isSupercharged()) {
             return new JsonResponse(['error' => 'This node is not running Wings-RS.'], 400);
@@ -52,7 +53,7 @@ class NodeWingsRsController extends ApplicationApiController
     /**
      * GET /api/application/nodes/{node}/stats — Wings-RS real-time stats.
      */
-    public function stats(Request $request, Node $node): JsonResponse
+    public function stats(WingsRsNodeReadRequest $request, Node $node): JsonResponse
     {
         if (!$node->isSupercharged()) {
             return new JsonResponse(['error' => 'This node is not running Wings-RS.'], 400);
@@ -66,7 +67,7 @@ class NodeWingsRsController extends ApplicationApiController
     /**
      * GET /api/application/nodes/{node}/logs — List Wings-RS log files.
      */
-    public function logs(Request $request, Node $node): JsonResponse
+    public function logs(WingsRsNodeReadRequest $request, Node $node): JsonResponse
     {
         if (!$node->isSupercharged()) {
             return new JsonResponse(['error' => 'This node is not running Wings-RS.'], 400);
@@ -80,7 +81,7 @@ class NodeWingsRsController extends ApplicationApiController
     /**
      * GET /api/application/nodes/{node}/logs/{file} — Read specific log file.
      */
-    public function logContents(Request $request, Node $node, string $file): JsonResponse
+    public function logContents(WingsRsNodeReadRequest $request, Node $node, string $file): JsonResponse
     {
         if (!$node->isSupercharged()) {
             return new JsonResponse(['error' => 'This node is not running Wings-RS.'], 400);
@@ -99,28 +100,28 @@ class NodeWingsRsController extends ApplicationApiController
 
     /**
      * POST /api/application/nodes/{node}/upgrade — Trigger Wings-RS self-upgrade.
+     *
+     * The daemon is responsible for executing the upgrade. To prevent arbitrary command
+     * injection the panel no longer accepts a caller-controlled restart command; the daemon
+     * must use its own hardcoded restart mechanism. The "headers" field is also removed so
+     * callers cannot inject credentials or bypass daemon-side download security.
      */
-    public function upgrade(Request $request, Node $node): JsonResponse
+    public function upgrade(WingsRsNodeUpdateRequest $request, Node $node): JsonResponse
     {
         if (!$node->isSupercharged()) {
             return new JsonResponse(['error' => 'This node is not running Wings-RS.'], 400);
         }
 
         $request->validate([
-            'url' => 'required|url',
-            'sha256' => 'required|string|size:64',
-            'restart_command' => 'required|string',
-            'restart_command_args' => 'array',
-            'restart_command_args.*' => 'string',
-            'headers' => 'array',
+            // Must be HTTPS to prevent MITM on the binary download.
+            'url' => ['required', 'url', 'regex:/^https:\/\//i'],
+            // Must be a 64-character lowercase hex string (SHA-256).
+            'sha256' => ['required', 'string', 'size:64', 'regex:/^[0-9a-f]{64}$/'],
         ]);
 
         $this->wingsRsRepository->setNode($node)->upgradeSystem(
             $request->input('url'),
-            $request->input('headers', []),
-            $request->input('sha256'),
-            $request->input('restart_command'),
-            $request->input('restart_command_args', [])
+            $request->input('sha256')
         );
 
         return new JsonResponse(['success' => true], 202);

@@ -181,6 +181,30 @@ class RouteServiceProvider extends ServiceProvider
                 ], 429);
             });
         });
+
+        RateLimiter::for('wings-rs.search', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(30)->by($key);
+        });
+
+        RateLimiter::for('wings-rs.compress', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(10)->by($key);
+        });
+
+        RateLimiter::for('wings-rs.fingerprints', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(30)->by($key);
+        });
+
+        RateLimiter::for('wings-rs.script', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(5)->by($key);
+        });
     }
 
     private function apiDocsMiddleware(): array

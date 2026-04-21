@@ -100,8 +100,12 @@ class DaemonWingsRsRepository extends DaemonRepository
 
     /**
      * POST /api/system/upgrade — trigger Wings-RS self-upgrade.
+     *
+     * The restart mechanism is intentionally left to the daemon; this panel
+     * endpoint no longer forwards caller-supplied restart commands or custom
+     * download headers to prevent arbitrary command/header injection.
      */
-    public function upgradeSystem(string $url, array $headers, string $sha256, string $restartCommand, array $restartArgs): void
+    public function upgradeSystem(string $url, string $sha256): void
     {
         $this->assertSupercharged();
 
@@ -109,10 +113,7 @@ class DaemonWingsRsRepository extends DaemonRepository
             $this->getHttpClient()->post('/api/system/upgrade', [
                 'json' => [
                     'url' => $url,
-                    'headers' => $headers,
                     'sha256' => $sha256,
-                    'restart_command' => $restartCommand,
-                    'restart_command_args' => $restartArgs,
                 ],
             ]);
         } catch (TransferException $exception) {

@@ -45,8 +45,8 @@ class WingsRsController extends ClientApiController
         }
 
         $request->validate([
-            'files' => 'required|array|min:1|max:100',
-            'files.*' => 'required|string',
+            'files' => 'required|array|min:1|max:50',
+            'files.*' => 'required|string|max:1024',
             'algorithm' => 'string|in:sha256,sha512,md5,blake3',
         ]);
 
@@ -74,20 +74,20 @@ class WingsRsController extends ClientApiController
         }
 
         $request->validate([
-            'root' => 'nullable|string',
-            'per_page' => 'required|integer|min:1|max:500',
+            'root' => 'nullable|string|max:1024',
+            'per_page' => 'required|integer|min:1|max:100',
             'path_filter' => 'nullable|array',
-            'path_filter.include' => 'required_with:path_filter|array',
-            'path_filter.include.*' => 'string',
-            'path_filter.exclude' => 'nullable|array',
-            'path_filter.exclude.*' => 'string',
+            'path_filter.include' => 'required_with:path_filter|array|max:20',
+            'path_filter.include.*' => 'string|max:512',
+            'path_filter.exclude' => 'nullable|array|max:20',
+            'path_filter.exclude.*' => 'string|max:512',
             'path_filter.case_insensitive' => 'nullable|boolean',
             'size_filter' => 'nullable|array',
             'size_filter.min' => 'nullable|integer|min:0',
             'size_filter.max' => 'required_with:size_filter|integer|min:0',
             'content_filter' => 'nullable|array',
-            'content_filter.query' => 'required_with:content_filter|string',
-            'content_filter.max_search_size' => 'required_with:content_filter|integer|min:0',
+            'content_filter.query' => 'required_with:content_filter|string|max:1024',
+            'content_filter.max_search_size' => 'required_with:content_filter|integer|min:0|max:104857600',
             'content_filter.include_unmatched' => 'nullable|boolean',
             'content_filter.case_insensitive' => 'nullable|boolean',
         ]);
@@ -115,9 +115,9 @@ class WingsRsController extends ClientApiController
         }
 
         $request->validate([
-            'root' => 'nullable|string',
-            'files' => 'required|array|min:1',
-            'files.*' => 'required|string',
+            'root' => 'nullable|string|max:1024',
+            'files' => 'required|array|min:1|max:200',
+            'files.*' => 'required|string|max:1024',
             'format' => 'nullable|string|in:tar,tar_gz,tar_xz,tar_lzip,tar_bz2,tar_lz4,tar_zstd,zip,seven_zip',
             'name' => 'nullable|string|max:255',
             'foreground' => 'nullable|boolean',
@@ -149,6 +149,11 @@ class WingsRsController extends ClientApiController
             return new JsonResponse(['error' => 'Feature requires a Supercharged node.'], 400);
         }
 
+        // Validate that the operation ID is a safe UUID-like token before forwarding to the daemon.
+        if (!preg_match('/^[a-zA-Z0-9\-]{1,64}$/', $operation)) {
+            return new JsonResponse(['error' => 'Invalid operation identifier.'], 422);
+        }
+
         $this->wingsRsRepository->setServer($server)->cancelOperation($operation);
 
         return new JsonResponse(['success' => true]);
@@ -156,10 +161,14 @@ class WingsRsController extends ClientApiController
 
     /**
      * POST /api/client/servers/{server}/script — Run async script.
+     *
+     * Requires the dedicated script.run permission (not startup.update) because this
+     * allows arbitrary container image selection and script execution — far beyond
+     * editing startup environment variables.
      */
     public function runScript(Request $request, Server $server): JsonResponse
     {
-        if (!$request->user()->can(Permission::ACTION_STARTUP_UPDATE, $server)) {
+        if (!$request->user()->can(Permission::ACTION_SCRIPT_RUN, $server)) {
             throw new AuthorizationException();
         }
 
@@ -168,10 +177,11 @@ class WingsRsController extends ClientApiController
         }
 
         $request->validate([
-            'container_image' => 'required|string',
-            'entrypoint' => 'required|string',
-            'script' => 'required|string',
-            'environment' => 'nullable|array',
+            'container_image' => 'required|string|max:191',
+            'entrypoint' => 'required|string|max:191',
+            'script' => 'required|string|max:65535',
+            'environment' => 'nullable|array|max:50',
+            'environment.*' => 'nullable|string|max:1024',
         ]);
 
         $data = $this->wingsRsRepository

@@ -321,11 +321,16 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         // Wings-RS (Supercharged) endpoints
         Route::group(['prefix' => '/wings-rs'], function () {
             Route::get('/status', [Client\Servers\WingsRsController::class, 'status']);
-            Route::post('/fingerprints', [Client\Servers\WingsRsController::class, 'fingerprints']);
-            Route::post('/search', [Client\Servers\WingsRsController::class, 'searchFiles']);
-            Route::post('/compress', [Client\Servers\WingsRsController::class, 'compressAdvanced']);
-            Route::delete('/operations/{operation}', [Client\Servers\WingsRsController::class, 'cancelOperation']);
-            Route::post('/script', [Client\Servers\WingsRsController::class, 'runScript']);
+            Route::post('/fingerprints', [Client\Servers\WingsRsController::class, 'fingerprints'])
+                ->middleware('throttle:wings-rs.fingerprints');
+            Route::post('/search', [Client\Servers\WingsRsController::class, 'searchFiles'])
+                ->middleware('throttle:wings-rs.search');
+            Route::post('/compress', [Client\Servers\WingsRsController::class, 'compressAdvanced'])
+                ->middleware('throttle:wings-rs.compress');
+            Route::delete('/operations/{operation}', [Client\Servers\WingsRsController::class, 'cancelOperation'])
+                ->where('operation', '[a-zA-Z0-9\-]{1,64}');
+            Route::post('/script', [Client\Servers\WingsRsController::class, 'runScript'])
+                ->middleware('throttle:wings-rs.script');
             Route::post('/abort-install', [Client\Servers\WingsRsController::class, 'abortInstall']);
             Route::get('/install-logs', [Client\Servers\WingsRsController::class, 'installLogs']);
             Route::get('/ssh', [Client\Servers\WingsRsController::class, 'sshInfo']);
