@@ -41,19 +41,39 @@ class ExtensionInstallProgressService
 
     /**
      * Record the current stage of an in-progress operation.
+     *
+     * @throws \InvalidArgumentException if $action or $stage is not recognised.
      */
     public function report(string $action, string $extensionId, string $stage): void
     {
-        $path = storage_path('app/' . self::PROGRESS_FILE);
+        $validStages = $action === 'install' ? self::INSTALL_STAGES : self::UNINSTALL_STAGES;
+
+        if (!in_array($stage, $validStages, true)) {
+            throw new \InvalidArgumentException(
+                sprintf('Invalid stage "%s" for action "%s".', $stage, $action)
+            );
+        }
+
+        $path = $this->progressFilePath();
+        $tmp  = $path . '.tmp';
 
         File::ensureDirectoryExists(dirname($path));
 
-        File::put($path, json_encode([
-            'action' => $action,
+        // Carry forward started_at so callers can detect stale/hung operations.
+        $existing = $this->current();
+        $startedAt = $existing['started_at'] ?? now()->toIso8601String();
+
+        // Atomic write: write to a temp file then rename into place so a
+        // concurrent reader never sees partial JSON.
+        File::put($tmp, json_encode([
+            'action'       => $action,
             'extension_id' => $extensionId,
-            'stage' => $stage,
-            'updated_at' => now()->toIso8601String(),
+            'stage'        => $stage,
+            'started_at'   => $startedAt,
+            'updated_at'   => now()->toIso8601String(),
         ], JSON_UNESCAPED_SLASHES));
+
+        rename($tmp, $path);
     }
 
     /**
@@ -63,7 +83,7 @@ class ExtensionInstallProgressService
      */
     public function current(): ?array
     {
-        $path = storage_path('app/' . self::PROGRESS_FILE);
+        $path = $this->progressFilePath();
 
         if (!File::exists($path)) {
             return null;
@@ -80,10 +100,14 @@ class ExtensionInstallProgressService
      */
     public function clear(): void
     {
-        $path = storage_path('app/' . self::PROGRESS_FILE);
+        File::delete($this->progressFilePath());
+    }
 
-        if (File::exists($path)) {
-            File::delete($path);
-        }
+    /**
+     * Absolute path to the progress JSON file.
+     */
+    private function progressFilePath(): string
+    {
+        return storage_path('app/' . self::PROGRESS_FILE);
     }
 }
