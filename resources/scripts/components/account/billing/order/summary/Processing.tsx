@@ -12,6 +12,7 @@ import {
     checkPayPalOrderStatus,
     getOrderIdFromToken,
 } from '@/api/routes/account/billing/orders/paypal';
+import { isValidServerUuid } from '@/lib/helpers';
 
 export default () => {
     const location = useLocation();
@@ -36,7 +37,7 @@ export default () => {
             processPaidOrder(stripeIntent, renewal)
                 .then(() => {
                     // Redirect to server billing page for renewals with full page reload, otherwise to success page
-                    if (renewal && serverUuid) {
+                    if (renewal && isValidServerUuid(serverUuid)) {
                         window.location.href = `/server/${serverUuid}/billing`;
                     } else {
                         navigate('/account/billing/success');
@@ -79,7 +80,7 @@ export default () => {
 
                             if (status.processed) {
                                 // Order has been processed successfully
-                                if (renewal && serverUuid) {
+                                if (renewal && isValidServerUuid(serverUuid)) {
                                     window.location.href = `/server/${serverUuid}/billing`;
                                 } else {
                                     navigate('/account/billing/success');
@@ -89,7 +90,7 @@ export default () => {
                             } else if (status.payment_status === 'paid') {
                                 // For renewals, payment is paid but order won't be marked as "processed"
                                 // The renewal is already complete, redirect to server billing page
-                                if (renewal && serverUuid) {
+                                if (renewal && isValidServerUuid(serverUuid)) {
                                     window.location.href = `/server/${serverUuid}/billing`;
                                 } else {
                                     // For new orders, keep checking - webhook will process it
@@ -171,7 +172,7 @@ export default () => {
                                     if (status.processed) {
                                         console.log('[PayPal Processing] Order processed successfully!');
                                         // Order has been processed successfully
-                                        if (renewal && serverUuid) {
+                                        if (renewal && isValidServerUuid(serverUuid)) {
                                             window.location.href = `/server/${serverUuid}/billing`;
                                         } else {
                                             navigate('/account/billing/success');
