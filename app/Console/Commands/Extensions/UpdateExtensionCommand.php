@@ -38,7 +38,7 @@ class UpdateExtensionCommand extends Command
     public function handle(): int
     {
         $source = trim((string) ($this->argument('source') ?? ''));
-        $resolution = null;
+        $resolution = ['extensionId' => null];
 
         try {
             $resolution = $this->resolveUpdateResolution($source);
