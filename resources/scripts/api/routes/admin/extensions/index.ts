@@ -149,6 +149,20 @@ export const uninstallExtension = async (extensionId: string): Promise<Extension
     return data.attributes ?? data;
 };
 
+export const upgradeExtension = async (
+    extensionId: string,
+    repositoryId: number,
+    version?: string
+): Promise<ExtensionData> => {
+    const { data } = await http.post(
+        `/api/application/extensions/${extensionId}/update-package`,
+        { repository_id: repositoryId, version },
+        { timeout: 300000 }
+    );
+
+    return data.attributes ?? data;
+};
+
 export const updateModuleSettings = async (enabled: boolean): Promise<void> => {
     await http.put('/api/application/extensions/settings', { key: 'enabled', value: enabled });
 };

@@ -11,7 +11,7 @@ import useFlash from '@/plugins/useFlash';
 type PackageActionState = {
     extensionId: string;
     extensionName: string;
-    type: 'install' | 'uninstall';
+    type: 'install' | 'uninstall' | 'update';
 };
 
 export default () => {
@@ -180,7 +180,7 @@ export default () => {
 
     const hasActiveFilters = catalogFilter !== 'all' || panelSupportFilter !== 'all';
     const activePackageActionMessage = activePackageAction
-        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
+        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : activePackageAction.type === 'uninstall' ? 'uninstalling' : 'updating'} before starting another extension install, update, or uninstall.`
         : null;
 
     const handlePackageActionStart = (action: PackageActionState) => {

@@ -322,6 +322,7 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);
         Route::post('/{extensionId}/toggle', [Application\Extensions\ExtensionsController::class, 'toggle']);
         Route::post('/{extensionId}/install', [Application\Extensions\ExtensionsController::class, 'install']);
+        Route::post('/{extensionId}/update-package', [Application\Extensions\ExtensionsController::class, 'updatePackage']);
         Route::post('/{extensionId}/uninstall', [Application\Extensions\ExtensionsController::class, 'uninstall']);
     });
 
