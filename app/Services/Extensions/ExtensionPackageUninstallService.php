@@ -60,12 +60,6 @@ class ExtensionPackageUninstallService
                     }
                 }
 
-                // Validate (and auto-repair when root) workspace ownership before the
-                // build runs so any ownership problem surfaces here with a clear error
-                // rather than as a cryptic mid-build failure.
-                $this->progressService->report('uninstall', $extensionId, 'ownership');
-                $this->ownershipService->validateBuildWorkspaceOwnership();
-
                 // Report 'optimizing' before optimize:clear and 'building' before pnpm/npm.
                 $this->rebuildService->rebuild(
                     sprintf('Uninstall extension %s', $extensionId),

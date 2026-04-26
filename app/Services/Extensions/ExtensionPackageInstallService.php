@@ -127,12 +127,6 @@ class ExtensionPackageInstallService
                 $appliedFiles[] = $plan;
             }
 
-            // Validate (and auto-repair when root) workspace ownership before the
-            // build runs so any ownership problem surfaces here with a clear error
-            // rather than as a cryptic mid-build failure.
-            $this->progressService->report('install', $extensionId, 'ownership');
-            $this->ownershipService->validateBuildWorkspaceOwnership();
-
             // Report 'optimizing' before optimize:clear and 'building' before pnpm/npm.
             // The callback fires just before each sub-command so the file-based progress
             // is written after optimize:clear has already cleared the application cache.

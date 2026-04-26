@@ -21,7 +21,6 @@ class ExtensionInstallProgressService
         'extracting',
         'validating',
         'copying',
-        'ownership',
         'optimizing',
         'building',
         'registering',
@@ -34,7 +33,6 @@ class ExtensionInstallProgressService
     public const UNINSTALL_STAGES = [
         'validating',
         'removing',
-        'ownership',
         'optimizing',
         'building',
         'registering',

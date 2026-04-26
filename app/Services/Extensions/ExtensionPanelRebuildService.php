@@ -9,6 +9,11 @@ use Symfony\Component\Process\Process;
 
 class ExtensionPanelRebuildService
 {
+    public function __construct(
+        private ExtensionFilesystemOwnershipService $ownershipService
+    ) {
+    }
+
     /**
      * Run the fixed rebuild hooks required after filesystem changes.
      *
@@ -32,6 +37,13 @@ class ExtensionPanelRebuildService
         foreach ($commands as $index => $command) {
             if ($onCommandStart !== null) {
                 $onCommandStart($index);
+            }
+
+            // Before the frontend build, validate (and auto-repair when root)
+            // filesystem ownership so permission problems produce a clear error
+            // instead of a cryptic mid-build failure.
+            if ($index === 1) {
+                $this->ownershipService->validateBuildWorkspaceOwnership();
             }
 
             $process = new Process($command, base_path(), $environment);

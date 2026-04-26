@@ -87,26 +87,26 @@ class ExtensionFilesystemOwnershipService
     }
 
     /**
-     * Validate that the build workspace paths are owned by the panel user.
+     * Validate that the build workspace paths are writable before the frontend build runs.
      *
-     * If the process is running as root, mismatched paths are repaired
-     * automatically. Otherwise a DisplayException is thrown with a clear,
-     * actionable message so the operator knows exactly what to fix.
+     * When running as root, any path whose owner doesn't match the panel user
+     * (including root-owned paths in application directories) is repaired
+     * automatically. When not running as root, writability is checked directly
+     * so that bad permissions — including root-owned files left by a previous
+     * root-run build — are caught before pnpm/npm starts.
      *
-     * @throws DisplayException if any path has wrong ownership and cannot be repaired automatically.
+     * @throws DisplayException if any path is not writable and cannot be repaired automatically.
      */
     public function validateBuildWorkspaceOwnership(): void
     {
         $ownership = $this->resolveOwnershipTarget();
-        if ($ownership === null) {
-            return;
-        }
 
         $candidates = [
             base_path(),
             base_path('vendor'),
             base_path('node_modules'),
             base_path('public/build'),
+            base_path('public/build/assets'),
             storage_path('app/extensions/runtime-home'),
         ];
 
@@ -117,19 +117,27 @@ class ExtensionFilesystemOwnershipService
                 continue;
             }
 
-            $actualUid = @fileowner($path);
-            if ($actualUid === false || $actualUid === $ownership['uid']) {
-                continue;
-            }
-
-            // Skip paths already owned by root — those are system-level and should not be chowned.
-            if ($actualUid === 0) {
-                continue;
-            }
-
             if ($this->isRunningAsRoot()) {
+                // When running as root, repair any path whose owner doesn't match
+                // the panel user — including root-owned application paths.
+                if ($ownership === null) {
+                    continue;
+                }
+
+                $actualUid = @fileowner($path);
+                if ($actualUid === false || $actualUid === $ownership['uid']) {
+                    continue;
+                }
+
                 $this->applyOwnership($path, $ownership['uid'], $ownership['gid']);
             } else {
+                // When not running as root, check real writability. This catches
+                // root-owned directories and files left by a previous root-run build
+                // that would cause pnpm/npm to fail with EACCES.
+                if (is_writable($path)) {
+                    continue;
+                }
+
                 $mismatched[] = $path;
             }
         }
@@ -138,14 +146,13 @@ class ExtensionFilesystemOwnershipService
             return;
         }
 
-        $user  = $ownership['user'];
-        $group = $ownership['group'];
+        $user  = $ownership['user'] ?? 'the panel user';
+        $group = $ownership['group'] ?? 'the panel group';
 
         throw new DisplayException(sprintf(
-            'M12Labs cannot start the build because %d path(s) are not owned by "%s": %s. '
+            'M12Labs cannot start the build because %d path(s) are not writable: %s. '
             . 'Run "sudo chown -R %s:%s <path>" for each path listed to repair ownership, then try again.',
             count($mismatched),
-            $user,
             implode(', ', $mismatched),
             $user,
             $group
