@@ -87,6 +87,72 @@ class ExtensionFilesystemOwnershipService
     }
 
     /**
+     * Validate that the build workspace paths are owned by the panel user.
+     *
+     * If the process is running as root, mismatched paths are repaired
+     * automatically. Otherwise a DisplayException is thrown with a clear,
+     * actionable message so the operator knows exactly what to fix.
+     *
+     * @throws DisplayException if any path has wrong ownership and cannot be repaired automatically.
+     */
+    public function validateBuildWorkspaceOwnership(): void
+    {
+        $ownership = $this->resolveOwnershipTarget();
+        if ($ownership === null) {
+            return;
+        }
+
+        $candidates = [
+            base_path(),
+            base_path('vendor'),
+            base_path('node_modules'),
+            base_path('public/build'),
+            storage_path('app/extensions/runtime-home'),
+        ];
+
+        $mismatched = [];
+
+        foreach ($candidates as $path) {
+            if (!file_exists($path)) {
+                continue;
+            }
+
+            $actualUid = @fileowner($path);
+            if ($actualUid === false || $actualUid === $ownership['uid']) {
+                continue;
+            }
+
+            // Skip paths already owned by root — those are system-level and should not be chowned.
+            if ($actualUid === 0) {
+                continue;
+            }
+
+            if ($this->isRunningAsRoot()) {
+                $this->applyOwnership($path, $ownership['uid'], $ownership['gid']);
+            } else {
+                $mismatched[] = $path;
+            }
+        }
+
+        if ($mismatched === []) {
+            return;
+        }
+
+        $user  = $ownership['user'];
+        $group = $ownership['group'];
+
+        throw new DisplayException(sprintf(
+            'M12Labs cannot start the build because %d path(s) are not owned by "%s": %s. '
+            . 'Run "sudo chown -R %s:%s <path>" for each path listed to repair ownership, then try again.',
+            count($mismatched),
+            $user,
+            implode(', ', $mismatched),
+            $user,
+            $group
+        ));
+    }
+
+    /**
      * @return array{uid: int, gid: int, user: string, group: string, sourcePath: string}|null
      */
     private function resolveOwnershipTarget(): ?array
