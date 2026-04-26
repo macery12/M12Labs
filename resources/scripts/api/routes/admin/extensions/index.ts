@@ -113,21 +113,38 @@ export const toggleExtension = async (extensionId: string): Promise<ExtensionDat
     return data.attributes ?? data;
 };
 
+export interface InstallProgress {
+    action: 'install' | 'uninstall';
+    extension_id: string;
+    stage: string;
+    updated_at: string;
+}
+
+export const getInstallProgress = async (): Promise<InstallProgress | null> => {
+    const { data } = await http.get('/api/application/extensions/progress');
+    return data.progress ?? null;
+};
+
 export const installExtension = async (
     extensionId: string,
     repositoryId: number,
     version?: string
 ): Promise<ExtensionData> => {
-    const { data } = await http.post(`/api/application/extensions/${extensionId}/install`, {
-        repository_id: repositoryId,
-        version,
-    });
+    const { data } = await http.post(
+        `/api/application/extensions/${extensionId}/install`,
+        { repository_id: repositoryId, version },
+        { timeout: 300000 }
+    );
 
     return data.attributes ?? data;
 };
 
 export const uninstallExtension = async (extensionId: string): Promise<ExtensionData> => {
-    const { data } = await http.post(`/api/application/extensions/${extensionId}/uninstall`);
+    const { data } = await http.post(
+        `/api/application/extensions/${extensionId}/uninstall`,
+        {},
+        { timeout: 300000 }
+    );
 
     return data.attributes ?? data;
 };

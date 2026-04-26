@@ -312,6 +312,7 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/', [Application\Extensions\ExtensionsController::class, 'index']);
         Route::get('/repositories', [Application\Extensions\ExtensionsController::class, 'repositories']);
         Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
+        Route::get('/progress', [Application\Extensions\ExtensionsController::class, 'progress']);
         Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
         Route::post('/repositories', [Application\Extensions\ExtensionsController::class, 'storeRepository']);
         Route::patch('/repositories/{repository:id}', [Application\Extensions\ExtensionsController::class, 'updateRepository']);
