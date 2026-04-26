@@ -62,6 +62,7 @@ type PackageStep =
     | 'extracting'
     | 'validating'
     | 'copying'
+    | 'ownership'
     | 'optimizing'
     | 'building'
     | 'registering'
@@ -75,6 +76,7 @@ const INSTALL_STEP_SEQUENCE: PackageStep[] = [
     'extracting',
     'validating',
     'copying',
+    'ownership',
     'optimizing',
     'building',
     'registering',
@@ -85,6 +87,7 @@ const UNINSTALL_STEP_SEQUENCE: PackageStep[] = [
     'queued',
     'validating',
     'removing',
+    'ownership',
     'optimizing',
     'building',
     'registering',
@@ -103,6 +106,7 @@ const STEP_LABELS: Record<PackageStep, string> = {
     extracting: 'Extracting',
     validating: 'Validating',
     copying: 'Copying files',
+    ownership: 'Permission check',
     optimizing: 'Optimizing',
     building: 'Building panel',
     registering: 'Registering',
