@@ -1,38 +1,11 @@
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import * as React from 'react';
-import { Dialog as HDialog } from '@headlessui/react';
+import { Dialog as HDialog, Transition } from '@headlessui/react';
 import { Button } from '@/elements/button/index';
-import { AnimatePresence, motion } from 'framer-motion';
 import { DialogContext, IconPosition, RenderDialogProps } from './';
 import { ReplyIcon, XIcon } from '@heroicons/react/outline';
 import classNames from 'classnames';
 import styles from './style.module.css';
-
-const variants = {
-    open: {
-        scale: 1,
-        opacity: 1,
-        transition: {
-            type: 'spring',
-            damping: 15,
-            stiffness: 300,
-            duration: 0.15,
-        },
-    },
-    closed: {
-        scale: 0.75,
-        opacity: 0,
-        transition: {
-            type: 'easeIn',
-            duration: 0.15,
-        },
-    },
-    bounce: {
-        scale: 0.95,
-        opacity: 1,
-        transition: { type: 'linear', duration: 0.075 },
-    },
-};
 
 const sizeMap = {
     sm: 'max-w-md',
@@ -71,34 +44,45 @@ export default ({
     };
 
     return (
-        <AnimatePresence>
-            {open && (
+        <Transition show={open} as={Fragment}>
+            <HDialog static open={open} onClose={onDialogClose}>
                 <DialogContext.Provider value={{ setIcon, setFooter, setIconPosition }}>
-                    <HDialog
-                        static
-                        as={motion.div}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        open={open}
-                        onClose={onDialogClose}
+                    {/* Backdrop */}
+                    <Transition.Child
+                        as={Fragment}
+                        enter="transition-opacity ease-out duration-150"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="transition-opacity ease-in duration-150"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
                     >
                         <div className="fixed inset-0 z-40 bg-slate-900/50" />
-                        <div className="fixed inset-0 z-50 overflow-y-auto">
-                            <div
-                                ref={container}
-                                className={styles.container}
-                                onMouseDown={e => onContainerClick(true, e)}
-                                onMouseUp={e => onContainerClick(false, e)}
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-50 overflow-y-auto">
+                        <div
+                            ref={container}
+                            className={styles.container}
+                            onMouseDown={e => onContainerClick(true, e)}
+                            onMouseUp={e => onContainerClick(false, e)}
+                        >
+                            {/* Panel */}
+                            <Transition.Child
+                                as={Fragment}
+                                enter="transition ease-out duration-150"
+                                enterFrom="opacity-0 scale-75"
+                                enterTo="opacity-100 scale-100"
+                                leave="transition ease-in duration-150"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-75"
                             >
                                 <HDialog.Panel
-                                    as={motion.div}
-                                    initial="closed"
-                                    animate={down ? 'bounce' : 'open'}
-                                    exit="closed"
-                                    variants={variants}
-                                    className={classNames(styles.panel, sizeMap[size])}
+                                    className={classNames(
+                                        styles.panel,
+                                        sizeMap[size],
+                                        'transition-transform duration-75',
+                                        down && 'scale-95',
+                                    )}
                                 >
                                     <div className="flex overflow-y-auto p-6 pb-0">
                                         {iconPosition === 'container' && icon}
@@ -137,11 +121,11 @@ export default ({
                                         </div>
                                     )}
                                 </HDialog.Panel>
-                            </div>
+                            </Transition.Child>
                         </div>
-                    </HDialog>
+                    </div>
                 </DialogContext.Provider>
-            )}
-        </AnimatePresence>
+            </HDialog>
+        </Transition>
     );
 };

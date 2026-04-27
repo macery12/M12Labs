@@ -79,8 +79,6 @@ export default defineConfig({
                         id.includes('/redux-thunk/')
                     )
                         return 'vendor-state';
-                    // Framer Motion animation runtime
-                    if (id.includes('framer-motion')) return 'vendor-motion';
                     // CSS-in-JS runtime (styled-components)
                     if (id.includes('styled-components')) return 'vendor-styled';
                     // Preact/compat (react alias), React Router, and FontAwesome.

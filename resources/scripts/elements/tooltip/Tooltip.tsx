@@ -1,4 +1,4 @@
-import { cloneElement, useRef, useState } from 'react';
+import { cloneElement, Fragment, useRef, useState } from 'react';
 import * as React from 'react';
 import {
     arrow,
@@ -16,7 +16,7 @@ import {
     useInteractions,
     useRole,
 } from '@floating-ui/react-dom-interactions';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Transition } from '@headlessui/react';
 import classNames from 'classnames';
 
 type Interaction = 'hover' | 'click' | 'focus';
@@ -82,39 +82,42 @@ export default ({ children, ...props }: Props) => {
     return (
         <>
             {cloneElement(children, getReferenceProps({ ref: reference, ...children.props }))}
-            <AnimatePresence>
-                {open && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.85 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ type: 'spring', damping: 20, stiffness: 300, duration: 0.075 }}
-                        {...getFloatingProps({
-                            ref: floating,
-                            className:
-                                'bg-slate-900 text-sm text-slate-200 px-3 py-2 rounded pointer-events-none max-w-[24rem] normal-case',
-                            style: {
-                                position: strategy,
-                                top: `${y || 0}px`,
-                                left: `${x || 0}px`,
-                            },
-                        })}
-                    >
-                        {props.content}
-                        {props.arrow && (
-                            <div
-                                ref={arrowEl}
-                                style={{
-                                    transform: `translate(${Math.round(ax || 0)}px, ${Math.round(
-                                        ay || 0,
-                                    )}px) rotate(45deg)`,
-                                }}
-                                className={classNames('absolute z-50 h-3 w-3 bg-slate-900', side)}
-                            />
-                        )}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <Transition
+                show={open}
+                as={Fragment}
+                enter="transition ease-out duration-75"
+                enterFrom="opacity-0 scale-90"
+                enterTo="opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0"
+            >
+                <div
+                    {...getFloatingProps({
+                        ref: floating,
+                        className:
+                            'bg-slate-900 text-sm text-slate-200 px-3 py-2 rounded pointer-events-none max-w-[24rem] normal-case',
+                        style: {
+                            position: strategy,
+                            top: `${y || 0}px`,
+                            left: `${x || 0}px`,
+                        },
+                    })}
+                >
+                    {props.content}
+                    {props.arrow && (
+                        <div
+                            ref={arrowEl}
+                            style={{
+                                transform: `translate(${Math.round(ax || 0)}px, ${Math.round(
+                                    ay || 0,
+                                )}px) rotate(45deg)`,
+                            }}
+                            className={classNames('absolute z-50 h-3 w-3 bg-slate-900', side)}
+                        />
+                    )}
+                </div>
+            </Transition>
         </>
     );
 };
