@@ -34,7 +34,7 @@ export default defineConfig({
     plugins,
 
     build: {
-        target: 'es2019',
+        target: 'es2020',
         rollupOptions: {
             output: {
                 manualChunks(id) {
