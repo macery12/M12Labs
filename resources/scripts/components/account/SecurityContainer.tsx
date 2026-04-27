@@ -112,7 +112,8 @@ export default () => {
                                                 <td css={tw`py-4 px-4 align-top`}>
                                             <div css={tw`font-semibold text-white truncate max-w-full`}>{session.deviceName}</div>
                                             <div
-                                                css={tw`text-xs text-gray-400 mt-1 leading-snug line-clamp-2 max-w-full break-words`}
+                                                css={tw`text-xs text-gray-400 mt-1 leading-snug max-w-full break-words`}
+                                                className={'line-clamp-2'}
                                                 title={session.userAgent || undefined}
                                             >
                                                 {session.userAgent || 'Unknown user agent'}
@@ -159,7 +160,8 @@ export default () => {
                                         <div>
                                             <div css={tw`font-semibold text-white`}>{session.deviceName}</div>
                                             <div
-                                                css={tw`text-xs text-gray-400 mt-1 leading-snug line-clamp-2`}
+                                                css={tw`text-xs text-gray-400 mt-1 leading-snug`}
+                                                className={'line-clamp-2'}
                                                 title={session.userAgent || undefined}
                                             >
                                                 {session.userAgent || 'Unknown user agent'}
