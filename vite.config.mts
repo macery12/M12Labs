@@ -4,141 +4,154 @@ import { dirname, resolve } from 'pathe';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-const plugins = [
-    react({
-        babel: {
-            plugins: ['babel-plugin-macros', 'babel-plugin-styled-components'],
-        },
-    }),
-];
+export default defineConfig(({ mode }) => {
+    const isProduction = mode === 'production';
 
-if (process.env.VITEST === undefined) {
-    plugins.push(
-        laravel({
-            input: 'resources/scripts/index.tsx',
+    // babel-plugin-styled-components: disable displayName/fileName in production
+    // (debug metadata only; these are already auto-detected from NODE_ENV but we
+    // make the intent explicit so CI builds with unusual NODE_ENV still stay fast).
+    const styledPlugin = [
+        'babel-plugin-styled-components',
+        { displayName: !isProduction, fileName: !isProduction, pure: true },
+    ] as const;
+
+    const plugins = [
+        react({
+            babel: {
+                plugins: ['babel-plugin-macros', styledPlugin],
+            },
         }),
-    );
-}
+    ];
 
-export default defineConfig({
-    define:
-        process.env.VITEST === undefined
-            ? {
-                  'process.env': {},
-                  'process.platform': null,
-                  'process.version': null,
-                  'process.versions': null,
-              }
-            : undefined,
+    if (process.env.VITEST === undefined) {
+        plugins.push(
+            laravel({
+                input: 'resources/scripts/index.tsx',
+            }),
+        );
+    }
 
-    plugins,
+    return {
+        define:
+            process.env.VITEST === undefined
+                ? {
+                      'process.env': {},
+                      'process.platform': null,
+                      'process.version': null,
+                      'process.versions': null,
+                  }
+                : undefined,
 
-    build: {
-        target: 'es2020',
-        rollupOptions: {
-            output: {
-                manualChunks(id) {
-                    if (!id.includes('node_modules')) return;
-                    // CodeMirror core runtime + @codemirror/view + Lezer parser runtime.
-                    // @codemirror/view MUST be in the same chunk as @codemirror/state: they share
-                    // circular file-level dependencies, so splitting them across chunks causes a TDZ
-                    // crash ("Cannot access 'x' before initialization") at module evaluation time.
-                    // language-data is metadata only (each language's load() uses a dynamic import),
-                    // so it belongs here rather than inflating a lang chunk.
-                    if (
-                        id.includes('@codemirror/view') ||
-                        id.includes('@codemirror/state') ||
-                        id.includes('@codemirror/commands') ||
-                        id.includes('@codemirror/autocomplete') ||
-                        id.includes('@codemirror/language/') ||   // base package, not language-data
-                        id.includes('@codemirror/language-data') ||
-                        id.includes('@codemirror/lint') ||
-                        id.includes('@codemirror/search') ||
-                        id.includes('@lezer/common') ||
-                        id.includes('@lezer/lr') ||
-                        id.includes('@lezer/highlight')
-                    ) return 'vendor-editor-core';
-                    // @codemirror/legacy-modes, @codemirror/lang-*, and @lezer/* language parsers are
-                    // intentionally NOT assigned to a manual chunk.
-                    // - legacy-modes is only statically imported for the `shell` mode inside the lazy
-                    //   EggInstallContainer chunk, so it costs nothing on the initial page load.
-                    // - @codemirror/language-data references every other language via a dynamic import()
-                    //   inside its load() method, so Rollup creates small per-language async chunks that
-                    //   are fetched on demand when the user opens a file of that type.
-                    // xterm terminal emulator and addons
-                    if (id.includes('xterm')) return 'vendor-terminal';
-                    // Chart.js and react-chartjs-2
-                    if (id.includes('chart.js') || id.includes('react-chartjs-2')) return 'vendor-charts';
-                    // Stripe payment libraries
-                    if (id.includes('@stripe')) return 'vendor-stripe';
-                    // State management: easy-peasy wraps immer + redux
-                    if (
-                        id.includes('easy-peasy') ||
-                        id.includes('/immer/') ||
-                        id.includes('/redux/') ||
-                        id.includes('/redux-thunk/')
-                    )
-                        return 'vendor-state';
-                    // CSS-in-JS runtime (styled-components)
-                    if (id.includes('styled-components')) return 'vendor-styled';
-                    // Preact/compat (react alias), React Router, and FontAwesome.
-                    // FontAwesome calls React.forwardRef() at module evaluation time (top-level), so it
-                    // MUST be in the same chunk as preact/compat to guarantee correct init order.
-                    if (
-                        id.includes('preact') ||
-                        id.includes('react-router') ||
-                        id.includes('@remix-run') ||
-                        id.includes('@fortawesome')
-                    )
-                        return 'vendor-react';
+        plugins,
+
+        build: {
+            target: 'es2020',
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (!id.includes('node_modules')) return;
+                        // CodeMirror core runtime + @codemirror/view + Lezer parser runtime.
+                        // @codemirror/view MUST be in the same chunk as @codemirror/state: they share
+                        // circular file-level dependencies, so splitting them across chunks causes a TDZ
+                        // crash ("Cannot access 'x' before initialization") at module evaluation time.
+                        // language-data is metadata only (each language's load() uses a dynamic import),
+                        // so it belongs here rather than inflating a lang chunk.
+                        if (
+                            id.includes('@codemirror/view') ||
+                            id.includes('@codemirror/state') ||
+                            id.includes('@codemirror/commands') ||
+                            id.includes('@codemirror/autocomplete') ||
+                            id.includes('@codemirror/language/') || // base package, not language-data
+                            id.includes('@codemirror/language-data') ||
+                            id.includes('@codemirror/lint') ||
+                            id.includes('@codemirror/search') ||
+                            id.includes('@lezer/common') ||
+                            id.includes('@lezer/lr') ||
+                            id.includes('@lezer/highlight')
+                        )
+                            return 'vendor-editor-core';
+                        // @codemirror/legacy-modes, @codemirror/lang-*, and @lezer/* language parsers are
+                        // intentionally NOT assigned to a manual chunk.
+                        // - legacy-modes is only statically imported for the `shell` mode inside the lazy
+                        //   EggInstallContainer chunk, so it costs nothing on the initial page load.
+                        // - @codemirror/language-data references every other language via a dynamic import()
+                        //   inside its load() method, so Rollup creates small per-language async chunks that
+                        //   are fetched on demand when the user opens a file of that type.
+                        // xterm terminal emulator and addons
+                        if (id.includes('xterm')) return 'vendor-terminal';
+                        // Chart.js and react-chartjs-2
+                        if (id.includes('chart.js') || id.includes('react-chartjs-2')) return 'vendor-charts';
+                        // Stripe payment libraries
+                        if (id.includes('@stripe')) return 'vendor-stripe';
+                        // State management: easy-peasy wraps immer + redux
+                        if (
+                            id.includes('easy-peasy') ||
+                            id.includes('/immer/') ||
+                            id.includes('/redux/') ||
+                            id.includes('/redux-thunk/')
+                        )
+                            return 'vendor-state';
+                        // CSS-in-JS runtime (styled-components)
+                        if (id.includes('styled-components')) return 'vendor-styled';
+                        // Preact/compat (react alias), React Router, and FontAwesome.
+                        // FontAwesome calls React.forwardRef() at module evaluation time (top-level), so it
+                        // MUST be in the same chunk as preact/compat to guarantee correct init order.
+                        if (
+                            id.includes('preact') ||
+                            id.includes('react-router') ||
+                            id.includes('@remix-run') ||
+                            id.includes('@fortawesome')
+                        )
+                            return 'vendor-react';
+                    },
                 },
             },
         },
-    },
 
-    server: {
-        cors: {
-            origin: '*',
+        server: {
+            cors: {
+                origin: '*',
+            },
         },
-    },
 
-    resolve: {
-        alias: {
-            '@': resolve(dirname(fileURLToPath(import.meta.url)), 'resources', 'scripts'),
-            '@definitions': resolve(
-                dirname(fileURLToPath(import.meta.url)),
-                'resources',
-                'scripts',
-                'api',
-                'definitions',
-            ),
-            '@feature': resolve(
-                dirname(fileURLToPath(import.meta.url)),
-                'resources',
-                'scripts',
-                'components',
-                'server',
-                'features',
-            ),
-            '@account': resolve(
-                dirname(fileURLToPath(import.meta.url)),
-                'resources',
-                'scripts',
-                'components',
-                'account',
-            ),
-            '@server': resolve(dirname(fileURLToPath(import.meta.url)), 'resources', 'scripts', 'components', 'server'),
-            '@admin': resolve(dirname(fileURLToPath(import.meta.url)), 'resources', 'scripts', 'components', 'admin'),
+        resolve: {
+            alias: {
+                '@': resolve(dirname(fileURLToPath(import.meta.url)), 'resources', 'scripts'),
+                '@definitions': resolve(
+                    dirname(fileURLToPath(import.meta.url)),
+                    'resources',
+                    'scripts',
+                    'api',
+                    'definitions',
+                ),
+                '@feature': resolve(
+                    dirname(fileURLToPath(import.meta.url)),
+                    'resources',
+                    'scripts',
+                    'components',
+                    'server',
+                    'features',
+                ),
+                '@account': resolve(
+                    dirname(fileURLToPath(import.meta.url)),
+                    'resources',
+                    'scripts',
+                    'components',
+                    'account',
+                ),
+                '@server': resolve(dirname(fileURLToPath(import.meta.url)), 'resources', 'scripts', 'components', 'server'),
+                '@admin': resolve(dirname(fileURLToPath(import.meta.url)), 'resources', 'scripts', 'components', 'admin'),
 
-            react: 'preact/compat',
-            'react-dom': 'preact/compat',
-            'react/jsx-runtime': 'preact/jsx-runtime',
-            'react-dom/test-utils': 'preact/test-utils',
+                react: 'preact/compat',
+                'react-dom': 'preact/compat',
+                'react/jsx-runtime': 'preact/jsx-runtime',
+                'react-dom/test-utils': 'preact/test-utils',
+            },
         },
-    },
 
-    test: {
-        environment: 'happy-dom',
-        include: ['resources/scripts/**/*.{spec,test}.{ts,tsx}'],
-    },
+        test: {
+            environment: 'happy-dom',
+            include: ['resources/scripts/**/*.{spec,test}.{ts,tsx}'],
+        },
+    };
 });

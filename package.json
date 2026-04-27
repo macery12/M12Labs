@@ -51,7 +51,6 @@
         "@lezer/highlight": "1.1.3",
         "@stripe/react-stripe-js": "^3.10.0",
         "@stripe/stripe-js": "^5.10.0",
-        "@types/react-transition-group": "^4.4.12",
         "@types/use-persisted-state": "^0.3.5",
         "axios": "0.30.3",
         "boring-avatars": "1.7.0",
@@ -78,7 +77,6 @@
         "react-router": "6.30.2",
         "react-router-dom": "6.30.2",
         "react-select": "5.7.0",
-        "react-transition-group": "^4.4.5",
         "sockette": "2.0.6",
         "strip-ansi": "^7.1.2",
         "styled-components": "5.3.6",
@@ -110,7 +108,6 @@
         "autoprefixer": "10.4.13",
         "babel-plugin-macros": "^3.1.0",
         "babel-plugin-styled-components": "2.0.7",
-        "babel-plugin-twin": "1.1.0",
         "cross-env": "7.0.3",
         "eslint": "8.34.0",
         "eslint-config-prettier": "8.6.0",
@@ -147,9 +144,7 @@
             "preset": "styled-components"
         },
         "styledComponents": {
-            "pure": true,
-            "displayName": true,
-            "fileName": true
+            "pure": true
         }
     },
     "pnpm": {
