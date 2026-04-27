@@ -58,7 +58,7 @@ const PermissionToggle = ({ permission, disabled }: PermissionToggleProps) => {
             />
             <div css={tw`flex-1 min-w-0`}>
                 <p css={tw`text-sm font-medium text-neutral-200 capitalize`}>{pkey.replace(/_/g, ' ')}</p>
-                {description && <p css={tw`text-xs text-neutral-400 mt-0.5 line-clamp-1`}>{description}</p>}
+                {description && <p css={tw`text-xs text-neutral-400 mt-0.5`} className={'line-clamp-1'}>{description}</p>}
             </div>
         </label>
     );
@@ -121,7 +121,7 @@ const PermissionCategory = ({
                     {description && <p css={tw`text-xs text-neutral-400 mt-1`}>{description}</p>}
                     {/* Show permission names when collapsed */}
                     {!isExpanded && (
-                        <p css={tw`text-xs text-neutral-500 mt-2 line-clamp-1 capitalize`}>{permissionNames}</p>
+                        <p css={tw`text-xs text-neutral-500 mt-2 capitalize`} className={'line-clamp-1'}>{permissionNames}</p>
                     )}
                 </div>
                 <div css={tw`flex items-center gap-3`}>

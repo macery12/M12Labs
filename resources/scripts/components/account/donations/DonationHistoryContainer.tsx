@@ -182,7 +182,7 @@ export default () => {
                                                 <FontAwesomeIcon icon={faMessage} css={tw`mr-1`} />
                                                 Message
                                             </p>
-                                            <p css={tw`text-sm text-gray-300 italic line-clamp-2`}>
+                                            <p css={tw`text-sm text-gray-300 italic`} className={'line-clamp-2'}>
                                                 &quot;{donation.message}&quot;
                                             </p>
                                         </div>
