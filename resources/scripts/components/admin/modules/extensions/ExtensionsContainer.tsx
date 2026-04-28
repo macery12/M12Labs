@@ -343,17 +343,20 @@ export default () => {
         if (selectableForEnable.length === 0) return;
         setBatchLoading(true);
         clearFlashes('admin:extensions');
-        Promise.all(selectableForEnable.map(ext => toggleExtension(ext.id)))
-            .then(() => {
+        Promise.allSettled(selectableForEnable.map(ext => toggleExtension(ext.id)))
+            .then(results => {
+                const succeeded = results.filter(r => r.status === 'fulfilled').length;
+                const failed = results.length - succeeded;
                 clearSelection();
                 addFlash({
                     key: 'admin:extensions',
-                    type: 'success',
-                    message: `${selectableForEnable.length} extension(s) enabled.`,
+                    type: failed > 0 ? 'warning' : 'success',
+                    message: failed > 0
+                        ? `${succeeded} extension(s) enabled; ${failed} failed.`
+                        : `${succeeded} extension(s) enabled.`,
                 });
                 silentRefresh();
             })
-            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
             .finally(() => setBatchLoading(false));
     };
 
@@ -366,17 +369,20 @@ export default () => {
         ) return;
         setBatchLoading(true);
         clearFlashes('admin:extensions');
-        Promise.all(selectableForDisable.map(ext => toggleExtension(ext.id)))
-            .then(() => {
+        Promise.allSettled(selectableForDisable.map(ext => toggleExtension(ext.id)))
+            .then(results => {
+                const succeeded = results.filter(r => r.status === 'fulfilled').length;
+                const failed = results.length - succeeded;
                 clearSelection();
                 addFlash({
                     key: 'admin:extensions',
-                    type: 'success',
-                    message: `${selectableForDisable.length} extension(s) disabled.`,
+                    type: failed > 0 ? 'warning' : 'success',
+                    message: failed > 0
+                        ? `${succeeded} extension(s) disabled; ${failed} failed.`
+                        : `${succeeded} extension(s) disabled.`,
                 });
                 silentRefresh();
             })
-            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
             .finally(() => setBatchLoading(false));
     };
 
