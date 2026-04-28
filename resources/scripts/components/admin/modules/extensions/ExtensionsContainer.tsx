@@ -8,6 +8,7 @@ import {
     batchUpdateExtensions,
     getExtensions,
     refreshExtensions,
+    toggleExtension,
 } from '@/api/routes/admin/extensions';
 import getVersion from '@/api/routes/admin/getVersion';
 import CatalogCard from './CatalogCard';
@@ -16,7 +17,7 @@ import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowsRotate, faCheck, faDownload, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsRotate, faCheck, faDownload, faToggleOff, faToggleOn, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 type PackageActionState = {
     extensionId: string;
@@ -238,6 +239,7 @@ export default () => {
     const clearSelection = () => setSelectedIds(new Set());
 
     const selectedExtensions = extensions.filter(ext => selectedIds.has(ext.id));
+    const isManageable = (ext: ExtensionData) => Boolean(ext.installed) || ext.status === 'core';
     const selectableForInstall = selectedExtensions.filter(
         ext => ext.installable && ext.source?.repositoryId
     );
@@ -245,6 +247,8 @@ export default () => {
     const selectableForUpdate = selectedExtensions.filter(
         ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall
     );
+    const selectableForEnable = selectedExtensions.filter(ext => isManageable(ext) && !ext.enabled);
+    const selectableForDisable = selectedExtensions.filter(ext => isManageable(ext) && ext.enabled);
 
     const handleBatchInstall = () => {
         if (selectableForInstall.length === 0) return;
@@ -335,6 +339,47 @@ export default () => {
             .finally(() => setBatchLoading(false));
     };
 
+    const handleBatchEnable = () => {
+        if (selectableForEnable.length === 0) return;
+        setBatchLoading(true);
+        clearFlashes('admin:extensions');
+        Promise.all(selectableForEnable.map(ext => toggleExtension(ext.id)))
+            .then(() => {
+                clearSelection();
+                addFlash({
+                    key: 'admin:extensions',
+                    type: 'success',
+                    message: `${selectableForEnable.length} extension(s) enabled.`,
+                });
+                silentRefresh();
+            })
+            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
+            .finally(() => setBatchLoading(false));
+    };
+
+    const handleBatchDisable = () => {
+        if (selectableForDisable.length === 0) return;
+        if (
+            !window.confirm(
+                `Disable ${selectableForDisable.length} extension(s)? They will no longer be active on servers.`
+            )
+        ) return;
+        setBatchLoading(true);
+        clearFlashes('admin:extensions');
+        Promise.all(selectableForDisable.map(ext => toggleExtension(ext.id)))
+            .then(() => {
+                clearSelection();
+                addFlash({
+                    key: 'admin:extensions',
+                    type: 'success',
+                    message: `${selectableForDisable.length} extension(s) disabled.`,
+                });
+                silentRefresh();
+            })
+            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
+            .finally(() => setBatchLoading(false));
+    };
+
     if (loading) {
         return (
             <div className={'flex items-center justify-center py-16'}>
@@ -402,6 +447,28 @@ export default () => {
                             >
                                 Update {selectableForUpdate.length}
                             </Button>
+                        )}
+
+                        {selectableForEnable.length > 0 && (
+                            <Button
+                                onClick={handleBatchEnable}
+                                loading={batchLoading}
+                                disabled={batchLoading || !!activePackageAction}
+                                icon={() => <FontAwesomeIcon icon={faToggleOn} />}
+                            >
+                                Enable {selectableForEnable.length}
+                            </Button>
+                        )}
+
+                        {selectableForDisable.length > 0 && (
+                            <Button.Dark
+                                onClick={handleBatchDisable}
+                                loading={batchLoading}
+                                disabled={batchLoading || !!activePackageAction}
+                                icon={() => <FontAwesomeIcon icon={faToggleOff} />}
+                            >
+                                Disable {selectableForDisable.length}
+                            </Button.Dark>
                         )}
 
                         {selectableForUninstall.length > 0 && (
