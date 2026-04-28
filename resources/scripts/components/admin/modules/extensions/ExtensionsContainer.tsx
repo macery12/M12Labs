@@ -62,6 +62,12 @@ export default () => {
             .finally(() => setLoading(false));
     };
 
+    const silentRefresh = () => {
+        getExtensions()
+            .then(data => setExtensions(data))
+            .catch(() => {});
+    };
+
     const handleCheckForUpdates = () => {
         setRefreshing(true);
         clearFlashes('admin:extensions');
@@ -266,6 +272,7 @@ export default () => {
                     type: 'success',
                     message: `${selectableForInstall.length} extension(s) installed and M12Labs was rebuilt.`,
                 });
+                silentRefresh();
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
             .finally(() => setBatchLoading(false));
@@ -291,6 +298,7 @@ export default () => {
                     type: 'success',
                     message: `${selectableForUninstall.length} extension(s) uninstalled and M12Labs was rebuilt.`,
                 });
+                silentRefresh();
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
             .finally(() => setBatchLoading(false));
@@ -321,6 +329,7 @@ export default () => {
                     type: 'success',
                     message: `${selectableForUpdate.length} extension(s) updated and M12Labs was rebuilt.`,
                 });
+                silentRefresh();
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
             .finally(() => setBatchLoading(false));
@@ -540,7 +549,7 @@ export default () => {
                             activePackageAction={activePackageAction}
                             isSelected={selectedIds.has(extension.id)}
                             onToggleSelect={() => toggleSelection(extension.id)}
-                            onRefresh={fetchExtensions}
+                            onRefresh={silentRefresh}
                             onPackageActionStart={handlePackageActionStart}
                             onPackageActionEnd={handlePackageActionEnd}
                         />
