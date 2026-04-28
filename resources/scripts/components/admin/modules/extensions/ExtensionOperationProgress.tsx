@@ -168,7 +168,7 @@ export default () => {
     // Sub-label for batch (extension ID + count)
     const batchSubLabel =
         isBatch && progress.batch_total
-            ? `${progress.extension_id}  (${progress.batch_current ?? 1} of ${progress.batch_total})`
+            ? `${progress.extension_id} (${progress.batch_current ?? 1} of ${progress.batch_total})`
             : null;
 
     // Batch progress bar percentage
