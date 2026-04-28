@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStoreState } from '@/state/hooks';
-import { ExtensionData, getExtensions, refreshExtensions } from '@/api/routes/admin/extensions';
+import {
+    BatchInstallItem,
+    ExtensionData,
+    batchInstallExtensions,
+    batchUninstallExtensions,
+    batchUpdateExtensions,
+    getExtensions,
+    refreshExtensions,
+    toggleExtension,
+} from '@/api/routes/admin/extensions';
 import getVersion from '@/api/routes/admin/getVersion';
 import CatalogCard from './CatalogCard';
 import Spinner from '@/elements/Spinner';
@@ -8,7 +17,7 @@ import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsRotate, faCheck, faDownload, faToggleOff, faToggleOn, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 type PackageActionState = {
     extensionId: string;
@@ -25,6 +34,8 @@ export default () => {
     const [activePackageAction, setActivePackageAction] = useState<PackageActionState | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [batchLoading, setBatchLoading] = useState(false);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
 
     const withAlpha = (color: string, alpha: string) => `${color}${alpha}`;
@@ -50,6 +61,12 @@ export default () => {
             .then(data => setExtensions(data))
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
             .finally(() => setLoading(false));
+    };
+
+    const silentRefresh = () => {
+        getExtensions()
+            .then(data => setExtensions(data))
+            .catch(() => {});
     };
 
     const handleCheckForUpdates = () => {
@@ -198,9 +215,6 @@ export default () => {
     );
 
     const hasActiveFilters = catalogFilter !== 'all' || panelSupportFilter !== 'all';
-    const activePackageActionMessage = activePackageAction
-        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : activePackageAction.type === 'uninstall' ? 'uninstalling' : 'updating'} before starting another extension install, update, or uninstall.`
-        : null;
 
     const handlePackageActionStart = (action: PackageActionState) => {
         setActivePackageAction(action);
@@ -208,6 +222,168 @@ export default () => {
 
     const handlePackageActionEnd = (extensionId: string) => {
         setActivePackageAction(current => (current?.extensionId === extensionId ? null : current));
+    };
+
+    const toggleSelection = (extensionId: string) => {
+        setSelectedIds(current => {
+            const next = new Set(current);
+            if (next.has(extensionId)) {
+                next.delete(extensionId);
+            } else {
+                next.add(extensionId);
+            }
+            return next;
+        });
+    };
+
+    const clearSelection = () => setSelectedIds(new Set());
+
+    const selectedExtensions = extensions.filter(ext => selectedIds.has(ext.id));
+    const isManageable = (ext: ExtensionData) => Boolean(ext.installed) || ext.status === 'core';
+    const selectableForInstall = selectedExtensions.filter(
+        ext => ext.installable && ext.source?.repositoryId
+    );
+    const selectableForUninstall = selectedExtensions.filter(ext => ext.canUninstall);
+    const selectableForUpdate = selectedExtensions.filter(
+        ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall
+    );
+    const selectableForEnable = selectedExtensions.filter(ext => isManageable(ext) && !ext.enabled);
+    const selectableForDisable = selectedExtensions.filter(ext => isManageable(ext) && ext.enabled);
+
+    const handleBatchInstall = () => {
+        if (selectableForInstall.length === 0) return;
+        const hasThirdParty = selectableForInstall.some(ext => !ext.source?.official);
+        const message = hasThirdParty
+            ? `Install ${selectableForInstall.length} extension(s)? Some are from third-party repositories that can execute arbitrary PHP and frontend code inside M12Labs.`
+            : `Install ${selectableForInstall.length} extension(s)?`;
+
+        if (!window.confirm(message)) return;
+
+        setBatchLoading(true);
+        clearFlashes('admin:extensions');
+
+        const items: BatchInstallItem[] = selectableForInstall.map(ext => ({
+            extensionId: ext.id,
+            repositoryId: ext.source!.repositoryId!,
+        }));
+
+        batchInstallExtensions(items)
+            .then(updatedExtensions => {
+                setExtensions(updatedExtensions);
+                clearSelection();
+                addFlash({
+                    key: 'admin:extensions',
+                    type: 'success',
+                    message: `${selectableForInstall.length} extension(s) installed and M12Labs was rebuilt.`,
+                });
+                silentRefresh();
+            })
+            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
+            .finally(() => setBatchLoading(false));
+    };
+
+    const handleBatchUninstall = () => {
+        if (selectableForUninstall.length === 0) return;
+        if (
+            !window.confirm(
+                `Uninstall ${selectableForUninstall.length} extension(s)? This removes their files and rebuilds M12Labs.`
+            )
+        ) return;
+
+        setBatchLoading(true);
+        clearFlashes('admin:extensions');
+
+        batchUninstallExtensions(selectableForUninstall.map(ext => ext.id))
+            .then(updatedExtensions => {
+                setExtensions(updatedExtensions);
+                clearSelection();
+                addFlash({
+                    key: 'admin:extensions',
+                    type: 'success',
+                    message: `${selectableForUninstall.length} extension(s) uninstalled and M12Labs was rebuilt.`,
+                });
+                silentRefresh();
+            })
+            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
+            .finally(() => setBatchLoading(false));
+    };
+
+    const handleBatchUpdate = () => {
+        if (selectableForUpdate.length === 0) return;
+        if (
+            !window.confirm(
+                `Update ${selectableForUpdate.length} extension(s) to their latest versions? M12Labs will be rebuilt once.`
+            )
+        ) return;
+
+        setBatchLoading(true);
+        clearFlashes('admin:extensions');
+
+        const items: BatchInstallItem[] = selectableForUpdate.map(ext => ({
+            extensionId: ext.id,
+            repositoryId: ext.source!.repositoryId!,
+        }));
+
+        batchUpdateExtensions(items)
+            .then(updatedExtensions => {
+                setExtensions(updatedExtensions);
+                clearSelection();
+                addFlash({
+                    key: 'admin:extensions',
+                    type: 'success',
+                    message: `${selectableForUpdate.length} extension(s) updated and M12Labs was rebuilt.`,
+                });
+                silentRefresh();
+            })
+            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
+            .finally(() => setBatchLoading(false));
+    };
+
+    const handleBatchEnable = () => {
+        if (selectableForEnable.length === 0) return;
+        setBatchLoading(true);
+        clearFlashes('admin:extensions');
+        Promise.allSettled(selectableForEnable.map(ext => toggleExtension(ext.id)))
+            .then(results => {
+                const succeeded = results.filter(r => r.status === 'fulfilled').length;
+                const failed = results.length - succeeded;
+                clearSelection();
+                addFlash({
+                    key: 'admin:extensions',
+                    type: failed > 0 ? 'warning' : 'success',
+                    message: failed > 0
+                        ? `${succeeded} extension(s) enabled; ${failed} failed.`
+                        : `${succeeded} extension(s) enabled.`,
+                });
+                silentRefresh();
+            })
+            .finally(() => setBatchLoading(false));
+    };
+
+    const handleBatchDisable = () => {
+        if (selectableForDisable.length === 0) return;
+        if (
+            !window.confirm(
+                `Disable ${selectableForDisable.length} extension(s)? They will no longer be active on servers.`
+            )
+        ) return;
+        setBatchLoading(true);
+        clearFlashes('admin:extensions');
+        Promise.allSettled(selectableForDisable.map(ext => toggleExtension(ext.id)))
+            .then(results => {
+                const succeeded = results.filter(r => r.status === 'fulfilled').length;
+                const failed = results.length - succeeded;
+                clearSelection();
+                addFlash({
+                    key: 'admin:extensions',
+                    type: failed > 0 ? 'warning' : 'success',
+                    message: failed > 0
+                        ? `${succeeded} extension(s) disabled; ${failed} failed.`
+                        : `${succeeded} extension(s) disabled.`,
+                });
+                silentRefresh();
+            })
+            .finally(() => setBatchLoading(false));
     };
 
     if (loading) {
@@ -247,15 +423,80 @@ export default () => {
                 </p>
             </div>
 
-            {activePackageActionMessage && (
+            {selectedIds.size > 0 && (
                 <div
-                    className={'rounded-lg border p-4'}
-                    style={{ backgroundColor: withAlpha(colors.primary, '10'), borderColor: colors.primary }}
+                    className={'sticky top-4 z-10 rounded-xl border p-4 shadow-lg'}
+                    style={{ backgroundColor: colors.secondary, borderColor: colors.primary }}
                 >
-                    <p className={'text-sm font-semibold'} style={{ color: colors.primary }}>
-                        Extension action in progress
-                    </p>
-                    <p className={'mt-2 text-sm text-neutral-300'}>{activePackageActionMessage}</p>
+                    <div className={'flex flex-wrap items-center gap-3'}>
+                        <span className={'flex-1 text-sm font-semibold text-neutral-100'}>
+                            {selectedIds.size} extension{selectedIds.size === 1 ? '' : 's'} selected
+                        </span>
+
+                        {selectableForInstall.length > 0 && (
+                            <Button
+                                onClick={handleBatchInstall}
+                                loading={batchLoading}
+                                disabled={batchLoading || !!activePackageAction}
+                                icon={() => <FontAwesomeIcon icon={faDownload} />}
+                            >
+                                Install {selectableForInstall.length}
+                            </Button>
+                        )}
+
+                        {selectableForUpdate.length > 0 && (
+                            <Button
+                                onClick={handleBatchUpdate}
+                                loading={batchLoading}
+                                disabled={batchLoading || !!activePackageAction}
+                                icon={() => <FontAwesomeIcon icon={faArrowsRotate} />}
+                            >
+                                Update {selectableForUpdate.length}
+                            </Button>
+                        )}
+
+                        {selectableForEnable.length > 0 && (
+                            <Button
+                                onClick={handleBatchEnable}
+                                loading={batchLoading}
+                                disabled={batchLoading || !!activePackageAction}
+                                icon={() => <FontAwesomeIcon icon={faToggleOn} />}
+                            >
+                                Enable {selectableForEnable.length}
+                            </Button>
+                        )}
+
+                        {selectableForDisable.length > 0 && (
+                            <Button.Dark
+                                onClick={handleBatchDisable}
+                                loading={batchLoading}
+                                disabled={batchLoading || !!activePackageAction}
+                                icon={() => <FontAwesomeIcon icon={faToggleOff} />}
+                            >
+                                Disable {selectableForDisable.length}
+                            </Button.Dark>
+                        )}
+
+                        {selectableForUninstall.length > 0 && (
+                            <Button.Danger
+                                onClick={handleBatchUninstall}
+                                loading={batchLoading}
+                                disabled={batchLoading || !!activePackageAction}
+                                icon={() => <FontAwesomeIcon icon={faTrash} />}
+                            >
+                                Uninstall {selectableForUninstall.length}
+                            </Button.Danger>
+                        )}
+
+                        <Button.Text
+                            onClick={clearSelection}
+                            disabled={batchLoading}
+                            variant={Button.Variants.Secondary}
+                        >
+                            <FontAwesomeIcon icon={faXmark} className={'mr-1'} />
+                            Clear
+                        </Button.Text>
+                    </div>
                 </div>
             )}
 
@@ -281,6 +522,34 @@ export default () => {
                         >
                             <FontAwesomeIcon icon={faArrowsRotate} className={'mr-2'} />
                             Check for updates
+                        </Button.Text>
+                        <Button.Text
+                            onClick={() => {
+                                const installable = filteredExtensions.filter(
+                                    ext => ext.installable && ext.source?.repositoryId
+                                );
+                                const ids = new Set(installable.map(ext => ext.id));
+                                setSelectedIds(ids);
+                            }}
+                            disabled={!!activePackageAction || batchLoading}
+                            variant={Button.Variants.Secondary}
+                        >
+                            <FontAwesomeIcon icon={faCheck} className={'mr-2'} />
+                            Select installable
+                        </Button.Text>
+                        <Button.Text
+                            onClick={() => {
+                                const updatable = filteredExtensions.filter(
+                                    ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall
+                                );
+                                const ids = new Set(updatable.map(ext => ext.id));
+                                setSelectedIds(ids);
+                            }}
+                            disabled={!!activePackageAction || batchLoading}
+                            variant={Button.Variants.Secondary}
+                        >
+                            <FontAwesomeIcon icon={faArrowsRotate} className={'mr-2'} />
+                            Select updatable
                         </Button.Text>
                         <Button.Text
                             onClick={() => {
@@ -351,7 +620,9 @@ export default () => {
                             extension={extension}
                             currentPanelVersion={currentPanelVersion}
                             activePackageAction={activePackageAction}
-                            onRefresh={fetchExtensions}
+                            isSelected={selectedIds.has(extension.id)}
+                            onToggleSelect={() => toggleSelection(extension.id)}
+                            onRefresh={silentRefresh}
                             onPackageActionStart={handlePackageActionStart}
                             onPackageActionEnd={handlePackageActionEnd}
                         />

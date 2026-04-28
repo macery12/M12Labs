@@ -57,14 +57,19 @@ class ExtensionInstallProgressService
     /**
      * Record the current stage of an in-progress operation.
      *
+     * @param int|null $batchTotal   Total number of extensions in a batch (null for single operations).
+     * @param int|null $batchCurrent 1-based index of the extension currently being processed in a batch.
      * @throws \InvalidArgumentException if $action or $stage is not recognised.
      */
-    public function report(string $action, string $extensionId, string $stage): void
+    public function report(string $action, string $extensionId, string $stage, ?int $batchTotal = null, ?int $batchCurrent = null): void
     {
         $validStages = match ($action) {
-            'install'   => self::INSTALL_STAGES,
-            'update'    => self::UPDATE_STAGES,
-            default     => self::UNINSTALL_STAGES,
+            'install'       => self::INSTALL_STAGES,
+            'update'        => self::UPDATE_STAGES,
+            'batch-install' => self::INSTALL_STAGES,
+            'batch-uninstall' => self::UNINSTALL_STAGES,
+            'batch-update'  => self::UPDATE_STAGES,
+            default         => self::UNINSTALL_STAGES,
         };
 
         if (!in_array($stage, $validStages, true)) {
@@ -82,15 +87,22 @@ class ExtensionInstallProgressService
         $existing = $this->current();
         $startedAt = $existing['started_at'] ?? now()->toIso8601String();
 
-        // Atomic write: write to a temp file then rename into place so a
-        // concurrent reader never sees partial JSON.
-        File::put($tmp, json_encode([
+        $payload = [
             'action'       => $action,
             'extension_id' => $extensionId,
             'stage'        => $stage,
             'started_at'   => $startedAt,
             'updated_at'   => now()->toIso8601String(),
-        ], JSON_UNESCAPED_SLASHES));
+        ];
+
+        if ($batchTotal !== null) {
+            $payload['batch_total']   = $batchTotal;
+            $payload['batch_current'] = $batchCurrent ?? 1;
+        }
+
+        // Atomic write: write to a temp file then rename into place so a
+        // concurrent reader never sees partial JSON.
+        File::put($tmp, json_encode($payload, JSON_UNESCAPED_SLASHES));
 
         rename($tmp, $path);
     }

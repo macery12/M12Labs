@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 import { NotFound } from '@/elements/ScreenBlock';
 import EnableExtensionsContainer from './EnableExtensionsContainer';
 import ExtensionsContainer from './ExtensionsContainer';
+import ExtensionOperationProgress from './ExtensionOperationProgress';
 import RepositoriesContainer from './RepositoriesContainer';
 import { PuzzleIcon, CogIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
@@ -45,6 +46,7 @@ export default () => {
                     <CogIcon />
                 </SubNavigationLink>
             </SubNavigation>
+            <ExtensionOperationProgress />
             <Routes>
                 <Route path={'/'} element={<ExtensionsContainer />} />
                 <Route path={'/repositories'} element={<RepositoriesContainer />} />
