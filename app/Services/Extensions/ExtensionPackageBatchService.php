@@ -8,7 +8,7 @@ use Everest\Models\ExtensionPackage;
 /**
  * Orchestrates batch install, uninstall, and update operations for multiple extensions.
  *
- * The key optimisation is that file operations are performed for ALL extensions first,
+ * The key optimization is that file operations are performed for ALL extensions first,
  * and the panel is rebuilt ONLY ONCE after all file transfers are complete — instead of
  * rebuilding after each individual extension.
  *

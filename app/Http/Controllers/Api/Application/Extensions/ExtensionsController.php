@@ -13,6 +13,7 @@ use Everest\Models\ExtensionRepository;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Extensions\BatchInstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\BatchUninstallExtensionRequest;
+use Everest\Http\Requests\Api\Application\Extensions\BatchUpdateExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\GetExtensionsRequest;
 use Everest\Http\Requests\Api\Application\Extensions\InstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\StoreExtensionRepositoryRequest;
@@ -446,7 +447,7 @@ class ExtensionsController extends ApplicationApiController
      * Update multiple extensions as a batch, performing all file operations first
      * and rebuilding the panel only once after all files are in place.
      */
-    public function batchUpdate(BatchInstallExtensionRequest $request): JsonResponse
+    public function batchUpdate(BatchUpdateExtensionRequest $request): JsonResponse
     {
         $items = array_map(fn (array $item) => [
             'extensionId'  => $item['extension_id'],

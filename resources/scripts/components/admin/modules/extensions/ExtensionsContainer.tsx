@@ -559,7 +559,7 @@ export default () => {
                                     ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall
                                 );
                                 const ids = new Set(updatable.map(ext => ext.id));
-                                setSelectedIds(prev => new Set([...prev, ...ids]));
+                                setSelectedIds(ids);
                             }}
                             disabled={!!activePackageAction || batchLoading}
                             variant={Button.Variants.Secondary}

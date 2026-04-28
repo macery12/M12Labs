@@ -587,7 +587,7 @@ export default ({
                     !loading && 'hover:-translate-y-1',
                     isSelected && 'ring-2'
                 )}
-                style={{ ...cardStyle, ...(isSelected ? { outlineColor: primary } : {}) }}
+                style={{ ...cardStyle, ...(isSelected ? { ['--tw-ring-color' as string]: primary } : {}) }}
             >
                 <div className={'flex items-start justify-between gap-4'}>
                     <div className={'flex items-center gap-3'}>
