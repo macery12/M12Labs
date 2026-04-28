@@ -89,6 +89,11 @@ export const getExtensions = async (): Promise<ExtensionData[]> => {
     return data.data;
 };
 
+export const refreshExtensions = async (): Promise<ExtensionData[]> => {
+    const { data } = await http.post('/api/application/extensions/refresh');
+    return data.data;
+};
+
 export const getExtension = async (extensionId: string): Promise<ExtensionData> => {
     const { data } = await http.get(`/api/application/extensions/${extensionId}`);
     return data.attributes ?? data;

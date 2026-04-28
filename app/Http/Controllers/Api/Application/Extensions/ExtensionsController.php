@@ -60,6 +60,19 @@ class ExtensionsController extends ApplicationApiController
     }
 
     /**
+     * Force-refresh all repository manifests (bust cache) and return the updated extension list.
+     */
+    public function refresh(GetExtensionsRequest $request): JsonResponse
+    {
+        $catalog = $this->catalogService->getCatalog(forceRefresh: true);
+
+        return new JsonResponse([
+            'object' => 'list',
+            'data' => $catalog['extensions'],
+        ]);
+    }
+
+    /**
      * Get a single extension configuration.
      */
     public function view(GetExtensionsRequest $request, string $extensionId): JsonResponse
