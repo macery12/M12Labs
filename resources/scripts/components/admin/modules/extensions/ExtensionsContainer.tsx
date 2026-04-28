@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStoreState } from '@/state/hooks';
 import {
     BatchInstallItem,
@@ -7,7 +7,6 @@ import {
     batchUninstallExtensions,
     batchUpdateExtensions,
     getExtensions,
-    getInstallProgress,
     refreshExtensions,
 } from '@/api/routes/admin/extensions';
 import getVersion from '@/api/routes/admin/getVersion';
@@ -25,14 +24,6 @@ type PackageActionState = {
     type: 'install' | 'uninstall' | 'update';
 };
 
-type BatchProgress = {
-    stage: string;
-    total: number;
-    current: number;
-    extensionId: string;
-    action: string;
-};
-
 export default () => {
     const { colors } = useStoreState(state => state.theme.data!);
     const [extensions, setExtensions] = useState<ExtensionData[]>([]);
@@ -44,8 +35,6 @@ export default () => {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [batchLoading, setBatchLoading] = useState(false);
-    const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
-    const batchPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
 
     const withAlpha = (color: string, alpha: string) => `${color}${alpha}`;
@@ -219,9 +208,6 @@ export default () => {
     );
 
     const hasActiveFilters = catalogFilter !== 'all' || panelSupportFilter !== 'all';
-    const activePackageActionMessage = activePackageAction
-        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : activePackageAction.type === 'uninstall' ? 'uninstalling' : 'updating'} before starting another extension install, update, or uninstall.`
-        : null;
 
     const handlePackageActionStart = (action: PackageActionState) => {
         setActivePackageAction(action);
@@ -245,36 +231,6 @@ export default () => {
 
     const clearSelection = () => setSelectedIds(new Set());
 
-    const startBatchPoll = () => {
-        if (batchPollRef.current !== null) return;
-        batchPollRef.current = setInterval(() => {
-            getInstallProgress()
-                .then(progress => {
-                    if (progress && (
-                        progress.action === 'batch-install' ||
-                        progress.action === 'batch-uninstall' ||
-                        progress.action === 'batch-update'
-                    )) {
-                        setBatchProgress({
-                            stage: progress.stage,
-                            total: progress.batch_total ?? 1,
-                            current: progress.batch_current ?? 1,
-                            extensionId: progress.extension_id,
-                            action: progress.action,
-                        });
-                    }
-                })
-                .catch(() => {});
-        }, 1500);
-    };
-
-    const stopBatchPoll = () => {
-        if (batchPollRef.current !== null) {
-            clearInterval(batchPollRef.current);
-            batchPollRef.current = null;
-        }
-    };
-
     const selectedExtensions = extensions.filter(ext => selectedIds.has(ext.id));
     const selectableForInstall = selectedExtensions.filter(
         ext => ext.installable && ext.source?.repositoryId
@@ -295,7 +251,6 @@ export default () => {
 
         setBatchLoading(true);
         clearFlashes('admin:extensions');
-        startBatchPoll();
 
         const items: BatchInstallItem[] = selectableForInstall.map(ext => ({
             extensionId: ext.id,
@@ -313,11 +268,7 @@ export default () => {
                 });
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
-            .finally(() => {
-                setBatchLoading(false);
-                setBatchProgress(null);
-                stopBatchPoll();
-            });
+            .finally(() => setBatchLoading(false));
     };
 
     const handleBatchUninstall = () => {
@@ -330,7 +281,6 @@ export default () => {
 
         setBatchLoading(true);
         clearFlashes('admin:extensions');
-        startBatchPoll();
 
         batchUninstallExtensions(selectableForUninstall.map(ext => ext.id))
             .then(updatedExtensions => {
@@ -343,11 +293,7 @@ export default () => {
                 });
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
-            .finally(() => {
-                setBatchLoading(false);
-                setBatchProgress(null);
-                stopBatchPoll();
-            });
+            .finally(() => setBatchLoading(false));
     };
 
     const handleBatchUpdate = () => {
@@ -360,7 +306,6 @@ export default () => {
 
         setBatchLoading(true);
         clearFlashes('admin:extensions');
-        startBatchPoll();
 
         const items: BatchInstallItem[] = selectableForUpdate.map(ext => ({
             extensionId: ext.id,
@@ -378,11 +323,7 @@ export default () => {
                 });
             })
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
-            .finally(() => {
-                setBatchLoading(false);
-                setBatchProgress(null);
-                stopBatchPoll();
-            });
+            .finally(() => setBatchLoading(false));
     };
 
     if (loading) {
@@ -421,45 +362,6 @@ export default () => {
                     against the selected repository manifest, but they do not make third-party code safe by themselves.
                 </p>
             </div>
-
-            {activePackageActionMessage && (
-                <div
-                    className={'rounded-lg border p-4'}
-                    style={{ backgroundColor: withAlpha(colors.primary, '10'), borderColor: colors.primary }}
-                >
-                    <p className={'text-sm font-semibold'} style={{ color: colors.primary }}>
-                        Extension action in progress
-                    </p>
-                    <p className={'mt-2 text-sm text-neutral-300'}>{activePackageActionMessage}</p>
-                </div>
-            )}
-
-            {batchProgress && (
-                <div
-                    className={'rounded-lg border p-4'}
-                    style={{ backgroundColor: withAlpha(colors.primary, '10'), borderColor: colors.primary }}
-                >
-                    <p className={'text-sm font-semibold'} style={{ color: colors.primary }}>
-                        Batch operation in progress
-                    </p>
-                    <p className={'mt-1 text-sm text-neutral-300'}>
-                        {batchProgress.action === 'batch-install' ? 'Installing' :
-                         batchProgress.action === 'batch-uninstall' ? 'Uninstalling' : 'Updating'}{' '}
-                        extension {batchProgress.current} of {batchProgress.total}
-                        {batchProgress.extensionId ? ` (${batchProgress.extensionId})` : ''}
-                        {' '}— {batchProgress.stage}…
-                    </p>
-                    <div className={'mt-2 h-1.5 rounded-full bg-neutral-700'}>
-                        <div
-                            className={'h-1.5 rounded-full transition-all duration-500'}
-                            style={{
-                                backgroundColor: colors.primary,
-                                width: `${Math.round((batchProgress.current / batchProgress.total) * 100)}%`,
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
 
             {selectedIds.size > 0 && (
                 <div

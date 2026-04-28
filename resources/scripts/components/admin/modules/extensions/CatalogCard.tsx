@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useStoreState } from '@/state/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -32,7 +32,6 @@ import {
     faCog,
     faTriangleExclamation,
     faCheck,
-    faXmark,
     faArrowsRotate,
 } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
@@ -47,7 +46,6 @@ import {
     ExtensionData,
     ExtensionSettingField,
     NestOption,
-    getInstallProgress,
     getNestsAndEggs,
     installExtension,
     toggleExtension,
@@ -56,80 +54,10 @@ import {
     upgradeExtension,
 } from '@/api/routes/admin/extensions';
 
-type PackageActionType = 'install' | 'uninstall' | 'update';
-
-type PackageStep =
-    | 'queued'
-    | 'downloading'
-    | 'extracting'
-    | 'validating'
-    | 'copying'
-    | 'optimizing'
-    | 'building'
-    | 'registering'
-    | 'removing'
-    | 'completed'
-    | 'failed';
-
-const INSTALL_STEP_SEQUENCE: PackageStep[] = [
-    'queued',
-    'downloading',
-    'extracting',
-    'validating',
-    'copying',
-    'optimizing',
-    'building',
-    'registering',
-    'completed',
-];
-
-const UNINSTALL_STEP_SEQUENCE: PackageStep[] = [
-    'queued',
-    'validating',
-    'removing',
-    'optimizing',
-    'building',
-    'registering',
-    'completed',
-];
-
-const UPDATE_STEP_SEQUENCE: PackageStep[] = [
-    'queued',
-    'downloading',
-    'extracting',
-    'validating',
-    'removing',
-    'copying',
-    'optimizing',
-    'building',
-    'registering',
-    'completed',
-];
-
-/** How long (ms) to display the completed/failed state before clearing the indicator. */
-const COMPLETION_DISPLAY_DURATION = 6000;
-
-/** How often (ms) to poll the /progress endpoint while an operation is running. */
-const POLL_INTERVAL_MS = 1500;
-
-const STEP_LABELS: Record<PackageStep, string> = {
-    queued: 'Queued',
-    downloading: 'Downloading',
-    extracting: 'Extracting',
-    validating: 'Validating',
-    copying: 'Copying files',
-    optimizing: 'Optimizing',
-    building: 'Building panel',
-    registering: 'Registering',
-    removing: 'Removing files',
-    completed: 'Completed',
-    failed: 'Failed',
-};
-
 interface PackageActionState {
     extensionId: string;
     extensionName: string;
-    type: PackageActionType;
+    type: 'install' | 'uninstall' | 'update';
 }
 
 interface Props {
@@ -189,57 +117,6 @@ export default ({
     const [selectedNests, setSelectedNests] = useState<number[]>(extension.allowedNests || []);
     const [selectedEggs, setSelectedEggs] = useState<number[]>(extension.allowedEggs || []);
     const [settings, setSettings] = useState<Record<string, unknown>>(extension.settings || {});
-    const [packageStep, setPackageStep] = useState<PackageStep | null>(null);
-    const [activeActionType, setActiveActionType] = useState<PackageActionType | null>(null);
-    const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const stopPolling = () => {
-        if (pollIntervalRef.current !== null) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-        }
-    };
-
-    const startPolling = () => {
-        stopPolling();
-        pollIntervalRef.current = setInterval(() => {
-            getInstallProgress()
-                .then(progress => {
-                    if (
-                        progress &&
-                        progress.extension_id === extension.id &&
-                        (progress.action === 'install' || progress.action === 'uninstall' || progress.action === 'update')
-                    ) {
-                        const stage = progress.stage as PackageStep;
-                        setPackageStep(stage);
-                    }
-                })
-                .catch(() => {
-                    // Polling errors are non-fatal; the main request will report completion
-                });
-        }, POLL_INTERVAL_MS);
-    };
-
-    const finishPackageProgress = (success: boolean) => {
-        stopPolling();
-        setPackageStep(success ? 'completed' : 'failed');
-        completionTimeoutRef.current = setTimeout(() => {
-            setPackageStep(null);
-            setActiveActionType(null);
-            completionTimeoutRef.current = null;
-        }, COMPLETION_DISPLAY_DURATION);
-    };
-
-    useEffect(
-        () => () => {
-            stopPolling();
-            if (completionTimeoutRef.current !== null) {
-                clearTimeout(completionTimeoutRef.current);
-            }
-        },
-        []
-    );
 
     const icon = iconMap[extension.icon] || faPuzzlePiece;
     const manageable = Boolean(extension.installed) || extension.status === 'core';
@@ -370,13 +247,9 @@ export default ({
         setLoading(true);
         clearFlashes('admin:extensions');
         onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'install' });
-        setActiveActionType('install');
-        setPackageStep('queued');
-        startPolling();
 
         installExtension(extension.id, extension.source.repositoryId)
             .then(() => {
-                finishPackageProgress(true);
                 addFlash({
                     key: 'admin:extensions',
                     type: 'success',
@@ -385,7 +258,6 @@ export default ({
                 onRefresh();
             })
             .catch(error => {
-                finishPackageProgress(false);
                 clearAndAddHttpError({ key: 'admin:extensions', error });
             })
             .finally(() => {
@@ -421,13 +293,9 @@ export default ({
         setLoading(true);
         clearFlashes('admin:extensions');
         onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'uninstall' });
-        setActiveActionType('uninstall');
-        setPackageStep('queued');
-        startPolling();
 
         uninstallExtension(extension.id)
             .then(() => {
-                finishPackageProgress(true);
                 addFlash({
                     key: 'admin:extensions',
                     type: 'success',
@@ -436,7 +304,6 @@ export default ({
                 onRefresh();
             })
             .catch(error => {
-                finishPackageProgress(false);
                 clearAndAddHttpError({ key: 'admin:extensions', error });
             })
             .finally(() => {
@@ -472,13 +339,9 @@ export default ({
         setLoading(true);
         clearFlashes('admin:extensions');
         onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'update' });
-        setActiveActionType('update');
-        setPackageStep('queued');
-        startPolling();
 
         upgradeExtension(extension.id, extension.source.repositoryId)
             .then(() => {
-                finishPackageProgress(true);
                 addFlash({
                     key: 'admin:extensions',
                     type: 'success',
@@ -487,7 +350,6 @@ export default ({
                 onRefresh();
             })
             .catch(error => {
-                finishPackageProgress(false);
                 clearAndAddHttpError({ key: 'admin:extensions', error });
             })
             .finally(() => {
@@ -744,71 +606,6 @@ export default ({
                         </Button.Danger>
                     )}
                 </div>
-
-                {packageStep && (
-                    <div className={'mt-3 rounded-lg border p-3 text-xs'} style={surfaceStyle}>
-                        <div className={'flex items-center gap-2'}>
-                            {packageStep === 'completed' ? (
-                                <FontAwesomeIcon icon={faCheck} className={'text-green-400'} />
-                            ) : packageStep === 'failed' ? (
-                                <FontAwesomeIcon icon={faXmark} className={'text-red-400'} />
-                            ) : (
-                                <Spinner size={'small'} />
-                            )}
-                            <span
-                                className={classNames(
-                                    'font-medium',
-                                    packageStep === 'completed' && 'text-green-400',
-                                    packageStep === 'failed' && 'text-red-400',
-                                    packageStep !== 'completed' && packageStep !== 'failed' && 'text-neutral-200'
-                                )}
-                            >
-                                {STEP_LABELS[packageStep]}
-                                {packageStep !== 'completed' && packageStep !== 'failed' && '…'}
-                            </span>
-                        </div>
-                        <div className={'mt-2 flex flex-wrap items-center gap-1'}>
-                            {(() => {
-                                const sequence = activeActionType === 'uninstall'
-                                    ? UNINSTALL_STEP_SEQUENCE
-                                    : activeActionType === 'update'
-                                      ? UPDATE_STEP_SEQUENCE
-                                      : INSTALL_STEP_SEQUENCE;
-                                const isTerminal = packageStep === 'completed' || packageStep === 'failed';
-                                const currentIndex = isTerminal ? sequence.length : sequence.indexOf(packageStep);
-
-                                return sequence.map(step => {
-                                    const stepIndex = sequence.indexOf(step);
-                                    const isDone = isTerminal || stepIndex < currentIndex;
-                                    const isActive = step === packageStep;
-
-                                    return (
-                                        <span key={step} className={'flex items-center gap-1'}>
-                                            <span
-                                                className={classNames(
-                                                    'inline-block h-1.5 w-1.5 rounded-full transition-colors duration-300',
-                                                    isActive && 'bg-white',
-                                                    isDone && !isActive && 'bg-neutral-500',
-                                                    !isDone && !isActive && 'bg-neutral-700'
-                                                )}
-                                            />
-                                            <span
-                                                className={classNames(
-                                                    'transition-colors duration-300',
-                                                    isActive && 'text-neutral-100',
-                                                    isDone && !isActive && 'text-neutral-500',
-                                                    !isDone && !isActive && 'text-neutral-700'
-                                                )}
-                                            >
-                                                {STEP_LABELS[step]}
-                                            </span>
-                                        </span>
-                                    );
-                                });
-                            })()}
-                        </div>
-                    </div>
-                )}
             </div>
 
             <Modal visible={configOpen} onDismissed={() => setConfigOpen(false)} closeOnBackground showSpinnerOverlay={loading}>
