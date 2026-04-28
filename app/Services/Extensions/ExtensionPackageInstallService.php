@@ -30,21 +30,43 @@ class ExtensionPackageInstallService
     public function install(string $extensionId, int $repositoryId, ?string $version = null): ExtensionPackage
     {
         return $this->operationLockService->withinLock('install', $extensionId, function () use ($extensionId, $repositoryId, $version) {
-            $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
-            $release = $package['latestRelease'];
+            $prepared = null;
+            try {
+                $prepared = $this->prepareInstall($extensionId, $repositoryId, $version);
 
-            return $this->installFromSource(
-                archiveLocation: $release['archiveUrl'],
-                expectedExtensionId: $extensionId,
-                expectedVersion: $release['version'],
-                expectedArchiveChecksum: $release['archiveChecksum'],
-                compatiblePanelVersions: $release['compatiblePanelVersions'] ?? [],
-                sourceRepositoryId: $package['repository']->id,
-                sourceRepositoryName: $package['repository']->name,
-                sourceRegistryUrl: $package['repository']->manifest_url,
-                sourceArchiveUrl: $release['archiveUrl'],
-                fallbackPackageMetadata: $package,
-            );
+                $this->rebuildService->rebuild(
+                    sprintf('Install extension %s', $prepared['extensionId']),
+                    function (int $index) use ($prepared): void {
+                        $this->progressService->report(
+                            'install',
+                            $prepared['extensionId'],
+                            $index === 0 ? 'optimizing' : 'building'
+                        );
+                    }
+                );
+
+                $this->progressService->report('install', $prepared['extensionId'], 'registering');
+                $packageModel = $this->finalizeInstall($prepared);
+                $this->progressService->report('install', $prepared['extensionId'], 'completed');
+
+                return $packageModel->fresh(['repository', 'files']);
+            } catch (\Throwable $exception) {
+                if ($prepared !== null) {
+                    $this->rollbackInstall($prepared);
+                    $this->attemptRollbackRebuild($prepared['extensionId'], 'install rollback');
+                }
+
+                if ($exception instanceof DisplayException) {
+                    throw $exception;
+                }
+
+                throw new DisplayException('Failed to install the selected extension package.', $exception);
+            } finally {
+                $this->progressService->clear();
+                if ($prepared !== null) {
+                    $this->cleanupPreparedInstall($prepared);
+                }
+            }
         });
     }
 
@@ -54,26 +76,141 @@ class ExtensionPackageInstallService
         $this->assertSupportedArchiveArtifact($resolvedArchivePath);
 
         return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel) {
-            return $this->installFromSource(
-                archiveLocation: $resolvedArchivePath,
-                expectedExtensionId: null,
-                expectedVersion: null,
-                expectedArchiveChecksum: null,
-                compatiblePanelVersions: [],
-                sourceRepositoryId: null,
-                sourceRepositoryName: $sourceLabel ?: 'Manual package file',
-                sourceRegistryUrl: null,
-                sourceArchiveUrl: 'file://' . $resolvedArchivePath,
-                fallbackPackageMetadata: [],
+            $prepared = null;
+            try {
+                $prepared = $this->performInstallFileOps(
+                    archiveLocation: $resolvedArchivePath,
+                    expectedExtensionId: null,
+                    expectedVersion: null,
+                    expectedArchiveChecksum: null,
+                    compatiblePanelVersions: [],
+                    sourceRepositoryId: null,
+                    sourceRepositoryName: $sourceLabel ?: 'Manual package file',
+                    sourceRegistryUrl: null,
+                    sourceArchiveUrl: 'file://' . $resolvedArchivePath,
+                    fallbackPackageMetadata: [],
+                );
+
+                $this->rebuildService->rebuild(
+                    sprintf('Install extension %s', $prepared['extensionId']),
+                    function (int $index) use ($prepared): void {
+                        $this->progressService->report(
+                            'install',
+                            $prepared['extensionId'],
+                            $index === 0 ? 'optimizing' : 'building'
+                        );
+                    }
+                );
+
+                $this->progressService->report('install', $prepared['extensionId'], 'registering');
+                $packageModel = $this->finalizeInstall($prepared);
+                $this->progressService->report('install', $prepared['extensionId'], 'completed');
+
+                return $packageModel->fresh(['repository', 'files']);
+            } catch (\Throwable $exception) {
+                if ($prepared !== null) {
+                    $this->rollbackInstall($prepared);
+                    $this->attemptRollbackRebuild($prepared['extensionId'], 'install rollback');
+                }
+
+                if ($exception instanceof DisplayException) {
+                    throw $exception;
+                }
+
+                throw new DisplayException('Failed to install the selected extension package.', $exception);
+            } finally {
+                $this->progressService->clear();
+                if ($prepared !== null) {
+                    $this->cleanupPreparedInstall($prepared);
+                }
+            }
+        });
+    }
+
+    /**
+     * Prepare an extension install: download, extract, validate, and copy files into place.
+     * Does NOT rebuild the panel or write to the database.
+     *
+     * Used by the batch service to prepare multiple extensions before a single rebuild.
+     * After calling this for each extension, call ExtensionPanelRebuildService::rebuild()
+     * once, then finalizeInstall() for each prepared result.
+     *
+     * @return array<string, mixed> Opaque prepared state; pass to finalizeInstall() and rollbackInstall().
+     */
+    public function prepareInstall(string $extensionId, int $repositoryId, ?string $version = null): array
+    {
+        $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
+        $release = $package['latestRelease'];
+
+        return $this->performInstallFileOps(
+            archiveLocation: $release['archiveUrl'],
+            expectedExtensionId: $extensionId,
+            expectedVersion: $release['version'],
+            expectedArchiveChecksum: $release['archiveChecksum'],
+            compatiblePanelVersions: $release['compatiblePanelVersions'] ?? [],
+            sourceRepositoryId: $package['repository']->id,
+            sourceRepositoryName: $package['repository']->name,
+            sourceRegistryUrl: $package['repository']->manifest_url,
+            sourceArchiveUrl: $release['archiveUrl'],
+            fallbackPackageMetadata: $package,
+        );
+    }
+
+    /**
+     * Finalize an install prepared via prepareInstall(): write the package record to the database.
+     * Must be called after the panel has been rebuilt.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function finalizeInstall(array $prepared): ExtensionPackage
+    {
+        return DB::transaction(function () use ($prepared) {
+            return $this->persistInstalledPackage(
+                extensionId: $prepared['extensionId'],
+                normalizedManifest: $prepared['normalizedManifest'],
+                fallbackPackageMetadata: $prepared['fallbackPackageMetadata'],
+                filePlans: $prepared['filePlans'],
+                sourceRepositoryId: $prepared['sourceRepositoryId'],
+                sourceRepositoryName: $prepared['sourceRepositoryName'],
+                sourceRegistryUrl: $prepared['sourceRegistryUrl'],
+                sourceArchiveUrl: $prepared['sourceArchiveUrl'],
+                archiveChecksum: $prepared['archiveChecksum'],
             );
         });
     }
 
     /**
+     * Roll back a prepared install by reverting copied files to their pre-install state.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function rollbackInstall(array $prepared): void
+    {
+        $this->rollbackAppliedFiles($prepared['appliedFiles'] ?? []);
+        $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? null);
+    }
+
+    /**
+     * Clean up temp files associated with a prepared install.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function cleanupPreparedInstall(array $prepared): void
+    {
+        if (!empty($prepared['tempRoot'])) {
+            File::deleteDirectory($prepared['tempRoot']);
+        }
+    }
+
+    /**
+     * Perform the file-operations phase of an install (download → extract → validate → copy).
+     * Returns the prepared state needed to finalize or roll back.
+     *
      * @param array<string, mixed> $fallbackPackageMetadata
      * @param array<int, string> $compatiblePanelVersions
+     * @return array<string, mixed>
      */
-    private function installFromSource(
+    private function performInstallFileOps(
         string $archiveLocation,
         ?string $expectedExtensionId,
         ?string $expectedVersion,
@@ -84,7 +221,7 @@ class ExtensionPackageInstallService
         ?string $sourceRegistryUrl,
         string $sourceArchiveUrl,
         array $fallbackPackageMetadata
-    ): ExtensionPackage {
+    ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
         $archivePath = $tempRoot . '/' . self::PACKAGE_ARTIFACT_FILENAME;
         $extractPath = $tempRoot . '/extract';
@@ -127,61 +264,29 @@ class ExtensionPackageInstallService
                 $appliedFiles[] = $plan;
             }
 
-            // Report 'optimizing' before optimize:clear and 'building' before pnpm/npm.
-            // The callback fires just before each sub-command so the file-based progress
-            // is written after optimize:clear has already cleared the application cache.
-            $this->rebuildService->rebuild(
-                sprintf('Install extension %s', $extensionId),
-                function (int $index) use ($extensionId): void {
-                    $this->progressService->report(
-                        'install',
-                        $extensionId,
-                        $index === 0 ? 'optimizing' : 'building'
-                    );
-                }
-            );
-
-            $this->progressService->report('install', $extensionId, 'registering');
-            $packageModel = DB::transaction(function () use (
-                $archiveChecksum,
-                $extensionId,
-                $fallbackPackageMetadata,
-                $filePlans,
-                $normalizedManifest,
-                $sourceArchiveUrl,
-                $sourceRegistryUrl,
-                $sourceRepositoryId,
-                $sourceRepositoryName
-            ) {
-                return $this->persistInstalledPackage(
-                    extensionId: $extensionId,
-                    normalizedManifest: $normalizedManifest,
-                    fallbackPackageMetadata: $fallbackPackageMetadata,
-                    filePlans: $filePlans,
-                    sourceRepositoryId: $sourceRepositoryId,
-                    sourceRepositoryName: $sourceRepositoryName,
-                    sourceRegistryUrl: $sourceRegistryUrl,
-                    sourceArchiveUrl: $sourceArchiveUrl,
-                    archiveChecksum: is_string($archiveChecksum) ? $archiveChecksum : null,
-                );
-            });
-
-            $this->progressService->report('install', $extensionId, 'completed');
-
-            return $packageModel->fresh(['repository', 'files']);
+            return [
+                'extensionId' => $extensionId,
+                'normalizedManifest' => $normalizedManifest,
+                'fallbackPackageMetadata' => $fallbackPackageMetadata,
+                'filePlans' => $filePlans,
+                'appliedFiles' => $appliedFiles,
+                'sourceRepositoryId' => $sourceRepositoryId,
+                'sourceRepositoryName' => $sourceRepositoryName,
+                'sourceRegistryUrl' => $sourceRegistryUrl,
+                'sourceArchiveUrl' => $sourceArchiveUrl,
+                'archiveChecksum' => is_string($archiveChecksum) ? $archiveChecksum : null,
+                'tempRoot' => $tempRoot,
+            ];
         } catch (\Throwable $exception) {
             $this->rollbackAppliedFiles($appliedFiles);
-            $this->attemptRollbackRebuild($resolvedExtensionId ?? 'extension-package', 'install rollback');
+            $this->ownershipService->repairStandardPaths($resolvedExtensionId);
+            File::deleteDirectory($tempRoot);
 
             if ($exception instanceof DisplayException) {
                 throw $exception;
             }
 
-            throw new DisplayException('Failed to install the selected extension package.', $exception);
-        } finally {
-            $this->progressService->clear();
-            $this->ownershipService->repairStandardPaths($resolvedExtensionId);
-            File::deleteDirectory($tempRoot);
+            throw new DisplayException('Failed to prepare the extension package for installation.', $exception);
         }
     }
 

@@ -119,10 +119,12 @@ export const toggleExtension = async (extensionId: string): Promise<ExtensionDat
 };
 
 export interface InstallProgress {
-    action: 'install' | 'uninstall';
+    action: 'install' | 'uninstall' | 'update' | 'batch-install' | 'batch-uninstall' | 'batch-update';
     extension_id: string;
     stage: string;
     updated_at: string;
+    batch_total?: number;
+    batch_current?: number;
 }
 
 export const getInstallProgress = async (): Promise<InstallProgress | null> => {
@@ -216,4 +218,49 @@ export const updateRepository = async (
 
 export const deleteRepository = async (repositoryId: number): Promise<void> => {
     await http.delete(`/api/application/extensions/repositories/${repositoryId}`);
+};
+
+export interface BatchInstallItem {
+    extensionId: string;
+    repositoryId: number;
+    version?: string;
+}
+
+export const batchInstallExtensions = async (items: BatchInstallItem[]): Promise<ExtensionData[]> => {
+    const { data } = await http.post(
+        '/api/application/extensions/batch-install',
+        {
+            extensions: items.map(item => ({
+                extension_id: item.extensionId,
+                repository_id: item.repositoryId,
+                version: item.version,
+            })),
+        },
+        { timeout: 1800000 }
+    );
+    return data.data;
+};
+
+export const batchUninstallExtensions = async (extensionIds: string[]): Promise<ExtensionData[]> => {
+    const { data } = await http.post(
+        '/api/application/extensions/batch-uninstall',
+        { extension_ids: extensionIds },
+        { timeout: 1800000 }
+    );
+    return data.data;
+};
+
+export const batchUpdateExtensions = async (items: BatchInstallItem[]): Promise<ExtensionData[]> => {
+    const { data } = await http.post(
+        '/api/application/extensions/batch-update',
+        {
+            extensions: items.map(item => ({
+                extension_id: item.extensionId,
+                repository_id: item.repositoryId,
+                version: item.version,
+            })),
+        },
+        { timeout: 1800000 }
+    );
+    return data.data;
 };

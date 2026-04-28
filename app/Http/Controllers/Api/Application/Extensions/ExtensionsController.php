@@ -11,6 +11,8 @@ use Everest\Models\Setting;
 use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionRepository;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
+use Everest\Http\Requests\Api\Application\Extensions\BatchInstallExtensionRequest;
+use Everest\Http\Requests\Api\Application\Extensions\BatchUninstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\GetExtensionsRequest;
 use Everest\Http\Requests\Api\Application\Extensions\InstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\StoreExtensionRepositoryRequest;
@@ -20,6 +22,7 @@ use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionRepositoryRe
 use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionSettingsRequest;
 use Everest\Services\Extensions\ExtensionCatalogService;
 use Everest\Services\Extensions\ExtensionInstallProgressService;
+use Everest\Services\Extensions\ExtensionPackageBatchService;
 use Everest\Services\Extensions\ExtensionPackageInstallService;
 use Everest\Services\Extensions\ExtensionPackageUninstallService;
 use Everest\Services\Extensions\ExtensionPackageUpdateService;
@@ -31,6 +34,7 @@ class ExtensionsController extends ApplicationApiController
         private ExtensionPackageInstallService $installService,
         private ExtensionPackageUninstallService $uninstallService,
         private ExtensionPackageUpdateService $updateService,
+        private ExtensionPackageBatchService $batchService,
         private ExtensionInstallProgressService $progressService
     )
     {
@@ -389,7 +393,83 @@ class ExtensionsController extends ApplicationApiController
     }
 
     /**
-     * @return array<string, mixed>|null
+     * Install multiple extensions as a batch, performing all file operations first
+     * and rebuilding the panel only once after all files are in place.
+     */
+    public function batchInstall(BatchInstallExtensionRequest $request): JsonResponse
+    {
+        $items = array_map(fn (array $item) => [
+            'extensionId'  => $item['extension_id'],
+            'repositoryId' => (int) $item['repository_id'],
+            'version'      => $item['version'] ?? null,
+        ], $request->input('extensions', []));
+
+        $this->batchService->batchInstall($items);
+
+        foreach ($items as $item) {
+            Activity::event('admin:extensions:install')
+                ->property('extension_id', $item['extensionId'])
+                ->property('batch', true)
+                ->log();
+        }
+
+        return new JsonResponse([
+            'object' => 'list',
+            'data'   => $this->catalogService->getCatalog()['extensions'],
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Uninstall multiple extensions as a batch, removing all files first
+     * and rebuilding the panel only once after all files are removed.
+     */
+    public function batchUninstall(BatchUninstallExtensionRequest $request): JsonResponse
+    {
+        $extensionIds = $request->input('extension_ids', []);
+
+        $this->batchService->batchUninstall($extensionIds);
+
+        foreach ($extensionIds as $extensionId) {
+            Activity::event('admin:extensions:uninstall')
+                ->property('extension_id', $extensionId)
+                ->property('batch', true)
+                ->log();
+        }
+
+        return new JsonResponse([
+            'object' => 'list',
+            'data'   => $this->catalogService->getCatalog()['extensions'],
+        ]);
+    }
+
+    /**
+     * Update multiple extensions as a batch, performing all file operations first
+     * and rebuilding the panel only once after all files are in place.
+     */
+    public function batchUpdate(BatchInstallExtensionRequest $request): JsonResponse
+    {
+        $items = array_map(fn (array $item) => [
+            'extensionId'  => $item['extension_id'],
+            'repositoryId' => (int) $item['repository_id'],
+            'version'      => $item['version'] ?? null,
+        ], $request->input('extensions', []));
+
+        $this->batchService->batchUpdate($items);
+
+        foreach ($items as $item) {
+            Activity::event('admin:extensions:update-package')
+                ->property('extension_id', $item['extensionId'])
+                ->property('batch', true)
+                ->log();
+        }
+
+        return new JsonResponse([
+            'object' => 'list',
+            'data'   => $this->catalogService->getCatalog()['extensions'],
+        ]);
+    }
+
+    /**
      */
     private function getManageableExtension(string $extensionId): ?array
     {

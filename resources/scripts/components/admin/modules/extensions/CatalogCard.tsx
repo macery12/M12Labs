@@ -136,6 +136,8 @@ interface Props {
     extension: ExtensionData;
     currentPanelVersion?: string;
     activePackageAction: PackageActionState | null;
+    isSelected?: boolean;
+    onToggleSelect?: () => void;
     onRefresh: () => void;
     onPackageActionStart: (action: PackageActionState) => void;
     onPackageActionEnd: (extensionId: string) => void;
@@ -171,6 +173,8 @@ export default ({
     extension,
     currentPanelVersion,
     activePackageAction,
+    isSelected = false,
+    onToggleSelect,
     onRefresh,
     onPackageActionStart,
     onPackageActionEnd,
@@ -580,12 +584,27 @@ export default ({
             <div
                 className={classNames(
                     'flex h-full flex-col rounded-xl border p-5 shadow-lg transition-transform duration-200',
-                    !loading && 'hover:-translate-y-1'
+                    !loading && 'hover:-translate-y-1',
+                    isSelected && 'ring-2'
                 )}
-                style={cardStyle}
+                style={{ ...cardStyle, ...(isSelected ? { outlineColor: primary } : {}) }}
             >
                 <div className={'flex items-start justify-between gap-4'}>
                     <div className={'flex items-center gap-3'}>
+                        {onToggleSelect && (
+                            <button
+                                type={'button'}
+                                onClick={onToggleSelect}
+                                className={'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors'}
+                                style={{
+                                    borderColor: isSelected ? primary : undefined,
+                                    backgroundColor: isSelected ? primary : undefined,
+                                }}
+                                aria-label={isSelected ? `Deselect ${extension.name}` : `Select ${extension.name}`}
+                            >
+                                {isSelected && <FontAwesomeIcon icon={faCheck} className={'text-xs text-white'} />}
+                            </button>
+                        )}
                         <div
                             className={'flex h-12 w-12 items-center justify-center rounded-xl'}
                             style={{ backgroundColor: `${primary}1f` }}

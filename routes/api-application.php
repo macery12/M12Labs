@@ -318,6 +318,9 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/repositories', [Application\Extensions\ExtensionsController::class, 'storeRepository']);
         Route::patch('/repositories/{repository:id}', [Application\Extensions\ExtensionsController::class, 'updateRepository']);
         Route::delete('/repositories/{repository:id}', [Application\Extensions\ExtensionsController::class, 'deleteRepository']);
+        Route::post('/batch-install', [Application\Extensions\ExtensionsController::class, 'batchInstall']);
+        Route::post('/batch-uninstall', [Application\Extensions\ExtensionsController::class, 'batchUninstall']);
+        Route::post('/batch-update', [Application\Extensions\ExtensionsController::class, 'batchUpdate']);
 
         Route::get('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'view']);
         Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);

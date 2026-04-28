@@ -32,21 +32,44 @@ class ExtensionPackageUpdateService
     public function update(string $extensionId, int $repositoryId, ?string $version = null): ExtensionPackage
     {
         return $this->operationLockService->withinLock('update', $extensionId, function () use ($extensionId, $repositoryId, $version) {
-            $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
-            $release = $package['latestRelease'];
+            $prepared = null;
+            try {
+                $prepared = $this->prepareUpdate($extensionId, $repositoryId, $version);
 
-            return $this->updateFromSource(
-                archiveLocation: $release['archiveUrl'],
-                extensionId: $extensionId,
-                expectedVersion: $release['version'],
-                expectedArchiveChecksum: $release['archiveChecksum'],
-                compatiblePanelVersions: $release['compatiblePanelVersions'] ?? [],
-                sourceRepositoryId: $package['repository']->id,
-                sourceRepositoryName: $package['repository']->name,
-                sourceRegistryUrl: $package['repository']->manifest_url,
-                sourceArchiveUrl: $release['archiveUrl'],
-                fallbackPackageMetadata: $package,
-            );
+                $this->rebuildService->rebuild(
+                    sprintf('Update extension %s', $prepared['extensionId']),
+                    function (int $index) use ($prepared): void {
+                        $this->progressService->report(
+                            'update',
+                            $prepared['extensionId'],
+                            $index === 0 ? 'optimizing' : 'building'
+                        );
+                    }
+                );
+
+                $this->progressService->report('update', $prepared['extensionId'], 'registering');
+                $packageModel = $this->finalizeUpdate($prepared);
+                $this->progressService->report('update', $prepared['extensionId'], 'completed');
+
+                return $packageModel->fresh(['repository', 'files']);
+            } catch (\Throwable $exception) {
+                if ($prepared !== null) {
+                    $this->rollbackUpdate($prepared);
+                    $this->attemptRollbackRebuild($prepared['extensionId'], 'update rollback');
+                }
+
+                if ($exception instanceof DisplayException) {
+                    throw $exception;
+                }
+
+                throw new DisplayException('Failed to update the selected extension package.', $exception);
+            } finally {
+                $this->progressService->clear();
+                $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? $extensionId);
+                if ($prepared !== null) {
+                    $this->cleanupPreparedUpdate($prepared);
+                }
+            }
         });
     }
 
@@ -59,26 +82,201 @@ class ExtensionPackageUpdateService
         $this->assertSupportedArchiveArtifact($resolvedPath);
 
         return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel) {
-            return $this->updateFromSource(
-                archiveLocation: $resolvedPath,
-                extensionId: null,
-                expectedVersion: null,
-                expectedArchiveChecksum: null,
-                compatiblePanelVersions: [],
-                sourceRepositoryId: null,
-                sourceRepositoryName: $sourceLabel ?: 'Manual package file',
-                sourceRegistryUrl: null,
-                sourceArchiveUrl: 'file://' . $resolvedPath,
-                fallbackPackageMetadata: [],
-            );
+            $prepared = null;
+            try {
+                $prepared = $this->performUpdateFileOps(
+                    archiveLocation: $resolvedPath,
+                    extensionId: null,
+                    expectedVersion: null,
+                    expectedArchiveChecksum: null,
+                    compatiblePanelVersions: [],
+                    sourceRepositoryId: null,
+                    sourceRepositoryName: $sourceLabel ?: 'Manual package file',
+                    sourceRegistryUrl: null,
+                    sourceArchiveUrl: 'file://' . $resolvedPath,
+                    fallbackPackageMetadata: [],
+                );
+
+                $this->rebuildService->rebuild(
+                    sprintf('Update extension %s', $prepared['extensionId']),
+                    function (int $index) use ($prepared): void {
+                        $this->progressService->report(
+                            'update',
+                            $prepared['extensionId'],
+                            $index === 0 ? 'optimizing' : 'building'
+                        );
+                    }
+                );
+
+                $this->progressService->report('update', $prepared['extensionId'], 'registering');
+                $packageModel = $this->finalizeUpdate($prepared);
+                $this->progressService->report('update', $prepared['extensionId'], 'completed');
+
+                return $packageModel->fresh(['repository', 'files']);
+            } catch (\Throwable $exception) {
+                if ($prepared !== null) {
+                    $this->rollbackUpdate($prepared);
+                    $this->attemptRollbackRebuild($prepared['extensionId'], 'update rollback');
+                }
+
+                if ($exception instanceof DisplayException) {
+                    throw $exception;
+                }
+
+                throw new DisplayException('Failed to update the selected extension package.', $exception);
+            } finally {
+                $this->progressService->clear();
+                if ($prepared !== null) {
+                    $this->ownershipService->repairStandardPaths($prepared['extensionId']);
+                    $this->cleanupPreparedUpdate($prepared);
+                }
+            }
         });
     }
 
     /**
+     * Prepare an extension update: download, extract, validate, and swap files into place.
+     * Does NOT rebuild the panel or modify the database.
+     *
+     * Used by the batch service to prepare multiple extensions before a single rebuild.
+     * After calling this for each extension, call ExtensionPanelRebuildService::rebuild()
+     * once, then finalizeUpdate() for each prepared result.
+     *
+     * @return array<string, mixed> Opaque prepared state; pass to finalizeUpdate() and rollbackUpdate().
+     */
+    public function prepareUpdate(string $extensionId, int $repositoryId, ?string $version = null): array
+    {
+        $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
+        $release = $package['latestRelease'];
+
+        return $this->performUpdateFileOps(
+            archiveLocation: $release['archiveUrl'],
+            extensionId: $extensionId,
+            expectedVersion: $release['version'],
+            expectedArchiveChecksum: $release['archiveChecksum'],
+            compatiblePanelVersions: $release['compatiblePanelVersions'] ?? [],
+            sourceRepositoryId: $package['repository']->id,
+            sourceRepositoryName: $package['repository']->name,
+            sourceRegistryUrl: $package['repository']->manifest_url,
+            sourceArchiveUrl: $release['archiveUrl'],
+            fallbackPackageMetadata: $package,
+        );
+    }
+
+    /**
+     * Finalize an update prepared via prepareUpdate(): write updated package records to the database.
+     * Must be called after the panel has been rebuilt.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function finalizeUpdate(array $prepared): ExtensionPackage
+    {
+        $existingPackage = $prepared['existingPackage'];
+        $normalizedManifest = $prepared['normalizedManifest'];
+        $fallbackPackageMetadata = $prepared['fallbackPackageMetadata'];
+        $newFilePlans = $prepared['newFilePlans'];
+        $oldOnlyFiles = $prepared['oldOnlyFiles'];
+        $resolvedExtensionId = $prepared['extensionId'];
+        $archiveChecksum = $prepared['archiveChecksum'];
+        $sourceRepositoryId = $prepared['sourceRepositoryId'];
+        $sourceRepositoryName = $prepared['sourceRepositoryName'];
+        $sourceRegistryUrl = $prepared['sourceRegistryUrl'];
+        $sourceArchiveUrl = $prepared['sourceArchiveUrl'];
+
+        DB::transaction(function () use (
+            $archiveChecksum,
+            $existingPackage,
+            $fallbackPackageMetadata,
+            $newFilePlans,
+            $normalizedManifest,
+            $oldOnlyFiles,
+            $resolvedExtensionId,
+            $sourceArchiveUrl,
+            $sourceRegistryUrl,
+            $sourceRepositoryId,
+            $sourceRepositoryName
+        ) {
+            ExtensionPackageFile::query()
+                ->where('extension_package_id', $existingPackage->id)
+                ->delete();
+
+            $existingPackage->update([
+                'package_id'             => Arr::get($normalizedManifest, 'package.id', Arr::get($fallbackPackageMetadata, 'id', $resolvedExtensionId)),
+                'name'                   => Arr::get($normalizedManifest, 'extension.name', Arr::get($fallbackPackageMetadata, 'name', $resolvedExtensionId)),
+                'description'            => Arr::get($normalizedManifest, 'extension.description', Arr::get($fallbackPackageMetadata, 'description', '')),
+                'author'                 => Arr::get($normalizedManifest, 'extension.author', Arr::get($fallbackPackageMetadata, 'author', 'M12Labs')),
+                'icon'                   => Arr::get($normalizedManifest, 'extension.icon', Arr::get($fallbackPackageMetadata, 'icon', 'puzzle')),
+                'route'                  => Arr::get($normalizedManifest, 'extension.route', Arr::get($fallbackPackageMetadata, 'route', $resolvedExtensionId)),
+                'installed_version'      => Arr::get($normalizedManifest, 'package.version'),
+                'source_repository_id'   => $sourceRepositoryId ?? $existingPackage->source_repository_id,
+                'source_repository_name' => $sourceRepositoryName ?? $existingPackage->source_repository_name,
+                'source_registry_url'    => $sourceRegistryUrl ?? $existingPackage->source_registry_url,
+                'source_archive_url'     => $sourceArchiveUrl,
+                'package_checksum'       => is_string($archiveChecksum) ? $archiveChecksum : null,
+                'manifest'               => $normalizedManifest,
+                'installed_at'           => now(),
+            ]);
+
+            foreach ($newFilePlans as $plan) {
+                ExtensionPackageFile::query()->create([
+                    'extension_package_id' => $existingPackage->id,
+                    'path'                 => $plan['path'],
+                    'operation'            => $plan['operation'],
+                    'installed_checksum'   => $plan['checksum'],
+                    'backup_path'          => $plan['backupPath'],
+                    'backup_checksum'      => $plan['backupChecksum'],
+                ]);
+            }
+
+            foreach ($oldOnlyFiles as $oldFile) {
+                if ($oldFile->operation === 'updated' && $oldFile->backup_path && is_file($oldFile->backup_path)) {
+                    File::delete($oldFile->backup_path);
+                }
+            }
+        });
+
+        return $existingPackage->fresh(['repository', 'files']);
+    }
+
+    /**
+     * Roll back a prepared update by restoring files from the rollback snapshot.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function rollbackUpdate(array $prepared): void
+    {
+        if ($prepared['existingPackage']) {
+            $this->restoreRollbackSnapshot($prepared['existingPackage']->files->all(), $prepared['rollbackRoot']);
+        }
+
+        $this->ownershipService->repairStandardPaths($prepared['extensionId']);
+    }
+
+    /**
+     * Clean up temp files associated with a prepared update.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function cleanupPreparedUpdate(array $prepared): void
+    {
+        if (!empty($prepared['tempRoot'])) {
+            File::deleteDirectory($prepared['tempRoot']);
+        }
+
+        if (!empty($prepared['rollbackRoot'])) {
+            File::deleteDirectory($prepared['rollbackRoot']);
+        }
+    }
+
+    /**
+     * Perform the file-operations phase of an update (download → extract → validate → swap files).
+     * Returns the prepared state needed to finalize or roll back.
+     *
      * @param array<string, mixed> $fallbackPackageMetadata
      * @param array<int, string> $compatiblePanelVersions
+     * @return array<string, mixed>
      */
-    private function updateFromSource(
+    private function performUpdateFileOps(
         string $archiveLocation,
         ?string $extensionId,
         ?string $expectedVersion,
@@ -89,7 +287,7 @@ class ExtensionPackageUpdateService
         ?string $sourceRegistryUrl,
         string $sourceArchiveUrl,
         array $fallbackPackageMetadata
-    ): ExtensionPackage {
+    ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
         $archivePath = $tempRoot . '/' . self::PACKAGE_ARTIFACT_FILENAME;
         $extractPath = $tempRoot . '/extract';
@@ -130,15 +328,11 @@ class ExtensionPackageUpdateService
             $this->assertCompatiblePanelVersions(Arr::get($normalizedManifest, 'compatiblePanelVersions', []));
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
-            // Verify installed files have not been externally modified before we touch anything.
             $this->assertInstalledFilesUnmodified($existingPackage->files->all());
-
-            // Snapshot the current state of all installed files for rollback.
             $this->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
 
             $newBackupRoot = storage_path('app/extensions/backups/' . $resolvedExtensionId . '/' . Str::uuid()->toString());
 
-            // Build plans for the new file set, inheriting backups from the current install.
             $newFilePlans = $this->prepareUpdateFilePlans(
                 $extractPath,
                 $normalizedManifest,
@@ -147,7 +341,6 @@ class ExtensionPackageUpdateService
                 $existingPackage
             );
 
-            // Files present in the old package but absent from the new set must be cleaned up.
             $newFilePaths = array_column($newFilePlans, 'path');
             /** @var array<int, ExtensionPackageFile> $oldOnlyFiles */
             $oldOnlyFiles = $existingPackage->files
@@ -157,13 +350,11 @@ class ExtensionPackageUpdateService
 
             $this->assertWritableUpdateTargets($newFilePlans, $oldOnlyFiles);
 
-            // Remove / restore old-only files before copying new content.
             $this->progressService->report('update', $resolvedExtensionId, 'removing');
             foreach ($oldOnlyFiles as $oldFile) {
                 $targetPath = base_path($oldFile->path);
 
                 if ($oldFile->operation === 'updated') {
-                    // Restore the original pre-extension file from the backup.
                     if ($oldFile->backup_path && is_file($oldFile->backup_path)) {
                         File::ensureDirectoryExists(dirname($targetPath));
                         File::copy($oldFile->backup_path, $targetPath);
@@ -173,103 +364,41 @@ class ExtensionPackageUpdateService
                 }
             }
 
-            // Copy new files to their target locations.
             $this->progressService->report('update', $resolvedExtensionId, 'copying');
             foreach ($newFilePlans as $plan) {
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
                 File::copy($plan['sourcePath'], $plan['targetPath']);
             }
 
-            // Rebuild the panel once after all filesystem changes.
-            $this->rebuildService->rebuild(
-                sprintf('Update extension %s', $resolvedExtensionId),
-                function (int $index) use ($resolvedExtensionId): void {
-                    $this->progressService->report(
-                        'update',
-                        $resolvedExtensionId,
-                        $index === 0 ? 'optimizing' : 'building'
-                    );
-                }
-            );
-
-            $this->progressService->report('update', $resolvedExtensionId, 'registering');
-            DB::transaction(function () use (
-                $archiveChecksum,
-                $existingPackage,
-                $fallbackPackageMetadata,
-                $newFilePlans,
-                $normalizedManifest,
-                $oldOnlyFiles,
-                $resolvedExtensionId,
-                $sourceArchiveUrl,
-                $sourceRegistryUrl,
-                $sourceRepositoryId,
-                $sourceRepositoryName
-            ) {
-                // Replace all tracked file records for this package.
-                ExtensionPackageFile::query()
-                    ->where('extension_package_id', $existingPackage->id)
-                    ->delete();
-
-                // Update the package metadata to the new version.
-                $existingPackage->update([
-                    'package_id'           => Arr::get($normalizedManifest, 'package.id', Arr::get($fallbackPackageMetadata, 'id', $resolvedExtensionId)),
-                    'name'                 => Arr::get($normalizedManifest, 'extension.name', Arr::get($fallbackPackageMetadata, 'name', $resolvedExtensionId)),
-                    'description'          => Arr::get($normalizedManifest, 'extension.description', Arr::get($fallbackPackageMetadata, 'description', '')),
-                    'author'               => Arr::get($normalizedManifest, 'extension.author', Arr::get($fallbackPackageMetadata, 'author', 'M12Labs')),
-                    'icon'                 => Arr::get($normalizedManifest, 'extension.icon', Arr::get($fallbackPackageMetadata, 'icon', 'puzzle')),
-                    'route'                => Arr::get($normalizedManifest, 'extension.route', Arr::get($fallbackPackageMetadata, 'route', $resolvedExtensionId)),
-                    'installed_version'    => Arr::get($normalizedManifest, 'package.version'),
-                    'source_repository_id' => $sourceRepositoryId ?? $existingPackage->source_repository_id,
-                    'source_repository_name' => $sourceRepositoryName ?? $existingPackage->source_repository_name,
-                    'source_registry_url'  => $sourceRegistryUrl ?? $existingPackage->source_registry_url,
-                    'source_archive_url'   => $sourceArchiveUrl,
-                    'package_checksum'     => is_string($archiveChecksum) ? $archiveChecksum : null,
-                    'manifest'             => $normalizedManifest,
-                    'installed_at'         => now(),
-                ]);
-
-                // Record the new file set.
-                foreach ($newFilePlans as $plan) {
-                    ExtensionPackageFile::query()->create([
-                        'extension_package_id' => $existingPackage->id,
-                        'path'                 => $plan['path'],
-                        'operation'            => $plan['operation'],
-                        'installed_checksum'   => $plan['checksum'],
-                        'backup_path'          => $plan['backupPath'],
-                        'backup_checksum'      => $plan['backupChecksum'],
-                    ]);
-                }
-
-                // Clean up on-disk backups for old-only 'updated' files; the
-                // originals have already been restored to their live paths.
-                foreach ($oldOnlyFiles as $oldFile) {
-                    if ($oldFile->operation === 'updated' && $oldFile->backup_path && is_file($oldFile->backup_path)) {
-                        File::delete($oldFile->backup_path);
-                    }
-                }
-            });
-
-            $this->progressService->report('update', $resolvedExtensionId, 'completed');
-
-            return $existingPackage->fresh(['repository', 'files']);
+            return [
+                'extensionId'            => $resolvedExtensionId,
+                'existingPackage'        => $existingPackage,
+                'normalizedManifest'     => $normalizedManifest,
+                'fallbackPackageMetadata' => $fallbackPackageMetadata,
+                'newFilePlans'           => $newFilePlans,
+                'oldOnlyFiles'           => $oldOnlyFiles,
+                'archiveChecksum'        => is_string($archiveChecksum) ? $archiveChecksum : null,
+                'sourceRepositoryId'     => $sourceRepositoryId,
+                'sourceRepositoryName'   => $sourceRepositoryName,
+                'sourceRegistryUrl'      => $sourceRegistryUrl,
+                'sourceArchiveUrl'       => $sourceArchiveUrl,
+                'rollbackRoot'           => $rollbackRoot,
+                'tempRoot'               => $tempRoot,
+            ];
         } catch (\Throwable $exception) {
-            // Restore the previous installation state from the rollback snapshot.
             if ($existingPackage) {
                 $this->restoreRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
-                $this->attemptRollbackRebuild($resolvedExtensionId ?? 'extension', 'update rollback');
             }
+
+            $this->ownershipService->repairStandardPaths($resolvedExtensionId);
+            File::deleteDirectory($tempRoot);
+            File::deleteDirectory($rollbackRoot);
 
             if ($exception instanceof DisplayException) {
                 throw $exception;
             }
 
-            throw new DisplayException('Failed to update the selected extension package.', $exception);
-        } finally {
-            $this->progressService->clear();
-            $this->ownershipService->repairStandardPaths($resolvedExtensionId);
-            File::deleteDirectory($tempRoot);
-            File::deleteDirectory($rollbackRoot);
+            throw new DisplayException('Failed to prepare the extension package for update.', $exception);
         }
     }
 
