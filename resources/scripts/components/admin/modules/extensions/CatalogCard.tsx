@@ -33,6 +33,7 @@ import {
     faTriangleExclamation,
     faCheck,
     faXmark,
+    faArrowsRotate,
 } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { Button } from '@/elements/button';
@@ -52,9 +53,10 @@ import {
     toggleExtension,
     uninstallExtension,
     updateExtension,
+    upgradeExtension,
 } from '@/api/routes/admin/extensions';
 
-type PackageActionType = 'install' | 'uninstall';
+type PackageActionType = 'install' | 'uninstall' | 'update';
 
 type PackageStep =
     | 'queued'
@@ -85,6 +87,19 @@ const UNINSTALL_STEP_SEQUENCE: PackageStep[] = [
     'queued',
     'validating',
     'removing',
+    'optimizing',
+    'building',
+    'registering',
+    'completed',
+];
+
+const UPDATE_STEP_SEQUENCE: PackageStep[] = [
+    'queued',
+    'downloading',
+    'extracting',
+    'validating',
+    'removing',
+    'copying',
     'optimizing',
     'building',
     'registering',
@@ -190,7 +205,7 @@ export default ({
                     if (
                         progress &&
                         progress.extension_id === extension.id &&
-                        (progress.action === 'install' || progress.action === 'uninstall')
+                        (progress.action === 'install' || progress.action === 'uninstall' || progress.action === 'update')
                     ) {
                         const stage = progress.stage as PackageStep;
                         setPackageStep(stage);
@@ -426,6 +441,57 @@ export default ({
             });
     };
 
+    const handleUpdate = () => {
+        if (packageActionNotice) {
+            clearFlashes('admin:extensions');
+            addFlash({
+                key: 'admin:extensions',
+                type: 'warning',
+                message: packageActionNotice,
+            });
+
+            return;
+        }
+
+        if (!extension.updateAvailable || !extension.source?.repositoryId) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Update ${extension.name} from v${extension.version} to v${extension.latestVersion ?? 'latest'}? The panel will be rebuilt after the update.`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setLoading(true);
+        clearFlashes('admin:extensions');
+        onPackageActionStart({ extensionId: extension.id, extensionName: extension.name, type: 'update' });
+        setActiveActionType('update');
+        setPackageStep('queued');
+        startPolling();
+
+        upgradeExtension(extension.id, extension.source.repositoryId)
+            .then(() => {
+                finishPackageProgress(true);
+                addFlash({
+                    key: 'admin:extensions',
+                    type: 'success',
+                    message: `${extension.name} was updated to v${extension.latestVersion ?? 'latest'} and M12Labs was rebuilt.`,
+                });
+                onRefresh();
+            })
+            .catch(error => {
+                finishPackageProgress(false);
+                clearAndAddHttpError({ key: 'admin:extensions', error });
+            })
+            .finally(() => {
+                setLoading(false);
+                onPackageActionEnd(extension.id);
+            });
+    };
+
     const handleSaveConfig = () => {
         setLoading(true);
         clearFlashes('admin:extensions');
@@ -637,6 +703,17 @@ export default ({
                         Configure
                     </Button.Text>
 
+                    {extension.updateAvailable && extension.canUninstall && extension.source?.repositoryId && (
+                        <Button
+                            onClick={handleUpdate}
+                            loading={loading}
+                            disabled={loading || anotherPackageActionInProgress}
+                        >
+                            <FontAwesomeIcon icon={faArrowsRotate} className={'mr-2'} />
+                            Update to v{extension.latestVersion}
+                        </Button>
+                    )}
+
                     {extension.canUninstall && (
                         <Button.Danger
                             onClick={handleUninstall}
@@ -675,7 +752,9 @@ export default ({
                             {(() => {
                                 const sequence = activeActionType === 'uninstall'
                                     ? UNINSTALL_STEP_SEQUENCE
-                                    : INSTALL_STEP_SEQUENCE;
+                                    : activeActionType === 'update'
+                                      ? UPDATE_STEP_SEQUENCE
+                                      : INSTALL_STEP_SEQUENCE;
                                 const isTerminal = packageStep === 'completed' || packageStep === 'failed';
                                 const currentIndex = isTerminal ? sequence.length : sequence.indexOf(packageStep);
 

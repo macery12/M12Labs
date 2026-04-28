@@ -40,13 +40,32 @@ class ExtensionInstallProgressService
     ];
 
     /**
+     * Valid stage identifiers emitted during a package update.
+     */
+    public const UPDATE_STAGES = [
+        'downloading',
+        'extracting',
+        'validating',
+        'removing',
+        'copying',
+        'optimizing',
+        'building',
+        'registering',
+        'completed',
+    ];
+
+    /**
      * Record the current stage of an in-progress operation.
      *
      * @throws \InvalidArgumentException if $action or $stage is not recognised.
      */
     public function report(string $action, string $extensionId, string $stage): void
     {
-        $validStages = $action === 'install' ? self::INSTALL_STAGES : self::UNINSTALL_STAGES;
+        $validStages = match ($action) {
+            'install'   => self::INSTALL_STAGES,
+            'update'    => self::UPDATE_STAGES,
+            default     => self::UNINSTALL_STAGES,
+        };
 
         if (!in_array($stage, $validStages, true)) {
             throw new \InvalidArgumentException(

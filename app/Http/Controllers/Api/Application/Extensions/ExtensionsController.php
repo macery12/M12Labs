@@ -22,6 +22,7 @@ use Everest\Services\Extensions\ExtensionCatalogService;
 use Everest\Services\Extensions\ExtensionInstallProgressService;
 use Everest\Services\Extensions\ExtensionPackageInstallService;
 use Everest\Services\Extensions\ExtensionPackageUninstallService;
+use Everest\Services\Extensions\ExtensionPackageUpdateService;
 
 class ExtensionsController extends ApplicationApiController
 {
@@ -29,6 +30,7 @@ class ExtensionsController extends ApplicationApiController
         private ExtensionCatalogService $catalogService,
         private ExtensionPackageInstallService $installService,
         private ExtensionPackageUninstallService $uninstallService,
+        private ExtensionPackageUpdateService $updateService,
         private ExtensionInstallProgressService $progressService
     )
     {
@@ -54,6 +56,19 @@ class ExtensionsController extends ApplicationApiController
         return new JsonResponse([
             'object' => 'list',
             'data' => $this->catalogService->getRepositories(),
+        ]);
+    }
+
+    /**
+     * Force-refresh all repository manifests (bust cache) and return the updated extension list.
+     */
+    public function refresh(GetExtensionsRequest $request): JsonResponse
+    {
+        $catalog = $this->catalogService->getCatalog(forceRefresh: true);
+
+        return new JsonResponse([
+            'object' => 'list',
+            'data' => $catalog['extensions'],
         ]);
     }
 
@@ -182,7 +197,30 @@ class ExtensionsController extends ApplicationApiController
     }
 
     /**
-     * Return the current install/uninstall progress stage for polling by the frontend.
+     * Update an already-installed repository-backed extension package to a newer version.
+     */
+    public function updatePackage(InstallExtensionRequest $request, string $extensionId): JsonResponse
+    {
+        $package = $this->updateService->update(
+            $extensionId,
+            (int) $request->input('repository_id'),
+            $request->input('version')
+        );
+
+        Activity::event('admin:extensions:update-package')
+            ->property('extension_id', $extensionId)
+            ->property('version', $package->installed_version)
+            ->property('repository', $package->source_repository_name)
+            ->log();
+
+        return new JsonResponse([
+            'object' => 'extension',
+            'attributes' => $this->catalogService->getExtension($extensionId, true),
+        ]);
+    }
+
+    /**
+     * Return the current install/uninstall/update progress stage for polling by the frontend.
      * Returns null when no operation is in progress.
      */
     public function progress(GetExtensionsRequest $request): JsonResponse

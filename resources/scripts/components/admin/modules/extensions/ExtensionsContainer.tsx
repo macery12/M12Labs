@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStoreState } from '@/state/hooks';
-import { ExtensionData, getExtensions } from '@/api/routes/admin/extensions';
+import { ExtensionData, getExtensions, refreshExtensions } from '@/api/routes/admin/extensions';
 import getVersion from '@/api/routes/admin/getVersion';
 import CatalogCard from './CatalogCard';
 import Spinner from '@/elements/Spinner';
 import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons';
 
 type PackageActionState = {
     extensionId: string;
     extensionName: string;
-    type: 'install' | 'uninstall';
+    type: 'install' | 'uninstall' | 'update';
 };
 
 export default () => {
@@ -22,7 +24,8 @@ export default () => {
     const [panelSupportFilter, setPanelSupportFilter] = useState('all');
     const [activePackageAction, setActivePackageAction] = useState<PackageActionState | null>(null);
     const [loading, setLoading] = useState(true);
-    const { clearAndAddHttpError } = useFlash();
+    const [refreshing, setRefreshing] = useState(false);
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
 
     const withAlpha = (color: string, alpha: string) => `${color}${alpha}`;
 
@@ -47,6 +50,22 @@ export default () => {
             .then(data => setExtensions(data))
             .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
             .finally(() => setLoading(false));
+    };
+
+    const handleCheckForUpdates = () => {
+        setRefreshing(true);
+        clearFlashes('admin:extensions');
+        refreshExtensions()
+            .then(data => {
+                setExtensions(data);
+                addFlash({
+                    key: 'admin:extensions',
+                    type: 'success',
+                    message: 'Repository manifests refreshed. Update status is now up to date.',
+                });
+            })
+            .catch(error => clearAndAddHttpError({ key: 'admin:extensions', error }))
+            .finally(() => setRefreshing(false));
     };
 
     useEffect(() => {
@@ -180,7 +199,7 @@ export default () => {
 
     const hasActiveFilters = catalogFilter !== 'all' || panelSupportFilter !== 'all';
     const activePackageActionMessage = activePackageAction
-        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
+        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : activePackageAction.type === 'uninstall' ? 'uninstalling' : 'updating'} before starting another extension install, update, or uninstall.`
         : null;
 
     const handlePackageActionStart = (action: PackageActionState) => {
@@ -253,16 +272,27 @@ export default () => {
                             {currentPanelVersion ? ` for panel ${currentPanelVersion}` : ''}.
                         </p>
                     </div>
-                    <Button.Text
-                        onClick={() => {
-                            setCatalogFilter('all');
-                            setPanelSupportFilter('all');
-                        }}
-                        disabled={!hasActiveFilters}
-                        variant={Button.Variants.Secondary}
-                    >
-                        Clear filters
-                    </Button.Text>
+                    <div className={'flex items-center gap-2'}>
+                        <Button.Text
+                            onClick={handleCheckForUpdates}
+                            loading={refreshing}
+                            disabled={refreshing || !!activePackageAction}
+                            variant={Button.Variants.Secondary}
+                        >
+                            <FontAwesomeIcon icon={faArrowsRotate} className={'mr-2'} />
+                            Check for updates
+                        </Button.Text>
+                        <Button.Text
+                            onClick={() => {
+                                setCatalogFilter('all');
+                                setPanelSupportFilter('all');
+                            }}
+                            disabled={!hasActiveFilters}
+                            variant={Button.Variants.Secondary}
+                        >
+                            Clear filters
+                        </Button.Text>
+                    </div>
                 </div>
 
                 <div className={'mt-4 grid gap-4 lg:grid-cols-2'}>

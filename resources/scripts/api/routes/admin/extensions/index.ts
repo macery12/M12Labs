@@ -89,6 +89,11 @@ export const getExtensions = async (): Promise<ExtensionData[]> => {
     return data.data;
 };
 
+export const refreshExtensions = async (): Promise<ExtensionData[]> => {
+    const { data } = await http.post('/api/application/extensions/refresh');
+    return data.data;
+};
+
 export const getExtension = async (extensionId: string): Promise<ExtensionData> => {
     const { data } = await http.get(`/api/application/extensions/${extensionId}`);
     return data.attributes ?? data;
@@ -143,6 +148,20 @@ export const uninstallExtension = async (extensionId: string): Promise<Extension
     const { data } = await http.post(
         `/api/application/extensions/${extensionId}/uninstall`,
         {},
+        { timeout: 300000 }
+    );
+
+    return data.attributes ?? data;
+};
+
+export const upgradeExtension = async (
+    extensionId: string,
+    repositoryId: number,
+    version?: string
+): Promise<ExtensionData> => {
+    const { data } = await http.post(
+        `/api/application/extensions/${extensionId}/update-package`,
+        { repository_id: repositoryId, version },
         { timeout: 300000 }
     );
 
