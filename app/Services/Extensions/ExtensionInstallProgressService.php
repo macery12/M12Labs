@@ -64,12 +64,13 @@ class ExtensionInstallProgressService
     public function report(string $action, string $extensionId, string $stage, ?int $batchTotal = null, ?int $batchCurrent = null): void
     {
         $validStages = match ($action) {
-            'install'       => self::INSTALL_STAGES,
-            'update'        => self::UPDATE_STAGES,
-            'batch-install' => self::INSTALL_STAGES,
+            'install'         => self::INSTALL_STAGES,
+            'uninstall'       => self::UNINSTALL_STAGES,
+            'update'          => self::UPDATE_STAGES,
+            'batch-install'   => self::INSTALL_STAGES,
             'batch-uninstall' => self::UNINSTALL_STAGES,
-            'batch-update'  => self::UPDATE_STAGES,
-            default         => self::UNINSTALL_STAGES,
+            'batch-update'    => self::UPDATE_STAGES,
+            default           => throw new \InvalidArgumentException(sprintf('Unknown extension action "%s".', $action)),
         };
 
         if (!in_array($stage, $validStages, true)) {

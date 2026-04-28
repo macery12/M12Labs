@@ -25,6 +25,7 @@ class ExtensionPackageBatchService
         private ExtensionPackageUpdateService $updateService,
         private ExtensionPanelRebuildService $rebuildService,
         private ExtensionOperationLockService $operationLockService,
+        private ExtensionFilesystemOwnershipService $ownershipService,
         private ExtensionInstallProgressService $progressService
     ) {
     }
@@ -98,6 +99,7 @@ class ExtensionPackageBatchService
             } finally {
                 $this->progressService->clear();
                 foreach ($preparedList as $prepared) {
+                    $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? null);
                     $this->installService->cleanupPreparedInstall($prepared);
                 }
             }
@@ -165,6 +167,7 @@ class ExtensionPackageBatchService
             } finally {
                 $this->progressService->clear();
                 foreach ($preparedList as $prepared) {
+                    $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? null);
                     $this->uninstallService->cleanupPreparedUninstall($prepared);
                 }
             }
@@ -240,6 +243,7 @@ class ExtensionPackageBatchService
             } finally {
                 $this->progressService->clear();
                 foreach ($preparedList as $prepared) {
+                    $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? null);
                     $this->updateService->cleanupPreparedUpdate($prepared);
                 }
             }

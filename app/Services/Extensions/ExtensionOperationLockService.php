@@ -36,28 +36,21 @@ class ExtensionOperationLockService
     private function buildBlockedMessage(): string
     {
         $context = Cache::get(self::CONTEXT_KEY);
+        $action = is_array($context) ? ($context['action'] ?? null) : null;
         $subject = is_array($context) ? trim((string) ($context['subject'] ?? '')) : '';
 
-        return match (is_array($context) ? ($context['action'] ?? null) : null) {
-            'install' => $subject !== ''
-                ? sprintf(
-                    'Another extension is currently being installed (%s). Wait for the previous extension action to finish before starting a new install, update, or uninstall.',
-                    $subject
-                )
-                : 'Another extension is currently being installed. Wait for the previous extension action to finish before starting a new install, update, or uninstall.',
-            'update' => $subject !== ''
-                ? sprintf(
-                    'Another extension is currently being updated (%s). Wait for the previous extension action to finish before starting a new install, update, or uninstall.',
-                    $subject
-                )
-                : 'Another extension is currently being updated. Wait for the previous extension action to finish before starting a new install, update, or uninstall.',
-            'uninstall' => $subject !== ''
-                ? sprintf(
-                    'Another extension is currently being uninstalled (%s). Wait for the previous extension action to finish before starting a new install, update, or uninstall.',
-                    $subject
-                )
-                : 'Another extension is currently being uninstalled. Wait for the previous extension action to finish before starting a new install, update, or uninstall.',
-            default => 'Another extension action is already running. Wait for the previous install, update, or uninstall to finish before starting a new one.',
-        };
+        if ($action === null) {
+            return 'Another extension action is already running. Wait for the previous install, update, or uninstall to finish before starting a new one.';
+        }
+
+        // NOTE: Current actions (install, update, uninstall) all form regular past participles
+        // with "-ed". If a new action with an irregular past tense is added, use a lookup map.
+        $suffix = $subject !== '' ? sprintf(' (%s)', $subject) : '';
+
+        return sprintf(
+            'Another extension is currently being %sed%s. Wait for the previous extension action to finish before starting a new install, update, or uninstall.',
+            $action,
+            $suffix
+        );
     }
 }
