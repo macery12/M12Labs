@@ -29,7 +29,17 @@ interface ItemTooltipProps {
 }
 
 // Enchantments that only have one level (don't show roman numeral)
-const SINGLE_LEVEL_ENCHANTS = ['Mending', 'Aqua Affinity', 'Curse of Binding', 'Curse of Vanishing', 'Multishot', 'Silk Touch', 'Flame', 'Infinity', 'Channeling'];
+const SINGLE_LEVEL_ENCHANTS = [
+    'Mending',
+    'Aqua Affinity',
+    'Curse of Binding',
+    'Curse of Vanishing',
+    'Multishot',
+    'Silk Touch',
+    'Flame',
+    'Infinity',
+    'Channeling',
+];
 
 // Format enchantment display - hide roman numeral for single-level enchants
 const formatEnchant = (name: string, levelRoman: string): string => {
@@ -41,48 +51,55 @@ const formatEnchant = (name: string, levelRoman: string): string => {
 
 const ItemTooltip = ({ item, position }: ItemTooltipProps) => {
     const isContainer = item.contents && item.contents.length > 0;
-    const isEnchantedBook = item.id === 'minecraft:enchanted_book' && item.storedEnchantments && item.storedEnchantments.length > 0;
-    
+    const isEnchantedBook =
+        item.id === 'minecraft:enchanted_book' && item.storedEnchantments && item.storedEnchantments.length > 0;
+
     // Helper to format an item's display name with enchants for container contents
     const formatContainerItem = (contentItem: InventoryItem): string => {
         // For enchanted books, show the stored enchantment instead of "Enchanted Book"
-        if (contentItem.id === 'minecraft:enchanted_book' && contentItem.storedEnchantments && contentItem.storedEnchantments.length > 0) {
+        if (
+            contentItem.id === 'minecraft:enchanted_book' &&
+            contentItem.storedEnchantments &&
+            contentItem.storedEnchantments.length > 0
+        ) {
             return contentItem.storedEnchantments.map(e => formatEnchant(e.name, e.levelRoman)).join(', ');
         }
-        
+
         // For other items with enchantments, show item name + enchants
         if (contentItem.enchantments && contentItem.enchantments.length > 0) {
             const enchantStr = contentItem.enchantments.map(e => formatEnchant(e.name, e.levelRoman)).join(', ');
             return `${contentItem.customName || contentItem.name} (${enchantStr})`;
         }
-        
+
         return contentItem.customName || contentItem.name;
     };
-    
+
     // Group container items by their formatted display name
-    const groupContainerItems = (contents: InventoryItem[]): { name: string; count: number; isEnchantedBook: boolean }[] => {
+    const groupContainerItems = (
+        contents: InventoryItem[],
+    ): { name: string; count: number; isEnchantedBook: boolean }[] => {
         const groups: Record<string, { count: number; isEnchantedBook: boolean }> = {};
-        
+
         contents.forEach(contentItem => {
             const displayName = formatContainerItem(contentItem);
             const isBook = contentItem.id === 'minecraft:enchanted_book';
-            
+
             if (groups[displayName]) {
                 groups[displayName].count += contentItem.count;
             } else {
                 groups[displayName] = { count: contentItem.count, isEnchantedBook: isBook };
             }
         });
-        
+
         return Object.entries(groups).map(([name, data]) => ({
             name,
             count: data.count,
             isEnchantedBook: data.isEnchantedBook,
         }));
     };
-    
+
     const groupedContents = isContainer ? groupContainerItems(item.contents) : [];
-    
+
     return (
         <div
             className="pointer-events-none fixed z-[100] max-w-xs rounded-lg bg-neutral-900 p-3 shadow-xl border border-neutral-700"
@@ -96,7 +113,7 @@ const ItemTooltip = ({ item, position }: ItemTooltipProps) => {
                 {item.customName || item.name}
                 {item.count > 1 && <span className="ml-1 text-neutral-400">x{item.count}</span>}
             </div>
-            
+
             {/* Item ID */}
             <div className="text-xs text-neutral-500">{item.id}</div>
 
@@ -133,11 +150,12 @@ const ItemTooltip = ({ item, position }: ItemTooltipProps) => {
                             className="h-full rounded transition-all"
                             style={{
                                 width: `${item.durability.percentage}%`,
-                                backgroundColor: item.durability.percentage > 50
-                                    ? '#22c55e'
-                                    : item.durability.percentage > 20
-                                    ? '#eab308'
-                                    : '#ef4444',
+                                backgroundColor:
+                                    item.durability.percentage > 50
+                                        ? '#22c55e'
+                                        : item.durability.percentage > 20
+                                        ? '#eab308'
+                                        : '#ef4444',
                             }}
                         />
                     </div>
@@ -243,9 +261,7 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
 
     return (
         <div className="relative">
-            {label && (
-                <div className="mb-1 text-center text-xs text-neutral-500">{label}</div>
-            )}
+            {label && <div className="mb-1 text-center text-xs text-neutral-500">{label}</div>}
             <div
                 className={`${slotClasses[slotType]} rounded bg-neutral-700/50 border border-neutral-600 flex items-center justify-center relative cursor-pointer transition-all hover:border-neutral-500`}
                 onMouseEnter={() => setHovered(true)}
@@ -294,11 +310,12 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
                                     className="h-full"
                                     style={{
                                         width: `${item.durability.percentage}%`,
-                                        backgroundColor: item.durability.percentage > 50
-                                            ? '#22c55e'
-                                            : item.durability.percentage > 20
-                                            ? '#eab308'
-                                            : '#ef4444',
+                                        backgroundColor:
+                                            item.durability.percentage > 50
+                                                ? '#22c55e'
+                                                : item.durability.percentage > 20
+                                                ? '#eab308'
+                                                : '#ef4444',
                                     }}
                                 />
                             </div>
@@ -308,9 +325,7 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
                     <div className="w-full h-full" />
                 )}
             </div>
-            {hovered && item && item.id !== 'minecraft:air' && (
-                <ItemTooltip item={item} position={tooltipPos} />
-            )}
+            {hovered && item && item.id !== 'minecraft:air' && <ItemTooltip item={item} position={tooltipPos} />}
         </div>
     );
 };
@@ -393,9 +408,7 @@ const LocationDisplay = ({ location }: LocationDisplayProps) => {
             </div>
             <div className="mt-3 pt-3 border-t border-neutral-700">
                 <div className="text-neutral-500 text-xs mb-1">Dimension</div>
-                <div className={`font-medium ${getDimensionColor(location.dimension)}`}>
-                    {location.world}
-                </div>
+                <div className={`font-medium ${getDimensionColor(location.dimension)}`}>{location.world}</div>
             </div>
         </div>
     );
@@ -421,7 +434,9 @@ const StatsDisplay = ({ stats }: StatsDisplayProps) => {
                         <span className="flex items-center gap-1 text-red-400">
                             <FontAwesomeIcon icon={faHeart} /> Health
                         </span>
-                        <span className="text-white">{stats.health.toFixed(1)}/{stats.maxHealth}</span>
+                        <span className="text-white">
+                            {stats.health.toFixed(1)}/{stats.maxHealth}
+                        </span>
                     </div>
                     <div className="h-2 rounded bg-neutral-700 overflow-hidden">
                         <div
@@ -514,9 +529,7 @@ const InventoryViewer = ({ visible, onDismissed, onBack, serverUuid, playerName 
             <div className="max-h-[85vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-white">
-                        {playerName}'s Data
-                    </h2>
+                    <h2 className="text-xl font-semibold text-white">{playerName}'s Data</h2>
                     <button
                         onClick={() => {
                             onDismissed();
@@ -593,7 +606,7 @@ const InventoryViewer = ({ visible, onDismissed, onBack, serverUuid, playerName 
                                             <FontAwesomeIcon icon={faBox} style={{ color: primary }} />
                                             Inventory
                                         </h4>
-                                        
+
                                         {/* Hotbar (slots 0-8) */}
                                         <div className="mb-4">
                                             <div className="text-xs text-neutral-500 mb-1">Hotbar</div>
@@ -624,12 +637,7 @@ const InventoryViewer = ({ visible, onDismissed, onBack, serverUuid, playerName 
                                     <FontAwesomeIcon icon={faBoxesStacked} className="text-purple-400" />
                                     Ender Chest
                                 </h4>
-                                <InventoryGrid
-                                    items={data.enderChest || []}
-                                    rows={3}
-                                    cols={9}
-                                    startSlot={0}
-                                />
+                                <InventoryGrid items={data.enderChest || []} rows={3} cols={9} startSlot={0} />
                             </div>
                         )}
                     </div>

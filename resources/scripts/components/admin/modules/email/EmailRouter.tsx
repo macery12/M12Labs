@@ -13,28 +13,27 @@ export default () => {
     return (
         <PageContentBlock title={'Email Management'}>
             <SubNavigation>
-                <SubNavigationLink to='/admin/email' name='Settings' base />
-                <SubNavigationLink to='/admin/email/notifications' name='Notifications' />
-                <SubNavigationLink to='/admin/email/activity' name='Activity Log' />
-                <SubNavigationLink to='/admin/email/queue' name='Deferred Queue' />
-                <SubNavigationLink to='/admin/email/verification' name='Verification Restrictions' />
-                <SubNavigationLink to='/admin/email/templates' name='Template Editor' />
+                <SubNavigationLink to="/admin/email" name="Settings" base />
+                <SubNavigationLink to="/admin/email/notifications" name="Notifications" />
+                <SubNavigationLink to="/admin/email/activity" name="Activity Log" />
+                <SubNavigationLink to="/admin/email/queue" name="Deferred Queue" />
+                <SubNavigationLink to="/admin/email/verification" name="Verification Restrictions" />
+                <SubNavigationLink to="/admin/email/templates" name="Template Editor" />
             </SubNavigation>
 
             <Routes>
                 <Route
-                    path='/'
+                    path="/"
                     element={
                         <>
                             <ContentBox title={'Email Configuration'} showFlashes={'email:settings'}>
                                 <ResendSettings />
                             </ContentBox>
-
                         </>
                     }
                 />
                 <Route
-                    path='/notifications'
+                    path="/notifications"
                     element={
                         <ContentBox title={'Email Notification Settings'} showFlashes={'email:notifications'}>
                             <NotificationSettings />
@@ -42,7 +41,7 @@ export default () => {
                     }
                 />
                 <Route
-                    path='/activity'
+                    path="/activity"
                     element={
                         <ContentBox title={'Email Activity Log'} showFlashes={'email:activity'}>
                             <EmailActivityLog />
@@ -50,7 +49,7 @@ export default () => {
                     }
                 />
                 <Route
-                    path='/queue'
+                    path="/queue"
                     element={
                         <ContentBox title={'Deferred Email Queue'} showFlashes={'email:deferred'}>
                             <DeferredQueueViewer />
@@ -58,7 +57,7 @@ export default () => {
                     }
                 />
                 <Route
-                    path='/verification'
+                    path="/verification"
                     element={
                         <ContentBox title={'Verification Restrictions'} showFlashes={'email:verification'}>
                             <VerificationRestrictions />
@@ -66,7 +65,7 @@ export default () => {
                     }
                 />
                 <Route
-                    path='/templates'
+                    path="/templates"
                     element={
                         <ContentBox title={'Email Template Editor'} showFlashes={'email:templates'}>
                             <TemplateViewer />

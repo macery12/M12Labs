@@ -75,9 +75,7 @@ export default () => {
     const renewalDate = ServerContext.useStoreState(s => s.server.data!.renewalDate);
     const billingDays = ServerContext.useStoreState(s => s.server.data!.billingDays);
     const serverStatus = ServerContext.useStoreState(s => s.server.data!.status);
-    const isDeletionScheduled = ServerContext.useStoreState(
-        s => s.server.data!.isDeletionScheduled ?? false,
-    );
+    const isDeletionScheduled = ServerContext.useStoreState(s => s.server.data!.isDeletionScheduled ?? false);
 
     // Get configurable renewal settings
     // Use the actual billing days from the server if available, otherwise fall back to default renewalDays
@@ -209,265 +207,271 @@ export default () => {
                         </div>
                     </Alert>
                 )}
-            {!product && !loading && (
-                <Alert type={'warning'} className={'mb-6'}>
-                    The product package you purchased initially no longer exists, so some details may not be shown.
-                </Alert>
-            )}
+                {!product && !loading && (
+                    <Alert type={'warning'} className={'mb-6'}>
+                        The product package you purchased initially no longer exists, so some details may not be shown.
+                    </Alert>
+                )}
 
-            {/* Billing Overview Section */}
-            <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
-                {/* Server Status Card */}
-                {renewalDate && (
-                    <TitledGreyBox title={'Renewal Status'} icon={faClock}>
-                        <SpinnerOverlay visible={loading} />
-                        {statusBadge && (
-                            <div css={tw`mb-4`}>
-                                <span
-                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white ${statusBadge.color}`}
-                                >
-                                    <FontAwesomeIcon icon={statusBadge.icon} className={'mr-2'} />
-                                    {statusBadge.text}
-                                </span>
+                {/* Billing Overview Section */}
+                <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
+                    {/* Server Status Card */}
+                    {renewalDate && (
+                        <TitledGreyBox title={'Renewal Status'} icon={faClock}>
+                            <SpinnerOverlay visible={loading} />
+                            {statusBadge && (
+                                <div css={tw`mb-4`}>
+                                    <span
+                                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white ${statusBadge.color}`}
+                                    >
+                                        <FontAwesomeIcon icon={statusBadge.icon} className={'mr-2'} />
+                                        {statusBadge.text}
+                                    </span>
+                                </div>
+                            )}
+                            <div>
+                                <Label>Next Renewal Date</Label>
+                                <p css={tw`text-gray-300 font-medium mb-1`}>
+                                    {new Date(renewalDate).toLocaleDateString('en-US', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                    })}
+                                </p>
+                                <p css={tw`text-gray-400 text-sm`}>
+                                    <FontAwesomeIcon icon={faClock} css={tw`mr-1`} />
+                                    {daysRemaining >= 0 ? (
+                                        <>
+                                            {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'},{' '}
+                                            {timeUntil(renewalDate).hours}{' '}
+                                            {timeUntil(renewalDate).hours === 1 ? 'hour' : 'hours'} remaining
+                                        </>
+                                    ) : (
+                                        <>
+                                            {daysOverdue} {daysOverdue === 1 ? 'day' : 'days'} overdue
+                                        </>
+                                    )}
+                                </p>
                             </div>
-                        )}
+                        </TitledGreyBox>
+                    )}
+
+                    {/* Package Information Card */}
+                    <TitledGreyBox title={'Package Details'} icon={faBox}>
+                        <SpinnerOverlay visible={loading} />
                         <div>
-                            <Label>Next Renewal Date</Label>
+                            <Label>Current Package</Label>
                             <p css={tw`text-gray-300 font-medium mb-1`}>
-                                {new Date(renewalDate).toLocaleDateString('en-US', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                })}
+                                {product?.name || (loading ? 'Loading...' : 'Unknown')}
                             </p>
+                            {product?.description && <p css={tw`text-gray-400 text-xs mb-3`}>{product.description}</p>}
+                        </div>
+                        <div css={tw`mt-4`}>
+                            <Label>Billing Cycle</Label>
                             <p css={tw`text-gray-400 text-sm`}>
-                                <FontAwesomeIcon icon={faClock} css={tw`mr-1`} />
-                                {daysRemaining >= 0 ? (
-                                    <>
-                                        {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'},{' '}
-                                        {timeUntil(renewalDate).hours}{' '}
-                                        {timeUntil(renewalDate).hours === 1 ? 'hour' : 'hours'} remaining
-                                    </>
-                                ) : (
-                                    <>
-                                        {daysOverdue} {daysOverdue === 1 ? 'day' : 'days'} overdue
-                                    </>
-                                )}
+                                <FontAwesomeIcon icon={faCalendarAlt} css={tw`mr-1`} />
+                                Every {actualBillingDays} days
                             </p>
                         </div>
                     </TitledGreyBox>
-                )}
 
-                {/* Package Information Card */}
-                <TitledGreyBox title={'Package Details'} icon={faBox}>
-                    <SpinnerOverlay visible={loading} />
-                    <div>
-                        <Label>Current Package</Label>
-                        <p css={tw`text-gray-300 font-medium mb-1`}>
-                            {product?.name || (loading ? 'Loading...' : 'Unknown')}
-                        </p>
-                        {product?.description && <p css={tw`text-gray-400 text-xs mb-3`}>{product.description}</p>}
-                    </div>
-                    <div css={tw`mt-4`}>
-                        <Label>Billing Cycle</Label>
-                        <p css={tw`text-gray-400 text-sm`}>
-                            <FontAwesomeIcon icon={faCalendarAlt} css={tw`mr-1`} />
-                            Every {actualBillingDays} days
-                        </p>
-                    </div>
-                </TitledGreyBox>
-
-                {/* Pricing Card */}
-                <TitledGreyBox title={'Plan Cost'} icon={faCreditCard}>
-                    <SpinnerOverlay visible={loading} />
-                    <div>
-                        <Label>Price</Label>
-                        <p css={tw`text-3xl font-bold text-gray-200 mb-2`}>
-                            {settings.currency.symbol}
-                            {currentBillingCycle
-                                ? currentBillingCycle.price.toFixed(2)
-                                : product
-                                ? product.price
-                                : '...'}
-                            <span css={tw`text-sm font-normal text-gray-400 ml-1`}>
-                                {settings.currency.code.toUpperCase()}
-                            </span>
-                        </p>
-                        <p css={tw`text-gray-400 text-xs mb-3`}>per {actualBillingDays} day billing cycle</p>
-                        {currentBillingCycle && currentBillingCycle.discountPercent !== 0 && (
-                            <p
-                                css={tw`text-xs mb-3`}
-                                className={currentBillingCycle.discountPercent > 0 ? 'text-green-400' : 'text-red-400'}
-                            >
-                                {currentBillingCycle.discountPercent > 0 ? (
-                                    <>✓ {currentBillingCycle.discountPercent.toFixed(1)}% discount applied</>
-                                ) : (
-                                    <>
-                                        +{Math.abs(currentBillingCycle.discountPercent).toFixed(1)}% premium for shorter
-                                        cycle
-                                    </>
-                                )}
+                    {/* Pricing Card */}
+                    <TitledGreyBox title={'Plan Cost'} icon={faCreditCard}>
+                        <SpinnerOverlay visible={loading} />
+                        <div>
+                            <Label>Price</Label>
+                            <p css={tw`text-3xl font-bold text-gray-200 mb-2`}>
+                                {settings.currency.symbol}
+                                {currentBillingCycle
+                                    ? currentBillingCycle.price.toFixed(2)
+                                    : product
+                                    ? product.price
+                                    : '...'}
+                                <span css={tw`text-sm font-normal text-gray-400 ml-1`}>
+                                    {settings.currency.code.toUpperCase()}
+                                </span>
                             </p>
-                        )}
-                        <Link
-                            to={'/account/billing/orders'}
-                            css={tw`text-green-400 text-sm hover:text-green-300 transition-colors duration-150`}
-                        >
-                            View order history <FontAwesomeIcon icon={faArrowRight} css={tw`ml-1`} />
-                        </Link>
-                    </div>
-                </TitledGreyBox>
-            </div>
-
-            {!renewalDate && (
-                <Alert type={'warning'} className={'mb-4'}>
-                    There is no present renewal date for your server. Please contact support if you believe this is an
-                    error.
-                </Alert>
-            )}
-
-            {/* Action Cards Section - Renewal and Server Type Change */}
-            <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
-                {/* Renewal Section */}
-                <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
-                    {isDeletionScheduled ? (
-                        <div css={tw`space-y-3`}>
-                            <Alert type={'warning'}>
-                                This server is scheduled for deletion. Manage or cancel from Server Settings.
-                            </Alert>
-                            <Link to={settingsPath} css={settingsLinkStyles}>
-                                Manage Scheduled Deletion in Settings
-                            </Link>
-                        </div>
-                    ) : !product ? (
-                        <Alert type={'danger'}>
-                            The product package that the server was made with no longer exists. In order to renew your
-                            server, you&apos;ll need to speak to an administrator.
-                        </Alert>
-                    ) : (
-                        <>
-                            {product.price === 0 ? (
-                                <div>
-                                    <p css={tw`text-gray-300 text-xs mb-3`}>
-                                        <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
-                                        Free server - renewable {actualGracePeriod} days before expiration
-                                    </p>
-                                    {isPaymentDisabled ? (
-                                        <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more
-                                            than {maxSuspensionThresholdDays} days due to non-payment. Please create a
-                                            support ticket to restore access. Self-service payment is no longer
-                                            available.
-                                        </Alert>
-                                    ) : daysRemaining > actualGracePeriod ? (
-                                        <Alert type={'info'}>
-                                            Renewal available in {daysRemaining - actualGracePeriod} days.
-                                        </Alert>
-                                    ) : (
-                                        <div>
-                                            <p css={tw`text-gray-300 text-sm mb-3`}>
-                                                {daysRemaining >= 0 ? (
-                                                    <>Renew for {actualBillingDays} more days.</>
-                                                ) : (
-                                                    <>
-                                                        Grace period: {daysOverdue}/{actualGracePeriod} days
-                                                    </>
-                                                )}
-                                            </p>
-                                            <Button onClick={handleFreeRenewal} disabled={renewing} css={tw`w-full`}>
-                                                {renewing ? 'Renewing...' : 'Renew Server'}
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div>
-                                    {isPaymentDisabled ? (
-                                        <Alert type={'danger'}>
-                                            <strong>Server Suspended</strong> - Your server has been suspended for more
-                                            than {maxSuspensionThresholdDays} days due to non-payment. Please create a
-                                            support ticket to restore access. Self-service payment is no longer
-                                            available.
-                                        </Alert>
+                            <p css={tw`text-gray-400 text-xs mb-3`}>per {actualBillingDays} day billing cycle</p>
+                            {currentBillingCycle && currentBillingCycle.discountPercent !== 0 && (
+                                <p
+                                    css={tw`text-xs mb-3`}
+                                    className={
+                                        currentBillingCycle.discountPercent > 0 ? 'text-green-400' : 'text-red-400'
+                                    }
+                                >
+                                    {currentBillingCycle.discountPercent > 0 ? (
+                                        <>✓ {currentBillingCycle.discountPercent.toFixed(1)}% discount applied</>
                                     ) : (
                                         <>
-                                            {/* Show coupon input for paid servers */}
-                                            <div css={tw`mb-4`}>
-                                                <Label>Renewal Cost</Label>
-                                                {couponData ? (
-                                                    <div>
-                                                        <div css={tw`text-sm text-gray-400 line-through`}>
-                                                            {settings.currency.symbol}
-                                                            {couponData.subtotal.toFixed(2)}
-                                                        </div>
-                                                        <div css={tw`flex items-baseline gap-1 mb-1`}>
-                                                            <span css={tw`text-2xl font-bold text-gray-200`}>
-                                                                {settings.currency.symbol}
-                                                                {couponData.total.toFixed(2)}
-                                                            </span>
-                                                            <span css={tw`text-xs text-gray-400`}>
-                                                                {settings.currency.code.toUpperCase()}
-                                                            </span>
-                                                        </div>
-                                                        <div css={tw`text-xs font-medium text-green-400`}>
-                                                            Save {settings.currency.symbol}
-                                                            {couponData.discount.toFixed(2)}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <p css={tw`text-gray-300 text-sm`}>
-                                                        {settings.currency.symbol}
-                                                        {currentBillingCycle
-                                                            ? currentBillingCycle.price.toFixed(2)
-                                                            : product.price.toFixed(2)}{' '}
-                                                        {settings.currency.code.toUpperCase()}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <CouponInput
-                                                subtotal={
-                                                    currentBillingCycle ? currentBillingCycle.price : product.price
-                                                }
-                                                onCouponApplied={handleCouponApplied}
-                                                orderType="ren"
-                                            />
-                                            <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
-
-                                            <div css={tw`mt-4`}>
-                                                {couponData?.total === 0 ? (
-                                                    <div>
-                                                        <p css={tw`text-green-400 text-sm mb-3`}>
-                                                            🎉 Your coupon has made this renewal free!
-                                                        </p>
-                                                        <Button
-                                                            onClick={handleFreeRenewal}
-                                                            disabled={renewing}
-                                                            css={tw`w-full`}
-                                                        >
-                                                            {renewing ? 'Renewing...' : 'Renew Server'}
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <PaymentContainer
-                                                        id={Number(product.id)}
-                                                        couponId={couponData?.coupon.id}
-                                                        billingDays={billingDays}
-                                                    />
-                                                )}
-                                            </div>
+                                            +{Math.abs(currentBillingCycle.discountPercent).toFixed(1)}% premium for
+                                            shorter cycle
                                         </>
                                     )}
-                                </div>
+                                </p>
                             )}
-                        </>
-                    )}
-                </TitledGreyBox>
+                            <Link
+                                to={'/account/billing/orders'}
+                                css={tw`text-green-400 text-sm hover:text-green-300 transition-colors duration-150`}
+                            >
+                                View order history <FontAwesomeIcon icon={faArrowRight} css={tw`ml-1`} />
+                            </Link>
+                        </div>
+                    </TitledGreyBox>
+                </div>
 
-                {/* Plan Change Section */}
-                <ChangePlanContainer />
-            </div>
+                {!renewalDate && (
+                    <Alert type={'warning'} className={'mb-4'}>
+                        There is no present renewal date for your server. Please contact support if you believe this is
+                        an error.
+                    </Alert>
+                )}
+
+                {/* Action Cards Section - Renewal and Server Type Change */}
+                <div css={tw`grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4`}>
+                    {/* Renewal Section */}
+                    <TitledGreyBox title={'Server Renewal'} icon={faCreditCard}>
+                        {isDeletionScheduled ? (
+                            <div css={tw`space-y-3`}>
+                                <Alert type={'warning'}>
+                                    This server is scheduled for deletion. Manage or cancel from Server Settings.
+                                </Alert>
+                                <Link to={settingsPath} css={settingsLinkStyles}>
+                                    Manage Scheduled Deletion in Settings
+                                </Link>
+                            </div>
+                        ) : !product ? (
+                            <Alert type={'danger'}>
+                                The product package that the server was made with no longer exists. In order to renew
+                                your server, you&apos;ll need to speak to an administrator.
+                            </Alert>
+                        ) : (
+                            <>
+                                {product.price === 0 ? (
+                                    <div>
+                                        <p css={tw`text-gray-300 text-xs mb-3`}>
+                                            <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-1`} />
+                                            Free server - renewable {actualGracePeriod} days before expiration
+                                        </p>
+                                        {isPaymentDisabled ? (
+                                            <Alert type={'danger'}>
+                                                <strong>Server Suspended</strong> - Your server has been suspended for
+                                                more than {maxSuspensionThresholdDays} days due to non-payment. Please
+                                                create a support ticket to restore access. Self-service payment is no
+                                                longer available.
+                                            </Alert>
+                                        ) : daysRemaining > actualGracePeriod ? (
+                                            <Alert type={'info'}>
+                                                Renewal available in {daysRemaining - actualGracePeriod} days.
+                                            </Alert>
+                                        ) : (
+                                            <div>
+                                                <p css={tw`text-gray-300 text-sm mb-3`}>
+                                                    {daysRemaining >= 0 ? (
+                                                        <>Renew for {actualBillingDays} more days.</>
+                                                    ) : (
+                                                        <>
+                                                            Grace period: {daysOverdue}/{actualGracePeriod} days
+                                                        </>
+                                                    )}
+                                                </p>
+                                                <Button
+                                                    onClick={handleFreeRenewal}
+                                                    disabled={renewing}
+                                                    css={tw`w-full`}
+                                                >
+                                                    {renewing ? 'Renewing...' : 'Renew Server'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {isPaymentDisabled ? (
+                                            <Alert type={'danger'}>
+                                                <strong>Server Suspended</strong> - Your server has been suspended for
+                                                more than {maxSuspensionThresholdDays} days due to non-payment. Please
+                                                create a support ticket to restore access. Self-service payment is no
+                                                longer available.
+                                            </Alert>
+                                        ) : (
+                                            <>
+                                                {/* Show coupon input for paid servers */}
+                                                <div css={tw`mb-4`}>
+                                                    <Label>Renewal Cost</Label>
+                                                    {couponData ? (
+                                                        <div>
+                                                            <div css={tw`text-sm text-gray-400 line-through`}>
+                                                                {settings.currency.symbol}
+                                                                {couponData.subtotal.toFixed(2)}
+                                                            </div>
+                                                            <div css={tw`flex items-baseline gap-1 mb-1`}>
+                                                                <span css={tw`text-2xl font-bold text-gray-200`}>
+                                                                    {settings.currency.symbol}
+                                                                    {couponData.total.toFixed(2)}
+                                                                </span>
+                                                                <span css={tw`text-xs text-gray-400`}>
+                                                                    {settings.currency.code.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div css={tw`text-xs font-medium text-green-400`}>
+                                                                Save {settings.currency.symbol}
+                                                                {couponData.discount.toFixed(2)}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <p css={tw`text-gray-300 text-sm`}>
+                                                            {settings.currency.symbol}
+                                                            {currentBillingCycle
+                                                                ? currentBillingCycle.price.toFixed(2)
+                                                                : product.price.toFixed(2)}{' '}
+                                                            {settings.currency.code.toUpperCase()}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <CouponInput
+                                                    subtotal={
+                                                        currentBillingCycle ? currentBillingCycle.price : product.price
+                                                    }
+                                                    onCouponApplied={handleCouponApplied}
+                                                    orderType="ren"
+                                                />
+                                                <FlashMessageRender byKey={'coupon'} css={tw`mt-2`} />
+
+                                                <div css={tw`mt-4`}>
+                                                    {couponData?.total === 0 ? (
+                                                        <div>
+                                                            <p css={tw`text-green-400 text-sm mb-3`}>
+                                                                🎉 Your coupon has made this renewal free!
+                                                            </p>
+                                                            <Button
+                                                                onClick={handleFreeRenewal}
+                                                                disabled={renewing}
+                                                                css={tw`w-full`}
+                                                            >
+                                                                {renewing ? 'Renewing...' : 'Renew Server'}
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <PaymentContainer
+                                                            id={Number(product.id)}
+                                                            couponId={couponData?.coupon.id}
+                                                            billingDays={billingDays}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </TitledGreyBox>
+
+                    {/* Plan Change Section */}
+                    <ChangePlanContainer />
+                </div>
             </PageContentBlock>
         </>
     );

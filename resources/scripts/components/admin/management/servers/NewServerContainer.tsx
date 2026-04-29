@@ -703,7 +703,9 @@ function InternalForm() {
                                     name={'featureLimits.subdomains'}
                                     label={'Subdomain Limit'}
                                     type={'number'}
-                                    description={'The total number of custom subdomains that can be created for this server.'}
+                                    description={
+                                        'The total number of custom subdomains that can be created for this server.'
+                                    }
                                 />
                             </div>
                         </AdminBox>

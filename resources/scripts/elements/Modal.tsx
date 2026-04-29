@@ -133,7 +133,13 @@ function Modal({
             >
                 <ModalContainer alignTop={top}>
                     {isDismissable && (
-                        <div className={'close-icon'} onClick={() => { setRender(false); onDismissed(); }}>
+                        <div
+                            className={'close-icon'}
+                            onClick={() => {
+                                setRender(false);
+                                onDismissed();
+                            }}
+                        >
                             <svg
                                 xmlns={'http://www.w3.org/2000/svg'}
                                 fill={'none'}

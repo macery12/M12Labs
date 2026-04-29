@@ -311,14 +311,14 @@ export default () => {
                         {/* Current Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-                                <Label>
-                                    Current Allocations
-                                </Label>
+                                <Label>Current Allocations</Label>
                                 <div css={tw`flex gap-2`}>
                                     <Button
                                         type="button"
                                         onClick={handleSetPrimary}
-                                        disabled={!selectedCurrentId || selectedCurrentId === server.allocationId || loading}
+                                        disabled={
+                                            !selectedCurrentId || selectedCurrentId === server.allocationId || loading
+                                        }
                                         css={tw`text-xs px-2 py-1`}
                                     >
                                         <FontAwesomeIcon icon={faStar} css={tw`mr-1`} />
@@ -353,9 +353,8 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-                                                    backgroundColor: selectedCurrentId === allocation.id
-                                                        ? '#374151'
-                                                        : undefined,
+                                                    backgroundColor:
+                                                        selectedCurrentId === allocation.id ? '#374151' : undefined,
                                                 }}
                                             >
                                                 <div css={tw`flex items-center gap-3`}>
@@ -388,9 +387,7 @@ export default () => {
                         {/* Available Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-                                <Label>
-                                    Available Allocations
-                                </Label>
+                                <Label>Available Allocations</Label>
                                 <Button
                                     type="button"
                                     onClick={handleAddAllocation}
@@ -425,9 +422,8 @@ export default () => {
                                                 }
                                                 css={tw`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-                                                    backgroundColor: selectedAvailableId === allocation.id
-                                                        ? '#374151'
-                                                        : undefined,
+                                                    backgroundColor:
+                                                        selectedAvailableId === allocation.id ? '#374151' : undefined,
                                                 }}
                                             >
                                                 <input
@@ -455,10 +451,10 @@ export default () => {
                     {/* Info Message */}
                     <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded mt-4`}>
                         <p>
-                            💡 <strong>How to use:</strong> Select an allocation from either list. Click
-                            &quot;Add&quot; to add the selected available allocation, or &quot;Remove&quot; to
-                            remove the selected current allocation. Select a current allocation and click
-                            &quot;Set Primary&quot; to make it the primary allocation. Changes are saved automatically.
+                            💡 <strong>How to use:</strong> Select an allocation from either list. Click &quot;Add&quot;
+                            to add the selected available allocation, or &quot;Remove&quot; to remove the selected
+                            current allocation. Select a current allocation and click &quot;Set Primary&quot; to make it
+                            the primary allocation. Changes are saved automatically.
                         </p>
                     </div>
                 </div>

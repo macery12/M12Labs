@@ -55,16 +55,16 @@ export default ({ password }: Props) => {
                 const hashBuffer = await crypto.subtle.digest('SHA-1', data);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                
+
                 const prefix = hashHex.substring(0, 5).toUpperCase();
                 const suffix = hashHex.substring(5).toUpperCase();
 
                 const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
                 const text = await response.text();
-                
+
                 const lines = text.split('\n');
                 const found = lines.find(line => line.startsWith(suffix));
-                
+
                 if (found) {
                     const count = parseInt(found.split(':')[1], 10);
                     setIsPwned(true);
@@ -99,28 +99,30 @@ export default ({ password }: Props) => {
                 <RequirementItem met={requirements.hasNumber} text="At least one number" />
                 <RequirementItem met={requirements.hasSpecialChar} text="At least one special character" />
             </div>
-            
+
             {isPwned !== null && (
-                <div css={tw`mt-3 p-2 rounded border`} className={isPwned ? 'bg-red-900/20 border-red-700' : 'bg-green-900/20 border-green-700'}>
+                <div
+                    css={tw`mt-3 p-2 rounded border`}
+                    className={isPwned ? 'bg-red-900/20 border-red-700' : 'bg-green-900/20 border-green-700'}
+                >
                     <div css={tw`flex items-center gap-2`}>
-                        <FontAwesomeIcon 
-                            icon={isPwned ? faExclamationTriangle : faCheck} 
+                        <FontAwesomeIcon
+                            icon={isPwned ? faExclamationTriangle : faCheck}
                             css={isPwned ? tw`text-red-400` : tw`text-green-400`}
                         />
                         <span css={isPwned ? tw`text-red-300` : tw`text-green-300`}>
-                            {isPwned 
-                                ? `Warning: This password has been exposed in ${pwnedCount.toLocaleString()} data breach${pwnedCount !== 1 ? 'es' : ''}. Consider using a different password.`
-                                : 'This password has not been found in known data breaches.'
-                            }
+                            {isPwned
+                                ? `Warning: This password has been exposed in ${pwnedCount.toLocaleString()} data breach${
+                                      pwnedCount !== 1 ? 'es' : ''
+                                  }. Consider using a different password.`
+                                : 'This password has not been found in known data breaches.'}
                         </span>
                     </div>
                 </div>
             )}
-            
+
             {checking && password.length >= 8 && (
-                <div css={tw`mt-2 text-xs text-gray-500`}>
-                    Checking password against breach database...
-                </div>
+                <div css={tw`mt-2 text-xs text-gray-500`}>Checking password against breach database...</div>
             )}
         </div>
     );
@@ -133,13 +135,7 @@ interface RequirementItemProps {
 
 const RequirementItem = ({ met, text }: RequirementItemProps) => (
     <div css={tw`flex items-center gap-2`}>
-        <FontAwesomeIcon 
-            icon={met ? faCheck : faTimes} 
-            css={met ? tw`text-green-400` : tw`text-gray-600`}
-            fixedWidth
-        />
-        <span css={met ? tw`text-gray-300` : tw`text-gray-500`}>
-            {text}
-        </span>
+        <FontAwesomeIcon icon={met ? faCheck : faTimes} css={met ? tw`text-green-400` : tw`text-gray-600`} fixedWidth />
+        <span css={met ? tw`text-gray-300` : tw`text-gray-500`}>{text}</span>
     </div>
 );

@@ -127,7 +127,10 @@ export default () => {
             <SpinnerOverlay visible={loading} />
 
             <div className={'rounded p-6'} style={{ backgroundColor: colors.secondary }}>
-                <div className={'-mx-6 -mt-6 mb-4 rounded-t border-b border-black px-6 py-3'} style={{ backgroundColor: colors.headers }}>
+                <div
+                    className={'-mx-6 -mt-6 mb-4 rounded-t border-b border-black px-6 py-3'}
+                    style={{ backgroundColor: colors.headers }}
+                >
                     <h3 className={'text-lg font-semibold text-neutral-100'}>Cloudflare API Keys</h3>
                 </div>
                 <p className={'mb-4 text-sm text-neutral-400'}>
@@ -166,7 +169,9 @@ export default () => {
                     {apiKeys.map(row => (
                         <div
                             key={row.id}
-                            className={'flex flex-col gap-3 rounded border border-neutral-700 p-3 md:flex-row md:items-center md:justify-between'}
+                            className={
+                                'flex flex-col gap-3 rounded border border-neutral-700 p-3 md:flex-row md:items-center md:justify-between'
+                            }
                             style={{ backgroundColor: colors.background }}
                         >
                             <div>
@@ -192,7 +197,10 @@ export default () => {
             </div>
 
             <div className={'mt-6 rounded p-6'} style={{ backgroundColor: colors.secondary }}>
-                <div className={'-mx-6 -mt-6 mb-4 rounded-t border-b border-black px-6 py-3'} style={{ backgroundColor: colors.headers }}>
+                <div
+                    className={'-mx-6 -mt-6 mb-4 rounded-t border-b border-black px-6 py-3'}
+                    style={{ backgroundColor: colors.headers }}
+                >
                     <h3 className={'text-lg font-semibold text-neutral-100'}>Security & Rate Limits</h3>
                 </div>
                 <p className={'mb-4 text-sm text-neutral-400'}>
@@ -202,8 +210,8 @@ export default () => {
                     className={'mb-4 rounded border border-neutral-700 px-3 py-2 text-xs text-neutral-300'}
                     style={{ backgroundColor: colors.background }}
                 >
-                    Rate limits are scoped per authenticated user UUID (fallback to client IP if unauthenticated),
-                    not per server and not a single global bucket for all users.
+                    Rate limits are scoped per authenticated user UUID (fallback to client IP if unauthenticated), not
+                    per server and not a single global bucket for all users.
                 </div>
 
                 <div className={'grid grid-cols-1 gap-3 md:grid-cols-2'}>

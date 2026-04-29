@@ -21,7 +21,9 @@ export default () => {
     const [confirmDisable, setConfirmDisable] = useState(false);
 
     // Local controlled state — initialized from page-load store, updated immediately on change.
-    const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed'>(jguard.approval_mode === 'immediate' ? 'manual' : jguard.approval_mode as 'manual' | 'delayed');
+    const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed'>(
+        jguard.approval_mode === 'immediate' ? 'manual' : (jguard.approval_mode as 'manual' | 'delayed'),
+    );
     const [delay, setDelay] = useState<number>(jguard.delay);
     const [pendingMessage, setPendingMessage] = useState<string>(jguard.pending_message ?? '');
 
@@ -172,8 +174,8 @@ export default () => {
             {approvalMode === 'manual' && (
                 <Alert type={'info'}>
                     <span className={'text-xs'}>
-                        Manual approval mode is active. New registrations will be held until you approve them from
-                        the <strong>Pending Accounts</strong> tab.
+                        Manual approval mode is active. New registrations will be held until you approve them from the{' '}
+                        <strong>Pending Accounts</strong> tab.
                     </span>
                 </Alert>
             )}

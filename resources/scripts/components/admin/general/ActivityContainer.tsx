@@ -20,7 +20,7 @@ import debounce from 'debounce';
 export default () => {
     const { hash } = useLocationHash();
     const { clearAndAddHttpError } = useFlashKey('account');
-    
+
     // Filter states that will be sent to backend
     const [searchInput, setSearchInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -28,7 +28,7 @@ export default () => {
     const [selectedEventType, setSelectedEventType] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<'-timestamp' | 'timestamp'>('-timestamp');
     const [currentPage, setCurrentPage] = useState(1);
-    
+
     // All users and events (loaded from backend)
     const [allUsers, setAllUsers] = useState<Array<{ uuid: string; username: string }>>([]);
     const [allEvents, setAllEvents] = useState<string[]>([]);
@@ -41,23 +41,23 @@ export default () => {
             sorts: { timestamp: sortOrder === '-timestamp' ? -1 : 1 },
             filters: {},
         };
-        
+
         // Add hash filters if present
         if (hash.ip) f.filters!.ip = hash.ip;
         if (hash.event) f.filters!.event = hash.event;
-        
+
         if (searchQuery.trim()) {
             f.filters!.search = searchQuery;
         }
-        
+
         if (selectedUser) {
             f.filters!.actor = selectedUser;
         }
-        
+
         if (selectedEventType) {
             f.filters!.event = selectedEventType;
         }
-        
+
         return f;
     }, [searchQuery, selectedUser, selectedEventType, sortOrder, currentPage, hash]);
 
@@ -74,10 +74,7 @@ export default () => {
     useEffect(() => {
         const loadMetadata = async () => {
             try {
-                const [users, events] = await Promise.all([
-                    getActivityUsers(),
-                    getActivityEvents(),
-                ]);
+                const [users, events] = await Promise.all([getActivityUsers(), getActivityEvents()]);
                 setAllUsers(users);
                 setAllEvents(events);
             } catch (err) {
@@ -99,7 +96,7 @@ export default () => {
             debounce((value: string) => {
                 setSearchQuery(value);
             }, 300),
-        []
+        [],
     );
 
     // Update search query when input changes
@@ -129,10 +126,7 @@ export default () => {
     }, [searchQuery, selectedUser, selectedEventType, sortOrder]);
 
     const hasActiveFilters =
-        searchInput.trim() !== '' ||
-        selectedUser !== '' ||
-        selectedEventType !== '' ||
-        sortOrder !== '-timestamp';
+        searchInput.trim() !== '' || selectedUser !== '' || selectedEventType !== '' || sortOrder !== '-timestamp';
 
     return (
         <AdminContentBlock title={'Admin Activity'}>
@@ -256,10 +250,7 @@ export default () => {
                 </div>
             )}
             {data && data.items.length > 0 && (
-                <PaginationFooter
-                    pagination={data.pagination}
-                    onPageSelect={page => setCurrentPage(page)}
-                />
+                <PaginationFooter pagination={data.pagination} onPageSelect={page => setCurrentPage(page)} />
             )}
         </AdminContentBlock>
     );

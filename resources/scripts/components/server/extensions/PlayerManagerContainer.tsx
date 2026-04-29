@@ -71,7 +71,19 @@ interface PlayerActionsModalProps {
     canManage: boolean;
 }
 
-const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction, supportsAttributes, onViewInventory, onEditAttributes, isOperator, isOnline, canManage }: PlayerActionsModalProps) => {
+const PlayerActionsModal = ({
+    visible,
+    onDismissed,
+    player,
+    serverUuid,
+    onAction,
+    supportsAttributes,
+    onViewInventory,
+    onEditAttributes,
+    isOperator,
+    isOnline,
+    canManage,
+}: PlayerActionsModalProps) => {
     const [loading, setLoading] = useState(false);
     const [activeAction, setActiveAction] = useState<string | null>(null);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
@@ -81,7 +93,7 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
         setLoading(true);
         setActiveAction(actionName);
         clearFlashes('server:player-manager:modal');
-        
+
         try {
             await action();
             addFlash({ key: 'server:player-manager', type: 'success', message: `Action completed: ${actionName}` });
@@ -98,17 +110,21 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
     return (
         <Modal visible={visible} onDismissed={onDismissed} closeOnBackground showSpinnerOverlay={loading}>
             <FlashMessageRender byKey={'server:player-manager:modal'} className={'mb-4'} />
-            <h2 className={'mb-4 text-xl font-semibold text-white'}>
-                Actions for {player}
-            </h2>
-            
+            <h2 className={'mb-4 text-xl font-semibold text-white'}>Actions for {player}</h2>
+
             {!isOnline && (
-                <div className={'mb-4 rounded-lg border border-amber-600/40 bg-amber-500/10 p-3 text-sm text-amber-300'}>
+                <div
+                    className={'mb-4 rounded-lg border border-amber-600/40 bg-amber-500/10 p-3 text-sm text-amber-300'}
+                >
                     This player is offline. Kick, Kill, and Attribute editing are unavailable.
                 </div>
             )}
             {!canManage && (
-                <div className={'mb-4 rounded-lg border border-neutral-600/40 bg-neutral-500/10 p-3 text-sm text-neutral-300'}>
+                <div
+                    className={
+                        'mb-4 rounded-lg border border-neutral-600/40 bg-neutral-500/10 p-3 text-sm text-neutral-300'
+                    }
+                >
                     You have read-only access. Management actions are disabled.
                 </div>
             )}
@@ -142,11 +158,11 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                     </Button>
                 )}
             </div>
-            
+
             <div className={'border-t border-neutral-700 pt-4 mb-4'}>
                 <h3 className={'text-sm text-neutral-400 mb-3'}>Quick Actions</h3>
             </div>
-            
+
             <div className={'grid gap-3 sm:grid-cols-2'}>
                 <Button
                     onClick={() => handleAction(() => kickPlayer(serverUuid, player), 'Kick')}
@@ -167,10 +183,12 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                     Kill Player
                 </Button>
                 <Button
-                    onClick={() => handleAction(
-                        isOperator ? () => deopPlayer(serverUuid, player) : () => opPlayer(serverUuid, player),
-                        isOperator ? 'Deop' : 'Op'
-                    )}
+                    onClick={() =>
+                        handleAction(
+                            isOperator ? () => deopPlayer(serverUuid, player) : () => opPlayer(serverUuid, player),
+                            isOperator ? 'Deop' : 'Op',
+                        )
+                    }
                     className={'w-full justify-center'}
                     disabled={loading || !canManage}
                     title={!canManage ? 'Read-only access' : undefined}
@@ -196,10 +214,7 @@ const PlayerActionsModal = ({ visible, onDismissed, player, serverUuid, onAction
                     initialValues={{ message: '' }}
                     validationSchema={object().shape({ message: string().required('Message is required') })}
                     onSubmit={async (values, { resetForm }) => {
-                        await handleAction(
-                            () => whisperPlayer(serverUuid, player, values.message),
-                            'Whisper'
-                        );
+                        await handleAction(() => whisperPlayer(serverUuid, player, values.message), 'Whisper');
                         resetForm();
                     }}
                 >
@@ -234,20 +249,25 @@ const AddPlayerModal = ({ visible, onDismissed, type, serverUuid, onAction }: Ad
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
 
     const titles: Record<string, string> = {
-        'whitelist': 'Add to Whitelist',
-        'op': 'Add Operator',
-        'ban': 'Ban Player',
+        whitelist: 'Add to Whitelist',
+        op: 'Add Operator',
+        ban: 'Ban Player',
         'ban-ip': 'Ban IP Address',
     };
 
-    const validationSchema = type === 'ban-ip'
-        ? object().shape({ target: string().required('IP address is required').matches(/^[\d.]+$/, 'Invalid IP format') })
-        : type === 'op'
-        ? object().shape({ 
-            target: string().required('Player name is required'),
-            level: number().min(1).max(4).default(4),
-          })
-        : object().shape({ target: string().required('Player name is required') });
+    const validationSchema =
+        type === 'ban-ip'
+            ? object().shape({
+                  target: string()
+                      .required('IP address is required')
+                      .matches(/^[\d.]+$/, 'Invalid IP format'),
+              })
+            : type === 'op'
+            ? object().shape({
+                  target: string().required('Player name is required'),
+                  level: number().min(1).max(4).default(4),
+              })
+            : object().shape({ target: string().required('Player name is required') });
 
     return (
         <Modal visible={visible} onDismissed={onDismissed} closeOnBackground showSpinnerOverlay={loading}>
@@ -259,7 +279,7 @@ const AddPlayerModal = ({ visible, onDismissed, type, serverUuid, onAction }: Ad
                 onSubmit={async (values, { resetForm }) => {
                     setLoading(true);
                     clearFlashes('server:player-manager:add');
-                    
+
                     try {
                         switch (type) {
                             case 'whitelist':
@@ -275,7 +295,11 @@ const AddPlayerModal = ({ visible, onDismissed, type, serverUuid, onAction }: Ad
                                 await banIp(serverUuid, values.target, values.reason || undefined);
                                 break;
                         }
-                        addFlash({ key: 'server:player-manager', type: 'success', message: `${titles[type]} successful` });
+                        addFlash({
+                            key: 'server:player-manager',
+                            type: 'success',
+                            message: `${titles[type]} successful`,
+                        });
                         onAction();
                         onDismissed();
                         resetForm();
@@ -304,9 +328,7 @@ const AddPlayerModal = ({ visible, onDismissed, type, serverUuid, onAction }: Ad
                                     min={1}
                                     max={4}
                                 />
-                                <p className={'mt-1 text-xs text-neutral-400'}>
-                                    Level 4 = full operator permissions
-                                </p>
+                                <p className={'mt-1 text-xs text-neutral-400'}>Level 4 = full operator permissions</p>
                             </div>
                         )}
                         {(type === 'ban' || type === 'ban-ip') && (
@@ -342,7 +364,16 @@ interface PlayerListProps {
     badge?: (player: { name: string; level?: number }) => string | null;
 }
 
-const PlayerList = ({ title, icon, players, emptyMessage, onRemove, onPlayerClick, loading, badge }: PlayerListProps) => {
+const PlayerList = ({
+    title,
+    icon,
+    players,
+    emptyMessage,
+    onRemove,
+    onPlayerClick,
+    loading,
+    badge,
+}: PlayerListProps) => {
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     return (
@@ -365,7 +396,7 @@ const PlayerList = ({ title, icon, players, emptyMessage, onRemove, onPlayerClic
                             key={`${player.name}-${index}`}
                             className={classNames(
                                 'flex items-center justify-between rounded bg-zinc-700 p-2',
-                                onPlayerClick && 'cursor-pointer transition-colors hover:bg-zinc-600'
+                                onPlayerClick && 'cursor-pointer transition-colors hover:bg-zinc-600',
                             )}
                             onClick={() => onPlayerClick?.(player.name)}
                         >
@@ -392,7 +423,7 @@ const PlayerList = ({ title, icon, players, emptyMessage, onRemove, onPlayerClic
                             </div>
                             {onRemove && (
                                 <button
-                                    onClick={(e) => {
+                                    onClick={e => {
                                         e.stopPropagation();
                                         onRemove(player.name);
                                     }}
@@ -430,7 +461,7 @@ export default () => {
         if (!uuid) return;
 
         setLoading(true);
-        
+
         // Fetch both status and version in parallel
         Promise.all([
             getPlayerManagerStatus(uuid),
@@ -449,7 +480,7 @@ export default () => {
     const isPlayerOnline = useCallback(
         (playerName: string): boolean =>
             status?.server.players.list?.some(p => p.name.toLowerCase() === playerName.toLowerCase()) ?? false,
-        [status]
+        [status],
     );
 
     useEffect(() => {
@@ -461,10 +492,10 @@ export default () => {
     const handleToggleWhitelist = async () => {
         if (!canManage) return;
         if (!uuid || !status) return;
-        
+
         setActionLoading(true);
         clearFlashes('server:player-manager');
-        
+
         try {
             await setWhitelistEnabled(uuid, !status.whitelistEnabled);
             addFlash({
@@ -483,10 +514,10 @@ export default () => {
     const handleRemoveFromList = async (type: 'whitelist' | 'op' | 'ban' | 'ban-ip', target: string) => {
         if (!canManage) return;
         if (!uuid) return;
-        
+
         setActionLoading(true);
         clearFlashes('server:player-manager');
-        
+
         try {
             switch (type) {
                 case 'whitelist':
@@ -561,14 +592,14 @@ export default () => {
                         <div
                             className={classNames(
                                 'flex h-16 w-16 items-center justify-center rounded-lg',
-                                status.server.online ? 'bg-green-500/20' : 'bg-red-500/20'
+                                status.server.online ? 'bg-green-500/20' : 'bg-red-500/20',
                             )}
                         >
                             <FontAwesomeIcon
                                 icon={faCircle}
                                 className={classNames(
                                     'text-2xl',
-                                    status.server.online ? 'text-green-500' : 'text-red-500'
+                                    status.server.online ? 'text-green-500' : 'text-red-500',
                                 )}
                             />
                         </div>
@@ -698,9 +729,9 @@ export default () => {
                     <PlayerList
                         title={'Banned Players'}
                         icon={faBan}
-                        players={status.bannedPlayers.map(p => ({ 
-                            name: p.name, 
-                            uuid: p.uuid, 
+                        players={status.bannedPlayers.map(p => ({
+                            name: p.name,
+                            uuid: p.uuid,
                             reason: p.reason,
                             source: p.source,
                         }))}
@@ -753,7 +784,7 @@ export default () => {
                                             title={!canManage ? 'Read-only access' : undefined}
                                             className={classNames(
                                                 'p-1 text-neutral-400 transition-colors hover:text-red-400',
-                                                !canManage && 'cursor-not-allowed opacity-50 hover:text-neutral-400'
+                                                !canManage && 'cursor-not-allowed opacity-50 hover:text-neutral-400',
                                             )}
                                         >
                                             <FontAwesomeIcon icon={faTrash} />
@@ -777,7 +808,9 @@ export default () => {
                     supportsAttributes={serverVersion?.supportsAttributes || false}
                     onViewInventory={() => setInventoryPlayer(selectedPlayer)}
                     onEditAttributes={() => setAttributePlayer(selectedPlayer)}
-                    isOperator={status?.operators.some(op => op.name.toLowerCase() === selectedPlayer.toLowerCase()) || false}
+                    isOperator={
+                        status?.operators.some(op => op.name.toLowerCase() === selectedPlayer.toLowerCase()) || false
+                    }
                     isOnline={isPlayerOnline(selectedPlayer)}
                     canManage={canManage}
                 />

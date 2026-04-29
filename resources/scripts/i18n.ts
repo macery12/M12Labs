@@ -24,9 +24,7 @@ const normalizeTranslations = (value: unknown): unknown => {
     }
 
     if (value && typeof value === 'object') {
-        return Object.fromEntries(
-            Object.entries(value).map(([key, entry]) => [key, normalizeTranslations(entry)]),
-        );
+        return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, normalizeTranslations(entry)]));
     }
 
     return value;

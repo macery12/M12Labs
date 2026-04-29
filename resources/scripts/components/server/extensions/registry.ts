@@ -13,10 +13,10 @@ type PackageMeta = {
     route?: string;
 };
 
-const packageMetas = import.meta.glob('../../../extensions/packages/**/meta.json', { eager: true, import: 'default' }) as Record<
-    string,
-    PackageMeta
->;
+const packageMetas = import.meta.glob('../../../extensions/packages/**/meta.json', {
+    eager: true,
+    import: 'default',
+}) as Record<string, PackageMeta>;
 const packageComponents = import.meta.glob('../../../extensions/packages/**/index.tsx') as Record<
     string,
     () => Promise<{ default: () => JSX.Element }>
@@ -41,4 +41,3 @@ const dynamicRoutes = Object.entries(packageMetas)
     .filter((route): route is ExtensionRouteDefinition => route !== null);
 
 export const extensionRoutes: ExtensionRouteDefinition[] = [...staticRoutes, ...dynamicRoutes];
-

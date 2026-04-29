@@ -82,7 +82,7 @@ export default () => {
     const selectedDomainOption = customDomainOptions.find(option => option.id === selectedDomainId);
     const effectiveRecordType: 'srv' | 'cname' = selectedDomainOption?.allow_record_type_selection
         ? mappingRecordType
-        : (selectedDomainOption?.forced_record_type ?? selectedDomainOption?.recommended_record_type ?? 'cname');
+        : selectedDomainOption?.forced_record_type ?? selectedDomainOption?.recommended_record_type ?? 'cname';
 
     // Wizard step state
     const [currentStep, setCurrentStep] = useState<number>(1);
@@ -230,13 +230,14 @@ export default () => {
                     throw new Error(message, { cause: result.reason });
                 });
 
-                    if (removedMissingEggs) {
-                        addFlash({
-                            key: 'account:billing:order',
-                            type: 'warning',
-                            message: 'Some server software options are no longer available and were removed from selection.',
-                        });
-                    }
+                if (removedMissingEggs) {
+                    addFlash({
+                        key: 'account:billing:order',
+                        type: 'warning',
+                        message:
+                            'Some server software options are no longer available and were removed from selection.',
+                    });
+                }
 
                 setAvailableEggs(available);
                 if (available.length > 0) {
@@ -261,7 +262,7 @@ export default () => {
                     setSelectedDomainId(firstDomain.id);
                     setMappingRecordType(firstDomain.recommended_record_type);
                 }
-                  
+
                 if (productData.price !== 0) {
                     // Check which processors are available and fetch resources accordingly
                     const stripeAvailable = billing.processors?.stripe?.available ?? false;
@@ -285,7 +286,6 @@ export default () => {
                     // Mollie doesn't need pre-initialization like Stripe
                     // Payment is created when user clicks the button
                 }
-
             } catch (error: unknown) {
                 console.error('Error fetching billing order data:', error);
                 if (error instanceof Error && error.message) {
@@ -389,7 +389,9 @@ export default () => {
                             </p>
                         </div>
                         {(!nodes || nodes.length < 1) && (
-                            <Alert type={'danger'}>No nodes are available for this product. Please contact support.</Alert>
+                            <Alert type={'danger'}>
+                                No nodes are available for this product. Please contact support.
+                            </Alert>
                         )}
                         <div className={'grid gap-4 sm:grid-cols-2'}>
                             {nodes?.map(node => (
@@ -452,10 +454,7 @@ export default () => {
                                 Name your server and set any required configuration values for your selected software.
                             </p>
                         </div>
-                        <div
-                            className={'rounded-lg border p-6'}
-                            style={cardSurfaceStyle}
-                        >
+                        <div className={'rounded-lg border p-6'} style={cardSurfaceStyle}>
                             <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
                             <input
                                 id={'server-name-input'}
@@ -469,14 +468,17 @@ export default () => {
                                 required
                                 maxLength={191}
                                 aria-invalid={serverNameTouched && !serverName.trim()}
-                                aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
+                                aria-describedby={
+                                    serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
+                                }
                                 className={classNames(
                                     'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                     'text-gray-200 placeholder-gray-500',
                                     'focus:outline-none focus:ring-2 focus:ring-primary/20',
                                     {
                                         'border-gray-600': !serverNameTouched,
-                                        'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
+                                        'border-green-500 focus:border-green-500':
+                                            serverNameTouched && serverName.trim(),
                                         'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
                                     },
                                 )}
@@ -513,10 +515,7 @@ export default () => {
                             </p>
                         </div>
 
-                        <div
-                            className={'rounded-lg border p-6 space-y-6'}
-                            style={cardSurfaceStyle}
-                        >
+                        <div className={'rounded-lg border p-6 space-y-6'} style={cardSurfaceStyle}>
                             <div className={'space-y-3'}>
                                 <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
                                     {product.icon && (
@@ -525,7 +524,8 @@ export default () => {
                                     <div>
                                         <p className={'font-semibold text-gray-200'}>{product.name}</p>
                                         <p className={'text-sm text-gray-400'}>
-                                            {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                            {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing
+                                            cycle
                                         </p>
                                     </div>
                                 </div>

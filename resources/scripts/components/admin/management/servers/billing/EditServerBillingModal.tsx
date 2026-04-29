@@ -628,8 +628,8 @@ export default ({ server }: { server: Server }) => {
                 {page > 0 && !form.billable && (
                     <div className="mb-8">
                         <Alert type="warning">
-                            Billing is disabled. Click &quot;Finish&quot; to save these changes and disable automatic billing for
-                            this server.
+                            Billing is disabled. Click &quot;Finish&quot; to save these changes and disable automatic
+                            billing for this server.
                         </Alert>
                     </div>
                 )}

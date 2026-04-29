@@ -24,9 +24,14 @@ const ContentTypeTabPanel = ({ providers, activeProvider, onChange, providerLabe
                         key={provider}
                         css={[
                             tw`px-3 py-1.5 text-sm font-medium transition-colors rounded-full border`,
-                            !active && tw`bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-neutral-100 hover:bg-neutral-700`,
+                            !active &&
+                                tw`bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-neutral-100 hover:bg-neutral-700`,
                         ]}
-                        style={active ? { backgroundColor: colors.primary, color: '#fff', borderColor: colors.primary } : undefined}
+                        style={
+                            active
+                                ? { backgroundColor: colors.primary, color: '#fff', borderColor: colors.primary }
+                                : undefined
+                        }
                         onClick={() => onChange(provider)}
                         type="button"
                     >

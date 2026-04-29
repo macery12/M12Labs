@@ -135,7 +135,9 @@ function DiscordLinkChoiceContainer() {
                             <div css={tw`p-4 bg-zinc-700/50 border border-zinc-600 rounded`}>
                                 <div css={tw`flex items-center mb-2`}>
                                     <FontAwesomeIcon icon={faLink} css={tw`text-yellow-400 mr-2`} />
-                                    <span css={tw`text-sm font-semibold text-gray-200`}>Link to an Existing Account</span>
+                                    <span css={tw`text-sm font-semibold text-gray-200`}>
+                                        Link to an Existing Account
+                                    </span>
                                 </div>
                                 <p css={tw`text-xs text-gray-400 mb-3`}>
                                     If you already have an account on this panel, you can link your Discord profile to
@@ -147,8 +149,8 @@ function DiscordLinkChoiceContainer() {
                                         Go to your <span css={tw`text-gray-300`}>Account</span> page.
                                     </li>
                                     <li>
-                                        Click <span css={tw`text-gray-300`}>Link Discord Account</span> in the
-                                        Connected Accounts section.
+                                        Click <span css={tw`text-gray-300`}>Link Discord Account</span> in the Connected
+                                        Accounts section.
                                     </li>
                                 </ol>
                                 <Button.Text

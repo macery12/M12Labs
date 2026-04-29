@@ -67,13 +67,7 @@ function getActionVerb(action: string): string {
 }
 
 /** Renders the step-dot row shared by single and per-extension batch views. */
-function StepDots({
-    steps,
-    currentStage,
-}: {
-    steps: StepName[];
-    currentStage: string;
-}) {
+function StepDots({ steps, currentStage }: { steps: StepName[]; currentStage: string }) {
     const currentStageIndex = steps.indexOf(currentStage as StepName);
     return (
         <div className={'mt-2 flex flex-wrap items-center gap-x-2 gap-y-1'}>
@@ -87,7 +81,7 @@ function StepDots({
                                 'inline-block h-1.5 w-1.5 rounded-full transition-colors duration-300',
                                 isActive && 'bg-white',
                                 isDone && !isActive && 'bg-neutral-500',
-                                !isDone && !isActive && 'bg-neutral-700'
+                                !isDone && !isActive && 'bg-neutral-700',
                             )}
                         />
                         <span
@@ -95,7 +89,7 @@ function StepDots({
                                 'text-xs transition-colors duration-300',
                                 isActive && 'text-neutral-100',
                                 isDone && !isActive && 'text-neutral-500',
-                                !isDone && !isActive && 'text-neutral-700'
+                                !isDone && !isActive && 'text-neutral-700',
                             )}
                         >
                             {STEP_LABELS[step]}
@@ -157,10 +151,14 @@ export default () => {
         };
 
         // Check immediately on mount so a refresh mid-operation shows the banner right away.
-        getInstallProgress().then(handleResult).catch(() => {});
+        getInstallProgress()
+            .then(handleResult)
+            .catch(() => {});
 
         pollRef.current = setInterval(() => {
-            getInstallProgress().then(handleResult).catch(() => {});
+            getInstallProgress()
+                .then(handleResult)
+                .catch(() => {});
         }, POLL_INTERVAL_MS);
 
         return () => {
@@ -218,9 +216,7 @@ export default () => {
                         {progress.stage !== 'completed' && '…'}
                     </span>
                 </div>
-                {steps.length > 0 && (
-                    <StepDots steps={steps} currentStage={progress.stage} />
-                )}
+                {steps.length > 0 && <StepDots steps={steps} currentStage={progress.stage} />}
             </div>
         );
     }
@@ -268,10 +264,7 @@ export default () => {
                                 {/* Status icon */}
                                 <span className={'flex h-4 w-4 shrink-0 items-center justify-center'}>
                                     {isDone ? (
-                                        <FontAwesomeIcon
-                                            icon={faCheck}
-                                            className={'text-xs text-green-400'}
-                                        />
+                                        <FontAwesomeIcon icon={faCheck} className={'text-xs text-green-400'} />
                                     ) : isActive ? (
                                         <Spinner size={'small'} />
                                     ) : (

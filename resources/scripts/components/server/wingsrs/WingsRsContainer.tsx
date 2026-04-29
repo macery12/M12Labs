@@ -1,23 +1,10 @@
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import { ServerContext } from '@/state/server';
-import {
-    getWingsRsStatus,
-    getInstallLogs,
-    abortInstall,
-    runScript,
-    WingsRsStatus,
-} from '@/api/routes/server/wingsRs';
+import { getWingsRsStatus, getInstallLogs, abortInstall, runScript, WingsRsStatus } from '@/api/routes/server/wingsRs';
 import useFlash from '@/plugins/useFlash';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faBoltLightning,
-    faCheck,
-    faCode,
-    faFileAlt,
-    faSync,
-    faStopCircle,
-} from '@fortawesome/free-solid-svg-icons';
+import { faBoltLightning, faCheck, faCode, faFileAlt, faSync, faStopCircle } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/elements/button';
 import { Dialog } from '@/elements/dialog';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
@@ -135,7 +122,10 @@ export default () => {
                                 <span className={'text-gray-200'}>Wings-RS Active</span>
                             </div>
                             <div className={'text-sm text-gray-400'}>
-                                <p>Version: <code className={'rounded bg-black/50 px-1'}>{wingsStatus.wings_version}</code></p>
+                                <p>
+                                    Version:{' '}
+                                    <code className={'rounded bg-black/50 px-1'}>{wingsStatus.wings_version}</code>
+                                </p>
                             </div>
                             {Array.isArray(wingsStatus.features) && wingsStatus.features.length > 0 && (
                                 <div className={'flex flex-wrap gap-1'}>
@@ -183,10 +173,7 @@ export default () => {
             {/* Install Logs */}
             {Array.isArray(installLogs) && installLogs.length > 0 && (
                 <div className={'mt-4'}>
-                    <TitledGreyBox
-                        title={'Install Logs'}
-                        icon={faFileAlt}
-                    >
+                    <TitledGreyBox title={'Install Logs'} icon={faFileAlt}>
                         <div className={'flex justify-end mb-2'}>
                             <button onClick={fetchInstallLogs} className={'text-sm text-gray-400 hover:text-gray-200'}>
                                 <FontAwesomeIcon icon={faSync} css={tw`mr-1`} />
@@ -244,8 +231,8 @@ export default () => {
                 confirm={'Abort'}
                 onConfirmed={handleAbortInstall}
             >
-                Are you sure you want to abort the current installation? This will stop the installation
-                process and may leave the server in an incomplete state.
+                Are you sure you want to abort the current installation? This will stop the installation process and may
+                leave the server in an incomplete state.
             </Dialog.Confirm>
         </PageContentBlock>
     );

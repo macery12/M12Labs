@@ -5,7 +5,11 @@ import { useEmailVerification } from '@/hooks/useEmailVerification';
 import { useStoreState } from '@/state/hooks';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import React from 'react';
-import { EMAIL_VERIFICATION_ALERT_MESSAGE, EMAIL_VERIFICATION_ALERT_TITLE, EMAIL_VERIFICATION_AREA_LABELS } from '@/constants/emailVerification';
+import {
+    EMAIL_VERIFICATION_ALERT_MESSAGE,
+    EMAIL_VERIFICATION_ALERT_TITLE,
+    EMAIL_VERIFICATION_AREA_LABELS,
+} from '@/constants/emailVerification';
 import { type VerificationArea } from '@/state/everest';
 
 type Props = {
@@ -15,13 +19,12 @@ type Props = {
 
 const EmailVerificationGate = ({ children, area }: Props) => {
     const user = useStoreState(state => state.user.data!);
-    const emailEnabled = useStoreState(
-        state =>
-            Boolean(
-                state.everest.data?.email?.enabled ??
-                    state.everest.data?.email?.resend?.enabled ??
-                    state.everest.data?.email?.resend,
-            ),
+    const emailEnabled = useStoreState(state =>
+        Boolean(
+            state.everest.data?.email?.enabled ??
+                state.everest.data?.email?.resend?.enabled ??
+                state.everest.data?.email?.resend,
+        ),
     );
     const verification = useEmailVerification(emailEnabled) || {};
     const {

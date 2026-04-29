@@ -55,6 +55,10 @@ export const getDiscordSrvSubusers = async (uuid: string): Promise<DiscordSrvHel
     return data.data || [];
 };
 
-export const setDiscordSrvSubuserAccess = async (uuid: string, subuserUuid: string, enabled: boolean): Promise<void> => {
+export const setDiscordSrvSubuserAccess = async (
+    uuid: string,
+    subuserUuid: string,
+    enabled: boolean,
+): Promise<void> => {
     await http.post(`${base(uuid)}/subusers/${subuserUuid}`, { enabled });
 };

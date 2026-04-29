@@ -88,7 +88,9 @@ export default ({ activity, children }: Props) => {
 
     return (
         <div
-            className={'group grid grid-cols-10 py-5 px-4 last:rounded-b last:border-0 border-b border-slate-600/50 hover:bg-slate-600/30 transition-colors duration-150'}
+            className={
+                'group grid grid-cols-10 py-5 px-4 last:rounded-b last:border-0 border-b border-slate-600/50 hover:bg-slate-600/30 transition-colors duration-150'
+            }
             style={{ backgroundColor: colors.secondary }}
         >
             {/* Avatar Column - Always visible on larger screens */}
@@ -141,26 +143,39 @@ export default ({ activity, children }: Props) => {
                                             <TerminalIcon />
                                         </Tooltip>
                                     )}
-                                    {activity.properties?.source === 'ssh' && !activity.event.startsWith('server:ssh.') && (
-                                        <Tooltip placement={'top'} content={'Via SSH'}>
-                                            <TerminalIcon />
-                                        </Tooltip>
-                                    )}
+                                    {activity.properties?.source === 'ssh' &&
+                                        !activity.event.startsWith('server:ssh.') && (
+                                            <Tooltip placement={'top'} content={'Via SSH'}>
+                                                <TerminalIcon />
+                                            </Tooltip>
+                                        )}
                                     {children}
                                 </div>
                                 <div className={'flex flex-wrap items-center gap-2 pl-1'}>
                                     {activity.context === 'admin' && (
-                                        <span className={'rounded-full border border-red-400/40 bg-red-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-red-200'}>
+                                        <span
+                                            className={
+                                                'rounded-full border border-red-400/40 bg-red-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-red-200'
+                                            }
+                                        >
                                             Admin
                                         </span>
                                     )}
                                     {activity.isApi && (
-                                        <span className={'rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-emerald-200'}>
+                                        <span
+                                            className={
+                                                'rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-emerald-200'
+                                            }
+                                        >
                                             API
                                         </span>
                                     )}
                                     {activity.category && (
-                                        <span className={'rounded-full border border-slate-400/30 bg-slate-600/60 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-200'}>
+                                        <span
+                                            className={
+                                                'rounded-full border border-slate-400/30 bg-slate-600/60 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-200'
+                                            }
+                                        >
                                             {activity.category}
                                         </span>
                                     )}
@@ -181,7 +196,11 @@ export default ({ activity, children }: Props) => {
 
                             {/* Activity Details */}
                             <p className={classNames(style.description, 'mt-1')}>
-                                <Translate ns={'activity'} values={properties} i18nKey={activity.event.replace(':', '.')} />
+                                <Translate
+                                    ns={'activity'}
+                                    values={properties}
+                                    i18nKey={activity.event.replace(':', '.')}
+                                />
                             </p>
 
                             {fileDiff && (
@@ -214,15 +233,9 @@ export default ({ activity, children }: Props) => {
                     <div className={'flex items-center justify-between text-xs text-slate-500'}>
                         <div className={'flex items-center gap-2'}>
                             {activity.ip && (
-                                <span className={'font-mono bg-slate-700/50 px-2 py-0.5 rounded'}>
-                                    {activity.ip}
-                                </span>
+                                <span className={'font-mono bg-slate-700/50 px-2 py-0.5 rounded'}>{activity.ip}</span>
                             )}
-                            {activity.id && (
-                                <span className={'text-slate-600'}>
-                                    ID: {activity.id.substring(0, 8)}
-                                </span>
-                            )}
+                            {activity.id && <span className={'text-slate-600'}>ID: {activity.id.substring(0, 8)}</span>}
                         </div>
                         {activity.hasAdditionalMetadata && <ActivityLogMetaButton meta={activity.properties} />}
                     </div>

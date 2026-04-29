@@ -250,7 +250,12 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
                         )}
                         {isSupercharged && !file.isArchiveType() && (
                             <Can action={'file.archive'}>
-                                <Button.Text onClick={() => { setVisible(false); setShowAdvancedCompress(true); }}>
+                                <Button.Text
+                                    onClick={() => {
+                                        setVisible(false);
+                                        setShowAdvancedCompress(true);
+                                    }}
+                                >
                                     <LightningBoltIcon className={'mt-0.5 mr-2 w-4'} />
                                     Advanced Compress
                                 </Button.Text>
@@ -258,7 +263,12 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
                         )}
                         {isSupercharged && file.isFile && (
                             <Can action={'file.read'}>
-                                <Button.Text onClick={() => { setVisible(false); setShowFingerprints(true); }}>
+                                <Button.Text
+                                    onClick={() => {
+                                        setVisible(false);
+                                        setShowFingerprints(true);
+                                    }}
+                                >
                                     <FingerPrintIcon className={'mt-0.5 mr-2 w-4'} />
                                     Checksum
                                 </Button.Text>

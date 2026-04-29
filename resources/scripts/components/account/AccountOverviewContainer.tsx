@@ -34,8 +34,10 @@ const Container = styled.div`
 export default () => {
     const { state } = useLocation();
     const user = useStoreState(s => s.user.data!);
-    const emailEnabled = useStoreState(
-        s => Boolean(s.everest.data?.email?.enabled ?? s.everest.data?.email?.resend?.enabled ?? s.everest.data?.email?.resend),
+    const emailEnabled = useStoreState(s =>
+        Boolean(
+            s.everest.data?.email?.enabled ?? s.everest.data?.email?.resend?.enabled ?? s.everest.data?.email?.resend,
+        ),
     );
     const discordEnabled = useStoreState(s => Boolean(s.everest.data?.auth?.modules?.discord?.enabled));
 
@@ -56,9 +58,7 @@ export default () => {
 
                 <ContentBox
                     css={tw`mt-8 sm:mt-0 sm:ml-8`}
-                    title={`Update Email Address ${
-                        emailEnabled ? '' : '(email sending disabled)'
-                    }`}
+                    title={`Update Email Address ${emailEnabled ? '' : '(email sending disabled)'}`}
                     showFlashes="account:email"
                 >
                     <div className="mb-4 flex items-center justify-between">

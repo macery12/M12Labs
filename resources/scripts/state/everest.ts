@@ -125,13 +125,15 @@ export interface EverestSettings {
     };
     email: {
         enabled?: boolean;
-        resend: {
-            enabled?: boolean;
-            api_key: boolean;
-            from_email: string;
-            from_name: string;
-            reply_to: string;
-        } | boolean;
+        resend:
+            | {
+                  enabled?: boolean;
+                  api_key: boolean;
+                  from_email: string;
+                  from_name: string;
+                  reply_to: string;
+              }
+            | boolean;
         verification_rules?: VerificationRules;
     };
 }

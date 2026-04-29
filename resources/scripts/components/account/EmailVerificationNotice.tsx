@@ -12,13 +12,12 @@ interface Props {
 
 const EmailVerificationNotice = ({ className }: Props) => {
     const user = useStoreState(state => state.user.data!);
-    const emailEnabled = useStoreState(
-        state =>
-            Boolean(
-                state.everest.data?.email?.enabled ??
-                    state.everest.data?.email?.resend?.enabled ??
-                    state.everest.data?.email?.resend,
-            ),
+    const emailEnabled = useStoreState(state =>
+        Boolean(
+            state.everest.data?.email?.enabled ??
+                state.everest.data?.email?.resend?.enabled ??
+                state.everest.data?.email?.resend,
+        ),
     );
     const verification = useEmailVerification(emailEnabled) || {};
     const {

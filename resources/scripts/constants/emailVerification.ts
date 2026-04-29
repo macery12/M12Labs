@@ -45,7 +45,9 @@ const toBoolean = (value: unknown, fallback: boolean): boolean => {
     return fallback;
 };
 
-export const normalizeVerificationRules = (rules?: Partial<Record<VerificationArea, Partial<VerificationRule>>> | null): VerificationRules => {
+export const normalizeVerificationRules = (
+    rules?: Partial<Record<VerificationArea, Partial<VerificationRule>>> | null,
+): VerificationRules => {
     if (!rules || typeof rules !== 'object') {
         return DEFAULT_EMAIL_VERIFICATION_RULES;
     }

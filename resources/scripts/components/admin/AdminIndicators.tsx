@@ -27,7 +27,9 @@ export default () => {
     return (
         <div className={'fixed top-3 right-3 hidden md:block'}>
             <div className={'grid grid-cols-1 gap-y-2'}>
-                {everest.auth.registration.enabled && <Indicator text={'Email registration is enabled.'} icon={faKey} />}
+                {everest.auth.registration.enabled && (
+                    <Indicator text={'Email registration is enabled.'} icon={faKey} />
+                )}
                 {everest.billing.enabled && <Indicator text={'Billing module is enabled.'} icon={faDollar} />}
                 {everest.tickets.enabled && <Indicator text={'Support ticket system is enabled.'} icon={faTicket} />}
             </div>

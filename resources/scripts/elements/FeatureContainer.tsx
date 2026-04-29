@@ -16,7 +16,12 @@ export default ({ image, icon, title, children, noHeight }: Props) => {
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     return (
-        <div className={classNames(!noHeight && 'min-h-[50vh] lg:h-[80vh]', 'my-auto grid max-w-7xl gap-4 lg:grid-cols-2 lg:gap-12')}>
+        <div
+            className={classNames(
+                !noHeight && 'min-h-[50vh] lg:h-[80vh]',
+                'my-auto grid max-w-7xl gap-4 lg:grid-cols-2 lg:gap-12',
+            )}
+        >
             <span className={'hidden lg:flex'}>{image}</span>
             <div className={'my-auto'}>
                 <p className={'mb-2 text-2xl font-bold text-white lg:text-5xl'}>

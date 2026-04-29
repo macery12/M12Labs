@@ -388,22 +388,29 @@ export const previewEmailTemplate = (key: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         http.get<string>(`/api/application/email/templates/${encodeURIComponent(key)}/preview`, {
             responseType: 'text',
-            transformResponse: [(data) => data],
+            transformResponse: [data => data],
         })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const getEmailTemplateSource = (key: string): Promise<{ key: string; content: string; is_customized: boolean }> => {
+export const getEmailTemplateSource = (
+    key: string,
+): Promise<{ key: string; content: string; is_customized: boolean }> => {
     return new Promise((resolve, reject) => {
-        http.get<{ key: string; content: string; is_customized: boolean }>(`/api/application/email/templates/${encodeURIComponent(key)}/source`)
+        http.get<{ key: string; content: string; is_customized: boolean }>(
+            `/api/application/email/templates/${encodeURIComponent(key)}/source`,
+        )
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const saveEmailTemplateSource = (key: string, content: string): Promise<{ success: boolean; key: string; is_customized: boolean }> => {
+export const saveEmailTemplateSource = (
+    key: string,
+    content: string,
+): Promise<{ success: boolean; key: string; is_customized: boolean }> => {
     return new Promise((resolve, reject) => {
         http.put<{ success: boolean; key: string; is_customized: boolean }>(
             `/api/application/email/templates/${encodeURIComponent(key)}/source`,
@@ -414,7 +421,9 @@ export const saveEmailTemplateSource = (key: string, content: string): Promise<{
     });
 };
 
-export const revertEmailTemplate = (key: string): Promise<{ success: boolean; key: string; is_customized: boolean }> => {
+export const revertEmailTemplate = (
+    key: string,
+): Promise<{ success: boolean; key: string; is_customized: boolean }> => {
     return new Promise((resolve, reject) => {
         http.delete<{ success: boolean; key: string; is_customized: boolean }>(
             `/api/application/email/templates/${encodeURIComponent(key)}/source`,

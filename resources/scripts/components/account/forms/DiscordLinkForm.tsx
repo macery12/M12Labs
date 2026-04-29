@@ -29,7 +29,11 @@ export default () => {
     };
 
     const handleUnlink = () => {
-        if (!confirm('Are you sure you want to unlink your Discord account? You will no longer be able to log in via Discord SSO.')) {
+        if (
+            !confirm(
+                'Are you sure you want to unlink your Discord account? You will no longer be able to log in via Discord SSO.',
+            )
+        ) {
             return;
         }
 
@@ -39,7 +43,12 @@ export default () => {
         unlinkDiscordAccount()
             .then(() => {
                 updateUserData({ discordLinked: false });
-                addFlash({ key: 'account:discord', type: 'success', title: 'Success', message: 'Your Discord account has been unlinked.' });
+                addFlash({
+                    key: 'account:discord',
+                    type: 'success',
+                    title: 'Success',
+                    message: 'Your Discord account has been unlinked.',
+                });
                 setLoading(false);
             })
             .catch(error => {

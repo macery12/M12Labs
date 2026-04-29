@@ -125,7 +125,8 @@ export default () => {
 
         setLoading(true);
         clearFlashes('files:view');
-        fetchFileContent.current()
+        fetchFileContent
+            .current()
             .then(newContent => {
                 // Pass original content for diff calculation (use empty string for new files)
                 const original = action === 'new' ? '' : originalContent;

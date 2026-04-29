@@ -118,8 +118,7 @@ export default () => {
     let scheduleButtonText = 'Schedule Deletion';
     if (scheduling) {
         scheduleButtonText = 'Scheduling...';
-    }
-    else if (server.isDeletionScheduled) {
+    } else if (server.isDeletionScheduled) {
         scheduleButtonText = 'Deletion Scheduled';
     }
 
@@ -134,7 +133,9 @@ export default () => {
                 <TitledGreyBox title={'General'} icon={faCog}>
                     <Can
                         action={'settings.rename'}
-                        renderOnError={<p css={tw`text-sm text-gray-400`}>You do not have permission to rename this server.</p>}
+                        renderOnError={
+                            <p css={tw`text-sm text-gray-400`}>You do not have permission to rename this server.</p>
+                        }
                     >
                         <Formik
                             onSubmit={(values, { setSubmitting }) =>
@@ -186,12 +187,12 @@ export default () => {
                                 </p>
                                 <p>
                                     Reinstalling will stop your server and re-run the installation script. Files are
-                                    normally not deleted, but corruption is possible. Always backup important data before
-                                    continuing.
+                                    normally not deleted, but corruption is possible. Always backup important data
+                                    before continuing.
                                 </p>
                             </div>
-                            Your server will be stopped and the installation script will be re-run. Are you sure you wish
-                            to continue?
+                            Your server will be stopped and the installation script will be re-run. Are you sure you
+                            wish to continue?
                         </Dialog.Confirm>
                         <Button.Danger
                             css={tw`w-full mt-3`}
@@ -213,11 +214,7 @@ export default () => {
                         </Dialog.Confirm>
                         {server.isDeletionScheduled && (
                             <>
-                                <Button
-                                    css={tw`w-full mt-3`}
-                                    disabled={cancelling}
-                                    onClick={() => setCancelOpen(true)}
-                                >
+                                <Button css={tw`w-full mt-3`} disabled={cancelling} onClick={() => setCancelOpen(true)}>
                                     {cancelling ? 'Cancelling...' : 'Cancel Scheduled Deletion'}
                                 </Button>
                                 <Dialog.Confirm
@@ -246,9 +243,7 @@ export default () => {
                         <div>
                             <Label>Node</Label>
                             <p css={tw`text-gray-200`}>{server.node}</p>
-                            {server.nodeId && (
-                                <p css={tw`font-mono text-gray-300 text-xs`}>Node ID: {server.nodeId}</p>
-                            )}
+                            {server.nodeId && <p css={tw`font-mono text-gray-300 text-xs`}>Node ID: {server.nodeId}</p>}
                         </div>
                     </div>
                 </TitledGreyBox>

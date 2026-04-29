@@ -107,7 +107,10 @@ export default () => {
                 against the selected repository manifest, but you still need to trust the repository operator.
             </div>
 
-            <form className={'grid gap-4 rounded-xl border border-zinc-700 bg-zinc-900/80 p-6 lg:grid-cols-2'} onSubmit={handleCreateRepository}>
+            <form
+                className={'grid gap-4 rounded-xl border border-zinc-700 bg-zinc-900/80 p-6 lg:grid-cols-2'}
+                onSubmit={handleCreateRepository}
+            >
                 <div className={'space-y-2'}>
                     <label className={'text-sm font-medium text-neutral-200'}>Repository name</label>
                     <Input
@@ -132,7 +135,11 @@ export default () => {
                         placeholder={'Optional support or source URL'}
                     />
                 </div>
-                <label className={'lg:col-span-2 flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-950/60 p-4'}>
+                <label
+                    className={
+                        'lg:col-span-2 flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-950/60 p-4'
+                    }
+                >
                     <Input
                         type={'checkbox'}
                         checked={form.acknowledgeRisk}
@@ -183,12 +190,18 @@ export default () => {
                                             {repository.enabled ? 'Enabled' : 'Disabled'}
                                         </span>
                                         {repository.status === 'error' && (
-                                            <span className={'rounded-full bg-red-500/15 px-3 py-1 text-xs font-medium text-red-200'}>
+                                            <span
+                                                className={
+                                                    'rounded-full bg-red-500/15 px-3 py-1 text-xs font-medium text-red-200'
+                                                }
+                                            >
                                                 Error
                                             </span>
                                         )}
                                     </div>
-                                    <p className={'mt-2 break-all text-sm text-neutral-400'}>{repository.manifestUrl}</p>
+                                    <p className={'mt-2 break-all text-sm text-neutral-400'}>
+                                        {repository.manifestUrl}
+                                    </p>
                                     {repository.homepageUrl && (
                                         <a
                                             href={repository.homepageUrl}
@@ -205,7 +218,8 @@ export default () => {
                                     )}
                                     {repository.status === 'ok' && (
                                         <p className={'mt-3 text-sm text-neutral-400'}>
-                                            {repository.packagesCount} package{repository.packagesCount === 1 ? '' : 's'} available.
+                                            {repository.packagesCount} package
+                                            {repository.packagesCount === 1 ? '' : 's'} available.
                                         </p>
                                     )}
                                 </div>

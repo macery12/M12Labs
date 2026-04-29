@@ -103,7 +103,7 @@ export const updateExtension = async (
     extensionId: string,
     allowedNests: number[],
     allowedEggs: number[],
-    settings: Record<string, unknown> = {}
+    settings: Record<string, unknown> = {},
 ): Promise<ExtensionData> => {
     const { data } = await http.put(`/api/application/extensions/${extensionId}`, {
         allowed_nests: allowedNests,
@@ -136,23 +136,19 @@ export const getInstallProgress = async (): Promise<InstallProgress | null> => {
 export const installExtension = async (
     extensionId: string,
     repositoryId: number,
-    version?: string
+    version?: string,
 ): Promise<ExtensionData> => {
     const { data } = await http.post(
         `/api/application/extensions/${extensionId}/install`,
         { repository_id: repositoryId, version },
-        { timeout: 300000 }
+        { timeout: 300000 },
     );
 
     return data.attributes ?? data;
 };
 
 export const uninstallExtension = async (extensionId: string): Promise<ExtensionData> => {
-    const { data } = await http.post(
-        `/api/application/extensions/${extensionId}/uninstall`,
-        {},
-        { timeout: 300000 }
-    );
+    const { data } = await http.post(`/api/application/extensions/${extensionId}/uninstall`, {}, { timeout: 300000 });
 
     return data.attributes ?? data;
 };
@@ -160,12 +156,12 @@ export const uninstallExtension = async (extensionId: string): Promise<Extension
 export const upgradeExtension = async (
     extensionId: string,
     repositoryId: number,
-    version?: string
+    version?: string,
 ): Promise<ExtensionData> => {
     const { data } = await http.post(
         `/api/application/extensions/${extensionId}/update-package`,
         { repository_id: repositoryId, version },
-        { timeout: 300000 }
+        { timeout: 300000 },
     );
 
     return data.attributes ?? data;
@@ -205,7 +201,7 @@ export const createRepository = async (payload: {
 
 export const updateRepository = async (
     repositoryId: number,
-    payload: Partial<{ name: string; manifestUrl: string; homepageUrl: string | null; enabled: boolean }>
+    payload: Partial<{ name: string; manifestUrl: string; homepageUrl: string | null; enabled: boolean }>,
 ): Promise<ExtensionRepositoryData> => {
     const { data } = await http.patch(`/api/application/extensions/repositories/${repositoryId}`, {
         name: payload.name,
@@ -237,7 +233,7 @@ export const batchInstallExtensions = async (items: BatchInstallItem[]): Promise
                 version: item.version,
             })),
         },
-        { timeout: 1800000 }
+        { timeout: 1800000 },
     );
     return data.data;
 };
@@ -246,7 +242,7 @@ export const batchUninstallExtensions = async (extensionIds: string[]): Promise<
     const { data } = await http.post(
         '/api/application/extensions/batch-uninstall',
         { extension_ids: extensionIds },
-        { timeout: 1800000 }
+        { timeout: 1800000 },
     );
     return data.data;
 };
@@ -261,7 +257,7 @@ export const batchUpdateExtensions = async (items: BatchInstallItem[]): Promise<
                 version: item.version,
             })),
         },
-        { timeout: 1800000 }
+        { timeout: 1800000 },
     );
     return data.data;
 };

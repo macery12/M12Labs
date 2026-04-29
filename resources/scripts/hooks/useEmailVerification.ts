@@ -29,7 +29,7 @@ export const useEmailVerification = (enabled = true) => {
         const initialCooldownEnd = storedCooldown ? Number(storedCooldown) : 0;
         const [cooldownEnd, setCooldownEnd] = useState<number>(initialCooldownEnd);
         const [cooldown, setCooldown] = useState(() =>
-            Math.max(0, Math.ceil((Math.max(0, initialCooldownEnd - Date.now())) / 1000)),
+            Math.max(0, Math.ceil(Math.max(0, initialCooldownEnd - Date.now()) / 1000)),
         );
 
         useEffect(() => {

@@ -12,9 +12,7 @@ export interface JGuardPendingUser {
 }
 
 export const getJGuardPending = (status = 'pending'): Promise<JGuardPendingUser[]> => {
-    return http
-        .get('/api/application/auth/jguard/pending', { params: { status } })
-        .then(({ data }) => data.data);
+    return http.get('/api/application/auth/jguard/pending', { params: { status } }).then(({ data }) => data.data);
 };
 
 export const approveJGuardUser = (userId: number): Promise<void> => {

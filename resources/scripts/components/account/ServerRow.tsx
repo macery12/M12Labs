@@ -46,7 +46,11 @@ const UtilBox = ({
     rounded?: string;
     server?: Server;
 }) => {
-    const stateLabel = server?.isTransferring ? 'Transferring' : server?.status === 'suspended' ? 'Suspended' : 'Offline';
+    const stateLabel = server?.isTransferring
+        ? 'Transferring'
+        : server?.status === 'suspended'
+        ? 'Suspended'
+        : 'Offline';
 
     return (
         <div
@@ -58,10 +62,14 @@ const UtilBox = ({
             )}
         >
             <div className={'flex items-center justify-center text-center font-bold text-gray-300'}>
-                <span className={'inline-flex max-w-full flex-wrap items-center justify-center gap-x-1 text-xs sm:text-sm'}>
+                <span
+                    className={
+                        'inline-flex max-w-full flex-wrap items-center justify-center gap-x-1 text-xs sm:text-sm'
+                    }
+                >
                     <FontAwesomeIcon icon={icon} className={'mt-0.5 flex-shrink-0'} size={'xs'} />
                     <span className={'whitespace-normal break-words leading-tight'}>
-                    {utilised > -1 ? `${utilised === Infinity ? 0 : utilised}%` : stateLabel}
+                        {utilised > -1 ? `${utilised === Infinity ? 0 : utilised}%` : stateLabel}
                     </span>
                 </span>
             </div>

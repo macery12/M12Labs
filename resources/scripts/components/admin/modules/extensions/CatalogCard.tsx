@@ -123,8 +123,9 @@ export default ({
     const icon = iconMap[extension.icon] || faPuzzlePiece;
     const manageable = Boolean(extension.installed) || extension.status === 'core';
     const compatiblePanelVersions = useMemo(
-        () => (extension.compatiblePanelVersions ?? []).filter((version): version is string => version.trim().length > 0),
-        [extension.compatiblePanelVersions]
+        () =>
+            (extension.compatiblePanelVersions ?? []).filter((version): version is string => version.trim().length > 0),
+        [extension.compatiblePanelVersions],
     );
     const hasPanelRestrictions = compatiblePanelVersions.length > 0;
     const canEvaluatePanelCompatibility = Boolean(currentPanelVersion);
@@ -138,19 +139,19 @@ export default ({
     const compatibilityHeading = !hasPanelRestrictions
         ? 'Compatible with any panel version'
         : installBlockedByPanelVersion
-          ? 'Unsupported on this panel version'
-          : canEvaluatePanelCompatibility
-            ? 'Supports the current panel version'
-            : 'Declared supported panel versions';
+        ? 'Unsupported on this panel version'
+        : canEvaluatePanelCompatibility
+        ? 'Supports the current panel version'
+        : 'Declared supported panel versions';
     const compatibilityMessage = !hasPanelRestrictions
         ? 'This package does not declare panel version restrictions.'
         : installBlockedByPanelVersion
-          ? extension.installable
-              ? `This package cannot be installed on panel ${currentPanelVersion}. Install is blocked until the panel version matches one of the supported releases below.`
-              : `This installed package does not list panel ${currentPanelVersion} as supported. Update the panel or package if you see compatibility issues.`
-          : canEvaluatePanelCompatibility
-            ? `Panel ${currentPanelVersion} is included in this package's supported version list.`
-            : 'This package declares support for the panel versions listed below.';
+        ? extension.installable
+            ? `This package cannot be installed on panel ${currentPanelVersion}. Install is blocked until the panel version matches one of the supported releases below.`
+            : `This installed package does not list panel ${currentPanelVersion} as supported. Update the panel or package if you see compatibility issues.`
+        : canEvaluatePanelCompatibility
+        ? `Panel ${currentPanelVersion} is included in this package's supported version list.`
+        : 'This package declares support for the panel versions listed below.';
     const alpha = (color: string, opacity: string) => `${color}${opacity}`;
     const cardStyle = { backgroundColor: colors.secondary, borderColor: colors.headers };
     const surfaceStyle = { backgroundColor: colors.background, borderColor: colors.headers };
@@ -171,9 +172,12 @@ export default ({
         isOperationRunning || (activePackageAction !== null && activePackageAction.extensionId !== extension.id);
     let packageActionNotice: string | null = null;
     if (anotherPackageActionInProgress) {
-        packageActionNotice = activePackageAction !== null
-            ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
-            : 'An extension operation is already running. Wait for it to finish before starting another install, update, or uninstall.';
+        packageActionNotice =
+            activePackageAction !== null
+                ? `Wait for ${activePackageAction.extensionName} to finish ${
+                      activePackageAction.type === 'install' ? 'installing' : 'uninstalling'
+                  } before starting another extension install or uninstall.`
+                : 'An extension operation is already running. Wait for it to finish before starting another install, update, or uninstall.';
     }
 
     useEffect(() => {
@@ -197,9 +201,8 @@ export default ({
     }, [configOpen, extension.allowedEggs, extension.allowedNests, extension.settings]);
 
     const filteredEggs = useMemo(
-        () =>
-            nestsAndEggs?.eggs.filter(egg => selectedNests.length === 0 || selectedNests.includes(egg.nestId)) ?? [],
-        [nestsAndEggs, selectedNests]
+        () => nestsAndEggs?.eggs.filter(egg => selectedNests.length === 0 || selectedNests.includes(egg.nestId)) ?? [],
+        [nestsAndEggs, selectedNests],
     );
 
     const updateSetting = (key: string, value: unknown) => {
@@ -215,7 +218,9 @@ export default ({
                 addFlash({
                     key: 'admin:extensions',
                     type: 'success',
-                    message: `${extension.name} has been ${extension.enabled ? 'disabled' : 'enabled'} for eligible servers.`,
+                    message: `${extension.name} has been ${
+                        extension.enabled ? 'disabled' : 'enabled'
+                    } for eligible servers.`,
                 });
                 onRefresh();
             })
@@ -242,7 +247,7 @@ export default ({
         const confirmed = window.confirm(
             extension.source.official
                 ? `Install ${extension.name} from ${extension.source.label}?`
-                : `Install ${extension.name} from ${extension.source.label}? Third-party repositories can execute arbitrary PHP and frontend code inside M12Labs.`
+                : `Install ${extension.name} from ${extension.source.label}? Third-party repositories can execute arbitrary PHP and frontend code inside M12Labs.`,
         );
 
         if (!confirmed) {
@@ -288,7 +293,7 @@ export default ({
         }
 
         const confirmed = window.confirm(
-            `Uninstall ${extension.name}? This restores the files it added to M12Labs and rebuilds the panel.`
+            `Uninstall ${extension.name}? This restores the files it added to M12Labs and rebuilds the panel.`,
         );
 
         if (!confirmed) {
@@ -334,7 +339,9 @@ export default ({
         }
 
         const confirmed = window.confirm(
-            `Update ${extension.name} from v${extension.version} to v${extension.latestVersion ?? 'latest'}? The panel will be rebuilt after the update.`
+            `Update ${extension.name} from v${extension.version} to v${
+                extension.latestVersion ?? 'latest'
+            }? The panel will be rebuilt after the update.`,
         );
 
         if (!confirmed) {
@@ -350,7 +357,9 @@ export default ({
                 addFlash({
                     key: 'admin:extensions',
                     type: 'success',
-                    message: `${extension.name} was updated to v${extension.latestVersion ?? 'latest'} and M12Labs was rebuilt.`,
+                    message: `${extension.name} was updated to v${
+                        extension.latestVersion ?? 'latest'
+                    } and M12Labs was rebuilt.`,
                 });
                 onRefresh();
             })
@@ -452,7 +461,7 @@ export default ({
                 className={classNames(
                     'flex h-full flex-col rounded-xl border p-5 shadow-lg transition-transform duration-200',
                     !loading && 'hover:-translate-y-1',
-                    isSelected && 'ring-2'
+                    isSelected && 'ring-2',
                 )}
                 style={{ ...cardStyle, ...(isSelected ? { ['--tw-ring-color' as string]: primary } : {}) }}
             >
@@ -462,7 +471,9 @@ export default ({
                             <button
                                 type={'button'}
                                 onClick={onToggleSelect}
-                                className={'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors'}
+                                className={
+                                    'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors'
+                                }
                                 style={{
                                     borderColor: isSelected ? primary : undefined,
                                     backgroundColor: isSelected ? primary : undefined,
@@ -490,7 +501,9 @@ export default ({
                         </div>
                     </div>
                     <span
-                        className={'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wide text-neutral-200'}
+                        className={
+                            'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wide text-neutral-200'
+                        }
                         style={statusPillStyle}
                     >
                         {extension.status === 'core' ? 'Core' : extension.installed ? 'Installed' : 'Available'}
@@ -510,10 +523,7 @@ export default ({
                             </span>
                         )}
                         {manageable && (
-                            <span
-                                className={'rounded-full border px-3 py-1 text-neutral-300'}
-                                style={enabledPillStyle}
-                            >
+                            <span className={'rounded-full border px-3 py-1 text-neutral-300'} style={enabledPillStyle}>
                                 {extension.enabled ? 'Enabled for servers' : 'Disabled for servers'}
                             </span>
                         )}
@@ -538,7 +548,10 @@ export default ({
                                 <p className={'mt-1 leading-5 text-neutral-200'}>{compatibilityMessage}</p>
                                 <div className={'mt-3 flex flex-wrap gap-2'}>
                                     {!hasPanelRestrictions ? (
-                                        <span className={'rounded-full border px-3 py-1 font-medium'} style={accentPillStyle}>
+                                        <span
+                                            className={'rounded-full border px-3 py-1 font-medium'}
+                                            style={accentPillStyle}
+                                        >
                                             Any panel version
                                         </span>
                                     ) : (
@@ -546,7 +559,9 @@ export default ({
                                             <span
                                                 key={version}
                                                 className={'rounded-full border px-3 py-1 font-medium text-neutral-100'}
-                                                style={currentPanelVersion === version ? accentPillStyle : neutralPillStyle}
+                                                style={
+                                                    currentPanelVersion === version ? accentPillStyle : neutralPillStyle
+                                                }
                                             >
                                                 {version}
                                             </span>
@@ -560,7 +575,11 @@ export default ({
                     {extension.source?.securityWarning && !extension.source.official && (
                         <div className={'rounded-lg border p-3 text-xs'} style={accentSurfaceStyle}>
                             <div className={'flex items-start gap-2'}>
-                                <FontAwesomeIcon icon={faTriangleExclamation} className={'mt-0.5'} style={{ color: primary }} />
+                                <FontAwesomeIcon
+                                    icon={faTriangleExclamation}
+                                    className={'mt-0.5'}
+                                    style={{ color: primary }}
+                                />
                                 <span className={'text-neutral-200'}>{extension.source.securityWarning}</span>
                             </div>
                         </div>
@@ -613,12 +632,17 @@ export default ({
                 </div>
             </div>
 
-            <Modal visible={configOpen} onDismissed={() => setConfigOpen(false)} closeOnBackground showSpinnerOverlay={loading}>
+            <Modal
+                visible={configOpen}
+                onDismissed={() => setConfigOpen(false)}
+                closeOnBackground
+                showSpinnerOverlay={loading}
+            >
                 <div className={'max-h-[80vh] overflow-y-auto'}>
                     <h2 className={'text-xl font-semibold text-white'}>Configure {extension.name}</h2>
                     <p className={'mt-2 text-sm text-neutral-400'}>
-                        Limit this extension to specific nests or eggs. Leaving both lists empty makes it available on all
-                        eligible servers.
+                        Limit this extension to specific nests or eggs. Leaving both lists empty makes it available on
+                        all eligible servers.
                     </p>
 
                     {!manageable ? (
@@ -633,14 +657,16 @@ export default ({
                         <div className={'mt-6 space-y-6'}>
                             <section>
                                 <div className={'mb-3 flex items-center justify-between'}>
-                                    <h3 className={'text-sm font-semibold uppercase tracking-wide text-neutral-300'}>Nests</h3>
+                                    <h3 className={'text-sm font-semibold uppercase tracking-wide text-neutral-300'}>
+                                        Nests
+                                    </h3>
                                     <div className={'flex gap-2 text-xs'}>
-                                        <Button.Text onClick={() => setSelectedNests(nestsAndEggs.nests.map(nest => nest.id))}>
+                                        <Button.Text
+                                            onClick={() => setSelectedNests(nestsAndEggs.nests.map(nest => nest.id))}
+                                        >
                                             Select all
                                         </Button.Text>
-                                        <Button.Text onClick={() => setSelectedNests([])}>
-                                            Clear
-                                        </Button.Text>
+                                        <Button.Text onClick={() => setSelectedNests([])}>Clear</Button.Text>
                                     </div>
                                 </div>
                                 <div className={'grid gap-2 sm:grid-cols-2'}>
@@ -657,14 +683,16 @@ export default ({
                                                     setSelectedNests(current =>
                                                         current.includes(nest.id)
                                                             ? current.filter(id => id !== nest.id)
-                                                            : [...current, nest.id]
+                                                            : [...current, nest.id],
                                                     )
                                                 }
                                             />
                                             <div>
                                                 <p className={'text-sm font-medium text-white'}>{nest.name}</p>
                                                 {nest.description && (
-                                                    <p className={'mt-1 text-xs text-neutral-400'}>{nest.description}</p>
+                                                    <p className={'mt-1 text-xs text-neutral-400'}>
+                                                        {nest.description}
+                                                    </p>
                                                 )}
                                             </div>
                                         </label>
@@ -674,14 +702,14 @@ export default ({
 
                             <section>
                                 <div className={'mb-3 flex items-center justify-between'}>
-                                    <h3 className={'text-sm font-semibold uppercase tracking-wide text-neutral-300'}>Eggs</h3>
+                                    <h3 className={'text-sm font-semibold uppercase tracking-wide text-neutral-300'}>
+                                        Eggs
+                                    </h3>
                                     <div className={'flex gap-2 text-xs'}>
                                         <Button.Text onClick={() => setSelectedEggs(filteredEggs.map(egg => egg.id))}>
                                             Select filtered
                                         </Button.Text>
-                                        <Button.Text onClick={() => setSelectedEggs([])}>
-                                            Clear
-                                        </Button.Text>
+                                        <Button.Text onClick={() => setSelectedEggs([])}>Clear</Button.Text>
                                     </div>
                                 </div>
                                 <div className={'grid gap-2 sm:grid-cols-2'}>
@@ -698,7 +726,7 @@ export default ({
                                                     setSelectedEggs(current =>
                                                         current.includes(egg.id)
                                                             ? current.filter(id => id !== egg.id)
-                                                            : [...current, egg.id]
+                                                            : [...current, egg.id],
                                                     )
                                                 }
                                             />
@@ -713,7 +741,11 @@ export default ({
 
                             {extension.settingsSchema && extension.settingsSchema.length > 0 && (
                                 <section>
-                                    <h3 className={'mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-300'}>
+                                    <h3
+                                        className={
+                                            'mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-300'
+                                        }
+                                    >
                                         Settings
                                     </h3>
                                     <div className={'space-y-3'}>

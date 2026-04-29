@@ -5,7 +5,13 @@ import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faAngleLeft, faAngleRight, faDownload } from '@fortawesome/free-solid-svg-icons';
+import {
+    faAngleDoubleLeft,
+    faAngleDoubleRight,
+    faAngleLeft,
+    faAngleRight,
+    faDownload,
+} from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 
 interface Props {
@@ -83,9 +89,7 @@ export default ({ mods, loading, contentType = 'mods', pagination, onModClick, o
     if (!mods.length && !loading) {
         return (
             <div css={tw`text-center py-16`}>
-                <p css={tw`text-neutral-400 text-lg`}>
-                    No {contentLabelLower} found matching your search criteria.
-                </p>
+                <p css={tw`text-neutral-400 text-lg`}>No {contentLabelLower} found matching your search criteria.</p>
             </div>
         );
     }
@@ -155,12 +159,16 @@ export default ({ mods, loading, contentType = 'mods', pagination, onModClick, o
                                         </ModAuthor>
                                         <div css={tw`flex gap-2 mt-1`}>
                                             {mod.isPremium && (
-                                                <span css={tw`text-[11px] px-2 py-0.5 bg-red-900/60 text-red-200 rounded`}>
+                                                <span
+                                                    css={tw`text-[11px] px-2 py-0.5 bg-red-900/60 text-red-200 rounded`}
+                                                >
                                                     Premium
                                                 </span>
                                             )}
                                             {mod.isExternal && (
-                                                <span css={tw`text-[11px] px-2 py-0.5 bg-yellow-900/60 text-yellow-200 rounded`}>
+                                                <span
+                                                    css={tw`text-[11px] px-2 py-0.5 bg-yellow-900/60 text-yellow-200 rounded`}
+                                                >
                                                     External
                                                 </span>
                                             )}

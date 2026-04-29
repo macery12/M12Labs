@@ -125,7 +125,7 @@ export default () => {
                 try {
                     const cycles = await getBillingCyclesForProduct(plan.id);
                     setBillingCycles(cycles);
-                    
+
                     // Auto-select the default or current billing cycle
                     if (cycles.length > 0) {
                         const defaultCycle = cycles.find(c => c.is_default) || cycles[0];
@@ -138,7 +138,7 @@ export default () => {
                 } finally {
                     setLoadingCycles(false);
                 }
-                
+
                 setShowConfirmDialog(true);
             }
         } catch (error) {
@@ -218,7 +218,8 @@ export default () => {
                                                 <span>{plan.limits.database} DB</span>
                                                 <span>{plan.limits.backup} Backups</span>
                                                 <span>
-                                                    {plan.limits.subdomain === null || plan.limits.subdomain === undefined
+                                                    {plan.limits.subdomain === null ||
+                                                    plan.limits.subdomain === undefined
                                                         ? 'Unlimited Subdomains'
                                                         : `${plan.limits.subdomain} Subdomains`}
                                                 </span>
@@ -260,7 +261,9 @@ export default () => {
                 {selectedPlan &&
                     (() => {
                         const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                        const fallbackPricing = !selectedCycle ? calculatePlanPrice(selectedPlan, selectedBillingDays) : null;
+                        const fallbackPricing = !selectedCycle
+                            ? calculatePlanPrice(selectedPlan, selectedBillingDays)
+                            : null;
                         const price = selectedCycle?.price ?? fallbackPricing!.price;
                         const discount = selectedCycle?.discount_percent ?? fallbackPricing!.discount;
 
@@ -321,7 +324,10 @@ export default () => {
                                                                             ]}
                                                                         >
                                                                             {cycle.discount_percent > 0 ? '-' : '+'}
-                                                                            {Math.abs(cycle.discount_percent).toFixed(0)}%
+                                                                            {Math.abs(cycle.discount_percent).toFixed(
+                                                                                0,
+                                                                            )}
+                                                                            %
                                                                         </span>
                                                                     )}
                                                                 </div>

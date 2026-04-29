@@ -18,7 +18,15 @@ import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
 import useFlash from '@/plugins/useFlash';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowsRotate, faCheck, faDownload, faToggleOff, faToggleOn, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons';
+import {
+    faArrowsRotate,
+    faCheck,
+    faDownload,
+    faToggleOff,
+    faToggleOn,
+    faTrash,
+    faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 
 type PackageActionState = {
     extensionId: string;
@@ -117,9 +125,7 @@ export default () => {
 
         extensions.forEach(extension => {
             const value = getCatalogValue(extension);
-            const label = extension.source?.type === 'core'
-                ? 'Core'
-                : extension.source?.label ?? 'Unknown';
+            const label = extension.source?.type === 'core' ? 'Core' : extension.source?.label ?? 'Unknown';
             const existing = counts.get(value);
 
             counts.set(value, {
@@ -231,7 +237,7 @@ export default () => {
                         return true;
                 }
             }),
-        [catalogFilter, currentPanelVersion, extensions, panelSupportFilter]
+        [catalogFilter, currentPanelVersion, extensions, panelSupportFilter],
     );
 
     const hasActiveFilters = catalogFilter !== 'all' || panelSupportFilter !== 'all';
@@ -260,12 +266,10 @@ export default () => {
 
     const selectedExtensions = extensions.filter(ext => selectedIds.has(ext.id));
     const isManageable = (ext: ExtensionData) => Boolean(ext.installed) || ext.status === 'core';
-    const selectableForInstall = selectedExtensions.filter(
-        ext => ext.installable && ext.source?.repositoryId
-    );
+    const selectableForInstall = selectedExtensions.filter(ext => ext.installable && ext.source?.repositoryId);
     const selectableForUninstall = selectedExtensions.filter(ext => ext.canUninstall);
     const selectableForUpdate = selectedExtensions.filter(
-        ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall
+        ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall,
     );
     const selectableForEnable = selectedExtensions.filter(ext => isManageable(ext) && !ext.enabled);
     const selectableForDisable = selectedExtensions.filter(ext => isManageable(ext) && ext.enabled);
@@ -306,9 +310,10 @@ export default () => {
         if (selectableForUninstall.length === 0) return;
         if (
             !window.confirm(
-                `Uninstall ${selectableForUninstall.length} extension(s)? This removes their files and rebuilds M12Labs.`
+                `Uninstall ${selectableForUninstall.length} extension(s)? This removes their files and rebuilds M12Labs.`,
             )
-        ) return;
+        )
+            return;
 
         setBatchLoading(true);
         clearFlashes('admin:extensions');
@@ -332,9 +337,10 @@ export default () => {
         if (selectableForUpdate.length === 0) return;
         if (
             !window.confirm(
-                `Update ${selectableForUpdate.length} extension(s) to their latest versions? M12Labs will be rebuilt once.`
+                `Update ${selectableForUpdate.length} extension(s) to their latest versions? M12Labs will be rebuilt once.`,
             )
-        ) return;
+        )
+            return;
 
         setBatchLoading(true);
         clearFlashes('admin:extensions');
@@ -371,9 +377,10 @@ export default () => {
                 addFlash({
                     key: 'admin:extensions',
                     type: failed > 0 ? 'warning' : 'success',
-                    message: failed > 0
-                        ? `${succeeded} extension(s) enabled; ${failed} failed.`
-                        : `${succeeded} extension(s) enabled.`,
+                    message:
+                        failed > 0
+                            ? `${succeeded} extension(s) enabled; ${failed} failed.`
+                            : `${succeeded} extension(s) enabled.`,
                 });
                 silentRefresh();
             })
@@ -384,9 +391,10 @@ export default () => {
         if (selectableForDisable.length === 0) return;
         if (
             !window.confirm(
-                `Disable ${selectableForDisable.length} extension(s)? They will no longer be active on servers.`
+                `Disable ${selectableForDisable.length} extension(s)? They will no longer be active on servers.`,
             )
-        ) return;
+        )
+            return;
         setBatchLoading(true);
         clearFlashes('admin:extensions');
         Promise.allSettled(selectableForDisable.map(ext => toggleExtension(ext.id)))
@@ -397,9 +405,10 @@ export default () => {
                 addFlash({
                     key: 'admin:extensions',
                     type: failed > 0 ? 'warning' : 'success',
-                    message: failed > 0
-                        ? `${succeeded} extension(s) disabled; ${failed} failed.`
-                        : `${succeeded} extension(s) disabled.`,
+                    message:
+                        failed > 0
+                            ? `${succeeded} extension(s) disabled; ${failed} failed.`
+                            : `${succeeded} extension(s) disabled.`,
                 });
                 silentRefresh();
             })
@@ -546,7 +555,7 @@ export default () => {
                         <Button.Text
                             onClick={() => {
                                 const installable = filteredExtensions.filter(
-                                    ext => ext.installable && ext.source?.repositoryId
+                                    ext => ext.installable && ext.source?.repositoryId,
                                 );
                                 const ids = new Set(installable.map(ext => ext.id));
                                 setSelectedIds(ids);
@@ -560,7 +569,7 @@ export default () => {
                         <Button.Text
                             onClick={() => {
                                 const updatable = filteredExtensions.filter(
-                                    ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall
+                                    ext => ext.updateAvailable && ext.source?.repositoryId && ext.canUninstall,
                                 );
                                 const ids = new Set(updatable.map(ext => ext.id));
                                 setSelectedIds(ids);
@@ -628,9 +637,7 @@ export default () => {
                     style={{ backgroundColor: colors.secondary, borderColor: colors.headers }}
                 >
                     <p className={'text-neutral-200'}>No extensions match the selected filters.</p>
-                    <p className={'mt-2 text-sm text-neutral-500'}>
-                        Try a different catalog or panel support filter.
-                    </p>
+                    <p className={'mt-2 text-sm text-neutral-500'}>Try a different catalog or panel support filter.</p>
                 </div>
             ) : (
                 <div className={'grid gap-6 sm:grid-cols-2 xl:grid-cols-3'}>

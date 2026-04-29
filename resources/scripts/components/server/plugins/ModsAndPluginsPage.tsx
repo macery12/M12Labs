@@ -254,7 +254,11 @@ const ModsAndPluginsPage = () => {
                                     tw`px-4 py-2 font-medium transition-colors rounded-t`,
                                     !active && tw`text-neutral-400 hover:text-neutral-200`,
                                 ]}
-                                style={active ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
+                                style={
+                                    active
+                                        ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }
+                                        : undefined
+                                }
                                 onClick={() => setActiveType(type)}
                                 type="button"
                             >

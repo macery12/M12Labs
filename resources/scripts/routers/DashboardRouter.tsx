@@ -34,15 +34,16 @@ function DashboardRouter() {
     const flags = useStoreState(state => state.everest.data!);
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
     const { addFlash, clearFlashes } = useFlash();
-    const emailEnabled = useStoreState(
-        state =>
-            Boolean(
-                state.everest.data?.email?.enabled ??
-                    state.everest.data?.email?.resend?.enabled ??
-                    state.everest.data?.email?.resend,
-            ),
+    const emailEnabled = useStoreState(state =>
+        Boolean(
+            state.everest.data?.email?.enabled ??
+                state.everest.data?.email?.resend?.enabled ??
+                state.everest.data?.email?.resend,
+        ),
     );
-    const verificationRules = normalizeVerificationRules(useStoreState(state => state.everest.data?.email?.verification_rules));
+    const verificationRules = normalizeVerificationRules(
+        useStoreState(state => state.everest.data?.email?.verification_rules),
+    );
     const verification = useEmailVerification(emailEnabled) || {};
     const {
         resend = () => {},
@@ -101,12 +102,12 @@ function DashboardRouter() {
 
     return (
         <MobileDrawer>
-        <div className={'flex h-screen'}>
-            {' '}
-            <MobileDrawer.Panel>
-                <MobileDrawer.Home />
-                {routes.account
-                    .filter(route => route.name && (!route.condition || route.condition(flags)))
+            <div className={'flex h-screen'}>
+                {' '}
+                <MobileDrawer.Panel>
+                    <MobileDrawer.Home />
+                    {routes.account
+                        .filter(route => route.name && (!route.condition || route.condition(flags)))
                         .map(route => (
                             <MobileDrawer.Link
                                 key={route.route}
@@ -117,97 +118,96 @@ function DashboardRouter() {
                                 onClick={e => handleRestrictedClick(route.path, e)}
                             />
                         ))}
-                {(user.rootAdmin || user.admin_role_id) && (
-                    <MobileDrawer.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
-                )}
-            </MobileDrawer.Panel>
-            <Sidebar className={'flex-none'} $collapsed={collapsed} theme={theme}>
-                <div
-                    className={
-                        'mt-1 mb-3 flex h-16 w-full cursor-pointer select-none flex-col items-center justify-center'
-                    }
-                    onClick={() => setCollapsed(!collapsed)}
-                >
-                    {!collapsed ? (
-                        <h1 className={'whitespace-nowrap text-2xl font-medium text-neutral-50'}>{name}</h1>
-                    ) : (
-                        <img
-                            src={logo?.toString() || 'https://avatars.githubusercontent.com/u/91636558'}
-                            className={'mt-4 w-12'}
-                            alt={'Logo'}
-                        />
-                    )}
-                </div>
-                <Sidebar.Wrapper theme={theme}>
-                    <NavLink to={'/'} end className={'mb-[18px]'}>
-                        <DesktopComputerIcon />
-                        <span>Dashboard</span>
-                    </NavLink>
-                    {routes.account
-                        .filter(route => route.name && (!route.condition || route.condition(flags)))
-                        .map(route => (
-                            <NavLink
-                                to={`/account/${route.path}`}
-                                key={route.path}
-                                end={route.end}
-                                onClick={e => handleRestrictedClick(route.path, e)}
-                            >
-                                <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
-                                <span>{route.name}</span>
-                            </NavLink>
-                        ))}
-                </Sidebar.Wrapper>
-                <span className={'mt-auto mb-3 mr-auto'}>
-                    {!collapsed && (
-                        <>
-                            {links?.map(link => (
-                                <a key={link.id} href={link.url} target={'_blank'} rel={'noreferrer'}>
-                                    <ExternalLinkIcon />
-                                    <span>{link.name}</span>
-                                </a>
-                            ))}
-                        </>
-                    )}
                     {(user.rootAdmin || user.admin_role_id) && (
-                        <NavLink to={'/admin'}>
-                            <CogIcon />
-                            <span className={collapsed ? 'hidden' : ''}>Settings</span>
-                        </NavLink>
+                        <MobileDrawer.Link icon={CogIcon} text={'Admin'} linkTo={'/admin'} />
                     )}
-                    <NavLink to={'/'} onClick={onTriggerLogout}>
-                        <LogoutIcon />
-                        <span className={collapsed ? 'hidden' : ''}>Logout</span>
-                    </NavLink>
-                </span>
-                <Sidebar.User>
-                    <span className="flex items-center">
-                        <Avatar.User />
-                    </span>
-                    <div className={'ml-3 flex flex-col'}>
-                        <span
-                            className={
-                                'select-none whitespace-nowrap font-sans text-xs font-normal leading-tight text-gray-300'
-                            }
-                        >
-                            <div className={'text-sm text-gray-400'}>Welcome back,</div>
-                            {user.email}
-                        </span>
+                </MobileDrawer.Panel>
+                <Sidebar className={'flex-none'} $collapsed={collapsed} theme={theme}>
+                    <div
+                        className={
+                            'mt-1 mb-3 flex h-16 w-full cursor-pointer select-none flex-col items-center justify-center'
+                        }
+                        onClick={() => setCollapsed(!collapsed)}
+                    >
+                        {!collapsed ? (
+                            <h1 className={'whitespace-nowrap text-2xl font-medium text-neutral-50'}>{name}</h1>
+                        ) : (
+                            <img
+                                src={logo?.toString() || 'https://avatars.githubusercontent.com/u/91636558'}
+                                className={'mt-4 w-12'}
+                                alt={'Logo'}
+                            />
+                        )}
                     </div>
-                </Sidebar.User>
-            </Sidebar>
-            <div className={'flex-1 overflow-x-hidden'}>
-                <NavigationBar />
-                <Suspense fallback={<Spinner centered />}>
-                    <Routes>
-                        <Route path="" element={<DashboardContainer />} />
+                    <Sidebar.Wrapper theme={theme}>
+                        <NavLink to={'/'} end className={'mb-[18px]'}>
+                            <DesktopComputerIcon />
+                            <span>Dashboard</span>
+                        </NavLink>
                         {routes.account
-                            .filter(route => !route.condition || route.condition(flags))
-                            .map(({ route, component: Component, path }) => (
-                                <Route
-                                    key={route}
-                                    path={prefixAccountPath(route)}
-                                    element={
-                                        (() => {
+                            .filter(route => route.name && (!route.condition || route.condition(flags)))
+                            .map(route => (
+                                <NavLink
+                                    to={`/account/${route.path}`}
+                                    key={route.path}
+                                    end={route.end}
+                                    onClick={e => handleRestrictedClick(route.path, e)}
+                                >
+                                    <Sidebar.Icon icon={route.icon ?? PuzzleIcon} />
+                                    <span>{route.name}</span>
+                                </NavLink>
+                            ))}
+                    </Sidebar.Wrapper>
+                    <span className={'mt-auto mb-3 mr-auto'}>
+                        {!collapsed && (
+                            <>
+                                {links?.map(link => (
+                                    <a key={link.id} href={link.url} target={'_blank'} rel={'noreferrer'}>
+                                        <ExternalLinkIcon />
+                                        <span>{link.name}</span>
+                                    </a>
+                                ))}
+                            </>
+                        )}
+                        {(user.rootAdmin || user.admin_role_id) && (
+                            <NavLink to={'/admin'}>
+                                <CogIcon />
+                                <span className={collapsed ? 'hidden' : ''}>Settings</span>
+                            </NavLink>
+                        )}
+                        <NavLink to={'/'} onClick={onTriggerLogout}>
+                            <LogoutIcon />
+                            <span className={collapsed ? 'hidden' : ''}>Logout</span>
+                        </NavLink>
+                    </span>
+                    <Sidebar.User>
+                        <span className="flex items-center">
+                            <Avatar.User />
+                        </span>
+                        <div className={'ml-3 flex flex-col'}>
+                            <span
+                                className={
+                                    'select-none whitespace-nowrap font-sans text-xs font-normal leading-tight text-gray-300'
+                                }
+                            >
+                                <div className={'text-sm text-gray-400'}>Welcome back,</div>
+                                {user.email}
+                            </span>
+                        </div>
+                    </Sidebar.User>
+                </Sidebar>
+                <div className={'flex-1 overflow-x-hidden'}>
+                    <NavigationBar />
+                    <Suspense fallback={<Spinner centered />}>
+                        <Routes>
+                            <Route path="" element={<DashboardContainer />} />
+                            {routes.account
+                                .filter(route => !route.condition || route.condition(flags))
+                                .map(({ route, component: Component, path }) => (
+                                    <Route
+                                        key={route}
+                                        path={prefixAccountPath(route)}
+                                        element={(() => {
                                             const area = getAreaForPath(path);
                                             const blocked = area ? isRestrictedRoute(path) : false;
 
@@ -220,44 +220,45 @@ function DashboardRouter() {
                                             }
 
                                             return <Component />;
-                                        })()
-                                    }
-                                />
-                            ))}
-                        <Route path="*" element={<NotFound />} />
-                    </Routes>
-                </Suspense>
-                <Dialog.Confirm
-                    open={showVerifyPrompt}
-                    title={EMAIL_VERIFICATION_ALERT_TITLE}
-                    onClose={() => setShowVerifyPrompt(false)}
-                    onConfirmed={() => setShowVerifyPrompt(false)}
-                    buttonType="success"
-                >
-                    <p className={'mb-4'}>{EMAIL_VERIFICATION_ALERT_MESSAGE}</p>
-                    <div className={'flex flex-wrap gap-2'}>
-                        <button
-                            className={'rounded bg-green-600 px-3 py-2 text-white disabled:opacity-50 hover:bg-green-500 transition-colors'}
-                            disabled={isCoolingDown}
-                            onClick={() => {
-                                void resend();
-                                setShowVerifyPrompt(false);
-                            }}
-                        >
-                            {resendLabel}
-                        </button>
-                        <button
-                            className={'rounded bg-gray-700 px-3 py-2 text-white'}
-                            onClick={() => {
-                                window.location.reload();
-                            }}
-                        >
-                            I already verified
-                        </button>
-                    </div>
-                </Dialog.Confirm>
+                                        })()}
+                                    />
+                                ))}
+                            <Route path="*" element={<NotFound />} />
+                        </Routes>
+                    </Suspense>
+                    <Dialog.Confirm
+                        open={showVerifyPrompt}
+                        title={EMAIL_VERIFICATION_ALERT_TITLE}
+                        onClose={() => setShowVerifyPrompt(false)}
+                        onConfirmed={() => setShowVerifyPrompt(false)}
+                        buttonType="success"
+                    >
+                        <p className={'mb-4'}>{EMAIL_VERIFICATION_ALERT_MESSAGE}</p>
+                        <div className={'flex flex-wrap gap-2'}>
+                            <button
+                                className={
+                                    'rounded bg-green-600 px-3 py-2 text-white disabled:opacity-50 hover:bg-green-500 transition-colors'
+                                }
+                                disabled={isCoolingDown}
+                                onClick={() => {
+                                    void resend();
+                                    setShowVerifyPrompt(false);
+                                }}
+                            >
+                                {resendLabel}
+                            </button>
+                            <button
+                                className={'rounded bg-gray-700 px-3 py-2 text-white'}
+                                onClick={() => {
+                                    window.location.reload();
+                                }}
+                            >
+                                I already verified
+                            </button>
+                        </div>
+                    </Dialog.Confirm>
+                </div>
             </div>
-        </div>
         </MobileDrawer>
     );
 }

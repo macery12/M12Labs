@@ -261,7 +261,9 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                                 : 'Unknown date'}{' '}
                             {mod.latestVersion.downloads !== undefined && `• ${mod.latestVersion.downloads} downloads`}
                             {mod.latestVersion.rating?.average !== undefined &&
-                                ` • Rating ${mod.latestVersion.rating.average} (${mod.latestVersion.rating.count ?? 0})`}
+                                ` • Rating ${mod.latestVersion.rating.average} (${
+                                    mod.latestVersion.rating.count ?? 0
+                                })`}
                         </p>
                     </Section>
                 )}
@@ -318,24 +320,24 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                                     <FileItem key={file.id} $backgroundColor={colors.secondary}>
                                         <FileInfo>
                                             <FileName>{file.displayName}</FileName>
-                                             <FileDetails>
-                                                 <span css={getReleaseTypeColor(file.releaseType)}>
-                                                     {getReleaseTypeLabel(file.releaseType)}
-                                                 </span>
-                                                 {' • '}
-                                                 <span>
-                                                     {file.gameVersions.slice(0, 3).join(', ')}
-                                                     {file.gameVersions.length > 3 && '...'}
-                                                 </span>
-                                                 {' • '}
-                                                 <span>{new Date(file.fileDate).toLocaleDateString()}</span>
-                                                 {file.fileLength > 0 && (
-                                                     <>
-                                                         {' • '}
-                                                         <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
-                                                     </>
-                                                 )}
-                                             </FileDetails>
+                                            <FileDetails>
+                                                <span css={getReleaseTypeColor(file.releaseType)}>
+                                                    {getReleaseTypeLabel(file.releaseType)}
+                                                </span>
+                                                {' • '}
+                                                <span>
+                                                    {file.gameVersions.slice(0, 3).join(', ')}
+                                                    {file.gameVersions.length > 3 && '...'}
+                                                </span>
+                                                {' • '}
+                                                <span>{new Date(file.fileDate).toLocaleDateString()}</span>
+                                                {file.fileLength > 0 && (
+                                                    <>
+                                                        {' • '}
+                                                        <span>{(file.fileLength / 1024 / 1024).toFixed(2)} MB</span>
+                                                    </>
+                                                )}
+                                            </FileDetails>
                                         </FileInfo>
                                         <ModDownloadButton
                                             modId={mod.id}

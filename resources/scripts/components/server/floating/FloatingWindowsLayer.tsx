@@ -341,9 +341,11 @@ const FloatingWindowToolbar = ({
     onDragPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }) => {
     const showExternalServerMessage = sourceServerId !== currentServerId;
-    const { secondary: _secondary, headers: _headers, background: _background } = useStoreState(
-        state => state.theme.data!.colors,
-    );
+    const {
+        secondary: _secondary,
+        headers: _headers,
+        background: _background,
+    } = useStoreState(state => state.theme.data!.colors);
 
     return (
         <div>
