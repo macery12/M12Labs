@@ -1,0 +1,1438 @@
+From 283ca1dc2d94088250ea39512f23178c85043ef3 Mon Sep 17 00:00:00 2001
+From: "copilot-swe-agent[bot]" <198982749+Copilot@users.noreply.github.com>
+Date: Wed, 29 Apr 2026 01:22:05 +0000
+Subject: [PATCH 1/3] fix: resolve TypeScript errors across account and admin
+ scripts
+
+- billing/models.d.ts: add allowEggChanges to Product interface
+- billing/transformers.ts: add allowPlanChanges to toCategory
+- modpacks.ts: remove unused CurseForgeModpack import (TS6133)
+- getEgg.ts: uncomment configFrom, copyScriptFrom, scriptIsPrivileged in Egg interface
+- server/index.ts: add 'offline' to ServerStatus union type
+- AccountApiContainer.tsx, CredentialsContainer.tsx: fix import path from @definitions/user to @definitions/account
+- AccountOverviewContainer.tsx, EmailVerificationGate.tsx, EmailVerificationNotice.tsx, DashboardRouter.tsx: fix email.resend?.enabled access on boolean|object union type
+- AlertHistoryModal.tsx: remove unused getTypeColor function (TS6133)
+- DashboardAlert.tsx, ScopedAlert.tsx: cast position as string for 'notification' comparison (TS2367)
+- DashboardRouter.tsx: prefix unused refreshUser with _ (TS6133)
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+Co-authored-by: macery12 <57544649+macery12@users.noreply.github.com>
+---
+ .../definitions/account/billing/models.d.ts    |  1 +
+ .../account/billing/transformers.ts            |  1 +
+ .../scripts/api/routes/account/modpacks.ts     |  1 -
+ .../scripts/api/routes/admin/eggs/getEgg.ts    |  6 +++---
+ resources/scripts/api/routes/server/index.ts   |  1 +
+ .../components/account/AccountApiContainer.tsx |  2 +-
+ .../account/AccountOverviewContainer.tsx       | 14 +++++++++-----
+ .../components/account/AlertHistoryModal.tsx   | 13 -------------
+ .../account/CredentialsContainer.tsx           |  2 +-
+ .../components/account/DashboardAlert.tsx      |  2 +-
+ .../account/EmailVerificationGate.tsx          | 16 +++++++++-------
+ .../account/EmailVerificationNotice.tsx        | 16 +++++++++-------
+ .../scripts/components/account/ScopedAlert.tsx |  2 +-
+ resources/scripts/routers/DashboardRouter.tsx  | 18 ++++++++++--------
+ 14 files changed, 47 insertions(+), 48 deletions(-)
+
+diff --git a/resources/scripts/api/definitions/account/billing/models.d.ts b/resources/scripts/api/definitions/account/billing/models.d.ts
+index 7ac8b4f..9aa75e3 100644
+--- a/resources/scripts/api/definitions/account/billing/models.d.ts
++++ b/resources/scripts/api/definitions/account/billing/models.d.ts
+@@ -47,6 +47,7 @@ interface Product extends Model {
+     description?: string;
+     eggId: number;
+     allowedEggs: number[];
++    allowEggChanges: boolean;
+     limits: {
+         cpu: number;
+         memory: number;
+diff --git a/resources/scripts/api/definitions/account/billing/transformers.ts b/resources/scripts/api/definitions/account/billing/transformers.ts
+index 7a2dea7..d86887e 100644
+--- a/resources/scripts/api/definitions/account/billing/transformers.ts
++++ b/resources/scripts/api/definitions/account/billing/transformers.ts
+@@ -37,6 +37,7 @@ export default class Transformers {
+         description: data.description,
+         allowedEggs: data.allowedEggs || [data.eggId],
+         allowEggChanges: data.allowEggChanges ?? true,
++        allowPlanChanges: data.allowPlanChanges ?? true,
+     });
+ 
+     static toProduct = ({ attributes: data }: FractalResponseData): Models.Product => ({
+diff --git a/resources/scripts/api/routes/account/modpacks.ts b/resources/scripts/api/routes/account/modpacks.ts
+index 20a7e54..0522a66 100644
+--- a/resources/scripts/api/routes/account/modpacks.ts
++++ b/resources/scripts/api/routes/account/modpacks.ts
+@@ -1,6 +1,5 @@
+ import http from '@/api/http';
+ import {
+-    CurseForgeModpack,
+     ModpackSearchParams,
+     ModpackSearchResponse,
+     ModpackResponse,
+diff --git a/resources/scripts/api/routes/admin/eggs/getEgg.ts b/resources/scripts/api/routes/admin/eggs/getEgg.ts
+index 161ce94..eaa5325 100644
+--- a/resources/scripts/api/routes/admin/eggs/getEgg.ts
++++ b/resources/scripts/api/routes/admin/eggs/getEgg.ts
+@@ -49,9 +49,9 @@ export interface Egg {
+     scriptInstall: string | null;
+     createdAt: Date;
+     updatedAt: Date;
+-    // configFrom: number | null;
+-    // copyScriptFrom: number | null;
+-    // scriptIsPrivileged: boolean;
++    configFrom: number | null;
++    copyScriptFrom: number | null;
++    scriptIsPrivileged: boolean;
+ 
+     relations: {
+         nest?: Nest;
+diff --git a/resources/scripts/api/routes/server/index.ts b/resources/scripts/api/routes/server/index.ts
+index c4bc26d..4d8e6f1 100644
+--- a/resources/scripts/api/routes/server/index.ts
++++ b/resources/scripts/api/routes/server/index.ts
+@@ -8,6 +8,7 @@ export type ServerStatus =
+     | 'reinstall_failed'
+     | 'suspended'
+     | 'restoring_backup'
++    | 'offline'
+     | null;
+ 
+ const getServer = (uuid: string): Promise<[Server, string[]]> => {
+diff --git a/resources/scripts/components/account/AccountApiContainer.tsx b/resources/scripts/components/account/AccountApiContainer.tsx
+index 6ad19f1..e4e2206 100644
+--- a/resources/scripts/components/account/AccountApiContainer.tsx
++++ b/resources/scripts/components/account/AccountApiContainer.tsx
+@@ -5,7 +5,7 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
+ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+ import { faKey, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+ import { getApiKeys, deleteApiKey } from '@/api/routes/account/api-keys';
+-import { type ApiKey } from '@definitions/user';
++import { type ApiKey } from '@definitions/account';
+ import FlashMessageRender from '@/elements/FlashMessageRender';
+ import { format } from 'date-fns';
+ import PageContentBlock from '@/elements/PageContentBlock';
+diff --git a/resources/scripts/components/account/AccountOverviewContainer.tsx b/resources/scripts/components/account/AccountOverviewContainer.tsx
+index 75a089b..e03b018 100644
+--- a/resources/scripts/components/account/AccountOverviewContainer.tsx
++++ b/resources/scripts/components/account/AccountOverviewContainer.tsx
+@@ -34,11 +34,15 @@ const Container = styled.div`
+ export default () => {
+     const { state } = useLocation();
+     const user = useStoreState(s => s.user.data!);
+-    const emailEnabled = useStoreState(s =>
+-        Boolean(
+-            s.everest.data?.email?.enabled ?? s.everest.data?.email?.resend?.enabled ?? s.everest.data?.email?.resend,
+-        ),
+-    );
++    const emailEnabled = useStoreState(s => {
++        const email = s.everest.data?.email;
++        const resend = email?.resend;
++        return Boolean(
++            email?.enabled ??
++                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
++                resend,
++        );
++    });
+     const discordEnabled = useStoreState(s => Boolean(s.everest.data?.auth?.modules?.discord?.enabled));
+ 
+     return (
+diff --git a/resources/scripts/components/account/AlertHistoryModal.tsx b/resources/scripts/components/account/AlertHistoryModal.tsx
+index fa9b4d0..8b4c207 100644
+--- a/resources/scripts/components/account/AlertHistoryModal.tsx
++++ b/resources/scripts/components/account/AlertHistoryModal.tsx
+@@ -63,19 +63,6 @@ export default ({ open, onClose }: Props) => {
+         window.location.reload();
+     };
+ 
+-    const getTypeColor = (type: string) => {
+-        switch (type) {
+-            case 'success':
+-                return 'text-green-400';
+-            case 'warning':
+-                return 'text-yellow-400';
+-            case 'danger':
+-                return 'text-red-400';
+-            default:
+-                return 'text-blue-400';
+-        }
+-    };
+-
+     const getTypeBadge = (type: string) => {
+         switch (type) {
+             case 'success':
+diff --git a/resources/scripts/components/account/CredentialsContainer.tsx b/resources/scripts/components/account/CredentialsContainer.tsx
+index fc5ba8a..f8006a4 100644
+--- a/resources/scripts/components/account/CredentialsContainer.tsx
++++ b/resources/scripts/components/account/CredentialsContainer.tsx
+@@ -5,7 +5,7 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
+ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+ import { faKey, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+ import { getApiKeys, deleteApiKey } from '@/api/routes/account/api-keys';
+-import { type ApiKey } from '@definitions/user';
++import { type ApiKey } from '@definitions/account';
+ import FlashMessageRender from '@/elements/FlashMessageRender';
+ import { format } from 'date-fns';
+ import PageContentBlock from '@/elements/PageContentBlock';
+diff --git a/resources/scripts/components/account/DashboardAlert.tsx b/resources/scripts/components/account/DashboardAlert.tsx
+index 938349d..0293898 100644
+--- a/resources/scripts/components/account/DashboardAlert.tsx
++++ b/resources/scripts/components/account/DashboardAlert.tsx
+@@ -33,7 +33,7 @@ export default () => {
+     const dismissAlert = (alert: ActiveAlert) => dismissAlertForUser(alert, user);
+ 
+     // Filter out dismissed alerts and notification-only alerts, then group by position
+-    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && a.position !== 'notification');
++    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && (a.position as string) !== 'notification');
+     const topCenterAlerts = visibleAlerts.filter(a => a.position === 'top-center');
+     const slideOutAlerts = visibleAlerts.filter(a => a.position === 'slide-out');
+     const centerAlerts = visibleAlerts.filter(a => a.position === 'center');
+diff --git a/resources/scripts/components/account/EmailVerificationGate.tsx b/resources/scripts/components/account/EmailVerificationGate.tsx
+index 1feefc1..1637c2d 100644
+--- a/resources/scripts/components/account/EmailVerificationGate.tsx
++++ b/resources/scripts/components/account/EmailVerificationGate.tsx
+@@ -19,13 +19,15 @@ type Props = {
+ 
+ const EmailVerificationGate = ({ children, area }: Props) => {
+     const user = useStoreState(state => state.user.data!);
+-    const emailEnabled = useStoreState(state =>
+-        Boolean(
+-            state.everest.data?.email?.enabled ??
+-                state.everest.data?.email?.resend?.enabled ??
+-                state.everest.data?.email?.resend,
+-        ),
+-    );
++    const emailEnabled = useStoreState(state => {
++        const email = state.everest.data?.email;
++        const resend = email?.resend;
++        return Boolean(
++            email?.enabled ??
++                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
++                resend,
++        );
++    });
+     const verification = useEmailVerification(emailEnabled) || {};
+     const {
+         resend = () => {},
+diff --git a/resources/scripts/components/account/EmailVerificationNotice.tsx b/resources/scripts/components/account/EmailVerificationNotice.tsx
+index daba332..f224c1a 100644
+--- a/resources/scripts/components/account/EmailVerificationNotice.tsx
++++ b/resources/scripts/components/account/EmailVerificationNotice.tsx
+@@ -12,13 +12,15 @@ interface Props {
+ 
+ const EmailVerificationNotice = ({ className }: Props) => {
+     const user = useStoreState(state => state.user.data!);
+-    const emailEnabled = useStoreState(state =>
+-        Boolean(
+-            state.everest.data?.email?.enabled ??
+-                state.everest.data?.email?.resend?.enabled ??
+-                state.everest.data?.email?.resend,
+-        ),
+-    );
++    const emailEnabled = useStoreState(state => {
++        const email = state.everest.data?.email;
++        const resend = email?.resend;
++        return Boolean(
++            email?.enabled ??
++                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
++                resend,
++        );
++    });
+     const verification = useEmailVerification(emailEnabled) || {};
+     const {
+         resend = () => {},
+diff --git a/resources/scripts/components/account/ScopedAlert.tsx b/resources/scripts/components/account/ScopedAlert.tsx
+index f438aed..5dac1ad 100644
+--- a/resources/scripts/components/account/ScopedAlert.tsx
++++ b/resources/scripts/components/account/ScopedAlert.tsx
+@@ -33,7 +33,7 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
+     const dismissAlert = (alert: ActiveAlert) => dismissAlertForUser(alert, user);
+ 
+     // Filter out dismissed alerts, notification-only alerts, and group by position
+-    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && a.position !== 'notification');
++    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && (a.position as string) !== 'notification');
+ 
+     // Apply position filter if specified
+     const filteredAlerts = position === 'all' ? visibleAlerts : visibleAlerts.filter(a => a.position === position);
+diff --git a/resources/scripts/routers/DashboardRouter.tsx b/resources/scripts/routers/DashboardRouter.tsx
+index 0f7536a..9878d9e 100644
+--- a/resources/scripts/routers/DashboardRouter.tsx
++++ b/resources/scripts/routers/DashboardRouter.tsx
+@@ -34,13 +34,15 @@ function DashboardRouter() {
+     const flags = useStoreState(state => state.everest.data!);
+     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
+     const { addFlash, clearFlashes } = useFlash();
+-    const emailEnabled = useStoreState(state =>
+-        Boolean(
+-            state.everest.data?.email?.enabled ??
+-                state.everest.data?.email?.resend?.enabled ??
+-                state.everest.data?.email?.resend,
+-        ),
+-    );
++    const emailEnabled = useStoreState(state => {
++        const email = state.everest.data?.email;
++        const resend = email?.resend;
++        return Boolean(
++            email?.enabled ??
++                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
++                resend,
++        );
++    });
+     const verificationRules = normalizeVerificationRules(
+         useStoreState(state => state.everest.data?.email?.verification_rules),
+     );
+@@ -49,7 +51,7 @@ function DashboardRouter() {
+         resend = () => {},
+         isCoolingDown = false,
+         resendLabel = 'Resend verification email',
+-        refreshUser = () => {},
++        refreshUser: _refreshUser = () => {},
+     } = verification as ReturnType<typeof useEmailVerification>;
+     const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
+ 
+-- 
+2.53.0
+
+
+From 9e950b59965d3ef94a05ff6bfc23344531a3ff8e Mon Sep 17 00:00:00 2001
+From: "copilot-swe-agent[bot]" <198982749+Copilot@users.noreply.github.com>
+Date: Wed, 29 Apr 2026 01:35:40 +0000
+Subject: [PATCH 2/3] fix: resolve TypeScript errors across 10
+ billing/donation/modpack files
+
+- CheckoutPaymentContainer: add non-null assertion and optional chaining for checkoutState
+- OrderContainer: add missing imports (PaymentMethodSelector, Stripe, StripeIntent,
+  getStripeIntent, getStripeKey, processUnpaidOrder, loadStripeOnce), add intent/stripe state,
+  remove unused Input/Select imports, prefix/remove unused declarations, fix array index access
+- PaymentMethodSelector: use 'as const' for PaymentMethod literals, remove unused @ts-expect-error
+- PaymentContainer (server): use 'as const' for PaymentMethod literals, remove unused @ts-expect-error
+- Processing: add payment_status? to MolliePaymentStatus interface
+- OrdersContainer: remove unused faSearch import
+- DonationHistoryContainer: remove unused React import
+- DonationPaymentForm: remove unused React import and unused colors destructuring
+- ModpackList: add non-null assertion for array index accesses
+- ModpackInstallModal: remove invalid 'large' prop from Modal
+- products.ts: add label? to BillingCycle interface
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+Co-authored-by: macery12 <57544649+macery12@users.noreply.github.com>
+---
+ .../routes/account/billing/orders/mollie.ts   |   1 +
+ .../api/routes/account/billing/products.ts    |   1 +
+ .../order/CheckoutPaymentContainer.tsx        |   4 +-
+ .../account/billing/order/OrderContainer.tsx  |  55 +--
+ .../billing/order/PaymentMethodSelector.tsx   |   7 +-
+ .../billing/orders/OrdersContainer.tsx        |   2 +-
+ .../donations/DonationHistoryContainer.tsx    |   2 +-
+ .../account/donations/DonationPaymentForm.tsx |   4 +-
+ .../account/modpacks/ModpackInstallModal.tsx  |   2 +-
+ .../account/modpacks/ModpackList.tsx          |   4 +-
+ .../server/billing/PaymentContainer.tsx       |   7 +-
+ tsc-errors-clean.txt                          | 331 ++++++++++++++++++
+ 12 files changed, 363 insertions(+), 57 deletions(-)
+ create mode 100644 tsc-errors-clean.txt
+
+diff --git a/resources/scripts/api/routes/account/billing/orders/mollie.ts b/resources/scripts/api/routes/account/billing/orders/mollie.ts
+index 4f4c37a..026e750 100644
+--- a/resources/scripts/api/routes/account/billing/orders/mollie.ts
++++ b/resources/scripts/api/routes/account/billing/orders/mollie.ts
+@@ -10,6 +10,7 @@ export interface MolliePaymentStatus {
+     processed: boolean;
+     failed: boolean;
+     pending: boolean;
++    payment_status?: string;
+ }
+ 
+ export interface MolliePaymentFromToken {
+diff --git a/resources/scripts/api/routes/account/billing/products.ts b/resources/scripts/api/routes/account/billing/products.ts
+index 6d3ca8c..ca68b3d 100644
+--- a/resources/scripts/api/routes/account/billing/products.ts
++++ b/resources/scripts/api/routes/account/billing/products.ts
+@@ -56,6 +56,7 @@ export interface BillingCycle {
+     multiplier: number;
+     discountPercent: number;
+     isDefault: boolean;
++    label?: string;
+ }
+ 
+ export const getProductBillingCycles = (productId: number): Promise<BillingCycle[]> => {
+diff --git a/resources/scripts/components/account/billing/order/CheckoutPaymentContainer.tsx b/resources/scripts/components/account/billing/order/CheckoutPaymentContainer.tsx
+index 7fd1535..f2a18d6 100644
+--- a/resources/scripts/components/account/billing/order/CheckoutPaymentContainer.tsx
++++ b/resources/scripts/components/account/billing/order/CheckoutPaymentContainer.tsx
+@@ -106,7 +106,7 @@ export default () => {
+ 
+         const initializeStripe = async () => {
+             try {
+-                const intentData = await getStripeIntent(product.id, couponId, checkoutState.selectedBillingDays);
++                const intentData = await getStripeIntent(product.id, couponId, checkoutState!.selectedBillingDays);
+                 setIntent({ id: intentData.id, secret: intentData.secret });
+ 
+                 const stripePublicKey = await getStripeKey(product.id);
+@@ -118,7 +118,7 @@ export default () => {
+         };
+ 
+         initializeStripe();
+-    }, [product?.id, couponId, couponData?.total, checkoutState.selectedBillingDays]);
++    }, [product?.id, couponId, couponData?.total, checkoutState?.selectedBillingDays]);
+ 
+     if (!checkoutState?.productId) {
+         return (
+diff --git a/resources/scripts/components/account/billing/order/OrderContainer.tsx b/resources/scripts/components/account/billing/order/OrderContainer.tsx
+index 7ec8dac..ad9de44 100644
+--- a/resources/scripts/components/account/billing/order/OrderContainer.tsx
++++ b/resources/scripts/components/account/billing/order/OrderContainer.tsx
+@@ -15,7 +15,8 @@ import useFlash from '@/plugins/useFlash';
+ import { EggVariable } from '@definitions/server';
+ import { Button } from '@/elements/button';
+ import FlashMessageRender from '@/elements/FlashMessageRender';
+-import { Product, type Node } from '@definitions/account/billing';
++import { Product, StripeIntent, type Node } from '@definitions/account/billing';
++import { Stripe } from '@stripe/stripe-js';
+ import {
+     getProduct,
+     getProductVariables,
+@@ -28,8 +29,10 @@ import {
+ import AdminCheckbox from '@/elements/AdminCheckbox';
+ import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+ import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
+-import Input from '@/elements/Input';
+-import Select from '@/elements/Select';
++import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
++import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
++import { loadStripeOnce } from '@/lib/stripe';
++import PaymentMethodSelector from '@account/billing/order/PaymentMethodSelector';
+ import classNames from 'classnames';
+ 
+ const getResponseStatus = (reason: unknown): number | undefined => {
+@@ -61,13 +64,14 @@ export default () => {
+     const [serverName, setServerName] = useState<string>('');
+     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
+     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
++    const [intent, setIntent] = useState<StripeIntent | null>(null);
++    const [stripe, setStripe] = useState<Stripe | null>(null);
+ 
+     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
+     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
+-    const reviewStep = hasEditableVariables ? 5 : 4;
+ 
+-    const [customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
+-    const [domainMappings, setDomainMappings] = useState<
++    const [_customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
++    const [domainMappings, _setDomainMappings] = useState<
+         Array<{
+             domain_id: number;
+             domain: string;
+@@ -76,16 +80,11 @@ export default () => {
+         }>
+     >([]);
+     const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
+-    const [mappingSubdomain, setMappingSubdomain] = useState<string>('');
+-    const [mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
+-
+-    const selectedDomainOption = customDomainOptions.find(option => option.id === selectedDomainId);
+-    const effectiveRecordType: 'srv' | 'cname' = selectedDomainOption?.allow_record_type_selection
+-        ? mappingRecordType
+-        : selectedDomainOption?.forced_record_type ?? selectedDomainOption?.recommended_record_type ?? 'cname';
++    const [_mappingSubdomain, _setMappingSubdomain] = useState<string>('');
++    const [_mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
+ 
+     // Wizard step state
+-    const [currentStep, setCurrentStep] = useState<number>(1);
++    const [_currentStep, _setCurrentStep] = useState<number>(1);
+ 
+     const { colors } = useStoreState(state => state.theme.data!);
+ 
+@@ -133,7 +132,7 @@ export default () => {
+                 // Regenerate intent with new amount for paid products
+                 getStripeIntent(Number(params.id), data?.coupon.id)
+                     .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
+-                    .catch(error => console.error('Error updating payment intent:', error));
++                    .catch((error: any) => console.error('Error updating payment intent:', error));
+             }
+         }
+     };
+@@ -145,28 +144,6 @@ export default () => {
+             record_type: mapping.record_type,
+         }));
+ 
+-    const addDomainMapping = () => {
+-        const selected = customDomainOptions.find(domain => domain.id === selectedDomainId);
+-        if (!selected || !mappingSubdomain.trim()) {
+-            return;
+-        }
+-
+-        setDomainMappings(current =>
+-            current.concat({
+-                domain_id: selected.id,
+-                domain: selected.domain,
+-                subdomain: mappingSubdomain.trim().toLowerCase(),
+-                record_type: effectiveRecordType,
+-            }),
+-        );
+-
+-        setMappingSubdomain('');
+-    };
+-
+-    const removeDomainMapping = (index: number) => {
+-        setDomainMappings(current => current.filter((_, idx) => idx !== index));
+-    };
+-
+     const createFree = () => {
+         if (product && serverName.trim()) {
+             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
+@@ -182,7 +159,7 @@ export default () => {
+                 getDomainPayload(),
+             )
+                 .then(() => navigate('/'))
+-                .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
++                .catch((error: any) => clearAndAddHttpError({ key: 'account:billing:order', error }));
+         }
+     };
+ 
+@@ -241,7 +218,7 @@ export default () => {
+ 
+                 setAvailableEggs(available);
+                 if (available.length > 0) {
+-                    setSelectedEggId(available[0].id);
++                    setSelectedEggId(available[0]!.id);
+                 } else {
+                     // Clear selections and variables when no eggs remain.
+                     setSelectedEggId(undefined);
+diff --git a/resources/scripts/components/account/billing/order/PaymentMethodSelector.tsx b/resources/scripts/components/account/billing/order/PaymentMethodSelector.tsx
+index 68b7f6e..b5ba074 100644
+--- a/resources/scripts/components/account/billing/order/PaymentMethodSelector.tsx
++++ b/resources/scripts/components/account/billing/order/PaymentMethodSelector.tsx
+@@ -37,15 +37,15 @@ export default (props: Props) => {
+ 
+     const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
+         {
+-            method: 'stripe',
++            method: 'stripe' as const,
+             available: billing.processors?.stripe?.available ?? false,
+         },
+         {
+-            method: 'mollie',
++            method: 'mollie' as const,
+             available: billing.processors?.mollie?.available ?? false,
+         },
+         {
+-            method: 'paypal',
++            method: 'paypal' as const,
+             available: billing.processors?.paypal?.available ?? false,
+         },
+     ].filter(processor => {
+@@ -258,7 +258,6 @@ export default (props: Props) => {
+             {/* Render the selected payment method */}
+             {selectedMethod === 'stripe' && props.intent && props.stripe ? (
+                 <div>
+-                    {/* @ts-expect-error this is fine, stripe library is just weird */}
+                     <Elements stripe={props.stripe} options={stripeOptions} key={props.intent.id}>
+                         <PaymentButton
+                             selectedNode={props.selectedNode}
+diff --git a/resources/scripts/components/account/billing/orders/OrdersContainer.tsx b/resources/scripts/components/account/billing/orders/OrdersContainer.tsx
+index e8d5a46..778679a 100644
+--- a/resources/scripts/components/account/billing/orders/OrdersContainer.tsx
++++ b/resources/scripts/components/account/billing/orders/OrdersContainer.tsx
+@@ -28,7 +28,7 @@ import OrderInspectorModal from '@/components/elements/OrderInspectorModal';
+ import { Order } from '@definitions/account/billing/models';
+ import tw from 'twin.macro';
+ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+-import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
++import { faTimes } from '@fortawesome/free-solid-svg-icons';
+ import Input from '@/elements/Input';
+ import InputSpinner from '@/elements/InputSpinner';
+ import debounce from 'debounce';
+diff --git a/resources/scripts/components/account/donations/DonationHistoryContainer.tsx b/resources/scripts/components/account/donations/DonationHistoryContainer.tsx
+index 96bb0ac..6aae287 100644
+--- a/resources/scripts/components/account/donations/DonationHistoryContainer.tsx
++++ b/resources/scripts/components/account/donations/DonationHistoryContainer.tsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import { useEffect, useState } from 'react';
+ import tw from 'twin.macro';
+ import PageContentBlock from '@/elements/PageContentBlock';
+ import FlashMessageRender from '@/elements/FlashMessageRender';
+diff --git a/resources/scripts/components/account/donations/DonationPaymentForm.tsx b/resources/scripts/components/account/donations/DonationPaymentForm.tsx
+index b0e5c7a..9ea29f0 100644
+--- a/resources/scripts/components/account/donations/DonationPaymentForm.tsx
++++ b/resources/scripts/components/account/donations/DonationPaymentForm.tsx
+@@ -1,4 +1,4 @@
+-import React, { FormEvent, useState } from 'react';
++import { FormEvent, useState } from 'react';
+ import useFlash from '@/plugins/useFlash';
+ import { Button } from '@/elements/button';
+ import FlashMessageRender from '@/elements/FlashMessageRender';
+@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
+ import tw from 'twin.macro';
+ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+ import { faHeart, faLock } from '@fortawesome/free-solid-svg-icons';
+-import { useStoreState } from '@/state/hooks';
+ 
+ interface Props {
+     intentId: string;
+@@ -20,7 +19,6 @@ export default ({ intentId, amount }: Props) => {
+     const stripe = useStripe();
+     const elements = useElements();
+     const navigate = useNavigate();
+-    const { colors } = useStoreState(state => state.theme.data!);
+     const [loading, setLoading] = useState(false);
+     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
+ 
+diff --git a/resources/scripts/components/account/modpacks/ModpackInstallModal.tsx b/resources/scripts/components/account/modpacks/ModpackInstallModal.tsx
+index 541505f..369b97f 100644
+--- a/resources/scripts/components/account/modpacks/ModpackInstallModal.tsx
++++ b/resources/scripts/components/account/modpacks/ModpackInstallModal.tsx
+@@ -195,7 +195,7 @@ export default ({ modpack, onClose }: Props) => {
+ 
+     return (
+         <>
+-            <Modal visible onDismissed={onClose} large>
++            <Modal visible onDismissed={onClose}>
+                 <ModalContent>
+                     <ModpackHeader>
+                         <ModpackLogo
+diff --git a/resources/scripts/components/account/modpacks/ModpackList.tsx b/resources/scripts/components/account/modpacks/ModpackList.tsx
+index 45efb18..933bf2b 100644
+--- a/resources/scripts/components/account/modpacks/ModpackList.tsx
++++ b/resources/scripts/components/account/modpacks/ModpackList.tsx
+@@ -173,7 +173,7 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
+ 
+                     {totalPages > 1 && (
+                         <div css={tw`my-6 flex justify-center`}>
+-                            {!isFirstPage && pages[0] > 1 && (
++                            {!isFirstPage && pages[0]! > 1 && (
+                                 <PaginationButton.Text
+                                     size={Button.Sizes.Small}
+                                     onClick={() => handlePageClick(1)}
+@@ -193,7 +193,7 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
+                                     {i}
+                                 </PaginationButton.Text>
+                             ))}
+-                            {!isLastPage && pages[pages.length - 1] < totalPages && (
++                            {!isLastPage && pages[pages.length - 1]! < totalPages && (
+                                 <PaginationButton.Text
+                                     size={Button.Sizes.Small}
+                                     onClick={() => handlePageClick(totalPages)}
+diff --git a/resources/scripts/components/server/billing/PaymentContainer.tsx b/resources/scripts/components/server/billing/PaymentContainer.tsx
+index f930923..e7d1a03 100644
+--- a/resources/scripts/components/server/billing/PaymentContainer.tsx
++++ b/resources/scripts/components/server/billing/PaymentContainer.tsx
+@@ -30,15 +30,15 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
+ 
+     const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
+         {
+-            method: 'stripe',
++            method: 'stripe' as const,
+             available: billing.processors?.stripe?.available ?? false,
+         },
+         {
+-            method: 'mollie',
++            method: 'mollie' as const,
+             available: billing.processors?.mollie?.available ?? false,
+         },
+         {
+-            method: 'paypal',
++            method: 'paypal' as const,
+             available: billing.processors?.paypal?.available ?? false,
+         },
+     ].filter(processor => {
+@@ -288,7 +288,6 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
+                         <Spinner size={'large'} centered />
+                     ) : (
+                         <div>
+-                            {/* @ts-expect-error this is fine, stripe library is just weird */}
+                             {/* Key prop forces re-mount when intent changes (e.g., coupon applied/removed) */}
+                             <Elements stripe={stripe} options={stripeOptions} key={intent.id}>
+                                 <PaymentForm
+diff --git a/tsc-errors-clean.txt b/tsc-errors-clean.txt
+new file mode 100644
+index 0000000..6100fff
+--- /dev/null
++++ b/tsc-errors-clean.txt
+@@ -0,0 +1,331 @@
++resources/scripts/api/definitions/account/billing/transformers.ts(33,90): error TS2741: Property 'allowPlanChanges' is missing in type '{ id: any; name: any; icon: any; description: any; allowedEggs: any; allowEggChanges: any; }' but required in type 'Category'.
++resources/scripts/api/definitions/account/billing/transformers.ts(50,9): error TS2353: Object literal may only specify known properties, and 'allowEggChanges' does not exist in type 'Product'.
++resources/scripts/api/routes/account/modpacks.ts(3,5): error TS6133: 'CurseForgeModpack' is declared but its value is never read.
++resources/scripts/api/routes/admin/eggs/getEgg.ts(75,5): error TS2353: Object literal may only specify known properties, and 'configFrom' does not exist in type 'Egg'.
++resources/scripts/api/routes/admin/eggs/updateEgg.ts(17,30): error TS2339: Property 'configFrom' does not exist on type 'Partial<Egg2>'.
++resources/scripts/api/routes/admin/eggs/updateEgg.ts(20,35): error TS2339: Property 'copyScriptFrom' does not exist on type 'Partial<Egg2>'.
++resources/scripts/api/routes/admin/eggs/updateEgg.ts(22,39): error TS2339: Property 'scriptIsPrivileged' does not exist on type 'Partial<Egg2>'.
++resources/scripts/components/account/AccountApiContainer.tsx(8,29): error TS2307: Cannot find module '@definitions/user' or its corresponding type declarations.
++resources/scripts/components/account/AccountOverviewContainer.tsx(39,78): error TS2339: Property 'enabled' does not exist on type 'boolean | { enabled?: boolean | undefined; api_key: boolean; from_email: string; from_name: string; reply_to: string; }'.
++resources/scripts/components/account/AlertHistoryModal.tsx(66,11): error TS6133: 'getTypeColor' is declared but its value is never read.
++resources/scripts/components/account/CredentialsContainer.tsx(8,29): error TS2307: Cannot find module '@definitions/user' or its corresponding type declarations.
++resources/scripts/components/account/DashboardAlert.tsx(36,70): error TS2367: This comparison appears to be unintentional because the types '"top-center" | "slide-out" | "center" | "top-right-banner"' and '"notification"' have no overlap.
++resources/scripts/components/account/EmailVerificationGate.tsx(25,52): error TS2339: Property 'enabled' does not exist on type 'boolean | { enabled?: boolean | undefined; api_key: boolean; from_email: string; from_name: string; reply_to: string; }'.
++resources/scripts/components/account/EmailVerificationNotice.tsx(18,52): error TS2339: Property 'enabled' does not exist on type 'boolean | { enabled?: boolean | undefined; api_key: boolean; from_email: string; from_name: string; reply_to: string; }'.
++resources/scripts/components/account/ModpacksAccountContainer.tsx(35,9): error TS2353: Object literal may only specify known properties, and 'gameVersion' does not exist in type 'ModpackSearchParams | (() => ModpackSearchParams)'.
++resources/scripts/components/account/ScopedAlert.tsx(36,70): error TS2367: This comparison appears to be unintentional because the types '"top-center" | "slide-out" | "center" | "top-right-banner"' and '"notification"' have no overlap.
++resources/scripts/components/account/ServerRow.tsx(183,33): error TS2367: This comparison appears to be unintentional because the types 'ServerStatus' and '"offline"' have no overlap.
++resources/scripts/components/account/billing/order/CheckoutPaymentContainer.tsx(109,80): error TS18048: 'checkoutState' is possibly 'undefined'.
++resources/scripts/components/account/billing/order/CheckoutPaymentContainer.tsx(121,51): error TS18048: 'checkoutState' is possibly 'undefined'.
++resources/scripts/components/account/billing/order/CheckoutPaymentContainer.tsx(200,97): error TS2339: Property 'label' does not exist on type 'BillingCycle'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(31,1): error TS6133: 'Input' is declared but its value is never read.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(32,1): error TS6133: 'Select' is declared but its value is never read.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(67,11): error TS6133: 'reviewStep' is declared but its value is never read.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(88,12): error TS6133: 'currentStep' is declared but its value is never read.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(88,25): error TS6133: 'setCurrentStep' is declared but its value is never read.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(131,17): error TS2304: Cannot find name 'setIntent'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(134,17): error TS2304: Cannot find name 'getStripeIntent'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(135,27): error TS7006: Parameter 'intentData' implicitly has an 'any' type.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(135,41): error TS2304: Cannot find name 'setIntent'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(136,28): error TS7006: Parameter 'error' implicitly has an 'any' type.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(148,11): error TS6133: 'addDomainMapping' is declared but its value is never read.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(166,11): error TS6133: 'removeDomainMapping' is declared but its value is never read.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(173,13): error TS2304: Cannot find name 'processUnpaidOrder'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(185,24): error TS7006: Parameter 'error' implicitly has an 'any' type.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(244,38): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(274,54): error TS2304: Cannot find name 'getStripeIntent'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(275,29): error TS2304: Cannot find name 'setIntent'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(278,59): error TS2304: Cannot find name 'getStripeKey'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(279,58): error TS2304: Cannot find name 'loadStripeOnce'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(280,29): error TS2304: Cannot find name 'setStripe'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(554,103): error TS2339: Property 'label' does not exist on type 'BillingCycle'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(623,34): error TS2304: Cannot find name 'PaymentMethodSelector'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(627,45): error TS2304: Cannot find name 'intent'.
++resources/scripts/components/account/billing/order/OrderContainer.tsx(628,45): error TS2304: Cannot find name 'stripe'.
++resources/scripts/components/account/billing/order/PaymentMethodSelector.tsx(38,11): error TS2322: Type '{ method: string; available: boolean; }[]' is not assignable to type '{ method: PaymentMethod; available: boolean; }[]'.
++resources/scripts/components/account/billing/order/PaymentMethodSelector.tsx(261,22): error TS2578: Unused '@ts-expect-error' directive.
++resources/scripts/components/account/billing/order/summary/Processing.tsx(89,47): error TS2339: Property 'payment_status' does not exist on type 'MolliePaymentStatus'.
++resources/scripts/components/account/billing/orders/OrdersContainer.tsx(31,10): error TS6133: 'faSearch' is declared but its value is never read.
++resources/scripts/components/account/donations/DonationHistoryContainer.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
++resources/scripts/components/account/donations/DonationPaymentForm.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
++resources/scripts/components/account/donations/DonationPaymentForm.tsx(23,11): error TS6133: 'colors' is declared but its value is never read.
++resources/scripts/components/account/modpacks/ModpackInstallModal.tsx(198,50): error TS2322: Type '{ children: Element; visible: true; onDismissed: () => void; large: true; }' is not assignable to type 'IntrinsicAttributes & ModalProps'.
++resources/scripts/components/account/modpacks/ModpackList.tsx(176,46): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/account/modpacks/ModpackList.tsx(196,45): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/AdminIndicators.tsx(24,11): error TS6133: 'settings' is declared but its value is never read.
++resources/scripts/components/admin/management/nodes/allocations/CreateAllocationForm.tsx(59,13): error TS2322: Type '({ ips, startPort, endPort, alias }: Values, { setSubmitting }: FormikHelpers<Values>) => void' is not assignable to type '((values: { ips: string[]; startPort: undefined; endPort: undefined; alias: string; }, formikHelpers: FormikHelpers<{ ips: string[]; startPort: undefined; endPort: undefined; alias: string; }>) => void | Promise<...>) & (({ ips, startPort, endPort, alias }: Values, { setSubmitting }: FormikHelpers<...>) => void)'.
++resources/scripts/components/admin/management/servers/NewServerContainer.tsx(131,11): error TS6133: 'loadOptions' is declared but its value is never read.
++resources/scripts/components/admin/management/servers/NewServerContainer.tsx(131,72): error TS2749: 'Option' refers to a value, but is being used as a type here. Did you mean 'typeof Option'?
++resources/scripts/components/admin/management/servers/NewServerContainer.tsx(133,28): error TS2749: 'Option' refers to a value, but is being used as a type here. Did you mean 'typeof Option'?
++resources/scripts/components/admin/management/servers/ServerConfigurationContainer.tsx(112,86): error TS2322: Type '(value: LoadedEgg | undefined) => void' is not assignable to type '(egg: WithRelationships<Egg, "variables"> | undefined) => void'.
++resources/scripts/components/admin/management/servers/ServerConfigurationContainer.tsx(208,17): error TS2322: Type 'ServerLimits' is not assignable to type '{ memory: number; swap: number; disk: number; io: number; cpu: number; threads: string; oomKiller: boolean; }'.
++resources/scripts/components/admin/management/servers/ServerOverviewContainer.tsx(34,13): error TS2339: Property 'addFlash' does not exist on type 'KeyedFlashStore'.
++resources/scripts/components/admin/management/servers/ServerStartupContainer.tsx(180,79): error TS2322: Type '(value: LoadedEgg | undefined) => void' is not assignable to type '(value: WithRelationships<Egg, "variables"> | undefined) => void'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(57,51): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(133,73): error TS2551: Property 'is_default' does not exist on type 'BillingCycleWithPrice'. Did you mean 'isDefault'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(134,91): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(138,69): error TS2551: Property 'is_default' does not exist on type 'BillingCycleWithPrice'. Did you mean 'isDefault'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(139,87): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(382,72): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(385,81): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(386,80): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(389,72): error TS2551: Property 'is_default' does not exist on type 'BillingCycleWithPrice'. Did you mean 'isDefault'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(406,80): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(409,91): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(415,89): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(416,97): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx(417,88): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(228,52): error TS2551: Property 'is_default' does not exist on type 'BillingCycleWithPrice'. Did you mean 'isDefault'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(237,48): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(240,59): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(243,56): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(244,65): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(245,56): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(271,56): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(276,71): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(281,68): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(282,77): error TS2551: Property 'discount_percent' does not exist on type 'BillingCycleWithPrice'. Did you mean 'discountPercent'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(367,25): error TS2345: Argument of type '(prev: BillingFormData) => { billingDays: number | undefined; billable: boolean; categoryId: number | null; productId: number | null; renewalDate: string; }' is not assignable to parameter of type 'SetStateAction<BillingFormData>'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(373,49): error TS2551: Property 'is_default' does not exist on type 'BillingCycleWithPrice'. Did you mean 'isDefault'?
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(376,61): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(403,69): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(410,65): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(461,37): error TS2345: Argument of type '(prev: BillingFormData) => { productId: number | undefined; billable: boolean; categoryId: number | null; billingDays: number | null; renewalDate: string; }' is not assignable to parameter of type 'SetStateAction<BillingFormData>'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(611,24): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx(612,30): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/billing/ServerBillingContainer.tsx(28,11): error TS6133: 'renewalDays' is declared but its value is never read.
++resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx(34,24): error TS6133: 'error' is declared but its value is never read.
++resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx(56,49): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx(62,24): error TS6133: 'error' is declared but its value is never read.
++resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx(104,20): error TS6133: 'error' is declared but its value is never read.
++resources/scripts/components/admin/management/servers/settings/NetworkingBox.tsx(308,45): error TS2322: Type '"info" | "loading"' is not assignable to type '"success" | "warning" | "danger" | "info"'.
++resources/scripts/components/admin/modules/ai/ConfigureAI.tsx(33,13): error TS2339: Property 'addFlash' does not exist on type 'KeyedFlashStore'.
++resources/scripts/components/admin/modules/ai/OverviewContainer.tsx(148,37): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/ai/OverviewContainer.tsx(148,59): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/ai/OverviewContainer.tsx(152,33): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/ai/SettingsContainer.tsx(19,1): error TS6133: 'SelectField' is declared but its value is never read.
++resources/scripts/components/admin/modules/ai/SettingsContainer.tsx(111,40): error TS2322: Type '{ children: Element[]; as: string; id: string; name: string; }' is not assignable to type 'IntrinsicAttributes & OwnProps & Omit<InputHTMLAttributes<HTMLInputElement>, "name"> & RefAttributes<...>'.
++resources/scripts/components/admin/modules/ai/SettingsContainer.tsx(207,37): error TS2322: Type '{ as: string; id: string; name: string; rows: number; placeholder: string; }' is not assignable to type 'IntrinsicAttributes & OwnProps & Omit<InputHTMLAttributes<HTMLInputElement>, "name"> & RefAttributes<...>'.
++resources/scripts/components/admin/modules/alert/AlertAppearance.tsx(92,50): error TS2339: Property 'title' does not exist on type '{ enabled: boolean; type: AlertType; position: AlertPosition; content: string; uuid: string; }'.
++resources/scripts/components/admin/modules/alert/AlertAppearance.tsx(98,21): error TS2367: This comparison appears to be unintentional because the types '"notification" | "top-center" | "center"' and '"bottom-right"' have no overlap.
++resources/scripts/components/admin/modules/alert/AlertAppearance.tsx(107,21): error TS2367: This comparison appears to be unintentional because the types '"notification" | "top-center" | "center"' and '"bottom-left"' have no overlap.
++resources/scripts/components/admin/modules/alert/AlertAppearance.tsx(141,48): error TS2367: This comparison appears to be unintentional because the types 'AlertPosition' and '"bottom-right"' have no overlap.
++resources/scripts/components/admin/modules/alert/AlertAppearance.tsx(152,48): error TS2367: This comparison appears to be unintentional because the types 'AlertPosition' and '"bottom-left"' have no overlap.
++resources/scripts/components/admin/modules/alert/AlertForm.tsx(84,29): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
++resources/scripts/components/admin/modules/alert/AlertForm.tsx(85,29): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
++resources/scripts/components/admin/modules/alert/AlertForm.tsx(139,76): error TS2345: Argument of type 'CreateAlertData | UpdateAlertData' is not assignable to parameter of type 'CreateAlertData'.
++resources/scripts/components/admin/modules/auth/AuthRouter.tsx(18,18): error TS2322: Type '{ to: string; name: string; base: true; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/auth/AuthRouter.tsx(21,26): error TS2322: Type '{ to: string; name: string; base: true; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/auth/AuthRouter.tsx(22,26): error TS2322: Type '{ to: string; name: string; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/auth/CaptchaSettings.tsx(15,70): error TS2339: Property 'captcha' does not exist on type '{ registration: { enabled: boolean; }; security: { force2fa: boolean; attempts: number; }; modules: { jguard: { enabled: boolean; approval_mode: "manual" | "delayed"; delay: number; pending_message: string; }; discord: { ...; }; google: { ...; }; onboarding: { ...; }; }; }'.
++resources/scripts/components/admin/modules/auth/jguard/JGuardSettings.tsx(25,9): error TS2367: This comparison appears to be unintentional because the types '"manual" | "delayed"' and '"immediate"' have no overlap.
++resources/scripts/components/admin/modules/auth/jguard/JGuardSettings.tsx(33,30): error TS2345: Argument of type '{ approval_mode?: string | undefined; delay?: number | undefined; pending_message?: string | undefined; }' is not assignable to parameter of type 'JGuardSettingsValues'.
++resources/scripts/components/admin/modules/billing/BillingDropdown.tsx(42,36): error TS2322: Type '{ className: string; }' is not assignable to type 'IntrinsicAttributes'.
++resources/scripts/components/admin/modules/billing/BillingDropdown.tsx(103,58): error TS2322: Type '{ className: string; }' is not assignable to type 'IntrinsicAttributes'.
++resources/scripts/components/admin/modules/billing/BillingRulesContainer.tsx(271,21): error TS2322: Type '{ default_billing_days: number; multiplier_steps: string; days?: number | undefined; free_renewal_days?: number | undefined; suspension_threshold?: number | undefined; free_suspension_days?: number | undefined; paid_suspension_days?: number | undefined; }' is not assignable to type '{ days: number; free_renewal_days: number; suspension_threshold: number; free_suspension_days: number; paid_suspension_days: number; default_billing_days: number; multiplier_steps: string; }'.
++resources/scripts/components/admin/modules/billing/NodePricingManager.tsx(455,45): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/billing/SettingsContainer.tsx(1,1): error TS6133: 'useState' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/SettingsContainer.tsx(3,1): error TS6133: 'Button' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/SettingsContainer.tsx(80,77): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string | boolean'.
++resources/scripts/components/admin/modules/billing/coupons/CouponForm.tsx(12,1): error TS6133: 'useStoreState' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/donations/DonationsContainer.tsx(60,25): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/billing/donations/DonationsTable.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/donations/DonationsTable.tsx(3,10): error TS6133: 'AdminDonation' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/donations/DonationsTable.tsx(198,29): error TS2739: Type 'PaginatedDonations' is missing the following properties from type 'PaginatedResult<unknown>': items, pagination
++resources/scripts/components/admin/modules/billing/donations/DonationsTable.tsx(199,25): error TS2339: Property 'isLoading' does not exist on type 'RenderFuncProps<unknown>'.
++resources/scripts/components/admin/modules/billing/exceptions/BillingExceptionsTable.tsx(32,13): error TS2322: Type '"error"' is not assignable to type 'PillStatus'.
++resources/scripts/components/admin/modules/billing/exceptions/BillingExceptionsTable.tsx(38,13): error TS2322: Type '"error"' is not assignable to type 'PillStatus'.
++resources/scripts/components/admin/modules/billing/guides/SetupMollie.tsx(8,1): error TS6133: 'BillingSetupDialog' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/guides/SetupMollie.tsx(18,17): error TS6133: 'extOpen' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/guides/SetupMollie.tsx(29,29): error TS2322: Type 'string' is not assignable to type 'boolean | undefined'.
++resources/scripts/components/admin/modules/billing/guides/SetupMollieKeys.tsx(17,11): error TS6133: 'existingMollie' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/guides/SetupPayPalKeys.tsx(20,11): error TS6133: 'existingPayPal' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/guides/SetupStripeKeys.tsx(4,48): error TS6133: 'faInfoCircle' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/guides/SetupStripeKeys.tsx(7,10): error TS6133: 'useEffect' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/guides/SetupStripeKeys.tsx(18,11): error TS6133: 'existingKeys' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/integrations/IntegrationsContainer.tsx(14,11): error TS6133: '_updateEverest' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/overview/BillingHealthSummary.tsx(3,1): error TS6192: All imports in import declaration are unused.
++resources/scripts/components/admin/modules/billing/overview/BillingHealthSummary.tsx(22,25): error TS6133: 'history' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/overview/BillingHealthSummary.tsx(23,11): error TS6133: 'now' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/products/BillingCyclesManager.tsx(96,9): error TS2322: Type '{ isEnabled: boolean; id?: number; days?: number | undefined; price?: number; }' is not assignable to type 'BillingCycle'.
++resources/scripts/components/admin/modules/billing/products/BillingCyclesManager.tsx(96,59): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/modules/billing/products/CategoryForm.tsx(8,1): error TS6133: 'AdminContentBlock' is declared but its value is never read.
++resources/scripts/components/admin/modules/billing/products/CategoryForm.tsx(227,13): error TS2322: Type '(values: CategoryValues, { setSubmitting }: FormikHelpers<CategoryValues>) => void' is not assignable to type '((values: { name: string; icon: string; description: string; visible: boolean; eggId: number; allowedEggs: number[]; allowEggChanges: boolean; allowPlanChanges: boolean; }, formikHelpers: FormikHelpers<{ name: string; ... 6 more ...; allowPlanChanges: boolean; }>) => void | Promise<...>) & ((values: CategoryValues, ...'.
++resources/scripts/components/admin/modules/billing/products/MultiEggSelect.tsx(41,37): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/modules/billing/products/MultiEggSelect.tsx(46,35): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
++resources/scripts/components/admin/modules/billing/products/MultiEggSelect.tsx(65,25): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/modules/billing/products/MultiEggSelect.tsx(73,27): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
++resources/scripts/components/admin/modules/billing/products/MultiEggSelect.tsx(103,23): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
++resources/scripts/components/admin/modules/billing/products/ProductForm.tsx(8,1): error TS6133: 'AdminContentBlock' is declared but its value is never read.
++resources/scripts/components/admin/modules/customDomains/domains/DomainsContainer.tsx(501,33): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/customDomains/settings/SettingsContainer.tsx(185,37): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/DeferredQueueViewer.tsx(149,75): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/DeferredQueueViewer.tsx(149,95): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/DeferredQueueViewer.tsx(263,53): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/DeferredQueueViewer.tsx(264,53): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/DeferredQueueViewer.tsx(278,53): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/DeferredQueueViewer.tsx(279,53): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(77,45): error TS2345: Argument of type '{ status: string; template_key: string; recipient: string; only_failures: boolean; date_from: string; date_to: string; page: number; }' is not assignable to parameter of type 'EmailLogFilters'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(164,20): error TS2345: Argument of type '{ date_from: string | undefined; date_to: string | undefined; page: number; status: string; template_key: string; recipient: string; only_failures: boolean; }' is not assignable to parameter of type 'SetStateAction<{ status: string; template_key: string; recipient: string; only_failures: boolean; date_from: string; date_to: string; page: number; }>'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(189,70): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(189,90): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(199,56): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(199,71): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(249,75): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(249,95): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(252,75): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(252,95): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(255,76): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(255,96): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(365,53): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(366,53): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(384,33): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(385,33): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(395,33): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailActivityLog.tsx(396,33): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailLogDetailModal.tsx(144,67): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/admin/modules/email/EmailLogDetailModal.tsx(144,87): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/admin/modules/email/EmailRouter.tsx(16,18): error TS2322: Type '{ to: string; name: string; base: true; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/email/EmailRouter.tsx(17,18): error TS2322: Type '{ to: string; name: string; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/email/EmailRouter.tsx(18,18): error TS2322: Type '{ to: string; name: string; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/email/EmailRouter.tsx(19,18): error TS2322: Type '{ to: string; name: string; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/email/EmailRouter.tsx(20,18): error TS2322: Type '{ to: string; name: string; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/email/EmailRouter.tsx(21,18): error TS2322: Type '{ to: string; name: string; }' is not assignable to type 'IntrinsicAttributes & (PropsWithIcon | PropsWithoutIcon)'.
++resources/scripts/components/admin/modules/email/NotificationSettings.tsx(6,10): error TS6133: 'NotificationSettingsResponse' is declared but its value is never read.
++resources/scripts/components/admin/modules/email/NotificationSettings.tsx(51,27): error TS18048: 'category' is possibly 'undefined'.
++resources/scripts/components/admin/modules/email/NotificationSettings.tsx(52,13): error TS18048: 'category' is possibly 'undefined'.
++resources/scripts/components/admin/modules/email/NotificationSettings.tsx(52,13): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(303,19): error TS2345: Argument of type '"processing"' is not assignable to parameter of type 'SetStateAction<Status>'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(399,19): error TS2345: Argument of type '"processing"' is not assignable to parameter of type 'SetStateAction<Status>'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(426,19): error TS2345: Argument of type '"processing"' is not assignable to parameter of type 'SetStateAction<Status>'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(452,19): error TS2345: Argument of type '"processing"' is not assignable to parameter of type 'SetStateAction<Status>'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(478,19): error TS2345: Argument of type '"processing"' is not assignable to parameter of type 'SetStateAction<Status>'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(554,21): error TS2322: Type '"success" | "warning" | "danger"' is not assignable to type 'FlashMessageType'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(566,17): error TS2322: Type '"danger"' is not assignable to type 'FlashMessageType'.
++resources/scripts/components/admin/modules/email/ResendSettings.tsx(601,21): error TS2322: Type '"success" | "warning" | "danger"' is not assignable to type 'FlashMessageType'.
++resources/scripts/components/admin/modules/email/TemplateViewer.tsx(21,5): error TS6133: 'faTimes' is declared but its value is never read.
++resources/scripts/components/admin/modules/email/TemplateViewer.tsx(259,34): error TS2345: Argument of type 'EmailTemplate | undefined' is not assignable to parameter of type 'EmailTemplate'.
++resources/scripts/components/admin/modules/email/TemplateViewer.tsx(318,11): error TS6133: 'discardChanges' is declared but its value is never read.
++resources/scripts/components/admin/modules/email/TemplateViewer.tsx(474,51): error TS2322: Type '"tiny"' is not assignable to type 'SpinnerSize | undefined'.
++resources/scripts/components/admin/modules/email/TemplateViewer.tsx(495,48): error TS2322: Type '"tiny"' is not assignable to type 'SpinnerSize | undefined'.
++resources/scripts/components/admin/modules/email/VerificationRestrictions.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
++resources/scripts/components/admin/modules/email/status.ts(47,9): error TS2322: Type 'EmailStatusPresentation | undefined' is not assignable to type 'EmailStatusPresentation'.
++resources/scripts/components/admin/modules/extensions/ExtensionsRouter.tsx(15,64): error TS2339: Property 'extensions' does not exist on type 'EverestSettings'.
++resources/scripts/components/admin/modules/extensions/ToggleExtensionsButton.tsx(10,64): error TS2339: Property 'extensions' does not exist on type 'EverestSettings'.
++resources/scripts/components/admin/modules/mods/AccessControlContainer.integration.test.ts(63,16): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/admin/modules/mods/EnableMods.tsx(7,11): error TS6133: 'primary' is declared but its value is never read.
++resources/scripts/components/admin/modules/mods/EnableMods.tsx(10,10): error TS2741: Property 'image' is missing in type '{ children: (string | Element)[]; icon: IconDefinition; title: string; }' but required in type 'Props'.
++resources/scripts/components/admin/modules/mods/OverviewContainer.tsx(45,60): error TS2322: Type '(props: SVGProps<SVGSVGElement>) => Element' is not assignable to type 'IconProp | undefined'.
++resources/scripts/components/admin/modules/mods/OverviewContainer.tsx(49,64): error TS2322: Type '(props: SVGProps<SVGSVGElement>) => Element' is not assignable to type 'IconProp | undefined'.
++resources/scripts/components/admin/modules/mods/OverviewContainer.tsx(55,66): error TS2322: Type '(props: SVGProps<SVGSVGElement>) => Element' is not assignable to type 'IconProp | undefined'.
++resources/scripts/components/admin/modules/mods/OverviewContainer.tsx(64,55): error TS2322: Type '(props: SVGProps<SVGSVGElement>) => Element' is not assignable to type 'IconProp | undefined'.
++resources/scripts/components/admin/modules/mods/OverviewContainer.tsx(77,65): error TS2322: Type '(props: SVGProps<SVGSVGElement>) => Element' is not assignable to type 'IconProp | undefined'.
++resources/scripts/components/admin/modules/tickets/view/ViewTicketContainer.tsx(99,17): error TS2322: Type '(values: Values, { setSubmitting }: FormikHelpers<Values>) => void' is not assignable to type '((values: { title: string; status: TicketStatus; user_id: number; }, formikHelpers: FormikHelpers<{ title: string; status: TicketStatus; user_id: number; }>) => void | Promise<any>) & ((values: Values, { setSubmitting }: FormikHelpers<...>) => void)'.
++resources/scripts/components/admin/modules/webhooks/WebhookSettings.tsx(47,17): error TS2322: Type '"danger"' is not assignable to type 'FlashMessageType'.
++resources/scripts/components/admin/modules/webhooks/events/WebhookEventsContainer.tsx(77,18): error TS2538: Type 'undefined' cannot be used as an index type.
++resources/scripts/components/admin/modules/webhooks/events/WebhookEventsContainer.tsx(78,17): error TS2538: Type 'undefined' cannot be used as an index type.
++resources/scripts/components/admin/modules/webhooks/events/WebhookEventsContainer.tsx(80,13): error TS2538: Type 'undefined' cannot be used as an index type.
++resources/scripts/components/admin/modules/webhooks/events/WebhookEventsContainer.tsx(122,29): error TS2322: Type 'WebhookEvent[] | undefined' is not assignable to type 'WebhookEvent[]'.
++resources/scripts/components/auth/PasswordStrengthIndicator.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
++resources/scripts/components/auth/PasswordStrengthIndicator.tsx(69,44): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
++resources/scripts/components/elements/PaymentProcessorBadge.tsx(2,1): error TS6133: 'faCreditCard' is declared but its value is never read.
++resources/scripts/components/elements/PaymentProcessorBadge.tsx(3,1): error TS6133: 'FontAwesomeIcon' is declared but its value is never read.
++resources/scripts/components/elements/SlideOutAlert.tsx(68,21): error TS2322: Type 'string | Element' is not assignable to type 'string'.
++resources/scripts/components/server/billing/ChangeEggContainer.tsx(62,49): error TS2339: Property 'allowEggChanges' does not exist on type 'Product'.
++resources/scripts/components/server/billing/ChangePlanContainer.tsx(4,1): error TS6133: 'FontAwesomeIcon' is declared but its value is never read.
++resources/scripts/components/server/billing/ChangePlanContainer.tsx(5,25): error TS6133: 'faInfoCircle' is declared but its value is never read.
++resources/scripts/components/server/billing/ChangePlanContainer.tsx(5,39): error TS6133: 'faCheckCircle' is declared but its value is never read.
++resources/scripts/components/server/billing/ChangePlanContainer.tsx(63,32): error TS2339: Property 'basePrice' does not exist on type 'Product'.
++resources/scripts/components/server/billing/ChangePlanContainer.tsx(132,48): error TS18048: 'defaultCycle' is possibly 'undefined'.
++resources/scripts/components/server/billing/ChangePlanContainer.tsx(228,108): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/server/billing/ChangePlanContainer.tsx(265,64): error TS2345: Argument of type 'number | null' is not assignable to parameter of type 'number | undefined'.
++resources/scripts/components/server/billing/MolliePaymentForm.tsx(5,31): error TS6133: 'updateMolliePayment' is declared but its value is never read.
++resources/scripts/components/server/billing/MolliePaymentForm.tsx(32,69): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
++resources/scripts/components/server/billing/PayPalRenewalForm.tsx(34,65): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
++resources/scripts/components/server/billing/PaymentContainer.tsx(31,11): error TS2322: Type '{ method: string; available: boolean; }[]' is not assignable to type '{ method: PaymentMethod; available: boolean; }[]'.
++resources/scripts/components/server/billing/PaymentContainer.tsx(291,30): error TS2578: Unused '@ts-expect-error' directive.
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(71,11): error TS6133: 'currentUserId' is declared but its value is never read.
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(71,59): error TS2339: Property 'id' does not exist on type 'UserData'.
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(83,11): error TS6133: 'freeRenewalDays' is declared but its value is never read.
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(102,46): error TS2339: Property 'suspension_threshold_percentage' does not exist on type '{ days: number; free_renewal_days: number; suspension_threshold: number; free_suspension_days: number; paid_suspension_days: number; default_billing_days: number; multiplier_steps: string; }'.
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(104,48): error TS2551: Property 'min_suspension_threshold_days' does not exist on type '{ days: number; free_renewal_days: number; suspension_threshold: number; free_suspension_days: number; paid_suspension_days: number; default_billing_days: number; multiplier_steps: string; }'. Did you mean 'suspension_threshold'?
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(105,48): error TS2551: Property 'max_suspension_threshold_days' does not exist on type '{ days: number; free_renewal_days: number; suspension_threshold: number; free_suspension_days: number; paid_suspension_days: number; default_billing_days: number; multiplier_steps: string; }'. Did you mean 'suspension_threshold'?
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(153,43): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
++resources/scripts/components/server/billing/ServerBillingContainer.tsx(174,58): error TS2551: Property 'max_suspension_threshold_days' does not exist on type '{ days: number; free_renewal_days: number; suspension_threshold: number; free_suspension_days: number; paid_suspension_days: number; default_billing_days: number; multiplier_steps: string; }'. Did you mean 'suspension_threshold'?
++resources/scripts/components/server/console/IntelligenceButton.tsx(130,33): error TS2322: Type 'string' is not assignable to type 'Variant | undefined'.
++resources/scripts/components/server/console/IntelligenceButton.tsx(130,55): error TS2322: Type 'string' is not assignable to type 'Size | undefined'.
++resources/scripts/components/server/databases/DatabaseRow.tsx(44,21): error TS2322: Type 'string | undefined' is not assignable to type 'string | Ref'.
++resources/scripts/components/server/extensions/AttributeEditor.tsx(75,11): error TS6133: 'primary' is declared but its value is never read.
++resources/scripts/components/server/extensions/InventoryViewer.tsx(224,27): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/server/extensions/InventoryViewer.tsx(225,26): error TS2532: Object is possibly 'undefined'.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(31,5): error TS6133: 'faUserPlus' is declared but its value is never read.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(32,5): error TS6133: 'faUserMinus' is declared but its value is never read.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(88,12): error TS6133: 'activeAction' is declared but its value is never read.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(200,55): error TS2554: Expected 3 arguments, but got 2.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(289,75): error TS2554: Expected 2 arguments, but got 3.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(292,76): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(295,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(815,21): error TS2322: Type 'boolean | undefined' is not assignable to type 'boolean'.
++resources/scripts/components/server/extensions/PlayerManagerContainer.tsx(839,21): error TS2322: Type 'boolean | undefined' is not assignable to type 'boolean'.
++resources/scripts/components/server/extensions/registry.ts(16,34): error TS2339: Property 'glob' does not exist on type 'ImportMeta'.
++resources/scripts/components/server/extensions/registry.ts(20,39): error TS2339: Property 'glob' does not exist on type 'ImportMeta'.
++resources/scripts/components/server/floating/FloatingWindowsLayer.tsx(123,21): error TS2322: Type 'string' is not assignable to type 'TwStyle'.
++resources/scripts/components/server/floating/FloatingWindowsLayer.tsx(269,13): error TS6133: 'secondary' is declared but its value is never read.
++resources/scripts/components/server/floating/FloatingWindowsLayer.tsx(407,11): error TS6198: All destructured elements are unused.
++resources/scripts/components/server/modpacks/ModpacksContainer.tsx(39,9): error TS2353: Object literal may only specify known properties, and 'gameVersion' does not exist in type 'ModpackSearchParams | (() => ModpackSearchParams)'.
++resources/scripts/components/server/mods/ModDetails.tsx(148,13): error TS2322: Type 'string' is not assignable to type '"modrinth" | "curseforge" | "spigot" | undefined'.
++resources/scripts/components/server/mods/ModList.tsx(132,31): error TS6133: 'lastUpdated' is declared but its value is never read.
++resources/scripts/components/server/mods/ModsContainer.tsx(26,76): error TS2339: Property 'spiget_enabled' does not exist on type '{ enabled: boolean; curseforge_api_key: string | boolean; default_source?: string | undefined; }'.
++resources/scripts/components/server/plugins/ModsAndPluginsPage.tsx(56,55): error TS2339: Property 'server' does not exist on type 'StateMapper<FilterActionTypes<ApplicationStore>>'.
++resources/scripts/components/server/plugins/ModsAndPluginsPage.tsx(132,78): error TS2345: Argument of type '() => ProviderKey | null | undefined' is not assignable to parameter of type 'ProviderKey | (() => ProviderKey | null) | null'.
++resources/scripts/components/server/plugins/ModsAndPluginsPage.tsx(213,67): error TS2345: Argument of type 'ProviderKey | undefined' is not assignable to parameter of type 'ProviderKey | null'.
++resources/scripts/components/server/plugins/ModsAndPluginsPage.tsx(223,66): error TS2345: Argument of type 'ProviderKey | undefined' is not assignable to parameter of type 'ProviderKey | null'.
++resources/scripts/components/server/users/EditSubuserModal.tsx(105,58): error TS18048: 'p.name' is possibly 'undefined'.
++resources/scripts/components/server/users/EditSubuserModal.tsx(311,37): error TS2322: Type 'boolean | undefined' is not assignable to type 'boolean'.
++resources/scripts/elements/CopyOnClick.tsx(37,15): error TS2578: Unused '@ts-expect-error' directive.
++resources/scripts/elements/MobileSidebar.tsx(64,34): error TS2345: Argument of type '({ children }: { children: ReactNode[]; }) => JSX.Element' is not assignable to parameter of type 'StyledComponent<any, any>'.
++resources/scripts/elements/ScreenBlock.tsx(14,22): error TS2459: Module '"@/api/routes/account/billing/products"' declares 'Product' locally, but it is not exported.
++resources/scripts/elements/ScreenBlock.tsx(157,29): error TS2551: Property 'max_suspension_threshold_days' does not exist on type '{ days: number; free_renewal_days: number; suspension_threshold: number; free_suspension_days: number; paid_suspension_days: number; default_billing_days: number; multiplier_steps: string; }'. Did you mean 'suspension_threshold'?
++resources/scripts/elements/SearchableSelect.tsx(214,32): error TS2532: Object is possibly 'undefined'.
++resources/scripts/elements/SelectField.tsx(1,27): error TS2307: Cannot find module '@emotion/serialize' or its corresponding type declarations.
++resources/scripts/elements/SelectField.tsx(8,5): error TS2724: '"react-select"' has no exported member named 'IndicatorContainerProps'. Did you mean 'IndicatorsContainerProps'?
++resources/scripts/elements/SelectField.tsx(9,5): error TS2614: Module '"react-select"' has no exported member 'IndicatorProps'. Did you mean to use 'import IndicatorProps from "react-select"' instead?
++resources/scripts/elements/SelectField.tsx(11,5): error TS2614: Module '"react-select"' has no exported member 'MenuListComponentProps'. Did you mean to use 'import MenuListComponentProps from "react-select"' instead?
++resources/scripts/elements/SelectField.tsx(24,27): error TS2307: Cannot find module 'react-select/src/types' or its corresponding type declarations.
++resources/scripts/elements/SelectField.tsx(25,35): error TS2307: Cannot find module 'react-select/src/components/Group' or its corresponding type declarations.
++resources/scripts/elements/SelectField.tsx(26,46): error TS2307: Cannot find module 'react-select/src/components/Menu' or its corresponding type declarations.
++resources/scripts/elements/SelectField.tsx(27,39): error TS2307: Cannot find module 'react-select/src/components/indicators' or its corresponding type declarations.
++resources/scripts/elements/SelectField.tsx(28,39): error TS2307: Cannot find module 'react-select/src/components/MultiValue' or its corresponding type declarations.
++resources/scripts/elements/SelectField.tsx(45,34): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(83,30): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(90,37): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(97,44): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(104,43): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(112,30): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(121,41): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(128,39): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(135,29): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(144,33): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(151,35): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(158,35): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(167,40): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(175,41): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(182,41): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(189,31): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(202,36): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(211,36): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/SelectField.tsx(219,39): error TS6133: 'props' is declared but its value is never read.
++resources/scripts/elements/editor/theme.ts(4,27): error TS7016: Could not find a declaration file for module '@lezer/highlight'. '/home/runner/work/M12Labs/M12Labs/node_modules/.pnpm/@lezer+highlight@1.1.3/node_modules/@lezer/highlight/dist/index.js' implicitly has an 'any' type.
++resources/scripts/i18n.ts(15,49): error TS2339: Property 'translations' does not exist on type 'SiteSettings'.
++resources/scripts/i18n.ts(34,5): error TS2769: No overload matches this call.
++resources/scripts/routers/DashboardRouter.tsx(40,52): error TS2339: Property 'enabled' does not exist on type 'boolean | { enabled?: boolean | undefined; api_key: boolean; from_email: string; from_name: string; reply_to: string; }'.
++resources/scripts/routers/DashboardRouter.tsx(52,9): error TS6133: 'refreshUser' is declared but its value is never read.
++resources/scripts/routers/ServerRouter.tsx(83,33): error TS2339: Property 'modsEnabled' does not exist on type 'Server'.
++resources/scripts/routers/ServerRouter.tsx(105,28): error TS2345: Argument of type '(prev: FloatingServerWindow[]) => { id: string; serverId: string | undefined; serverUuid: string; serverName: string; routePath: string; title: string; x: number; y: number; width: number; height: number; zIndex: number; }[]' is not assignable to parameter of type 'SetStateAction<FloatingServerWindow[]>'.
++resources/scripts/routers/ServerRouter.tsx(188,21): error TS2322: Type 'string | number' is not assignable to type 'number | undefined'.
++resources/scripts/routers/ServerRouter.tsx(382,33): error TS2322: Type '{ windows: FloatingServerWindow[]; currentServerId: string; onClose: (id: string) => void; onFocus: (id: string) => void; onMove: (id: string, x: number, y: number) => void; onResize: (id: string, width: number, height: number) => void; onNavigate: (id: string, routePath: string) => void; serverRoutes: ServerRouteDe...' is not assignable to type 'IntrinsicAttributes & Props'.
++resources/scripts/routers/routes/admin.ts(15,7): error TS6133: 'AuthContainer' is declared but its value is never read.
++resources/scripts/routers/routes/server.ts(33,7): error TS6133: 'ModsContainer' is declared but its value is never read.
++resources/scripts/routers/routes/server.ts(34,7): error TS6133: 'ModpacksContainer' is declared but its value is never read.
++resources/scripts/state/server/databases.ts(2,32): error TS2307: Cannot find module '@/api/routes/server/databases/getServerDatabases' or its corresponding type declarations.
++vite.config.mts(40,17): error TS7030: Not all code paths return a value.
+-- 
+2.53.0
+
+
+From 6c95d5ddedd18818f95447d91cba9692529e37a5 Mon Sep 17 00:00:00 2001
+From: "copilot-swe-agent[bot]" <198982749+Copilot@users.noreply.github.com>
+Date: Wed, 29 Apr 2026 01:51:12 +0000
+Subject: [PATCH 3/3] Fix TypeScript errors in 11 admin component files
+
+- Remove unused variables (AdminIndicators, NewServerContainer, ServerBillingContainer)
+- Add Formik<Values> type param to fix onSubmit type mismatch (CreateAllocationForm)
+- Use WithRelationships<Egg,'variables'> instead of LoadedEgg (ServerConfigurationContainer, ServerStartupContainer)
+- Fix threads null coalescing (ServerConfigurationContainer)
+- Use useFlash() directly for addFlash (ServerOverviewContainer)
+- Fix camelCase billing cycle props: isDefault, discountPercent (EditServerBillingDialog, EditServerBillingModal)
+- Fix possibly-undefined array access with ! (EditServerBillingDialog, EditServerBillingModal)
+- Fix type mismatch: compare c.id instead of c.uuid to product.categoryUuid (EditServerBillingModal)
+- Fix pages[page]! non-null assertion (EditServerBillingModal)
+- Fix catch block variables and allocation id access (TransferServerBox)
+- Fix Dialog.Icon type loading->info (NetworkingBox)
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+Co-authored-by: macery12 <57544649+macery12@users.noreply.github.com>
+---
+ .../components/admin/AdminIndicators.tsx      |  1 -
+ .../allocations/CreateAllocationForm.tsx      |  4 +--
+ .../management/servers/NewServerContainer.tsx | 15 --------
+ .../servers/ServerConfigurationContainer.tsx  | 11 +++---
+ .../servers/ServerOverviewContainer.tsx       |  4 +--
+ .../servers/ServerStartupContainer.tsx        |  8 ++---
+ .../billing/EditServerBillingDialog.tsx       | 28 +++++++--------
+ .../billing/EditServerBillingModal.tsx        | 36 +++++++++----------
+ .../billing/ServerBillingContainer.tsx        |  3 --
+ .../servers/manage/TransferServerBox.tsx      |  8 ++---
+ .../servers/settings/NetworkingBox.tsx        |  2 +-
+ 11 files changed, 51 insertions(+), 69 deletions(-)
+
+diff --git a/resources/scripts/components/admin/AdminIndicators.tsx b/resources/scripts/components/admin/AdminIndicators.tsx
+index bd4fbc6..e2cdadc 100644
+--- a/resources/scripts/components/admin/AdminIndicators.tsx
++++ b/resources/scripts/components/admin/AdminIndicators.tsx
+@@ -21,7 +21,6 @@ const Indicator = ({ text, icon }: Props) => {
+ };
+ 
+ export default () => {
+-    const settings = useStoreState(state => state.settings.data!);
+     const everest = useStoreState(state => state.everest.data!);
+ 
+     return (
+diff --git a/resources/scripts/components/admin/management/nodes/allocations/CreateAllocationForm.tsx b/resources/scripts/components/admin/management/nodes/allocations/CreateAllocationForm.tsx
+index 119e0ce..ecf572a 100644
+--- a/resources/scripts/components/admin/management/nodes/allocations/CreateAllocationForm.tsx
++++ b/resources/scripts/components/admin/management/nodes/allocations/CreateAllocationForm.tsx
+@@ -45,7 +45,7 @@ function CreateAllocationForm({ nodeId }: { nodeId: number }) {
+         return inputValue.match(/^([0-9a-f.:/]+)$/) !== null;
+     };
+ 
+-    const submit = ({ ips, startPort, endPort, alias }: Values, { setSubmitting }: FormikHelpers<Values>) => {
++    const submit = ({ ips, startPort, endPort, alias }: Values, { setSubmitting }: FormikHelpers<Values>): void => {
+         setSubmitting(false);
+ 
+         ips.forEach(async ip => {
+@@ -55,7 +55,7 @@ function CreateAllocationForm({ nodeId }: { nodeId: number }) {
+     };
+ 
+     return (
+-        <Formik
++        <Formik<Values>
+             onSubmit={submit}
+             initialValues={{
+                 ips: [] as string[],
+diff --git a/resources/scripts/components/admin/management/servers/NewServerContainer.tsx b/resources/scripts/components/admin/management/servers/NewServerContainer.tsx
+index 57d8d95..1df3909 100644
+--- a/resources/scripts/components/admin/management/servers/NewServerContainer.tsx
++++ b/resources/scripts/components/admin/management/servers/NewServerContainer.tsx
+@@ -128,21 +128,6 @@ function InternalForm() {
+         }
+     };
+ 
+-    const loadOptions = async (inputValue: string, callback: (options: Option[]) => void) => {
+-        if (!node) {
+-            callback([] as Option[]);
+-            return;
+-        }
+-
+-        const allocations = await getAllocations(node.id, { search: inputValue, server_id: '0' });
+-
+-        callback(
+-            allocations.map(a => {
+-                return { value: a.id.toString(), label: a.getDisplayText() };
+-            }),
+-        );
+-    };
+-
+     const getWizardSteps = (): Step[] => {
+         return [
+             {
+diff --git a/resources/scripts/components/admin/management/servers/ServerConfigurationContainer.tsx b/resources/scripts/components/admin/management/servers/ServerConfigurationContainer.tsx
+index af09ad7..e0e1dfd 100644
+--- a/resources/scripts/components/admin/management/servers/ServerConfigurationContainer.tsx
++++ b/resources/scripts/components/admin/management/servers/ServerConfigurationContainer.tsx
+@@ -6,8 +6,9 @@ import { useEffect, useState } from 'react';
+ import { object } from 'yup';
+ import tw from 'twin.macro';
+ 
+-import type { LoadedEgg } from '@/api/routes/admin/egg';
++import type { Egg } from '@/api/routes/admin/egg';
+ import { getEgg } from '@/api/routes/admin/egg';
++import type { WithRelationships } from '@/api/routes/admin';
+ import type { Server } from '@/api/routes/admin/server';
+ import { useServerFromRoute } from '@/api/routes/admin/server';
+ import type { Values } from '@/api/routes/admin/servers/updateServerStartup';
+@@ -33,8 +34,8 @@ function ServerConfigurationForm({
+     server,
+ }: {
+     selectedEggId?: number;
+-    egg?: LoadedEgg;
+-    setEgg: (value: LoadedEgg | undefined) => void;
++    egg?: WithRelationships<Egg, 'variables'>;
++    setEgg: (value: WithRelationships<Egg, 'variables'> | undefined) => void;
+     server: Server;
+ }) {
+     const {
+@@ -170,7 +171,7 @@ export default () => {
+     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
+         (actions: Actions<ApplicationStore>) => actions.flashes,
+     );
+-    const [egg, setEgg] = useState<LoadedEgg | undefined>(undefined);
++    const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>(undefined);
+ 
+     useEffect(() => {
+         if (!server) {
+@@ -205,7 +206,7 @@ export default () => {
+                 name: values.name,
+                 externalId: values.externalId,
+                 ownerId: values.ownerId,
+-                limits: server.limits,
++                limits: { ...server.limits, threads: server.limits.threads ?? '' },
+                 featureLimits: server.featureLimits,
+                 allocationId: server.allocationId,
+                 addAllocations: [],
+diff --git a/resources/scripts/components/admin/management/servers/ServerOverviewContainer.tsx b/resources/scripts/components/admin/management/servers/ServerOverviewContainer.tsx
+index 635de10..ae256d1 100644
+--- a/resources/scripts/components/admin/management/servers/ServerOverviewContainer.tsx
++++ b/resources/scripts/components/admin/management/servers/ServerOverviewContainer.tsx
+@@ -10,7 +10,7 @@ import getNode from '@/api/routes/admin/nodes/getNode';
+ import { Node } from '@/api/routes/admin/nodes/getNodes';
+ import NodeStatus from '@admin/management/nodes/NodeStatus';
+ import { NavLink } from 'react-router-dom';
+-import { useFlashKey } from '@/plugins/useFlash';
++import useFlash from '@/plugins/useFlash';
+ 
+ // Status badge colors
+ const STATUS_COLORS = {
+@@ -31,7 +31,7 @@ export default () => {
+     const [node, setNode] = useState<Node | undefined>();
+     const { data: server } = useServerFromRoute();
+     const { billing } = useStoreState(state => state.everest.data!);
+-    const { addFlash } = useFlashKey('server');
++    const { addFlash } = useFlash();
+ 
+     useEffect(() => {
+         if (server) {
+diff --git a/resources/scripts/components/admin/management/servers/ServerStartupContainer.tsx b/resources/scripts/components/admin/management/servers/ServerStartupContainer.tsx
+index 96dc955..d6dc228 100644
+--- a/resources/scripts/components/admin/management/servers/ServerStartupContainer.tsx
++++ b/resources/scripts/components/admin/management/servers/ServerStartupContainer.tsx
+@@ -5,7 +5,7 @@ import { Form, Formik, useField, useFormikContext } from 'formik';
+ import { useEffect, useState } from 'react';
+ import { object } from 'yup';
+ 
+-import type { Egg, EggVariable, LoadedEgg } from '@/api/routes/admin/egg';
++import type { Egg, EggVariable } from '@/api/routes/admin/egg';
+ import { getEgg } from '@/api/routes/admin/egg';
+ import type { Server } from '@/api/routes/admin/server';
+ import { useServerFromRoute } from '@/api/routes/admin/server';
+@@ -156,8 +156,8 @@ function ServerStartupForm({
+     server,
+ }: {
+     selectedEggId?: number;
+-    egg?: LoadedEgg;
+-    setEgg: (value: LoadedEgg | undefined) => void;
++    egg?: WithRelationships<Egg, 'variables'>;
++    setEgg: (value: WithRelationships<Egg, 'variables'> | undefined) => void;
+     server: Server;
+ }) {
+     const {
+@@ -219,7 +219,7 @@ export default () => {
+     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
+         (actions: Actions<ApplicationStore>) => actions.flashes,
+     );
+-    const [egg, setEgg] = useState<LoadedEgg | undefined>(undefined);
++    const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>(undefined);
+ 
+     useEffect(() => {
+         if (!server) {
+diff --git a/resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx b/resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx
+index 3158a57..68741bc 100644
+--- a/resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx
++++ b/resources/scripts/components/admin/management/servers/billing/EditServerBillingDialog.tsx
+@@ -54,7 +54,7 @@ export default ({ server }: { server: Server }) => {
+                         // We need to find which category this product belongs to
+                         // For now, if there's only one category, select it
+                         if (cats.length === 1) {
+-                            setSelectedCategoryId(cats[0].id);
++                            setSelectedCategoryId(cats[0]!.id);
+                         }
+                     }
+                 })
+@@ -130,13 +130,13 @@ export default ({ server }: { server: Server }) => {
+                                 setSelectedBillingDays(server.billingDays);
+                             } else {
+                                 // Select default cycle
+-                                const defaultCycle = cycles.find(c => c.is_default);
+-                                setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0].days);
++                                const defaultCycle = cycles.find(c => c.isDefault);
++                                setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0]!.days);
+                             }
+                         } else {
+                             // Select default cycle
+-                            const defaultCycle = cycles.find(c => c.is_default);
+-                            setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0].days);
++                            const defaultCycle = cycles.find(c => c.isDefault);
++                            setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0]!.days);
+                         }
+                     }
+                 })
+@@ -379,14 +379,14 @@ export default ({ server }: { server: Server }) => {
+                                                         {billingCycles.map(cycle => (
+                                                             <option key={cycle.id} value={cycle.days}>
+                                                                 {cycle.days} days - ${cycle.price?.toFixed(2) || '0.00'}
+-                                                                {cycle.discount_percent !== 0 && (
++                                                                {cycle.discountPercent !== 0 && (
+                                                                     <>
+                                                                         {' '}
+-                                                                        ({cycle.discount_percent > 0 ? '+' : ''}
+-                                                                        {cycle.discount_percent}%)
++                                                                        ({cycle.discountPercent > 0 ? '+' : ''}
++                                                                        {cycle.discountPercent}%)
+                                                                     </>
+                                                                 )}
+-                                                                {cycle.is_default && ' (Default)'}
++                                                                {cycle.isDefault && ' (Default)'}
+                                                             </option>
+                                                         ))}
+                                                     </select>
+@@ -403,18 +403,18 @@ export default ({ server }: { server: Server }) => {
+                                                             <p className={'text-gray-300'}>
+                                                                 <strong>Price:</strong> $
+                                                                 {selectedCycle.price?.toFixed(2) || '0.00'}
+-                                                                {selectedCycle.discount_percent !== 0 && (
++                                                                {selectedCycle.discountPercent !== 0 && (
+                                                                     <span
+                                                                         className={
+-                                                                            selectedCycle.discount_percent > 0
++                                                                            selectedCycle.discountPercent > 0
+                                                                                 ? 'text-green-400'
+                                                                                 : 'text-red-400'
+                                                                         }
+                                                                     >
+                                                                         {' '}
+-                                                                        ({selectedCycle.discount_percent > 0 ? '' : '+'}
+-                                                                        {Math.abs(selectedCycle.discount_percent)}%{' '}
+-                                                                        {selectedCycle.discount_percent > 0
++                                                                        ({selectedCycle.discountPercent > 0 ? '' : '+'}
++                                                                        {Math.abs(selectedCycle.discountPercent)}%{' '}
++                                                                        {selectedCycle.discountPercent > 0
+                                                                             ? 'discount'
+                                                                             : 'premium'}
+                                                                         )
+diff --git a/resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx b/resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx
+index 19919b4..22a852c 100644
+--- a/resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx
++++ b/resources/scripts/components/admin/management/servers/billing/EditServerBillingModal.tsx
+@@ -225,7 +225,7 @@ const PlanSelectionStep = ({
+                                             <div className="font-semibold">
+                                                 {cycle.days} {cycle.days === 1 ? 'Day' : 'Days'}
+                                             </div>
+-                                            {cycle.is_default && (
++                                            {cycle.isDefault && (
+                                                 <span className="rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
+                                                     Default
+                                                 </span>
+@@ -234,15 +234,15 @@ const PlanSelectionStep = ({
+                                         <div className="mt-1 text-lg font-bold">
+                                             ${cycle.price?.toFixed(2) || '0.00'}
+                                         </div>
+-                                        {cycle.discount_percent !== 0 && (
++                                        {cycle.discountPercent !== 0 && (
+                                             <div
+                                                 className={`mt-1 text-xs ${
+-                                                    cycle.discount_percent > 0 ? 'text-green-400' : 'text-red-400'
++                                                    cycle.discountPercent > 0 ? 'text-green-400' : 'text-red-400'
+                                                 }`}
+                                             >
+-                                                {cycle.discount_percent > 0 ? '' : '+'}
+-                                                {Math.abs(cycle.discount_percent)}%{' '}
+-                                                {cycle.discount_percent > 0 ? 'discount' : 'premium'}
++                                                {cycle.discountPercent > 0 ? '' : '+'}
++                                                {Math.abs(cycle.discountPercent)}%{' '}
++                                                {cycle.discountPercent > 0 ? 'discount' : 'premium'}
+                                             </div>
+                                         )}
+                                     </button>
+@@ -268,18 +268,18 @@ const PlanSelectionStep = ({
+                                                 ${selectedCycle.price?.toFixed(2) || '0.00'}
+                                             </span>
+                                         </div>
+-                                        {selectedCycle.discount_percent !== 0 && (
++                                        {selectedCycle.discountPercent !== 0 && (
+                                             <div className="flex justify-between">
+                                                 <span>Discount:</span>
+                                                 <span
+                                                     className={`font-semibold ${
+-                                                        selectedCycle.discount_percent > 0
++                                                        selectedCycle.discountPercent > 0
+                                                             ? 'text-green-400'
+                                                             : 'text-red-400'
+                                                     }`}
+                                                 >
+-                                                    {selectedCycle.discount_percent > 0 ? '' : '+'}
+-                                                    {Math.abs(selectedCycle.discount_percent)}%
++                                                    {selectedCycle.discountPercent > 0 ? '' : '+'}
++                                                    {Math.abs(selectedCycle.discountPercent)}%
+                                                 </span>
+                                             </div>
+                                         )}
+@@ -364,16 +364,16 @@ export default ({ server }: { server: Server }) => {
+         if (server.billingDays) {
+             const hasCycle = cycles.some(c => c.days === server.billingDays);
+             if (hasCycle) {
+-                setForm(prev => ({ ...prev, billingDays: server.billingDays }));
++                setForm(prev => ({ ...prev, billingDays: server.billingDays ?? null }));
+                 return;
+             }
+         }
+ 
+         // Select default cycle or first available
+-        const defaultCycle = cycles.find(c => c.is_default);
++        const defaultCycle = cycles.find(c => c.isDefault);
+         setForm(prev => ({
+             ...prev,
+-            billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
++            billingDays: defaultCycle ? defaultCycle.days : cycles[0]!.days,
+         }));
+     };
+ 
+@@ -400,14 +400,14 @@ export default ({ server }: { server: Server }) => {
+                             setForm(prev => ({ ...prev, categoryId: category.id }));
+                         } else if (product.categoryUuid) {
+                             // Fallback: find category by UUID in the loaded categories
+-                            const matchingCategory = cats.find(c => c.uuid === product.categoryUuid);
++                            const matchingCategory = cats.find(c => c.id === product.categoryUuid);
+                             if (matchingCategory) {
+                                 setForm(prev => ({ ...prev, categoryId: matchingCategory.id }));
+                             }
+                         }
+                     } else if (server.billingProductId && cats.length === 1) {
+                         // Fallback: if there's only one category, use it
+-                        setForm(prev => ({ ...prev, categoryId: cats[0].id }));
++                        setForm(prev => ({ ...prev, categoryId: cats[0]!.id }));
+                     }
+                 })
+                 .catch(err => {
+@@ -458,7 +458,7 @@ export default ({ server }: { server: Server }) => {
+                     if (server.billingProductId) {
+                         const hasProduct = productList.some((p: Product) => p.id === server.billingProductId);
+                         if (hasProduct) {
+-                            setForm(prev => ({ ...prev, productId: server.billingProductId }));
++                            setForm(prev => ({ ...prev, productId: server.billingProductId ?? null }));
+                         } else {
+                             setForm(prev => ({ ...prev, productId: null }));
+                         }
+@@ -608,8 +608,8 @@ export default ({ server }: { server: Server }) => {
+             <Dialog
+                 open={open}
+                 onClose={() => setOpen(false)}
+-                title={pages[page].title}
+-                description={pages[page].description}
++                title={pages[page]!.title}
++                description={pages[page]!.description}
+                 size="lg"
+             >
+                 <SpinnerOverlay visible={loading} />
+diff --git a/resources/scripts/components/admin/management/servers/billing/ServerBillingContainer.tsx b/resources/scripts/components/admin/management/servers/billing/ServerBillingContainer.tsx
+index cf398e9..bd6f94b 100644
+--- a/resources/scripts/components/admin/management/servers/billing/ServerBillingContainer.tsx
++++ b/resources/scripts/components/admin/management/servers/billing/ServerBillingContainer.tsx
+@@ -24,9 +24,6 @@ export default () => {
+     const { data: server } = useServerFromRoute();
+     const billing = useStoreState(state => state.everest.data!.billing);
+ 
+-    // Get configurable renewal settings
+-    const renewalDays = billing.renewal?.days || 30;
+-
+     if (!server) return null;
+ 
+     const product = server.relationships.product;
+diff --git a/resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx b/resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx
+index cec58fe..23875ca 100644
+--- a/resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx
++++ b/resources/scripts/components/admin/management/servers/manage/TransferServerBox.tsx
+@@ -31,7 +31,7 @@ export default () => {
+                     const availableNodes = fetchedNodes.filter(node => node.id !== server.nodeId);
+                     setNodes(availableNodes);
+                 })
+-                .catch(error => {
++                .catch(_error => {
+                     addFlash({
+                         key: 'server:manage',
+                         type: 'error',
+@@ -53,13 +53,13 @@ export default () => {
+                     setAllocations(availableAllocations);
+                     // Auto-select first allocation if available
+                     if (availableAllocations.length > 0) {
+-                        setSelectedAllocationId(availableAllocations[0].id);
++                        setSelectedAllocationId(availableAllocations[0]!.id);
+                     } else {
+                         setSelectedAllocationId(null);
+                     }
+                     setLoading(false);
+                 })
+-                .catch(error => {
++                .catch(_error => {
+                     addFlash({
+                         key: 'server:manage',
+                         type: 'error',
+@@ -101,7 +101,7 @@ export default () => {
+                 setNodes([]);
+                 setAllocations([]);
+             })
+-            .catch(error => {
++            .catch(_error => {
+                 addFlash({
+                     key: 'server:manage',
+                     type: 'error',
+diff --git a/resources/scripts/components/admin/management/servers/settings/NetworkingBox.tsx b/resources/scripts/components/admin/management/servers/settings/NetworkingBox.tsx
+index 0abf1f0..74bffd2 100644
+--- a/resources/scripts/components/admin/management/servers/settings/NetworkingBox.tsx
++++ b/resources/scripts/components/admin/management/servers/settings/NetworkingBox.tsx
+@@ -305,7 +305,7 @@ export default () => {
+                 description="Add, remove, or set primary allocations for this server"
+                 size="xl"
+             >
+-                <Dialog.Icon position="top" type={loading ? 'loading' : 'info'} />
++                <Dialog.Icon position="top" type={'info'} />
+                 <div css={tw`mt-4`}>
+                     <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6`}>
+                         {/* Current Allocations */}
+-- 
+2.53.0
+
