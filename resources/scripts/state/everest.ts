@@ -74,7 +74,7 @@ export interface EverestSettings {
             secret: boolean;
         };
         mollie?: {
-            api_key?: boolean;
+            api_key?: string | boolean;
         };
         paypal_standalone?: {
             mode?: string;
@@ -93,16 +93,16 @@ export interface EverestSettings {
             privacy: string;
         };
         renewal?: {
-            days: number;
-            free_renewal_days: number;
-            suspension_threshold: number;
+            days?: number;
+            free_renewal_days?: number;
+            suspension_threshold?: number;
             suspension_threshold_percentage?: number;
             min_suspension_threshold_days?: number;
             max_suspension_threshold_days?: number;
-            free_suspension_days: number;
-            paid_suspension_days: number;
-            default_billing_days: number;
-            multiplier_steps: string;
+            free_suspension_days?: number;
+            paid_suspension_days?: number;
+            default_billing_days?: number;
+            multiplier_steps?: string;
         };
         plan_change_cooldown_hours?: number;
     };

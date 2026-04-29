@@ -81,8 +81,8 @@ export default () => {
                             link: alert.link || '',
                             link_text: alert.link_text || '',
                             priority: alert.priority,
-                            start_at: alert.start_at ? alert.start_at.split('T')[0] : '',
-                            end_at: alert.end_at ? alert.end_at.split('T')[0] : '',
+                            start_at: alert.start_at ? (alert.start_at.split('T')[0] ?? '') : '',
+                            end_at: alert.end_at ? (alert.end_at.split('T')[0] ?? '') : '',
                         });
 
                         if (alert.users) {
@@ -136,7 +136,7 @@ export default () => {
             end_at: values.end_at || undefined,
         };
 
-        const promise = id ? updateAlert(parseInt(id), data) : createAlert(data);
+        const promise = id ? updateAlert(parseInt(id), data) : createAlert(data as CreateAlertData);
 
         promise
             .then(() => {

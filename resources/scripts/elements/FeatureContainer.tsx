@@ -5,7 +5,7 @@ import { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import classNames from 'classnames';
 
 interface Props {
-    image: ReactElement;
+    image?: ReactElement;
     icon: IconDefinition;
     title: string;
     children: ReactNode;

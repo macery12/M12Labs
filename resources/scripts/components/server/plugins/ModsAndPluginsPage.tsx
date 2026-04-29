@@ -53,7 +53,7 @@ const ModsAndPluginsPage = () => {
     const modSettings = useStoreState(state => state.everest?.data?.mods);
     const { colors } = useStoreState(state => state.theme.data!);
     const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
-    const uuidFallback = useStoreState(state => state.server?.data?.uuid);
+    const uuidFallback = undefined as string | undefined;
     const uuid = serverUuid ?? uuidFallback;
 
     const [searchParams, setSearchParams] = useSearchParams();

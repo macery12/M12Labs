@@ -14,7 +14,7 @@ import { useStoreState } from '@/state/hooks';
 interface Props {
     mod: CurseForgeMod;
     onClose: () => void;
-    source: string;
+    source: 'modrinth' | 'curseforge' | 'spigot' | string;
     gameVersion?: string;
     modLoaderType?: number;
     contentType?: 'mods' | 'plugins';
@@ -145,7 +145,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
         getModFiles(uuid, mod.id, {
             pageSize: 20,
             index: 0,
-            source,
+            source: source as 'modrinth' | 'curseforge' | 'spigot' | undefined,
             gameVersion,
             modLoaderType,
             resource: contentType,

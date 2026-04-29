@@ -8,7 +8,7 @@ import { useStoreActions, useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
 import { faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { toggleModule } from '@/api/routes/admin/auth/module';
-import { updateJGuardSettings } from '@/api/routes/admin/auth/jguard';
+import { updateJGuardSettings, type JGuardSettingsValues } from '@/api/routes/admin/auth/jguard';
 import { Alert } from '@/elements/alert';
 import { Dialog } from '@/elements/dialog';
 
@@ -27,7 +27,7 @@ export default () => {
     const [delay, setDelay] = useState<number>(jguard.delay);
     const [pendingMessage, setPendingMessage] = useState<string>(jguard.pending_message ?? '');
 
-    const saveSetting = (values: { approval_mode?: string; delay?: number; pending_message?: string }) => {
+    const saveSetting = (values: JGuardSettingsValues) => {
         clearFlashes('auth:jguard:settings');
         setStatus('loading');
         updateJGuardSettings(values)
