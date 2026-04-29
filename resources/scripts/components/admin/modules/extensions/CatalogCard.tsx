@@ -169,11 +169,12 @@ export default ({
         : surfaceStyle;
     const anotherPackageActionInProgress =
         isOperationRunning || (activePackageAction !== null && activePackageAction.extensionId !== extension.id);
-    const packageActionNotice = anotherPackageActionInProgress
-        ? activePackageAction !== null
+    let packageActionNotice: string | null = null;
+    if (anotherPackageActionInProgress) {
+        packageActionNotice = activePackageAction !== null
             ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
-            : 'An extension operation is already running. Wait for it to finish before starting another install, update, or uninstall.'
-        : null;
+            : 'An extension operation is already running. Wait for it to finish before starting another install, update, or uninstall.';
+    }
 
     useEffect(() => {
         if (!configOpen || nestsAndEggs) {
