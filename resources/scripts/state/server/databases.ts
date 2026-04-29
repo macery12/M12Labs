@@ -1,5 +1,7 @@
 import { action, Action } from 'easy-peasy';
-import { ServerDatabase } from '@/api/routes/server/databases/getServerDatabases';
+
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ServerDatabase extends Database {}
 
 export interface ServerDatabaseStore {
     data: ServerDatabase[];

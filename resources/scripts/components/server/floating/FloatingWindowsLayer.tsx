@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import tw from 'twin.macro';
 import { ArrowLeftIcon, XIcon } from '@heroicons/react/outline';
 import { getFileContents, saveFileContents } from '@/api/routes/server/files';
 import { type ServerRouteDefinition } from '@/routers/routes/utils';
@@ -120,7 +121,7 @@ const FloatingFileEditor = ({ serverUuid, filename }: { serverUuid: string; file
             <div className={'min-h-0 flex-1 px-4 pb-4'}>
                 <Editor
                     style={{ height: '100%' }}
-                    childClassName={'h-full rounded-md'}
+                    childClassName={tw`h-full rounded-md`}
                     filename={filename}
                     initialContent={content}
                     fetchContent={value => {

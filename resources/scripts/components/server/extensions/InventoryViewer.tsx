@@ -221,8 +221,8 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
 
     const getItemImageUrl = (item: InventoryItem, level: number = 0) => {
         const [rawNamespace, rawName] = item.id.split(':');
-        const namespace = (rawName ? rawNamespace : 'minecraft').toLowerCase();
-        const itemName = (rawName ? rawName : rawNamespace).toLowerCase();
+        const namespace = (rawName ? rawNamespace! : 'minecraft').toLowerCase();
+        const itemName = (rawName ? rawName : rawNamespace!).toLowerCase();
 
         const moddedBaseUrls: Record<string, string> = {
             create: 'https://mc.nerothe.com/img/1.20-mods-create',

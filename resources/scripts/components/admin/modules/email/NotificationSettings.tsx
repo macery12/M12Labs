@@ -46,9 +46,9 @@ export default () => {
 
             // Update local state
             const updatedCategories = { ...categories };
-            const category = updatedCategories[setting.category];
+            const category = updatedCategories[setting.category]!;
             const index = category.findIndex(s => s.id === setting.id);
-            category[index].enabled = !setting.enabled;
+            category[index]!.enabled = !setting.enabled;
             setCategories(updatedCategories);
 
             addFlash({

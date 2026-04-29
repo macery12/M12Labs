@@ -255,7 +255,7 @@ export default () => {
             .then(({ templates: list }) => {
                 setTemplates(list);
                 if (list.length > 0) {
-                    loadTemplate(list[0]);
+                    loadTemplate(list[0]!);
                 }
             })
             .catch(() =>

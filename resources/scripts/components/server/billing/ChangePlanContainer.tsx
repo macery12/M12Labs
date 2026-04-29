@@ -128,7 +128,7 @@ export default () => {
                     // Auto-select the default or current billing cycle
                     if (cycles.length > 0) {
                         const defaultCycle = cycles.find(c => c.is_default) || cycles[0];
-                        setSelectedBillingDays(defaultCycle.days);
+                        setSelectedBillingDays(defaultCycle!.days);
                     }
                 } catch (error) {
                     console.error('Failed to fetch billing cycles:', error);
@@ -261,7 +261,7 @@ export default () => {
                     (() => {
                         const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
                         const fallbackPricing = !selectedCycle
-                            ? calculatePlanPrice(selectedPlan, selectedBillingDays)
+                            ? calculatePlanPrice(selectedPlan, selectedBillingDays ?? undefined)
                             : null;
                         const price = selectedCycle?.price ?? fallbackPricing!.price;
                         const discount = selectedCycle?.discount_percent ?? fallbackPricing!.discount;

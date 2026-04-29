@@ -66,7 +66,7 @@ export default ({ password }: Props) => {
                 const found = lines.find(line => line.startsWith(suffix));
 
                 if (found) {
-                    const count = parseInt(found.split(':')[1], 10);
+                    const count = parseInt(found.split(':')[1] ?? '0', 10);
                     setIsPwned(true);
                     setPwnedCount(count);
                 } else {

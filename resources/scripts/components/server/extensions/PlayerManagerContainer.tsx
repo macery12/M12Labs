@@ -195,7 +195,7 @@ const PlayerActionsModal = ({
                     {isOperator ? 'Remove Operator' : 'Make Operator'}
                 </Button>
                 <Button
-                    onClick={() => handleAction(() => banPlayer(serverUuid, player), 'Ban')}
+                    onClick={() => handleAction(() => banPlayer(serverUuid, player, ''), 'Ban')}
                     className={'w-full justify-center'}
                     disabled={loading || !canManage}
                     title={!canManage ? 'Read-only access' : undefined}
@@ -284,13 +284,13 @@ const AddPlayerModal = ({ visible, onDismissed, type, serverUuid, onAction }: Ad
                                 await addToWhitelist(serverUuid, values.target);
                                 break;
                             case 'op':
-                                await opPlayer(serverUuid, values.target, values.level);
+                                await opPlayer(serverUuid, values.target);
                                 break;
                             case 'ban':
-                                await banPlayer(serverUuid, values.target, values.reason || undefined);
+                                await banPlayer(serverUuid, values.target, values.reason || '');
                                 break;
                             case 'ban-ip':
-                                await banIp(serverUuid, values.target, values.reason || undefined);
+                                await banIp(serverUuid, values.target, values.reason || '');
                                 break;
                         }
                         addFlash({
@@ -810,7 +810,7 @@ export default () => {
                         status?.operators.some(op => op.name.toLowerCase() === selectedPlayer.toLowerCase()) || false
                     }
                     isOnline={isPlayerOnline(selectedPlayer)}
-                    canManage={canManage}
+                    canManage={canManage ?? false}
                 />
             )}
 
@@ -834,7 +834,7 @@ export default () => {
                     serverUuid={uuid}
                     playerName={attributePlayer}
                     isOnline={isPlayerOnline(attributePlayer)}
-                    canManage={canManage}
+                    canManage={canManage ?? false}
                 />
             )}
 
