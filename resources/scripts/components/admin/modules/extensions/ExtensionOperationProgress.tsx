@@ -73,7 +73,6 @@ function StepDots({
 }: {
     steps: StepName[];
     currentStage: string;
-    primary?: string;
 }) {
     const currentStageIndex = steps.indexOf(currentStage as StepName);
     return (
