@@ -1,7 +1,7 @@
 import { action, Action } from 'easy-peasy';
 
 export type AlertType = 'success' | 'warning' | 'danger' | 'info';
-export type AlertPosition = 'notification' | 'top-center' | 'slide-out' | 'center';
+export type AlertPosition = 'notification' | 'top-center' | 'slide-out' | 'center' | 'bottom-right' | 'bottom-left';
 
 export type VerificationArea = 'billing' | 'orders' | 'donate' | 'credentials' | 'tickets';
 export type VerificationRule = { can_view: boolean; can_interact: boolean };
@@ -19,7 +19,7 @@ export interface EverestSettings {
         modules: {
             jguard: {
                 enabled: boolean;
-                approval_mode: 'manual' | 'delayed';
+                approval_mode: 'manual' | 'delayed' | 'immediate';
                 delay: number;
                 pending_message: string;
             };
@@ -37,6 +37,12 @@ export interface EverestSettings {
                 enabled: boolean;
                 content?: string;
             };
+        };
+        captcha: {
+            enabled: boolean;
+            provider?: string;
+            site_key?: string;
+            secret_key?: string;
         };
     };
     tickets: {
@@ -90,6 +96,9 @@ export interface EverestSettings {
             days: number;
             free_renewal_days: number;
             suspension_threshold: number;
+            suspension_threshold_percentage?: number;
+            min_suspension_threshold_days?: number;
+            max_suspension_threshold_days?: number;
             free_suspension_days: number;
             paid_suspension_days: number;
             default_billing_days: number;
@@ -103,6 +112,7 @@ export interface EverestSettings {
         position: AlertPosition;
         content: string;
         uuid: string;
+        title?: string;
     };
     ai: {
         enabled: boolean;
@@ -118,6 +128,7 @@ export interface EverestSettings {
         enabled: boolean;
         curseforge_api_key: boolean | string;
         default_source?: string;
+        spiget_enabled?: boolean;
     };
     webhooks: {
         enabled: boolean;
@@ -135,6 +146,9 @@ export interface EverestSettings {
               }
             | boolean;
         verification_rules?: VerificationRules;
+    };
+    extensions?: {
+        enabled: boolean;
     };
 }
 

@@ -44,6 +44,7 @@ interface Product extends Model {
     name: string;
     icon?: string;
     price: number;
+    basePrice?: number;
     description?: string;
     eggId: number;
     allowedEggs: number[];

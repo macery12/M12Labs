@@ -6,6 +6,8 @@ export interface ModpackSearchParams {
     sortOrder?: string;
     pageSize?: number;
     index?: number;
+    gameVersion?: string;
+    modLoaderType?: number;
 }
 
 export interface ModpackFileParams {

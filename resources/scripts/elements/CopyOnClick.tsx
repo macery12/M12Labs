@@ -34,7 +34,6 @@ const CopyOnClick = ({ text, showInNotification = true, children }: CopyOnClickP
     const child = !text
         ? Children.only(children)
         : cloneElement(Children.only(children), {
-              // @ts-expect-error I don't know
               className: classNames(children.props.className || '', 'cursor-pointer'),
               onClick: (e: MouseEvent<HTMLElement>) => {
                   copy(String(text));

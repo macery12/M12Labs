@@ -22,6 +22,6 @@ export type ButtonProps = JSX.IntrinsicElements['button'] & {
     shape?: Shape;
     size?: Size | 'sm' | 'small' | 'large' | 'lg' | 'default';
     loading?: boolean;
-    variant?: Variant | 'primary' | 'secondary';
+    variant?: Variant | 'primary' | 'secondary' | 'filled' | 'outlined' | 'text' | 'danger';
     icon?: ElementType;
 };
