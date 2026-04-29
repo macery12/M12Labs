@@ -63,19 +63,6 @@ export default ({ open, onClose }: Props) => {
         window.location.reload();
     };
 
-    const getTypeColor = (type: string) => {
-        switch (type) {
-            case 'success':
-                return 'text-green-400';
-            case 'warning':
-                return 'text-yellow-400';
-            case 'danger':
-                return 'text-red-400';
-            default:
-                return 'text-blue-400';
-        }
-    };
-
     const getTypeBadge = (type: string) => {
         switch (type) {
             case 'success':

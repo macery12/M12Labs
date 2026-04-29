@@ -19,13 +19,15 @@ type Props = {
 
 const EmailVerificationGate = ({ children, area }: Props) => {
     const user = useStoreState(state => state.user.data!);
-    const emailEnabled = useStoreState(state =>
-        Boolean(
-            state.everest.data?.email?.enabled ??
-                state.everest.data?.email?.resend?.enabled ??
-                state.everest.data?.email?.resend,
-        ),
-    );
+    const emailEnabled = useStoreState(state => {
+        const email = state.everest.data?.email;
+        const resend = email?.resend;
+        return Boolean(
+            email?.enabled ??
+                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
+                resend,
+        );
+    });
     const verification = useEmailVerification(emailEnabled) || {};
     const {
         resend = () => {},

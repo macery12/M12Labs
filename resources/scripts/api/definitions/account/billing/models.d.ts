@@ -47,6 +47,7 @@ interface Product extends Model {
     description?: string;
     eggId: number;
     allowedEggs: number[];
+    allowEggChanges: boolean;
     limits: {
         cpu: number;
         memory: number;

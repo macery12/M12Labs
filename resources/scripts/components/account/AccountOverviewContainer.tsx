@@ -34,11 +34,15 @@ const Container = styled.div`
 export default () => {
     const { state } = useLocation();
     const user = useStoreState(s => s.user.data!);
-    const emailEnabled = useStoreState(s =>
-        Boolean(
-            s.everest.data?.email?.enabled ?? s.everest.data?.email?.resend?.enabled ?? s.everest.data?.email?.resend,
-        ),
-    );
+    const emailEnabled = useStoreState(s => {
+        const email = s.everest.data?.email;
+        const resend = email?.resend;
+        return Boolean(
+            email?.enabled ??
+                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
+                resend,
+        );
+    });
     const discordEnabled = useStoreState(s => Boolean(s.everest.data?.auth?.modules?.discord?.enabled));
 
     return (

@@ -34,13 +34,15 @@ function DashboardRouter() {
     const flags = useStoreState(state => state.everest.data!);
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
     const { addFlash, clearFlashes } = useFlash();
-    const emailEnabled = useStoreState(state =>
-        Boolean(
-            state.everest.data?.email?.enabled ??
-                state.everest.data?.email?.resend?.enabled ??
-                state.everest.data?.email?.resend,
-        ),
-    );
+    const emailEnabled = useStoreState(state => {
+        const email = state.everest.data?.email;
+        const resend = email?.resend;
+        return Boolean(
+            email?.enabled ??
+                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
+                resend,
+        );
+    });
     const verificationRules = normalizeVerificationRules(
         useStoreState(state => state.everest.data?.email?.verification_rules),
     );
@@ -49,7 +51,7 @@ function DashboardRouter() {
         resend = () => {},
         isCoolingDown = false,
         resendLabel = 'Resend verification email',
-        refreshUser = () => {},
+        refreshUser: _refreshUser = () => {},
     } = verification as ReturnType<typeof useEmailVerification>;
     const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
 
