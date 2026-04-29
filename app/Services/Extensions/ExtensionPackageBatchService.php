@@ -46,11 +46,12 @@ class ExtensionPackageBatchService
         return $this->operationLockService->withinLock('install', 'batch', function () use ($items) {
             $preparedList = [];
             $total = count($items);
+            $allExtensionIds = array_column($items, 'extensionId');
 
             try {
                 foreach ($items as $index => $item) {
                     $current = $index + 1;
-                    $this->progressService->report('batch-install', $item['extensionId'], 'downloading', $total, $current);
+                    $this->progressService->report('batch-install', $item['extensionId'], 'downloading', $total, $current, $allExtensionIds);
                     $prepared = $this->installService->prepareInstall(
                         $item['extensionId'],
                         (int) $item['repositoryId'],
@@ -63,25 +64,26 @@ class ExtensionPackageBatchService
                 $lastExtensionId = end($preparedList)['extensionId'] ?? 'unknown';
                 $this->rebuildService->rebuild(
                     sprintf('Batch install %d extension(s)', $total),
-                    function (int $cmdIndex) use ($lastExtensionId, $total): void {
+                    function (int $cmdIndex) use ($lastExtensionId, $total, $allExtensionIds): void {
                         $this->progressService->report(
                             'batch-install',
                             $lastExtensionId,
                             $cmdIndex === 0 ? 'optimizing' : 'building',
                             $total,
-                            $total
+                            $total,
+                            $allExtensionIds
                         );
                     }
                 );
 
                 // Finalize all installs (DB registration) after the rebuild succeeded.
-                $this->progressService->report('batch-install', $lastExtensionId, 'registering', $total, $total);
+                $this->progressService->report('batch-install', $lastExtensionId, 'registering', $total, $total, $allExtensionIds);
                 $packages = [];
                 foreach ($preparedList as $prepared) {
                     $packages[] = $this->installService->finalizeInstall($prepared);
                 }
 
-                $this->progressService->report('batch-install', $lastExtensionId, 'completed', $total, $total);
+                $this->progressService->report('batch-install', $lastExtensionId, 'completed', $total, $total, $allExtensionIds);
 
                 return $packages;
             } catch (\Throwable $exception) {
@@ -121,11 +123,12 @@ class ExtensionPackageBatchService
         $this->operationLockService->withinLock('uninstall', 'batch', function () use ($extensionIds) {
             $preparedList = [];
             $total = count($extensionIds);
+            $allExtensionIds = array_values($extensionIds);
 
             try {
                 foreach ($extensionIds as $index => $extensionId) {
                     $current = $index + 1;
-                    $this->progressService->report('batch-uninstall', $extensionId, 'validating', $total, $current);
+                    $this->progressService->report('batch-uninstall', $extensionId, 'validating', $total, $current, $allExtensionIds);
                     $prepared = $this->uninstallService->prepareUninstall($extensionId);
                     $preparedList[] = $prepared;
                 }
@@ -134,24 +137,25 @@ class ExtensionPackageBatchService
                 $lastExtensionId = end($preparedList)['extensionId'] ?? 'unknown';
                 $this->rebuildService->rebuild(
                     sprintf('Batch uninstall %d extension(s)', $total),
-                    function (int $cmdIndex) use ($lastExtensionId, $total): void {
+                    function (int $cmdIndex) use ($lastExtensionId, $total, $allExtensionIds): void {
                         $this->progressService->report(
                             'batch-uninstall',
                             $lastExtensionId,
                             $cmdIndex === 0 ? 'optimizing' : 'building',
                             $total,
-                            $total
+                            $total,
+                            $allExtensionIds
                         );
                     }
                 );
 
                 // Finalize all uninstalls (DB deletion) after the rebuild succeeded.
-                $this->progressService->report('batch-uninstall', $lastExtensionId, 'registering', $total, $total);
+                $this->progressService->report('batch-uninstall', $lastExtensionId, 'registering', $total, $total, $allExtensionIds);
                 foreach ($preparedList as $prepared) {
                     $this->uninstallService->finalizeUninstall($prepared);
                 }
 
-                $this->progressService->report('batch-uninstall', $lastExtensionId, 'completed', $total, $total);
+                $this->progressService->report('batch-uninstall', $lastExtensionId, 'completed', $total, $total, $allExtensionIds);
             } catch (\Throwable $exception) {
                 foreach ($preparedList as $prepared) {
                     $this->uninstallService->rollbackUninstall($prepared);
@@ -190,11 +194,12 @@ class ExtensionPackageBatchService
         return $this->operationLockService->withinLock('update', 'batch', function () use ($items) {
             $preparedList = [];
             $total = count($items);
+            $allExtensionIds = array_column($items, 'extensionId');
 
             try {
                 foreach ($items as $index => $item) {
                     $current = $index + 1;
-                    $this->progressService->report('batch-update', $item['extensionId'], 'downloading', $total, $current);
+                    $this->progressService->report('batch-update', $item['extensionId'], 'downloading', $total, $current, $allExtensionIds);
                     $prepared = $this->updateService->prepareUpdate(
                         $item['extensionId'],
                         (int) $item['repositoryId'],
@@ -207,25 +212,26 @@ class ExtensionPackageBatchService
                 $lastExtensionId = end($preparedList)['extensionId'] ?? 'unknown';
                 $this->rebuildService->rebuild(
                     sprintf('Batch update %d extension(s)', $total),
-                    function (int $cmdIndex) use ($lastExtensionId, $total): void {
+                    function (int $cmdIndex) use ($lastExtensionId, $total, $allExtensionIds): void {
                         $this->progressService->report(
                             'batch-update',
                             $lastExtensionId,
                             $cmdIndex === 0 ? 'optimizing' : 'building',
                             $total,
-                            $total
+                            $total,
+                            $allExtensionIds
                         );
                     }
                 );
 
                 // Finalize all updates (DB records) after the rebuild succeeded.
-                $this->progressService->report('batch-update', $lastExtensionId, 'registering', $total, $total);
+                $this->progressService->report('batch-update', $lastExtensionId, 'registering', $total, $total, $allExtensionIds);
                 $packages = [];
                 foreach ($preparedList as $prepared) {
                     $packages[] = $this->updateService->finalizeUpdate($prepared);
                 }
 
-                $this->progressService->report('batch-update', $lastExtensionId, 'completed', $total, $total);
+                $this->progressService->report('batch-update', $lastExtensionId, 'completed', $total, $total, $allExtensionIds);
 
                 return $packages;
             } catch (\Throwable $exception) {

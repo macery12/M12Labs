@@ -57,11 +57,12 @@ class ExtensionInstallProgressService
     /**
      * Record the current stage of an in-progress operation.
      *
-     * @param int|null $batchTotal   Total number of extensions in a batch (null for single operations).
-     * @param int|null $batchCurrent 1-based index of the extension currently being processed in a batch.
+     * @param int|null    $batchTotal      Total number of extensions in a batch (null for single operations).
+     * @param int|null    $batchCurrent    1-based index of the extension currently being processed in a batch.
+     * @param string[]|null $batchExtensions Ordered list of all extension IDs in the batch.
      * @throws \InvalidArgumentException if $action or $stage is not recognised.
      */
-    public function report(string $action, string $extensionId, string $stage, ?int $batchTotal = null, ?int $batchCurrent = null): void
+    public function report(string $action, string $extensionId, string $stage, ?int $batchTotal = null, ?int $batchCurrent = null, ?array $batchExtensions = null): void
     {
         $validStages = match ($action) {
             'install'         => self::INSTALL_STAGES,
@@ -97,8 +98,11 @@ class ExtensionInstallProgressService
         ];
 
         if ($batchTotal !== null) {
-            $payload['batch_total']   = $batchTotal;
-            $payload['batch_current'] = $batchCurrent ?? 1;
+            $payload['batch_total']      = $batchTotal;
+            $payload['batch_current']    = $batchCurrent ?? 1;
+            if ($batchExtensions !== null) {
+                $payload['batch_extensions'] = $batchExtensions;
+            }
         }
 
         // Atomic write: write to a temp file then rename into place so a
