@@ -28,7 +28,7 @@ import OrderInspectorModal from '@/components/elements/OrderInspectorModal';
 import { Order } from '@definitions/account/billing/models';
 import tw from 'twin.macro';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import Input from '@/elements/Input';
 import InputSpinner from '@/elements/InputSpinner';
 import debounce from 'debounce';

@@ -56,6 +56,7 @@ export interface BillingCycle {
     multiplier: number;
     discountPercent: number;
     isDefault: boolean;
+    label?: string;
 }
 
 export const getProductBillingCycles = (productId: number): Promise<BillingCycle[]> => {
