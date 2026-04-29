@@ -31,7 +31,7 @@ export default () => {
                     const availableNodes = fetchedNodes.filter(node => node.id !== server.nodeId);
                     setNodes(availableNodes);
                 })
-                .catch(error => {
+                .catch(_error => {
                     addFlash({
                         key: 'server:manage',
                         type: 'error',
@@ -53,13 +53,13 @@ export default () => {
                     setAllocations(availableAllocations);
                     // Auto-select first allocation if available
                     if (availableAllocations.length > 0) {
-                        setSelectedAllocationId(availableAllocations[0].id);
+                        setSelectedAllocationId(availableAllocations[0]!.id);
                     } else {
                         setSelectedAllocationId(null);
                     }
                     setLoading(false);
                 })
-                .catch(error => {
+                .catch(_error => {
                     addFlash({
                         key: 'server:manage',
                         type: 'error',
@@ -101,7 +101,7 @@ export default () => {
                 setNodes([]);
                 setAllocations([]);
             })
-            .catch(error => {
+            .catch(_error => {
                 addFlash({
                     key: 'server:manage',
                     type: 'error',

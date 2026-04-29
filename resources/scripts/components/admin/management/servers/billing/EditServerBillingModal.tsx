@@ -225,7 +225,7 @@ const PlanSelectionStep = ({
                                             <div className="font-semibold">
                                                 {cycle.days} {cycle.days === 1 ? 'Day' : 'Days'}
                                             </div>
-                                            {cycle.is_default && (
+                                            {cycle.isDefault && (
                                                 <span className="rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
                                                     Default
                                                 </span>
@@ -234,15 +234,15 @@ const PlanSelectionStep = ({
                                         <div className="mt-1 text-lg font-bold">
                                             ${cycle.price?.toFixed(2) || '0.00'}
                                         </div>
-                                        {cycle.discount_percent !== 0 && (
+                                        {cycle.discountPercent !== 0 && (
                                             <div
                                                 className={`mt-1 text-xs ${
-                                                    cycle.discount_percent > 0 ? 'text-green-400' : 'text-red-400'
+                                                    cycle.discountPercent > 0 ? 'text-green-400' : 'text-red-400'
                                                 }`}
                                             >
-                                                {cycle.discount_percent > 0 ? '' : '+'}
-                                                {Math.abs(cycle.discount_percent)}%{' '}
-                                                {cycle.discount_percent > 0 ? 'discount' : 'premium'}
+                                                {cycle.discountPercent > 0 ? '' : '+'}
+                                                {Math.abs(cycle.discountPercent)}%{' '}
+                                                {cycle.discountPercent > 0 ? 'discount' : 'premium'}
                                             </div>
                                         )}
                                     </button>
@@ -268,18 +268,18 @@ const PlanSelectionStep = ({
                                                 ${selectedCycle.price?.toFixed(2) || '0.00'}
                                             </span>
                                         </div>
-                                        {selectedCycle.discount_percent !== 0 && (
+                                        {selectedCycle.discountPercent !== 0 && (
                                             <div className="flex justify-between">
                                                 <span>Discount:</span>
                                                 <span
                                                     className={`font-semibold ${
-                                                        selectedCycle.discount_percent > 0
+                                                        selectedCycle.discountPercent > 0
                                                             ? 'text-green-400'
                                                             : 'text-red-400'
                                                     }`}
                                                 >
-                                                    {selectedCycle.discount_percent > 0 ? '' : '+'}
-                                                    {Math.abs(selectedCycle.discount_percent)}%
+                                                    {selectedCycle.discountPercent > 0 ? '' : '+'}
+                                                    {Math.abs(selectedCycle.discountPercent)}%
                                                 </span>
                                             </div>
                                         )}
@@ -364,16 +364,16 @@ export default ({ server }: { server: Server }) => {
         if (server.billingDays) {
             const hasCycle = cycles.some(c => c.days === server.billingDays);
             if (hasCycle) {
-                setForm(prev => ({ ...prev, billingDays: server.billingDays }));
+                setForm(prev => ({ ...prev, billingDays: server.billingDays ?? null }));
                 return;
             }
         }
 
         // Select default cycle or first available
-        const defaultCycle = cycles.find(c => c.is_default);
+        const defaultCycle = cycles.find(c => c.isDefault);
         setForm(prev => ({
             ...prev,
-            billingDays: defaultCycle ? defaultCycle.days : cycles[0].days,
+            billingDays: defaultCycle ? defaultCycle.days : cycles[0]!.days,
         }));
     };
 
@@ -400,14 +400,14 @@ export default ({ server }: { server: Server }) => {
                             setForm(prev => ({ ...prev, categoryId: category.id }));
                         } else if (product.categoryUuid) {
                             // Fallback: find category by UUID in the loaded categories
-                            const matchingCategory = cats.find(c => c.uuid === product.categoryUuid);
+                            const matchingCategory = cats.find(c => c.id === product.categoryUuid);
                             if (matchingCategory) {
                                 setForm(prev => ({ ...prev, categoryId: matchingCategory.id }));
                             }
                         }
                     } else if (server.billingProductId && cats.length === 1) {
                         // Fallback: if there's only one category, use it
-                        setForm(prev => ({ ...prev, categoryId: cats[0].id }));
+                        setForm(prev => ({ ...prev, categoryId: cats[0]!.id }));
                     }
                 })
                 .catch(err => {
@@ -458,7 +458,7 @@ export default ({ server }: { server: Server }) => {
                     if (server.billingProductId) {
                         const hasProduct = productList.some((p: Product) => p.id === server.billingProductId);
                         if (hasProduct) {
-                            setForm(prev => ({ ...prev, productId: server.billingProductId }));
+                            setForm(prev => ({ ...prev, productId: server.billingProductId ?? null }));
                         } else {
                             setForm(prev => ({ ...prev, productId: null }));
                         }
@@ -608,8 +608,8 @@ export default ({ server }: { server: Server }) => {
             <Dialog
                 open={open}
                 onClose={() => setOpen(false)}
-                title={pages[page].title}
-                description={pages[page].description}
+                title={pages[page]!.title}
+                description={pages[page]!.description}
                 size="lg"
             >
                 <SpinnerOverlay visible={loading} />

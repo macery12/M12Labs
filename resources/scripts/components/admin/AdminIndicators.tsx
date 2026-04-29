@@ -21,7 +21,6 @@ const Indicator = ({ text, icon }: Props) => {
 };
 
 export default () => {
-    const settings = useStoreState(state => state.settings.data!);
     const everest = useStoreState(state => state.everest.data!);
 
     return (

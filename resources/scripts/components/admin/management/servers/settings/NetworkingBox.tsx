@@ -305,7 +305,7 @@ export default () => {
                 description="Add, remove, or set primary allocations for this server"
                 size="xl"
             >
-                <Dialog.Icon position="top" type={loading ? 'loading' : 'info'} />
+                <Dialog.Icon position="top" type={'info'} />
                 <div css={tw`mt-4`}>
                     <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6`}>
                         {/* Current Allocations */}

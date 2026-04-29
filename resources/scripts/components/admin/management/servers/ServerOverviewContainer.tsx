@@ -10,7 +10,7 @@ import getNode from '@/api/routes/admin/nodes/getNode';
 import { Node } from '@/api/routes/admin/nodes/getNodes';
 import NodeStatus from '@admin/management/nodes/NodeStatus';
 import { NavLink } from 'react-router-dom';
-import { useFlashKey } from '@/plugins/useFlash';
+import useFlash from '@/plugins/useFlash';
 
 // Status badge colors
 const STATUS_COLORS = {
@@ -31,7 +31,7 @@ export default () => {
     const [node, setNode] = useState<Node | undefined>();
     const { data: server } = useServerFromRoute();
     const { billing } = useStoreState(state => state.everest.data!);
-    const { addFlash } = useFlashKey('server');
+    const { addFlash } = useFlash();
 
     useEffect(() => {
         if (server) {

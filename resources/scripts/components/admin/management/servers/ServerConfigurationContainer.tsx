@@ -6,8 +6,9 @@ import { useEffect, useState } from 'react';
 import { object } from 'yup';
 import tw from 'twin.macro';
 
-import type { LoadedEgg } from '@/api/routes/admin/egg';
+import type { Egg } from '@/api/routes/admin/egg';
 import { getEgg } from '@/api/routes/admin/egg';
+import type { WithRelationships } from '@/api/routes/admin';
 import type { Server } from '@/api/routes/admin/server';
 import { useServerFromRoute } from '@/api/routes/admin/server';
 import type { Values } from '@/api/routes/admin/servers/updateServerStartup';
@@ -33,8 +34,8 @@ function ServerConfigurationForm({
     server,
 }: {
     selectedEggId?: number;
-    egg?: LoadedEgg;
-    setEgg: (value: LoadedEgg | undefined) => void;
+    egg?: WithRelationships<Egg, 'variables'>;
+    setEgg: (value: WithRelationships<Egg, 'variables'> | undefined) => void;
     server: Server;
 }) {
     const {
@@ -170,7 +171,7 @@ export default () => {
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
-    const [egg, setEgg] = useState<LoadedEgg | undefined>(undefined);
+    const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>(undefined);
 
     useEffect(() => {
         if (!server) {
@@ -205,7 +206,7 @@ export default () => {
                 name: values.name,
                 externalId: values.externalId,
                 ownerId: values.ownerId,
-                limits: server.limits,
+                limits: { ...server.limits, threads: server.limits.threads ?? '' },
                 featureLimits: server.featureLimits,
                 allocationId: server.allocationId,
                 addAllocations: [],
