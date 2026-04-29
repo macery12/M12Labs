@@ -66,6 +66,47 @@ function getActionVerb(action: string): string {
     return 'Installing';
 }
 
+/** Renders the step-dot row shared by single and per-extension batch views. */
+function StepDots({
+    steps,
+    currentStage,
+}: {
+    steps: StepName[];
+    currentStage: string;
+}) {
+    const currentStageIndex = steps.indexOf(currentStage as StepName);
+    return (
+        <div className={'mt-2 flex flex-wrap items-center gap-x-2 gap-y-1'}>
+            {steps.map((step, index) => {
+                const isActive = step === currentStage;
+                const isDone = currentStageIndex > index;
+                return (
+                    <span key={step} className={'flex items-center gap-1'}>
+                        <span
+                            className={classNames(
+                                'inline-block h-1.5 w-1.5 rounded-full transition-colors duration-300',
+                                isActive && 'bg-white',
+                                isDone && !isActive && 'bg-neutral-500',
+                                !isDone && !isActive && 'bg-neutral-700'
+                            )}
+                        />
+                        <span
+                            className={classNames(
+                                'text-xs transition-colors duration-300',
+                                isActive && 'text-neutral-100',
+                                isDone && !isActive && 'text-neutral-500',
+                                !isDone && !isActive && 'text-neutral-700'
+                            )}
+                        >
+                            {STEP_LABELS[step]}
+                        </span>
+                    </span>
+                );
+            })}
+        </div>
+    );
+}
+
 type DisplayState = 'idle' | 'active' | 'completed';
 
 /**
@@ -154,45 +195,57 @@ export default () => {
     const isBatch = progress.action.startsWith('batch-');
     const verb = getActionVerb(progress.action);
     const steps = getStepsForAction(progress.action);
-    const currentStageIndex = steps.indexOf(progress.stage as StepName);
 
-    // Title line
-    let titleSuffix: string;
-    if (isBatch) {
-        const total = progress.batch_total ?? 1;
-        titleSuffix = `${total} extension${total === 1 ? '' : 's'}`;
-    } else {
-        titleSuffix = progress.extension_id;
+    // ─── Single operation ──────────────────────────────────────────────────────
+    if (!isBatch) {
+        return (
+            <div
+                className={'mb-4 rounded-lg border p-4'}
+                style={{ backgroundColor: alpha(primary, '10'), borderColor: alpha(primary, '55') }}
+            >
+                <div className={'flex items-center gap-3'}>
+                    <Spinner size={'small'} />
+                    <div className={'flex-1 min-w-0'}>
+                        <p className={'text-sm font-semibold text-neutral-100'}>
+                            {verb} {progress.extension_id}
+                        </p>
+                    </div>
+                    <span
+                        className={'whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium'}
+                        style={{ backgroundColor: alpha(primary, '20'), color: primary }}
+                    >
+                        {STEP_LABELS[progress.stage] ?? progress.stage}
+                        {progress.stage !== 'completed' && '…'}
+                    </span>
+                </div>
+                {steps.length > 0 && (
+                    <StepDots steps={steps} currentStage={progress.stage} />
+                )}
+            </div>
+        );
     }
 
-    // Sub-label for batch (extension ID + count)
-    const batchSubLabel =
-        isBatch && progress.batch_total
-            ? `${progress.extension_id} (${progress.batch_current ?? 1} of ${progress.batch_total})`
-            : null;
+    // ─── Batch operation ───────────────────────────────────────────────────────
+    const total = progress.batch_total ?? 1;
+    const currentIndex = (progress.batch_current ?? 1) - 1; // 0-based
+    const batchExtensions = progress.batch_extensions ?? [progress.extension_id];
 
-    // Batch progress bar percentage
-    const batchPercent =
-        isBatch && progress.batch_total
-            ? Math.round(((progress.batch_current ?? 1) / progress.batch_total) * 100)
-            : null;
+    // After all file-prep steps the service reports batch_current === batch_total for
+    // the shared rebuild/register/complete phases. In those phases every extension is
+    // "done" from a per-item perspective, so we treat it as a post-loop stage.
+    const isSharedPhase = ['optimizing', 'building', 'registering', 'completed'].includes(progress.stage);
 
     return (
         <div
             className={'mb-4 rounded-lg border p-4'}
             style={{ backgroundColor: alpha(primary, '10'), borderColor: alpha(primary, '55') }}
         >
-            {/* Header row */}
+            {/* Header */}
             <div className={'flex items-center gap-3'}>
                 <Spinner size={'small'} />
-                <div className={'flex-1 min-w-0'}>
-                    <p className={'text-sm font-semibold text-neutral-100'}>
-                        {verb} {titleSuffix}
-                    </p>
-                    {batchSubLabel && (
-                        <p className={'mt-0.5 text-xs text-neutral-400'}>{batchSubLabel}</p>
-                    )}
-                </div>
+                <p className={'flex-1 min-w-0 text-sm font-semibold text-neutral-100'}>
+                    {verb} {total} extension{total === 1 ? '' : 's'}:
+                </p>
                 <span
                     className={'whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium'}
                     style={{ backgroundColor: alpha(primary, '20'), color: primary }}
@@ -202,45 +255,57 @@ export default () => {
                 </span>
             </div>
 
-            {/* Batch progress bar */}
-            {batchPercent !== null && (
-                <div className={'mt-3 h-1.5 rounded-full bg-neutral-700'}>
-                    <div
-                        className={'h-1.5 rounded-full transition-all duration-500'}
-                        style={{ backgroundColor: primary, width: `${batchPercent}%` }}
-                    />
-                </div>
-            )}
+            {/* Per-extension list */}
+            <ol className={'mt-3 space-y-2'}>
+                {batchExtensions.map((extId, idx) => {
+                    const isDone = isSharedPhase || idx < currentIndex;
+                    const isActive = !isSharedPhase && idx === currentIndex;
+                    const isPending = !isSharedPhase && idx > currentIndex;
 
-            {/* Step dots for single operations */}
-            {!isBatch && steps.length > 0 && (
-                <div className={'mt-3 flex flex-wrap items-center gap-x-2 gap-y-1'}>
-                    {steps.map((step, index) => {
-                        const isActive = step === progress.stage;
-                        const isDone = currentStageIndex > index;
-                        return (
-                            <span key={step} className={'flex items-center gap-1'}>
-                                <span
-                                    className={classNames(
-                                        'inline-block h-1.5 w-1.5 rounded-full transition-colors duration-300',
-                                        isActive && 'bg-white',
-                                        isDone && !isActive && 'bg-neutral-500',
-                                        !isDone && !isActive && 'bg-neutral-700'
+                    return (
+                        <li key={extId}>
+                            <div className={'flex items-center gap-2'}>
+                                {/* Status icon */}
+                                <span className={'flex h-4 w-4 shrink-0 items-center justify-center'}>
+                                    {isDone ? (
+                                        <FontAwesomeIcon
+                                            icon={faCheck}
+                                            className={'text-xs text-green-400'}
+                                        />
+                                    ) : isActive ? (
+                                        <Spinner size={'small'} />
+                                    ) : (
+                                        <span className={'inline-block h-1.5 w-1.5 rounded-full bg-neutral-700'} />
                                     )}
-                                />
-                                <span
-                                    className={classNames(
-                                        'text-xs transition-colors duration-300',
-                                        isActive && 'text-neutral-100',
-                                        isDone && !isActive && 'text-neutral-500',
-                                        !isDone && !isActive && 'text-neutral-700'
-                                    )}
-                                >
-                                    {STEP_LABELS[step]}
                                 </span>
-                            </span>
-                        );
-                    })}
+
+                                {/* Extension label */}
+                                <span
+                                    className={classNames('text-xs font-mono transition-colors duration-300', {
+                                        'text-neutral-100': isActive,
+                                        'text-neutral-500': isDone,
+                                        'text-neutral-600': isPending,
+                                    })}
+                                >
+                                    {idx + 1}: {extId}
+                                </span>
+                            </div>
+
+                            {/* Step dots appear under the currently-active extension */}
+                            {isActive && steps.length > 0 && (
+                                <div className={'ml-6'}>
+                                    <StepDots steps={steps} currentStage={progress.stage} />
+                                </div>
+                            )}
+                        </li>
+                    );
+                })}
+            </ol>
+
+            {/* Shared-phase step dots (optimizing / building / registering) shown below the list */}
+            {isSharedPhase && progress.stage !== 'completed' && steps.length > 0 && (
+                <div className={'mt-3'}>
+                    <StepDots steps={steps} currentStage={progress.stage} />
                 </div>
             )}
         </div>

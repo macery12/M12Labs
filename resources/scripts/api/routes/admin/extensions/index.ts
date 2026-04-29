@@ -125,6 +125,7 @@ export interface InstallProgress {
     updated_at: string;
     batch_total?: number;
     batch_current?: number;
+    batch_extensions?: string[];
 }
 
 export const getInstallProgress = async (): Promise<InstallProgress | null> => {
