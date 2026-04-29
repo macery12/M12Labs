@@ -8,21 +8,18 @@ use Everest\Models\ExtensionPackageFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use ZipArchive;
 
 class ExtensionPackageUpdateService
 {
-    private const MANIFEST_FILENAME = 'm12labs-extension.json';
-    public const PACKAGE_ARTIFACT_FILENAME = 'package.M12LabsExtension';
-
     public function __construct(
         private ExtensionCatalogService $catalogService,
         private ExtensionPanelRebuildService $rebuildService,
         private ExtensionOperationLockService $operationLockService,
         private ExtensionFilesystemOwnershipService $ownershipService,
-        private ExtensionInstallProgressService $progressService
+        private ExtensionInstallProgressService $progressService,
+        private ExtensionPackageArtifactService $artifactService,
+        private ExtensionPackageFileService $fileService
     ) {
     }
 
@@ -65,8 +62,8 @@ class ExtensionPackageUpdateService
                 throw new DisplayException('Failed to update the selected extension package.', $exception);
             } finally {
                 $this->progressService->clear();
-                $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? $extensionId);
                 if ($prepared !== null) {
+                    $this->ownershipService->repairStandardPaths($prepared['extensionId']);
                     $this->cleanupPreparedUpdate($prepared);
                 }
             }
@@ -78,7 +75,7 @@ class ExtensionPackageUpdateService
      */
     public function updateFromArchive(string $archivePath, ?string $sourceLabel = null): ExtensionPackage
     {
-        $resolvedPath = $this->resolveLocalArchivePath($archivePath);
+        $resolvedPath = $this->artifactService->resolveArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedPath);
 
         return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel) {
@@ -246,7 +243,7 @@ class ExtensionPackageUpdateService
     public function rollbackUpdate(array $prepared): void
     {
         if ($prepared['existingPackage']) {
-            $this->restoreRollbackSnapshot($prepared['existingPackage']->files->all(), $prepared['rollbackRoot']);
+            $this->fileService->restoreRollbackSnapshot($prepared['existingPackage']->files->all(), $prepared['rollbackRoot']);
         }
 
         $this->ownershipService->repairStandardPaths($prepared['extensionId']);
@@ -289,7 +286,7 @@ class ExtensionPackageUpdateService
         array $fallbackPackageMetadata
     ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
-        $archivePath = $tempRoot . '/' . self::PACKAGE_ARTIFACT_FILENAME;
+        $archivePath = $tempRoot . '/' . ExtensionPackageArtifactService::PACKAGE_ARTIFACT_FILENAME;
         $extractPath = $tempRoot . '/extract';
         $rollbackRoot = storage_path('app/extensions/tmp-update/' . Str::uuid()->toString());
         $resolvedExtensionId = $extensionId;
@@ -301,18 +298,18 @@ class ExtensionPackageUpdateService
 
         try {
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'downloading');
-            $this->downloadArchive($archiveLocation, $archivePath);
+            $this->artifactService->downloadArchive($archiveLocation, $archivePath);
 
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'extracting');
             $archiveChecksum = hash_file('sha256', $archivePath);
             if ($expectedArchiveChecksum !== null) {
-                $this->verifyChecksum($archivePath, $expectedArchiveChecksum, 'archive');
+                $this->artifactService->verifyChecksum($archivePath, $expectedArchiveChecksum, 'archive');
             }
-            $this->extractArchive($archivePath, $extractPath);
+            $this->artifactService->extractArchive($archivePath, $extractPath);
 
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'validating');
-            $manifest = $this->readPackageManifest($extractPath);
-            $normalizedManifest = $this->normalizeManifest($manifest, $extensionId, $expectedVersion);
+            $manifest = $this->artifactService->readPackageManifest($extractPath);
+            $normalizedManifest = $this->artifactService->normalizeManifest($manifest, $extensionId, $expectedVersion);
             $resolvedExtensionId = (string) Arr::get($normalizedManifest, 'extension.id');
 
             $existingPackage = ExtensionPackage::query()
@@ -324,12 +321,12 @@ class ExtensionPackageUpdateService
                 throw new DisplayException('This extension is not currently installed. Use the install command to install it first.');
             }
 
-            $this->assertCompatiblePanelVersions($compatiblePanelVersions);
-            $this->assertCompatiblePanelVersions(Arr::get($normalizedManifest, 'compatiblePanelVersions', []));
+            $this->artifactService->assertCompatiblePanelVersions($compatiblePanelVersions);
+            $this->artifactService->assertCompatiblePanelVersions(Arr::get($normalizedManifest, 'compatiblePanelVersions', []));
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
-            $this->assertInstalledFilesUnmodified($existingPackage->files->all());
-            $this->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
+            $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated');
+            $this->fileService->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
 
             $newBackupRoot = storage_path('app/extensions/backups/' . $resolvedExtensionId . '/' . Str::uuid()->toString());
 
@@ -371,23 +368,23 @@ class ExtensionPackageUpdateService
             }
 
             return [
-                'extensionId'            => $resolvedExtensionId,
-                'existingPackage'        => $existingPackage,
-                'normalizedManifest'     => $normalizedManifest,
+                'extensionId'             => $resolvedExtensionId,
+                'existingPackage'         => $existingPackage,
+                'normalizedManifest'      => $normalizedManifest,
                 'fallbackPackageMetadata' => $fallbackPackageMetadata,
-                'newFilePlans'           => $newFilePlans,
-                'oldOnlyFiles'           => $oldOnlyFiles,
-                'archiveChecksum'        => is_string($archiveChecksum) ? $archiveChecksum : null,
-                'sourceRepositoryId'     => $sourceRepositoryId,
-                'sourceRepositoryName'   => $sourceRepositoryName,
-                'sourceRegistryUrl'      => $sourceRegistryUrl,
-                'sourceArchiveUrl'       => $sourceArchiveUrl,
-                'rollbackRoot'           => $rollbackRoot,
-                'tempRoot'               => $tempRoot,
+                'newFilePlans'            => $newFilePlans,
+                'oldOnlyFiles'            => $oldOnlyFiles,
+                'archiveChecksum'         => is_string($archiveChecksum) ? $archiveChecksum : null,
+                'sourceRepositoryId'      => $sourceRepositoryId,
+                'sourceRepositoryName'    => $sourceRepositoryName,
+                'sourceRegistryUrl'       => $sourceRegistryUrl,
+                'sourceArchiveUrl'        => $sourceArchiveUrl,
+                'rollbackRoot'            => $rollbackRoot,
+                'tempRoot'                => $tempRoot,
             ];
         } catch (\Throwable $exception) {
             if ($existingPackage) {
-                $this->restoreRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
+                $this->fileService->restoreRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
             }
 
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
@@ -430,7 +427,7 @@ class ExtensionPackageUpdateService
                 continue;
             }
 
-            $path = $this->normalizeTargetPath((string) ($file['path'] ?? ''), $extensionId);
+            $path = $this->artifactService->normalizeTargetPath((string) ($file['path'] ?? ''), $extensionId);
             $checksum = trim((string) ($file['sha256'] ?? ''));
 
             if ($path === '' || $checksum === '') {
@@ -442,7 +439,7 @@ class ExtensionPackageUpdateService
                 throw new DisplayException(sprintf('The extension package is missing "%s".', $path));
             }
 
-            $this->verifyChecksum($sourcePath, $checksum, sprintf('file "%s"', $path));
+            $this->artifactService->verifyChecksum($sourcePath, $checksum, sprintf('file "%s"', $path));
 
             // Ensure the path is not owned by a different extension.
             if (ExtensionPackageFile::query()
@@ -482,90 +479,17 @@ class ExtensionPackageUpdateService
             }
 
             $plans[] = [
-                'path'          => $path,
-                'sourcePath'    => $sourcePath,
-                'targetPath'    => $targetPath,
-                'operation'     => $operation,
-                'checksum'      => $checksum,
-                'backupPath'    => $backupPath,
+                'path'           => $path,
+                'sourcePath'     => $sourcePath,
+                'targetPath'     => $targetPath,
+                'operation'      => $operation,
+                'checksum'       => $checksum,
+                'backupPath'     => $backupPath,
                 'backupChecksum' => $backupChecksum,
             ];
         }
 
         return $plans;
-    }
-
-    /**
-     * Fail if any tracked file has been externally modified since it was installed.
-     *
-     * @param array<int, ExtensionPackageFile> $files
-     */
-    private function assertInstalledFilesUnmodified(array $files): void
-    {
-        $modified = [];
-
-        foreach ($files as $file) {
-            $targetPath = base_path($file->path);
-            if (!is_file($targetPath)) {
-                $modified[] = $file->path;
-                continue;
-            }
-
-            if (hash_file('sha256', $targetPath) !== $file->installed_checksum) {
-                $modified[] = $file->path;
-            }
-        }
-
-        if ($modified === []) {
-            return;
-        }
-
-        $preview = implode(', ', array_slice($modified, 0, 5));
-        $suffix = count($modified) > 5 ? ', and more' : '';
-
-        throw new DisplayException(
-            sprintf('The extension cannot be updated because these files were modified after installation: %s%s.', $preview, $suffix)
-        );
-    }
-
-    /**
-     * Snapshot all currently installed files to a temporary directory.
-     *
-     * @param array<int, ExtensionPackageFile> $files
-     */
-    private function createRollbackSnapshot(array $files, string $rollbackRoot): void
-    {
-        foreach ($files as $file) {
-            $targetPath = base_path($file->path);
-            if (!is_file($targetPath)) {
-                continue;
-            }
-
-            $rollbackPath = $rollbackRoot . '/' . $file->path;
-            File::ensureDirectoryExists(dirname($rollbackPath));
-            File::copy($targetPath, $rollbackPath);
-        }
-    }
-
-    /**
-     * Restore all tracked files to the state captured in the rollback snapshot.
-     *
-     * @param array<int, ExtensionPackageFile> $files
-     */
-    private function restoreRollbackSnapshot(array $files, string $rollbackRoot): void
-    {
-        foreach ($files as $file) {
-            $rollbackPath = $rollbackRoot . '/' . $file->path;
-            $targetPath = base_path($file->path);
-
-            if (!is_file($rollbackPath)) {
-                continue;
-            }
-
-            $this->ownershipService->ensureWritablePath($targetPath, $file->path);
-            File::ensureDirectoryExists(dirname($targetPath));
-            File::copy($rollbackPath, $targetPath);
-        }
     }
 
     /**
@@ -591,167 +515,11 @@ class ExtensionPackageUpdateService
         }
     }
 
-    private function downloadArchive(string $location, string $destination): void
-    {
-        if (Str::startsWith($location, ['http://', 'https://'])) {
-            $response = Http::timeout(120)->withOptions(['sink' => $destination])->get($location);
-            if (!$response->successful()) {
-                throw new DisplayException(sprintf('Unable to download extension archive from "%s".', $location));
-            }
-
-            return;
-        }
-
-        $sourcePath = Str::startsWith($location, 'file://') ? rawurldecode(substr($location, 7)) : $location;
-        if (!is_file($sourcePath)) {
-            throw new DisplayException(sprintf('Extension archive "%s" was not found.', $sourcePath));
-        }
-
-        File::copy($sourcePath, $destination);
-    }
-
-    private function verifyChecksum(string $path, string $expectedChecksum, string $label): void
-    {
-        $actualChecksum = hash_file('sha256', $path);
-        if ($actualChecksum !== $expectedChecksum) {
-            throw new DisplayException(sprintf('The %s checksum did not match the manifest.', $label));
-        }
-    }
-
-    private function extractArchive(string $archivePath, string $extractPath): void
-    {
-        $zip = new ZipArchive();
-        if ($zip->open($archivePath) !== true) {
-            throw new DisplayException('The downloaded extension archive could not be opened.');
-        }
-
-        if (!$zip->extractTo($extractPath)) {
-            $zip->close();
-            throw new DisplayException('The downloaded extension archive could not be extracted.');
-        }
-
-        $zip->close();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function readPackageManifest(string $extractPath): array
-    {
-        $manifestPath = $extractPath . '/' . self::MANIFEST_FILENAME;
-        if (!is_file($manifestPath)) {
-            throw new DisplayException('The extension archive did not include an m12labs-extension.json manifest.');
-        }
-
-        $manifest = json_decode(File::get($manifestPath), true, 512, JSON_THROW_ON_ERROR);
-        if (!is_array($manifest)) {
-            throw new DisplayException('The extension package manifest is invalid.');
-        }
-
-        return $manifest;
-    }
-
-    /**
-     * @param array<string, mixed> $manifest
-     * @return array<string, mixed>
-     */
-    private function normalizeManifest(array $manifest, ?string $expectedExtensionId = null, ?string $expectedVersion = null): array
-    {
-        $extensionId = trim((string) Arr::get($manifest, 'extension.id', ''));
-        $version = trim((string) Arr::get($manifest, 'package.version', ''));
-
-        if ($extensionId === '' || $version === '') {
-            throw new DisplayException('The extension package manifest is missing required metadata.');
-        }
-
-        if ($expectedExtensionId !== null && $extensionId !== $expectedExtensionId) {
-            throw new DisplayException('The downloaded package does not match the requested extension id.');
-        }
-
-        if ($expectedVersion !== null && $version !== $expectedVersion) {
-            throw new DisplayException('The downloaded package version does not match the repository manifest.');
-        }
-
-        return $manifest;
-    }
-
-    /**
-     * @param array<int, string> $versions
-     */
-    private function assertCompatiblePanelVersions(array $versions): void
-    {
-        $versions = array_values(array_filter($versions, 'is_string'));
-        if ($versions === []) {
-            return;
-        }
-
-        $currentVersion = (string) config('app.version');
-        if (!in_array($currentVersion, $versions, true)) {
-            throw new DisplayException(sprintf(
-                'This extension package supports M12Labs panel versions %s. The current panel version is %s.',
-                implode(', ', $versions),
-                $currentVersion
-            ));
-        }
-    }
-
-    private function normalizeTargetPath(string $path, string $extensionId): string
-    {
-        $normalized = str_replace('\\', '/', trim($path));
-        $normalized = trim($normalized, '/');
-
-        if ($normalized === '' || Str::contains($normalized, ['../', '..\\']) || Str::startsWith($normalized, '/')) {
-            throw new DisplayException('The extension package includes an unsafe target path.');
-        }
-
-        $allowedPrefixes = [
-            sprintf('app/Extensions/Packages/%s/', $extensionId),
-            sprintf('resources/scripts/extensions/packages/%s/', $extensionId),
-        ];
-
-        foreach ($allowedPrefixes as $prefix) {
-            if (Str::startsWith($normalized, $prefix)) {
-                return $normalized;
-            }
-        }
-
-        throw new DisplayException(sprintf('The package target path "%s" is not allowed by M12Labs.', $normalized));
-    }
-
-    private function resolveLocalArchivePath(string $archivePath): string
-    {
-        $archivePath = trim($archivePath);
-        if ($archivePath === '') {
-            throw new DisplayException('Provide a path to a local .M12LabsExtension package file.');
-        }
-
-        if (Str::startsWith($archivePath, 'file://')) {
-            $archivePath = rawurldecode(substr($archivePath, 7));
-        }
-
-        $candidates = [$archivePath];
-        if (!Str::startsWith($archivePath, '/')) {
-            $candidates[] = base_path($archivePath);
-        }
-
-        foreach ($candidates as $candidate) {
-            $resolved = realpath($candidate);
-            if ($resolved && is_file($resolved)) {
-                return $resolved;
-            }
-        }
-
-        throw new DisplayException(sprintf('The extension package file "%s" was not found.', $archivePath));
-    }
-
     private function assertSupportedArchiveArtifact(string $archivePath): void
     {
-        $normalizedPath = Str::lower($archivePath);
-        if (Str::endsWith($normalizedPath, ['.m12labsextension', '.zip'])) {
-            return;
+        if (!Str::endsWith(Str::lower($archivePath), ['.m12labsextension', '.zip'])) {
+            throw new DisplayException('Manual updates expect a .M12LabsExtension package file. Legacy .zip artifacts are still supported for compatibility.');
         }
-
-        throw new DisplayException('Manual updates expect a .M12LabsExtension package file. Legacy .zip artifacts are still supported for compatibility.');
     }
 
     private function attemptRollbackRebuild(string $extensionId, string $reason): void

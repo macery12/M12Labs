@@ -4,12 +4,15 @@ namespace Everest\Services\Extensions;
 
 use Everest\Exceptions\DisplayException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use ZipArchive;
 
 class ExtensionPackageArtifactService
 {
-    private const MANIFEST_FILENAME = 'm12labs-extension.json';
+    public const MANIFEST_FILENAME = 'm12labs-extension.json';
+    public const PACKAGE_ARTIFACT_FILENAME = 'package.M12LabsExtension';
 
     /**
      * @return array<string, mixed>
@@ -155,6 +158,139 @@ class ExtensionPackageArtifactService
         }
 
         throw new DisplayException(sprintf('The extension package file "%s" was not found.', $archivePath));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Shared archive helpers — used by install and update services
+    // ---------------------------------------------------------------------------
+
+    public function downloadArchive(string $location, string $destination): void
+    {
+        if (Str::startsWith($location, ['http://', 'https://'])) {
+            $response = Http::timeout(120)->withOptions(['sink' => $destination])->get($location);
+            if (!$response->successful()) {
+                throw new DisplayException(sprintf('Unable to download extension archive from "%s".', $location));
+            }
+
+            return;
+        }
+
+        $sourcePath = Str::startsWith($location, 'file://') ? rawurldecode(substr($location, 7)) : $location;
+        if (!is_file($sourcePath)) {
+            throw new DisplayException(sprintf('Extension archive "%s" was not found.', $sourcePath));
+        }
+
+        File::copy($sourcePath, $destination);
+    }
+
+    public function verifyChecksum(string $path, string $expectedChecksum, string $label): void
+    {
+        if (hash_file('sha256', $path) !== $expectedChecksum) {
+            throw new DisplayException(sprintf('The %s checksum did not match the manifest.', $label));
+        }
+    }
+
+    public function extractArchive(string $archivePath, string $extractPath): void
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($archivePath) !== true) {
+            throw new DisplayException('The downloaded extension archive could not be opened.');
+        }
+
+        if (!$zip->extractTo($extractPath)) {
+            $zip->close();
+
+            throw new DisplayException('The downloaded extension archive could not be extracted.');
+        }
+
+        $zip->close();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function readPackageManifest(string $extractPath): array
+    {
+        $manifestPath = $extractPath . '/' . self::MANIFEST_FILENAME;
+        if (!is_file($manifestPath)) {
+            throw new DisplayException('The extension archive did not include an m12labs-extension.json manifest.');
+        }
+
+        $manifest = json_decode(File::get($manifestPath), true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($manifest)) {
+            throw new DisplayException('The extension package manifest is invalid.');
+        }
+
+        return $manifest;
+    }
+
+    /**
+     * Validate the manifest's extension id / version against expected values and return it unchanged.
+     *
+     * @param array<string, mixed> $manifest
+     * @return array<string, mixed>
+     */
+    public function normalizeManifest(array $manifest, ?string $expectedExtensionId = null, ?string $expectedVersion = null): array
+    {
+        $extensionId = trim((string) Arr::get($manifest, 'extension.id', ''));
+        $version = trim((string) Arr::get($manifest, 'package.version', ''));
+
+        if ($extensionId === '' || $version === '') {
+            throw new DisplayException('The extension package manifest is missing required metadata.');
+        }
+
+        if ($expectedExtensionId !== null && $extensionId !== $expectedExtensionId) {
+            throw new DisplayException('The downloaded package does not match the requested extension id.');
+        }
+
+        if ($expectedVersion !== null && $version !== $expectedVersion) {
+            throw new DisplayException('The downloaded package version does not match the repository manifest.');
+        }
+
+        return $manifest;
+    }
+
+    /**
+     * @param array<int, string> $versions
+     */
+    public function assertCompatiblePanelVersions(array $versions): void
+    {
+        $versions = array_values(array_filter($versions, 'is_string'));
+        if ($versions === []) {
+            return;
+        }
+
+        $currentVersion = (string) config('app.version');
+        if (!in_array($currentVersion, $versions, true)) {
+            throw new DisplayException(sprintf(
+                'This extension package supports M12Labs panel versions %s. The current panel version is %s.',
+                implode(', ', $versions),
+                $currentVersion
+            ));
+        }
+    }
+
+    public function normalizeTargetPath(string $path, string $extensionId): string
+    {
+        $normalized = str_replace('\\', '/', trim($path));
+        $normalized = trim($normalized, '/');
+
+        if ($normalized === '' || Str::contains($normalized, ['../', '..\\']) || Str::startsWith($normalized, '/')) {
+            throw new DisplayException('The extension package includes an unsafe target path.');
+        }
+
+        $allowedPrefixes = [
+            sprintf('app/Extensions/Packages/%s/', $extensionId),
+            sprintf('resources/scripts/extensions/packages/%s/', $extensionId),
+        ];
+
+        foreach ($allowedPrefixes as $prefix) {
+            if (Str::startsWith($normalized, $prefix)) {
+                return $normalized;
+            }
+        }
+
+        throw new DisplayException(sprintf('The package target path "%s" is not allowed by M12Labs.', $normalized));
     }
 
     private function isSupportedArchiveName(string $path): bool

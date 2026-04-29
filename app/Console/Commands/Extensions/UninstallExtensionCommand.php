@@ -2,12 +2,16 @@
 
 namespace Everest\Console\Commands\Extensions;
 
+use Everest\Console\Commands\Extensions\Concerns\HandlesExtensionPackages;
+use Everest\Console\Commands\Extensions\Concerns\InteractsWithExtensionRepositories;
 use Everest\Services\Extensions\ExtensionFilesystemOwnershipService;
 use Everest\Services\Extensions\ExtensionPackageUninstallService;
 use Illuminate\Console\Command;
 
 class UninstallExtensionCommand extends Command
 {
+    use HandlesExtensionPackages, InteractsWithExtensionRepositories;
+
     protected $signature = 'p:extensions:uninstall
                             {extensionId : Installed extension id to remove}
                             {--force : Skip the confirmation prompt}
@@ -37,25 +41,15 @@ class UninstallExtensionCommand extends Command
         } catch (\Throwable $exception) {
             $this->components->error($exception->getMessage());
 
-            if ((bool) $this->option('debug')) {
-                $this->line(sprintf('Debug: %s', $exception::class));
-                $previous = $exception->getPrevious();
-                while ($previous) {
-                    $this->line(sprintf('Caused by: %s - %s', $previous::class, $previous->getMessage()));
-                    $previous = $previous->getPrevious();
-                }
+            if ($this->isDebug()) {
+                $this->renderDebugException($exception);
             }
 
             return self::FAILURE;
         } finally {
             $ownershipReport = $this->ownershipService->repairStandardPaths($extensionId);
-            if ($ownershipReport !== [] && ((bool) $this->option('debug') || $this->ownershipService->isRunningAsRoot())) {
-                $this->components->info(sprintf(
-                    'Repaired ownership for extension paths using %s:%s (%s).',
-                    $ownershipReport['user'],
-                    $ownershipReport['group'],
-                    $ownershipReport['sourcePath']
-                ));
+            if ($ownershipReport !== [] && ($this->isDebug() || $this->ownershipService->isRunningAsRoot())) {
+                $this->renderOwnershipReport($ownershipReport);
             }
         }
 

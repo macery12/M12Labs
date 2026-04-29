@@ -16,9 +16,9 @@ class ExtensionPackageUninstallService
         private ExtensionPanelRebuildService $rebuildService,
         private ExtensionOperationLockService $operationLockService,
         private ExtensionFilesystemOwnershipService $ownershipService,
-        private ExtensionInstallProgressService $progressService
-    )
-    {
+        private ExtensionInstallProgressService $progressService,
+        private ExtensionPackageFileService $fileService
+    ) {
     }
 
     public function uninstall(string $extensionId): void
@@ -86,8 +86,8 @@ class ExtensionPackageUninstallService
         $this->ownershipService->repairStandardPaths($extensionId);
 
         $this->progressService->report('uninstall', $extensionId, 'validating');
-        $this->assertFilesAreUnmodified($files->all());
-        $this->createRollbackSnapshot($files->all(), $rollbackRoot);
+        $this->fileService->assertFilesUnmodified($files->all(), 'uninstalled');
+        $this->fileService->createRollbackSnapshot($files->all(), $rollbackRoot);
         $this->assertWritableUninstallTargets($files->all());
 
         try {
@@ -118,7 +118,7 @@ class ExtensionPackageUninstallService
                 'rollbackRoot' => $rollbackRoot,
             ];
         } catch (\Throwable $exception) {
-            $this->restoreRollbackSnapshot($files->all(), $rollbackRoot);
+            $this->fileService->restoreRollbackSnapshot($files->all(), $rollbackRoot);
             File::deleteDirectory($rollbackRoot);
             $this->ownershipService->repairStandardPaths($extensionId);
 
@@ -162,7 +162,7 @@ class ExtensionPackageUninstallService
      */
     public function rollbackUninstall(array $prepared): void
     {
-        $this->restoreRollbackSnapshot($prepared['files']->all(), $prepared['rollbackRoot']);
+        $this->fileService->restoreRollbackSnapshot($prepared['files']->all(), $prepared['rollbackRoot']);
         $this->ownershipService->repairStandardPaths($prepared['extensionId']);
     }
 
@@ -175,75 +175,6 @@ class ExtensionPackageUninstallService
     {
         if (!empty($prepared['rollbackRoot'])) {
             File::deleteDirectory($prepared['rollbackRoot']);
-        }
-    }
-
-    /**
-     * @param array<int, ExtensionPackageFile> $files
-     */
-    private function assertFilesAreUnmodified(array $files): void
-    {
-        $modified = [];
-
-        foreach ($files as $file) {
-            $targetPath = base_path($file->path);
-            if (!is_file($targetPath)) {
-                $modified[] = $file->path;
-
-                continue;
-            }
-
-            $currentChecksum = hash_file('sha256', $targetPath);
-            if ($currentChecksum !== $file->installed_checksum) {
-                $modified[] = $file->path;
-            }
-        }
-
-        if ($modified === []) {
-            return;
-        }
-
-        $preview = implode(', ', array_slice($modified, 0, 5));
-        $suffix = count($modified) > 5 ? ', and more' : '';
-
-        throw new DisplayException(
-            sprintf('The extension cannot be uninstalled because these files were modified after installation: %s%s.', $preview, $suffix)
-        );
-    }
-
-    /**
-     * @param array<int, ExtensionPackageFile> $files
-     */
-    private function createRollbackSnapshot(array $files, string $rollbackRoot): void
-    {
-        foreach ($files as $file) {
-            $targetPath = base_path($file->path);
-            if (!is_file($targetPath)) {
-                continue;
-            }
-
-            $rollbackPath = $rollbackRoot . '/' . $file->path;
-            File::ensureDirectoryExists(dirname($rollbackPath));
-            File::copy($targetPath, $rollbackPath);
-        }
-    }
-
-    /**
-     * @param array<int, ExtensionPackageFile> $files
-     */
-    private function restoreRollbackSnapshot(array $files, string $rollbackRoot): void
-    {
-        foreach ($files as $file) {
-            $rollbackPath = $rollbackRoot . '/' . $file->path;
-            $targetPath = base_path($file->path);
-
-            if (!is_file($rollbackPath)) {
-                continue;
-            }
-
-            $this->ownershipService->ensureWritablePath($targetPath, $file->path);
-            File::ensureDirectoryExists(dirname($targetPath));
-            File::copy($rollbackPath, $targetPath);
         }
     }
 
