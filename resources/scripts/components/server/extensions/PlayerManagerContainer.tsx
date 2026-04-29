@@ -28,8 +28,6 @@ import {
     faListCheck,
     faBan,
     faSync,
-    faUserPlus,
-    faUserMinus,
     faCrown,
     faCommentDots,
     faSkull,
@@ -85,7 +83,7 @@ const PlayerActionsModal = ({
     canManage,
 }: PlayerActionsModalProps) => {
     const [loading, setLoading] = useState(false);
-    const [activeAction, setActiveAction] = useState<string | null>(null);
+    const [, setActiveAction] = useState<string | null>(null);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 

@@ -266,7 +266,7 @@ const FloatingWindowFrame = ({
         event.currentTarget.releasePointerCapture(event.pointerId);
     };
 
-    const { secondary, headers, background } = useStoreState(state => state.theme.data!.colors);
+    const { headers, background } = useStoreState(state => state.theme.data!.colors);
 
     return (
         <div
@@ -404,7 +404,6 @@ const FloatingWindowToolbar = ({
 
 export default ({ windows, currentServerId, onClose, onFocus, onMove, onResize, serverRoutes }: Props) => {
     const orderedWindows = useMemo(() => [...windows].sort((a, b) => a.zIndex - b.zIndex), [windows]);
-    const { secondary, headers, background } = useStoreState(state => state.theme.data!.colors);
 
     if (!orderedWindows.length) {
         return null;

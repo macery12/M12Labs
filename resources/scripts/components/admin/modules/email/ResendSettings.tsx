@@ -53,7 +53,7 @@ export default () => {
     const resolveEmailResponseStatus = (response: EmailResponse): EmailStatus =>
         response.status || (response.success ? 'sent' : 'failed');
 
-    const getFlashType = (status: EmailStatus): 'success' | 'warning' | 'danger' => {
+    const getFlashType = (status: EmailStatus): 'success' | 'warning' | 'error' => {
         const tone = getEmailStatusPresentation(status).tone;
 
         if (tone === 'success') {
@@ -64,7 +64,7 @@ export default () => {
             return 'warning';
         }
 
-        return 'danger';
+        return 'error';
     };
 
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -300,7 +300,7 @@ export default () => {
         if (!settings) return;
         setSaving(true);
         clearFlashes('email:settings');
-        setStatus('processing');
+        setStatus('loading');
 
         const payload: EmailSettingsUpdate = {
             enabled,
@@ -396,7 +396,7 @@ export default () => {
         setEnabled(newEnabled);
         setSavingEnabled(true);
         clearFlashes('email:settings');
-        setStatus('processing');
+        setStatus('loading');
 
         updateSettings({ enabled: newEnabled })
             .then(updated => {
@@ -423,7 +423,7 @@ export default () => {
 
         clearFlashes('email:settings:resend');
         setClearingApiKey(true);
-        setStatus('processing');
+        setStatus('loading');
 
         updateSettings({ api_key: '', clear_api_key: true })
             .then(updated => {
@@ -449,7 +449,7 @@ export default () => {
 
         clearFlashes('email:settings:smtp');
         setClearingSmtpPassword(true);
-        setStatus('processing');
+        setStatus('loading');
 
         updateSettings({ smtp_password: '', clear_smtp_password: true })
             .then(updated => {
@@ -475,7 +475,7 @@ export default () => {
 
         clearFlashes('email:settings:smtp');
         setResettingSmtp(true);
-        setStatus('processing');
+        setStatus('loading');
 
         const payload: EmailSettingsUpdate = {
             smtp_host: '',
@@ -563,7 +563,7 @@ export default () => {
         if (!testRecipient) {
             addFlash({
                 key: 'email:settings:test',
-                type: 'danger',
+                type: 'error',
                 message: 'Enter a recipient email first.',
             });
             return;

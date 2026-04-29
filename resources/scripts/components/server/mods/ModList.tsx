@@ -129,14 +129,6 @@ export default ({ mods, loading, contentType = 'mods', pagination, onModClick, o
                                 ? `${(mod.downloadCount / 1000).toFixed(0)}K`
                                 : mod.downloadCount.toString();
 
-                        const lastUpdated = latestFile?.fileDate
-                            ? new Date(latestFile.fileDate).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                              })
-                            : 'Unknown';
-
                         return (
                             <ModCard key={mod.id} onClick={() => onModClick(mod)} $backgroundColor={background}>
                                 <ModHeader>

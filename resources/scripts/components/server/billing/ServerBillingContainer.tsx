@@ -68,7 +68,6 @@ export default () => {
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
-    const currentUserId = useStoreState(s => s.user.data!.id);
     const serverId = ServerContext.useStoreState(s => s.server.data!.internalId);
     const serverUuid = ServerContext.useStoreState(s => s.server.data!.uuid);
     const billingProductId = ServerContext.useStoreState(s => s.server.data!.billingProductId);
@@ -80,7 +79,6 @@ export default () => {
     // Get configurable renewal settings
     // Use the actual billing days from the server if available, otherwise fall back to default renewalDays
     const actualBillingDays = billingDays || settings.renewal?.days || 30;
-    const freeRenewalDays = settings.renewal?.free_renewal_days || 30;
     const freeGraceDays = settings.renewal?.free_suspension_days || 7;
     const suspensionThreshold = settings.renewal?.suspension_threshold || 7;
     const settingsPath = `/server/${serverUuid}/settings`;

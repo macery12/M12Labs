@@ -30,8 +30,6 @@ const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
 const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
-const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
-const ModpacksContainer = lazy(() => import('@server/modpacks/ModpacksContainer'));
 const ExtensionsRouter = lazy(() => import('@server/extensions/ExtensionsRouter'));
 const CustomDomainsContainer = lazy(() => import('@server/domains/CustomDomainsContainer'));
 

@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
-import { createMolliePayment, updateMolliePayment } from '@/api/routes/account/billing/orders/mollie';
+import { createMolliePayment } from '@/api/routes/account/billing/orders/mollie';
 
 export default ({
     id,

@@ -44,7 +44,7 @@ export default () => {
     const handleTestWebhook = () => {
         if (!settings.url) {
             addFlash({
-                type: 'danger',
+                type: 'error',
                 key: 'admin:webhooks',
                 message: 'Please configure a webhook URL before testing.',
             });

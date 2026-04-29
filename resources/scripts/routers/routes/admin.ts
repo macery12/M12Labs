@@ -12,7 +12,6 @@ const ActivityContainer = lazy(() => import('@/components/admin/general/Activity
 const ApplicationApiRouter = lazy(() => import('@/components/admin/general/api/ApplicationApiRouter'));
 const ApiDocsContainer = lazy(() => import('@/components/admin/developers/ApiDocsContainer'));
 
-const AuthContainer = lazy(() => import('@/components/admin/modules/auth/AuthContainer'));
 const AuthRouter = lazy(() => import('@/components/admin/modules/auth/AuthRouter'));
 const BillingRouter = lazy(() => import('@/components/admin/modules/billing/BillingRouter'));
 const CustomDomainsRouter = lazy(() => import('@/components/admin/modules/customDomains/CustomDomainsRouter'));

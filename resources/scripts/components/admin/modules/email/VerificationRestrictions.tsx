@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getVerificationRules, updateVerificationRules } from '@/api/routes/admin/email';
 import {
     DEFAULT_EMAIL_VERIFICATION_RULES,

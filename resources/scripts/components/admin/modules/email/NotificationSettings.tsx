@@ -3,7 +3,6 @@ import {
     getNotificationSettings,
     updateNotificationSetting,
     type EmailNotificationSetting,
-    type NotificationSettingsResponse,
 } from '@/api/routes/admin/email';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';

@@ -1,10 +1,8 @@
-import { useStoreState } from '@/state/hooks';
 import FeatureContainer from '@/elements/FeatureContainer';
 import { faCube } from '@fortawesome/free-solid-svg-icons';
 import ToggleFeatureButton from '@admin/modules/mods/ToggleFeatureButton';
 
 export default () => {
-    const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     return (
         <FeatureContainer icon={faCube} title={'Marketplace Module'}>

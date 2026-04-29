@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import { ServerContext } from '@/state/server';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExchangeAlt, faInfoCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';

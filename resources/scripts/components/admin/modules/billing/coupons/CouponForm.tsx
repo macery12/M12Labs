@@ -9,7 +9,6 @@ import AdminBox from '@/elements/AdminBox';
 import { createCoupon, getCoupon, updateCoupon } from '@/api/routes/admin/billing/coupons';
 import { object, string, boolean, number } from 'yup';
 import { faTicketAlt } from '@fortawesome/free-solid-svg-icons';
-import { useStoreState } from '@/state/hooks';
 import Label from '@/elements/Label';
 import { useEffect, useState } from 'react';
 import { CouponValues } from '@/api/routes/admin/billing/types';

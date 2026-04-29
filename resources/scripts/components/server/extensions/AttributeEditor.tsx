@@ -72,7 +72,6 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess, disabled }
     const [value, setValue] = useState(attribute.default);
     const [loading, setLoading] = useState(false);
     const { addFlash, clearAndAddHttpError } = useFlash();
-    const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     const handleSetValue = async (newValue: number) => {
         if (disabled) return;

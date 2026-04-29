@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { AdminDonation, getAllDonations, PaginatedDonations } from '@/api/routes/admin/billing/donations';
+import { getAllDonations, PaginatedDonations } from '@/api/routes/admin/billing/donations';
 import Pagination from '@/elements/Pagination';
 import AdminTable from '@/elements/AdminTable';
 import Spinner from '@/elements/Spinner';

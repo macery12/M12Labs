@@ -18,7 +18,6 @@ import {
     faEnvelopeOpenText,
     faRedo,
     faSave,
-    faTimes,
     faChevronDown,
     faChevronUp,
     faCheck,
@@ -234,7 +233,7 @@ export default () => {
     // Editor source state — loaded automatically when a template is selected
     const [sourceContent, setSourceContent] = useState<string | null>(null);
     const [sourceLoading, setSourceLoading] = useState(false);
-    const [savedContent, setSavedContent] = useState<string | null>(null);
+    const [, setSavedContent] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<{ ok: boolean; msg: string } | null>(null);
     const [isCustomized, setIsCustomized] = useState(false);
@@ -313,11 +312,6 @@ export default () => {
             .then(rendered => setPreviewHtml(rendered))
             .catch(() => addFlash({ key: 'email:templates', type: 'error', message: 'Failed to refresh preview.' }))
             .finally(() => setPreviewLoading(false));
-    };
-
-    const discardChanges = () => {
-        setSourceContent(savedContent);
-        setSaveStatus(null);
     };
 
     const handleSave = useCallback(async () => {
@@ -471,7 +465,7 @@ export default () => {
                             disabled={reverting}
                             title="Revert to default template"
                         >
-                            {reverting ? <Spinner size="tiny" /> : <FontAwesomeIcon icon={faRotateLeft} />}
+                            {reverting ? <Spinner size="small" /> : <FontAwesomeIcon icon={faRotateLeft} />}
                             Revert to Default
                         </ActionButton>
                     )}
@@ -492,7 +486,7 @@ export default () => {
                             disabled={saving}
                             title="Save template (Ctrl+S)"
                         >
-                            {saving ? <Spinner size="tiny" /> : <FontAwesomeIcon icon={faSave} />}
+                            {saving ? <Spinner size="small" /> : <FontAwesomeIcon icon={faSave} />}
                             Save
                         </ActionButton>
                     )}

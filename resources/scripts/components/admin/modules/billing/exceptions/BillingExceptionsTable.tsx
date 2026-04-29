@@ -29,13 +29,13 @@ function getColor(type: BillingExceptionType): PillStatus {
         case 'deployment':
             return 'warn';
         case 'payment':
-            return 'error';
+            return 'danger';
         case 'storefront':
             return 'info';
         case 'webhook':
             return 'warn';
         case 'refund':
-            return 'error';
+            return 'danger';
         case 'validation':
             return 'warn';
         default:
