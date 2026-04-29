@@ -163,6 +163,8 @@ class ExtensionsController extends ApplicationApiController
      */
     public function install(InstallExtensionRequest $request, string $extensionId): JsonResponse
     {
+        $this->abortIfOperationRunning();
+
         $package = $this->installService->install(
             $extensionId,
             (int) $request->input('repository_id'),
@@ -186,6 +188,8 @@ class ExtensionsController extends ApplicationApiController
      */
     public function uninstall(UninstallExtensionRequest $request, string $extensionId): JsonResponse
     {
+        $this->abortIfOperationRunning();
+
         $this->uninstallService->uninstall($extensionId);
 
         Activity::event('admin:extensions:uninstall')
@@ -206,6 +210,8 @@ class ExtensionsController extends ApplicationApiController
      */
     public function updatePackage(InstallExtensionRequest $request, string $extensionId): JsonResponse
     {
+        $this->abortIfOperationRunning();
+
         $package = $this->updateService->update(
             $extensionId,
             (int) $request->input('repository_id'),
@@ -399,6 +405,7 @@ class ExtensionsController extends ApplicationApiController
      */
     public function batchInstall(BatchInstallExtensionRequest $request): JsonResponse
     {
+        $this->abortIfOperationRunning();
         $items = array_map(fn (array $item) => [
             'extensionId'  => $item['extension_id'],
             'repositoryId' => (int) $item['repository_id'],
@@ -426,6 +433,7 @@ class ExtensionsController extends ApplicationApiController
      */
     public function batchUninstall(BatchUninstallExtensionRequest $request): JsonResponse
     {
+        $this->abortIfOperationRunning();
         $extensionIds = $request->input('extension_ids', []);
 
         $this->batchService->batchUninstall($extensionIds);
@@ -449,6 +457,7 @@ class ExtensionsController extends ApplicationApiController
      */
     public function batchUpdate(BatchUpdateExtensionRequest $request): JsonResponse
     {
+        $this->abortIfOperationRunning();
         $items = array_map(fn (array $item) => [
             'extensionId'  => $item['extension_id'],
             'repositoryId' => (int) $item['repository_id'],
@@ -509,5 +518,25 @@ class ExtensionsController extends ApplicationApiController
         }
 
         return $slug;
+    }
+
+    /**
+     * Abort with 409 Conflict if a progress file indicates an operation is already in progress.
+     * This is a fast, file-based guard that runs before the cache lock is acquired.
+     */
+    private function abortIfOperationRunning(): void
+    {
+        $current = $this->progressService->current();
+
+        if ($current !== null && ($current['stage'] ?? '') !== 'completed') {
+            $action  = $current['action'] ?? 'unknown';
+            $subject = $current['extension_id'] ?? '';
+
+            abort(Response::HTTP_CONFLICT, sprintf(
+                'Another extension operation (%s%s) is already running. Wait for it to finish before starting a new install, update, or uninstall.',
+                $action,
+                $subject !== '' ? ": {$subject}" : ''
+            ));
+        }
     }
 }

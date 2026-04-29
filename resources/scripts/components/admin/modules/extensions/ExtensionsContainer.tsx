@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useStoreState } from '@/state/hooks';
 import {
     BatchInstallItem,
@@ -7,6 +7,7 @@ import {
     batchUninstallExtensions,
     batchUpdateExtensions,
     getExtensions,
+    getInstallProgress,
     refreshExtensions,
     toggleExtension,
 } from '@/api/routes/admin/extensions';
@@ -36,6 +37,8 @@ export default () => {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [batchLoading, setBatchLoading] = useState(false);
+    const [isOperationRunning, setIsOperationRunning] = useState(false);
+    const operationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
 
     const withAlpha = (color: string, alpha: string) => `${color}${alpha}`;
@@ -90,6 +93,23 @@ export default () => {
         getVersion()
             .then(data => setCurrentPanelVersion(data.panel.current))
             .catch(() => setCurrentPanelVersion(undefined));
+    }, []);
+
+    // Poll the progress endpoint so that buttons stay disabled when an operation
+    // is running — even after a page refresh that resets local in-flight state.
+    useEffect(() => {
+        const checkProgress = () => {
+            getInstallProgress()
+                .then(p => setIsOperationRunning(p !== null && p.stage !== 'completed'))
+                .catch(() => {});
+        };
+
+        checkProgress();
+        operationPollRef.current = setInterval(checkProgress, 2000);
+
+        return () => {
+            if (operationPollRef.current !== null) clearInterval(operationPollRef.current);
+        };
     }, []);
 
     const catalogOptions = useMemo(() => {
@@ -437,7 +457,7 @@ export default () => {
                             <Button
                                 onClick={handleBatchInstall}
                                 loading={batchLoading}
-                                disabled={batchLoading || !!activePackageAction}
+                                disabled={batchLoading || !!activePackageAction || isOperationRunning}
                                 icon={() => <FontAwesomeIcon icon={faDownload} />}
                             >
                                 Install {selectableForInstall.length}
@@ -448,7 +468,7 @@ export default () => {
                             <Button
                                 onClick={handleBatchUpdate}
                                 loading={batchLoading}
-                                disabled={batchLoading || !!activePackageAction}
+                                disabled={batchLoading || !!activePackageAction || isOperationRunning}
                                 icon={() => <FontAwesomeIcon icon={faArrowsRotate} />}
                             >
                                 Update {selectableForUpdate.length}
@@ -459,7 +479,7 @@ export default () => {
                             <Button
                                 onClick={handleBatchEnable}
                                 loading={batchLoading}
-                                disabled={batchLoading || !!activePackageAction}
+                                disabled={batchLoading || !!activePackageAction || isOperationRunning}
                                 icon={() => <FontAwesomeIcon icon={faToggleOn} />}
                             >
                                 Enable {selectableForEnable.length}
@@ -470,7 +490,7 @@ export default () => {
                             <Button.Dark
                                 onClick={handleBatchDisable}
                                 loading={batchLoading}
-                                disabled={batchLoading || !!activePackageAction}
+                                disabled={batchLoading || !!activePackageAction || isOperationRunning}
                                 icon={() => <FontAwesomeIcon icon={faToggleOff} />}
                             >
                                 Disable {selectableForDisable.length}
@@ -481,7 +501,7 @@ export default () => {
                             <Button.Danger
                                 onClick={handleBatchUninstall}
                                 loading={batchLoading}
-                                disabled={batchLoading || !!activePackageAction}
+                                disabled={batchLoading || !!activePackageAction || isOperationRunning}
                                 icon={() => <FontAwesomeIcon icon={faTrash} />}
                             >
                                 Uninstall {selectableForUninstall.length}
@@ -517,7 +537,7 @@ export default () => {
                         <Button.Text
                             onClick={handleCheckForUpdates}
                             loading={refreshing}
-                            disabled={refreshing || !!activePackageAction}
+                            disabled={refreshing || !!activePackageAction || isOperationRunning}
                             variant={Button.Variants.Secondary}
                         >
                             <FontAwesomeIcon icon={faArrowsRotate} className={'mr-2'} />
@@ -531,7 +551,7 @@ export default () => {
                                 const ids = new Set(installable.map(ext => ext.id));
                                 setSelectedIds(ids);
                             }}
-                            disabled={!!activePackageAction || batchLoading}
+                            disabled={!!activePackageAction || batchLoading || isOperationRunning}
                             variant={Button.Variants.Secondary}
                         >
                             <FontAwesomeIcon icon={faCheck} className={'mr-2'} />
@@ -545,7 +565,7 @@ export default () => {
                                 const ids = new Set(updatable.map(ext => ext.id));
                                 setSelectedIds(ids);
                             }}
-                            disabled={!!activePackageAction || batchLoading}
+                            disabled={!!activePackageAction || batchLoading || isOperationRunning}
                             variant={Button.Variants.Secondary}
                         >
                             <FontAwesomeIcon icon={faArrowsRotate} className={'mr-2'} />
@@ -620,6 +640,7 @@ export default () => {
                             extension={extension}
                             currentPanelVersion={currentPanelVersion}
                             activePackageAction={activePackageAction}
+                            isOperationRunning={isOperationRunning}
                             isSelected={selectedIds.has(extension.id)}
                             onToggleSelect={() => toggleSelection(extension.id)}
                             onRefresh={silentRefresh}

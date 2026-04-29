@@ -283,7 +283,7 @@ export default () => {
                                 <span
                                     className={classNames('text-xs font-mono transition-colors duration-300', {
                                         'text-neutral-100': isActive,
-                                        'text-neutral-500 line-through': isDone,
+                                        'text-neutral-500': isDone,
                                         'text-neutral-600': isPending,
                                     })}
                                 >

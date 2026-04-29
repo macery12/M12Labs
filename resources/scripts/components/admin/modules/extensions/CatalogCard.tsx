@@ -64,6 +64,7 @@ interface Props {
     extension: ExtensionData;
     currentPanelVersion?: string;
     activePackageAction: PackageActionState | null;
+    isOperationRunning?: boolean;
     isSelected?: boolean;
     onToggleSelect?: () => void;
     onRefresh: () => void;
@@ -101,6 +102,7 @@ export default ({
     extension,
     currentPanelVersion,
     activePackageAction,
+    isOperationRunning = false,
     isSelected = false,
     onToggleSelect,
     onRefresh,
@@ -166,9 +168,11 @@ export default ({
         ? { ...accentSurfaceStyle, borderStyle: 'dashed' }
         : surfaceStyle;
     const anotherPackageActionInProgress =
-        activePackageAction !== null && activePackageAction.extensionId !== extension.id;
+        isOperationRunning || (activePackageAction !== null && activePackageAction.extensionId !== extension.id);
     const packageActionNotice = anotherPackageActionInProgress
-        ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
+        ? activePackageAction !== null
+            ? `Wait for ${activePackageAction.extensionName} to finish ${activePackageAction.type === 'install' ? 'installing' : 'uninstalling'} before starting another extension install or uninstall.`
+            : 'An extension operation is already running. Wait for it to finish before starting another install, update, or uninstall.'
         : null;
 
     useEffect(() => {
