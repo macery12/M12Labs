@@ -33,7 +33,7 @@ const normalizeTranslations = (value: unknown): unknown => {
 i18next.use(initReactI18next).init({
     resources: {
         [locale]: {
-            activity: normalizeTranslations(activityTranslations),
+            activity: normalizeTranslations(activityTranslations) as Record<string, string>,
         },
     },
     lng: locale,

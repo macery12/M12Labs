@@ -10,6 +10,9 @@
             "@/*": [
                 "./resources/scripts/*"
             ],
+            "@definitions": [
+                "./resources/scripts/api/definitions/index.d.ts"
+            ],
             "@definitions/*": [
                 "./resources/scripts/api/definitions/*"
             ],

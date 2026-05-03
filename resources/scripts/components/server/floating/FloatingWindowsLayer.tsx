@@ -31,6 +31,7 @@ interface Props {
     onFocus: (id: string) => void;
     onMove: (id: string, x: number, y: number) => void;
     onResize: (id: string, width: number, height: number) => void;
+    onNavigate: (id: string, routePath: string) => void;
     serverRoutes: ServerRouteDefinition[];
 }
 

@@ -1,7 +1,7 @@
 import Checkbox from '@/elements/inputs/Checkbox';
 import InputField from '@/elements/inputs/InputField';
 
-const Input = Object.assign(
+const Input: { Text: typeof InputField; Checkbox: typeof Checkbox } = Object.assign(
     {},
     {
         Text: InputField,

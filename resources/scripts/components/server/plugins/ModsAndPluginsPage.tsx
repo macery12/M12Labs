@@ -130,7 +130,7 @@ const ModsAndPluginsPage = () => {
         () => resolveActive(initialType, availableContentTypes) ?? defaultType,
     );
     const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(() =>
-        resolveActive(initialProvider, initialProviderPool),
+        resolveActive(initialProvider, initialProviderPool) ?? null,
     );
 
     useEffect(() => {
@@ -207,7 +207,7 @@ const ModsAndPluginsPage = () => {
         }
 
         if (activeType === 'modpacks') {
-            const modpackProvider = activeProvider ?? providersByType.modpacks[0];
+            const modpackProvider = activeProvider ?? providersByType.modpacks[0] ?? null;
             return (
                 <>
                     {renderProviderTabs(providersByType.modpacks, modpackProvider)}
@@ -217,7 +217,7 @@ const ModsAndPluginsPage = () => {
         }
 
         if (activeType === 'plugins') {
-            const pluginProvider = activeProvider ?? providersByType.plugins[0];
+            const pluginProvider = activeProvider ?? providersByType.plugins[0] ?? null;
             return (
                 <>
                     {renderProviderTabs(providersByType.plugins, pluginProvider)}

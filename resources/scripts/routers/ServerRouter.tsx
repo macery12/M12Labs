@@ -109,7 +109,7 @@ function ServerRouter() {
                 ...prev,
                 {
                     id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
-                    serverId: params.id,
+                    serverId: params.id ?? '',
                     serverUuid: server?.uuid ?? '',
                     serverName: server?.name ?? `Server ${params.id}`,
                     routePath: path,
@@ -185,7 +185,7 @@ function ServerRouter() {
                 <Suspended
                     id={server.billingProductId}
                     date={server.renewalDate}
-                    serverId={server.internalId}
+                    serverId={Number(server.internalId)}
                     serverUuid={server.uuid}
                     serverStatus={server.status}
                 />

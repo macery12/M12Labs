@@ -127,6 +127,7 @@ export default class Transformers {
         description: attributes.description,
         permissions: attributes.permissions,
         color: attributes.color,
+        relationships: {},
     });
 
     static toAdminRolePermission = ({ attributes }: FractalResponseData): Models.AdminRolePermission => ({
