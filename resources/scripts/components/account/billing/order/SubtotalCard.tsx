@@ -51,7 +51,7 @@ export default ({
     const selectedEgg = availableEggs.find(e => e.id === selectedEggId);
 
     // Calculate pricing
-    const afterBillingCycle = basePrice * (selectedCycle?.multiplier || 1.0);
+    const afterBillingCycle = selectedCycle?.price ?? basePrice;
     const afterNodeMultiplier = afterBillingCycle * (selectedNodeData?.priceMultiplier || 1.0);
     const subtotal = afterNodeMultiplier;
     const total = Math.max(0, subtotal - couponDiscount);
@@ -61,7 +61,6 @@ export default ({
     const hasNodePremium = (selectedNodeData?.priceMultiplier || 1.0) > 1.0;
     const hasNodeDiscount = (selectedNodeData?.priceMultiplier || 1.0) < 1.0;
 
-    const billingMultiplier = selectedCycle?.multiplier || 1.0;
     const nodeMultiplier = selectedNodeData?.priceMultiplier || 1.0;
 
     // Calculate actual dollar difference for node location pricing
@@ -157,12 +156,23 @@ export default ({
                         <span className={'text-gray-300'}>{formatPrice(basePrice)}</span>
                     </div>
 
-                    {/* Billing Cycle Adjustment */}
-                    {billingMultiplier !== 1.0 && (
+                    {/* Billing Cycle Price */}
+                    {selectedCycle && (
                         <div className={'flex items-center justify-between text-sm'}>
                             <div className={'flex flex-col'}>
-                                <span className={'text-gray-400'}>Billing Adjustment</span>
-                                <span className={'text-xs text-gray-500'}>×{billingMultiplier.toFixed(2)}</span>
+                                <span className={'text-gray-400'}>
+                                    {selectedBillingDays}-day cycle
+                                </span>
+                                {hasDiscount && (
+                                    <span className={'text-xs text-green-400'}>
+                                        {selectedCycle.discountPercent.toFixed(0)}% off
+                                    </span>
+                                )}
+                                {hasPremium && (
+                                    <span className={'text-xs text-red-400'}>
+                                        +{Math.abs(selectedCycle.discountPercent).toFixed(0)}% premium
+                                    </span>
+                                )}
                             </div>
                             <span
                                 className={
@@ -199,7 +209,7 @@ export default ({
                     )}
 
                     {/* Subtotal */}
-                    {(billingMultiplier !== 1.0 || nodeMultiplier !== 1.0) && (
+                    {(selectedCycle || nodeMultiplier !== 1.0) && (
                         <div className={'flex items-center justify-between text-sm pt-2 border-t border-gray-700'}>
                             <span className={'text-gray-300 font-medium'}>Subtotal</span>
                             <span className={'text-gray-200 font-medium'}>{formatPrice(subtotal)}</span>
