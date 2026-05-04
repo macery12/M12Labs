@@ -5,7 +5,13 @@ import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faAngleLeft, faAngleRight, faDownload } from '@fortawesome/free-solid-svg-icons';
+import {
+    faAngleDoubleLeft,
+    faAngleDoubleRight,
+    faAngleLeft,
+    faAngleRight,
+    faDownload,
+} from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 
 const PLACEHOLDER_IMAGE = '/assets/images/placeholder-mod.png';

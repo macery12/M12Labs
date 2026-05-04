@@ -96,7 +96,7 @@ export default () => {
             </div>
             <FlashMessageRender byKey={'tickets:view'} className={'mb-4'} />
             <Formik
-                onSubmit={submit}
+                onSubmit={submit as any}
                 initialValues={{
                     title: ticket.title,
                     status: ticket.status,

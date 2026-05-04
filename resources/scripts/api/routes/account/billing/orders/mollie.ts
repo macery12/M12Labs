@@ -10,6 +10,7 @@ export interface MolliePaymentStatus {
     processed: boolean;
     failed: boolean;
     pending: boolean;
+    payment_status?: string;
 }
 
 export interface MolliePaymentFromToken {

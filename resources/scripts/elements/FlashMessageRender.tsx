@@ -38,7 +38,6 @@ function FlashMessageRender({ byKey, className }: Props) {
                 timers.delete(id);
             }
         });
-
     }, [flashes, removeFlash]);
 
     useEffect(() => {

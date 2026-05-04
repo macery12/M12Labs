@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { nanoid } from 'nanoid';
 
 export type AlertType = 'success' | 'error' | 'info' | 'warning';
@@ -12,7 +12,7 @@ export interface AlertAction {
 export interface Alert {
     id: string;
     type: AlertType;
-    message: string;
+    message: string | ReactNode;
     title?: string;
     actions?: AlertAction[];
     dismissible?: boolean;

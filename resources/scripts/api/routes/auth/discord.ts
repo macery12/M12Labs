@@ -33,7 +33,9 @@ export const checkUsernameAvailability = (username: string): Promise<UsernameChe
     });
 };
 
-export const completeDiscordRegistration = (data: CompleteDiscordRegistrationData): Promise<{ userState: string | null }> => {
+export const completeDiscordRegistration = (
+    data: CompleteDiscordRegistrationData,
+): Promise<{ userState: string | null }> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>

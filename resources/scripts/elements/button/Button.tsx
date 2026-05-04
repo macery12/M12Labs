@@ -16,10 +16,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 className={classNames(
                     styles.button,
                     {
-                        [styles.secondary]: variant === Options.Variant.Secondary,
+                        [styles.secondary]: variant === Options.Variant.Secondary || variant === 'secondary',
                         [styles.square]: shape === Options.Shape.IconSquare,
-                        [styles.small]: size === Options.Size.Small,
-                        [styles.large]: size === Options.Size.Large,
+                        [styles.small]: size === Options.Size.Small || size === 'small' || size === 'sm',
+                        [styles.large]: size === Options.Size.Large || size === 'large' || size === 'lg',
                     },
                     className,
                     loading && 'text-gray-300',

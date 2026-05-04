@@ -5,7 +5,6 @@ import { Form, Formik, useFormikContext } from 'formik';
 import { useNavigate, useParams } from 'react-router-dom';
 import Field, { FieldRow } from '@/elements/Field';
 import tw from 'twin.macro';
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import { Button } from '@/elements/button';
 import type { ApplicationStore } from '@/state';
 import AdminBox from '@/elements/AdminBox';
@@ -224,7 +223,7 @@ export default ({ category }: { category?: Category }) => {
 
     const formContent = (
         <Formik
-            onSubmit={category ? update : submit}
+            onSubmit={category ? update : submit as any}
             enableReinitialize={true}
             initialValues={{
                 name: category?.name ?? '',

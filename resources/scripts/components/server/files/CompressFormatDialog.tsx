@@ -55,7 +55,12 @@ export default ({ open, onClose, files, directory }: Props) => {
     };
 
     return (
-        <Dialog open={open} onClose={onClose} title={'Advanced Compression'} description={'Choose archive format and options for Wings-RS enhanced compression.'}>
+        <Dialog
+            open={open}
+            onClose={onClose}
+            title={'Advanced Compression'}
+            description={'Choose archive format and options for Wings-RS enhanced compression.'}
+        >
             <div className={'mt-4 space-y-4'}>
                 <div>
                     <Label>Archive Format</Label>

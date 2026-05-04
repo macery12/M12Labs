@@ -53,7 +53,7 @@ export default () => {
     const resolveEmailResponseStatus = (response: EmailResponse): EmailStatus =>
         response.status || (response.success ? 'sent' : 'failed');
 
-    const getFlashType = (status: EmailStatus): 'success' | 'warning' | 'danger' => {
+    const getFlashType = (status: EmailStatus): 'success' | 'warning' | 'error' => {
         const tone = getEmailStatusPresentation(status).tone;
 
         if (tone === 'success') {
@@ -64,7 +64,7 @@ export default () => {
             return 'warning';
         }
 
-        return 'danger';
+        return 'error';
     };
 
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -126,7 +126,7 @@ export default () => {
                 setResendUsage(data.resend_usage);
                 setCustomMonthlyLimit(
                     data.resend_plan.custom_monthly_limit !== null &&
-                    data.resend_plan.custom_monthly_limit !== undefined
+                        data.resend_plan.custom_monthly_limit !== undefined
                         ? String(data.resend_plan.custom_monthly_limit)
                         : '',
                 );
@@ -206,11 +206,7 @@ export default () => {
             return settings?.resend_plan;
         }
 
-        return (
-            resendPlanOptions.find(plan => plan.key === resendPlan) ||
-            resendPlanOptions[0] ||
-            settings?.resend_plan
-        );
+        return resendPlanOptions.find(plan => plan.key === resendPlan) || resendPlanOptions[0] || settings?.resend_plan;
     }, [resendPlanOptions, resendPlan, settings]);
 
     const activeUsage = useMemo(() => resendUsage, [resendUsage]);
@@ -237,7 +233,7 @@ export default () => {
                 (customMonthlyLimit || '') !==
                     (initialPlan.custom_monthly_limit !== null && initialPlan.custom_monthly_limit !== undefined
                         ? String(initialPlan.custom_monthly_limit)
-                        : '') ) ||
+                        : '')) ||
             (initialPlan &&
                 (customDailyLimit || '') !==
                     (initialPlan.custom_daily_limit !== null && initialPlan.custom_daily_limit !== undefined
@@ -304,7 +300,7 @@ export default () => {
         if (!settings) return;
         setSaving(true);
         clearFlashes('email:settings');
-        setStatus('processing');
+        setStatus('loading');
 
         const payload: EmailSettingsUpdate = {
             enabled,
@@ -352,14 +348,16 @@ export default () => {
                 setResendPlanOptions(updated.resend_plans || []);
                 setResendUsage(updated.resend_usage);
                 setCustomMonthlyLimit(
-                    updated.resend_plan.custom_monthly_limit !== null && updated.resend_plan.custom_monthly_limit !== undefined
+                    updated.resend_plan.custom_monthly_limit !== null &&
+                        updated.resend_plan.custom_monthly_limit !== undefined
                         ? String(updated.resend_plan.custom_monthly_limit)
-                        : ''
+                        : '',
                 );
                 setCustomDailyLimit(
-                    updated.resend_plan.custom_daily_limit !== null && updated.resend_plan.custom_daily_limit !== undefined
+                    updated.resend_plan.custom_daily_limit !== null &&
+                        updated.resend_plan.custom_daily_limit !== undefined
                         ? String(updated.resend_plan.custom_daily_limit)
-                        : ''
+                        : '',
                 );
                 setResendApiKeyInput('');
                 setSmtpPasswordInput('');
@@ -398,7 +396,7 @@ export default () => {
         setEnabled(newEnabled);
         setSavingEnabled(true);
         clearFlashes('email:settings');
-        setStatus('processing');
+        setStatus('loading');
 
         updateSettings({ enabled: newEnabled })
             .then(updated => {
@@ -425,7 +423,7 @@ export default () => {
 
         clearFlashes('email:settings:resend');
         setClearingApiKey(true);
-        setStatus('processing');
+        setStatus('loading');
 
         updateSettings({ api_key: '', clear_api_key: true })
             .then(updated => {
@@ -451,7 +449,7 @@ export default () => {
 
         clearFlashes('email:settings:smtp');
         setClearingSmtpPassword(true);
-        setStatus('processing');
+        setStatus('loading');
 
         updateSettings({ smtp_password: '', clear_smtp_password: true })
             .then(updated => {
@@ -477,7 +475,7 @@ export default () => {
 
         clearFlashes('email:settings:smtp');
         setResettingSmtp(true);
-        setStatus('processing');
+        setStatus('loading');
 
         const payload: EmailSettingsUpdate = {
             smtp_host: '',
@@ -565,7 +563,7 @@ export default () => {
         if (!testRecipient) {
             addFlash({
                 key: 'email:settings:test',
-                type: 'danger',
+                type: 'error',
                 message: 'Enter a recipient email first.',
             });
             return;
@@ -977,7 +975,10 @@ export default () => {
                                                 ? activeUsage?.daily_limit ?? activePlan?.daily_limit ?? null
                                                 : null
                                         }
-                                        applies={Boolean(activePlan?.enforce_daily && (activePlan?.daily_limit !== null || activeUsage?.daily_limit !== null))}
+                                        applies={Boolean(
+                                            activePlan?.enforce_daily &&
+                                                (activePlan?.daily_limit !== null || activeUsage?.daily_limit !== null),
+                                        )}
                                     />
                                     <UsageStat
                                         label={'Monthly quota'}
@@ -987,16 +988,26 @@ export default () => {
                                                 ? activeUsage?.monthly_limit ?? activePlan?.monthly_limit ?? null
                                                 : null
                                         }
-                                        applies={Boolean(activePlan?.enforce_monthly && (activePlan?.monthly_limit !== null || activeUsage?.monthly_limit !== null))}
+                                        applies={Boolean(
+                                            activePlan?.enforce_monthly &&
+                                                (activePlan?.monthly_limit !== null ||
+                                                    activeUsage?.monthly_limit !== null),
+                                        )}
                                     />
                                 </div>
                                 <p className={'text-xs text-gray-500'}>
-                                    Source: {activeUsage?.source === 'provider' ? 'Provider reported' : 'Internal fallback'}
-                                    {activeUsage?.synced_at ? ` • Updated ${new Date(activeUsage.synced_at).toLocaleString()}` : ''}
+                                    Source:{' '}
+                                    {activeUsage?.source === 'provider' ? 'Provider reported' : 'Internal fallback'}
+                                    {activeUsage?.synced_at
+                                        ? ` • Updated ${new Date(activeUsage.synced_at).toLocaleString()}`
+                                        : ''}
                                 </p>
                                 {settings.resend_rate_limit && (
                                     <p className={'text-xs text-gray-500'}>
-                                        Rate limit — limit: {settings.resend_rate_limit.limit ?? 'n/a'}, remaining: {settings.resend_rate_limit.remaining ?? 'n/a'}, reset: {settings.resend_rate_limit.reset ?? 'n/a'}, retry-after: {settings.resend_rate_limit.retry_after ?? 'n/a'}
+                                        Rate limit — limit: {settings.resend_rate_limit.limit ?? 'n/a'}, remaining:{' '}
+                                        {settings.resend_rate_limit.remaining ?? 'n/a'}, reset:{' '}
+                                        {settings.resend_rate_limit.reset ?? 'n/a'}, retry-after:{' '}
+                                        {settings.resend_rate_limit.retry_after ?? 'n/a'}
                                     </p>
                                 )}
                                 <p className={'text-xs text-gray-500'}>

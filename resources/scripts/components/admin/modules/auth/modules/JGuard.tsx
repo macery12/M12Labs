@@ -12,10 +12,7 @@ export default () => {
             <Alert type={'info'}>
                 <span className={'text-xs'}>
                     jGuard is enabled. Configure it and manage pending accounts under the{' '}
-                    <a
-                        href={'/admin/auth/jguard'}
-                        className={'underline underline-offset-2 hover:text-white'}
-                    >
+                    <a href={'/admin/auth/jguard'} className={'underline underline-offset-2 hover:text-white'}>
                         jGuard Settings
                     </a>{' '}
                     tab.
@@ -24,4 +21,3 @@ export default () => {
         </AdminBox>
     );
 };
-

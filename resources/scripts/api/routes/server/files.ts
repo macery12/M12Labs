@@ -43,11 +43,7 @@ const copyFile = (uuid: string, location: string): Promise<void> => {
     });
 };
 
-const getFileContents = (
-    server: string,
-    file: string,
-    options?: { signal?: AbortSignal },
-): Promise<string> => {
+const getFileContents = (server: string, file: string, options?: { signal?: AbortSignal }): Promise<string> => {
     return http
         .get(`/api/client/servers/${server}/files/contents`, {
             params: { file },
@@ -93,14 +89,11 @@ const saveFileContents = async (
 ): Promise<void> => {
     // Use the new endpoint with diff tracking when originalContent is provided
     if (originalContent !== undefined) {
-        await http.post(
-            `/api/client/servers/${uuid}/files/write-with-diff`,
-            {
-                file,
-                content,
-                original_content: originalContent,
-            },
-        );
+        await http.post(`/api/client/servers/${uuid}/files/write-with-diff`, {
+            file,
+            content,
+            original_content: originalContent,
+        });
     } else {
         // Fallback to the old endpoint for backward compatibility
         await http.post(`/api/client/servers/${uuid}/files/write`, content, {

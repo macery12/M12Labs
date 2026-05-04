@@ -24,9 +24,6 @@ export default () => {
     const { data: server } = useServerFromRoute();
     const billing = useStoreState(state => state.everest.data!.billing);
 
-    // Get configurable renewal settings
-    const renewalDays = billing.renewal?.days || 30;
-
     if (!server) return null;
 
     const product = server.relationships.product;

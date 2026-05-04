@@ -111,7 +111,9 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                             <code css={tw`text-sm font-mono text-gray-300`}>{order.egg_id}</code>
                         </div>
                     )}
-                    <div css={tw`flex flex-wrap justify-between items-start gap-1 border-t border-neutral-800 pt-3 mt-3`}>
+                    <div
+                        css={tw`flex flex-wrap justify-between items-start gap-1 border-t border-neutral-800 pt-3 mt-3`}
+                    >
                         <span css={tw`text-sm text-gray-400 font-medium`}>Total Amount</span>
                         <span css={tw`text-lg text-white font-bold`}>
                             ${order.total.toFixed(2)}

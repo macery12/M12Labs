@@ -8,7 +8,7 @@ import { useStoreActions, useStoreState } from '@/state/hooks';
 import useStatus from '@/plugins/useStatus';
 import { faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { toggleModule } from '@/api/routes/admin/auth/module';
-import { updateJGuardSettings } from '@/api/routes/admin/auth/jguard';
+import { updateJGuardSettings, type JGuardSettingsValues } from '@/api/routes/admin/auth/jguard';
 import { Alert } from '@/elements/alert';
 import { Dialog } from '@/elements/dialog';
 
@@ -21,11 +21,13 @@ export default () => {
     const [confirmDisable, setConfirmDisable] = useState(false);
 
     // Local controlled state — initialized from page-load store, updated immediately on change.
-    const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed'>(jguard.approval_mode === 'immediate' ? 'manual' : jguard.approval_mode as 'manual' | 'delayed');
+    const [approvalMode, setApprovalMode] = useState<'manual' | 'delayed'>(
+        jguard.approval_mode === 'immediate' ? 'manual' : (jguard.approval_mode as 'manual' | 'delayed'),
+    );
     const [delay, setDelay] = useState<number>(jguard.delay);
     const [pendingMessage, setPendingMessage] = useState<string>(jguard.pending_message ?? '');
 
-    const saveSetting = (values: { approval_mode?: string; delay?: number; pending_message?: string }) => {
+    const saveSetting = (values: JGuardSettingsValues) => {
         clearFlashes('auth:jguard:settings');
         setStatus('loading');
         updateJGuardSettings(values)
@@ -172,8 +174,8 @@ export default () => {
             {approvalMode === 'manual' && (
                 <Alert type={'info'}>
                     <span className={'text-xs'}>
-                        Manual approval mode is active. New registrations will be held until you approve them from
-                        the <strong>Pending Accounts</strong> tab.
+                        Manual approval mode is active. New registrations will be held until you approve them from the{' '}
+                        <strong>Pending Accounts</strong> tab.
                     </span>
                 </Alert>
             )}

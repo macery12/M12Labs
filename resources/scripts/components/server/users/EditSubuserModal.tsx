@@ -102,7 +102,7 @@ const PermissionCategory = ({
     };
 
     // Get list of permission names for preview
-    const permissionNames = categoryPermissions.map(p => p.name.replace(/_/g, ' ')).join(', ');
+    const permissionNames = categoryPermissions.map(p => p.name!.replace(/_/g, ' ')).join(', ');
 
     return (
         <div css={tw`border border-neutral-700 rounded-lg overflow-hidden`}>
@@ -308,7 +308,7 @@ const EditSubuserModal = ({ subuser }: Props) => {
                                     permissions={Object.keys(permissions[key]?.keys ?? {}).map(
                                         pkey => `${key}.${pkey}`,
                                     )}
-                                    isEditable={canEditUser}
+                                    isEditable={canEditUser ?? false}
                                     editablePermissions={editablePermissions}
                                 />
                             ))}

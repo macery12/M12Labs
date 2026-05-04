@@ -15,18 +15,18 @@ export default () => {
     return (
         <AdminContentBlock title={'Authentication'}>
             <SubNavigation>
-                <SubNavigationLink to='/admin/auth' name='Modules' base />
+                <SubNavigationLink to="/admin/auth" name="Modules" base />
                 {jguardEnabled && (
                     <>
-                        <SubNavigationLink to='/admin/auth/jguard' name='jGuard Settings' base />
-                        <SubNavigationLink to='/admin/auth/jguard/pending' name='Pending Accounts' />
+                        <SubNavigationLink to="/admin/auth/jguard" name="jGuard Settings" base />
+                        <SubNavigationLink to="/admin/auth/jguard/pending" name="Pending Accounts" />
                     </>
                 )}
             </SubNavigation>
 
             <Routes>
                 <Route
-                    path='/'
+                    path="/"
                     element={
                         <Suspense fallback={null}>
                             <AuthModulesPage />
@@ -36,7 +36,7 @@ export default () => {
                 {jguardEnabled && (
                     <>
                         <Route
-                            path='/jguard'
+                            path="/jguard"
                             element={
                                 <ContentBox title={'jGuard Settings'} showFlashes={'auth:jguard:settings'}>
                                     <Suspense fallback={null}>
@@ -46,7 +46,7 @@ export default () => {
                             }
                         />
                         <Route
-                            path='/jguard/pending'
+                            path="/jguard/pending"
                             element={
                                 <ContentBox title={'Pending Accounts'} showFlashes={'auth:jguard:pending'}>
                                     <Suspense fallback={null}>

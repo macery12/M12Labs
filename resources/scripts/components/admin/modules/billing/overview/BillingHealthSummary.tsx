@@ -1,6 +1,5 @@
 import { useStoreState } from '@/state/hooks';
 import ContentBox from '@/elements/ContentBox';
-import { differenceInDays, parseISO } from 'date-fns';
 import { BillingAnalytics } from '@definitions/admin';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -19,8 +18,7 @@ interface BillingHealthSummaryProps {
     history: number;
 }
 
-export default ({ data, history }: BillingHealthSummaryProps) => {
-    const now = new Date();
+export default ({ data }: BillingHealthSummaryProps) => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const [copiedUUID, setCopiedUUID] = useState<string | null>(null);
 

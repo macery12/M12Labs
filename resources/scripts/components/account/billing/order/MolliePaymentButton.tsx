@@ -39,7 +39,12 @@ export default (data: Props) => {
 
         try {
             // Create Mollie payment with return URL
-            const payment = await createMolliePayment(Number(data.product.id), data.couponId, data.billingDays, returnUrl);
+            const payment = await createMolliePayment(
+                Number(data.product.id),
+                data.couponId,
+                data.billingDays,
+                returnUrl,
+            );
 
             // Update payment with order details
             const variables = Array.from(data.vars, ([key, value]) => ({ key, value }));

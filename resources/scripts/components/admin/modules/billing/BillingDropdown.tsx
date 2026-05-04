@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 interface DropdownItemProps {
     to: string;
     name: string;
-    icon?: ComponentType;
+    icon?: ComponentType<{ className?: string }>;
     children?: ReactNode;
 }
 
@@ -51,7 +51,7 @@ const BillingDropdownItem = ({
 
 interface BillingDropdownProps {
     items: DropdownItemProps[];
-    icon?: ComponentType;
+    icon?: ComponentType<{ className?: string }>;
 }
 
 export const BillingDropdown = ({ items, icon: IconComponent }: BillingDropdownProps) => {

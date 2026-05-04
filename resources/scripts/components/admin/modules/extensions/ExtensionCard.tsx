@@ -33,14 +33,14 @@ import {
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { Button } from '@/elements/button';
 import Modal from '@/elements/Modal';
-import { 
-    ExtensionData, 
+import {
+    ExtensionData,
     ExtensionSettingField,
-    NestOption, 
-    EggOption, 
-    getNestsAndEggs, 
-    toggleExtension, 
-    updateExtension 
+    NestOption,
+    EggOption,
+    getNestsAndEggs,
+    toggleExtension,
+    updateExtension,
 } from '@/api/routes/admin/extensions';
 import useFlash from '@/plugins/useFlash';
 import Spinner from '@/elements/Spinner';
@@ -53,37 +53,37 @@ interface Props {
 }
 
 const iconMap: Record<string, typeof faPuzzlePiece> = {
-    'puzzle': faPuzzlePiece,
-    'users': faUsers,
-    'gamepad': faGamepad,
-    'cube': faCube,
-    'server': faServer,
+    puzzle: faPuzzlePiece,
+    users: faUsers,
+    gamepad: faGamepad,
+    cube: faCube,
+    server: faServer,
 
     // Extra icons for extension authors.
-    'discord': faDiscord,
-    'link': faLink,
-    'wrench': faWrench,
-    'shield': faShieldHalved,
-    'terminal': faTerminal,
-    'globe': faGlobe,
-    'database': faDatabase,
-    'chart': faChartLine,
-    'bell': faBell,
-    'robot': faRobot,
-    'cloud': faCloud,
-    'folder': faFolder,
-    'file': faFile,
-    'key': faKey,
-    'bolt': faBolt,
-    'cogs': faCogs,
-    'lock': faLock,
-    'scroll': faScroll,
+    discord: faDiscord,
+    link: faLink,
+    wrench: faWrench,
+    shield: faShieldHalved,
+    terminal: faTerminal,
+    globe: faGlobe,
+    database: faDatabase,
+    chart: faChartLine,
+    bell: faBell,
+    robot: faRobot,
+    cloud: faCloud,
+    folder: faFolder,
+    file: faFile,
+    key: faKey,
+    bolt: faBolt,
+    cogs: faCogs,
+    lock: faLock,
+    scroll: faScroll,
 };
 
 export default ({ extension, onUpdate }: Props) => {
     const primary = useStoreState(state => state.theme.data!.colors.primary);
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
-    
+
     const [configOpen, setConfigOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [nestsAndEggs, setNestsAndEggs] = useState<{ nests: NestOption[]; eggs: EggOption[] } | null>(null);
@@ -149,18 +149,14 @@ export default ({ extension, onUpdate }: Props) => {
     };
 
     const toggleNest = (nestId: number) => {
-        setSelectedNests((prev: number[]) => 
-            prev.includes(nestId) 
-                ? prev.filter((id: number) => id !== nestId) 
-                : [...prev, nestId]
+        setSelectedNests((prev: number[]) =>
+            prev.includes(nestId) ? prev.filter((id: number) => id !== nestId) : [...prev, nestId],
         );
     };
 
     const toggleEgg = (eggId: number) => {
-        setSelectedEggs((prev: number[]) => 
-            prev.includes(eggId) 
-                ? prev.filter((id: number) => id !== eggId) 
-                : [...prev, eggId]
+        setSelectedEggs((prev: number[]) =>
+            prev.includes(eggId) ? prev.filter((id: number) => id !== eggId) : [...prev, eggId],
         );
     };
 
@@ -175,9 +171,10 @@ export default ({ extension, onUpdate }: Props) => {
     };
 
     // Get filtered eggs based on selected nests
-    const filteredEggs = nestsAndEggs?.eggs.filter((egg: EggOption) => 
-        selectedNests.length === 0 || selectedNests.includes(egg.nestId)
-    ) ?? [];
+    const filteredEggs =
+        nestsAndEggs?.eggs.filter(
+            (egg: EggOption) => selectedNests.length === 0 || selectedNests.includes(egg.nestId),
+        ) ?? [];
 
     const selectAllEggs = () => {
         if (filteredEggs.length > 0) {
@@ -268,7 +265,7 @@ export default ({ extension, onUpdate }: Props) => {
             <div
                 className={classNames(
                     'relative transform transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
-                    'flex h-full flex-col rounded-lg p-6 shadow-lg bg-zinc-800'
+                    'flex h-full flex-col rounded-lg p-6 shadow-lg bg-zinc-800',
                 )}
                 style={{
                     borderTop: `4px solid ${extension.enabled ? primary : '#4a5568'}`,
@@ -293,7 +290,9 @@ export default ({ extension, onUpdate }: Props) => {
                         </div>
                         <div>
                             <h3 className={'text-lg font-semibold text-white'}>{extension.name}</h3>
-                            <p className={'text-xs text-neutral-400'}>v{extension.version} • {extension.author}</p>
+                            <p className={'text-xs text-neutral-400'}>
+                                v{extension.version} • {extension.author}
+                            </p>
                         </div>
                     </div>
                     <button
@@ -331,10 +330,7 @@ export default ({ extension, onUpdate }: Props) => {
                 </div>
 
                 {/* Configure Button */}
-                <Button
-                    onClick={() => setConfigOpen(true)}
-                    className={'w-full'}
-                >
+                <Button onClick={() => setConfigOpen(true)} className={'w-full'}>
                     <FontAwesomeIcon icon={faCog} className={'mr-2'} />
                     Configure
                 </Button>
@@ -348,11 +344,10 @@ export default ({ extension, onUpdate }: Props) => {
                 showSpinnerOverlay={loading}
             >
                 <div className={'max-h-[80vh] overflow-y-auto'}>
-                    <h2 className={'mb-4 text-xl font-semibold text-white'}>
-                        Configure {extension.name}
-                    </h2>
+                    <h2 className={'mb-4 text-xl font-semibold text-white'}>Configure {extension.name}</h2>
                     <p className={'mb-6 text-sm text-neutral-400'}>
-                        Select which nests and eggs can use this extension. Leaving selections empty means all nests/eggs are allowed.
+                        Select which nests and eggs can use this extension. Leaving selections empty means all
+                        nests/eggs are allowed.
                     </p>
 
                     {!nestsAndEggs ? (
@@ -398,11 +393,13 @@ export default ({ extension, onUpdate }: Props) => {
                                                 'flex cursor-pointer items-center rounded-lg border p-3 transition-colors h-full min-h-[60px]',
                                                 selectedNests.includes(nest.id)
                                                     ? 'border-opacity-50 bg-opacity-10'
-                                                    : 'border-neutral-600 bg-zinc-800'
+                                                    : 'border-neutral-600 bg-zinc-800',
                                             )}
                                             style={{
                                                 borderColor: selectedNests.includes(nest.id) ? primary : undefined,
-                                                backgroundColor: selectedNests.includes(nest.id) ? `${primary}15` : undefined,
+                                                backgroundColor: selectedNests.includes(nest.id)
+                                                    ? `${primary}15`
+                                                    : undefined,
                                             }}
                                         >
                                             <input
@@ -416,10 +413,12 @@ export default ({ extension, onUpdate }: Props) => {
                                                     'mr-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2',
                                                     selectedNests.includes(nest.id)
                                                         ? 'border-transparent'
-                                                        : 'border-neutral-500'
+                                                        : 'border-neutral-500',
                                                 )}
                                                 style={{
-                                                    backgroundColor: selectedNests.includes(nest.id) ? primary : 'transparent',
+                                                    backgroundColor: selectedNests.includes(nest.id)
+                                                        ? primary
+                                                        : 'transparent',
                                                 }}
                                             >
                                                 {selectedNests.includes(nest.id) && (
@@ -468,54 +467,63 @@ export default ({ extension, onUpdate }: Props) => {
                                 </div>
                                 {filteredEggs.length === 0 ? (
                                     <p className={'text-sm text-neutral-500 py-4 text-center'}>
-                                        {selectedNests.length === 0 
-                                            ? 'No eggs available.' 
+                                        {selectedNests.length === 0
+                                            ? 'No eggs available.'
                                             : 'No eggs found in the selected nests.'}
                                     </p>
                                 ) : (
-                                <div className={'grid gap-2 sm:grid-cols-2 lg:grid-cols-3'}>
-                                    {filteredEggs.map((egg: EggOption) => (
-                                        <label
-                                            key={egg.id}
-                                            className={classNames(
-                                                'flex cursor-pointer items-center rounded-lg border p-3 transition-colors',
-                                                selectedEggs.includes(egg.id)
-                                                    ? 'border-opacity-50 bg-opacity-10'
-                                                    : 'border-neutral-600 bg-zinc-800'
-                                            )}
-                                            style={{
-                                                borderColor: selectedEggs.includes(egg.id) ? primary : undefined,
-                                                backgroundColor: selectedEggs.includes(egg.id) ? `${primary}15` : undefined,
-                                            }}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedEggs.includes(egg.id)}
-                                                onChange={() => toggleEgg(egg.id)}
-                                                className={'sr-only'}
-                                            />
-                                            <div
+                                    <div className={'grid gap-2 sm:grid-cols-2 lg:grid-cols-3'}>
+                                        {filteredEggs.map((egg: EggOption) => (
+                                            <label
+                                                key={egg.id}
                                                 className={classNames(
-                                                    'mr-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2',
+                                                    'flex cursor-pointer items-center rounded-lg border p-3 transition-colors',
                                                     selectedEggs.includes(egg.id)
-                                                        ? 'border-transparent'
-                                                        : 'border-neutral-500'
+                                                        ? 'border-opacity-50 bg-opacity-10'
+                                                        : 'border-neutral-600 bg-zinc-800',
                                                 )}
                                                 style={{
-                                                    backgroundColor: selectedEggs.includes(egg.id) ? primary : 'transparent',
+                                                    borderColor: selectedEggs.includes(egg.id) ? primary : undefined,
+                                                    backgroundColor: selectedEggs.includes(egg.id)
+                                                        ? `${primary}15`
+                                                        : undefined,
                                                 }}
                                             >
-                                                {selectedEggs.includes(egg.id) && (
-                                                    <FontAwesomeIcon icon={faCheck} className={'text-xs text-white'} />
-                                                )}
-                                            </div>
-                                            <div className={'min-w-0'}>
-                                                <p className={'truncate text-sm font-medium text-white'}>{egg.name}</p>
-                                                <p className={'text-xs text-neutral-500'}>{egg.nestName}</p>
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedEggs.includes(egg.id)}
+                                                    onChange={() => toggleEgg(egg.id)}
+                                                    className={'sr-only'}
+                                                />
+                                                <div
+                                                    className={classNames(
+                                                        'mr-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2',
+                                                        selectedEggs.includes(egg.id)
+                                                            ? 'border-transparent'
+                                                            : 'border-neutral-500',
+                                                    )}
+                                                    style={{
+                                                        backgroundColor: selectedEggs.includes(egg.id)
+                                                            ? primary
+                                                            : 'transparent',
+                                                    }}
+                                                >
+                                                    {selectedEggs.includes(egg.id) && (
+                                                        <FontAwesomeIcon
+                                                            icon={faCheck}
+                                                            className={'text-xs text-white'}
+                                                        />
+                                                    )}
+                                                </div>
+                                                <div className={'min-w-0'}>
+                                                    <p className={'truncate text-sm font-medium text-white'}>
+                                                        {egg.name}
+                                                    </p>
+                                                    <p className={'text-xs text-neutral-500'}>{egg.nestName}</p>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </>

@@ -135,7 +135,9 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
                             <div key={index} css={tw`relative flex gap-4`}>
                                 {/* Icon */}
                                 <div
-                                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 border-neutral-700 flex items-center justify-center z-10 ${event.color ?? ''}`}
+                                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 border-neutral-700 flex items-center justify-center z-10 ${
+                                        event.color ?? ''
+                                    }`}
                                     style={{
                                         color: event.themeColor ? colors.primary : undefined,
                                         backgroundColor: colors.background || colors.secondary,
@@ -164,10 +166,7 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
             </div>
 
             {/* Additional info */}
-            <div
-                css={tw`rounded-lg p-4 border border-neutral-700`}
-                style={{ backgroundColor: colors.secondary }}
-            >
+            <div css={tw`rounded-lg p-4 border border-neutral-700`} style={{ backgroundColor: colors.secondary }}>
                 <p css={tw`text-xs text-gray-500`}>
                     <strong>Note:</strong> This timeline shows key events in the order lifecycle. Webhook events and
                     detailed provider responses may not be fully represented in this view.

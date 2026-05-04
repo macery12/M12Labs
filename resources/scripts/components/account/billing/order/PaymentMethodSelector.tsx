@@ -37,15 +37,15 @@ export default (props: Props) => {
 
     const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
         {
-            method: 'stripe',
+            method: 'stripe' as const,
             available: billing.processors?.stripe?.available ?? false,
         },
         {
-            method: 'mollie',
+            method: 'mollie' as const,
             available: billing.processors?.mollie?.available ?? false,
         },
         {
-            method: 'paypal',
+            method: 'paypal' as const,
             available: billing.processors?.paypal?.available ?? false,
         },
     ].filter(processor => {
@@ -258,7 +258,6 @@ export default (props: Props) => {
             {/* Render the selected payment method */}
             {selectedMethod === 'stripe' && props.intent && props.stripe ? (
                 <div>
-                    {/* @ts-expect-error this is fine, stripe library is just weird */}
                     <Elements stripe={props.stripe} options={stripeOptions} key={props.intent.id}>
                         <PaymentButton
                             selectedNode={props.selectedNode}

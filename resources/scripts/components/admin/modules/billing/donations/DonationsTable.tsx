@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { AdminDonation, getAllDonations, PaginatedDonations } from '@/api/routes/admin/billing/donations';
+import { getAllDonations, PaginatedDonations } from '@/api/routes/admin/billing/donations';
 import Pagination from '@/elements/Pagination';
 import AdminTable from '@/elements/AdminTable';
 import Spinner from '@/elements/Spinner';
@@ -195,9 +195,21 @@ export default () => {
                 </table>
             </AdminTable>
             {donations && donations.last_page > 1 && (
-                <Pagination data={donations} onPageSelect={setPage}>
-                    {({ isLoading }) => (
-                        <div className={'mt-4 flex justify-center'}>{isLoading && <Spinner size={'small'} />}</div>
+                <Pagination
+                    data={{
+                        items: donations.data,
+                        pagination: {
+                            total: donations.total,
+                            count: donations.data.length,
+                            perPage: donations.per_page,
+                            currentPage: donations.current_page,
+                            totalPages: donations.last_page,
+                        },
+                    }}
+                    onPageSelect={setPage}
+                >
+                    {() => (
+                        <div className={'mt-4 flex justify-center'} />
                     )}
                 </Pagination>
             )}

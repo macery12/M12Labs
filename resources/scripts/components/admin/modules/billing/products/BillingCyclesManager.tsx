@@ -93,7 +93,7 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
 
     const handleToggleCycle = (index: number) => {
         const updated = [...cycles];
-        updated[index] = { ...updated[index], isEnabled: !updated[index].isEnabled };
+        updated[index] = { ...updated[index]!, isEnabled: !updated[index]!.isEnabled };
         onChange(updated);
     };
 

@@ -64,7 +64,9 @@ function App() {
             state: PterodactylUser.state,
             useTotp: PterodactylUser.use_totp,
             emailVerified: Boolean(PterodactylUser.email_verified),
-            emailVerifiedAt: PterodactylUser.email_verified_at ? new Date(PterodactylUser.email_verified_at) : undefined,
+            emailVerifiedAt: PterodactylUser.email_verified_at
+                ? new Date(PterodactylUser.email_verified_at)
+                : undefined,
             createdAt: new Date(PterodactylUser.created_at),
             updatedAt: new Date(PterodactylUser.updated_at),
             discordLinked: Boolean(PterodactylUser.discord_linked),
@@ -102,7 +104,9 @@ function App() {
                 >
                     <button
                         onClick={handleLogout}
-                        className={'mt-6 px-6 py-2 rounded-full border border-red-500/60 bg-red-500/10 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition-colors cursor-pointer'}
+                        className={
+                            'mt-6 px-6 py-2 rounded-full border border-red-500/60 bg-red-500/10 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition-colors cursor-pointer'
+                        }
                     >
                         Logout
                     </button>

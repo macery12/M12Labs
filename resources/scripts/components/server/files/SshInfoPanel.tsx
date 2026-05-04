@@ -64,8 +64,8 @@ export default () => {
             {sshInfo.container_supported && (
                 <div css={tw`mt-4 border-l-4 border-green-500 p-3`}>
                     <p css={tw`text-xs text-neutral-200`}>
-                        This node supports direct container SSH access. You can connect directly to your
-                        server&apos;s container via SSH.
+                        This node supports direct container SSH access. You can connect directly to your server&apos;s
+                        container via SSH.
                     </p>
                 </div>
             )}

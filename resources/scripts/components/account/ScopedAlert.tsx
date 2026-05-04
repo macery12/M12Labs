@@ -33,7 +33,7 @@ export default ({ scope, position = 'all' }: ScopedAlertProps) => {
     const dismissAlert = (alert: ActiveAlert) => dismissAlertForUser(alert, user);
 
     // Filter out dismissed alerts, notification-only alerts, and group by position
-    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && a.position !== 'notification');
+    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && (a.position as string) !== 'notification');
 
     // Apply position filter if specified
     const filteredAlerts = position === 'all' ? visibleAlerts : visibleAlerts.filter(a => a.position === position);

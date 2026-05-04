@@ -36,7 +36,7 @@ function hashToPath(hash: string): string {
     return hash.length > 0 ? decodeURIComponent(hash.substring(1)) : '/';
 }
 
-const withSubComponents = <C extends StyledComponent<any, any>, P extends Record<string, any>>(
+const withSubComponents = <C extends ((...args: any[]) => any) | StyledComponent<any, any>, P extends Record<string, any>>(
     component: C,
     properties: P,
 ): C & P => {

@@ -55,7 +55,11 @@ export default () => {
             <div css={tw`h-auto flex flex-col`}>
                 <AdminBox icon={faEnvelope} title={'Email Verification'} css={tw`relative w-full`}>
                     {isVerified ? (
-                        <Button.Warn size={Button.Sizes.Large} css={tw`w-full capitalize`} onClick={() => setVisible(true)}>
+                        <Button.Warn
+                            size={Button.Sizes.Large}
+                            css={tw`w-full capitalize`}
+                            onClick={() => setVisible(true)}
+                        >
                             Unverify Email
                         </Button.Warn>
                     ) : (

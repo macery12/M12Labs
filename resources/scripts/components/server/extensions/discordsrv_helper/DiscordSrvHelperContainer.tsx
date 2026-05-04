@@ -51,7 +51,9 @@ export default () => {
     const inviteUrl = useMemo(() => {
         if (!clientId || clientId.trim().length === 0) return null;
         const encoded = encodeURIComponent('bot applications.commands');
-        return `https://discord.com/api/oauth2/authorize?client_id=${encodeURIComponent(clientId.trim())}&permissions=0&scope=${encoded}`;
+        return `https://discord.com/api/oauth2/authorize?client_id=${encodeURIComponent(
+            clientId.trim(),
+        )}&permissions=0&scope=${encoded}`;
     }, [clientId]);
 
     const refresh = async (opts?: { clearFlashes?: boolean }) => {
@@ -103,7 +105,9 @@ export default () => {
         return (
             <PageContentBlock title={'DiscordSRV Helper'}>
                 <div className={'rounded-lg bg-zinc-800 p-6'}>
-                    <p className={'text-neutral-300'}>This extension requires file read permission to check plugin status.</p>
+                    <p className={'text-neutral-300'}>
+                        This extension requires file read permission to check plugin status.
+                    </p>
                     <p className={'mt-2 text-sm text-neutral-400'}>Required: file.read</p>
                 </div>
             </PageContentBlock>
@@ -134,7 +138,11 @@ export default () => {
                     <div className={'mt-6 rounded-lg bg-zinc-800 p-6'}>
                         <h3 className={'text-lg font-semibold text-white'}>Install</h3>
                         <p className={'mt-2 text-sm text-neutral-400'}>
-                            Installs DiscordSRV to <span className={'text-neutral-200'}>/plugins/{'{'}DiscordSRV.jar{'}'}</span>.
+                            Installs DiscordSRV to{' '}
+                            <span className={'text-neutral-200'}>
+                                /plugins/{'{'}DiscordSRV.jar{'}'}
+                            </span>
+                            .
                         </p>
 
                         <div className={'mt-4'}>
@@ -154,8 +162,15 @@ export default () => {
                                     if (!uuid) return;
                                     clearFlashes('server:extensions:discordsrv');
                                     try {
-                                        await installDiscordSrv(uuid, jarUrl.trim().length > 0 ? jarUrl.trim() : undefined);
-                                        addFlash({ key: 'server:extensions:discordsrv', type: 'success', message: 'DiscordSRV install started.' });
+                                        await installDiscordSrv(
+                                            uuid,
+                                            jarUrl.trim().length > 0 ? jarUrl.trim() : undefined,
+                                        );
+                                        addFlash({
+                                            key: 'server:extensions:discordsrv',
+                                            type: 'success',
+                                            message: 'DiscordSRV install started.',
+                                        });
                                         await refresh();
                                     } catch (error) {
                                         clearAndAddHttpError({ key: 'server:extensions:discordsrv', error });
@@ -195,7 +210,11 @@ export default () => {
                                     clearFlashes('server:extensions:discordsrv');
                                     try {
                                         await setDiscordSrvToken(uuid, botToken);
-                                        addFlash({ key: 'server:extensions:discordsrv', type: 'success', message: 'Token saved.' });
+                                        addFlash({
+                                            key: 'server:extensions:discordsrv',
+                                            type: 'success',
+                                            message: 'Token saved.',
+                                        });
                                         setBotToken('');
                                         await refresh();
                                         await refreshOwnerData();
@@ -236,7 +255,11 @@ export default () => {
                                     clearFlashes('server:extensions:discordsrv');
                                     try {
                                         await setDiscordSrvGlobalChannel(uuid, globalChannelId.trim());
-                                        addFlash({ key: 'server:extensions:discordsrv', type: 'success', message: 'Global channel saved.' });
+                                        addFlash({
+                                            key: 'server:extensions:discordsrv',
+                                            type: 'success',
+                                            message: 'Global channel saved.',
+                                        });
                                         await refresh();
                                         await refreshOwnerData();
                                     } catch (error) {
@@ -292,11 +315,15 @@ export default () => {
                             ) : (
                                 <div className={'mt-4 space-y-2'}>
                                     {history.map(h => (
-                                        <div key={h.id} className={'flex items-center justify-between rounded bg-zinc-900 p-3'}>
+                                        <div
+                                            key={h.id}
+                                            className={'flex items-center justify-between rounded bg-zinc-900 p-3'}
+                                        >
                                             <div className={'text-sm text-neutral-300'}>
                                                 <div className={'font-medium text-white'}>{h.action}</div>
                                                 <div className={'text-xs text-neutral-500'}>
-                                                    {new Date(h.created_at).toLocaleString()} {h.actor ? `• ${h.actor.email}` : ''}
+                                                    {new Date(h.created_at).toLocaleString()}{' '}
+                                                    {h.actor ? `• ${h.actor.email}` : ''}
                                                 </div>
                                             </div>
                                             <Button
@@ -312,7 +339,10 @@ export default () => {
                                                         });
                                                         await refresh();
                                                     } catch (error) {
-                                                        clearAndAddHttpError({ key: 'server:extensions:discordsrv', error });
+                                                        clearAndAddHttpError({
+                                                            key: 'server:extensions:discordsrv',
+                                                            error,
+                                                        });
                                                     }
                                                 }}
                                             >
@@ -337,7 +367,10 @@ export default () => {
                             ) : (
                                 <div className={'mt-4 space-y-2'}>
                                     {subusers.map(s => (
-                                        <div key={s.uuid} className={'flex items-center justify-between rounded bg-zinc-900 p-3'}>
+                                        <div
+                                            key={s.uuid}
+                                            className={'flex items-center justify-between rounded bg-zinc-900 p-3'}
+                                        >
                                             <div className={'text-sm text-neutral-300'}>
                                                 <div className={'font-medium text-white'}>{s.email}</div>
                                                 <div className={'text-xs text-neutral-500'}>{s.username}</div>
@@ -350,7 +383,10 @@ export default () => {
                                                         await setDiscordSrvSubuserAccess(uuid, s.uuid, s.disabled);
                                                         await refreshOwnerData();
                                                     } catch (error) {
-                                                        clearAndAddHttpError({ key: 'server:extensions:discordsrv', error });
+                                                        clearAndAddHttpError({
+                                                            key: 'server:extensions:discordsrv',
+                                                            error,
+                                                        });
                                                     }
                                                 }}
                                             >

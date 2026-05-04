@@ -177,7 +177,9 @@ export function Pagination<T>({ data, onPageSelect, children }: Props<T>) {
         <>
             {children}
 
-            <div css={tw`min-h-[3rem] flex flex-col sm:flex-row items-start sm:items-center w-full px-4 sm:px-6 py-3 gap-2 border-t border-neutral-500`}>
+            <div
+                css={tw`min-h-[3rem] flex flex-col sm:flex-row items-start sm:items-center w-full px-4 sm:px-6 py-3 gap-2 border-t border-neutral-500`}
+            >
                 <p css={tw`text-xs sm:text-sm leading-5 text-neutral-400`}>
                     Showing{' '}
                     <span css={tw`text-neutral-300`}>

@@ -1,6 +1,5 @@
 import Input from '@/elements/Input';
 import Select from '@/elements/Select';
-import { useStoreState } from '@/state/hooks';
 import { Dialog } from '@/elements/dialog';
 import { faExclamationTriangle, faCheckCircle, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,7 +16,6 @@ interface PayPalKeys {
 
 export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
     const [data, setData] = useState<PayPalKeys>({ mode: 'sandbox' });
-    const existingPayPal = useStoreState(s => s.everest.data!.billing.paypal_standalone);
 
     const submit = async () => {
         if (!data.clientId || !data.clientSecret || !data.mode) return;

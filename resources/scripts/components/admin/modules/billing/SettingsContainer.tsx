@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
-import { Button } from '@/elements/button';
 import ToggleFeatureButton from './ToggleFeatureButton';
 import { faDollar, faExchange, faGavel, faPowerOff } from '@fortawesome/free-solid-svg-icons';
 import { useStoreActions, useStoreState } from '@/state/hooks';
@@ -77,7 +75,7 @@ export default () => {
                         max="720"
                         className="w-full rounded border-neutral-700 bg-neutral-900 px-4 py-2 text-sm text-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         value={settings.plan_change_cooldown_hours ?? 72}
-                        onChange={e => submit('plan_change_cooldown_hours', parseInt(e.target.value))}
+                        onChange={e => submit('plan_change_cooldown_hours', String(parseInt(e.target.value)))}
                     />
                     <p className={'mt-2 text-xs text-gray-400'}>
                         Users can only change plans once per cooldown period. Set to 0 to disable cooldown (not

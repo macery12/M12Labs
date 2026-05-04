@@ -199,7 +199,9 @@ export default () => {
                                                         <>
                                                             {product.limits.subdomain === null
                                                                 ? 'Unlimited subdomains'
-                                                                : `${product.limits.subdomain} subdomain${product.limits.subdomain === 1 ? '' : 's'}`}
+                                                                : `${product.limits.subdomain} subdomain${
+                                                                      product.limits.subdomain === 1 ? '' : 's'
+                                                                  }`}
                                                         </>
                                                     }
                                                 />

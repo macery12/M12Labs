@@ -135,15 +135,21 @@ export default () => {
                         large
                         icon={faMemory}
                         title={'Memory'}
-                        value={`${formatBytes(toNumber(stats?.memory?.used))} / ${formatBytes(toNumber(stats?.memory?.total))}`}
+                        value={`${formatBytes(toNumber(stats?.memory?.used))} / ${formatBytes(
+                            toNumber(stats?.memory?.total),
+                        )}`}
                         subtitle={`Process: ${formatBytes(toNumber(stats?.memory?.process))}`}
                     />
                     <StatCard
                         large
                         icon={faHdd}
                         title={'Disk'}
-                        value={`${formatBytes(toNumber(stats?.disk?.used))} / ${formatBytes(toNumber(stats?.disk?.total))}`}
-                        subtitle={`Read: ${formatRate(toNumber(stats?.disk?.read_rate))} · Write: ${formatRate(toNumber(stats?.disk?.write_rate))}`}
+                        value={`${formatBytes(toNumber(stats?.disk?.used))} / ${formatBytes(
+                            toNumber(stats?.disk?.total),
+                        )}`}
+                        subtitle={`Read: ${formatRate(toNumber(stats?.disk?.read_rate))} · Write: ${formatRate(
+                            toNumber(stats?.disk?.write_rate),
+                        )}`}
                     />
                     <StatCard
                         icon={faArrowDown}

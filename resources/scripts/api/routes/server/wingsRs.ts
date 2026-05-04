@@ -78,10 +78,12 @@ export const searchFiles = (
 };
 
 export const compressAdvanced = (uuid: string, data: CompressRequest): Promise<CompressResult> => {
-    return http.post(`/api/client/servers/${uuid}/wings-rs/compress`, data, {
-        timeout: 10000,
-        timeoutErrorMessage: 'The compression is taking a while. It will complete in the background.',
-    }).then(({ data }) => data);
+    return http
+        .post(`/api/client/servers/${uuid}/wings-rs/compress`, data, {
+            timeout: 10000,
+            timeoutErrorMessage: 'The compression is taking a while. It will complete in the background.',
+        })
+        .then(({ data }) => data);
 };
 
 export const cancelOperation = (uuid: string, operationId: string): Promise<void> => {
@@ -97,27 +99,25 @@ export const abortInstall = (uuid: string): Promise<void> => {
 };
 
 export const getInstallLogs = (uuid: string, lines?: number): Promise<string[]> => {
-    return http
-        .get(`/api/client/servers/${uuid}/wings-rs/install-logs`, { params: { lines } })
-        .then(({ data }) => {
-            if (Array.isArray(data)) {
-                return data;
-            }
+    return http.get(`/api/client/servers/${uuid}/wings-rs/install-logs`, { params: { lines } }).then(({ data }) => {
+        if (Array.isArray(data)) {
+            return data;
+        }
 
-            if (Array.isArray(data?.content)) {
-                return data.content;
-            }
+        if (Array.isArray(data?.content)) {
+            return data.content;
+        }
 
-            if (typeof data?.content === 'string') {
-                return data.content.split('\n');
-            }
+        if (typeof data?.content === 'string') {
+            return data.content.split('\n');
+        }
 
-            if (typeof data === 'string') {
-                return data.split('\n');
-            }
+        if (typeof data === 'string') {
+            return data.split('\n');
+        }
 
-            return [];
-        });
+        return [];
+    });
 };
 
 export interface SshInfo {

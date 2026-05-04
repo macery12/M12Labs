@@ -15,7 +15,8 @@ import useFlash from '@/plugins/useFlash';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { Product, type Node } from '@definitions/account/billing';
+import { Product, StripeIntent, type Node } from '@definitions/account/billing';
+import { Stripe } from '@stripe/stripe-js';
 import {
     getProduct,
     getProductVariables,
@@ -28,8 +29,10 @@ import {
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
-import Input from '@/elements/Input';
-import Select from '@/elements/Select';
+import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
+import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
+import { loadStripeOnce } from '@/lib/stripe';
+import PaymentMethodSelector from '@account/billing/order/PaymentMethodSelector';
 import classNames from 'classnames';
 
 const getResponseStatus = (reason: unknown): number | undefined => {
@@ -61,13 +64,14 @@ export default () => {
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
+    const [intent, setIntent] = useState<StripeIntent | null>(null);
+    const [stripe, setStripe] = useState<Stripe | null>(null);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
-    const reviewStep = hasEditableVariables ? 5 : 4;
 
-    const [customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
-    const [domainMappings, setDomainMappings] = useState<
+    const [_customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
+    const [domainMappings, _setDomainMappings] = useState<
         Array<{
             domain_id: number;
             domain: string;
@@ -76,16 +80,11 @@ export default () => {
         }>
     >([]);
     const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
-    const [mappingSubdomain, setMappingSubdomain] = useState<string>('');
-    const [mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
-
-    const selectedDomainOption = customDomainOptions.find(option => option.id === selectedDomainId);
-    const effectiveRecordType: 'srv' | 'cname' = selectedDomainOption?.allow_record_type_selection
-        ? mappingRecordType
-        : (selectedDomainOption?.forced_record_type ?? selectedDomainOption?.recommended_record_type ?? 'cname');
+    const [_mappingSubdomain, _setMappingSubdomain] = useState<string>('');
+    const [_mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
 
     // Wizard step state
-    const [currentStep, setCurrentStep] = useState<number>(1);
+    const [_currentStep, _setCurrentStep] = useState<number>(1);
 
     const { colors } = useStoreState(state => state.theme.data!);
 
@@ -133,7 +132,7 @@ export default () => {
                 // Regenerate intent with new amount for paid products
                 getStripeIntent(Number(params.id), data?.coupon.id)
                     .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
-                    .catch(error => console.error('Error updating payment intent:', error));
+                    .catch((error: any) => console.error('Error updating payment intent:', error));
             }
         }
     };
@@ -144,28 +143,6 @@ export default () => {
             subdomain: mapping.subdomain,
             record_type: mapping.record_type,
         }));
-
-    const addDomainMapping = () => {
-        const selected = customDomainOptions.find(domain => domain.id === selectedDomainId);
-        if (!selected || !mappingSubdomain.trim()) {
-            return;
-        }
-
-        setDomainMappings(current =>
-            current.concat({
-                domain_id: selected.id,
-                domain: selected.domain,
-                subdomain: mappingSubdomain.trim().toLowerCase(),
-                record_type: effectiveRecordType,
-            }),
-        );
-
-        setMappingSubdomain('');
-    };
-
-    const removeDomainMapping = (index: number) => {
-        setDomainMappings(current => current.filter((_, idx) => idx !== index));
-    };
 
     const createFree = () => {
         if (product && serverName.trim()) {
@@ -182,7 +159,7 @@ export default () => {
                 getDomainPayload(),
             )
                 .then(() => navigate('/'))
-                .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
+                .catch((error: any) => clearAndAddHttpError({ key: 'account:billing:order', error }));
         }
     };
 
@@ -230,17 +207,18 @@ export default () => {
                     throw new Error(message, { cause: result.reason });
                 });
 
-                    if (removedMissingEggs) {
-                        addFlash({
-                            key: 'account:billing:order',
-                            type: 'warning',
-                            message: 'Some server software options are no longer available and were removed from selection.',
-                        });
-                    }
+                if (removedMissingEggs) {
+                    addFlash({
+                        key: 'account:billing:order',
+                        type: 'warning',
+                        message:
+                            'Some server software options are no longer available and were removed from selection.',
+                    });
+                }
 
                 setAvailableEggs(available);
                 if (available.length > 0) {
-                    setSelectedEggId(available[0].id);
+                    setSelectedEggId(available[0]!.id);
                 } else {
                     // Clear selections and variables when no eggs remain.
                     setSelectedEggId(undefined);
@@ -261,7 +239,7 @@ export default () => {
                     setSelectedDomainId(firstDomain.id);
                     setMappingRecordType(firstDomain.recommended_record_type);
                 }
-                  
+
                 if (productData.price !== 0) {
                     // Check which processors are available and fetch resources accordingly
                     const stripeAvailable = billing.processors?.stripe?.available ?? false;
@@ -285,7 +263,6 @@ export default () => {
                     // Mollie doesn't need pre-initialization like Stripe
                     // Payment is created when user clicks the button
                 }
-
             } catch (error: unknown) {
                 console.error('Error fetching billing order data:', error);
                 if (error instanceof Error && error.message) {
@@ -389,7 +366,9 @@ export default () => {
                             </p>
                         </div>
                         {(!nodes || nodes.length < 1) && (
-                            <Alert type={'danger'}>No nodes are available for this product. Please contact support.</Alert>
+                            <Alert type={'danger'}>
+                                No nodes are available for this product. Please contact support.
+                            </Alert>
                         )}
                         <div className={'grid gap-4 sm:grid-cols-2'}>
                             {nodes?.map(node => (
@@ -452,10 +431,7 @@ export default () => {
                                 Name your server and set any required configuration values for your selected software.
                             </p>
                         </div>
-                        <div
-                            className={'rounded-lg border p-6'}
-                            style={cardSurfaceStyle}
-                        >
+                        <div className={'rounded-lg border p-6'} style={cardSurfaceStyle}>
                             <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
                             <input
                                 id={'server-name-input'}
@@ -469,14 +445,17 @@ export default () => {
                                 required
                                 maxLength={191}
                                 aria-invalid={serverNameTouched && !serverName.trim()}
-                                aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
+                                aria-describedby={
+                                    serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
+                                }
                                 className={classNames(
                                     'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                     'text-gray-200 placeholder-gray-500',
                                     'focus:outline-none focus:ring-2 focus:ring-primary/20',
                                     {
                                         'border-gray-600': !serverNameTouched,
-                                        'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
+                                        'border-green-500 focus:border-green-500':
+                                            serverNameTouched && serverName.trim(),
                                         'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
                                     },
                                 )}
@@ -513,10 +492,7 @@ export default () => {
                             </p>
                         </div>
 
-                        <div
-                            className={'rounded-lg border p-6 space-y-6'}
-                            style={cardSurfaceStyle}
-                        >
+                        <div className={'rounded-lg border p-6 space-y-6'} style={cardSurfaceStyle}>
                             <div className={'space-y-3'}>
                                 <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
                                     {product.icon && (
@@ -525,7 +501,8 @@ export default () => {
                                     <div>
                                         <p className={'font-semibold text-gray-200'}>{product.name}</p>
                                         <p className={'text-sm text-gray-400'}>
-                                            {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                            {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing
+                                            cycle
                                         </p>
                                     </div>
                                 </div>

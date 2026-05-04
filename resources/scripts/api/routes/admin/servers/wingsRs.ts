@@ -46,18 +46,23 @@ export const getAdminServerWingsStats = (serverId: number): Promise<AdminServerS
     });
 };
 
-export const getAdminServerInstallLogs = (serverId: number, lines = 100): Promise<{ content: string[]; missing: boolean }> => {
-    return http.get(`/api/application/servers/${serverId}/wings-rs/install-logs`, { params: { lines } }).then(({ data }) => {
-        const raw = data?.content;
+export const getAdminServerInstallLogs = (
+    serverId: number,
+    lines = 100,
+): Promise<{ content: string[]; missing: boolean }> => {
+    return http
+        .get(`/api/application/servers/${serverId}/wings-rs/install-logs`, { params: { lines } })
+        .then(({ data }) => {
+            const raw = data?.content;
 
-        if (Array.isArray(raw)) {
-            return { content: raw, missing: Boolean(data?.missing) };
-        }
+            if (Array.isArray(raw)) {
+                return { content: raw, missing: Boolean(data?.missing) };
+            }
 
-        if (typeof raw === 'string') {
-            return { content: raw.length ? raw.split('\n') : [], missing: Boolean(data?.missing) };
-        }
+            if (typeof raw === 'string') {
+                return { content: raw.length ? raw.split('\n') : [], missing: Boolean(data?.missing) };
+            }
 
-        return { content: [], missing: Boolean(data?.missing) };
-    });
+            return { content: [], missing: Boolean(data?.missing) };
+        });
 };

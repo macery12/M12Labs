@@ -20,8 +20,8 @@ export const Options = { Shape, Size, Variant };
 
 export type ButtonProps = JSX.IntrinsicElements['button'] & {
     shape?: Shape;
-    size?: Size;
+    size?: Size | 'sm' | 'small' | 'large' | 'lg' | 'default';
     loading?: boolean;
-    variant?: Variant;
+    variant?: Variant | 'primary' | 'secondary' | 'filled' | 'outlined' | 'text' | 'danger';
     icon?: ElementType;
 };

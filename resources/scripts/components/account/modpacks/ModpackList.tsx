@@ -173,7 +173,7 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
 
                     {totalPages > 1 && (
                         <div css={tw`my-6 flex justify-center`}>
-                            {!isFirstPage && pages[0] > 1 && (
+                            {!isFirstPage && pages[0]! > 1 && (
                                 <PaginationButton.Text
                                     size={Button.Sizes.Small}
                                     onClick={() => handlePageClick(1)}
@@ -193,7 +193,7 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                                     {i}
                                 </PaginationButton.Text>
                             ))}
-                            {!isLastPage && pages[pages.length - 1] < totalPages && (
+                            {!isLastPage && pages[pages.length - 1]! < totalPages && (
                                 <PaginationButton.Text
                                     size={Button.Sizes.Small}
                                     onClick={() => handlePageClick(totalPages)}

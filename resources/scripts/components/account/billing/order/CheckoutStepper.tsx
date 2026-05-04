@@ -21,7 +21,10 @@ export default ({ steps }: Props) => {
                 {steps.map((step, stepIdx) => (
                     <li
                         key={step.name}
-                        className={classNames('relative', stepIdx !== steps.length - 1 ? 'flex-1 pr-4 sm:pr-8 md:pr-20' : '')}
+                        className={classNames(
+                            'relative',
+                            stepIdx !== steps.length - 1 ? 'flex-1 pr-4 sm:pr-8 md:pr-20' : '',
+                        )}
                     >
                         {step.status === 'complete' ? (
                             <>

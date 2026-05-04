@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import PageContentBlock from '@/elements/PageContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';

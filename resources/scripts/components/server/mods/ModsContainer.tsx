@@ -27,9 +27,11 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     const defaultSource = useStoreState(state => state.everest.data?.mods?.default_source ?? 'modrinth');
     const normalizedDefaultSource = defaultSource === 'spiget' ? 'spigot' : defaultSource;
     const validSources: ModSource[] = ['modrinth', 'curseforge', 'spigot'];
-    const resolvedDefaultSource = (validSources.includes(normalizedDefaultSource as ModSource)
-        ? (normalizedDefaultSource as ModSource)
-        : 'modrinth') as ModSource;
+    const resolvedDefaultSource = (
+        validSources.includes(normalizedDefaultSource as ModSource)
+            ? (normalizedDefaultSource as ModSource)
+            : 'modrinth'
+    ) as ModSource;
     const { addError } = useFlash();
     const contentLabel = contentType === 'plugins' ? 'Plugins' : 'Mods';
     const contentLabelLower = contentType === 'plugins' ? 'plugins' : 'mods';
@@ -155,56 +157,64 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
 
     return (
         <PageContentBlock
-                title={`${contentLabel} Browser`}
-                header
-                description={`Browse and install Minecraft ${contentLabelLower} from ${
-                    activeSource === 'modrinth'
-                        ? 'Modrinth'
-                        : activeSource === 'curseforge'
-                        ? 'CurseForge'
-                        : 'Spigot'
-                }.`}
-                showFlashKey={'mods'}
-            >
-                {/* Source Tabs */}
-                {!sourceOverride && (
-                    <div css={tw`flex gap-2 mb-6 border-b border-neutral-700`}>
-                        <button
-                            css={[
-                                tw`px-4 py-2 font-medium transition-colors`,
-                                activeSource !== 'modrinth' && tw`text-neutral-400 hover:text-neutral-300`,
+            title={`${contentLabel} Browser`}
+            header
+            description={`Browse and install Minecraft ${contentLabelLower} from ${
+                activeSource === 'modrinth' ? 'Modrinth' : activeSource === 'curseforge' ? 'CurseForge' : 'Spigot'
+            }.`}
+            showFlashKey={'mods'}
+        >
+            {/* Source Tabs */}
+            {!sourceOverride && (
+                <div css={tw`flex gap-2 mb-6 border-b border-neutral-700`}>
+                    <button
+                        css={[
+                            tw`px-4 py-2 font-medium transition-colors`,
+                            activeSource !== 'modrinth' && tw`text-neutral-400 hover:text-neutral-300`,
                         ]}
-                        style={activeSource === 'modrinth' ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
+                        style={
+                            activeSource === 'modrinth'
+                                ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }
+                                : undefined
+                        }
                         onClick={() => handleSourceChange('modrinth')}
-                        >
-                            Modrinth
-                        </button>
-                        {curseforgeConfigured && (
-                            <button
+                    >
+                        Modrinth
+                    </button>
+                    {curseforgeConfigured && (
+                        <button
                             css={[
                                 tw`px-4 py-2 font-medium transition-colors`,
                                 activeSource !== 'curseforge' && tw`text-neutral-400 hover:text-neutral-300`,
                             ]}
-                            style={activeSource === 'curseforge' ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
+                            style={
+                                activeSource === 'curseforge'
+                                    ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }
+                                    : undefined
+                            }
                             onClick={() => handleSourceChange('curseforge')}
-                            >
-                                CurseForge
-                            </button>
-                        )}
-                        {spigotEnabled && (
-                            <button
-                                css={[
-                                    tw`px-4 py-2 font-medium transition-colors`,
-                                    activeSource !== 'spigot' && tw`text-neutral-400 hover:text-neutral-300`,
-                                ]}
-                                style={activeSource === 'spigot' ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` } : undefined}
-                                onClick={() => handleSourceChange('spigot')}
-                            >
-                                Spigot
-                            </button>
-                        )}
-                    </div>
-                )}
+                        >
+                            CurseForge
+                        </button>
+                    )}
+                    {spigotEnabled && (
+                        <button
+                            css={[
+                                tw`px-4 py-2 font-medium transition-colors`,
+                                activeSource !== 'spigot' && tw`text-neutral-400 hover:text-neutral-300`,
+                            ]}
+                            style={
+                                activeSource === 'spigot'
+                                    ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }
+                                    : undefined
+                            }
+                            onClick={() => handleSourceChange('spigot')}
+                        >
+                            Spigot
+                        </button>
+                    )}
+                </div>
+            )}
 
             <ModSearch
                 onSearch={handleSearch}

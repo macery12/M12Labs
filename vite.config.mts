@@ -93,6 +93,8 @@ export default defineConfig({
                         id.includes('@fortawesome')
                     )
                         return 'vendor-react';
+
+                    return undefined;
                 },
             },
         },

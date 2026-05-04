@@ -233,7 +233,12 @@ export interface SetAttributeResponse {
     error?: string;
 }
 
-export const setAttribute = async (uuid: string, player: string, attribute: string, value: number): Promise<SetAttributeResponse> => {
+export const setAttribute = async (
+    uuid: string,
+    player: string,
+    attribute: string,
+    value: number,
+): Promise<SetAttributeResponse> => {
     const { data } = await http.post(`${getBasePath(uuid)}/player/${player}/attribute/${attribute}`, { value });
     return data.data || data;
 };
@@ -245,8 +250,11 @@ export interface ResetAttributeResponse {
     error?: string;
 }
 
-export const resetAttribute = async (uuid: string, player: string, attribute: string): Promise<ResetAttributeResponse> => {
+export const resetAttribute = async (
+    uuid: string,
+    player: string,
+    attribute: string,
+): Promise<ResetAttributeResponse> => {
     const { data } = await http.delete(`${getBasePath(uuid)}/player/${player}/attribute/${attribute}`);
     return data.data || data;
 };
-

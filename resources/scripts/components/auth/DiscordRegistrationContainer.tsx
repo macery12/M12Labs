@@ -24,7 +24,7 @@ interface Values {
     confirm_password: string;
 }
 
-const passwordValidation = string()
+const passwordValidation = string();
 
 function DiscordRegistrationContainer() {
     const navigate = useNavigate();
@@ -215,7 +215,9 @@ function DiscordRegistrationContainer() {
                             name={'password'}
                             placeholder={'••••••••••••'}
                             disabled={isSubmitting}
-                            description={'Must use 8+ characters with uppercase, lowercase, number, and special character, and cannot be a known compromised password.'}
+                            description={
+                                'Must use 8+ characters with uppercase, lowercase, number, and special character, and cannot be a known compromised password.'
+                            }
                         />
                         <PasswordStrengthIndicator password={values.password} />
                     </div>

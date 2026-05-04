@@ -30,15 +30,15 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
 
     const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
         {
-            method: 'stripe',
+            method: 'stripe' as const,
             available: billing.processors?.stripe?.available ?? false,
         },
         {
-            method: 'mollie',
+            method: 'mollie' as const,
             available: billing.processors?.mollie?.available ?? false,
         },
         {
-            method: 'paypal',
+            method: 'paypal' as const,
             available: billing.processors?.paypal?.available ?? false,
         },
     ].filter(processor => {
@@ -288,7 +288,6 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
                         <Spinner size={'large'} centered />
                     ) : (
                         <div>
-                            {/* @ts-expect-error this is fine, stripe library is just weird */}
                             {/* Key prop forces re-mount when intent changes (e.g., coupon applied/removed) */}
                             <Elements stripe={stripe} options={stripeOptions} key={intent.id}>
                                 <PaymentForm

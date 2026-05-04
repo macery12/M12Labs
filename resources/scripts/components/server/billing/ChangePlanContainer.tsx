@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import TitledGreyBox from '@/elements/TitledGreyBox';
 import { ServerContext } from '@/state/server';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExchangeAlt, faInfoCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Alert } from '@/elements/alert';
@@ -125,11 +124,11 @@ export default () => {
                 try {
                     const cycles = await getBillingCyclesForProduct(plan.id);
                     setBillingCycles(cycles);
-                    
+
                     // Auto-select the default or current billing cycle
                     if (cycles.length > 0) {
                         const defaultCycle = cycles.find(c => c.is_default) || cycles[0];
-                        setSelectedBillingDays(defaultCycle.days);
+                        setSelectedBillingDays(defaultCycle!.days);
                     }
                 } catch (error) {
                     console.error('Failed to fetch billing cycles:', error);
@@ -138,7 +137,7 @@ export default () => {
                 } finally {
                     setLoadingCycles(false);
                 }
-                
+
                 setShowConfirmDialog(true);
             }
         } catch (error) {
@@ -218,7 +217,8 @@ export default () => {
                                                 <span>{plan.limits.database} DB</span>
                                                 <span>{plan.limits.backup} Backups</span>
                                                 <span>
-                                                    {plan.limits.subdomain === null || plan.limits.subdomain === undefined
+                                                    {plan.limits.subdomain === null ||
+                                                    plan.limits.subdomain === undefined
                                                         ? 'Unlimited Subdomains'
                                                         : `${plan.limits.subdomain} Subdomains`}
                                                 </span>
@@ -260,7 +260,9 @@ export default () => {
                 {selectedPlan &&
                     (() => {
                         const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-                        const fallbackPricing = !selectedCycle ? calculatePlanPrice(selectedPlan, selectedBillingDays) : null;
+                        const fallbackPricing = !selectedCycle
+                            ? calculatePlanPrice(selectedPlan, selectedBillingDays ?? undefined)
+                            : null;
                         const price = selectedCycle?.price ?? fallbackPricing!.price;
                         const discount = selectedCycle?.discount_percent ?? fallbackPricing!.discount;
 
@@ -321,7 +323,10 @@ export default () => {
                                                                             ]}
                                                                         >
                                                                             {cycle.discount_percent > 0 ? '-' : '+'}
-                                                                            {Math.abs(cycle.discount_percent).toFixed(0)}%
+                                                                            {Math.abs(cycle.discount_percent).toFixed(
+                                                                                0,
+                                                                            )}
+                                                                            %
                                                                         </span>
                                                                     )}
                                                                 </div>

@@ -78,7 +78,7 @@ const CustomDomainsContainer = () => {
     const selectedDomain = useMemo(() => options.find(item => item.id === domainId), [options, domainId]);
     const effectiveRecordType: 'srv' | 'cname' = selectedDomain?.allow_record_type_selection
         ? recordType
-        : (selectedDomain?.forced_record_type ?? selectedDomain?.recommended_record_type ?? 'cname');
+        : selectedDomain?.forced_record_type ?? selectedDomain?.recommended_record_type ?? 'cname';
     const supportsSrv = effectiveRecordType === 'srv';
     const currentSubdomainCount = data?.length ?? 0;
     const hasUnlimitedSubdomains = subdomainLimit === null || subdomainLimit === undefined;
@@ -122,7 +122,7 @@ const CustomDomainsContainer = () => {
             port,
             protocol,
             record_type: effectiveRecordType,
-            service_tag: supportsSrv ? (serviceTag.trim() || undefined) : undefined,
+            service_tag: supportsSrv ? serviceTag.trim() || undefined : undefined,
         })
             .then(() => {
                 addFlash({
@@ -184,9 +184,12 @@ const CustomDomainsContainer = () => {
                             </div>
                             <div css={tw`px-4 py-4`}>
                                 <div css={tw`mb-1 font-semibold text-neutral-100`}>
-                                    {!selectedDomain.allow_record_type_selection && selectedDomain.forced_record_type === 'cname'
+                                    {!selectedDomain.allow_record_type_selection &&
+                                    selectedDomain.forced_record_type === 'cname'
                                         ? 'CNAME Only'
-                                        : (selectedDomain.recommended_record_type === 'srv' ? 'SRV Recommended' : 'CNAME Recommended')}
+                                        : selectedDomain.recommended_record_type === 'srv'
+                                        ? 'SRV Recommended'
+                                        : 'CNAME Recommended'}
                                 </div>
                                 <div css={tw`text-neutral-300`}>{selectedDomain.recommendation_notice}</div>
                                 <div css={tw`mt-1 text-xs text-neutral-400`}>{selectedDomain.connection_hint}</div>
@@ -195,7 +198,10 @@ const CustomDomainsContainer = () => {
                     )}
 
                     <div css={tw`mb-6 overflow-hidden rounded`} style={{ backgroundColor: colors.secondary }}>
-                        <div css={tw`border-b border-black px-4 py-3 font-semibold text-neutral-100`} style={{ backgroundColor: colors.headers }}>
+                        <div
+                            css={tw`border-b border-black px-4 py-3 font-semibold text-neutral-100`}
+                            style={{ backgroundColor: colors.headers }}
+                        >
                             Add Mapping
                         </div>
                         <div css={tw`px-4 py-4`}>
@@ -211,7 +217,9 @@ const CustomDomainsContainer = () => {
                                     <Select
                                         value={domainId}
                                         onChange={e => {
-                                            const selected = options.find(option => option.id === Number(e.currentTarget.value));
+                                            const selected = options.find(
+                                                option => option.id === Number(e.currentTarget.value),
+                                            );
                                             setDomainId(Number(e.currentTarget.value));
                                             setRecordType(selected?.recommended_record_type ?? 'cname');
                                             setServiceTag(selected?.default_service_tag ?? '');
@@ -225,12 +233,12 @@ const CustomDomainsContainer = () => {
                                     </Select>
                                     <div css={tw`mt-2 text-xs text-neutral-400`}>
                                         {effectiveRecordType === 'srv'
-                                            ? (selectedDomain?.default_service_tag
+                                            ? selectedDomain?.default_service_tag
                                                 ? `Default SRV tag: ${selectedDomain.default_service_tag}`
-                                                : 'Default SRV tag: none (set one manually if needed)')
-                                            : (selectedDomain?.dns_mode === 'rust'
-                                                ? 'CNAME selected (recommended). Connect using :port.'
-                                                : 'CNAME is the only supported option for this game profile. Connect using :port.')}
+                                                : 'Default SRV tag: none (set one manually if needed)'
+                                            : selectedDomain?.dns_mode === 'rust'
+                                            ? 'CNAME selected (recommended). Connect using :port.'
+                                            : 'CNAME is the only supported option for this game profile. Connect using :port.'}
                                     </div>
                                 </div>
                                 <div>
@@ -243,8 +251,8 @@ const CustomDomainsContainer = () => {
                                             {selectedDomain?.dns_mode === 'minecraft'
                                                 ? 'CNAME (supported)'
                                                 : selectedDomain?.dns_mode === 'rust'
-                                                    ? 'CNAME (recommended)'
-                                                    : 'CNAME (only supported option)'}
+                                                ? 'CNAME (recommended)'
+                                                : 'CNAME (only supported option)'}
                                         </option>
                                         {selectedDomain?.allow_record_type_selection && (
                                             <option value={'srv'}>
@@ -263,7 +271,9 @@ const CustomDomainsContainer = () => {
                                             placeholder={'Service tag (optional, e.g. _minecraft._)'}
                                         />
                                     </div>
-                                ) : <div />}
+                                ) : (
+                                    <div />
+                                )}
                                 <div>
                                     <Select value={port} onChange={e => setPort(Number(e.currentTarget.value))}>
                                         {allocationPorts.map(allocationPort => (
@@ -274,7 +284,10 @@ const CustomDomainsContainer = () => {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Select value={protocol} onChange={e => setProtocol(e.currentTarget.value as 'tcp' | 'udp' | 'both')}>
+                                    <Select
+                                        value={protocol}
+                                        onChange={e => setProtocol(e.currentTarget.value as 'tcp' | 'udp' | 'both')}
+                                    >
                                         <option value={'both'}>Both</option>
                                         <option value={'tcp'}>TCP</option>
                                         <option value={'udp'}>UDP</option>
@@ -291,7 +304,11 @@ const CustomDomainsContainer = () => {
                                     <Button color={'secondary'} onClick={onSync}>
                                         Sync DNS
                                     </Button>
-                                    <Button color={'primary'} disabled={loading || !domainId || !subdomain || isSubdomainLimitReached} onClick={onCreate}>
+                                    <Button
+                                        color={'primary'}
+                                        disabled={loading || !domainId || !subdomain || isSubdomainLimitReached}
+                                        onClick={onCreate}
+                                    >
                                         Add Mapping
                                     </Button>
                                 </div>
@@ -300,7 +317,10 @@ const CustomDomainsContainer = () => {
                     </div>
 
                     <div css={tw`overflow-hidden rounded`} style={{ backgroundColor: colors.secondary }}>
-                        <div css={tw`border-b border-black px-4 py-3 font-semibold text-neutral-100`} style={{ backgroundColor: colors.headers }}>
+                        <div
+                            css={tw`border-b border-black px-4 py-3 font-semibold text-neutral-100`}
+                            style={{ backgroundColor: colors.headers }}
+                        >
                             Current Mappings
                         </div>
                         <div css={tw`space-y-2 px-4 py-4`}>
@@ -322,7 +342,8 @@ const CustomDomainsContainer = () => {
                                     <div>
                                         <div css={tw`text-sm font-semibold text-neutral-100`}>{row.full_domain}</div>
                                         <div css={tw`text-xs text-neutral-300`}>
-                                            Port {row.port} • {row.protocol.toUpperCase()} • {row.record_type === 'srv'
+                                            Port {row.port} • {row.protocol.toUpperCase()} •{' '}
+                                            {row.record_type === 'srv'
                                                 ? `SRV service: ${row.service_tag || 'auto'}`
                                                 : 'CNAME mapping (connect using :port)'}
                                         </div>
