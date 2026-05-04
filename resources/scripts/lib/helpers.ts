@@ -47,4 +47,14 @@ const withSubComponents = <C extends StyledComponent<any, any>, P extends Record
     return component as C & P;
 };
 
-export { hexToRgba, randomInt, cleanDirectoryPath, encodePathSegments, hashToPath, withSubComponents };
+/**
+ * Returns true when `uuid` is a valid, canonically-formatted server UUID
+ * (8-4-4-4-12 hex groups). Used to guard redirect URLs built from
+ * user-supplied query parameters against open-redirect / path-traversal
+ * attacks before embedding the value in `window.location.href`.
+ */
+function isValidServerUuid(uuid: string | null | undefined): uuid is string {
+    return typeof uuid === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+}
+
+export { hexToRgba, randomInt, cleanDirectoryPath, encodePathSegments, hashToPath, withSubComponents, isValidServerUuid };
