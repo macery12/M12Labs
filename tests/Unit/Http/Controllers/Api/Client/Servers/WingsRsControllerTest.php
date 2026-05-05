@@ -110,27 +110,18 @@ class WingsRsControllerTest extends TestCase
         $this->assertNotContains('headers', $params);
     }
 
-    // ─── Fix 5: TLS verify default ────────────────────────────────────────
+    // ─── Fix 5: TLS verify ────────────────────────────────────────────────
 
     /**
-     * Confirm the guzzle.verify config key exists and defaults to true.
+     * Confirm DaemonRepository uses environment('production') for TLS verify.
      */
-    public function testGuzzleVerifyDefaultIsTrue()
-    {
-        $this->assertTrue(config('everest.guzzle.verify'));
-    }
-
-    /**
-     * Confirm DaemonRepository uses config('everest.guzzle.verify') not environment() check.
-     */
-    public function testDaemonRepositoryUsesConfigForVerify()
+    public function testDaemonRepositoryUsesEnvironmentCheckForVerify()
     {
         $source = file_get_contents(
             base_path('app/Repositories/Wings/DaemonRepository.php')
         );
 
-        $this->assertStringContainsString("config('everest.guzzle.verify'", $source);
-        $this->assertStringNotContainsString("environment('production')", $source);
+        $this->assertStringContainsString("environment('production')", $source);
     }
 
     // ─── Fix 6: operationId validation ────────────────────────────────────
