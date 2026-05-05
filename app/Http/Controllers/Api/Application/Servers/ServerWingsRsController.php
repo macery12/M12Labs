@@ -3,11 +3,11 @@
 namespace Everest\Http\Controllers\Api\Application\Servers;
 
 use Everest\Models\Server;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Everest\Repositories\Wings\DaemonWingsRsRepository;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
+use Everest\Http\Requests\Api\Application\Servers\WingsRsServerReadRequest;
 
 class ServerWingsRsController extends ApplicationApiController
 {
@@ -17,7 +17,7 @@ class ServerWingsRsController extends ApplicationApiController
         parent::__construct();
     }
 
-    public function status(Request $request, Server $server): JsonResponse
+    public function status(WingsRsServerReadRequest $request, Server $server): JsonResponse
     {
         $node = $server->node;
 
@@ -28,7 +28,7 @@ class ServerWingsRsController extends ApplicationApiController
         ]);
     }
 
-    public function stats(Request $request, Server $server): JsonResponse
+    public function stats(WingsRsServerReadRequest $request, Server $server): JsonResponse
     {
         if (!$server->node->isSupercharged()) {
             return new JsonResponse(['error' => 'This server node is not running Wings-RS.'], 400);
@@ -39,7 +39,7 @@ class ServerWingsRsController extends ApplicationApiController
         return new JsonResponse($data);
     }
 
-    public function installLogs(Request $request, Server $server): JsonResponse
+    public function installLogs(WingsRsServerReadRequest $request, Server $server): JsonResponse
     {
         if (!$server->node->isSupercharged()) {
             return new JsonResponse(['error' => 'This server node is not running Wings-RS.'], 400);
