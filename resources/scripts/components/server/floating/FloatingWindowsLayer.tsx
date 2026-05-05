@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import tw from 'twin.macro';
 import { ArrowLeftIcon, XIcon } from '@heroicons/react/outline';
 import { getFileContents, saveFileContents } from '@/api/routes/server/files';
 import { type ServerRouteDefinition } from '@/routers/routes/utils';
@@ -30,6 +31,7 @@ interface Props {
     onFocus: (id: string) => void;
     onMove: (id: string, x: number, y: number) => void;
     onResize: (id: string, width: number, height: number) => void;
+    onNavigate: (id: string, routePath: string) => void;
     serverRoutes: ServerRouteDefinition[];
 }
 
@@ -120,7 +122,7 @@ const FloatingFileEditor = ({ serverUuid, filename }: { serverUuid: string; file
             <div className={'min-h-0 flex-1 px-4 pb-4'}>
                 <Editor
                     style={{ height: '100%' }}
-                    childClassName={'h-full rounded-md'}
+                    childClassName={tw`h-full rounded-md`}
                     filename={filename}
                     initialContent={content}
                     fetchContent={value => {
@@ -266,7 +268,7 @@ const FloatingWindowFrame = ({
         event.currentTarget.releasePointerCapture(event.pointerId);
     };
 
-    const { secondary, headers, background } = useStoreState(state => state.theme.data!.colors);
+    const { headers, background } = useStoreState(state => state.theme.data!.colors);
 
     return (
         <div
@@ -341,9 +343,11 @@ const FloatingWindowToolbar = ({
     onDragPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }) => {
     const showExternalServerMessage = sourceServerId !== currentServerId;
-    const { secondary: _secondary, headers: _headers, background: _background } = useStoreState(
-        state => state.theme.data!.colors,
-    );
+    const {
+        secondary: _secondary,
+        headers: _headers,
+        background: _background,
+    } = useStoreState(state => state.theme.data!.colors);
 
     return (
         <div>
@@ -402,7 +406,6 @@ const FloatingWindowToolbar = ({
 
 export default ({ windows, currentServerId, onClose, onFocus, onMove, onResize, serverRoutes }: Props) => {
     const orderedWindows = useMemo(() => [...windows].sort((a, b) => a.zIndex - b.zIndex), [windows]);
-    const { secondary, headers, background } = useStoreState(state => state.theme.data!.colors);
 
     if (!orderedWindows.length) {
         return null;

@@ -3,7 +3,12 @@ import tw from 'twin.macro';
 import AdminBox from '@/elements/AdminBox';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { Context } from '@admin/management/nodes/NodeRouter';
-import { detectWingsRs, getSystemOverview, SystemOverview, WingsRsDetectionResult } from '@/api/routes/admin/nodes/wingsRs';
+import {
+    detectWingsRs,
+    getSystemOverview,
+    SystemOverview,
+    WingsRsDetectionResult,
+} from '@/api/routes/admin/nodes/wingsRs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBoltLightning, faRocket, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
@@ -86,12 +91,7 @@ export default () => {
                 icon={faBoltLightning}
                 title={'Wings-RS Integration'}
                 button={
-                    <Button
-                        size={Button.Sizes.Small}
-                        css={tw`ml-auto`}
-                        onClick={handleDetect}
-                        disabled={detecting}
-                    >
+                    <Button size={Button.Sizes.Small} css={tw`ml-auto`} onClick={handleDetect} disabled={detecting}>
                         <FontAwesomeIcon icon={faRocket} css={tw`mr-1`} />
                         {detecting ? 'Detecting...' : 'Re-detect'}
                     </Button>
@@ -167,7 +167,9 @@ export default () => {
                                         <td css={tw`py-1`}>
                                             <Code>
                                                 {typeof overview.uptime === 'number'
-                                                    ? `${Math.floor(overview.uptime / 3600)}h ${Math.floor((overview.uptime % 3600) / 60)}m`
+                                                    ? `${Math.floor(overview.uptime / 3600)}h ${Math.floor(
+                                                          (overview.uptime % 3600) / 60,
+                                                      )}m`
                                                     : 'N/A'}
                                             </Code>
                                         </td>
@@ -198,9 +200,9 @@ export default () => {
 
                     {!isSupercharged && (
                         <p className={'text-sm text-gray-500'}>
-                            Click &quot;Re-detect&quot; to check if this node has been upgraded to Wings-RS.
-                            Wings-RS enables supercharged features like real-time stats, log viewing, advanced
-                            file operations, and more.
+                            Click &quot;Re-detect&quot; to check if this node has been upgraded to Wings-RS. Wings-RS
+                            enables supercharged features like real-time stats, log viewing, advanced file operations,
+                            and more.
                         </p>
                     )}
                 </div>

@@ -5,7 +5,6 @@ import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
 import { updateSettings } from '@/api/routes/admin/billing';
 import { useStoreActions, useStoreState } from '@/state/hooks';
-import { BillingSetupDialog } from '@admin/modules/billing/SettingsContainer';
 
 interface Values {
     apiKey: string;
@@ -15,7 +14,7 @@ interface Props {
     extOpen?: boolean;
 }
 
-export default ({ extOpen }: Props) => {
+export default ({}: Props) => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const updateEverest = useStoreActions(s => s.everest.updateEverest);
 

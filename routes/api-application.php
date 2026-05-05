@@ -47,6 +47,13 @@ Route::middleware([AdminSubject::class])->group(function () {
 
             Route::put('/', [Application\Auth\ModuleController::class, 'update']);
         });
+
+        Route::group(['prefix' => '/jguard'], function () {
+            Route::get('/pending', [Application\Auth\JGuardController::class, 'index']);
+            Route::post('/approve/{userId}', [Application\Auth\JGuardController::class, 'approve']);
+            Route::post('/reject/{userId}', [Application\Auth\JGuardController::class, 'reject']);
+            Route::patch('/settings', [Application\Auth\JGuardController::class, 'settings']);
+        });
     });
 
     /*
@@ -249,6 +256,13 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);
         Route::post('/deferred/{id}/send-now', [Application\EmailActivityController::class, 'sendDeferredNow']);
         Route::delete('/deferred/{id}', [Application\EmailActivityController::class, 'cancelDeferred']);
+
+        // Email template viewer/editor
+        Route::get('/templates', [Application\EmailTemplateController::class, 'index']);
+        Route::get('/templates/{key}/preview', [Application\EmailTemplateController::class, 'preview'])->where('key', '[a-z0-9_.]+');
+        Route::get('/templates/{key}/source', [Application\EmailTemplateController::class, 'source'])->where('key', '[a-z0-9_.]+');
+        Route::put('/templates/{key}/source', [Application\EmailTemplateController::class, 'update'])->where('key', '[a-z0-9_.]+');
+        Route::delete('/templates/{key}/source', [Application\EmailTemplateController::class, 'revert'])->where('key', '[a-z0-9_.]+');
     });
 
     /*
@@ -296,12 +310,24 @@ Route::middleware([AdminSubject::class])->group(function () {
     */
     Route::group(['prefix' => '/extensions'], function () {
         Route::get('/', [Application\Extensions\ExtensionsController::class, 'index']);
+        Route::get('/repositories', [Application\Extensions\ExtensionsController::class, 'repositories']);
         Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
+        Route::get('/progress', [Application\Extensions\ExtensionsController::class, 'progress']);
         Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
+        Route::post('/refresh', [Application\Extensions\ExtensionsController::class, 'refresh']);
+        Route::post('/repositories', [Application\Extensions\ExtensionsController::class, 'storeRepository']);
+        Route::patch('/repositories/{repository:id}', [Application\Extensions\ExtensionsController::class, 'updateRepository']);
+        Route::delete('/repositories/{repository:id}', [Application\Extensions\ExtensionsController::class, 'deleteRepository']);
+        Route::post('/batch-install', [Application\Extensions\ExtensionsController::class, 'batchInstall']);
+        Route::post('/batch-uninstall', [Application\Extensions\ExtensionsController::class, 'batchUninstall']);
+        Route::post('/batch-update', [Application\Extensions\ExtensionsController::class, 'batchUpdate']);
 
         Route::get('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'view']);
         Route::put('/{extensionId}', [Application\Extensions\ExtensionsController::class, 'update']);
         Route::post('/{extensionId}/toggle', [Application\Extensions\ExtensionsController::class, 'toggle']);
+        Route::post('/{extensionId}/install', [Application\Extensions\ExtensionsController::class, 'install']);
+        Route::post('/{extensionId}/update-package', [Application\Extensions\ExtensionsController::class, 'updatePackage']);
+        Route::post('/{extensionId}/uninstall', [Application\Extensions\ExtensionsController::class, 'uninstall']);
     });
 
     /*
@@ -526,6 +552,7 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         Route::post('/', [Application\Users\UserController::class, 'store']);
         Route::post('/{user:id}/suspend', [Application\Users\UserController::class, 'suspend']);
+        Route::post('/{user:id}/verify-email', [Application\Users\UserController::class, 'verifyEmail']);
 
         Route::patch('/{user:id}', [Application\Users\UserController::class, 'update']);
 

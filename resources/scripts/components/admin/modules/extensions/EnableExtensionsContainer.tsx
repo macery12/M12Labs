@@ -8,10 +8,10 @@ export default () => {
     const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     return (
-        <FeatureContainer image={<ExtensionsSvg color={primary} />} icon={faPuzzlePiece} title={'Extensions Module'}>
-            The Extensions module allows you to enable powerful add-ons for your servers. Configure which nests and eggs
-            can use each extension, giving server owners access to specialized tools like the Minecraft Player Manager.
-            Extensions can be configured individually with their own settings and access controls.
+        <FeatureContainer image={<ExtensionsSvg color={primary} />} icon={faPuzzlePiece} title={'M12Labs Extensions'}>
+            Enable the M12Labs extension system to install panel extensions from the official repository or your own
+            approved repositories. Each extension can be enabled per server type with its own settings, access rules,
+            and uninstall path.
             <p className={'text-right'}>
                 <ToggleExtensionsButton />
             </p>

@@ -73,10 +73,7 @@ export default () => {
                 title={selectedLog}
                 button={
                     <div css={tw`ml-auto flex gap-2`}>
-                        <button
-                            onClick={refreshLog}
-                            css={tw`text-sm text-neutral-300 hover:text-neutral-100`}
-                        >
+                        <button onClick={refreshLog} css={tw`text-sm text-neutral-300 hover:text-neutral-100`}>
                             <FontAwesomeIcon icon={faSync} css={tw`mr-1`} />
                             Refresh
                         </button>
@@ -95,9 +92,7 @@ export default () => {
                 css={tw`relative`}
             >
                 <SpinnerOverlay visible={logLoading} />
-                <div
-                    className={'max-h-[600px] overflow-y-auto rounded bg-black/50 p-4 font-mono text-sm'}
-                >
+                <div className={'max-h-[600px] overflow-y-auto rounded bg-black/50 p-4 font-mono text-sm'}>
                     {logContents.length === 0 ? (
                         <p className={'text-gray-500'}>No log entries found.</p>
                     ) : (

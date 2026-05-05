@@ -10,6 +10,7 @@ use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
+use Everest\Services\Billing\BillingCycleService;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 use Everest\Http\Requests\Api\Application\Billing\DeleteStripeKeysRequest;
 use Everest\Http\Requests\Api\Application\Billing\GetBillingAnalyticsRequest;
@@ -20,7 +21,7 @@ class BillingController extends ApplicationApiController
     /**
      * BillingController constructor.
      */
-    public function __construct()
+    public function __construct(private BillingCycleService $billingCycleService)
     {
         parent::__construct();
     }
@@ -33,9 +34,23 @@ class BillingController extends ApplicationApiController
     public function settings(UpdateBillingSettingsRequest $request): Response
     {
         // todo(jex): use normalized request with foreach key value pairs
-        Setting::set('settings::modules:billing:' . $request->input('key'), $request->input('value'));
+        $key = $request->input('key');
+        $value = $request->input('value');
 
-        if (strpos($request['key'], 'keys:') !== 0) {
+        if ($key === 'renewal:default_billing_days') {
+            $oldDefault = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
+            $newDefault = (int) $value;
+
+            Setting::set('settings::modules:billing:' . $key, $value);
+
+            if ($oldDefault !== $newDefault) {
+                $this->billingCycleService->reseedDefaultBillingCycle($oldDefault, $newDefault);
+            }
+        } else {
+            Setting::set('settings::modules:billing:' . $key, $value);
+        }
+
+        if (strpos($key, 'keys:') !== 0) {
             Activity::event('admin:billing:update')
                 ->property('settings', $request->all())
                 ->description('Jexactyl billing settings were updated')

@@ -49,9 +49,9 @@ export interface Egg {
     scriptInstall: string | null;
     createdAt: Date;
     updatedAt: Date;
-    // configFrom: number | null;
-    // copyScriptFrom: number | null;
-    // scriptIsPrivileged: boolean;
+    configFrom: number | null;
+    copyScriptFrom: number | null;
+    scriptIsPrivileged: boolean;
 
     relations: {
         nest?: Nest;

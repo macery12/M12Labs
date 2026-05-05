@@ -12,10 +12,13 @@ import GlobalStylesheet from '@/assets/css/GlobalStylesheet';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AuthenticatedRoute from '@/elements/AuthenticatedRoute';
 import { NotFound } from '@/elements/ScreenBlock';
+import ScreenBlock from '@/elements/ScreenBlock';
 import { EverestSettings } from '@/state/everest';
 import Onboarding from '@account/Onboarding';
 import SpeedDial from '@/elements/SpeedDial';
 import SetupContainer from './admin/setup/SetupContainer';
+import ServerErrorSvg from '@/assets/images/server_error.svg';
+import http from '@/api/http';
 
 const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
@@ -41,6 +44,7 @@ interface ExtendedWindow extends Window {
         email_verified_at?: string | null;
         updated_at: string;
         created_at: string;
+        discord_linked?: boolean;
     };
 }
 
@@ -60,9 +64,12 @@ function App() {
             state: PterodactylUser.state,
             useTotp: PterodactylUser.use_totp,
             emailVerified: Boolean(PterodactylUser.email_verified),
-            emailVerifiedAt: PterodactylUser.email_verified_at ? new Date(PterodactylUser.email_verified_at) : undefined,
+            emailVerifiedAt: PterodactylUser.email_verified_at
+                ? new Date(PterodactylUser.email_verified_at)
+                : undefined,
             createdAt: new Date(PterodactylUser.created_at),
             updatedAt: new Date(PterodactylUser.updated_at),
+            discordLinked: Boolean(PterodactylUser.discord_linked),
         });
     }
 
@@ -79,10 +86,45 @@ function App() {
     }
 
     if (PterodactylUser?.state === 'suspended') {
+        const handleLogout = () => {
+            http.post('/auth/logout').finally(() => {
+                window.location.href = '/auth/login';
+            });
+        };
+
         return (
-            <div style={{ color: 'white', fontWeight: 'bold', marginTop: '10px', marginLeft: '10px' }}>
-                Your account has been suspended and blocked by an administrator.
-            </div>
+            <StoreProvider store={store}>
+                <GlobalStylesheet />
+                <ScreenBlock
+                    title={'Account Blocked'}
+                    image={ServerErrorSvg}
+                    message={
+                        'Your account has been blocked by an administrator. Please contact support if you believe this is an error.'
+                    }
+                >
+                    <button
+                        onClick={handleLogout}
+                        className={
+                            'mt-6 px-6 py-2 rounded-full border border-red-500/60 bg-red-500/10 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition-colors cursor-pointer'
+                        }
+                    >
+                        Logout
+                    </button>
+                </ScreenBlock>
+            </StoreProvider>
+        );
+    }
+
+    if (PterodactylUser?.state === 'pending') {
+        const pendingMessage =
+            EverestConfiguration?.auth.modules.jguard.pending_message ||
+            'Your account is pending approval. An administrator will review your registration shortly.';
+
+        return (
+            <StoreProvider store={store}>
+                <GlobalStylesheet />
+                <ScreenBlock title={'Awaiting Approval'} image={ServerErrorSvg} message={pendingMessage} />
+            </StoreProvider>
         );
     }
 

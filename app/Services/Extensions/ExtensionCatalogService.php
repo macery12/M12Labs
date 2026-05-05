@@ -1,0 +1,525 @@
+<?php
+
+namespace Everest\Services\Extensions;
+
+use Everest\Exceptions\DisplayException;
+use Everest\Models\ExtensionConfig;
+use Everest\Models\ExtensionPackage;
+use Everest\Models\ExtensionRepository;
+use GuzzleHttp\Psr7\UriResolver;
+use GuzzleHttp\Psr7\Utils;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Throwable;
+
+class ExtensionCatalogService
+{
+    public function __construct(private ExtensionRepositoryBootstrapService $bootstrapService)
+    {
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getLocalExtensions(): array
+    {
+        $configs = ExtensionConfig::query()->get()->keyBy('extension_id');
+        $extensions = [];
+
+        foreach ((array) config('modules.extensions.available', []) as $extensionId => $definition) {
+            if (!is_array($definition)) {
+                continue;
+            }
+
+            $config = $configs->get($extensionId);
+            $extensions[$extensionId] = [
+                'id' => $extensionId,
+                'name' => $definition['name'] ?? $extensionId,
+                'description' => $definition['description'] ?? '',
+                'version' => $definition['version'] ?? '1.0.0',
+                'latestVersion' => $definition['version'] ?? '1.0.0',
+                'author' => $definition['author'] ?? 'M12Labs',
+                'icon' => $definition['icon'] ?? 'puzzle',
+                'route' => $definition['route'] ?? $extensionId,
+                'enabled' => (bool) ($config?->enabled ?? false),
+                'allowedNests' => array_values($config?->allowed_nests ?? $definition['allowed_nests'] ?? []),
+                'allowedEggs' => array_values($config?->allowed_eggs ?? $definition['allowed_eggs'] ?? []),
+                'settings' => is_array($config?->settings) ? $config->settings : [],
+                'settingsSchema' => $this->normalizeSettingsSchema($definition['settings_schema'] ?? []),
+                'installed' => true,
+                'installable' => false,
+                'canUninstall' => false,
+                'status' => 'core',
+                'updateAvailable' => false,
+                'compatiblePanelVersions' => [],
+                'source' => [
+                    'type' => 'core',
+                    'label' => 'Core',
+                    'official' => true,
+                    'repositoryId' => null,
+                    'repositoryName' => 'Core',
+                    'homepageUrl' => null,
+                    'securityWarning' => 'Core extensions ship with M12Labs itself and are not removed through the repository installer.',
+                ],
+            ];
+        }
+
+        $packages = ExtensionPackage::query()->with('repository')->get();
+        foreach ($packages as $package) {
+            $config = $configs->get($package->extension_id);
+            $manifest = is_array($package->manifest) ? $package->manifest : [];
+            $extension = (array) Arr::get($manifest, 'extension', []);
+            $repository = $package->repository;
+
+            $extensions[$package->extension_id] = [
+                'id' => $package->extension_id,
+                'name' => $package->name,
+                'description' => $package->description ?? '',
+                'version' => $package->installed_version,
+                'latestVersion' => $package->installed_version,
+                'author' => $package->author ?? 'M12Labs',
+                'icon' => $package->icon ?: 'puzzle',
+                'route' => $package->route ?: $package->extension_id,
+                'enabled' => (bool) ($config?->enabled ?? false),
+                'allowedNests' => array_values($config?->allowed_nests ?? Arr::get($extension, 'defaults.allowedNests', [])),
+                'allowedEggs' => array_values($config?->allowed_eggs ?? Arr::get($extension, 'defaults.allowedEggs', [])),
+                'settings' => is_array($config?->settings)
+                    ? $config->settings
+                    : (array) Arr::get($extension, 'defaults.settings', []),
+                'settingsSchema' => $this->normalizeSettingsSchema(Arr::get($extension, 'settingsSchema', [])),
+                'installed' => true,
+                'installable' => false,
+                'canUninstall' => true,
+                'status' => 'installed',
+                'updateAvailable' => false,
+                'compatiblePanelVersions' => array_values(array_filter((array) Arr::get($manifest, 'compatiblePanelVersions', []), 'is_string')),
+                'source' => [
+                    'type' => 'repository',
+                    'label' => $package->source_repository_name ?: ($repository?->name ?? 'Custom repository'),
+                    'official' => (bool) $repository?->is_official,
+                    'repositoryId' => $repository?->id,
+                    'repositoryName' => $package->source_repository_name ?: $repository?->name,
+                    'homepageUrl' => $repository?->homepage_url,
+                    'securityWarning' => $this->getRepositorySecurityWarning($repository),
+                ],
+            ];
+        }
+
+        ksort($extensions);
+
+        return array_values($extensions);
+    }
+
+    /**
+     * @return array{extensions: array<int, array<string, mixed>>, repositories: array<int, array<string, mixed>>}
+     */
+    public function getCatalog(bool $forceRefresh = false): array
+    {
+        $this->bootstrapService->ensureOfficialRepository();
+
+        $localExtensions = [];
+        foreach ($this->getLocalExtensions() as $extension) {
+            $localExtensions[$extension['id']] = $extension;
+        }
+
+        $configs = ExtensionConfig::query()->get()->keyBy('extension_id');
+        $repositories = [];
+
+        foreach (ExtensionRepository::query()->orderByDesc('is_official')->orderBy('name')->get() as $repository) {
+            $repositorySummary = $this->formatRepositorySummary($repository);
+
+            if (!$repository->enabled) {
+                $repositorySummary['status'] = 'disabled';
+                $repositories[] = $repositorySummary;
+
+                continue;
+            }
+
+            try {
+                $manifest = $this->fetchRepositoryManifest($repository, $forceRefresh);
+                $packages = $manifest['packages'] ?? [];
+
+                $repositorySummary['status'] = 'ok';
+                $repositorySummary['packagesCount'] = count($packages);
+
+                foreach ($packages as $package) {
+                    $extensionId = $package['id'];
+                    $latestRelease = $package['latestRelease'];
+                    $config = $configs->get($extensionId);
+
+                    if (isset($localExtensions[$extensionId])) {
+                        $localExtensions[$extensionId]['latestVersion'] = $latestRelease['version'];
+                        $localExtensions[$extensionId]['compatiblePanelVersions'] = $latestRelease['compatiblePanelVersions'];
+                        $localExtensions[$extensionId]['updateAvailable'] =
+                            in_array($localExtensions[$extensionId]['status'], ['installed', 'core'], true)
+                            && $localExtensions[$extensionId]['version'] !== $latestRelease['version'];
+
+                        if ($this->shouldMirrorCoreExtensionFromRepository($localExtensions[$extensionId], $repository)) {
+                            $localExtensions[$extensionId] = $this->mirrorCoreExtensionFromRepository(
+                                $localExtensions[$extensionId],
+                                $repository
+                            );
+                        }
+
+                        continue;
+                    }
+
+                    $localExtensions[$extensionId] = [
+                        'id' => $extensionId,
+                        'name' => $package['name'],
+                        'description' => $package['description'],
+                        'version' => $latestRelease['version'],
+                        'latestVersion' => $latestRelease['version'],
+                        'author' => $package['author'],
+                        'icon' => $package['icon'],
+                        'route' => $package['route'],
+                        'enabled' => false,
+                        'allowedNests' => array_values($config?->allowed_nests ?? []),
+                        'allowedEggs' => array_values($config?->allowed_eggs ?? []),
+                        'settings' => is_array($config?->settings) ? $config->settings : [],
+                        'settingsSchema' => $this->normalizeSettingsSchema($package['settingsSchema'] ?? []),
+                        'installed' => false,
+                        'installable' => true,
+                        'canUninstall' => false,
+                        'status' => 'available',
+                        'updateAvailable' => false,
+                        'compatiblePanelVersions' => $latestRelease['compatiblePanelVersions'],
+                        'source' => [
+                            'type' => 'repository',
+                            'label' => $repository->name,
+                            'official' => $repository->is_official,
+                            'repositoryId' => $repository->id,
+                            'repositoryName' => $repository->name,
+                            'homepageUrl' => $repository->homepage_url,
+                            'securityWarning' => $this->getRepositorySecurityWarning($repository),
+                        ],
+                    ];
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+
+                $repositorySummary['status'] = 'error';
+                $repositorySummary['error'] = $exception->getMessage();
+            }
+
+            $repositories[] = $repositorySummary;
+        }
+
+        ksort($localExtensions);
+
+        return [
+            'extensions' => array_values($localExtensions),
+            'repositories' => $repositories,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getExtension(string $extensionId, bool $forceRefresh = false): ?array
+    {
+        foreach ($this->getCatalog($forceRefresh)['extensions'] as $extension) {
+            if ($extension['id'] === $extensionId) {
+                return $extension;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getRepositories(bool $forceRefresh = false): array
+    {
+        return $this->getCatalog($forceRefresh)['repositories'];
+    }
+
+    /**
+     * @return array{id: string, name: string, description: string, author: string, icon: string, route: string, settingsSchema: array<int, array<string, mixed>>, latestRelease: array<string, mixed>}
+     */
+    public function findRepositoryPackage(string $extensionId, int $repositoryId, ?string $version = null): array
+    {
+        $this->bootstrapService->ensureOfficialRepository();
+
+        $repository = ExtensionRepository::query()->findOrFail($repositoryId);
+        $manifest = $this->fetchRepositoryManifest($repository, true);
+
+        foreach ($manifest['packages'] ?? [] as $package) {
+            if ($package['id'] !== $extensionId) {
+                continue;
+            }
+
+            if ($version === null || $package['latestRelease']['version'] === $version) {
+                $package['repository'] = $repository;
+
+                return $package;
+            }
+
+            foreach ($package['versions'] as $release) {
+                if ($release['version'] === $version) {
+                    $package['latestRelease'] = $release;
+                    $package['repository'] = $repository;
+
+                    return $package;
+                }
+            }
+        }
+
+        throw new DisplayException('The selected extension could not be found in that repository.');
+    }
+
+    public function validateRepository(ExtensionRepository $repository): void
+    {
+        if (!$repository->enabled) {
+            return;
+        }
+
+        $this->fetchRepositoryManifest($repository, true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function fetchRepositoryManifest(ExtensionRepository $repository, bool $forceRefresh = false): array
+    {
+        $cacheKey = sprintf(
+            'extensions:repository:%s:%s',
+            $repository->id,
+            sha1($repository->manifest_url . '|' . $repository->updated_at?->timestamp)
+        );
+
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($repository) {
+            $payload = json_decode($this->readLocationContents($repository->manifest_url), true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($payload)) {
+                throw new DisplayException(sprintf('Repository "%s" returned an invalid manifest.', $repository->name));
+            }
+
+            return $this->normalizeRepositoryManifest($payload, $repository);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function normalizeRepositoryManifest(array $payload, ExtensionRepository $repository): array
+    {
+        $packages = [];
+        foreach ((array) ($payload['packages'] ?? []) as $package) {
+            if (!is_array($package)) {
+                continue;
+            }
+
+            $extensionId = trim((string) ($package['id'] ?? ''));
+            if ($extensionId === '') {
+                continue;
+            }
+
+            $versions = [];
+            foreach ((array) ($package['versions'] ?? []) as $release) {
+                if (!is_array($release)) {
+                    continue;
+                }
+
+                $version = trim((string) ($release['version'] ?? ''));
+                $archive = trim((string) ($release['archive'] ?? ''));
+                $checksum = $this->normalizeChecksum((string) ($release['sha256'] ?? ''));
+
+                if ($version === '' || $archive === '' || $checksum === '') {
+                    continue;
+                }
+
+                $versions[] = [
+                    'version' => $version,
+                    'archiveUrl' => $this->resolveLocation($repository->manifest_url, $archive),
+                    'archiveChecksum' => $checksum,
+                    'publishedAt' => $release['publishedAt'] ?? null,
+                    'compatiblePanelVersions' => array_values(array_filter((array) ($release['compatiblePanelVersions'] ?? []), 'is_string')),
+                    'notes' => $release['notes'] ?? null,
+                ];
+            }
+
+            if ($versions === []) {
+                continue;
+            }
+
+            usort($versions, function (array $left, array $right): int {
+                $leftPublishedAt = $left['publishedAt'] ?? '';
+                $rightPublishedAt = $right['publishedAt'] ?? '';
+
+                if ($leftPublishedAt !== '' || $rightPublishedAt !== '') {
+                    return strcmp((string) $rightPublishedAt, (string) $leftPublishedAt);
+                }
+
+                return strcmp((string) $right['version'], (string) $left['version']);
+            });
+
+            $packages[] = [
+                'id' => $extensionId,
+                'name' => (string) ($package['name'] ?? $extensionId),
+                'description' => (string) ($package['description'] ?? ''),
+                'author' => (string) ($package['author'] ?? 'M12Labs'),
+                'icon' => (string) ($package['icon'] ?? 'puzzle'),
+                'route' => (string) ($package['route'] ?? $extensionId),
+                'settingsSchema' => $this->normalizeSettingsSchema($package['settingsSchema'] ?? []),
+                'versions' => $versions,
+                'latestRelease' => $versions[0],
+            ];
+        }
+
+        return [
+            'schemaVersion' => (int) ($payload['schemaVersion'] ?? 1),
+            'repository' => [
+                'name' => (string) Arr::get($payload, 'repository.name', $repository->name),
+                'homepage' => Arr::get($payload, 'repository.homepage', $repository->homepage_url),
+            ],
+            'packages' => $packages,
+        ];
+    }
+
+    /**
+     * @param mixed $schema
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeSettingsSchema(mixed $schema): array
+    {
+        if (!is_array($schema)) {
+            return [];
+        }
+
+        return array_values(array_filter($schema, function ($field): bool {
+            return is_array($field)
+                && !empty($field['key'])
+                && !empty($field['label'])
+                && !empty($field['type']);
+        }));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatRepositorySummary(ExtensionRepository $repository): array
+    {
+        return [
+            'id' => $repository->id,
+            'slug' => $repository->slug,
+            'name' => $repository->name,
+            'manifestUrl' => $repository->manifest_url,
+            'homepageUrl' => $repository->homepage_url,
+            'enabled' => $repository->enabled,
+            'official' => $repository->is_official,
+            'packagesCount' => 0,
+            'securityWarning' => $this->getRepositorySecurityWarning($repository),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $extension
+     */
+    private function shouldMirrorCoreExtensionFromRepository(array $extension, ExtensionRepository $repository): bool
+    {
+        return ($extension['status'] ?? null) === 'core' && $repository->is_official;
+    }
+
+    /**
+     * @param array<string, mixed> $extension
+     * @return array<string, mixed>
+     */
+    private function mirrorCoreExtensionFromRepository(array $extension, ExtensionRepository $repository): array
+    {
+        $extension['status'] = 'installed';
+        $extension['installed'] = true;
+        $extension['installable'] = false;
+        $extension['canUninstall'] = false;
+        $extension['source'] = [
+            'type' => 'repository',
+            'label' => $repository->name,
+            'official' => (bool) $repository->is_official,
+            'repositoryId' => $repository->id,
+            'repositoryName' => $repository->name,
+            'homepageUrl' => $repository->homepage_url,
+            'securityWarning' => $this->getRepositorySecurityWarning($repository),
+        ];
+
+        return $extension;
+    }
+
+    private function getRepositorySecurityWarning(?ExtensionRepository $repository): string
+    {
+        if ($repository?->is_official) {
+            return 'Checksums verify that the downloaded archive matches the manifest published by the official M12Labs repository.';
+        }
+
+        return 'Third-party repositories can ship arbitrary PHP and frontend code into M12Labs. Checksums only verify the archive matches that repository manifest.';
+    }
+
+    private function readLocationContents(string $location): string
+    {
+        if ($this->isHttpLocation($location)) {
+            $response = Http::timeout(30)->get($location);
+            if (!$response->successful()) {
+                throw new DisplayException(sprintf('Unable to fetch repository manifest from "%s".', $location));
+            }
+
+            return (string) $response->body();
+        }
+
+        $path = $this->toLocalPath($location);
+        if (!is_file($path)) {
+            throw new DisplayException(sprintf('Repository manifest "%s" does not exist on disk.', $path));
+        }
+
+        $contents = File::get($path);
+        if ($contents === false) {
+            throw new DisplayException(sprintf('Unable to read repository manifest "%s".', $path));
+        }
+
+        return $contents;
+    }
+
+    private function resolveLocation(string $baseLocation, string $path): string
+    {
+        if ($path === '') {
+            return $path;
+        }
+
+        if ($this->isHttpLocation($path) || Str::startsWith($path, 'file://') || Str::startsWith($path, '/')) {
+            return $path;
+        }
+
+        if ($this->isHttpLocation($baseLocation)) {
+            return (string) UriResolver::resolve(Utils::uriFor($baseLocation), Utils::uriFor($path));
+        }
+
+        return dirname($this->toLocalPath($baseLocation)) . '/' . ltrim($path, '/');
+    }
+
+    private function normalizeChecksum(string $checksum): string
+    {
+        $checksum = strtolower(trim($checksum));
+
+        return Str::startsWith($checksum, 'sha256:') ? substr($checksum, 7) : $checksum;
+    }
+
+    private function isHttpLocation(string $location): bool
+    {
+        return Str::startsWith($location, ['http://', 'https://']);
+    }
+
+    private function toLocalPath(string $location): string
+    {
+        if (Str::startsWith($location, 'file://')) {
+            return rawurldecode(substr($location, 7));
+        }
+
+        return $location;
+    }
+}

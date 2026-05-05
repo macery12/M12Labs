@@ -281,7 +281,9 @@ export default function AccessControlContainer() {
                                     <div className={'flex items-center justify-between'}>
                                         <div>
                                             <p className={'text-base font-semibold text-neutral-50'}>Nests Allowed</p>
-                                            <p className={'text-xs text-neutral-400'}>Select nests this provider can use.</p>
+                                            <p className={'text-xs text-neutral-400'}>
+                                                Select nests this provider can use.
+                                            </p>
                                         </div>
                                         <div className={'flex items-center gap-3 text-xs text-neutral-300'}>
                                             <button
@@ -331,7 +333,9 @@ export default function AccessControlContainer() {
                                     />
                                     <div className={'grid gap-2 md:grid-cols-2 xl:grid-cols-3'}>
                                         {filteredNests.length === 0 && (
-                                            <div className={'text-sm text-neutral-400'}>No nests match this search.</div>
+                                            <div className={'text-sm text-neutral-400'}>
+                                                No nests match this search.
+                                            </div>
                                         )}
                                         {filteredNests.map(nest => {
                                             const selected = (rule.allowed_nest_ids ?? []).includes(nest.id);

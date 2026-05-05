@@ -35,11 +35,7 @@ const toInstalledAddon = (raw: any): InstalledAddon => ({
     modifiedAt: raw?.modified_at ? new Date(raw.modified_at) : null,
     type: (raw?.type ?? 'mod') as InstalledAddonType,
     enabled:
-        typeof raw?.enabled === 'boolean'
-            ? raw.enabled
-            : typeof raw?.disabled === 'boolean'
-              ? !raw.disabled
-              : false,
+        typeof raw?.enabled === 'boolean' ? raw.enabled : typeof raw?.disabled === 'boolean' ? !raw.disabled : false,
 });
 
 export interface InstalledAddonQuery {
@@ -50,7 +46,10 @@ export interface InstalledAddonQuery {
     status?: InstalledStatusFilter;
 }
 
-export const getInstalledAddons = (uuid: string, query: InstalledAddonQuery): Promise<PaginatedResult<InstalledAddon>> =>
+export const getInstalledAddons = (
+    uuid: string,
+    query: InstalledAddonQuery,
+): Promise<PaginatedResult<InstalledAddon>> =>
     http
         .get(`/api/client/servers/${uuid}/plugins/installed`, {
             params: {

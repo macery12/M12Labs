@@ -72,7 +72,6 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess, disabled }
     const [value, setValue] = useState(attribute.default);
     const [loading, setLoading] = useState(false);
     const { addFlash, clearAndAddHttpError } = useFlash();
-    const primary = useStoreState(state => state.theme.data!.colors.primary);
 
     const handleSetValue = async (newValue: number) => {
         if (disabled) return;
@@ -157,9 +156,9 @@ const AttributeRow = ({ attribute, serverUuid, playerName, onSuccess, disabled }
                 <input
                     type="number"
                     value={value}
-                    onChange={(e) => setValue(parseFloat(e.target.value) || 0)}
+                    onChange={e => setValue(parseFloat(e.target.value) || 0)}
                     onBlur={() => handleSetValue(value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSetValue(value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSetValue(value)}
                     disabled={disabled || loading}
                     min={attribute.min}
                     max={attribute.max}
@@ -229,7 +228,7 @@ const CategorySection = ({
               attr =>
                   attr.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   attr.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  attr.description.toLowerCase().includes(searchQuery.toLowerCase())
+                  attr.description.toLowerCase().includes(searchQuery.toLowerCase()),
           )
         : category.attributes;
 
@@ -245,19 +244,13 @@ const CategorySection = ({
                 className="w-full flex items-center justify-between px-4 py-3 bg-zinc-700 hover:bg-zinc-600 transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <FontAwesomeIcon
-                        icon={getCategoryIcon(category.category)}
-                        style={{ color: primary }}
-                    />
+                    <FontAwesomeIcon icon={getCategoryIcon(category.category)} style={{ color: primary }} />
                     <span className="font-semibold text-white">{category.category}</span>
                     <span className="text-xs text-neutral-500 bg-neutral-700 px-2 py-0.5 rounded">
                         {filteredAttributes.length}
                     </span>
                 </div>
-                <FontAwesomeIcon
-                    icon={collapsed ? faChevronRight : faChevronDown}
-                    className="text-neutral-400"
-                />
+                <FontAwesomeIcon icon={collapsed ? faChevronRight : faChevronDown} className="text-neutral-400" />
             </button>
 
             {/* Attributes List */}
@@ -289,7 +282,15 @@ interface AttributeEditorProps {
     canManage: boolean;
 }
 
-const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName, isOnline, canManage }: AttributeEditorProps) => {
+const AttributeEditor = ({
+    visible,
+    onDismissed,
+    onBack,
+    serverUuid,
+    playerName,
+    isOnline,
+    canManage,
+}: AttributeEditorProps) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [version, setVersion] = useState<ServerVersion | null>(null);
@@ -314,7 +315,9 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName,
             setVersion(versionResponse.version);
 
             if (!versionResponse.version.supportsAttributes) {
-                setError(`Attributes require Minecraft 1.16 or higher. Detected version: ${versionResponse.version.raw}`);
+                setError(
+                    `Attributes require Minecraft 1.16 or higher. Detected version: ${versionResponse.version.raw}`,
+                );
                 setLoading(false);
                 return;
             }
@@ -360,8 +363,8 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName,
                   attr =>
                       attr.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                       attr.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      attr.description.toLowerCase().includes(searchQuery.toLowerCase())
-              )
+                      attr.description.toLowerCase().includes(searchQuery.toLowerCase()),
+              ),
           )
         : categories;
 
@@ -373,9 +376,7 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName,
                     <div className="flex items-center gap-3">
                         <FontAwesomeIcon icon={faSlidersH} style={{ color: primary }} className="text-xl" />
                         <div>
-                            <h2 className="text-xl font-semibold text-white">
-                                Attribute Editor
-                            </h2>
+                            <h2 className="text-xl font-semibold text-white">Attribute Editor</h2>
                             <p className="text-sm text-neutral-400">
                                 Editing {playerName}
                                 {version && (
@@ -431,7 +432,7 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName,
                                 type="text"
                                 placeholder="Search attributes..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={e => setSearchQuery(e.target.value)}
                                 className="w-full rounded-lg bg-zinc-800 border border-neutral-600 pl-10 pr-4 py-2 text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
                             />
                             {searchQuery && (
@@ -471,9 +472,7 @@ const AttributeEditor = ({ visible, onDismissed, onBack, serverUuid, playerName,
                         {/* Categories */}
                         <div className="space-y-3 overflow-y-auto flex-1 pr-1">
                             {visibleCategories.length === 0 ? (
-                                <div className="text-center py-8 text-neutral-500">
-                                    No attributes match your search
-                                </div>
+                                <div className="text-center py-8 text-neutral-500">No attributes match your search</div>
                             ) : (
                                 visibleCategories.map(category => (
                                     <CategorySection

@@ -41,6 +41,7 @@ class UserTransformer extends Transformer
             'admin_role_id' => $model->admin_role_id,
             'role_name' => $model->admin_role_name,
             'state' => $model->state,
+            'email_verified' => $model->email_verified,
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String(),
         ];

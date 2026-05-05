@@ -4,7 +4,6 @@ namespace Everest\Observers;
 
 use Everest\Events;
 use Everest\Models\Server;
-use Everest\Jobs\CustomDomains\CleanupServerCustomDomainsJob;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 
 class ServerObserver
@@ -51,9 +50,9 @@ class ServerObserver
     {
         event(new Events\Server\Deleted($server));
 
-        if (config('modules.custom_domains.cleanup_on_delete', true)) {
-            CleanupServerCustomDomainsJob::dispatch($server->id);
-        }
+        // Custom domain DNS cleanup is handled synchronously in ServerDeletionService::handle()
+        // before the server is deleted, ensuring DNS records are removed while the
+        // server_custom_domains rows still exist (before the cascadeOnDelete FK fires).
     }
 
     /**

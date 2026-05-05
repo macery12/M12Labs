@@ -68,36 +68,35 @@ export const getSystemStats = (nodeId: number): Promise<SystemStats> => {
         const stats = data?.stats ?? data;
 
         return {
-        cpu: {
-            used: Number(stats?.cpu?.used ?? stats?.cpu_used ?? 0),
-            threads: Number(stats?.cpu?.threads ?? stats?.cpu_threads ?? 0),
-            model: stats?.cpu?.model ?? stats?.cpu_model ?? 'Unknown',
-        },
-        network: {
-            received_rate: Number(
-                stats?.network?.receiving_rate
-                    ?? stats?.network?.received_rate
-                    ?? stats?.network_receiving_rate
-                    ?? 0
-            ),
-            sent_rate: Number(
-                stats?.network?.sending_rate
-                    ?? stats?.network?.sent_rate
-                    ?? stats?.network_sending_rate
-                    ?? 0
-            ),
-        },
-        memory: {
-            used: Number(stats?.memory?.used ?? stats?.memory_used ?? 0),
-            process: Number(stats?.memory?.used_process ?? stats?.memory?.process ?? stats?.memory_process ?? 0),
-            total: Number(stats?.memory?.total ?? stats?.memory_total ?? 0),
-        },
-        disk: {
-            used: Number(stats?.disk?.used ?? stats?.disk_used ?? 0),
-            total: Number(stats?.disk?.total ?? stats?.disk_total ?? 0),
-            read_rate: Number(stats?.disk?.reading_rate ?? stats?.disk?.read_rate ?? stats?.disk_reading_rate ?? 0),
-            write_rate: Number(stats?.disk?.writing_rate ?? stats?.disk?.write_rate ?? stats?.disk_writing_rate ?? 0),
-        },
+            cpu: {
+                used: Number(stats?.cpu?.used ?? stats?.cpu_used ?? 0),
+                threads: Number(stats?.cpu?.threads ?? stats?.cpu_threads ?? 0),
+                model: stats?.cpu?.model ?? stats?.cpu_model ?? 'Unknown',
+            },
+            network: {
+                received_rate: Number(
+                    stats?.network?.receiving_rate ??
+                        stats?.network?.received_rate ??
+                        stats?.network_receiving_rate ??
+                        0,
+                ),
+                sent_rate: Number(
+                    stats?.network?.sending_rate ?? stats?.network?.sent_rate ?? stats?.network_sending_rate ?? 0,
+                ),
+            },
+            memory: {
+                used: Number(stats?.memory?.used ?? stats?.memory_used ?? 0),
+                process: Number(stats?.memory?.used_process ?? stats?.memory?.process ?? stats?.memory_process ?? 0),
+                total: Number(stats?.memory?.total ?? stats?.memory_total ?? 0),
+            },
+            disk: {
+                used: Number(stats?.disk?.used ?? stats?.disk_used ?? 0),
+                total: Number(stats?.disk?.total ?? stats?.disk_total ?? 0),
+                read_rate: Number(stats?.disk?.reading_rate ?? stats?.disk?.read_rate ?? stats?.disk_reading_rate ?? 0),
+                write_rate: Number(
+                    stats?.disk?.writing_rate ?? stats?.disk?.write_rate ?? stats?.disk_writing_rate ?? 0,
+                ),
+            },
         };
     });
 };

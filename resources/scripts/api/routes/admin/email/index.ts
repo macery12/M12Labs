@@ -359,3 +359,76 @@ export const cancelDeferred = (id: number): Promise<{ success: boolean; message:
             .catch(reject);
     });
 };
+
+// Email template viewer/editor
+export interface TemplateVariable {
+    name: string;
+    description: string;
+    example: string;
+    required: boolean;
+}
+
+export interface EmailTemplate {
+    key: string;
+    label: string;
+    category: string;
+    variables: TemplateVariable[];
+    is_customized: boolean;
+}
+
+export const getEmailTemplates = (): Promise<{ templates: EmailTemplate[] }> => {
+    return new Promise((resolve, reject) => {
+        http.get<{ templates: EmailTemplate[] }>(`/api/application/email/templates`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const previewEmailTemplate = (key: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        http.get<string>(`/api/application/email/templates/${encodeURIComponent(key)}/preview`, {
+            responseType: 'text',
+            transformResponse: [data => data],
+        })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const getEmailTemplateSource = (
+    key: string,
+): Promise<{ key: string; content: string; is_customized: boolean }> => {
+    return new Promise((resolve, reject) => {
+        http.get<{ key: string; content: string; is_customized: boolean }>(
+            `/api/application/email/templates/${encodeURIComponent(key)}/source`,
+        )
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const saveEmailTemplateSource = (
+    key: string,
+    content: string,
+): Promise<{ success: boolean; key: string; is_customized: boolean }> => {
+    return new Promise((resolve, reject) => {
+        http.put<{ success: boolean; key: string; is_customized: boolean }>(
+            `/api/application/email/templates/${encodeURIComponent(key)}/source`,
+            { content },
+        )
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const revertEmailTemplate = (
+    key: string,
+): Promise<{ success: boolean; key: string; is_customized: boolean }> => {
+    return new Promise((resolve, reject) => {
+        http.delete<{ success: boolean; key: string; is_customized: boolean }>(
+            `/api/application/email/templates/${encodeURIComponent(key)}/source`,
+        )
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};

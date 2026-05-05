@@ -138,10 +138,8 @@ export default () => {
                         <SuggestionCard
                             icon={faUserPlus}
                             link={'/admin/auth'}
-                            title={'Allow user registration'}
-                            description={
-                                'Enabling the Authentication module allows users to signup via the login page.'
-                            }
+                            title={'Allow email registration'}
+                            description={'Enabling email registration allows users to signup via the login page.'}
                         />
                     )}
                     {metricData && (

@@ -43,7 +43,7 @@ interface PropsWithIcon extends Props {
 
 interface PropsWithoutIcon extends Props {
     icon?: never;
-    children: ReactNode;
+    children?: ReactNode;
 }
 
 export const SubNavigationLink = ({

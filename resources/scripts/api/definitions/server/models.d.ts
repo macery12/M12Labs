@@ -40,6 +40,7 @@ interface Server {
     deletionCanceledAt?: Date | undefined;
     deletionScheduledBy?: number | null;
     isDeletionScheduled?: boolean;
+    modsEnabled?: boolean;
     featureLimits: {
         databases: number;
         allocations: number;

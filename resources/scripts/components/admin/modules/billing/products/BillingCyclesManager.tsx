@@ -93,7 +93,7 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
 
     const handleToggleCycle = (index: number) => {
         const updated = [...cycles];
-        updated[index] = { ...updated[index], isEnabled: !updated[index].isEnabled };
+        updated[index] = { ...updated[index]!, isEnabled: !updated[index]!.isEnabled };
         onChange(updated);
     };
 
@@ -103,14 +103,13 @@ const BillingCyclesManager = ({ cycles, basePrice, onChange }: BillingCyclesMana
     };
 
     const getDiscountPercent = (days: number): number => {
-        if (days === defaultBillingDays) return 0;
+        if (basePrice === 0 || days === defaultBillingDays) return 0;
 
-        const baseMonthlyPrice = basePrice;
         const actualPrice = calculatePrice(days);
         const equivalentMonthlyPrice = (actualPrice / days) * defaultBillingDays;
 
         // Return positive for discount, negative for premium
-        return ((baseMonthlyPrice - equivalentMonthlyPrice) / baseMonthlyPrice) * 100;
+        return ((basePrice - equivalentMonthlyPrice) / basePrice) * 100;
     };
 
     return (

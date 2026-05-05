@@ -73,7 +73,7 @@ export default () => {
 
     // Group events by category
     const categorizedEvents = filteredEvents.reduce((acc, event) => {
-        const category = event.key.split(':')[1]; // Extract category from key like "admin:billing:update"
+        const category = event.key.split(':')[1] ?? 'unknown'; // Extract category from key like "admin:billing:update"
         if (!acc[category]) {
             acc[category] = [];
         }
@@ -119,7 +119,7 @@ export default () => {
                         <WebhookCategorySection
                             key={category}
                             category={category}
-                            events={categorizedEvents[category]}
+                            events={categorizedEvents[category] ?? []}
                             onUpdate={loadEvents}
                         />
                     ))

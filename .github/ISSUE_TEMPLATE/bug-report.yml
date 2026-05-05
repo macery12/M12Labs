@@ -1,87 +1,87 @@
 name: Bug Report
-description: Something isn't working quite right in the software.
-labels: [not confirmed]
+description: Something isn't working quite right in M12Labs.
+labels: [bug, not confirmed]
 body:
-- type: markdown
-  attributes:
-    value: |
-      Bug reports should only be used for reporting issues with how the software works. For assistance installing this software, as well as debugging issues with dependencies, please use our [Discord server](https://discord.gg/qttGR4Z5Pk).
+  - type: markdown
+    attributes:
+      value: |
+        > [!IMPORTANT]
+        > Bug reports should only be used for reporting issues with how the panel works.
+        > For general help or support, please visit our [Discord](https://discord.gg/fVJZtqKYrc).
 
-- type: textarea      
-  attributes:
-    label: Current Behavior
-    description: Please provide a clear & concise description of the issue.
-  validations:
-    required: true
+  - type: checkboxes
+    attributes:
+      label: Pre-flight Checklist
+      options:
+        - label: I have searched the existing issues and confirmed this has not been reported before.
+          required: true
+        - label: I believe this is a bug with the software, not a configuration issue with my system.
+          required: true
 
-- type: textarea      
-  attributes:
-    label: Expected Behavior
-    description: Please describe what you expected to happen.
-  validations:
-    required: true
-
-- type: textarea      
-  attributes:
-    label: Steps to Reproduce
-    description: Please be as detailed as possible when providing steps to reproduce, failure to provide steps will result in this issue being closed.
-  validations:
-    required: true
-
-- type: input
-  id: panel-version
-  attributes:
-    label: Panel Version
-    description: Version number of your Panel (latest is not a version)
-    placeholder: 1.4.0
-  validations:
-    required: true
-
-- type: input
-  id: wings-version
-  attributes:
-    label: Wings Version
-    description: Version number of your Wings (latest is not a version)
-    placeholder: 1.4.2
-  validations:
-    required: true
-    
-- type: input
-  id: egg-details
-  attributes:
-    label: Games and/or Eggs Affected
-    description: Please include the specific game(s) or egg(s) you are running into this bug with.
-    placeholder: Minecraft (Paper), Minecraft (Forge)
- 
-- type: input
-  id: docker-image
-  attributes:
-    label: Docker Image
-    description: The specific Docker image you are using for the game(s) above.
-    placeholder: ghcr.io/pterodactyl/yolks:java_21
-
-- type: textarea
-  id: panel-logs
-  attributes:
-    label: Error Logs
-    description: |
-      Run the following command to collect logs on your system.
-      
-      Wings: `sudo wings diagnostics`
-      Panel: `tail -n 150 /var/www/jexactyl/storage/logs/laravel-$(date +%F).log | nc pteropaste.com 99`
-    placeholder: "https://pteropaste.com/a1h6z"
-    render: bash
-  validations:
-    required: false
-    
-- type: checkboxes
-  attributes:
-    label: Is there an existing issue for this?
-    description: Please [search here](https://github.com/jexcactyl/jexactyl/issues) to see if an issue already exists for your problem.
-    options:
-    - label: I have searched the existing issues before opening this issue.
+  - type: textarea
+    attributes:
+      label: What's Happening
+      description: A clear and concise description of the bug you are experiencing.
+    validations:
       required: true
-    - label: I have provided all relevant details, including the specific game and Docker images I am using if this issue is related to running a server.
+
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      description: >
+        Provide detailed step-by-step instructions to reproduce the issue.
+        Issues without clear reproduction steps may be closed without investigation.
+    validations:
       required: true
-    - label: I have checked in the Discord server and believe this is a bug with the software, and not a configuration issue with my specific system.
+
+  - type: input
+    id: panel-version
+    attributes:
+      label: Panel Version
+      description: The version of M12Labs you are running. "Latest" is not a version.
+      placeholder: 2.0.0-alpha-2.7
+    validations:
       required: true
+
+  - type: input
+    id: wings-version
+    attributes:
+      label: Wings Version
+      description: The version of Wings you are running. "Latest" is not a version.
+      placeholder: 1.4.2
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: extensions-installed
+    attributes:
+      label: Extensions Installed
+      description: Are you running any M12Labs extensions?
+      options:
+        - label: "Yes, I have extensions installed."
+
+  - type: textarea
+    id: extensions-list
+    attributes:
+      label: Extensions List
+      description: If yes above, please list the extensions and their versions.
+      placeholder: "ExtensionA v1.0, ExtensionB v2.3"
+    validations:
+      required: false
+
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: Error Logs
+      description: Paste any relevant error logs here.
+      render: bash
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra-comments
+    attributes:
+      label: Additional Comments
+      description: Anything else that may help diagnose this issue?
+    validations:
+      required: false

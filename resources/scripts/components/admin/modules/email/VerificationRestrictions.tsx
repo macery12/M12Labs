@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getVerificationRules, updateVerificationRules } from '@/api/routes/admin/email';
 import {
     DEFAULT_EMAIL_VERIFICATION_RULES,
@@ -20,12 +20,17 @@ const VerificationRestrictions = () => {
     const { clearAndAddHttpError, clearFlashes, addFlash } = useFlash();
     const { background } = useStoreState(state => state.theme.data!.colors);
     const [rules, setRules] = useState<VerificationRules>(() => cloneRules(DEFAULT_EMAIL_VERIFICATION_RULES));
-    const [initialRules, setInitialRules] = useState<VerificationRules>(() => cloneRules(DEFAULT_EMAIL_VERIFICATION_RULES));
+    const [initialRules, setInitialRules] = useState<VerificationRules>(() =>
+        cloneRules(DEFAULT_EMAIL_VERIFICATION_RULES),
+    );
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     const hasChanges = useMemo(() => {
-        return JSON.stringify(normalizeVerificationRules(initialRules)) !== JSON.stringify(normalizeVerificationRules(rules));
+        return (
+            JSON.stringify(normalizeVerificationRules(initialRules)) !==
+            JSON.stringify(normalizeVerificationRules(rules))
+        );
     }, [initialRules, rules]);
 
     useEffect(() => {

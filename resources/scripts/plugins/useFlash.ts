@@ -1,8 +1,9 @@
 import { Actions, useStoreActions } from 'easy-peasy';
-import { FlashStore } from '@/state/flashes';
+import { FlashStore, FlashMessage } from '@/state/flashes';
 import { ApplicationStore } from '@/state';
 
 interface KeyedFlashStore {
+    addFlash: (message: Omit<FlashMessage, 'key'>) => void;
     addError: (message: string, title?: string) => void;
     clearFlashes: () => void;
     clearAndAddHttpError: (error?: Error | string | null) => void;
@@ -16,6 +17,7 @@ const useFlashKey = (key: string): KeyedFlashStore => {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
 
     return {
+        addFlash: (message) => addFlash({ ...message, key }),
         addError: (message, title) => addFlash({ key, message, title, type: 'error' }),
         clearFlashes: () => clearFlashes(key),
         clearAndAddHttpError: error => clearAndAddHttpError({ key, error }),

@@ -1,6 +1,7 @@
 import { HighlightStyle } from '@codemirror/language';
 import type { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+// @ts-ignore - @lezer/highlight does not ship declaration files
 import { tags as t } from '@lezer/highlight';
 
 const highlightBackground = 'transparent';

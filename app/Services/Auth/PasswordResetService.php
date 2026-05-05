@@ -29,7 +29,7 @@ class PasswordResetService
 
         event(new PasswordResetRequested(
             user: $user,
-            resetUrl: url("/auth/password/reset/{$token}?email=" . urlencode($email)),
+            resetUrl: rtrim(config('app.url'), '/') . '/auth/password/reset/' . $token . '?email=' . urlencode($email),
             correlationId: Str::uuid()->toString()
         ));
 

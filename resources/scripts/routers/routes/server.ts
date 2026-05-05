@@ -1,5 +1,19 @@
 import { lazy } from 'react';
-import * as Icon from '@heroicons/react/outline';
+import {
+    ArchiveIcon,
+    CashIcon,
+    ClockIcon,
+    CogIcon,
+    DatabaseIcon,
+    EyeIcon,
+    FolderOpenIcon,
+    GlobeIcon,
+    PlayIcon,
+    PuzzleIcon,
+    TerminalIcon,
+    UsersIcon,
+    WifiIcon,
+} from '@heroicons/react/outline';
 import { route, type ServerRouteDefinition } from '@/routers/routes/utils';
 
 const ServerConsoleContainer = lazy(() => import('@server/console/ServerConsoleContainer'));
@@ -16,8 +30,6 @@ const StartupContainer = lazy(() => import('@server/startup/StartupContainer'));
 const ServerActivityLogContainer = lazy(() => import('@server/ServerActivityLogContainer'));
 const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingContainer'));
 const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
-const ModsContainer = lazy(() => import('@server/mods/ModsContainer'));
-const ModpacksContainer = lazy(() => import('@server/modpacks/ModpacksContainer'));
 const ExtensionsRouter = lazy(() => import('@server/extensions/ExtensionsRouter'));
 const CustomDomainsContainer = lazy(() => import('@server/domains/CustomDomainsContainer'));
 
@@ -26,86 +38,86 @@ const server: ServerRouteDefinition[] = [
         permission: 'control.console',
         name: 'Console',
         end: true,
-        icon: Icon.TerminalIcon,
+        icon: TerminalIcon,
     }),
     route('files/*', FileManagerContainer, {
         permission: 'file.*',
         name: 'Files',
-        icon: Icon.FolderOpenIcon,
+        icon: FolderOpenIcon,
         category: 'data',
     }),
     route('files/:action/*', FileEditContainer, { permission: 'file.*' }),
     route('databases/*', DatabasesContainer, {
         permission: 'database.*',
         name: 'Databases',
-        icon: Icon.DatabaseIcon,
+        icon: DatabaseIcon,
         category: 'data',
     }),
     route('marketplace/*', ModsAndPluginsPage, {
         permission: 'file.create',
         name: 'Mods & Plugins',
-        icon: Icon.PuzzleIcon,
+        icon: PuzzleIcon,
         category: 'data',
     }),
     route('schedules/*', ScheduleContainer, {
         permission: 'schedule.*',
         name: 'Schedules',
-        icon: Icon.ClockIcon,
+        icon: ClockIcon,
         category: 'configuration',
     }),
     route('schedules/:id/*', ScheduleEditContainer, { permission: 'schedule.*', category: 'configuration' }),
     route('users/*', UsersContainer, {
         permission: 'user.*',
         name: 'Users',
-        icon: Icon.UsersIcon,
+        icon: UsersIcon,
         category: 'configuration',
     }),
     route('backups/*', BackupContainer, {
         permission: 'backup.*',
         name: 'Backups',
-        icon: Icon.ArchiveIcon,
+        icon: ArchiveIcon,
         category: 'data',
     }),
     route('network/*', NetworkContainer, {
         permission: 'allocation.*',
         name: 'Network',
-        icon: Icon.WifiIcon,
+        icon: WifiIcon,
         category: 'configuration',
     }),
     route('custom-domains/*', CustomDomainsContainer, {
         permission: 'allocation.*',
         name: 'Custom Domains',
-        icon: Icon.GlobeIcon,
+        icon: GlobeIcon,
         category: 'configuration',
     }),
     route('startup/*', StartupContainer, {
         permission: 'startup.*',
         name: 'Startup',
-        icon: Icon.PlayIcon,
+        icon: PlayIcon,
         category: 'configuration',
     }),
     route('settings/*', ServerSettingsContainer, {
         permission: 'settings.*',
         name: 'Settings',
-        icon: Icon.CogIcon,
+        icon: CogIcon,
         category: 'configuration',
     }),
     route('activity/*', ServerActivityLogContainer, {
         permission: 'activity.*',
         name: 'Activity',
-        icon: Icon.EyeIcon,
+        icon: EyeIcon,
         condition: flags => flags.activityEnabled,
     }),
     route('billing/*', ServerBillingContainer, {
         permission: 'billing.*',
         name: 'Billing',
-        icon: Icon.CashIcon,
+        icon: CashIcon,
         condition: flags => flags.billable,
     }),
     route('extensions/*', ExtensionsRouter, {
         permission: 'extension.*',
         name: 'Extensions',
-        icon: Icon.PuzzleIcon,
+        icon: PuzzleIcon,
         condition: flags => flags.extensionsEnabled,
     }),
 ];

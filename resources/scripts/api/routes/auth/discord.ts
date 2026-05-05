@@ -33,7 +33,9 @@ export const checkUsernameAvailability = (username: string): Promise<UsernameChe
     });
 };
 
-export const completeDiscordRegistration = (data: CompleteDiscordRegistrationData): Promise<void> => {
+export const completeDiscordRegistration = (
+    data: CompleteDiscordRegistrationData,
+): Promise<{ userState: string | null }> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>
@@ -43,6 +45,22 @@ export const completeDiscordRegistration = (data: CompleteDiscordRegistrationDat
                     confirm_password: data.confirm_password,
                 }),
             )
+            .then(response => resolve({ userState: response.data?.data?.user?.state ?? null }))
+            .catch(reject);
+    });
+};
+
+export const getDiscordLinkUrl = (): Promise<{ url: string }> => {
+    return new Promise((resolve, reject) => {
+        http.post('/api/client/account/discord/link')
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const unlinkDiscordAccount = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.post('/api/client/account/discord/unlink')
             .then(() => resolve())
             .catch(reject);
     });

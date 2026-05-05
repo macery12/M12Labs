@@ -83,7 +83,7 @@ export const getBillingCyclesForProduct = (productId: number): Promise<BillingCy
 export const changePlan = (
     serverUuid: string,
     productId: number,
-    billingDays?: number
+    billingDays?: number,
 ): Promise<PlanChangeResponse> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${serverUuid}/billing/plans/${productId}/change`, {

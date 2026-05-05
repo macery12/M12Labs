@@ -22,7 +22,7 @@ export default () => {
     const { hash } = useLocationHash();
     const { clearAndAddHttpError } = useFlashKey('server:activity');
     const uuid = ServerContext.useStoreState(state => state.server.data?.uuid);
-    
+
     // Filter states that will be sent to backend
     const [searchInput, setSearchInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -30,7 +30,7 @@ export default () => {
     const [selectedEventType, setSelectedEventType] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<'-timestamp' | 'timestamp'>('-timestamp');
     const [currentPage, setCurrentPage] = useState(1);
-    
+
     // All users and events (loaded from backend)
     const [allUsers, setAllUsers] = useState<Array<{ uuid: string; username: string }>>([]);
     const [allEvents, setAllEvents] = useState<string[]>([]);
@@ -45,23 +45,23 @@ export default () => {
             sorts: { timestamp: sortOrder === '-timestamp' ? -1 : 1 },
             filters: {},
         };
-        
+
         // Add hash filters if present
         if (hash.ip) f.filters!.ip = hash.ip;
         if (hash.event) f.filters!.event = hash.event;
-        
+
         if (searchQuery.trim()) {
             f.filters!.search = searchQuery;
         }
-        
+
         if (selectedUser) {
             f.filters!.actor = selectedUser;
         }
-        
+
         if (selectedEventType) {
             f.filters!.event = selectedEventType;
         }
-        
+
         return f;
     }, [searchQuery, selectedUser, selectedEventType, sortOrder, currentPage, hash]);
 
@@ -75,13 +75,10 @@ export default () => {
     // Load all users and events on mount
     useEffect(() => {
         if (!uuid) return;
-        
+
         const loadMetadata = async () => {
             try {
-                const [users, events] = await Promise.all([
-                    getActivityUsers(uuid),
-                    getActivityEvents(uuid),
-                ]);
+                const [users, events] = await Promise.all([getActivityUsers(uuid), getActivityEvents(uuid)]);
                 setAllUsers(users);
                 setAllEvents(events);
             } catch (err) {
@@ -103,7 +100,7 @@ export default () => {
             debounce((value: string) => {
                 setSearchQuery(value);
             }, 300),
-        []
+        [],
     );
 
     // Update search query when input changes
@@ -133,15 +130,12 @@ export default () => {
     }, [searchQuery, selectedUser, selectedEventType, sortOrder]);
 
     const hasActiveFilters =
-        searchInput.trim() !== '' ||
-        selectedUser !== '' ||
-        selectedEventType !== '' ||
-        sortOrder !== '-timestamp';
+        searchInput.trim() !== '' || selectedUser !== '' || selectedEventType !== '' || sortOrder !== '-timestamp';
 
     return (
         <PageContentBlock title={'Activity Log'} header description={'View recent activity on your server.'}>
             <FlashMessageRender byKey={'server:activity'} />
-            
+
             {/* Filter Toolbar */}
             <div className={'mb-4 space-y-3'}>
                 <div className={'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'}>
@@ -242,10 +236,7 @@ export default () => {
                 </div>
             )}
             {data && data.items.length > 0 && (
-                <PaginationFooter
-                    pagination={data.pagination}
-                    onPageSelect={page => setCurrentPage(page)}
-                />
+                <PaginationFooter pagination={data.pagination} onPageSelect={page => setCurrentPage(page)} />
             )}
         </PageContentBlock>
     );

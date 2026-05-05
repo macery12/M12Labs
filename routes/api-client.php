@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Everest\Http\Controllers\Api\Client;
 use Everest\Http\Middleware\SuspendedAccount;
+use Everest\Http\Middleware\JGuardPendingAccount;
 use Everest\Http\Middleware\Activity\ServerSubject;
 use Everest\Http\Middleware\Activity\AccountSubject;
 use Everest\Http\Middleware\RequireTwoFactorAuthentication;
@@ -18,7 +19,7 @@ use Everest\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 |
 */
 
-Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
+Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
     Route::get('links', [Client\LinkController::class, 'index']);
@@ -52,6 +53,11 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
         Route::post('/email/verification', [Client\EmailVerificationController::class, 'send'])
             ->name('api:client.account.email-verification')
             ->middleware('throttle:email-verification');
+
+        Route::post('/discord/link', [\Everest\Http\Controllers\Auth\Modules\DiscordLoginController::class, 'requestLinkToken'])
+            ->name('api:client.account.discord.link');
+        Route::post('/discord/unlink', [\Everest\Http\Controllers\Auth\Modules\DiscordLoginController::class, 'unlinkDiscord'])
+            ->name('api:client.account.discord.unlink');
 
         Route::get('/activity', Client\ActivityLogController::class)
             ->middleware('verified.view:credentials')
@@ -351,7 +357,10 @@ Route::prefix('/')->middleware([SuspendedAccount::class])->group(function () {
             Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
 
             // Extension-specific routes (must come before the wildcard route)
-            foreach (glob(__DIR__ . '/extensions/client/*.php') as $extensionRoutes) {
+            foreach ((glob(__DIR__ . '/extensions/client/*.php') ?: []) as $extensionRoutes) {
+                require $extensionRoutes;
+            }
+            foreach ((glob(app_path('Extensions/Packages/*/routes/client.php')) ?: []) as $extensionRoutes) {
                 require $extensionRoutes;
             }
 

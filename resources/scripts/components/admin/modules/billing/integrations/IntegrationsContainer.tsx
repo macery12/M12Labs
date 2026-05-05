@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
-import { useStoreState, useStoreActions } from '@/state/hooks';
+import { useStoreState } from '@/state/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle, faPuzzlePiece, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { createIntegrationRegistry } from './registry';
@@ -11,7 +11,6 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
     const theme = useStoreState(s => s.theme.data!);
-    const _updateEverest = useStoreActions(s => s.everest.updateEverest);
     const [loading, setLoading] = useState<string | null>(null);
 
     const integrations = createIntegrationRegistry(settings);

@@ -2,15 +2,21 @@
 
 namespace Everest\Http\Controllers\Api\Client\Extensions;
 
-use Everest\Models\Server;
-use Illuminate\Http\JsonResponse;
 use Everest\Models\ExtensionConfig;
-use Everest\Models\Subuser;
+use Everest\Models\Server;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Extensions\GetServerExtensionsRequest;
+use Everest\Models\Subuser;
+use Everest\Services\Extensions\ExtensionCatalogService;
+use Illuminate\Http\JsonResponse;
 
 class ExtensionsController extends ClientApiController
 {
+    public function __construct(private ExtensionCatalogService $catalogService)
+    {
+        parent::__construct();
+    }
+
     private function isExtensionDisabledForUser(Server $server, $user, string $extensionId): bool
     {
         if ($user->root_admin || $server->owner_id === $user->id) {
@@ -31,7 +37,10 @@ class ExtensionsController extends ClientApiController
     public function index(GetServerExtensionsRequest $request, Server $server): JsonResponse
     {
         $enabledConfigs = ExtensionConfig::getEnabledForServer($server);
-        $availableExtensions = config('modules.extensions.available', []);
+        $availableExtensions = [];
+        foreach ($this->catalogService->getLocalExtensions() as $extension) {
+            $availableExtensions[$extension['id']] = $extension;
+        }
 
         $user = $request->user();
 
@@ -48,7 +57,7 @@ class ExtensionsController extends ClientApiController
                     'name' => $extensionDef['name'],
                     'description' => $extensionDef['description'],
                     'icon' => $extensionDef['icon'],
-                    'version' => $extensionDef['version'] ?? '1.0.0',
+                    'version' => $extensionDef['version'] ?? ($extensionDef['latestVersion'] ?? '1.0.0'),
                     'route' => $extensionDef['route'] ?? $config->extension_id,
                     'settings' => $config->settings ?? [],
                 ];
@@ -80,7 +89,11 @@ class ExtensionsController extends ClientApiController
             ]);
         }
 
-        $availableExtensions = config('modules.extensions.available', []);
+        $availableExtensions = [];
+        foreach ($this->catalogService->getLocalExtensions() as $extension) {
+            $availableExtensions[$extension['id']] = $extension;
+        }
+
         $extensionDef = $availableExtensions[$extensionId] ?? null;
 
         return new JsonResponse([

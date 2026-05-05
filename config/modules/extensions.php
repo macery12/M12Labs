@@ -157,43 +157,6 @@ return [
         //     ],
         // ],
 
-        'minecraft_player_manager' => [
-            'name' => 'Minecraft Player Manager',
-            'description' => 'Manage Minecraft Java Edition players directly from the panel. Includes whitelist management, banning, kicking, operator controls, inventory viewing, attribute editing, and more.',
-            'version' => '1.0.1',
-            'author' => 'Bimbab189',
-            'icon' => 'users',
-            'route' => 'minecraft_player_manager',
-            'enabled' => env('EXTENSION_MINECRAFT_PLAYER_MANAGER_ENABLED', false),
-            /*
-             * Default nests and eggs this extension works with.
-             * These can be overridden in the admin panel.
-             * Format: nest_id => [egg_ids] or nest_id => [] for all eggs in nest
-             */
-            'allowed_nests' => [],
-            'allowed_eggs' => [],
-        ],
-
-        'discordsrv_helper' => [
-            'name' => 'DiscordSRV Helper',
-            'description' => 'Quickly install and configure DiscordSRV (install plugin, set bot token, link chat channel, and generate invite link).',
-            'version' => '1.0.0',
-            'author' => 'Bimbab189',
-            'icon' => 'server',
-            'route' => 'discordsrv_helper',
-            'enabled' => env('EXTENSION_DISCORDSRV_HELPER_ENABLED', false),
-            'allowed_nests' => [],
-            'allowed_eggs' => [],
-            'settings_schema' => [
-                [
-                    'key' => 'jar_url',
-                    'label' => 'DiscordSRV Jar URL',
-                    'type' => 'text',
-                    'placeholder' => 'https://github.com/DiscordSRV/DiscordSRV/releases/download/.../DiscordSRV-Build-....jar',
-                    'help' => 'Optional. If set, the Install action uses this URL instead of auto-detecting the latest release.',
-                ],
-            ],
-        ],
     ],
 
     /*

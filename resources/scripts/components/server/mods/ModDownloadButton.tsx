@@ -33,8 +33,7 @@ export default ({ modId, fileId, fileName, source, contentType = 'mods', disable
         downloadMod(uuid, modId, fileId, source, contentType)
             .then(data => {
                 const resolvedName = data?.file?.name || fileName;
-                const destination =
-                    data?.file?.path && data.file.path.includes('/plugins') ? '/plugins' : '/mods';
+                const destination = data?.file?.path && data.file.path.includes('/plugins') ? '/plugins' : '/mods';
                 setDownloaded(true);
                 addFlash({
                     key: 'mods',
@@ -57,7 +56,7 @@ export default ({ modId, fileId, fileName, source, contentType = 'mods', disable
                 onClick={handleDownload}
                 disabled={downloading || downloaded || Boolean(disabledReason)}
                 css={[downloaded && tw`bg-green-600 hover:bg-green-700`, tw`min-w-[100px]`]}
-                >
+            >
                 {downloading ? (
                     <>
                         <Spinner size={'small'} css={tw`mr-2`} />

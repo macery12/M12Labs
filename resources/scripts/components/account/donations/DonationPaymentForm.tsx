@@ -1,4 +1,4 @@
-import React, { FormEvent, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import tw from 'twin.macro';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faLock } from '@fortawesome/free-solid-svg-icons';
-import { useStoreState } from '@/state/hooks';
 
 interface Props {
     intentId: string;
@@ -20,7 +19,6 @@ export default ({ intentId, amount }: Props) => {
     const stripe = useStripe();
     const elements = useElements();
     const navigate = useNavigate();
-    const { colors } = useStoreState(state => state.theme.data!);
     const [loading, setLoading] = useState(false);
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
 

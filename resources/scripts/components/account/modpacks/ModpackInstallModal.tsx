@@ -195,7 +195,7 @@ export default ({ modpack, onClose }: Props) => {
 
     return (
         <>
-            <Modal visible onDismissed={onClose} large>
+            <Modal visible onDismissed={onClose}>
                 <ModalContent>
                     <ModpackHeader>
                         <ModpackLogo

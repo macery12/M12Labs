@@ -5,7 +5,7 @@
     "private": true,
     "packageManager": "pnpm@9.0.6",
     "engines": {
-        "node": ">=16.13"
+        "node": ">=18"
     },
     "scripts": {
         "build": "vite build",
@@ -95,7 +95,6 @@
         "yup": "^0.29.3"
     },
     "devDependencies": {
-        "@preact/preset-vite": "^2.10.3",
         "@tailwindcss/forms": "0.5.3",
         "@tailwindcss/line-clamp": "0.4.2",
         "@testing-library/dom": "9.0.0",
@@ -103,14 +102,14 @@
         "@testing-library/user-event": "14.4.3",
         "@types/debounce": "1.2.1",
         "@types/events": "3.0.0",
-        "@types/node": "18.14.1",
+        "@types/node": "20.19.39",
         "@types/react": "18.0.28",
         "@types/react-dom": "18.0.11",
         "@types/styled-components": "5.1.26",
         "@types/yup": "^0.29.14",
         "@typescript-eslint/eslint-plugin": "5.53.0",
         "@typescript-eslint/parser": "5.53.0",
-        "@vitejs/plugin-react": "3.1.0",
+        "@vitejs/plugin-react": "^4.3.0",
         "autoprefixer": "10.4.13",
         "babel-plugin-macros": "^3.1.0",
         "babel-plugin-styled-components": "2.0.7",
@@ -123,7 +122,7 @@
         "eslint-plugin-react": "7.32.2",
         "eslint-plugin-react-hooks": "4.6.0",
         "happy-dom": "^20.8.9",
-        "laravel-vite-plugin": "0.7.4",
+        "laravel-vite-plugin": "^1.0.0",
         "pathe": "1.1.0",
         "postcss": "8.4.21",
         "postcss-import": "15.1.0",
@@ -136,8 +135,8 @@
         "tailwindcss": "3.2.7",
         "ts-essentials": "9.3.0",
         "twin.macro": "2.8.2",
-        "typescript": "4.9.5",
-        "vite": "4.5.14",
+        "typescript": "5.9.3",
+        "vite": "^5.4.0",
         "vitest": "^1.6.0"
     },
     "browserslist": [

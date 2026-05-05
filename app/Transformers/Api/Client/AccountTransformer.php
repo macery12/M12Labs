@@ -28,6 +28,7 @@ class AccountTransformer extends Transformer
             'language' => $model->language,
             'email_verified' => $model->hasVerifiedEmail(),
             'email_verified_at' => $model->email_verified_at,
+            'discord_linked' => !empty($model->external_id),
         ];
     }
 }

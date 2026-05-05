@@ -1,6 +1,6 @@
-import Field from '@/elements/Field';
+import Field, { TextareaField } from '@/elements/Field';
 import Label from '@/elements/Label';
-import { Form, Formik } from 'formik';
+import { Field as FormikField, Form, Formik } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
 import {
@@ -16,7 +16,6 @@ import {
 import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
-import SelectField from '@/elements/SelectField';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -108,10 +107,10 @@ export default () => {
                     <div className={'grid gap-4 lg:grid-cols-4'}>
                         <AdminBox title={'AI Provider Mode'} icon={faServer}>
                             <div>
-                                <Field as="select" id={'mode'} name={'mode'}>
+                                <FormikField as="select" id={'mode'} name={'mode'}>
                                     <option value="openai">OpenAI / Standard (HTTPS)</option>
                                     <option value="ollama">Ollama (Local/HTTPS)</option>
-                                </Field>
+                                </FormikField>
                                 <p className={'mt-1.5 text-xs text-gray-400'}>
                                     {values.mode === 'ollama'
                                         ? 'Ollama mode allows HTTP for local connections and does not require an API key.'
@@ -203,8 +202,7 @@ export default () => {
 
                         <AdminBox title={'System Prompt'} icon={faComment} className={'col-span-2'}>
                             <div>
-                                <Field
-                                    as="textarea"
+                                <TextareaField
                                     id={'system_prompt'}
                                     name={'system_prompt'}
                                     rows={3}

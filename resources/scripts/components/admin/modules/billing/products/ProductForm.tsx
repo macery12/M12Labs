@@ -5,7 +5,6 @@ import { Form, Formik } from 'formik';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Field, { FieldRow } from '@/elements/Field';
 import tw from 'twin.macro';
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import { Button } from '@/elements/button';
 import type { ApplicationStore } from '@/state';
 import AdminBox from '@/elements/AdminBox';
@@ -29,7 +28,7 @@ import { getCategory } from '@/api/routes/admin/billing/categories';
 import { Product } from '@definitions/admin';
 import { ProductValues } from '@/api/routes/admin/billing/types';
 import { Alert } from '@/elements/alert';
-import { getBillingCycles, syncBillingCycles, getMultiplierRanges } from '@/api/routes/admin/billing/billingCycles';
+import { getBillingCycles, syncBillingCycles } from '@/api/routes/admin/billing/billingCycles';
 
 export default ({ product }: { product?: Product }) => {
     const navigate = useNavigate();
@@ -65,7 +64,12 @@ export default ({ product }: { product?: Product }) => {
 
         if (product) {
             getBillingCycles(Number(params.id), product.id).then(cycles => {
-                setBillingCycles(cycles.map(c => ({ id: c.id, days: c.days, isEnabled: c.isEnabled ?? true })));
+                // Filter out synthetic default entries (no id) — they are fallbacks, not real DB rows.
+                setBillingCycles(
+                    cycles
+                        .filter(c => c.id !== undefined)
+                        .map(c => ({ id: c.id, days: c.days, isEnabled: c.isEnabled ?? true })),
+                );
             });
         }
     }, [params.id, product?.id]);
@@ -115,14 +119,11 @@ export default ({ product }: { product?: Product }) => {
         } else {
             updateProduct(Number(params.id), product!.id, submitData)
                 .then(() => {
-                    if (billingCycles.length > 0) {
-                        return syncBillingCycles(
-                            Number(params.id),
-                            product.id,
-                            billingCycles.map(c => ({ days: c.days, is_enabled: c.isEnabled })),
-                        );
-                    }
-                    return Promise.resolve();
+                    return syncBillingCycles(
+                        Number(params.id),
+                        product.id,
+                        billingCycles.map(c => ({ days: c.days, is_enabled: c.isEnabled })),
+                    );
                 })
                 .then(() => {
                     setSubmitting(false);

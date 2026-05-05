@@ -110,18 +110,28 @@ export default () => {
                                                 css={tw`border-t border-gray-800 hover:bg-white/5 transition-colors`}
                                             >
                                                 <td css={tw`py-4 px-4 align-top`}>
-                                            <div css={tw`font-semibold text-white truncate max-w-full`}>{session.deviceName}</div>
-                                            <div
-                                                css={tw`text-xs text-gray-400 mt-1 leading-snug line-clamp-2 max-w-full break-words`}
-                                                title={session.userAgent || undefined}
-                                            >
-                                                {session.userAgent || 'Unknown user agent'}
-                                            </div>
+                                                    <div css={tw`font-semibold text-white truncate max-w-full`}>
+                                                        {session.deviceName}
+                                                    </div>
+                                                    <div
+                                                        css={tw`text-xs text-gray-400 mt-1 leading-snug line-clamp-2 max-w-full break-words`}
+                                                        title={session.userAgent || undefined}
+                                                    >
+                                                        {session.userAgent || 'Unknown user agent'}
+                                                    </div>
                                                 </td>
-                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{session.ipAddress || 'Unknown'}</td>
-                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{session.location || 'Unknown'}</td>
-                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{formatDate(session.createdAt)}</td>
-                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>{formatDate(session.lastActivityAt)}</td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>
+                                                    {session.ipAddress || 'Unknown'}
+                                                </td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>
+                                                    {session.location || 'Unknown'}
+                                                </td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>
+                                                    {formatDate(session.createdAt)}
+                                                </td>
+                                                <td css={tw`py-4 px-4 text-gray-200 align-top truncate`}>
+                                                    {formatDate(session.lastActivityAt)}
+                                                </td>
                                                 <td css={tw`py-4 px-4 align-top`}>
                                                     <Pill type={status.type}>{status.label}</Pill>
                                                 </td>
@@ -136,7 +146,11 @@ export default () => {
                                                         onClick={() => void handleRevoke(session.id)}
                                                         disabled={session.isCurrent || !!session.revokedAt}
                                                     >
-                                                        {session.revokedAt ? 'Revoked' : session.isCurrent ? 'Current' : 'Log out'}
+                                                        {session.revokedAt
+                                                            ? 'Revoked'
+                                                            : session.isCurrent
+                                                            ? 'Current'
+                                                            : 'Log out'}
                                                     </Button.Text>
                                                 </td>
                                             </tr>
@@ -167,18 +181,22 @@ export default () => {
                                         </div>
                                         <div css={tw`flex flex-wrap gap-3 text-sm text-gray-200`}>
                                             <span>
-                                                <span css={tw`text-gray-400`}>IP:</span> {session.ipAddress || 'Unknown'}
+                                                <span css={tw`text-gray-400`}>IP:</span>{' '}
+                                                {session.ipAddress || 'Unknown'}
                                             </span>
                                             <span>
-                                                <span css={tw`text-gray-400`}>Location:</span> {session.location || 'Unknown'}
+                                                <span css={tw`text-gray-400`}>Location:</span>{' '}
+                                                {session.location || 'Unknown'}
                                             </span>
                                         </div>
                                         <div css={tw`text-sm text-gray-200 flex flex-wrap gap-3`}>
                                             <span>
-                                                <span css={tw`text-gray-400`}>First:</span> {formatDate(session.createdAt)}
+                                                <span css={tw`text-gray-400`}>First:</span>{' '}
+                                                {formatDate(session.createdAt)}
                                             </span>
                                             <span>
-                                                <span css={tw`text-gray-400`}>Last:</span> {formatDate(session.lastActivityAt)}
+                                                <span css={tw`text-gray-400`}>Last:</span>{' '}
+                                                {formatDate(session.lastActivityAt)}
                                             </span>
                                         </div>
                                         <div css={tw`flex items-center justify-between`}>
@@ -193,7 +211,11 @@ export default () => {
                                                 onClick={() => void handleRevoke(session.id)}
                                                 disabled={session.isCurrent || !!session.revokedAt}
                                             >
-                                                {session.revokedAt ? 'Revoked' : session.isCurrent ? 'Current' : 'Log out'}
+                                                {session.revokedAt
+                                                    ? 'Revoked'
+                                                    : session.isCurrent
+                                                    ? 'Current'
+                                                    : 'Log out'}
                                             </Button.Text>
                                         </div>
                                     </div>

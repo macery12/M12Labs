@@ -13,7 +13,11 @@ export default () => {
     const { addError } = useFlash();
 
     const [loading, setLoading] = useState(true);
-    const [status, setStatus] = useState<{ supercharged: boolean; wings_type: string; wings_version: string | null } | null>(null);
+    const [status, setStatus] = useState<{
+        supercharged: boolean;
+        wings_type: string;
+        wings_version: string | null;
+    } | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
     const [logsMissing, setLogsMissing] = useState(false);
     const [logsLoading, setLogsLoading] = useState(false);
@@ -69,8 +73,12 @@ export default () => {
             <AdminBox title={'Wings-RS Status'} icon={faBoltLightning} css={tw`relative`}>
                 <SpinnerOverlay visible={loading} />
                 <div className={'grid gap-2 text-sm text-gray-300'}>
-                    <div>Type: <span className={'font-mono'}>{status?.wings_type ?? 'unknown'}</span></div>
-                    <div>Version: <span className={'font-mono'}>{status?.wings_version ?? 'unknown'}</span></div>
+                    <div>
+                        Type: <span className={'font-mono'}>{status?.wings_type ?? 'unknown'}</span>
+                    </div>
+                    <div>
+                        Version: <span className={'font-mono'}>{status?.wings_version ?? 'unknown'}</span>
+                    </div>
                 </div>
             </AdminBox>
 
@@ -79,7 +87,8 @@ export default () => {
                 icon={faFileAlt}
                 button={
                     <button onClick={loadLogs} css={tw`ml-auto text-sm text-neutral-300 hover:text-neutral-100`}>
-                        <FontAwesomeIcon icon={faSync} css={tw`mr-1`} />Refresh
+                        <FontAwesomeIcon icon={faSync} css={tw`mr-1`} />
+                        Refresh
                     </button>
                 }
                 css={tw`relative`}
@@ -92,7 +101,9 @@ export default () => {
                 ) : (
                     <div className={'max-h-[420px] overflow-y-auto rounded bg-black/40 p-4 font-mono text-xs'}>
                         {logs.map((line, index) => (
-                            <div key={index} className={'py-0.5 text-gray-300'}>{line}</div>
+                            <div key={index} className={'py-0.5 text-gray-300'}>
+                                {line}
+                            </div>
                         ))}
                     </div>
                 )}

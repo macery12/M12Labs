@@ -45,9 +45,7 @@ function ServerConsoleContainer() {
     const isNodeUnderMaintenance = ServerContext.useStoreState(state => state.server.data!.isNodeUnderMaintenance);
     const status = ServerContext.useStoreState(state => state.status.value);
     const renewalDate = ServerContext.useStoreState(state => state.server.data!.renewalDate);
-    const isDeletionScheduled = ServerContext.useStoreState(
-        state => state.server.data!.isDeletionScheduled ?? false,
-    );
+    const isDeletionScheduled = ServerContext.useStoreState(state => state.server.data!.isDeletionScheduled ?? false);
     const billingProductId = ServerContext.useStoreState(state => state.server.data!.billingProductId);
     const settings = useStoreState(state => state.everest.data!.billing);
     const settingsPath = `/server/${uuid}/settings`;

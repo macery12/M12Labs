@@ -1,5 +1,4 @@
 import tw from 'twin.macro';
-import AdminContentBlock from '@/elements/AdminContentBlock';
 import Registration from '@admin/modules/auth/Registration';
 import Security from './Security';
 import CaptchaSettings from './CaptchaSettings';
@@ -19,7 +18,7 @@ export default () => {
     const modules = useStoreState(state => state.everest.data!.auth.modules);
 
     return (
-        <AdminContentBlock title={'Authentication'}>
+        <>
             {visible && (
                 <Dialog title={'Add Modules'} open={visible} onClose={() => setVisible(false)}>
                     <div className={'space-y-3'}>
@@ -57,6 +56,6 @@ export default () => {
                 {modules.discord.enabled && <DiscordSSO />}
                 {modules.google.enabled && <GoogleSSO />}
             </div>
-        </AdminContentBlock>
+        </>
     );
 };

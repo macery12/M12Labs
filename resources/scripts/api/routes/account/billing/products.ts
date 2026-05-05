@@ -3,6 +3,8 @@ import { EggVariable } from '@definitions/server';
 import http from '@/api/http';
 import { Transformers as ServerTransformers } from '@definitions/server';
 
+export type { Product };
+
 export interface EggInfo {
     id: number;
     name: string;
@@ -56,6 +58,7 @@ export interface BillingCycle {
     multiplier: number;
     discountPercent: number;
     isDefault: boolean;
+    label?: string;
 }
 
 export const getProductBillingCycles = (productId: number): Promise<BillingCycle[]> => {

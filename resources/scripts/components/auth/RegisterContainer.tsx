@@ -79,6 +79,11 @@ function RegisterContainer() {
 
         register({ ...values, 'cf-turnstile-response': token.current })
             .then(response => {
+                if (response.userState === 'pending') {
+                    window.location.href = '/';
+                    return;
+                }
+
                 if (response.complete) {
                     // @ts-expect-error this is valid
                     window.location = response.intended || '/';

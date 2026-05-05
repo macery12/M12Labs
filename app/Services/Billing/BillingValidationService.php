@@ -34,8 +34,8 @@ class BillingValidationService
     public function __construct(
         private DaemonServerRepository $daemonRepository,
         private NodeAvailabilityService $nodeAvailabilityService,
-    )
-    {
+        private BillingCycleService $billingCycleService,
+    ) {
     }
 
     /**
@@ -148,6 +148,12 @@ class BillingValidationService
         // Use billing days if provided, otherwise default to 30
         $days = $billingDays ?? 30;
 
+        // For new purchases, ensure the requested billing cycle is available for this product.
+        // Renewals use the server's existing billing_days and are not re-validated here.
+        if ($orderType !== 'ren') {
+            $this->billingCycleService->validateBillingCycle($product, $days);
+        }
+
         // Calculate price based on billing cycle and node
         $priceInfo = $product->calculatePrice($days, $nodeId);
         $basePrice = $priceInfo['price'];
@@ -157,7 +163,7 @@ class BillingValidationService
 
         if ($couponId) {
             $coupon = Coupon::find($couponId);
-            
+
             if (!$coupon) {
                 throw new DisplayException('The specified coupon does not exist.');
             }

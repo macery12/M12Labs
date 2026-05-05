@@ -61,7 +61,9 @@ export default class Transformers {
             featureLimits: attributes.feature_limits,
             container: attributes.container,
             renewalDate: attributes.renewal_date ? new Date(attributes.renewal_date) : undefined,
-            deletionScheduledAt: attributes.deletion_scheduled_at ? new Date(attributes.deletion_scheduled_at) : undefined,
+            deletionScheduledAt: attributes.deletion_scheduled_at
+                ? new Date(attributes.deletion_scheduled_at)
+                : undefined,
             deletionCanceledAt: attributes.deletion_canceled_at ? new Date(attributes.deletion_canceled_at) : undefined,
             deletionScheduledBy: attributes.deletion_scheduled_by,
             isDeletionScheduled: attributes.is_deletion_scheduled ?? false,
@@ -125,6 +127,7 @@ export default class Transformers {
         description: attributes.description,
         permissions: attributes.permissions,
         color: attributes.color,
+        relationships: {},
     });
 
     static toAdminRolePermission = ({ attributes }: FractalResponseData): Models.AdminRolePermission => ({
@@ -275,6 +278,7 @@ export default class Transformers {
             isRootAdmin: attributes.root_admin,
             isUsingTwoFactor: attributes['2fa'] || false,
             avatarUrl: attributes.avatar_url,
+            emailVerified: attributes.email_verified ?? false,
             createdAt: new Date(attributes.created_at),
             updatedAt: new Date(attributes.updated_at),
             relationships: {

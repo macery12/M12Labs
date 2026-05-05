@@ -41,7 +41,12 @@ export const processUnpaidOrder = (
     });
 };
 
-export const renewFreeServer = (product: number, server_id: number, coupon_id?: number, billing_days?: number): Promise<Server> => {
+export const renewFreeServer = (
+    product: number,
+    server_id: number,
+    coupon_id?: number,
+    billing_days?: number,
+): Promise<Server> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/billing/renew/free`, { product, server_id, coupon_id, billing_days })
             .then(({ data }) => resolve(data))

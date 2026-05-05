@@ -8,6 +8,7 @@ export type ServerStatus =
     | 'reinstall_failed'
     | 'suspended'
     | 'restoring_backup'
+    | 'offline'
     | null;
 
 const getServer = (uuid: string): Promise<[Server, string[]]> => {

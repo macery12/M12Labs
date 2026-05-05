@@ -35,7 +35,9 @@ export default () => {
     const [allowedEggIds, setAllowedEggIds] = useState<number[]>([]);
     const [apiKeys, setApiKeys] = useState<CustomDomainApiKey[]>([]);
     const [nests, setNests] = useState<Array<{ id: number; name: string }>>([]);
-    const [eggs, setEggs] = useState<Array<{ id: number; name: string; nest_id: number; nest_name: string; default_service_tag: string | null }>>([]);
+    const [eggs, setEggs] = useState<
+        Array<{ id: number; name: string; nest_id: number; nest_name: string; default_service_tag: string | null }>
+    >([]);
 
     const loadDomains = async () => {
         const rows = await getCustomDomains();
@@ -199,7 +201,8 @@ export default () => {
                     className={'rounded border border-neutral-700 px-3 py-2 text-xs text-neutral-300'}
                     style={{ backgroundColor: colors.background }}
                 >
-                    SRV is reliable for Minecraft-family eggs. Rust and most other eggs should use CNAME and connect with :port.
+                    SRV is reliable for Minecraft-family eggs. Rust and most other eggs should use CNAME and connect
+                    with :port.
                 </div>
                 <div
                     className={'rounded border border-neutral-700 px-3 py-2 text-xs text-neutral-300'}
@@ -210,11 +213,15 @@ export default () => {
             </div>
 
             <div className={'mb-6 rounded p-4'} style={{ backgroundColor: colors.secondary }}>
-                <div className={'-mx-4 -mt-4 mb-3 rounded-t border-b border-black px-4 py-3'} style={{ backgroundColor: colors.headers }}>
+                <div
+                    className={'-mx-4 -mt-4 mb-3 rounded-t border-b border-black px-4 py-3'}
+                    style={{ backgroundColor: colors.headers }}
+                >
                     <div className={'text-sm font-medium text-neutral-100'}>Per-Egg Service Tag Override</div>
                 </div>
                 <div className={'mb-3 text-xs text-neutral-400'}>
-                    Select an egg to override its service tag. The field auto-fills with the egg default tag when available.
+                    Select an egg to override its service tag. The field auto-fills with the egg default tag when
+                    available.
                 </div>
                 <div className={'grid grid-cols-1 gap-3 md:grid-cols-3'}>
                     <select
@@ -300,7 +307,7 @@ export default () => {
 
                             return (
                                 <div key={eggId} className={'text-neutral-300'}>
-                                    {(egg?.name || `Egg #${eggId}`)} → {tag}
+                                    {egg?.name || `Egg #${eggId}`} → {tag}
                                 </div>
                             );
                         })
@@ -309,18 +316,26 @@ export default () => {
             </div>
 
             <div className={'mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2'}>
-                <div
-                    className={'rounded p-4'}
-                    style={{ backgroundColor: colors.secondary }}
-                >
-                    <div className={'-mx-4 -mt-4 mb-3 flex items-center justify-between rounded-t border-b border-black px-4 py-3'} style={{ backgroundColor: colors.headers }}>
+                <div className={'rounded p-4'} style={{ backgroundColor: colors.secondary }}>
+                    <div
+                        className={
+                            '-mx-4 -mt-4 mb-3 flex items-center justify-between rounded-t border-b border-black px-4 py-3'
+                        }
+                        style={{ backgroundColor: colors.headers }}
+                    >
                         <h4 className={'text-sm font-medium text-neutral-100'}>Allowed Nests</h4>
                         <div className={'space-x-2 text-xs'}>
-                            <button onClick={() => setAllowedNestIds(nests.map(nest => nest.id))} className={'text-neutral-400 hover:text-white'}>
+                            <button
+                                onClick={() => setAllowedNestIds(nests.map(nest => nest.id))}
+                                className={'text-neutral-400 hover:text-white'}
+                            >
                                 Select All
                             </button>
                             <span className={'text-neutral-600'}>|</span>
-                            <button onClick={() => setAllowedNestIds([])} className={'text-neutral-400 hover:text-white'}>
+                            <button
+                                onClick={() => setAllowedNestIds([])}
+                                className={'text-neutral-400 hover:text-white'}
+                            >
                                 Clear
                             </button>
                         </div>
@@ -333,21 +348,32 @@ export default () => {
                                     'flex cursor-pointer items-center rounded border p-3 transition-colors',
                                     allowedNestIds.includes(nest.id)
                                         ? 'border-neutral-600 bg-neutral-700/20'
-                                        : 'border-neutral-700'
+                                        : 'border-neutral-700',
                                 )}
                                 style={{ backgroundColor: colors.background }}
                             >
-                                <input type={'checkbox'} checked={allowedNestIds.includes(nest.id)} onChange={() => toggleNest(nest.id)} className={'sr-only'} />
+                                <input
+                                    type={'checkbox'}
+                                    checked={allowedNestIds.includes(nest.id)}
+                                    onChange={() => toggleNest(nest.id)}
+                                    className={'sr-only'}
+                                />
                                 <div
                                     className={classNames(
                                         'mr-3 flex h-5 w-5 items-center justify-center rounded border-2',
                                         allowedNestIds.includes(nest.id)
                                             ? 'border-transparent'
-                                            : 'border-neutral-500 bg-transparent'
+                                            : 'border-neutral-500 bg-transparent',
                                     )}
-                                    style={allowedNestIds.includes(nest.id) ? { backgroundColor: colors.primary } : undefined}
+                                    style={
+                                        allowedNestIds.includes(nest.id)
+                                            ? { backgroundColor: colors.primary }
+                                            : undefined
+                                    }
                                 >
-                                    {allowedNestIds.includes(nest.id) && <FontAwesomeIcon icon={faCheck} className={'text-xs text-white'} />}
+                                    {allowedNestIds.includes(nest.id) && (
+                                        <FontAwesomeIcon icon={faCheck} className={'text-xs text-white'} />
+                                    )}
                                 </div>
                                 <span className={'text-sm text-neutral-100'}>{nest.name}</span>
                             </label>
@@ -355,11 +381,13 @@ export default () => {
                     </div>
                 </div>
 
-                <div
-                    className={'rounded p-4'}
-                    style={{ backgroundColor: colors.secondary }}
-                >
-                    <div className={'-mx-4 -mt-4 mb-3 flex items-center justify-between rounded-t border-b border-black px-4 py-3'} style={{ backgroundColor: colors.headers }}>
+                <div className={'rounded p-4'} style={{ backgroundColor: colors.secondary }}>
+                    <div
+                        className={
+                            '-mx-4 -mt-4 mb-3 flex items-center justify-between rounded-t border-b border-black px-4 py-3'
+                        }
+                        style={{ backgroundColor: colors.headers }}
+                    >
                         <h4 className={'text-sm font-medium text-neutral-100'}>
                             Allowed Eggs
                             {allowedNestIds.length > 0 && (
@@ -369,11 +397,17 @@ export default () => {
                             )}
                         </h4>
                         <div className={'space-x-2 text-xs'}>
-                            <button onClick={() => setAllowedEggIds(filteredEggs.map(egg => egg.id))} className={'text-neutral-400 hover:text-white'}>
+                            <button
+                                onClick={() => setAllowedEggIds(filteredEggs.map(egg => egg.id))}
+                                className={'text-neutral-400 hover:text-white'}
+                            >
                                 Select All
                             </button>
                             <span className={'text-neutral-600'}>|</span>
-                            <button onClick={() => setAllowedEggIds([])} className={'text-neutral-400 hover:text-white'}>
+                            <button
+                                onClick={() => setAllowedEggIds([])}
+                                className={'text-neutral-400 hover:text-white'}
+                            >
                                 Clear
                             </button>
                         </div>
@@ -391,21 +425,32 @@ export default () => {
                                         'flex cursor-pointer items-center rounded border p-3 transition-colors',
                                         allowedEggIds.includes(egg.id)
                                             ? 'border-neutral-600 bg-neutral-700/20'
-                                            : 'border-neutral-700'
+                                            : 'border-neutral-700',
                                     )}
                                     style={{ backgroundColor: colors.background }}
                                 >
-                                    <input type={'checkbox'} checked={allowedEggIds.includes(egg.id)} onChange={() => toggleEgg(egg.id)} className={'sr-only'} />
+                                    <input
+                                        type={'checkbox'}
+                                        checked={allowedEggIds.includes(egg.id)}
+                                        onChange={() => toggleEgg(egg.id)}
+                                        className={'sr-only'}
+                                    />
                                     <div
                                         className={classNames(
                                             'mr-3 flex h-5 w-5 items-center justify-center rounded border-2',
                                             allowedEggIds.includes(egg.id)
                                                 ? 'border-transparent'
-                                                : 'border-neutral-500 bg-transparent'
+                                                : 'border-neutral-500 bg-transparent',
                                         )}
-                                        style={allowedEggIds.includes(egg.id) ? { backgroundColor: colors.primary } : undefined}
+                                        style={
+                                            allowedEggIds.includes(egg.id)
+                                                ? { backgroundColor: colors.primary }
+                                                : undefined
+                                        }
                                     >
-                                        {allowedEggIds.includes(egg.id) && <FontAwesomeIcon icon={faCheck} className={'text-xs text-white'} />}
+                                        {allowedEggIds.includes(egg.id) && (
+                                            <FontAwesomeIcon icon={faCheck} className={'text-xs text-white'} />
+                                        )}
                                     </div>
                                     <div>
                                         <div className={'text-sm text-neutral-100'}>{egg.name}</div>
@@ -431,7 +476,9 @@ export default () => {
                 {domains.map(row => (
                     <div
                         key={row.id}
-                        className={'flex flex-col gap-3 rounded border border-neutral-700 p-4 md:flex-row md:items-center md:justify-between'}
+                        className={
+                            'flex flex-col gap-3 rounded border border-neutral-700 p-4 md:flex-row md:items-center md:justify-between'
+                        }
                         style={{ backgroundColor: colors.secondary }}
                     >
                         <div>
@@ -440,8 +487,8 @@ export default () => {
                                 Zone: {row.cloudflare_zone_id || 'Auto-resolve'} • API key: {row.api_key_name || 'none'}
                             </div>
                             <div className={'text-xs text-neutral-500'}>
-                                Service tag: {row.service_tag || 'auto (no explicit default)'} • Nests: {row.allowed_nest_ids?.length || 0} • Eggs:{' '}
-                                {row.allowed_egg_ids?.length || 0}
+                                Service tag: {row.service_tag || 'auto (no explicit default)'} • Nests:{' '}
+                                {row.allowed_nest_ids?.length || 0} • Eggs: {row.allowed_egg_ids?.length || 0}
                             </div>
                             <div className={'text-xs text-neutral-500'}>
                                 Egg overrides: {Object.keys(row.egg_service_tags || {}).length}
