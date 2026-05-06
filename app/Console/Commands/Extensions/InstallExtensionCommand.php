@@ -49,6 +49,8 @@ class InstallExtensionCommand extends Command
 
             if ($resolution['mode'] === 'file') {
                 // Run security scan before installation unless explicitly skipped.
+                // The scan runs interactively here so we can prompt on warnings.
+                // We then tell the service to skip its own scan to avoid double-scanning.
                 if (!$this->option('skip-scan')) {
                     $scanPassed = $this->runSecurityScan($resolution['archivePath']);
                     if (!$scanPassed) {
@@ -59,10 +61,14 @@ class InstallExtensionCommand extends Command
                 $package = $this->installService->installFromArchive(
                     $resolution['archivePath'],
                     $resolution['label'],
+                    skipScan: true, // interactive scan already ran above
                 );
             } else {
                 /** @var ExtensionRepository $repository */
                 $repository = $resolution['repository'];
+                if (!$this->option('skip-scan')) {
+                    $this->components->info('Security scan will run automatically after the archive is downloaded.');
+                }
                 $package = $this->installService->install(
                     $resolution['extensionId'],
                     $repository->id,

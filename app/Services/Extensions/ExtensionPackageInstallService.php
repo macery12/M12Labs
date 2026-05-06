@@ -9,6 +9,7 @@ use Everest\Models\ExtensionPackageFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ExtensionPackageInstallService
@@ -19,7 +20,8 @@ class ExtensionPackageInstallService
         private ExtensionOperationLockService $operationLockService,
         private ExtensionFilesystemOwnershipService $ownershipService,
         private ExtensionInstallProgressService $progressService,
-        private ExtensionPackageArtifactService $artifactService
+        private ExtensionPackageArtifactService $artifactService,
+        private ExtensionSecurityScanner $scanner
     ) {
     }
 
@@ -66,12 +68,12 @@ class ExtensionPackageInstallService
         });
     }
 
-    public function installFromArchive(string $archivePath, ?string $sourceLabel = null): ExtensionPackage
+    public function installFromArchive(string $archivePath, ?string $sourceLabel = null, bool $skipScan = false): ExtensionPackage
     {
         $resolvedArchivePath = $this->artifactService->resolveArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedArchivePath);
 
-        return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel) {
+        return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel, $skipScan) {
             $prepared = null;
             try {
                 $prepared = $this->performInstallFileOps(
@@ -85,6 +87,7 @@ class ExtensionPackageInstallService
                     sourceRegistryUrl: null,
                     sourceArchiveUrl: 'file://' . $resolvedArchivePath,
                     fallbackPackageMetadata: [],
+                    skipScan: $skipScan,
                 );
 
                 $this->rebuildService->rebuild(
@@ -216,7 +219,8 @@ class ExtensionPackageInstallService
         ?string $sourceRepositoryName,
         ?string $sourceRegistryUrl,
         string $sourceArchiveUrl,
-        array $fallbackPackageMetadata
+        array $fallbackPackageMetadata,
+        bool $skipScan = false
     ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
         $archivePath = $tempRoot . '/' . ExtensionPackageArtifactService::PACKAGE_ARTIFACT_FILENAME;
@@ -230,6 +234,12 @@ class ExtensionPackageInstallService
         try {
             $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'downloading');
             $this->artifactService->downloadArchive($archiveLocation, $archivePath);
+
+            // Security scan runs on the downloaded archive before extraction.
+            if (!$skipScan) {
+                $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'scanning');
+                $this->runArchiveScan($archivePath, $resolvedExtensionId ?? 'unknown', 'install');
+            }
 
             $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'extracting');
             $archiveChecksum = hash_file('sha256', $archivePath);
@@ -454,6 +464,49 @@ class ExtensionPackageInstallService
             $this->rebuildService->rebuild(sprintf('%s for %s', $reason, $extensionId));
         } catch (\Throwable $exception) {
             report($exception);
+        }
+    }
+
+    /**
+     * Run the security scanner on a downloaded archive.
+     * Throws DisplayException if the scan is BLOCKED.
+     * Logs a warning if WARNED but continues.
+     * Scanner errors are logged but do not block installation.
+     */
+    private function runArchiveScan(string $archivePath, string $extensionId, string $action): void
+    {
+        try {
+            $scanResult = $this->scanner->scan($archivePath);
+
+            if ($scanResult->isBlocked()) {
+                $summary = $scanResult->toArray()['summary'];
+                throw new DisplayException(sprintf(
+                    'Security scan BLOCKED %s of "%s": %d high-severity finding(s) detected. Review the scan report at: %s',
+                    $action,
+                    $extensionId,
+                    $summary['high'],
+                    $scanResult->reportPath
+                ));
+            }
+
+            if ($scanResult->hasSevereFindings()) {
+                Log::warning('Extension security scan found warnings.', [
+                    'action'    => $action,
+                    'extension' => $extensionId,
+                    'warnings'  => $scanResult->toArray()['summary']['warnings'],
+                    'report'    => $scanResult->reportPath,
+                ]);
+            }
+        } catch (DisplayException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            // Scanner errors (missing binaries, corrupt archives, etc.) are logged
+            // but do not block installation so a missing tool never prevents installs.
+            Log::error('Extension security scanner encountered an error.', [
+                'action'    => $action,
+                'extension' => $extensionId,
+                'error'     => $e->getMessage(),
+            ]);
         }
     }
 }

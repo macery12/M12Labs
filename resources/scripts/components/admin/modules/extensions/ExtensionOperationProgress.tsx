@@ -12,6 +12,7 @@ const COMPLETION_DISPLAY_DURATION = 5000;
 
 type StepName =
     | 'downloading'
+    | 'scanning'
     | 'extracting'
     | 'validating'
     | 'copying'
@@ -22,6 +23,7 @@ type StepName =
 
 const INSTALL_STEPS: StepName[] = [
     'downloading',
+    'scanning',
     'extracting',
     'validating',
     'copying',
@@ -34,6 +36,7 @@ const UNINSTALL_STEPS: StepName[] = ['validating', 'removing', 'optimizing', 'bu
 
 const UPDATE_STEPS: StepName[] = [
     'downloading',
+    'scanning',
     'extracting',
     'validating',
     'removing',
@@ -45,6 +48,7 @@ const UPDATE_STEPS: StepName[] = [
 
 const STEP_LABELS: Record<string, string> = {
     downloading: 'Downloading',
+    scanning: 'Security scan',
     extracting: 'Extracting',
     validating: 'Validating',
     copying: 'Copying files',
