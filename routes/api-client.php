@@ -182,6 +182,20 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
 
     /*
     |--------------------------------------------------------------------------
+    | Extension Security Scan API
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/client/extensions/scan
+    |
+    */
+    Route::prefix('/extensions')->group(function () {
+        Route::post('/scan', [Client\Extensions\ExtensionScanController::class, 'scan']);
+        Route::get('/{slug}/scan-report', [Client\Extensions\ExtensionScanController::class, 'report'])
+            ->where('slug', '[a-zA-Z0-9_\-]+');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | Client Control API
     |--------------------------------------------------------------------------
     |
