@@ -157,7 +157,7 @@ function RegisterContainer() {
                             label={'Email Address'}
                             icon={faAt}
                             name={'email'}
-                            placeholder={'user@jexpanel.com'}
+                            placeholder={'user@m12labs.net'}
                             disabled={isSubmitting}
                         />
                     </div>

@@ -52,7 +52,7 @@ return [
     | any other location as required by the application or its packages.
     */
 
-    'name' => env('APP_NAME', 'Everest'),
+    'name' => env('APP_NAME', 'M12Labs'),
 
     /*
     |--------------------------------------------------------------------------

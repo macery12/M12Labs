@@ -48,7 +48,7 @@ export default () => {
                             id={'username'}
                             name={'username'}
                             label={'Account Username'}
-                            placeholder={'everestuser1'}
+                            placeholder={'m12labsuser1'}
                         />
                         <p className={'mt-2 text-xs text-gray-400'}>
                             This will be the unique username for your account. Maybe make this your name?

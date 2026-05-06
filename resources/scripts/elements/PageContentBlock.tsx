@@ -39,6 +39,15 @@ function PageContentBlock({ title, header, description, showFlashKey, className,
                     Powered by&nbsp;
                     <a
                         rel={'noopener nofollow noreferrer'}
+                        href={'https://m12labs.net'}
+                        target={'_blank'}
+                        css={tw`no-underline text-neutral-500 hover:text-neutral-300`}
+                    >
+                        M12Labs.net
+                    </a>
+                    &nbsp;&middot;&nbsp;
+                    <a
+                        rel={'noopener nofollow noreferrer'}
                         href={'https://jexpanel.com'}
                         target={'_blank'}
                         css={tw`no-underline text-neutral-500 hover:text-neutral-300`}
