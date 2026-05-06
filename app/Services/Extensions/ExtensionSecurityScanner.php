@@ -15,6 +15,12 @@ class ExtensionSecurityScanner
 {
     private const MANIFEST_FILENAME = 'm12labs-extension.json';
 
+    /** Maximum number of entries allowed in an extension archive (zip-bomb guard). */
+    private const MAX_ZIP_ENTRIES = 10_000;
+
+    /** Maximum total uncompressed size allowed in an extension archive (zip-bomb guard), in bytes. */
+    private const MAX_EXTRACTED_BYTES = 500 * 1024 * 1024;
+
     public function scan(string $archivePath): ScanResult
     {
         $uuid    = Str::uuid()->toString();
@@ -89,20 +95,68 @@ class ExtensionSecurityScanner
             throw new \RuntimeException('Could not resolve extraction target directory.');
         }
 
-        // Validate each entry against zip-slip: reject any path that escapes the target dir.
-        for ($i = 0; $i < $zip->count(); $i++) {
+        $totalEntries = $zip->count();
+
+        // Zip-bomb guard: reject archives with an excessive number of entries.
+        if ($totalEntries > self::MAX_ZIP_ENTRIES) {
+            $zip->close();
+            throw new \RuntimeException(sprintf(
+                'Extension archive contains too many entries (%d). Maximum allowed is %d.',
+                $totalEntries,
+                self::MAX_ZIP_ENTRIES
+            ));
+        }
+
+        $totalUncompressedSize = 0;
+
+        for ($i = 0; $i < $totalEntries; $i++) {
             $entry = $zip->getNameIndex($i);
             if ($entry === false) {
                 continue;
             }
 
-            $entryPath = realpath($realTarget . DIRECTORY_SEPARATOR . $entry);
-            if ($entryPath !== false && !str_starts_with($entryPath, $realTarget . DIRECTORY_SEPARATOR)) {
+            // Zip-slip guard: normalise the entry path purely by string manipulation so
+            // that the check works even before any file exists on disk (realpath() returns
+            // false for non-existent paths and would silently skip the traversal check).
+            $rawPath    = $realTarget . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $entry);
+            $segments   = explode(DIRECTORY_SEPARATOR, $rawPath);
+            $normalised = [];
+            foreach ($segments as $segment) {
+                if ($segment === '..') {
+                    if (empty($normalised)) {
+                        // More '..' segments than valid components — path escapes the root.
+                        $zip->close();
+                        throw new \RuntimeException(sprintf(
+                            'Extension archive contains a path traversal entry: "%s". Aborting extraction.',
+                            $entry
+                        ));
+                    }
+                    array_pop($normalised);
+                } elseif ($segment !== '.') {
+                    $normalised[] = $segment;
+                }
+            }
+            $resolvedPath = implode(DIRECTORY_SEPARATOR, $normalised);
+
+            if (!str_starts_with($resolvedPath, $realTarget . DIRECTORY_SEPARATOR)) {
                 $zip->close();
                 throw new \RuntimeException(sprintf(
                     'Extension archive contains a path traversal entry: "%s". Aborting extraction.',
                     $entry
                 ));
+            }
+
+            // Zip-bomb guard: accumulate uncompressed sizes and reject if the limit is exceeded.
+            $stat = $zip->statIndex($i);
+            if ($stat !== false) {
+                $totalUncompressedSize += $stat['size'];
+                if ($totalUncompressedSize > self::MAX_EXTRACTED_BYTES) {
+                    $zip->close();
+                    throw new \RuntimeException(sprintf(
+                        'Extension archive exceeds the maximum allowed extracted size (%d bytes).',
+                        self::MAX_EXTRACTED_BYTES
+                    ));
+                }
             }
         }
 
@@ -177,7 +231,7 @@ class ExtensionSecurityScanner
             '--standard=Security',
             '--report=json',
             '--severity=1',
-            $dir,
+            ...$phpFiles,
         ]);
         $process->setTimeout(120);
         $process->run();
@@ -224,7 +278,8 @@ class ExtensionSecurityScanner
             return [];
         }
 
-        $eslintConfigPath = $dir . '/.eslint-scan.json';
+        $eslintConfigPath = storage_path('app/tmp/.eslint-scan-' . Str::uuid()->toString() . '.json');
+        File::ensureDirectoryExists(storage_path('app/tmp'));
         $eslintConfig = [
             'plugins' => ['security'],
             'rules'   => ['security/detect-object-injection' => 'warn'],
@@ -238,44 +293,48 @@ class ExtensionSecurityScanner
 
         File::put($eslintConfigPath, $encoded);
 
-        $binaryParts = explode(' ', (string) config('extensions.scan.eslint_binary', 'npx eslint'));
-        $cmd = array_merge(
-            $binaryParts,
-            ['--no-eslintrc', '-c', $eslintConfigPath, '--format', 'json'],
-            $jsFiles
-        );
-
-        $process = new Process($cmd);
-        $process->setTimeout(120);
-        $process->run();
-
-        $output = $process->getOutput();
-        if (empty($output)) {
-            return [];
-        }
-
         try {
-            $decoded = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return [];
-        }
+            $binaryParts = explode(' ', (string) config('extensions.scan.eslint_binary', 'npx eslint'));
+            $cmd = array_merge(
+                $binaryParts,
+                ['--no-eslintrc', '-c', $eslintConfigPath, '--format', 'json'],
+                $jsFiles
+            );
 
-        $findings = [];
-        foreach ((array) $decoded as $fileResult) {
-            foreach ((array) ($fileResult['messages'] ?? []) as $msg) {
-                $sev = (int) ($msg['severity'] ?? 1);
-                $findings[] = [
-                    'file'     => $fileResult['filePath'] ?? '',
-                    'line'     => $msg['line'] ?? 0,
-                    'column'   => $msg['column'] ?? 0,
-                    'severity' => $sev,
-                    'message'  => $msg['message'] ?? '',
-                    'rule'     => $msg['ruleId'] ?? '',
-                ];
+            $process = new Process($cmd);
+            $process->setTimeout(120);
+            $process->run();
+
+            $output = $process->getOutput();
+            if (empty($output)) {
+                return [];
             }
-        }
 
-        return $findings;
+            try {
+                $decoded = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                return [];
+            }
+
+            $findings = [];
+            foreach ((array) $decoded as $fileResult) {
+                foreach ((array) ($fileResult['messages'] ?? []) as $msg) {
+                    $sev = (int) ($msg['severity'] ?? 1);
+                    $findings[] = [
+                        'file'     => $fileResult['filePath'] ?? '',
+                        'line'     => $msg['line'] ?? 0,
+                        'column'   => $msg['column'] ?? 0,
+                        'severity' => $sev,
+                        'message'  => $msg['message'] ?? '',
+                        'rule'     => $msg['ruleId'] ?? '',
+                    ];
+                }
+            }
+
+            return $findings;
+        } finally {
+            @unlink($eslintConfigPath);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -300,8 +359,10 @@ class ExtensionSecurityScanner
 
         $process = new Process([
             $binary,
-            '--config=p/php-security',
-            '--config=p/javascript',
+            ...array_map(
+                fn (string $r) => '--config=' . $r,
+                array_filter(array_map('trim', explode(',', (string) config('extensions.scan.semgrep_rulesets', 'p/php-security,p/javascript'))))
+            ),
             '--json',
             $dir,
         ]);
@@ -349,7 +410,17 @@ class ExtensionSecurityScanner
         array $jsFindings,
         array $semgrepFindings,
     ): string {
-        $reportDir = rtrim(config('extensions.scan.install_dir', storage_path('app/extensions/installed')), '/') . '/' . $slug;
+        // BLOCKED extensions are never installed, so writing the report into the
+        // install directory would leave orphaned files. We route blocked reports to
+        // a dedicated "blocked-scans" directory for audit purposes while keeping
+        // the installed directory clean.
+        if ($outcome === ScanResult::BLOCKED) {
+            $reportDir = rtrim(config('extensions.scan.install_dir', storage_path('app/extensions/installed')), '/');
+            $reportDir = dirname($reportDir) . '/blocked-scans/' . $slug;
+        } else {
+            $reportDir = rtrim(config('extensions.scan.install_dir', storage_path('app/extensions/installed')), '/') . '/' . $slug;
+        }
+
         File::ensureDirectoryExists($reportDir);
 
         $reportPath = $reportDir . '/scan-report.json';
