@@ -44,9 +44,11 @@ interface Product extends Model {
     name: string;
     icon?: string;
     price: number;
+    basePrice?: number;
     description?: string;
     eggId: number;
     allowedEggs: number[];
+    allowEggChanges: boolean;
     limits: {
         cpu: number;
         memory: number;
@@ -54,6 +56,7 @@ interface Product extends Model {
         backup: number;
         database: number;
         allocation: number;
+        subdomain: number | null;
     };
 }
 

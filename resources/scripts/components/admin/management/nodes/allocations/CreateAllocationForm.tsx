@@ -45,7 +45,7 @@ function CreateAllocationForm({ nodeId }: { nodeId: number }) {
         return inputValue.match(/^([0-9a-f.:/]+)$/) !== null;
     };
 
-    const submit = ({ ips, startPort, endPort, alias }: Values, { setSubmitting }: FormikHelpers<Values>) => {
+    const submit = ({ ips, startPort, endPort, alias }: Values, { setSubmitting }: FormikHelpers<Values>): void => {
         setSubmitting(false);
 
         ips.forEach(async ip => {
@@ -55,7 +55,7 @@ function CreateAllocationForm({ nodeId }: { nodeId: number }) {
     };
 
     return (
-        <Formik
+        <Formik<Values>
             onSubmit={submit}
             initialValues={{
                 ips: [] as string[],

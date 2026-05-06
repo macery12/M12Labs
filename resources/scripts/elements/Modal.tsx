@@ -126,13 +126,20 @@ function Modal({
                         e.stopPropagation();
                         if (e.target === e.currentTarget) {
                             setRender(false);
+                            onDismissed();
                         }
                     }
                 }}
             >
                 <ModalContainer alignTop={top}>
                     {isDismissable && (
-                        <div className={'close-icon'} onClick={() => setRender(false)}>
+                        <div
+                            className={'close-icon'}
+                            onClick={() => {
+                                setRender(false);
+                                onDismissed();
+                            }}
+                        >
                             <svg
                                 xmlns={'http://www.w3.org/2000/svg'}
                                 fill={'none'}

@@ -19,7 +19,7 @@ It extends the original Jexpanel foundation with more features, deeper customiza
 - Advanced authentication and security setups  
 - Integrated billing system (Stripe + PayPal + mollie)  
 - Clean, user-friendly administrative interface  
-- Built with modern tech: PHP, Laravel, TypeScript, React, Docker  
+- Built with modern tech: PHP, Laravel, TypeScript, React  
 - Fully open-source, community-driven
 
 ## Useful Links

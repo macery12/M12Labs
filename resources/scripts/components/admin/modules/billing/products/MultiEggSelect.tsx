@@ -38,12 +38,12 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
 
                 let nextSelected = initialSelection;
                 if (nextSelected.length === 0 && _eggs.length > 0) {
-                    nextSelected = [_eggs[0].id];
+                    nextSelected = [_eggs[0]!.id!];
                 }
 
                 setSelected(nextSelected);
                 if (nextSelected.length > 0) {
-                    setEggIdValue(nextSelected[0]);
+                    setEggIdValue(nextSelected[0]!);
                     setEggIdTouched(true);
                     setAllowedEggsValue(nextSelected);
                     setAllowedEggsTouched(true);
@@ -62,7 +62,7 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
         let filtered = selectedEggIds.filter(id => validEggIds.has(id));
 
         if (filtered.length === 0 && eggs.length > 0) {
-            filtered = [eggs[0].id];
+            filtered = [eggs[0]!.id!];
         }
 
         const isSameSelection =
@@ -70,7 +70,7 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
 
         if (filtered.length > 0 && !isSameSelection) {
             setSelected(filtered);
-            setEggIdValue(filtered[0]);
+            setEggIdValue(filtered[0]!);
             setEggIdTouched(true);
             setAllowedEggsValue(filtered);
             setAllowedEggsTouched(true);
@@ -100,7 +100,7 @@ export default ({ nestId, selectedEggIds = [], onEggSelectionChange }: Props) =>
         setSelected(newSelected);
 
         // Update form values
-        setEggIdValue(newSelected[0]); // Primary egg is the first one
+        setEggIdValue(newSelected[0]!); // Primary egg is the first one
         setEggIdTouched(true);
         setAllowedEggsValue(newSelected);
         setAllowedEggsTouched(true);

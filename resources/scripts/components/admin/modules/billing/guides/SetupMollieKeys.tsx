@@ -1,5 +1,4 @@
 import Input from '@/elements/Input';
-import { useStoreState } from '@/state/hooks';
 import { Dialog } from '@/elements/dialog';
 import { faExclamationTriangle, faCheckCircle, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,7 +13,6 @@ interface MollieKeys {
 
 export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
     const [data, setData] = useState<MollieKeys>({});
-    const existingMollie = useStoreState(s => s.everest.data!.billing.mollie);
 
     const submit = async () => {
         if (!data.apiKey) return;

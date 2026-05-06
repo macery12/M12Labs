@@ -69,6 +69,11 @@ class Permission extends Model
     public const ACTION_BILLING_RENEW = 'billing.renew';
     public const ACTION_BILLING_UPDATE = 'billing.update';
 
+    public const ACTION_EXTENSION_READ = 'extension.read';
+    public const ACTION_EXTENSION_MANAGE = 'extension.manage';
+
+    public const ACTION_SCRIPT_RUN = 'script.run';
+
     /**
      * Should timestamps be used on this model.
      */
@@ -219,6 +224,21 @@ class Permission extends Model
                 'update' => 'Update general billing settings for the server.',
             ],
         ],
+
+        'extension' => [
+            'description' => 'Permissions that control a user\'s access to server extensions like player managers.',
+            'keys' => [
+                'read' => 'Allows a user to view and access enabled extensions for the server.',
+                'manage' => 'Allows a user to use extension features like player management (kick, ban, whitelist, etc.). Includes read access.',
+            ],
+        ],
+
+        'script' => [
+            'description' => 'Permissions that control a user\'s ability to run async scripts on a Supercharged (Wings-RS) node.',
+            'keys' => [
+                'run' => 'Allows a user to execute an async script inside a container on a Supercharged node. This is a powerful permission and should only be granted to trusted users.',
+            ],
+        ],
     ];
 
     /**
@@ -228,5 +248,19 @@ class Permission extends Model
     public static function permissions(): Collection
     {
         return Collection::make(self::$permissions);
+    }
+
+    /**
+     * Expands a permissions list with implied permissions.
+     */
+    public static function expandPermissions(array $permissions): array
+    {
+        $expanded = $permissions;
+
+        if (in_array(self::ACTION_EXTENSION_MANAGE, $expanded, true)) {
+            $expanded[] = self::ACTION_EXTENSION_READ;
+        }
+
+        return array_values(array_unique($expanded));
     }
 }

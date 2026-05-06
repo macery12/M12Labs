@@ -22,6 +22,10 @@ export interface SiteSettings {
             admin: boolean;
         };
     };
+    translations?: {
+        activity?: Record<string, string>;
+        [key: string]: Record<string, string> | undefined;
+    };
 }
 
 export interface SettingsStore {

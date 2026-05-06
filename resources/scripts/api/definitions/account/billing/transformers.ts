@@ -37,6 +37,7 @@ export default class Transformers {
         description: data.description,
         allowedEggs: data.allowedEggs || [data.eggId],
         allowEggChanges: data.allowEggChanges ?? true,
+        allowPlanChanges: data.allowPlanChanges ?? true,
     });
 
     static toProduct = ({ attributes: data }: FractalResponseData): Models.Product => ({
@@ -55,6 +56,7 @@ export default class Transformers {
             backup: data.limits.backup,
             database: data.limits.database,
             allocation: data.limits.allocation,
+            subdomain: data.limits.subdomain ?? null,
         },
     });
 

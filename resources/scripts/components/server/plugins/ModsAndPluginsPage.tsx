@@ -51,8 +51,9 @@ const isMarketplaceType = (type: ContentTab | null): type is ContentType =>
 
 const ModsAndPluginsPage = () => {
     const modSettings = useStoreState(state => state.everest?.data?.mods);
+    const { colors } = useStoreState(state => state.theme.data!);
     const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
-    const uuidFallback = useStoreState(state => state.server?.data?.uuid);
+    const uuidFallback = undefined as string | undefined;
     const uuid = serverUuid ?? uuidFallback;
 
     const [searchParams, setSearchParams] = useSearchParams();
@@ -129,7 +130,7 @@ const ModsAndPluginsPage = () => {
         () => resolveActive(initialType, availableContentTypes) ?? defaultType,
     );
     const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(() =>
-        resolveActive(initialProvider, initialProviderPool),
+        resolveActive(initialProvider, initialProviderPool) ?? null,
     );
 
     useEffect(() => {
@@ -206,7 +207,7 @@ const ModsAndPluginsPage = () => {
         }
 
         if (activeType === 'modpacks') {
-            const modpackProvider = activeProvider ?? providersByType.modpacks[0];
+            const modpackProvider = activeProvider ?? providersByType.modpacks[0] ?? null;
             return (
                 <>
                     {renderProviderTabs(providersByType.modpacks, modpackProvider)}
@@ -216,7 +217,7 @@ const ModsAndPluginsPage = () => {
         }
 
         if (activeType === 'plugins') {
-            const pluginProvider = activeProvider ?? providersByType.plugins[0];
+            const pluginProvider = activeProvider ?? providersByType.plugins[0] ?? null;
             return (
                 <>
                     {renderProviderTabs(providersByType.plugins, pluginProvider)}
@@ -251,10 +252,13 @@ const ModsAndPluginsPage = () => {
                                 key={type}
                                 css={[
                                     tw`px-4 py-2 font-medium transition-colors rounded-t`,
-                                    active
-                                        ? tw`text-blue-400 border-b-2 border-blue-400`
-                                        : tw`text-neutral-400 hover:text-neutral-200`,
+                                    !active && tw`text-neutral-400 hover:text-neutral-200`,
                                 ]}
+                                style={
+                                    active
+                                        ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }
+                                        : undefined
+                                }
                                 onClick={() => setActiveType(type)}
                                 type="button"
                             >

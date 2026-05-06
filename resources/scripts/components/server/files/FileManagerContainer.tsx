@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import tw from 'twin.macro';
 
 import { httpErrorToHuman } from '@/api/http';
@@ -23,7 +23,7 @@ import { FileActionCheckbox } from '@server/files/SelectFileCheckbox';
 import style from './style.module.css';
 import FadeTransition from '@/elements/transitions/FadeTransition';
 import { usePersistedState } from '@/plugins/usePersistedState';
-import { faBorderAll, faFolderPlus, faList } from '@fortawesome/free-solid-svg-icons';
+import { faBorderAll, faFolderPlus, faList, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import FileObjectList from './FileObjectList';
 import CopyOnClick from '@/elements/CopyOnClick';
@@ -34,6 +34,8 @@ import { ip } from '@/lib/formatters';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { hashToPath } from '@/lib/helpers';
 import FileSortControls from '@server/files/FileSortControls';
+import FileSearchDialog from '@server/files/FileSearchDialog';
+import SshInfoPanel from '@server/files/SshInfoPanel';
 import type { SortField, SortDirection } from '@/state/server/files';
 
 const sortFiles = (files: FileObject[], sortField: SortField, sortDirection: SortDirection): FileObject[] => {
@@ -82,6 +84,8 @@ const filterFiles = (files: FileObject[], searchTerm: string): FileObject[] => {
 
 export default () => {
     const id = ServerContext.useStoreState(state => state.server.data!.id);
+    const isSupercharged = ServerContext.useStoreState(state => state.server.data!.isNodeSupercharged);
+    const [showSearch, setShowSearch] = useState(false);
     const { hash } = useLocation();
     const { data: files, error, mutate } = useFileManagerSwr();
     const directory = ServerContext.useStoreState(state => state.files.directory);
@@ -182,9 +186,15 @@ export default () => {
                             <Button onClick={() => setGridView(!gridView)}>
                                 <FontAwesomeIcon icon={gridView ? faList : faBorderAll} fixedWidth />
                             </Button>
+                            {isSupercharged && (
+                                <Button onClick={() => setShowSearch(true)} title={'Advanced Search'}>
+                                    <FontAwesomeIcon icon={faSearch} fixedWidth />
+                                </Button>
+                            )}
                         </div>
                     </Can>
                 </div>
+                {isSupercharged && <FileSearchDialog open={showSearch} onClose={() => setShowSearch(false)} />}
                 <div className={'mb-4'}>
                     <FileSortControls />
                 </div>
@@ -275,6 +285,11 @@ export default () => {
                         </div>
                     </TitledGreyBox>
                 </Can>
+                {isSupercharged && (
+                    <Can action={'file.sftp'}>
+                        <SshInfoPanel />
+                    </Can>
+                )}
             </div>
         </PageContentBlock>
     );

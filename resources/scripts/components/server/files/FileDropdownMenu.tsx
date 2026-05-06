@@ -4,6 +4,7 @@ import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
 import RenameFileModal from '@server/files/RenameFileModal';
 import { ServerContext } from '@/state/server';
 import { join } from 'pathe';
+import { useNavigate } from 'react-router-dom';
 import { deleteFiles, copyFile, getFileDownloadUrl, compressFiles, decompressFiles } from '@/api/routes/server/files';
 import Can from '@/elements/Can';
 import { type FileObject } from '@definitions/server';
@@ -14,6 +15,9 @@ import DropdownMenu from '@/elements/DropdownMenu';
 import useEventListener from '@/plugins/useEventListener';
 import isEqual from 'react-fast-compare';
 import ChmodFileModal from '@server/files/ChmodFileModal';
+import CompressFormatDialog from '@server/files/CompressFormatDialog';
+import FileFingerprintDialog from '@server/files/FileFingerprintDialog';
+import { encodePathSegments } from '@/lib/helpers';
 import { Dialog } from '@/elements/dialog';
 import { Button } from '@/elements/button';
 import {
@@ -22,7 +26,9 @@ import {
     ClipboardCopyIcon,
     CogIcon,
     DownloadIcon,
+    FingerPrintIcon,
     InboxIcon,
+    LightningBoltIcon,
     PencilIcon,
     TrashIcon,
 } from '@heroicons/react/outline';
@@ -34,11 +40,36 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
     const [visible, setVisible] = useState<boolean>(false);
     const [modal, setModal] = useState<ModalType | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [showAdvancedCompress, setShowAdvancedCompress] = useState(false);
+    const [showFingerprints, setShowFingerprints] = useState(false);
 
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
+    const id = ServerContext.useStoreState(state => state.server.data!.id);
+    const isSupercharged = ServerContext.useStoreState(state => state.server.data!.isNodeSupercharged);
     const { mutate } = useFileManagerSwr();
     const { clearAndAddHttpError, clearFlashes } = useFlash();
     const directory = ServerContext.useStoreState(state => state.files.directory);
+    const navigate = useNavigate();
+
+    const getArchiveExtractedDirectory = (archiveName: string): string => {
+        const lower = archiveName.toLowerCase();
+
+        const multiExtensions = ['.tar.gz', '.tar.xz', '.tar.bz2', '.tar.lz4', '.tar.zstd', '.tar.lzip'];
+        for (const extension of multiExtensions) {
+            if (lower.endsWith(extension)) {
+                return archiveName.slice(0, archiveName.length - extension.length);
+            }
+        }
+
+        const singleExtensions = ['.zip', '.7z', '.tar'];
+        for (const extension of singleExtensions) {
+            if (lower.endsWith(extension)) {
+                return archiveName.slice(0, archiveName.length - extension.length);
+            }
+        }
+
+        return archiveName;
+    };
 
     useEventListener(`pterodactyl:files:ctx:${file.key}`, (e: CustomEvent) => {
         if (onClickRef.current) {
@@ -109,6 +140,22 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
             .catch(error => clearAndAddHttpError({ key: 'files', error }));
     };
 
+    const doExploreArchive = () => {
+        clearFlashes('files');
+
+        decompressFiles(uuid, directory, file.name)
+            .then(() => {
+                mutate();
+                setVisible(false);
+
+                const extractedDirectory = getArchiveExtractedDirectory(file.name);
+                const path = encodePathSegments(join(directory, extractedDirectory));
+
+                navigate(`/server/${id}/files#${path}`);
+            })
+            .catch(error => clearAndAddHttpError({ key: 'files', error }));
+    };
+
     return (
         <>
             {modal ? (
@@ -129,6 +176,18 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
                     />
                 )
             ) : null}
+            <CompressFormatDialog
+                open={showAdvancedCompress}
+                onClose={() => setShowAdvancedCompress(false)}
+                files={[file.name]}
+                directory={directory}
+            />
+            <FileFingerprintDialog
+                open={showFingerprints}
+                onClose={() => setShowFingerprints(false)}
+                files={[join(directory, file.name)]}
+                directory={directory}
+            />
             <Dialog.Confirm
                 open={showConfirmation}
                 onClose={() => setShowConfirmation(false)}
@@ -176,12 +235,42 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
                                     <InboxIcon className={'mt-0.5 mr-2 w-4'} />
                                     Extract Files
                                 </Button.Text>
+                                <Button.Text onClick={doExploreArchive}>
+                                    <InboxIcon className={'mt-0.5 mr-2 w-4'} />
+                                    Explore Archive
+                                </Button.Text>
                             </Can>
                         ) : (
                             <Can action={'file.archive'}>
                                 <Button.Text onClick={doArchive}>
                                     <ArchiveIcon className={'mt-0.5 mr-2 w-4'} />
                                     Archive File
+                                </Button.Text>
+                            </Can>
+                        )}
+                        {isSupercharged && !file.isArchiveType() && (
+                            <Can action={'file.archive'}>
+                                <Button.Text
+                                    onClick={() => {
+                                        setVisible(false);
+                                        setShowAdvancedCompress(true);
+                                    }}
+                                >
+                                    <LightningBoltIcon className={'mt-0.5 mr-2 w-4'} />
+                                    Advanced Compress
+                                </Button.Text>
+                            </Can>
+                        )}
+                        {isSupercharged && file.isFile && (
+                            <Can action={'file.read'}>
+                                <Button.Text
+                                    onClick={() => {
+                                        setVisible(false);
+                                        setShowFingerprints(true);
+                                    }}
+                                >
+                                    <FingerPrintIcon className={'mt-0.5 mr-2 w-4'} />
+                                    Checksum
                                 </Button.Text>
                             </Can>
                         )}

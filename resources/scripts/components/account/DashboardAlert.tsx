@@ -33,7 +33,7 @@ export default () => {
     const dismissAlert = (alert: ActiveAlert) => dismissAlertForUser(alert, user);
 
     // Filter out dismissed alerts and notification-only alerts, then group by position
-    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && a.position !== 'notification');
+    const visibleAlerts = alerts.filter(a => !isAlertDismissed(a) && (a.position as string) !== 'notification');
     const topCenterAlerts = visibleAlerts.filter(a => a.position === 'top-center');
     const slideOutAlerts = visibleAlerts.filter(a => a.position === 'slide-out');
     const centerAlerts = visibleAlerts.filter(a => a.position === 'center');

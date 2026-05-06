@@ -44,7 +44,7 @@ const EMAIL_STATUS_PRESENTATIONS: Record<string, EmailStatusPresentation> = {
 
 export const getEmailStatusPresentation = (status?: string | null): EmailStatusPresentation => {
     if (!status) {
-        return EMAIL_STATUS_PRESENTATIONS.failed;
+        return EMAIL_STATUS_PRESENTATIONS.failed!;
     }
 
     return (

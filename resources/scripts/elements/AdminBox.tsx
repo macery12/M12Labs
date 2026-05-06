@@ -1,6 +1,6 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode, SVGProps } from 'react';
 import tw from 'twin.macro';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import { useStoreState } from '@/state/hooks';
@@ -11,7 +11,7 @@ import { Status } from '@/plugins/useStatus';
 import classNames from 'classnames';
 
 interface Props {
-    icon?: IconProp;
+    icon?: IconProp | ComponentType<SVGProps<SVGSVGElement>>;
     isLoading?: boolean;
     title: string | ReactNode;
     className?: string;
@@ -65,7 +65,10 @@ const AdminBox = ({
             >
                 {typeof title === 'string' ? (
                     <p css={tw`font-semibold`}>
-                        {icon && <FontAwesomeIcon icon={icon} css={tw`mr-2 text-neutral-300`} />}
+                        {icon && (typeof icon === 'object' && ('iconName' in icon || 'prefix' in icon || Array.isArray(icon))
+                            ? <FontAwesomeIcon icon={icon as IconProp} css={tw`mr-2 text-neutral-300`} />
+                            : (() => { const SvgIcon = icon as ComponentType<SVGProps<SVGSVGElement>>; return <SvgIcon className="mr-2 h-4 w-4 inline text-neutral-300" />; })()
+                        )}
                         {title}
                     </p>
                 ) : (

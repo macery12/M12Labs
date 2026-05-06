@@ -27,11 +27,7 @@ const TimeRemaining = ({ expiresAt }: { expiresAt: string | null }) => {
         return <span className={'text-green-400'}>Activating shortly…</span>;
     }
 
-    return (
-        <span className={'text-yellow-400'}>
-            {formatDistanceToNow(date, { addSuffix: true })}
-        </span>
-    );
+    return <span className={'text-yellow-400'}>{formatDistanceToNow(date, { addSuffix: true })}</span>;
 };
 
 export default () => {
@@ -118,7 +114,11 @@ export default () => {
                 <div className={'overflow-x-auto'}>
                     <table className={'w-full text-sm'}>
                         <thead>
-                            <tr className={'text-left text-xs text-neutral-400 uppercase tracking-wider border-b border-neutral-700'}>
+                            <tr
+                                className={
+                                    'text-left text-xs text-neutral-400 uppercase tracking-wider border-b border-neutral-700'
+                                }
+                            >
                                 <th className={'px-4 py-3'}>Username</th>
                                 <th className={'px-4 py-3'}>Email</th>
                                 <th className={'px-4 py-3'}>Mode</th>
@@ -135,7 +135,9 @@ export default () => {
                                     <td className={'px-4 py-3'}>
                                         <span className={'capitalize text-neutral-400'}>{entry.approval_mode}</span>
                                     </td>
-                                    <td className={'px-4 py-3 text-neutral-400 text-xs'}>{formatDate(entry.created_at)}</td>
+                                    <td className={'px-4 py-3 text-neutral-400 text-xs'}>
+                                        {formatDate(entry.created_at)}
+                                    </td>
                                     <td className={'px-4 py-3 text-xs'}>
                                         <TimeRemaining expiresAt={entry.expires_at} />
                                     </td>

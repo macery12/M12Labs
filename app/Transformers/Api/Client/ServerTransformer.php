@@ -6,6 +6,7 @@ use Everest\Models\Egg;
 use Everest\Models\Server;
 use Everest\Models\Allocation;
 use Everest\Models\Permission;
+use Everest\Models\ExtensionConfig;
 use League\Fractal\Resource\Item;
 use Illuminate\Container\Container;
 use League\Fractal\Resource\Collection;
@@ -57,6 +58,10 @@ class ServerTransformer extends Transformer
             $modpacksSupported = $hasProjectId && $hasVersionId;
         }
 
+        // Check if any extensions are enabled for this server
+        $extensionsEnabled = config('modules.extensions.enabled', false) && 
+            !empty(ExtensionConfig::getEnabledForServer($server));
+
         return [
             'server_owner' => $user->id === $server->owner_id,
             'identifier' => $server->uuidShort,
@@ -67,6 +72,7 @@ class ServerTransformer extends Transformer
             'node' => $server->node->name,
             'node_id' => $server->node_id,
             'is_node_under_maintenance' => $server->node->isUnderMaintenance(),
+            'is_node_supercharged' => $server->node->isSupercharged(),
             'sftp_details' => [
                 'ip' => $server->node->fqdn,
                 'port' => $server->node->public_port_sftp,
@@ -86,6 +92,7 @@ class ServerTransformer extends Transformer
             'egg_features' => $server->egg->inherit_features,
             'egg_id' => $server->egg_id,
             'modpacks_supported' => $modpacksSupported,
+            'extensions_enabled' => $extensionsEnabled,
             'billing_product_id' => $server->billing_product_id,
             'billing_days' => $server->billing_days,
             'feature_limits' => [
@@ -93,6 +100,7 @@ class ServerTransformer extends Transformer
                 'allocations' => $server->allocation_limit,
                 'backups' => $server->backup_limit,
                 'subusers' => $server->subuser_limit,
+                'subdomains' => $server->subdomain_limit ?? $server->product?->subdomain_limit,
             ],
             'status' => $server->status,
             'renewal_date' => $server->renewal_date,

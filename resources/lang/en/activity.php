@@ -85,6 +85,8 @@ return [
         ],
         'sftp' => [
             'denied' => 'Blocked SFTP access due to permissions',
+            'login' => 'Logged in via SFTP (:method)',
+            'logout' => 'Disconnected from SFTP session',
             'create_one' => 'Created :files.0',
             'create_other' => 'Created :count new files',
             'write_one' => 'Modified the contents of :files.0',
@@ -95,6 +97,12 @@ return [
             'create-directory_other' => 'Created :count directories',
             'rename_one' => 'Renamed :files.0.from to :files.0.to',
             'rename_other' => 'Renamed or moved :count files',
+        ],
+        'ssh' => [
+            'login' => 'Logged in via SSH (:type)',
+            'logout' => 'Disconnected from SSH session',
+            'command' => 'Executed ":command" via SSH',
+            'power' => 'Sent :action power command via SSH',
         ],
         'allocation' => [
             'create' => 'Added :allocation to the server',

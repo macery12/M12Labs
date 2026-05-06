@@ -83,7 +83,6 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                 console.error(error);
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             });
-
     }, [uuid, source, contentType]);
 
     useEffect(() => {
@@ -139,10 +138,9 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
         });
     };
 
-    const sortOptions =
-        filtersMeta?.options?.sortBy?.length
-            ? filtersMeta.options.sortBy.map(option => ({ value: option.id, label: option.label }))
-            : DEFAULT_SORT_OPTIONS;
+    const sortOptions = filtersMeta?.options?.sortBy?.length
+        ? filtersMeta.options.sortBy.map(option => ({ value: option.id, label: option.label }))
+        : DEFAULT_SORT_OPTIONS;
 
     const categories = filtersMeta?.options?.categories || [];
     const minRatingOptions =
@@ -157,19 +155,20 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
               ];
     const showMinecraftVersion = source !== 'spigot';
     const showPlatformFilter = contentType === 'plugins' && source === 'modrinth';
-    const platformOptions =
-        filtersMeta?.options?.platforms?.map(option => ({ value: option.id, label: option.name })) ??
-        [
-            { value: 'paper', label: 'Paper' },
-            { value: 'purpur', label: 'Purpur' },
-            { value: 'spigot', label: 'Spigot' },
-            { value: 'bukkit', label: 'Bukkit' },
-            { value: 'folia', label: 'Folia' },
-            { value: 'velocity', label: 'Velocity' },
-            { value: 'waterfall', label: 'Waterfall' },
-            { value: 'sponge', label: 'Sponge' },
-            { value: 'bungeecord', label: 'BungeeCord' },
-        ];
+    const platformOptions = filtersMeta?.options?.platforms?.map(option => ({
+        value: option.id,
+        label: option.name,
+    })) ?? [
+        { value: 'paper', label: 'Paper' },
+        { value: 'purpur', label: 'Purpur' },
+        { value: 'spigot', label: 'Spigot' },
+        { value: 'bukkit', label: 'Bukkit' },
+        { value: 'folia', label: 'Folia' },
+        { value: 'velocity', label: 'Velocity' },
+        { value: 'waterfall', label: 'Waterfall' },
+        { value: 'sponge', label: 'Sponge' },
+        { value: 'bungeecord', label: 'BungeeCord' },
+    ];
     const searchPlaceholder = contentType === 'plugins' ? 'Search plugins...' : 'Search mods...';
 
     return (
@@ -224,10 +223,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                 {showPlatformFilter && (
                     <div>
                         <Label>Platforms (any)</Label>
-                        <Select
-                            value={platform}
-                            onChange={e => setPlatform(e.target.value)}
-                        >
+                        <Select value={platform} onChange={e => setPlatform(e.target.value)}>
                             <option value="">Any Platform</option>
                             {platformOptions.map(option => (
                                 <option key={option.value} value={option.value}>

@@ -234,11 +234,7 @@ export const getMod = (
     });
 };
 
-export const getModFiles = (
-    uuid: string,
-    modId: number | string,
-    params: ModFileParams,
-): Promise<ModFilesResponse> => {
+export const getModFiles = (uuid: string, modId: number | string, params: ModFileParams): Promise<ModFilesResponse> => {
     return new Promise((resolve, reject) => {
         http.get(`/api/client/servers/${uuid}/mods/${modId}/files`, { params })
             .then(({ data }) => resolve(data))

@@ -14,6 +14,11 @@ interface Props {
     billingDays: number;
     selectedEggId?: number;
     serverName: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        record_type?: 'srv' | 'cname';
+    }>;
 }
 
 export default (data: Props) => {
@@ -34,7 +39,12 @@ export default (data: Props) => {
 
         try {
             // Create Mollie payment with return URL
-            const payment = await createMolliePayment(Number(data.product.id), data.couponId, data.billingDays, returnUrl);
+            const payment = await createMolliePayment(
+                Number(data.product.id),
+                data.couponId,
+                data.billingDays,
+                returnUrl,
+            );
 
             // Update payment with order details
             const variables = Array.from(data.vars, ([key, value]) => ({ key, value }));
@@ -47,6 +57,7 @@ export default (data: Props) => {
                 eggId: data.selectedEggId,
                 billingDays: data.billingDays,
                 name: data.serverName,
+                domainPayload: data.domainPayload,
             });
 
             // Redirect to Mollie checkout

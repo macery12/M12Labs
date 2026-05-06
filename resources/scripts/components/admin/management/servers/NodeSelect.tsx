@@ -42,9 +42,7 @@ export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null
         <div>
             <div className="flex items-center justify-between mb-2">
                 <Label>Node</Label>
-                {node && (
-                    <span className="text-xs text-primary-300 bg-primary-500/10 px-2 py-1 rounded">Selected</span>
-                )}
+                {node && <span className="text-xs text-primary-300 bg-primary-500/10 px-2 py-1 rounded">Selected</span>}
             </div>
 
             {loading ? (
@@ -75,32 +73,32 @@ export default ({ node, setNode }: { node: Node | null; setNode: (_: Node | null
                                 onClick={() => onSelect(n)}
                                 aria-label={`Select node ${n.name} (${n.fqdn})`}
                             >
-                            <div className="flex items-start justify-between gap-2">
-                                <div>
-                                    <p className="font-semibold text-sm text-neutral-100">{n.name}</p>
-                                    <p className="text-[11px] text-neutral-400 break-all">{n.fqdn}</p>
+                                <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                        <p className="font-semibold text-sm text-neutral-100">{n.name}</p>
+                                        <p className="text-[11px] text-neutral-400 break-all">{n.fqdn}</p>
+                                    </div>
+                                    {isSelected && (
+                                        <span
+                                            className="text-[11px] px-2 py-0.5 rounded font-medium"
+                                            style={{
+                                                backgroundColor: `${colors.primary}20`,
+                                                color: colors.primary,
+                                            }}
+                                        >
+                                            Selected
+                                        </span>
+                                    )}
                                 </div>
-                                {isSelected && (
-                                    <span
-                                        className="text-[11px] px-2 py-0.5 rounded font-medium"
-                                        style={{
-                                            backgroundColor: `${colors.primary}20`,
-                                            color: colors.primary,
-                                        }}
-                                    >
-                                        Selected
+                                <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-neutral-300">
+                                    <span className="rounded bg-neutral-700/60 px-2 py-1">
+                                        HTTP {n.ports.http.public}
                                     </span>
-                                )}
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-neutral-300">
-                                <span className="rounded bg-neutral-700/60 px-2 py-1">
-                                    HTTP {n.ports.http.public}
-                                </span>
-                                <span className="rounded bg-neutral-700/60 px-2 py-1">
-                                    SFTP {n.ports.sftp.public}
-                                </span>
-                            </div>
-                        </button>
+                                    <span className="rounded bg-neutral-700/60 px-2 py-1">
+                                        SFTP {n.ports.sftp.public}
+                                    </span>
+                                </div>
+                            </button>
                         );
                     })}
                 </div>

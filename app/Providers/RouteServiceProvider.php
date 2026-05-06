@@ -124,6 +124,26 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinutes(5, 20)->by($email !== '' ? $email : $request->ip());
         });
 
+        RateLimiter::for('custom-domains-create', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+            $limit = max(1, (int) config('modules.custom_domains.rate_limits.create_per_minute', 10));
+
+            return Limit::perMinute($limit)->by($key);
+        });
+
+        RateLimiter::for('custom-domains-sync', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+            $limit = max(1, (int) config('modules.custom_domains.rate_limits.sync_per_minute', 5));
+
+            return Limit::perMinute($limit)->by($key);
+        });
+
+        RateLimiter::for('custom-domains-billing-options', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+            $limit = max(1, (int) config('modules.custom_domains.rate_limits.billing_options_per_minute', 20));
+
+            return Limit::perMinute($limit)->by($key);
+        });
         RateLimiter::for('email-verification', function (Request $request) {
             $key = optional($request->user())->id ?: $request->ip();
 
@@ -160,6 +180,30 @@ class RouteServiceProvider extends ServiceProvider
                     ],
                 ], 429);
             });
+        });
+
+        RateLimiter::for('wings-rs.search', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(30)->by($key);
+        });
+
+        RateLimiter::for('wings-rs.compress', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(10)->by($key);
+        });
+
+        RateLimiter::for('wings-rs.fingerprints', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(30)->by($key);
+        });
+
+        RateLimiter::for('wings-rs.script', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(5)->by($key);
         });
     }
 

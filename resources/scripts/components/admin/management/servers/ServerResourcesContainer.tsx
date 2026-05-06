@@ -55,6 +55,7 @@ export default () => {
                     backups: server.featureLimits.backups,
                     databases: server.featureLimits.databases,
                     subusers: server.featureLimits.subusers,
+                    subdomains: server.featureLimits.subdomains,
                 },
                 allocationId: server.allocationId,
                 addAllocations: [] as number[],

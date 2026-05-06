@@ -1,35 +1,10 @@
 import { lazy } from 'react';
-import {
-    BookOpenIcon,
-    CashIcon,
-    CodeIcon,
-    CogIcon,
-    CubeIcon,
-    CursorClickIcon,
-    DatabaseIcon,
-    EyeIcon,
-    KeyIcon,
-    LinkIcon,
-    MailIcon,
-    OfficeBuildingIcon,
-    PencilAltIcon,
-    ServerIcon,
-    ShieldExclamationIcon,
-    SparklesIcon,
-    TerminalIcon,
-    TicketIcon,
-    UserGroupIcon,
-    UserIcon,
-    ViewGridIcon,
-} from '@heroicons/react/outline';
+import * as Icon from '@heroicons/react/outline';
 import { route, type AdminRouteDefinition } from '@/routers/routes/utils';
 
-const ServerPresetContainer = lazy(
-    () => import('@/components/admin/management/servers/presets/ServerPresetContainer'),
-);
-const ServerPresetViewContainer = lazy(
-    () => import('@/components/admin/management/servers/presets/ServerPresetViewContainer'),
-);
+import ServerPresetContainer from '@/components/admin/management/servers/presets/ServerPresetContainer';
+import ServerPresetViewContainer from '@/components/admin/management/servers/presets/ServerPresetViewContainer';
+// todo(jex): lazy load these
 
 const OverviewContainer = lazy(() => import('@/components/admin/general/overview/OverviewContainer'));
 const SettingsRouter = lazy(() => import('@/components/admin/general/settings/SettingsRouter'));
@@ -37,14 +12,15 @@ const ActivityContainer = lazy(() => import('@/components/admin/general/Activity
 const ApplicationApiRouter = lazy(() => import('@/components/admin/general/api/ApplicationApiRouter'));
 const ApiDocsContainer = lazy(() => import('@/components/admin/developers/ApiDocsContainer'));
 
-const AuthContainer = lazy(() => import('@/components/admin/modules/auth/AuthContainer'));
 const AuthRouter = lazy(() => import('@/components/admin/modules/auth/AuthRouter'));
 const BillingRouter = lazy(() => import('@/components/admin/modules/billing/BillingRouter'));
+const CustomDomainsRouter = lazy(() => import('@/components/admin/modules/customDomains/CustomDomainsRouter'));
 const TicketRouter = lazy(() => import('@/components/admin/modules/tickets/TicketRouter'));
 const AIRouter = lazy(() => import('@/components/admin/modules/ai/AIRouter'));
 const ModsRouter = lazy(() => import('@/components/admin/modules/mods/ModsRouter'));
 const EmailRouter = lazy(() => import('@/components/admin/modules/email/EmailRouter'));
 const WebhookRouter = lazy(() => import('@/components/admin/modules/webhooks/WebhookRouter'));
+const ExtensionsRouter = lazy(() => import('@/components/admin/modules/extensions/ExtensionsRouter'));
 const ThemeContainer = lazy(() => import('@/components/admin/modules/theme/ThemeContainer'));
 const AlertRouter = lazy(() => import('@/components/admin/modules/alert/AlertRouter'));
 
@@ -72,22 +48,22 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - General Routes
      */
-    route('', OverviewContainer, { name: 'Overview', end: true, icon: OfficeBuildingIcon, category: 'general' }),
-    route('settings/*', SettingsRouter, { name: 'Settings', icon: CogIcon, category: 'general' }),
+    route('', OverviewContainer, { name: 'Overview', end: true, icon: Icon.OfficeBuildingIcon, category: 'general' }),
+    route('settings/*', SettingsRouter, { name: 'Settings', icon: Icon.CogIcon, category: 'general' }),
     route('activity', ActivityContainer, {
         name: 'Activity',
-        icon: EyeIcon,
+        icon: Icon.EyeIcon,
         category: 'general',
         condition: flags => flags.activityEnabled,
     }),
-    route('api/*', ApplicationApiRouter, { name: 'API', icon: CodeIcon, category: 'general', advanced: true }),
+    route('api/*', ApplicationApiRouter, { name: 'API', icon: Icon.CodeIcon, category: 'general', advanced: true }),
 
     /**
      * Admin - Developer Routes
      */
     route('developers/api-docs', ApiDocsContainer, {
         name: 'API Docs',
-        icon: BookOpenIcon,
+        icon: Icon.BookOpenIcon,
         category: 'developers',
         advanced: true,
     }),
@@ -95,17 +71,34 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - Module Routes
      */
-    route('auth/*', AuthRouter, { name: 'Auth', icon: KeyIcon, category: 'modules', advanced: true }),
-    route('billing/*', BillingRouter, { name: 'Billing', icon: CashIcon, category: 'modules', advanced: true }),
-    route('tickets/*', TicketRouter, { name: 'Tickets', icon: TicketIcon, category: 'modules', advanced: true }),
-    route('ai/*', AIRouter, { name: 'AI', icon: SparklesIcon, category: 'modules', advanced: true }),
-    route('marketplace/*', ModsRouter, { name: 'Marketplace', icon: CubeIcon, category: 'modules', advanced: true }),
-    route('plugins/*', ModsRouter, { name: undefined, icon: CubeIcon, category: 'modules', advanced: true }),
-    route('mods/*', ModsRouter, { name: undefined, icon: CubeIcon, category: 'modules', advanced: true }),
-    route('email/*', EmailRouter, { name: 'Email', icon: MailIcon, category: 'modules', advanced: true }),
+    route('auth/*', AuthRouter, { name: 'Auth', icon: Icon.KeyIcon, category: 'modules', advanced: true }),
+    route('billing/*', BillingRouter, { name: 'Billing', icon: Icon.CashIcon, category: 'modules', advanced: true }),
+    route('custom-domains/*', CustomDomainsRouter, {
+        name: 'Custom Domains',
+        icon: Icon.GlobeAltIcon,
+        category: 'modules',
+        advanced: true,
+    }),
+    route('tickets/*', TicketRouter, { name: 'Tickets', icon: Icon.TicketIcon, category: 'modules', advanced: true }),
+    route('ai/*', AIRouter, { name: 'AI', icon: Icon.SparklesIcon, category: 'modules', advanced: true }),
+    route('marketplace/*', ModsRouter, {
+        name: 'Marketplace',
+        icon: Icon.CubeIcon,
+        category: 'modules',
+        advanced: true,
+    }),
+    route('plugins/*', ModsRouter, { name: undefined, icon: Icon.CubeIcon, category: 'modules', advanced: true }),
+    route('mods/*', ModsRouter, { name: undefined, icon: Icon.CubeIcon, category: 'modules', advanced: true }),
+    route('email/*', EmailRouter, { name: 'Email', icon: Icon.MailIcon, category: 'modules', advanced: true }),
     route('webhooks/*', WebhookRouter, {
         name: 'Webhooks',
-        icon: CursorClickIcon,
+        icon: Icon.CursorClickIcon,
+        category: 'modules',
+        advanced: true,
+    }),
+    route('extensions/*', ExtensionsRouter, {
+        name: 'Extensions',
+        icon: Icon.PuzzleIcon,
         category: 'modules',
         advanced: true,
     }),
@@ -113,38 +106,38 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - Appearance Routes
      */
-    route('theme', ThemeContainer, { name: 'Theme', icon: PencilAltIcon, category: 'appearance' }),
-    route('links/*', LinksContainer, { name: 'Links', icon: LinkIcon, category: 'appearance' }),
-    route('alerts/*', AlertRouter, { name: 'Alerts', icon: ShieldExclamationIcon, category: 'appearance' }),
+    route('theme', ThemeContainer, { name: 'Theme', icon: Icon.PencilAltIcon, category: 'appearance' }),
+    route('links/*', LinksContainer, { name: 'Links', icon: Icon.LinkIcon, category: 'appearance' }),
+    route('alerts/*', AlertRouter, { name: 'Alerts', icon: Icon.ShieldExclamationIcon, category: 'appearance' }),
 
     /**
      * Admin - Management Routes
      */
     route('databases', DatabasesContainer, {
         name: 'Databases',
-        icon: DatabaseIcon,
+        icon: Icon.DatabaseIcon,
         category: 'management',
         advanced: true,
     }),
     route('databases/:id', DatabaseEditContainer),
-    route('nodes/*', NodesContainer, { name: 'Nodes', icon: ServerIcon, category: 'management' }),
+    route('nodes/*', NodesContainer, { name: 'Nodes', icon: Icon.ServerIcon, category: 'management' }),
     route('nodes/new', NewNodeContainer),
     route('nodes/:id/*', NodeRouter),
-    route('servers', ServersContainer, { name: 'Servers', icon: TerminalIcon, category: 'management' }),
+    route('servers', ServersContainer, { name: 'Servers', icon: Icon.TerminalIcon, category: 'management' }),
     route('servers/new', NewServerContainer),
     route('servers/presets', ServerPresetContainer),
     route('servers/presets/:id/*', ServerPresetViewContainer),
     route('servers/:id/*', ServerRouter),
-    route('users', AdminUsersContainer, { name: 'Users', icon: UserIcon, category: 'management' }),
+    route('users', AdminUsersContainer, { name: 'Users', icon: Icon.UserIcon, category: 'management' }),
     route('users/new', NewUserContainer),
     route('users/:id/*', UserRouter),
-    route('roles', RolesContainer, { name: 'Roles', icon: UserGroupIcon, category: 'management' }),
+    route('roles', RolesContainer, { name: 'Roles', icon: Icon.UserGroupIcon, category: 'management' }),
     route('roles/:id', RoleEditContainer),
 
     /**
      * Admin - Service Routes
      */
-    route('nests', NestsContainer, { name: 'Nests', icon: ViewGridIcon, category: 'services' }),
+    route('nests', NestsContainer, { name: 'Nests', icon: Icon.ViewGridIcon, category: 'services' }),
     route('nests/:nestId', NestEditContainer),
     route('nests/:nestId/new', NewEggContainer),
     route('nests/:nestId/eggs/:id/*', EggRouter),

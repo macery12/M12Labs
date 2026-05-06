@@ -139,9 +139,7 @@ export default () => {
                             icon={faUserPlus}
                             link={'/admin/auth'}
                             title={'Allow email registration'}
-                            description={
-                                'Enabling email registration allows users to signup via the login page.'
-                            }
+                            description={'Enabling email registration allows users to signup via the login page.'}
                         />
                     )}
                     {metricData && (

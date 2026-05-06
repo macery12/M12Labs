@@ -60,7 +60,7 @@ describe('saveAllProviders', () => {
             expect.objectContaining({ provider_key: 'modrinth.mods', enabled_global: true }),
         );
         expect(mockGetProviderRules).toHaveBeenCalledTimes(1);
-        expect(result.rules['modrinth.mods'].enabled_global).toBe(true);
+        expect(result.rules['modrinth.mods']!.enabled_global).toBe(true);
     });
 
     it('propagates errors when a provider update fails', async () => {

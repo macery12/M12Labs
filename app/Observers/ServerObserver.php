@@ -49,6 +49,10 @@ class ServerObserver
     public function deleted(Server $server): void
     {
         event(new Events\Server\Deleted($server));
+
+        // Custom domain DNS cleanup is handled synchronously in ServerDeletionService::handle()
+        // before the server is deleted, ensuring DNS records are removed while the
+        // server_custom_domains rows still exist (before the cascadeOnDelete FK fires).
     }
 
     /**

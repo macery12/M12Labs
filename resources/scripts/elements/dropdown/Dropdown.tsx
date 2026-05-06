@@ -1,6 +1,6 @@
 import { Menu, Transition } from '@headlessui/react';
 import classNames from 'classnames';
-import type { ElementType, ReactNode } from 'react';
+import type { ElementType, ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react';
 import { Children as ReactChildren } from 'react';
 import { forwardRef, useMemo } from 'react';
 
@@ -21,7 +21,7 @@ type TypedChild = ReactNode & {
     type?: JSX.Element;
 };
 
-const Dropdown = forwardRef<typeof Menu, Props>(({ as, children }, ref) => {
+const Dropdown: ForwardRefExoticComponent<Props & RefAttributes<typeof Menu>> = forwardRef<typeof Menu, Props>(({ as, children }, ref) => {
     const [Button, items] = useMemo(() => {
         const list = ReactChildren.toArray(children) as unknown as TypedChild[];
 
@@ -54,6 +54,10 @@ const _Dropdown = Object.assign(Dropdown, {
     Button: DropdownButton,
     Item: DropdownItem,
     Gap: DropdownGap,
-});
+}) as typeof Dropdown & {
+    Button: typeof DropdownButton;
+    Item: typeof DropdownItem;
+    Gap: typeof DropdownGap;
+};
 
 export { _Dropdown as default };

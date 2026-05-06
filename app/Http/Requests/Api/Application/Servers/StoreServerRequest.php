@@ -34,6 +34,7 @@ class StoreServerRequest extends ApplicationApiRequest
             'feature_limits.backups' => $rules['backup_limit'],
             'feature_limits.databases' => $rules['database_limit'],
             'feature_limits.subusers' => $rules['subuser_limit'],
+            'feature_limits.subdomains' => $rules['subdomain_limit'],
 
             'allocation.default' => 'required|bail|integer|exists:allocations,id',
             'allocation.additional.*' => 'integer|exists:allocations,id',
@@ -86,6 +87,10 @@ class StoreServerRequest extends ApplicationApiRequest
             'skip_scripts' => array_get($data, 'skip_scripts'),
             'start_on_completion' => array_get($data, 'start_on_completion', false),
         ];
+
+        if (Arr::has($data, 'feature_limits.subdomains')) {
+            $response['subdomain_limit'] = array_get($data, 'feature_limits.subdomains');
+        }
 
         return is_null($key) ? $response : Arr::get($response, $key, $default);
     }

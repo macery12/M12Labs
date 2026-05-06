@@ -20,6 +20,7 @@ export interface ProductValues {
         backup: number;
         database: number;
         allocation: number;
+        subdomain: number | null;
     };
 }
 

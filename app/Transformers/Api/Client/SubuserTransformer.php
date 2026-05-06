@@ -3,6 +3,7 @@
 namespace Everest\Transformers\Api\Client;
 
 use Everest\Models\Subuser;
+use Everest\Models\Permission;
 use Everest\Transformers\Api\Transformer;
 
 class SubuserTransformer extends Transformer
@@ -22,7 +23,7 @@ class SubuserTransformer extends Transformer
     {
         return array_merge(
             (new UserTransformer())->transform($model->user),
-            ['permissions' => $model->permissions]
+            ['permissions' => Permission::expandPermissions($model->permissions ?? [])]
         );
     }
 }

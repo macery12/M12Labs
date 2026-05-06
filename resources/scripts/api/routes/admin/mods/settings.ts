@@ -42,5 +42,4 @@ export interface ModsAnalytics {
 export const getModsAnalytics = (): Promise<ModsAnalytics> =>
     http.get(`/api/application/plugins/analytics`).then(({ data }) => data);
 
-export const resetCurseForgeKey = (): Promise<void> =>
-    http.delete(`/api/application/plugins/key`).then(() => {});
+export const resetCurseForgeKey = (): Promise<void> => http.delete(`/api/application/plugins/key`).then(() => {});

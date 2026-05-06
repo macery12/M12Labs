@@ -59,7 +59,6 @@
         @apply border-0 border-b-2 border-transparent transition-colors duration-100;
         @apply active:border-cyan-500 focus:border-cyan-500;
     }
-    
 }
 
 .chart_container {

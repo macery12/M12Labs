@@ -128,21 +128,6 @@ function InternalForm() {
         }
     };
 
-    const loadOptions = async (inputValue: string, callback: (options: Option[]) => void) => {
-        if (!node) {
-            callback([] as Option[]);
-            return;
-        }
-
-        const allocations = await getAllocations(node.id, { search: inputValue, server_id: '0' });
-
-        callback(
-            allocations.map(a => {
-                return { value: a.id.toString(), label: a.getDisplayText() };
-            }),
-        );
-    };
-
     const getWizardSteps = (): Step[] => {
         return [
             {
@@ -698,6 +683,15 @@ function InternalForm() {
                                     type={'number'}
                                     description={'The total number of subusers that can be added to this server.'}
                                 />
+                                <Field
+                                    id={'featureLimits.subdomains'}
+                                    name={'featureLimits.subdomains'}
+                                    label={'Subdomain Limit'}
+                                    type={'number'}
+                                    description={
+                                        'The total number of custom subdomains that can be created for this server.'
+                                    }
+                                />
                             </div>
                         </AdminBox>
                     </div>
@@ -888,6 +882,7 @@ export default () => {
                             backups: 0,
                             databases: 0,
                             subusers: 0,
+                            subdomains: 1,
                         },
                         allocation: {
                             default: 0,

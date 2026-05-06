@@ -20,8 +20,8 @@ export default () => {
     const { setFieldValue } = useFormikContext<Values>();
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(actions => actions.flashes);
     const [availableAllocations, setAvailableAllocations] = useState<Allocation[]>([]);
-    const [selectedAvailableIds, setSelectedAvailableIds] = useState<number[]>([]);
-    const [selectedCurrentIds, setSelectedCurrentIds] = useState<number[]>([]);
+    const [selectedAvailableId, setSelectedAvailableId] = useState<number | null>(null);
+    const [selectedCurrentId, setSelectedCurrentId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [loadingAvailable, setLoadingAvailable] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
@@ -97,15 +97,14 @@ export default () => {
     const canAddMore = allocationLimit === 0 || currentAllocations.length < allocationLimit;
 
     const handleAddAllocation = async () => {
-        if (selectedAvailableIds.length === 0) return;
+        if (!selectedAvailableId) return;
 
         // Check allocation limit before adding
-        const newTotal = currentAllocations.length + selectedAvailableIds.length;
-        if (allocationLimit > 0 && newTotal > allocationLimit) {
+        if (!canAddMore) {
             clearAndAddHttpError({
                 key: 'server:networking',
                 error: {
-                    message: `Cannot add ${selectedAvailableIds.length} allocation(s). Would exceed limit of ${allocationLimit}.`,
+                    message: `Allocation limit of ${allocationLimit} reached. Remove allocations or increase the limit.`,
                 },
             });
             return;
@@ -133,14 +132,15 @@ export default () => {
                     backups: server.featureLimits.backups,
                     databases: server.featureLimits.databases,
                     subusers: server.featureLimits.subusers,
+                    subdomains: server.featureLimits.subdomains,
                 },
                 allocationId: server.allocationId,
-                addAllocations: selectedAvailableIds,
+                addAllocations: [selectedAvailableId],
                 removeAllocations: [],
             });
 
             await mutate();
-            setSelectedAvailableIds([]);
+            setSelectedAvailableId(null);
         } catch (error) {
             console.error('Failed to add allocation:', error);
             clearAndAddHttpError({ key: 'server:networking', error });
@@ -150,11 +150,11 @@ export default () => {
     };
 
     const handleRemoveAllocation = async () => {
-        if (selectedCurrentIds.length === 0) return;
+        if (!selectedCurrentId) return;
 
         // Can't remove the primary allocation if there are no other allocations
-        const isPrimarySelected = selectedCurrentIds.includes(server.allocationId);
-        const remainingCount = currentAllocations.length - selectedCurrentIds.length;
+        const isPrimarySelected = selectedCurrentId === server.allocationId;
+        const remainingCount = currentAllocations.length - 1;
 
         if (isPrimarySelected && remainingCount === 0) {
             clearAndAddHttpError({
@@ -173,8 +173,8 @@ export default () => {
         try {
             // If removing primary, set a new primary first
             let newPrimaryId = server.allocationId;
-            if (isPrimarySelected) {
-                const remaining = currentAllocations.find(a => !selectedCurrentIds.includes(a.id));
+            if (selectedCurrentId === server.allocationId) {
+                const remaining = currentAllocations.find(a => a.id !== selectedCurrentId);
                 if (remaining) {
                     newPrimaryId = remaining.id;
                 }
@@ -198,14 +198,15 @@ export default () => {
                     backups: server.featureLimits.backups,
                     databases: server.featureLimits.databases,
                     subusers: server.featureLimits.subusers,
+                    subdomains: server.featureLimits.subdomains,
                 },
                 allocationId: newPrimaryId,
                 addAllocations: [],
-                removeAllocations: selectedCurrentIds,
+                removeAllocations: [selectedCurrentId],
             });
 
             await mutate();
-            setSelectedCurrentIds([]);
+            setSelectedCurrentId(null);
         } catch (error) {
             console.error('Failed to remove allocation:', error);
             clearAndAddHttpError({ key: 'server:networking', error });
@@ -215,7 +216,7 @@ export default () => {
     };
 
     const handleSetPrimary = async () => {
-        if (selectedCurrentIds.length !== 1 || selectedCurrentIds[0] === server.allocationId) return;
+        if (!selectedCurrentId || selectedCurrentId === server.allocationId) return;
 
         setLoading(true);
         clearFlashes('server:networking');
@@ -239,8 +240,9 @@ export default () => {
                     backups: server.featureLimits.backups,
                     databases: server.featureLimits.databases,
                     subusers: server.featureLimits.subusers,
+                    subdomains: server.featureLimits.subdomains,
                 },
-                allocationId: selectedCurrentIds[0],
+                allocationId: selectedCurrentId,
                 addAllocations: [],
                 removeAllocations: [],
             });
@@ -303,24 +305,19 @@ export default () => {
                 description="Add, remove, or set primary allocations for this server"
                 size="xl"
             >
-                <Dialog.Icon position="top" type={loading ? 'loading' : 'info'} />
+                <Dialog.Icon position="top" type={'info'} />
                 <div css={tw`mt-4`}>
                     <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6`}>
                         {/* Current Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-                                <Label>
-                                    Current Allocations{' '}
-                                    {selectedCurrentIds.length > 0 && `(${selectedCurrentIds.length} selected)`}
-                                </Label>
+                                <Label>Current Allocations</Label>
                                 <div css={tw`flex gap-2`}>
                                     <Button
                                         type="button"
                                         onClick={handleSetPrimary}
                                         disabled={
-                                            selectedCurrentIds.length !== 1 ||
-                                            selectedCurrentIds[0] === server.allocationId ||
-                                            loading
+                                            !selectedCurrentId || selectedCurrentId === server.allocationId || loading
                                         }
                                         css={tw`text-xs px-2 py-1`}
                                     >
@@ -330,11 +327,11 @@ export default () => {
                                     <Button
                                         type="button"
                                         onClick={handleRemoveAllocation}
-                                        disabled={selectedCurrentIds.length === 0 || loading}
+                                        disabled={!selectedCurrentId || loading}
                                         css={tw`text-xs px-2 py-1 bg-red-600 hover:bg-red-700`}
                                     >
                                         <FontAwesomeIcon icon={faTrash} css={tw`mr-1`} />
-                                        Remove{selectedCurrentIds.length > 0 ? ` (${selectedCurrentIds.length})` : ''}
+                                        Remove
                                     </Button>
                                 </div>
                             </div>
@@ -350,30 +347,21 @@ export default () => {
                                             <div
                                                 key={allocation.id}
                                                 onClick={() =>
-                                                    setSelectedCurrentIds(prev =>
-                                                        prev.includes(allocation.id)
-                                                            ? prev.filter(id => id !== allocation.id)
-                                                            : [...prev, allocation.id],
+                                                    setSelectedCurrentId(prev =>
+                                                        prev === allocation.id ? null : allocation.id,
                                                     )
                                                 }
                                                 css={tw`flex items-center justify-between p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-                                                    backgroundColor: selectedCurrentIds.includes(allocation.id)
-                                                        ? '#374151'
-                                                        : undefined,
+                                                    backgroundColor:
+                                                        selectedCurrentId === allocation.id ? '#374151' : undefined,
                                                 }}
                                             >
                                                 <div css={tw`flex items-center gap-3`}>
                                                     <input
-                                                        type="checkbox"
-                                                        checked={selectedCurrentIds.includes(allocation.id)}
-                                                        onChange={() =>
-                                                            setSelectedCurrentIds(prev =>
-                                                                prev.includes(allocation.id)
-                                                                    ? prev.filter(id => id !== allocation.id)
-                                                                    : [...prev, allocation.id],
-                                                            )
-                                                        }
+                                                        type="radio"
+                                                        checked={selectedCurrentId === allocation.id}
+                                                        onChange={() => setSelectedCurrentId(allocation.id)}
                                                         css={tw`cursor-pointer`}
                                                         onClick={e => e.stopPropagation()}
                                                     />
@@ -399,18 +387,15 @@ export default () => {
                         {/* Available Allocations */}
                         <div>
                             <div css={tw`flex items-center justify-between mb-2`}>
-                                <Label>
-                                    Available Allocations{' '}
-                                    {selectedAvailableIds.length > 0 && `(${selectedAvailableIds.length} selected)`}
-                                </Label>
+                                <Label>Available Allocations</Label>
                                 <Button
                                     type="button"
                                     onClick={handleAddAllocation}
-                                    disabled={selectedAvailableIds.length === 0 || loading}
+                                    disabled={!selectedAvailableId || !canAddMore || loading}
                                     css={tw`text-xs px-2 py-1`}
                                 >
                                     <FontAwesomeIcon icon={faPlus} css={tw`mr-1`} />
-                                    Add{selectedAvailableIds.length > 0 ? ` (${selectedAvailableIds.length})` : ''}
+                                    Add Selected
                                 </Button>
                             </div>
 
@@ -431,29 +416,20 @@ export default () => {
                                             <div
                                                 key={allocation.id}
                                                 onClick={() =>
-                                                    setSelectedAvailableIds(prev =>
-                                                        prev.includes(allocation.id)
-                                                            ? prev.filter(id => id !== allocation.id)
-                                                            : [...prev, allocation.id],
+                                                    setSelectedAvailableId(prev =>
+                                                        prev === allocation.id ? null : allocation.id,
                                                     )
                                                 }
                                                 css={tw`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-gray-700`}
                                                 style={{
-                                                    backgroundColor: selectedAvailableIds.includes(allocation.id)
-                                                        ? '#374151'
-                                                        : undefined,
+                                                    backgroundColor:
+                                                        selectedAvailableId === allocation.id ? '#374151' : undefined,
                                                 }}
                                             >
                                                 <input
-                                                    type="checkbox"
-                                                    checked={selectedAvailableIds.includes(allocation.id)}
-                                                    onChange={() =>
-                                                        setSelectedAvailableIds(prev =>
-                                                            prev.includes(allocation.id)
-                                                                ? prev.filter(id => id !== allocation.id)
-                                                                : [...prev, allocation.id],
-                                                        )
-                                                    }
+                                                    type="radio"
+                                                    checked={selectedAvailableId === allocation.id}
+                                                    onChange={() => setSelectedAvailableId(allocation.id)}
                                                     css={tw`cursor-pointer`}
                                                     onClick={e => e.stopPropagation()}
                                                 />
@@ -475,11 +451,10 @@ export default () => {
                     {/* Info Message */}
                     <div css={tw`text-xs text-gray-400 bg-gray-800 p-3 rounded mt-4`}>
                         <p>
-                            💡 <strong>How to use:</strong> Select multiple allocations using checkboxes from either
-                            list. Click &quot;Add&quot; to add selected available allocations immediately, or
-                            &quot;Remove&quot; to remove selected current allocations. Select a single allocation and
-                            click &quot;Set Primary&quot; to make it the primary allocation. Changes are saved
-                            automatically.
+                            💡 <strong>How to use:</strong> Select an allocation from either list. Click &quot;Add&quot;
+                            to add the selected available allocation, or &quot;Remove&quot; to remove the selected
+                            current allocation. Select a current allocation and click &quot;Set Primary&quot; to make it
+                            the primary allocation. Changes are saved automatically.
                         </p>
                     </div>
                 </div>

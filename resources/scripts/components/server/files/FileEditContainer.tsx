@@ -22,6 +22,45 @@ import useFlash from '@/plugins/useFlash';
 import { ServerContext } from '@/state/server';
 import { encodePathSegments } from '@/lib/helpers';
 
+const isArchiveType = (name: string): boolean => {
+    const lower = name.toLowerCase();
+
+    return [
+        '.zip',
+        '.7z',
+        '.ddup',
+        '.tar',
+        '.tar.gz',
+        '.tgz',
+        '.tar.xz',
+        '.txz',
+        '.tar.zst',
+        '.tzst',
+        '.tar.lz4',
+        '.tlz4',
+        '.tar.bz2',
+        '.tbz2',
+        '.gz',
+        '.xz',
+        '.zst',
+        '.lz4',
+        '.bz2',
+    ].some(extension => lower.endsWith(extension));
+};
+
+const isArchiveReadonlyPath = (path: string): boolean => {
+    const segments = path
+        .split('/')
+        .map(segment => segment.trim())
+        .filter(Boolean);
+
+    if (segments.length === 0) {
+        return false;
+    }
+
+    return segments.some(isArchiveType);
+};
+
 export default () => {
     const [error, setError] = useState('');
     const { action, '*': rawFilename } = useParams<{ action: 'edit' | 'new'; '*': string }>();
@@ -32,6 +71,7 @@ export default () => {
     const [language, setLanguage] = useState<LanguageDescription>();
 
     const [filename, setFilename] = useState<string>('');
+    const isArchiveReadonly = action === 'edit' && isArchiveReadonlyPath(filename);
 
     useEffect(() => {
         setFilename(decodeURIComponent(rawFilename ?? ''));
@@ -74,13 +114,19 @@ export default () => {
     }, [action, uuid, filename]);
 
     const save = (name?: string) => {
+        if (isArchiveReadonly) {
+            addError({ message: 'You cannot write to a file inside an archive. Extract it first.', key: 'files:view' });
+            return;
+        }
+
         if (!fetchFileContent.current) {
             return;
         }
 
         setLoading(true);
         clearFlashes('files:view');
-        fetchFileContent.current()
+        fetchFileContent
+            .current()
             .then(newContent => {
                 // Pass original content for diff calculation (use empty string for new files)
                 const original = action === 'new' ? '' : originalContent;
@@ -154,13 +200,17 @@ export default () => {
                     fetchContent={value => {
                         fetchFileContent.current = value;
                     }}
-                    onContentSaved={() => {
-                        if (action !== 'edit') {
-                            setModalVisible(true);
-                        } else {
-                            save();
-                        }
-                    }}
+                    onContentSaved={
+                        isArchiveReadonly
+                            ? undefined
+                            : () => {
+                                  if (action !== 'edit') {
+                                      setModalVisible(true);
+                                  } else {
+                                      save();
+                                  }
+                              }
+                    }
                 />
             </div>
 
@@ -182,8 +232,8 @@ export default () => {
 
                 {action === 'edit' ? (
                     <Can action={'file.update'}>
-                        <Button css={tw`flex-1 sm:flex-none`} onClick={() => save()}>
-                            Save Content
+                        <Button css={tw`flex-1 sm:flex-none`} onClick={() => save()} disabled={isArchiveReadonly}>
+                            {isArchiveReadonly ? 'Read-only' : 'Save Content'}
                         </Button>
                     </Can>
                 ) : (

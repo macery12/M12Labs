@@ -54,7 +54,7 @@ export default ({ server }: { server: Server }) => {
                         // We need to find which category this product belongs to
                         // For now, if there's only one category, select it
                         if (cats.length === 1) {
-                            setSelectedCategoryId(cats[0].id);
+                            setSelectedCategoryId(cats[0]!.id);
                         }
                     }
                 })
@@ -130,13 +130,13 @@ export default ({ server }: { server: Server }) => {
                                 setSelectedBillingDays(server.billingDays);
                             } else {
                                 // Select default cycle
-                                const defaultCycle = cycles.find(c => c.is_default);
-                                setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0].days);
+                                const defaultCycle = cycles.find(c => c.isDefault);
+                                setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0]!.days);
                             }
                         } else {
                             // Select default cycle
-                            const defaultCycle = cycles.find(c => c.is_default);
-                            setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0].days);
+                            const defaultCycle = cycles.find(c => c.isDefault);
+                            setSelectedBillingDays(defaultCycle ? defaultCycle.days : cycles[0]!.days);
                         }
                     }
                 })
@@ -379,14 +379,14 @@ export default ({ server }: { server: Server }) => {
                                                         {billingCycles.map(cycle => (
                                                             <option key={cycle.id} value={cycle.days}>
                                                                 {cycle.days} days - ${cycle.price?.toFixed(2) || '0.00'}
-                                                                {cycle.discount_percent !== 0 && (
+                                                                {cycle.discountPercent !== 0 && (
                                                                     <>
                                                                         {' '}
-                                                                        ({cycle.discount_percent > 0 ? '+' : ''}
-                                                                        {cycle.discount_percent}%)
+                                                                        ({cycle.discountPercent > 0 ? '+' : ''}
+                                                                        {cycle.discountPercent}%)
                                                                     </>
                                                                 )}
-                                                                {cycle.is_default && ' (Default)'}
+                                                                {cycle.isDefault && ' (Default)'}
                                                             </option>
                                                         ))}
                                                     </select>
@@ -403,18 +403,18 @@ export default ({ server }: { server: Server }) => {
                                                             <p className={'text-gray-300'}>
                                                                 <strong>Price:</strong> $
                                                                 {selectedCycle.price?.toFixed(2) || '0.00'}
-                                                                {selectedCycle.discount_percent !== 0 && (
+                                                                {selectedCycle.discountPercent !== 0 && (
                                                                     <span
                                                                         className={
-                                                                            selectedCycle.discount_percent > 0
+                                                                            selectedCycle.discountPercent > 0
                                                                                 ? 'text-green-400'
                                                                                 : 'text-red-400'
                                                                         }
                                                                     >
                                                                         {' '}
-                                                                        ({selectedCycle.discount_percent > 0 ? '' : '+'}
-                                                                        {Math.abs(selectedCycle.discount_percent)}%{' '}
-                                                                        {selectedCycle.discount_percent > 0
+                                                                        ({selectedCycle.discountPercent > 0 ? '' : '+'}
+                                                                        {Math.abs(selectedCycle.discountPercent)}%{' '}
+                                                                        {selectedCycle.discountPercent > 0
                                                                             ? 'discount'
                                                                             : 'premium'}
                                                                         )

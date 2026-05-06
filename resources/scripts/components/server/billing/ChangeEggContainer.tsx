@@ -83,7 +83,9 @@ export default () => {
                 // Remove duplicates and reuse the already-fetched current egg info
                 const uniqueAllowedEggIds = Array.from(new Set(allowedEggIds));
                 const eggInfos = await Promise.all(
-                    uniqueAllowedEggIds.map(id => (id === currentEggId ? Promise.resolve(currentEggInfo) : getEggInfo(id)))
+                    uniqueAllowedEggIds.map(id =>
+                        id === currentEggId ? Promise.resolve(currentEggInfo) : getEggInfo(id),
+                    ),
                 );
                 setAvailableEggs(eggInfos);
 
@@ -172,10 +174,10 @@ export default () => {
                 </div>
 
                 {!isStopped && (
-                     <Alert type={'warning'} className={'mb-3'}>
-                         Server must be stopped first.
-                     </Alert>
-                 )}
+                    <Alert type={'warning'} className={'mb-3'}>
+                        Server must be stopped first.
+                    </Alert>
+                )}
 
                 {selectedEggId !== currentEggId && isStopped && (
                     <Alert type={'warning'} className={'mb-3'}>

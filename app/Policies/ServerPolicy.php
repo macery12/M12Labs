@@ -4,6 +4,7 @@ namespace Everest\Policies;
 
 use Everest\Models\User;
 use Everest\Models\Server;
+use Everest\Models\Permission;
 
 class ServerPolicy
 {
@@ -17,7 +18,9 @@ class ServerPolicy
             return false;
         }
 
-        return in_array($permission, $subuser->permissions);
+        $permissions = Permission::expandPermissions($subuser->permissions ?? []);
+
+        return in_array($permission, $permissions, true);
     }
 
     /**

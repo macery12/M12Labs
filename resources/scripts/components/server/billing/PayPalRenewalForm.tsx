@@ -31,7 +31,7 @@ export default ({
 
         try {
             // Create PayPal order for renewal with all details in one request
-            const order = await createPayPalOrder(id, couponId, returnUrl, serverId, true);
+            const order = await createPayPalOrder(id, couponId, undefined, returnUrl, serverId, true);
 
             // Redirect to PayPal checkout
             // After payment, PayPal will redirect back to return_url with token parameter

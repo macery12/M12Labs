@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
-import { createMolliePayment, updateMolliePayment } from '@/api/routes/account/billing/orders/mollie';
+import { createMolliePayment } from '@/api/routes/account/billing/orders/mollie';
 
 export default ({
     id,
@@ -29,7 +29,7 @@ export default ({
 
         try {
             // Create Mollie payment for renewal with all details in one request
-            const payment = await createMolliePayment(id, couponId, returnUrl, serverId, true);
+            const payment = await createMolliePayment(id, couponId, undefined, returnUrl, serverId, true);
 
             // Redirect to Mollie checkout
             // After payment, Mollie will redirect back to return_url with token parameter

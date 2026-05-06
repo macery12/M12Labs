@@ -16,6 +16,11 @@ interface Props {
     billingDays: number;
     selectedEggId?: number;
     serverName: string;
+    domainPayload?: Array<{
+        domain_id: number;
+        subdomain: string;
+        record_type?: 'srv' | 'cname';
+    }>;
 }
 
 export default (data: Props) => {
@@ -41,6 +46,7 @@ export default (data: Props) => {
             coupon_id: data.couponId,
             egg_id: data.selectedEggId,
             name: data.serverName,
+            domain_payload: data.domainPayload,
             billing_days: data.billingDays,
         })
             .then(() => {

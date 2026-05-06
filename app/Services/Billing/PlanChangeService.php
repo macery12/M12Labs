@@ -109,6 +109,10 @@ class PlanChangeService
                 'allocation_limit' => $newProduct->allocation_limit,
             ];
 
+            if (is_null($server->subdomain_limit)) {
+                $buildData['subdomain_limit'] = null;
+            }
+
             return $this->buildModificationService->handle($server, $buildData);
         });
     }
@@ -133,6 +137,6 @@ class PlanChangeService
                $newProduct->cpu_limit < $server->cpu ||
                $newProduct->database_limit < $server->database_limit ||
                $newProduct->backup_limit < $server->backup_limit ||
-               $newProduct->allocation_limit < $server->allocation_limit;
+             $newProduct->allocation_limit < $server->allocation_limit;
     }
 }

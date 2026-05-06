@@ -1,10 +1,9 @@
 import Input from '@/elements/Input';
-import { useStoreState } from '@/state/hooks';
 import { Dialog } from '@/elements/dialog';
-import { faExclamationTriangle, faCheckCircle, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faExclamationTriangle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Tooltip from '@/elements/tooltip/Tooltip';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/elements/button';
 import { updateSettings } from '@/api/routes/admin/billing';
 
@@ -15,7 +14,6 @@ interface StripeKeys {
 
 export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
     const [data, setData] = useState<StripeKeys>({});
-    const existingKeys = useStoreState(s => s.everest.data!.billing.keys);
 
     const submit = async () => {
         if (!data.publishable || !data.secret) return;

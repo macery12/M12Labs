@@ -18,7 +18,6 @@ import {
     faEnvelopeOpenText,
     faRedo,
     faSave,
-    faTimes,
     faChevronDown,
     faChevronUp,
     faCheck,
@@ -87,9 +86,14 @@ const ViewToggleBtn = styled.button<{ $active: boolean }>`
     ${tw`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors`}
     background-color: ${({ $active }) => ($active ? 'rgba(255,255,255,0.14)' : 'transparent')};
     color: ${({ $active }) => ($active ? '#ffffff' : '#9ca3af')};
-    border-right: 1px solid rgba(255,255,255,0.08);
-    &:last-child { border-right: 0; }
-    &:hover { background-color: rgba(255,255,255,0.1); color: #ffffff; }
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    &:last-child {
+        border-right: 0;
+    }
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+    }
 `;
 
 const ActionButton = styled.button<{ $variant?: 'primary' | 'danger' }>`
@@ -101,7 +105,10 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'danger' }>`
         background-color: ${({ $variant }) =>
             $variant === 'primary' ? '#1d4ed8' : $variant === 'danger' ? '#b91c1c' : 'rgba(255,255,255,0.14)'};
     }
-    &:disabled { opacity: 0.45; cursor: not-allowed; }
+    &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
 `;
 
 const SaveFeedback = styled.span<{ $ok: boolean }>`
@@ -161,7 +168,9 @@ const VarsDivider = styled.div`
 const VarsPanelHeader = styled.button`
     ${tw`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors`}
     color: #6b7280;
-    &:hover { color: #9ca3af; }
+    &:hover {
+        color: #9ca3af;
+    }
 `;
 
 const VarsList = styled.div`
@@ -224,7 +233,7 @@ export default () => {
     // Editor source state — loaded automatically when a template is selected
     const [sourceContent, setSourceContent] = useState<string | null>(null);
     const [sourceLoading, setSourceLoading] = useState(false);
-    const [savedContent, setSavedContent] = useState<string | null>(null);
+    const [, setSavedContent] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<{ ok: boolean; msg: string } | null>(null);
     const [isCustomized, setIsCustomized] = useState(false);
@@ -234,7 +243,7 @@ export default () => {
     const [varsOpen, setVarsOpen] = useState(false);
 
     const { clearFlashes, addFlash } = useFlash();
-    const { colors } = useStoreState((state) => state.theme.data!);
+    const { colors } = useStoreState(state => state.theme.data!);
 
     // Ref to pull current editor text on demand
     const fetchEditorContent = useRef<null | (() => Promise<string>)>(null);
@@ -246,7 +255,7 @@ export default () => {
             .then(({ templates: list }) => {
                 setTemplates(list);
                 if (list.length > 0) {
-                    loadTemplate(list[0]);
+                    loadTemplate(list[0]!);
                 }
             })
             .catch(() =>
@@ -267,9 +276,13 @@ export default () => {
         setPreviewHtml(null);
         setPreviewLoading(true);
         previewEmailTemplate(tpl.key)
-            .then((rendered) => setPreviewHtml(rendered))
+            .then(rendered => setPreviewHtml(rendered))
             .catch(() =>
-                addFlash({ key: 'email:templates', type: 'error', message: `Failed to render preview for "${tpl.label}".` }),
+                addFlash({
+                    key: 'email:templates',
+                    type: 'error',
+                    message: `Failed to render preview for "${tpl.label}".`,
+                }),
             )
             .finally(() => setPreviewLoading(false));
 
@@ -282,7 +295,11 @@ export default () => {
                 setIsCustomized(is_customized);
             })
             .catch(() =>
-                addFlash({ key: 'email:templates', type: 'error', message: `Failed to load source for "${tpl.label}".` }),
+                addFlash({
+                    key: 'email:templates',
+                    type: 'error',
+                    message: `Failed to load source for "${tpl.label}".`,
+                }),
             )
             .finally(() => setSourceLoading(false));
     };
@@ -292,16 +309,9 @@ export default () => {
         setPreviewHtml(null);
         setPreviewLoading(true);
         previewEmailTemplate(selected.key)
-            .then((rendered) => setPreviewHtml(rendered))
-            .catch(() =>
-                addFlash({ key: 'email:templates', type: 'error', message: 'Failed to refresh preview.' }),
-            )
+            .then(rendered => setPreviewHtml(rendered))
+            .catch(() => addFlash({ key: 'email:templates', type: 'error', message: 'Failed to refresh preview.' }))
             .finally(() => setPreviewLoading(false));
-    };
-
-    const discardChanges = () => {
-        setSourceContent(savedContent);
-        setSaveStatus(null);
     };
 
     const handleSave = useCallback(async () => {
@@ -316,14 +326,12 @@ export default () => {
                 setSourceContent(content);
                 setIsCustomized(customized);
                 // Update the template list entry so the sidebar badge refreshes
-                setTemplates((prev) =>
-                    prev.map((t) => (t.key === selected.key ? { ...t, is_customized: customized } : t)),
-                );
+                setTemplates(prev => prev.map(t => (t.key === selected.key ? { ...t, is_customized: customized } : t)));
                 // Refresh preview to reflect saved changes
                 setPreviewHtml(null);
                 setPreviewLoading(true);
                 previewEmailTemplate(selected.key)
-                    .then((rendered) => setPreviewHtml(rendered))
+                    .then(rendered => setPreviewHtml(rendered))
                     .finally(() => setPreviewLoading(false));
             })
             .catch(() => setSaveStatus({ ok: false, msg: 'Save failed — check file permissions.' }))
@@ -337,9 +345,7 @@ export default () => {
         revertEmailTemplate(selected.key)
             .then(() => {
                 setIsCustomized(false);
-                setTemplates((prev) =>
-                    prev.map((t) => (t.key === selected.key ? { ...t, is_customized: false } : t)),
-                );
+                setTemplates(prev => prev.map(t => (t.key === selected.key ? { ...t, is_customized: false } : t)));
                 // Reload the default source and refresh preview
                 setSourceLoading(true);
                 getEmailTemplateSource(selected.key)
@@ -349,14 +355,18 @@ export default () => {
                         setIsCustomized(is_customized);
                     })
                     .catch(() =>
-                        addFlash({ key: 'email:templates', type: 'error', message: 'Failed to reload template source after revert.' }),
+                        addFlash({
+                            key: 'email:templates',
+                            type: 'error',
+                            message: 'Failed to reload template source after revert.',
+                        }),
                     )
                     .finally(() => setSourceLoading(false));
 
                 setPreviewHtml(null);
                 setPreviewLoading(true);
                 previewEmailTemplate(selected.key)
-                    .then((rendered) => setPreviewHtml(rendered))
+                    .then(rendered => setPreviewHtml(rendered))
                     .finally(() => setPreviewLoading(false));
 
                 setSaveStatus({ ok: true, msg: 'Reverted to default.' });
@@ -367,7 +377,11 @@ export default () => {
 
     const switchViewMode = (mode: ViewMode) => {
         setViewMode(mode);
-        try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch { /* ignore */ }
+        try {
+            localStorage.setItem(VIEW_MODE_KEY, mode);
+        } catch {
+            /* ignore */
+        }
     };
 
     // ── Derived ───────────────────────────────────────────────────────────────
@@ -381,7 +395,7 @@ export default () => {
     if (loading) {
         return (
             <div css={tw`flex justify-center py-8`}>
-                <Spinner size='large' />
+                <Spinner size="large" />
             </div>
         );
     }
@@ -398,15 +412,27 @@ export default () => {
                 <ToolbarLeft>
                     {/* View mode toggles */}
                     <ViewToggleGroup>
-                        <ViewToggleBtn $active={viewMode === 'split'} onClick={() => switchViewMode('split')} title='Split view'>
+                        <ViewToggleBtn
+                            $active={viewMode === 'split'}
+                            onClick={() => switchViewMode('split')}
+                            title="Split view"
+                        >
                             <FontAwesomeIcon icon={faTableColumns} />
                             Split
                         </ViewToggleBtn>
-                        <ViewToggleBtn $active={viewMode === 'editor'} onClick={() => switchViewMode('editor')} title='Editor only'>
+                        <ViewToggleBtn
+                            $active={viewMode === 'editor'}
+                            onClick={() => switchViewMode('editor')}
+                            title="Editor only"
+                        >
                             <FontAwesomeIcon icon={faCode} />
                             Editor
                         </ViewToggleBtn>
-                        <ViewToggleBtn $active={viewMode === 'preview'} onClick={() => switchViewMode('preview')} title='Preview only'>
+                        <ViewToggleBtn
+                            $active={viewMode === 'preview'}
+                            onClick={() => switchViewMode('preview')}
+                            title="Preview only"
+                        >
                             <FontAwesomeIcon icon={faEye} />
                             Preview
                         </ViewToggleBtn>
@@ -417,11 +443,7 @@ export default () => {
                         <TemplateName>
                             {selected.label}
                             <span>({selected.key})</span>
-                            {isCustomized ? (
-                                <CustomBadge>custom</CustomBadge>
-                            ) : (
-                                <DefaultBadge>default</DefaultBadge>
-                            )}
+                            {isCustomized ? <CustomBadge>custom</CustomBadge> : <DefaultBadge>default</DefaultBadge>}
                         </TemplateName>
                     )}
                 </ToolbarLeft>
@@ -438,19 +460,19 @@ export default () => {
                     {/* Revert to default */}
                     {selected && isCustomized && (
                         <ActionButton
-                            $variant='danger'
+                            $variant="danger"
                             onClick={handleRevert}
                             disabled={reverting}
-                            title='Revert to default template'
+                            title="Revert to default template"
                         >
-                            {reverting ? <Spinner size='tiny' /> : <FontAwesomeIcon icon={faRotateLeft} />}
+                            {reverting ? <Spinner size="small" /> : <FontAwesomeIcon icon={faRotateLeft} />}
                             Revert to Default
                         </ActionButton>
                     )}
 
                     {/* Refresh preview */}
                     {selected && viewMode !== 'editor' && (
-                        <ActionButton onClick={refreshPreview} disabled={previewLoading} title='Refresh preview'>
+                        <ActionButton onClick={refreshPreview} disabled={previewLoading} title="Refresh preview">
                             <FontAwesomeIcon icon={faRedo} />
                             Refresh
                         </ActionButton>
@@ -458,8 +480,13 @@ export default () => {
 
                     {/* Save */}
                     {selected && sourceContent !== null && (
-                        <ActionButton $variant='primary' onClick={handleSave} disabled={saving} title='Save template (Ctrl+S)'>
-                            {saving ? <Spinner size='tiny' /> : <FontAwesomeIcon icon={faSave} />}
+                        <ActionButton
+                            $variant="primary"
+                            onClick={handleSave}
+                            disabled={saving}
+                            title="Save template (Ctrl+S)"
+                        >
+                            {saving ? <Spinner size="small" /> : <FontAwesomeIcon icon={faSave} />}
                             Save
                         </ActionButton>
                     )}
@@ -474,7 +501,7 @@ export default () => {
                         {Object.entries(grouped).map(([category, items]) => (
                             <div key={category}>
                                 <CategoryLabel>{category}</CategoryLabel>
-                                {items.map((tpl) => (
+                                {items.map(tpl => (
                                     <TemplateItem
                                         key={tpl.key}
                                         $active={selected?.key === tpl.key}
@@ -492,23 +519,33 @@ export default () => {
                     {/* Variable docs in sidebar */}
                     {variables.length > 0 && (
                         <VarsDivider>
-                            <VarsPanelHeader onClick={() => setVarsOpen((v) => !v)}>
+                            <VarsPanelHeader onClick={() => setVarsOpen(v => !v)}>
                                 <span>Variables ({variables.length})</span>
                                 <FontAwesomeIcon icon={varsOpen ? faChevronUp : faChevronDown} />
                             </VarsPanelHeader>
                             {varsOpen && (
                                 <VarsList>
-                                    {variables.map((v) => (
+                                    {variables.map(v => (
                                         <VarRow key={v.name} $required={v.required}>
                                             <div css={tw`font-mono font-semibold`} style={{ color: '#93c5fd' }}>
                                                 {v.name}
                                                 {v.required && (
-                                                    <span css={tw`ml-1 font-normal`} style={{ color: '#60a5fa', fontSize: '0.65rem' }}>req</span>
+                                                    <span
+                                                        css={tw`ml-1 font-normal`}
+                                                        style={{ color: '#60a5fa', fontSize: '0.65rem' }}
+                                                    >
+                                                        req
+                                                    </span>
                                                 )}
                                             </div>
-                                            <div css={tw`mt-0.5`} style={{ color: '#9ca3af' }}>{v.description}</div>
+                                            <div css={tw`mt-0.5`} style={{ color: '#9ca3af' }}>
+                                                {v.description}
+                                            </div>
                                             {v.example && (
-                                                <div css={tw`mt-0.5 font-mono`} style={{ color: '#4b5563', fontSize: '0.65rem' }}>
+                                                <div
+                                                    css={tw`mt-0.5 font-mono`}
+                                                    style={{ color: '#4b5563', fontSize: '0.65rem' }}
+                                                >
                                                     e.g. {v.example}
                                                 </div>
                                             )}
@@ -529,14 +566,16 @@ export default () => {
 
                     {sourceLoading ? (
                         <EmptyPane>
-                            <Spinner size='large' />
+                            <Spinner size="large" />
                         </EmptyPane>
                     ) : sourceContent !== null ? (
                         <div css={tw`flex-1 overflow-auto`}>
                             <Editor
                                 initialContent={sourceContent}
                                 language={htmlLanguage}
-                                fetchContent={(cb) => { fetchEditorContent.current = cb; }}
+                                fetchContent={cb => {
+                                    fetchEditorContent.current = cb;
+                                }}
                                 onContentSaved={handleSave}
                                 style={{ minHeight: '560px' }}
                             />
@@ -557,17 +596,17 @@ export default () => {
 
                     {previewLoading ? (
                         <EmptyPane>
-                            <Spinner size='large' />
+                            <Spinner size="large" />
                         </EmptyPane>
                     ) : previewHtml !== null ? (
                         <StyledIframe
                             srcDoc={previewHtml}
                             title={`Preview: ${selected?.label}`}
-                            sandbox='allow-same-origin'
+                            sandbox="allow-same-origin"
                         />
                     ) : (
                         <EmptyPane>
-                            <FontAwesomeIcon icon={faEnvelopeOpenText} size='2x' />
+                            <FontAwesomeIcon icon={faEnvelopeOpenText} size="2x" />
                             <span css={tw`text-sm`}>Select a template to preview it here.</span>
                         </EmptyPane>
                     )}

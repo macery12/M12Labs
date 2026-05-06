@@ -42,7 +42,7 @@ function wrapProperties(value: unknown): any {
 
 function hasFileDiff(activity: ActivityLog): boolean {
     return (
-        activity.event === 'server:file.write' &&
+        (activity.event === 'server:file.write' || activity.event === 'server:sftp.write') &&
         activity.properties?.diff !== undefined &&
         typeof activity.properties.diff === 'object'
     );
@@ -52,8 +52,12 @@ function getFileDiff(activity: ActivityLog): FileDiff | null {
     if (!hasFileDiff(activity)) return null;
 
     const diff = activity.properties.diff as Record<string, unknown>;
+    const fileFromFiles = Array.isArray(activity.properties.files)
+        ? (activity.properties.files[0] as string | undefined)
+        : undefined;
+
     return {
-        file: activity.properties.file as string | undefined,
+        file: (activity.properties.file as string | undefined) || fileFromFiles,
         additions: (diff.additions as number) || 0,
         deletions: (diff.deletions as number) || 0,
         hunks: (diff.hunks as FileDiff['hunks']) || [],
@@ -62,16 +66,31 @@ function getFileDiff(activity: ActivityLog): FileDiff | null {
     };
 }
 
+function getCommand(activity: ActivityLog): string | null {
+    if (typeof activity.properties?.command !== 'string') {
+        return null;
+    }
+
+    if (activity.event !== 'server:console.command' && activity.event !== 'server:ssh.command') {
+        return null;
+    }
+
+    return activity.properties.command;
+}
+
 export default ({ activity, children }: Props) => {
     const { pathTo } = useLocationHash();
     const actor = activity.relationships.actor;
     const properties = wrapProperties(activity.properties);
     const { colors } = useStoreState(state => state.theme.data!);
     const fileDiff = getFileDiff(activity);
+    const command = getCommand(activity);
 
     return (
         <div
-            className={'group grid grid-cols-10 py-5 px-4 last:rounded-b last:border-0 border-b border-slate-600/50 hover:bg-slate-600/30 transition-colors duration-150'}
+            className={
+                'group grid grid-cols-10 py-5 px-4 last:rounded-b last:border-0 border-b border-slate-600/50 hover:bg-slate-600/30 transition-colors duration-150'
+            }
             style={{ backgroundColor: colors.secondary }}
         >
             {/* Avatar Column - Always visible on larger screens */}
@@ -119,21 +138,44 @@ export default ({ activity, children }: Props) => {
                                             <FolderOpenIcon />
                                         </Tooltip>
                                     )}
+                                    {activity.event.startsWith('server:ssh.') && (
+                                        <Tooltip placement={'top'} content={'Using SSH'}>
+                                            <TerminalIcon />
+                                        </Tooltip>
+                                    )}
+                                    {activity.properties?.source === 'ssh' &&
+                                        !activity.event.startsWith('server:ssh.') && (
+                                            <Tooltip placement={'top'} content={'Via SSH'}>
+                                                <TerminalIcon />
+                                            </Tooltip>
+                                        )}
                                     {children}
                                 </div>
                                 <div className={'flex flex-wrap items-center gap-2 pl-1'}>
                                     {activity.context === 'admin' && (
-                                        <span className={'rounded-full border border-red-400/40 bg-red-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-red-200'}>
+                                        <span
+                                            className={
+                                                'rounded-full border border-red-400/40 bg-red-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-red-200'
+                                            }
+                                        >
                                             Admin
                                         </span>
                                     )}
                                     {activity.isApi && (
-                                        <span className={'rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-emerald-200'}>
+                                        <span
+                                            className={
+                                                'rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-emerald-200'
+                                            }
+                                        >
                                             API
                                         </span>
                                     )}
                                     {activity.category && (
-                                        <span className={'rounded-full border border-slate-400/30 bg-slate-600/60 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-200'}>
+                                        <span
+                                            className={
+                                                'rounded-full border border-slate-400/30 bg-slate-600/60 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-200'
+                                            }
+                                        >
                                             {activity.category}
                                         </span>
                                     )}
@@ -154,7 +196,11 @@ export default ({ activity, children }: Props) => {
 
                             {/* Activity Details */}
                             <p className={classNames(style.description, 'mt-1')}>
-                                <Translate ns={'activity'} values={properties} i18nKey={activity.event.replace(':', '.')} />
+                                <Translate
+                                    ns={'activity'}
+                                    values={properties}
+                                    i18nKey={activity.event.replace(':', '.')}
+                                />
                             </p>
 
                             {fileDiff && (
@@ -163,6 +209,12 @@ export default ({ activity, children }: Props) => {
                                     <span className="mx-1">/</span>
                                     <span className="text-red-400">-{fileDiff.deletions}</span>
                                     <span className="ml-1">lines changed</span>
+                                </div>
+                            )}
+
+                            {command && (
+                                <div className="mt-2 rounded bg-slate-900/70 border border-slate-700 px-2 py-1 text-xs font-mono text-slate-200 break-all">
+                                    {command}
                                 </div>
                             )}
                         </div>
@@ -181,15 +233,9 @@ export default ({ activity, children }: Props) => {
                     <div className={'flex items-center justify-between text-xs text-slate-500'}>
                         <div className={'flex items-center gap-2'}>
                             {activity.ip && (
-                                <span className={'font-mono bg-slate-700/50 px-2 py-0.5 rounded'}>
-                                    {activity.ip}
-                                </span>
+                                <span className={'font-mono bg-slate-700/50 px-2 py-0.5 rounded'}>{activity.ip}</span>
                             )}
-                            {activity.id && (
-                                <span className={'text-slate-600'}>
-                                    ID: {activity.id.substring(0, 8)}
-                                </span>
-                            )}
+                            {activity.id && <span className={'text-slate-600'}>ID: {activity.id.substring(0, 8)}</span>}
                         </div>
                         {activity.hasAdditionalMetadata && <ActivityLogMetaButton meta={activity.properties} />}
                     </div>

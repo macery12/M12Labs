@@ -1,6 +1,4 @@
 import React from 'react';
-import { faCreditCard } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import tw from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
 

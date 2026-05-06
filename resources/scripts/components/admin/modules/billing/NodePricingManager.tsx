@@ -211,9 +211,7 @@ export default () => {
                     };
                 })
                 .filter(
-                    u =>
-                        u.price_multiplier !== u.original ||
-                        u.price_multiplier_description !== u.originalDescription,
+                    u => u.price_multiplier !== u.original || u.price_multiplier_description !== u.originalDescription,
                 )
                 .map(({ id, price_multiplier, price_multiplier_description }) => ({
                     id,
@@ -312,9 +310,7 @@ export default () => {
         if (parsed === null) return true; // counts as unsaved/invalid change
 
         const rawDescription = localDescriptions[node.id];
-        const normalizedDescription = normalizeDescription(
-            rawDescription ?? node.price_multiplier_description ?? '',
-        );
+        const normalizedDescription = normalizeDescription(rawDescription ?? node.price_multiplier_description ?? '');
         const originalDescription = normalizeDescription(node.price_multiplier_description ?? '');
 
         return parsed !== node.price_multiplier || normalizedDescription !== originalDescription;

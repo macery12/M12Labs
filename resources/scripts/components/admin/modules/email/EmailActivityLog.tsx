@@ -56,7 +56,15 @@ export default () => {
     const { colors } = useStoreState(state => state.theme.data!);
 
     // Filter states
-    const [filters, setFilters] = useState({
+    const [filters, setFilters] = useState<{
+        status: string;
+        template_key: string;
+        recipient: string;
+        only_failures: boolean;
+        date_from: string;
+        date_to: string;
+        page: number;
+    }>({
         status: searchParams.get('status') || '',
         template_key: searchParams.get('template_key') || '',
         recipient: searchParams.get('recipient') || '',
@@ -74,7 +82,7 @@ export default () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const data = await getEmailLogs(filters);
+            const data = await getEmailLogs(filters as import('@/api/routes/admin/email').EmailLogFilters);
             setLogs(data);
         } catch (error: any) {
             addFlash({
@@ -157,8 +165,8 @@ export default () => {
         const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
         const newFilters = {
             ...filters,
-            date_from: from.toISOString().split('T')[0],
-            date_to: now.toISOString().split('T')[0],
+            date_from: from.toISOString().split('T')[0] ?? '',
+            date_to: now.toISOString().split('T')[0] ?? '',
             page: 1,
         };
         setFilters(newFilters);

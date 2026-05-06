@@ -113,6 +113,18 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
     });
 
     Route::prefix('/billing')->group(function () {
+        Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
+        Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
+        Route::get('/custom-domains/options', [Client\Billing\CustomDomainOptionsController::class, 'index'])
+            ->middleware('throttle:custom-domains-billing-options');
+
+        Route::get('/categories/{id}', [Client\Billing\ProductController::class, 'index']);
+        Route::get('/products/{id}', [Client\Billing\ProductController::class, 'view']);
+        Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
+        Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
+
+        // Unified checkout controller for both free and paid products
+        Route::get('/products/{id}/key', [Client\Billing\CheckoutController::class, 'getStripeKey']);
         Route::middleware('verified.view:billing')->group(function () {
             Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
             Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
@@ -266,6 +278,16 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
         });
 
+        Route::group(['prefix' => '/custom-domains'], function () {
+            Route::get('/', [Client\Servers\CustomDomainController::class, 'index']);
+            Route::get('/options', [Client\Servers\CustomDomainController::class, 'options']);
+            Route::post('/', [Client\Servers\CustomDomainController::class, 'store'])
+                ->middleware('throttle:custom-domains-create');
+            Route::post('/sync', [Client\Servers\CustomDomainController::class, 'sync'])
+                ->middleware('throttle:custom-domains-sync');
+            Route::delete('/{customDomain:id}', [Client\Servers\CustomDomainController::class, 'destroy']);
+        });
+
         Route::group(['prefix' => '/users'], function () {
             Route::get('/', [Client\Servers\SubuserController::class, 'index']);
             Route::post('/', [Client\Servers\SubuserController::class, 'store']);
@@ -302,9 +324,48 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::post('/plans/{product}/change', [Client\Billing\PlanChangeController::class, 'changePlan']);
         });
 
+        // Wings-RS (Supercharged) endpoints
+        Route::group(['prefix' => '/wings-rs'], function () {
+            Route::get('/status', [Client\Servers\WingsRsController::class, 'status']);
+            Route::post('/fingerprints', [Client\Servers\WingsRsController::class, 'fingerprints'])
+                ->middleware('throttle:wings-rs.fingerprints');
+            Route::post('/search', [Client\Servers\WingsRsController::class, 'searchFiles'])
+                ->middleware('throttle:wings-rs.search');
+            Route::post('/compress', [Client\Servers\WingsRsController::class, 'compressAdvanced'])
+                ->middleware('throttle:wings-rs.compress');
+            Route::delete('/operations/{operation}', [Client\Servers\WingsRsController::class, 'cancelOperation'])
+                ->where('operation', '[a-zA-Z0-9\-]{1,64}');
+            Route::post('/script', [Client\Servers\WingsRsController::class, 'runScript'])
+                ->middleware('throttle:wings-rs.script');
+            Route::post('/abort-install', [Client\Servers\WingsRsController::class, 'abortInstall']);
+            Route::get('/install-logs', [Client\Servers\WingsRsController::class, 'installLogs']);
+            Route::get('/ssh', [Client\Servers\WingsRsController::class, 'sshInfo']);
+        });
+
         Route::group(['prefix' => '/deletion'], function () {
             Route::post('/schedule', [Client\Servers\DeletionScheduleController::class, 'schedule']);
             Route::post('/cancel', [Client\Servers\DeletionScheduleController::class, 'cancel']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Extensions Routes
+        |--------------------------------------------------------------------------
+        */
+        Route::group(['prefix' => '/extensions'], function () {
+            // List enabled extensions for this server
+            Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
+
+            // Extension-specific routes (must come before the wildcard route)
+            foreach ((glob(__DIR__ . '/extensions/client/*.php') ?: []) as $extensionRoutes) {
+                require $extensionRoutes;
+            }
+            foreach ((glob(app_path('Extensions/Packages/*/routes/client.php')) ?: []) as $extensionRoutes) {
+                require $extensionRoutes;
+            }
+
+            // Extension check route (must come AFTER specific extension routes)
+            Route::get('/{extensionId}', [Client\Extensions\ExtensionsController::class, 'check']);
         });
     });
 });

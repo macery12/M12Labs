@@ -1,6 +1,5 @@
 import http from '@/api/http';
 import {
-    CurseForgeModpack,
     ModpackSearchParams,
     ModpackSearchResponse,
     ModpackResponse,

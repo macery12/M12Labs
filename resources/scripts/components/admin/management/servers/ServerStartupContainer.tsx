@@ -5,7 +5,7 @@ import { Form, Formik, useField, useFormikContext } from 'formik';
 import { useEffect, useState } from 'react';
 import { object } from 'yup';
 
-import type { Egg, EggVariable, LoadedEgg } from '@/api/routes/admin/egg';
+import type { Egg, EggVariable } from '@/api/routes/admin/egg';
 import { getEgg } from '@/api/routes/admin/egg';
 import type { Server } from '@/api/routes/admin/server';
 import { useServerFromRoute } from '@/api/routes/admin/server';
@@ -156,8 +156,8 @@ function ServerStartupForm({
     server,
 }: {
     selectedEggId?: number;
-    egg?: LoadedEgg;
-    setEgg: (value: LoadedEgg | undefined) => void;
+    egg?: WithRelationships<Egg, 'variables'>;
+    setEgg: (value: WithRelationships<Egg, 'variables'> | undefined) => void;
     server: Server;
 }) {
     const {
@@ -219,7 +219,7 @@ export default () => {
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
-    const [egg, setEgg] = useState<LoadedEgg | undefined>(undefined);
+    const [egg, setEgg] = useState<WithRelationships<Egg, 'variables'> | undefined>(undefined);
 
     useEffect(() => {
         if (!server) {

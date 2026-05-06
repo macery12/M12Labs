@@ -15,7 +15,8 @@ import useFlash from '@/plugins/useFlash';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { Product, type Node } from '@definitions/account/billing';
+import { Product, StripeIntent, type Node } from '@definitions/account/billing';
+import { Stripe } from '@stripe/stripe-js';
 import {
     getProduct,
     getProductVariables,
@@ -27,6 +28,11 @@ import {
 } from '@/api/routes/account/billing/products';
 import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
+import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
+import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
+import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
+import { loadStripeOnce } from '@/lib/stripe';
+import PaymentMethodSelector from '@account/billing/order/PaymentMethodSelector';
 import classNames from 'classnames';
 
 const getResponseStatus = (reason: unknown): number | undefined => {
@@ -58,9 +64,27 @@ export default () => {
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
+    const [intent, setIntent] = useState<StripeIntent | null>(null);
+    const [stripe, setStripe] = useState<Stripe | null>(null);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
+
+    const [_customDomainOptions, setCustomDomainOptions] = useState<AvailableCustomDomain[]>([]);
+    const [domainMappings, _setDomainMappings] = useState<
+        Array<{
+            domain_id: number;
+            domain: string;
+            subdomain: string;
+            record_type: 'srv' | 'cname';
+        }>
+    >([]);
+    const [selectedDomainId, setSelectedDomainId] = useState<number>(0);
+    const [_mappingSubdomain, _setMappingSubdomain] = useState<string>('');
+    const [_mappingRecordType, setMappingRecordType] = useState<'srv' | 'cname'>('cname');
+
+    // Wizard step state
+    const [_currentStep, _setCurrentStep] = useState<number>(1);
 
     const { colors } = useStoreState(state => state.theme.data!);
 
@@ -85,6 +109,9 @@ export default () => {
         return selectedCycle ? selectedCycle.price : product?.price ?? 0;
     };
 
+    const calculatedOrderTotal = couponData ? couponData.total : getCurrentPrice();
+    const totalIsFree = calculatedOrderTotal === 0;
+
     const pricingComplete = hasValidSelectedNode && !!selectedBillingDays;
     const softwareComplete = availableEggs.length > 0 && selectedEggId !== undefined;
     const configurationComplete = serverName.trim() !== '';
@@ -93,6 +120,47 @@ export default () => {
     const handleCouponApplied = (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => {
         if (status === 'invalid') return;
         setCouponData(data);
+
+        // Only regenerate intent if the final total is not zero and using Stripe
+        if (product && product.price !== 0 && billing.processors?.stripe?.available) {
+            const finalTotal = data ? data.total : product.price;
+
+            // If coupon makes it free, don't fetch intent
+            if (finalTotal === 0) {
+                setIntent(null);
+            } else {
+                // Regenerate intent with new amount for paid products
+                getStripeIntent(Number(params.id), data?.coupon.id)
+                    .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
+                    .catch((error: any) => console.error('Error updating payment intent:', error));
+            }
+        }
+    };
+
+    const getDomainPayload = () =>
+        domainMappings.map(mapping => ({
+            domain_id: mapping.domain_id,
+            subdomain: mapping.subdomain,
+            record_type: mapping.record_type,
+        }));
+
+    const createFree = () => {
+        if (product && serverName.trim()) {
+            const variables = Array.from(vars, ([key, value]) => ({ key, value }));
+            processUnpaidOrder(
+                product.id,
+                selectedNode,
+                undefined,
+                variables,
+                undefined,
+                couponData?.coupon.id,
+                selectedEggId,
+                serverName.trim(),
+                getDomainPayload(),
+            )
+                .then(() => navigate('/'))
+                .catch((error: any) => clearAndAddHttpError({ key: 'account:billing:order', error }));
+        }
     };
 
     useEffect(() => {
@@ -139,17 +207,18 @@ export default () => {
                     throw new Error(message, { cause: result.reason });
                 });
 
-                    if (removedMissingEggs) {
-                        addFlash({
-                            key: 'account:billing:order',
-                            type: 'warning',
-                            message: 'Some server software options are no longer available and were removed from selection.',
-                        });
-                    }
+                if (removedMissingEggs) {
+                    addFlash({
+                        key: 'account:billing:order',
+                        type: 'warning',
+                        message:
+                            'Some server software options are no longer available and were removed from selection.',
+                    });
+                }
 
                 setAvailableEggs(available);
                 if (available.length > 0) {
-                    setSelectedEggId(available[0].id);
+                    setSelectedEggId(available[0]!.id);
                 } else {
                     // Clear selections and variables when no eggs remain.
                     setSelectedEggId(undefined);
@@ -159,9 +228,41 @@ export default () => {
                 // Fetch nodes
                 const nodesData = await getViableNodes(productData.id);
                 setNodes(nodesData);
-                const firstNodeId = nodesData.length > 0 ? Number(nodesData[0].id) : 0;
+                const firstNodeId = Number(nodesData.at(0)?.id ?? 0);
                 setSelectedNode(Number.isInteger(firstNodeId) && firstNodeId > 0 ? firstNodeId : 0);
+                setSelectedNode(Number(nodesData[0]?.id) ?? 0);
 
+                const domainsData = await getAvailableCustomDomains(allowedEggs[0]);
+                setCustomDomainOptions(domainsData);
+                const firstDomain = domainsData[0];
+                if (firstDomain) {
+                    setSelectedDomainId(firstDomain.id);
+                    setMappingRecordType(firstDomain.recommended_record_type);
+                }
+
+                if (productData.price !== 0) {
+                    // Check which processors are available and fetch resources accordingly
+                    const stripeAvailable = billing.processors?.stripe?.available ?? false;
+
+                    // Fetch Stripe resources if Stripe is available
+                    if (stripeAvailable) {
+                        try {
+                            // Fetch payment intent
+                            const intentData = await getStripeIntent(Number(params.id));
+                            setIntent({ id: intentData.id, secret: intentData.secret });
+
+                            // Fetch Stripe public key and initialize Stripe
+                            const stripePublicKey = await getStripeKey(Number(params.id));
+                            const stripeInstance = await loadStripeOnce(stripePublicKey.key);
+                            setStripe(stripeInstance);
+                        } catch (error) {
+                            console.error('Error initializing Stripe:', error);
+                        }
+                    }
+
+                    // Mollie doesn't need pre-initialization like Stripe
+                    // Payment is created when user clicks the button
+                }
             } catch (error: unknown) {
                 console.error('Error fetching billing order data:', error);
                 if (error instanceof Error && error.message) {
@@ -185,6 +286,31 @@ export default () => {
             .then(data => setEggs(data))
             .catch(error => console.error(error));
     }, [product, selectedEggId]);
+
+    useEffect(() => {
+        if (!selectedEggId) {
+            return;
+        }
+
+        getAvailableCustomDomains(selectedEggId)
+            .then(domains => {
+                setCustomDomainOptions(domains);
+
+                const currentlySelected = domains.find(option => option.id === selectedDomainId);
+                const nextSelected = currentlySelected ?? domains[0];
+
+                if (nextSelected) {
+                    if (!currentlySelected) {
+                        setSelectedDomainId(nextSelected.id);
+                    }
+
+                    setMappingRecordType(nextSelected.recommended_record_type);
+                } else {
+                    setSelectedDomainId(0);
+                }
+            })
+            .catch(error => console.error(error));
+    }, [selectedEggId]);
 
     // Auto-generate server name when selections change
     useEffect(() => {
@@ -240,7 +366,9 @@ export default () => {
                             </p>
                         </div>
                         {(!nodes || nodes.length < 1) && (
-                            <Alert type={'danger'}>No nodes are available for this product. Please contact support.</Alert>
+                            <Alert type={'danger'}>
+                                No nodes are available for this product. Please contact support.
+                            </Alert>
                         )}
                         <div className={'grid gap-4 sm:grid-cols-2'}>
                             {nodes?.map(node => (
@@ -303,10 +431,7 @@ export default () => {
                                 Name your server and set any required configuration values for your selected software.
                             </p>
                         </div>
-                        <div
-                            className={'rounded-lg border p-6'}
-                            style={cardSurfaceStyle}
-                        >
+                        <div className={'rounded-lg border p-6'} style={cardSurfaceStyle}>
                             <h3 className={'mb-4 text-lg font-semibold text-gray-200'}>Server Name</h3>
                             <input
                                 id={'server-name-input'}
@@ -320,14 +445,17 @@ export default () => {
                                 required
                                 maxLength={191}
                                 aria-invalid={serverNameTouched && !serverName.trim()}
-                                aria-describedby={serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined}
+                                aria-describedby={
+                                    serverNameTouched && !serverName.trim() ? 'server-name-error' : undefined
+                                }
                                 className={classNames(
                                     'w-full rounded-lg border-2 px-4 py-3 text-sm transition-all',
                                     'text-gray-200 placeholder-gray-500',
                                     'focus:outline-none focus:ring-2 focus:ring-primary/20',
                                     {
                                         'border-gray-600': !serverNameTouched,
-                                        'border-green-500 focus:border-green-500': serverNameTouched && serverName.trim(),
+                                        'border-green-500 focus:border-green-500':
+                                            serverNameTouched && serverName.trim(),
                                         'border-red-500 focus:border-red-500': serverNameTouched && !serverName.trim(),
                                     },
                                 )}
@@ -364,10 +492,7 @@ export default () => {
                             </p>
                         </div>
 
-                        <div
-                            className={'rounded-lg border p-6 space-y-6'}
-                            style={cardSurfaceStyle}
-                        >
+                        <div className={'rounded-lg border p-6 space-y-6'} style={cardSurfaceStyle}>
                             <div className={'space-y-3'}>
                                 <div className={'flex items-center gap-3 pb-3 border-b border-gray-700'}>
                                     {product.icon && (
@@ -376,7 +501,8 @@ export default () => {
                                     <div>
                                         <p className={'font-semibold text-gray-200'}>{product.name}</p>
                                         <p className={'text-sm text-gray-400'}>
-                                            {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing cycle
+                                            {selectedBillingDays} {selectedBillingDays === 1 ? 'day' : 'days'} billing
+                                            cycle
                                         </p>
                                     </div>
                                 </div>
@@ -460,6 +586,30 @@ export default () => {
                                     )}
                                 </div>
                             </div>
+
+                            {totalIsFree ? (
+                                <Button
+                                    onClick={createFree}
+                                    size={Button.Sizes.Large}
+                                    className={'w-full'}
+                                    disabled={!legalAgreed}
+                                >
+                                    Create Server
+                                </Button>
+                            ) : (
+                                <PaymentMethodSelector
+                                    selectedNode={selectedNode}
+                                    product={product}
+                                    vars={vars}
+                                    intent={intent}
+                                    stripe={stripe}
+                                    couponId={couponData?.coupon.id}
+                                    billingDays={selectedBillingDays}
+                                    selectedEggId={selectedEggId}
+                                    serverName={serverName}
+                                    domainPayload={getDomainPayload()}
+                                />
+                            )}
 
                             <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
                                 <div className={'text-sm text-gray-400'}>

@@ -21,7 +21,13 @@ export const checkUsernameAvailability = (username: string): Promise<UsernameChe
     });
 };
 
-export default ({ username, email, password, password_confirmation, ...rest }: LoginData & Record<string, any>): Promise<AuthResponse> => {
+export default ({
+    username,
+    email,
+    password,
+    password_confirmation,
+    ...rest
+}: LoginData & Record<string, any>): Promise<AuthResponse> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>
