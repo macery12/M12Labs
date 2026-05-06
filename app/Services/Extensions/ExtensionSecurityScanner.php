@@ -412,15 +412,26 @@ JSEOF;
      */
     private function resolveNodeModule(string $module, string $eslintBinary): ?string
     {
-        // Try to resolve via node from the eslint binary's directory
-        $eslintDir = dirname((string) (new ExecutableFinder())->find(explode(' ', $eslintBinary)[0]));
-        $candidates = [
-            // Local to the eslint binary (common for locally installed toolchains)
-            $eslintDir . '/../lib/node_modules/' . $module,
-            $eslintDir . '/../../' . $module,
-            // Global npm root
-            trim((string) shell_exec('npm root -g 2>/dev/null')) . '/' . $module,
-        ];
+        $eslintCmd   = explode(' ', $eslintBinary)[0];
+        $eslintFound = (new ExecutableFinder())->find($eslintCmd);
+
+        // If the binary is an absolute path it won't be found via PATH search; use it directly.
+        if ($eslintFound === null && (str_starts_with($eslintCmd, '/') || preg_match('/^[a-zA-Z]:[\\\\\/]/', $eslintCmd))) {
+            $eslintFound = $eslintCmd;
+        }
+
+        $candidates = [];
+        if ($eslintFound !== null) {
+            $eslintDir   = dirname($eslintFound);
+            $candidates[] = $eslintDir . '/../lib/node_modules/' . $module;
+            $candidates[] = $eslintDir . '/../../' . $module;
+        }
+
+        // Global npm root as final fallback
+        $npmRoot = trim((string) shell_exec('npm root -g 2>/dev/null'));
+        if ($npmRoot !== '') {
+            $candidates[] = $npmRoot . '/' . $module;
+        }
 
         foreach ($candidates as $candidate) {
             if (is_dir($candidate)) {
@@ -579,7 +590,8 @@ JSEOF;
 
         // If an absolute path was provided, check directly rather than searching PATH,
         // because ExecutableFinder::find() only resolves bare command names via PATH.
-        if (str_starts_with($cmd, '/') || str_starts_with($cmd, '\\')) {
+        // Covers Unix (/path/to/bin) and Windows (C:\path\to\bin or C:/path/to/bin).
+        if (str_starts_with($cmd, '/') || preg_match('/^[a-zA-Z]:[\\\\\/]/', $cmd)) {
             return is_file($cmd) && is_executable($cmd);
         }
 
