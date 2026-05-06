@@ -18,6 +18,7 @@ class ExtensionInstallProgressService
      */
     public const INSTALL_STAGES = [
         'downloading',
+        'scanning',
         'extracting',
         'validating',
         'copying',
@@ -44,6 +45,7 @@ class ExtensionInstallProgressService
      */
     public const UPDATE_STAGES = [
         'downloading',
+        'scanning',
         'extracting',
         'validating',
         'removing',
