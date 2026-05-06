@@ -46,7 +46,7 @@ class ScanResult
 
         $warnings = count(array_filter($this->phpFindings, fn ($f) => ($f['severity'] ?? '') === 'WARNING'))
             + count(array_filter($this->jsFindings, fn ($f) => ($f['severity'] ?? 0) === 1))
-            + count(array_filter($this->semgrepFindings, fn ($f) => ($f['severity'] ?? '') !== 'ERROR' && ($f['severity'] ?? '') !== ''));
+            + count(array_filter($this->semgrepFindings, fn ($f) => ($f['severity'] ?? '') === 'WARNING'));
 
         return [
             'scanned_at'       => $this->scannedAt->format(\DateTimeInterface::ATOM),
