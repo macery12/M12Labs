@@ -83,7 +83,30 @@ class ExtensionSecurityScanner
             ));
         }
 
-        $zip->extractTo($targetDir);
+        $realTarget = realpath($targetDir);
+        if ($realTarget === false) {
+            $zip->close();
+            throw new \RuntimeException('Could not resolve extraction target directory.');
+        }
+
+        // Validate each entry against zip-slip: reject any path that escapes the target dir.
+        for ($i = 0; $i < $zip->count(); $i++) {
+            $entry = $zip->getNameIndex($i);
+            if ($entry === false) {
+                continue;
+            }
+
+            $entryPath = realpath($realTarget . DIRECTORY_SEPARATOR . $entry);
+            if ($entryPath !== false && !str_starts_with($entryPath, $realTarget . DIRECTORY_SEPARATOR)) {
+                $zip->close();
+                throw new \RuntimeException(sprintf(
+                    'Extension archive contains a path traversal entry: "%s". Aborting extraction.',
+                    $entry
+                ));
+            }
+        }
+
+        $zip->extractTo($realTarget);
         $zip->close();
     }
 
@@ -208,7 +231,12 @@ class ExtensionSecurityScanner
             'extends' => ['plugin:security/recommended'],
         ];
 
-        File::put($eslintConfigPath, (string) json_encode($eslintConfig));
+        $encoded = json_encode($eslintConfig);
+        if ($encoded === false) {
+            throw new \RuntimeException('Failed to encode ESLint config as JSON: ' . json_last_error_msg());
+        }
+
+        File::put($eslintConfigPath, $encoded);
 
         $binaryParts = explode(' ', (string) config('extensions.scan.eslint_binary', 'npx eslint'));
         $cmd = array_merge(

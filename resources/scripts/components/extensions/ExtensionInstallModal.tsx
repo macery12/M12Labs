@@ -74,7 +74,7 @@ const ExtensionInstallModal = ({ visible, onDismissed, onInstall }: Props) => {
     const handleFileChange = useCallback((file: File | null) => {
         if (!file) return;
         if (!file.name.toLowerCase().endsWith('.m12labsextension') && !file.name.toLowerCase().endsWith('.zip')) {
-            setScanError('Please select a .M12LabsExtension file.');
+            setScanError('Please select a .M12LabsExtension (or .zip) file.');
             return;
         }
         setScanError(null);
