@@ -39,8 +39,15 @@ class ExtensionScanController extends ClientApiController
         /** @var \Illuminate\Http\UploadedFile $file */
         $file = $request->file('extension_file');
 
+        // Use the configured temp directory for uploads, relative to storage/app/.
+        $configuredTempDir = config('extensions.scan.temp_dir', storage_path('app/extension-scans'));
+        $relativeTempDir = 'extension-scans/uploads';
+        if (str_starts_with($configuredTempDir, storage_path('app/'))) {
+            $relativeTempDir = trim(substr($configuredTempDir, strlen(storage_path('app/'))), '/') . '/uploads';
+        }
+
         $tempPath = $file->storeAs(
-            'extension-scans/uploads',
+            $relativeTempDir,
             $file->hashName() . '.M12LabsExtension',
             'local'
         );

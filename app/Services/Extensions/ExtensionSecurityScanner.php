@@ -7,6 +7,7 @@ namespace Everest\Services\Extensions;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
 use ZipArchive;
 
@@ -40,11 +41,12 @@ class ExtensionSecurityScanner
             // Step 6 — Decide outcome
             $highCount = $this->countHigh($phpFindings, $jsFindings, $semgrepFindings);
             $warnCount = $this->countWarnings($phpFindings, $jsFindings, $semgrepFindings);
+            $blockOnHigh = (bool) config('extensions.scan.block_on_high', true);
 
             $outcome = match (true) {
-                $highCount > 0 => ScanResult::BLOCKED,
-                $warnCount > 0 => ScanResult::WARNED,
-                default        => ScanResult::PASSED,
+                $highCount > 0 && $blockOnHigh => ScanResult::BLOCKED,
+                $highCount > 0 || $warnCount > 0 => ScanResult::WARNED,
+                default                          => ScanResult::PASSED,
             };
 
             // Step 7 — Write report
@@ -206,7 +208,7 @@ class ExtensionSecurityScanner
             'extends' => ['plugin:security/recommended'],
         ];
 
-        file_put_contents($eslintConfigPath, json_encode($eslintConfig));
+        File::put($eslintConfigPath, (string) json_encode($eslintConfig));
 
         $binaryParts = explode(' ', (string) config('extensions.scan.eslint_binary', 'npx eslint'));
         $cmd = array_merge(
@@ -374,10 +376,9 @@ class ExtensionSecurityScanner
         // For compound commands like "npx eslint", check only the first token.
         $cmd = explode(' ', $binary)[0];
 
-        $process = new Process(['which', $cmd]);
-        $process->run();
+        $finder = new ExecutableFinder();
 
-        return $process->isSuccessful();
+        return $finder->find($cmd) !== null;
     }
 
     /**
