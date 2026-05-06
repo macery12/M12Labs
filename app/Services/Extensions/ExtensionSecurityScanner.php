@@ -278,23 +278,72 @@ class ExtensionSecurityScanner
             return [];
         }
 
-        $eslintConfigPath = storage_path('app/tmp/.eslint-scan-' . Str::uuid()->toString() . '.json');
-        File::ensureDirectoryExists(storage_path('app/tmp'));
-        $eslintConfig = [
-            'plugins' => ['security'],
-            'rules'   => ['security/detect-object-injection' => 'warn'],
-            'extends' => ['plugin:security/recommended'],
-        ];
+        $binaryParts = explode(' ', (string) config('extensions.scan.eslint_binary', 'npx eslint'));
 
-        $encoded = json_encode($eslintConfig);
-        if ($encoded === false) {
-            throw new \RuntimeException('Failed to encode ESLint config as JSON: ' . json_last_error_msg());
+        if (!$this->binaryExists($binaryParts[0])) {
+            Log::warning('ExtensionSecurityScanner: eslint binary not found, skipping JS scan.', ['binary' => $binaryParts[0]]);
+            return [];
         }
 
-        File::put($eslintConfigPath, $encoded);
+        $eslintMajor = $this->getEslintMajorVersion($binaryParts[0]);
 
-        try {
-            $binaryParts = explode(' ', (string) config('extensions.scan.eslint_binary', 'npx eslint'));
+        File::ensureDirectoryExists(storage_path('app/tmp'));
+
+        if ($eslintMajor >= 9) {
+            // ESLint v9+ uses flat config (eslint.config.cjs). The legacy eslintrc
+            // format and --no-eslintrc flag were removed in v9.
+            // We write the config to storage/app/tmp/ but ESLint's base path is
+            // the process CWD — files outside of it are silently ignored. We
+            // therefore run ESLint with CWD = $dir and pass relative file paths.
+            $eslintConfigPath = storage_path('app/tmp/.eslint-scan-' . Str::uuid()->toString() . '.cjs');
+            $pluginPath = $this->resolveNodeModule('eslint-plugin-security', $binaryParts[0]);
+
+            if ($pluginPath === null) {
+                Log::warning('ExtensionSecurityScanner: eslint-plugin-security not found, skipping JS scan.');
+                return [];
+            }
+
+            // All security rules are set to 'error' so they count as high-severity
+            // findings and can trigger BLOCKED, consistent with phpcs behaviour.
+            $configContent = <<<JSEOF
+const security = require({$this->jsString($pluginPath)});
+const rules = Object.fromEntries(
+  Object.keys(security.configs.recommended.rules).map(k => [k, 'error'])
+);
+module.exports = [{plugins:{security}, rules, languageOptions:{ecmaVersion:2020}}];
+JSEOF;
+            File::put($eslintConfigPath, $configContent);
+
+            // Build relative paths so they fall within ESLint's base path (CWD = $dir).
+            $relativeFiles = array_map(
+                fn (string $f) => ltrim(substr($f, strlen(rtrim($dir, '/'))), '/'),
+                $jsFiles
+            );
+
+            $cmd = array_merge(
+                $binaryParts,
+                ['-c', $eslintConfigPath, '--no-warn-ignored', '--format', 'json'],
+                $relativeFiles
+            );
+
+            $process = new Process($cmd);
+            $process->setWorkingDirectory($dir);
+        } else {
+            // ESLint ≤ v8: legacy eslintrc JSON config.
+            $eslintConfigPath = storage_path('app/tmp/.eslint-scan-' . Str::uuid()->toString() . '.json');
+            $eslintConfig = [
+                'plugins' => ['security'],
+                'rules'   => ['security/detect-object-injection' => 'error'],
+                'extends' => ['plugin:security/recommended'],
+            ];
+
+            $encoded = json_encode($eslintConfig);
+            if ($encoded === false) {
+                throw new \RuntimeException('Failed to encode ESLint config as JSON: ' . json_last_error_msg());
+            }
+
+            File::put($eslintConfigPath, $encoded);
+
             $cmd = array_merge(
                 $binaryParts,
                 ['--no-eslintrc', '-c', $eslintConfigPath, '--format', 'json'],
@@ -302,7 +351,11 @@ class ExtensionSecurityScanner
             );
 
             $process = new Process($cmd);
-            $process->setTimeout(120);
+        }
+
+        $process->setTimeout(120);
+
+        try {
             $process->run();
 
             $output = $process->getOutput();
@@ -335,6 +388,55 @@ class ExtensionSecurityScanner
         } finally {
             @unlink($eslintConfigPath);
         }
+    }
+
+    /**
+     * Returns the major version number of the configured ESLint binary, or 0 on failure.
+     */
+    private function getEslintMajorVersion(string $binary): int
+    {
+        $process = new Process([$binary, '--version']);
+        $process->setTimeout(10);
+        $process->run();
+        // Output is like "v10.3.0\n"
+        if (preg_match('/v?(\d+)/', trim($process->getOutput()), $m)) {
+            return (int) $m[1];
+        }
+        return 0;
+    }
+
+    /**
+     * Resolves the absolute directory path for a Node module, searching relative
+     * to the eslint binary's own node_modules first, then falling back to the
+     * global npm root.
+     */
+    private function resolveNodeModule(string $module, string $eslintBinary): ?string
+    {
+        // Try to resolve via node from the eslint binary's directory
+        $eslintDir = dirname((string) (new ExecutableFinder())->find(explode(' ', $eslintBinary)[0]));
+        $candidates = [
+            // Local to the eslint binary (common for locally installed toolchains)
+            $eslintDir . '/../lib/node_modules/' . $module,
+            $eslintDir . '/../../' . $module,
+            // Global npm root
+            trim((string) shell_exec('npm root -g 2>/dev/null')) . '/' . $module,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_dir($candidate)) {
+                return realpath($candidate) ?: null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns a JS string literal (double-quoted, with backslashes and double-quotes escaped).
+     */
+    private function jsString(string $value): string
+    {
+        return '"' . addcslashes($value, '"\\') . '"';
     }
 
     // -------------------------------------------------------------------------
@@ -474,6 +576,12 @@ class ExtensionSecurityScanner
     {
         // For compound commands like "npx eslint", check only the first token.
         $cmd = explode(' ', $binary)[0];
+
+        // If an absolute path was provided, check directly rather than searching PATH,
+        // because ExecutableFinder::find() only resolves bare command names via PATH.
+        if (str_starts_with($cmd, '/') || str_starts_with($cmd, '\\')) {
+            return is_file($cmd) && is_executable($cmd);
+        }
 
         $finder = new ExecutableFinder();
 
