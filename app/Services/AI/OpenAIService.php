@@ -20,6 +20,17 @@ class OpenAIService
     private float $temperature;
 
     /**
+     * Token/latency data from the last non-streamed query().
+     * Shape: ['model' => string, 'prompt_tokens' => int|null, 'completion_tokens' => int|null, 'total_tokens' => int|null]
+     */
+    private array $lastUsage = [];
+
+    public function getLastUsage(): array
+    {
+        return $this->lastUsage;
+    }
+
+    /**
      * OpenAIService constructor.
      */
     public function __construct()
@@ -127,11 +138,23 @@ class OpenAIService
             if ($this->mode === 'openai') {
                 // OpenAI new API response format
                 if (isset($data['output_text'])) {
+                    $this->lastUsage = [
+                        'model' => $options['model'] ?? $this->model,
+                        'prompt_tokens' => $data['usage']['input_tokens'] ?? null,
+                        'completion_tokens' => $data['usage']['output_tokens'] ?? null,
+                        'total_tokens' => $data['usage']['total_tokens'] ?? null,
+                    ];
                     return trim($data['output_text']);
                 }
             } else {
-                // Ollama response format
+                // Ollama / chat-completions response format
                 if (isset($data['choices'][0]['message']['content'])) {
+                    $this->lastUsage = [
+                        'model' => $options['model'] ?? $this->model,
+                        'prompt_tokens' => $data['usage']['prompt_tokens'] ?? null,
+                        'completion_tokens' => $data['usage']['completion_tokens'] ?? null,
+                        'total_tokens' => $data['usage']['total_tokens'] ?? null,
+                    ];
                     return trim($data['choices'][0]['message']['content']);
                 }
             }

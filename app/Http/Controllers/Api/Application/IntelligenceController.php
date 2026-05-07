@@ -3,9 +3,11 @@
 namespace Everest\Http\Controllers\Api\Application;
 
 use Everest\Models\Setting;
+use Everest\Models\AiUsageLog;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Everest\Services\AI\OpenAIService;
 use Everest\Services\Email\EmailRedactor;
 use Everest\Http\Requests\Api\Application\Intelligence;
@@ -42,7 +44,7 @@ class IntelligenceController extends ApplicationApiController
 
         Activity::event('admin:ai:update')
             ->property('settings', $activitySettings)
-            ->description('Jexactyl AI settings were updated')
+            ->description('M12Labs-AI settings were updated')
             ->log();
 
         return $this->returnNoContent();
@@ -79,12 +81,19 @@ class IntelligenceController extends ApplicationApiController
     public function query(Intelligence\QueryRequest $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         if (!config('modules.ai.enabled')) {
-            throw new \Exception('The Jexactyl AI module is not enabled.');
+            throw new \Exception('The M12Labs-AI module is not enabled.');
         }
 
         // Check if streaming is requested
         if ($request->input('stream', false)) {
-            return response()->stream(function () use ($request) {
+            $userId = $request->user()?->id;
+            $model = Setting::get('settings::modules:ai:model', config('modules.ai.model', 'unknown'));
+
+            return response()->stream(function () use ($request, $userId, $model) {
+                $start = microtime(true);
+                $status = 'success';
+                $errorMsg = null;
+
                 try {
                     foreach ($this->aiService->queryStream($request->input('query')) as $chunk) {
                         echo 'data: ' . json_encode(['content' => $chunk]) . "\n\n";
@@ -95,9 +104,25 @@ class IntelligenceController extends ApplicationApiController
                     ob_flush();
                     flush();
                 } catch (\Exception $e) {
+                    $status = 'error';
+                    $errorMsg = $e->getMessage();
                     echo 'data: ' . json_encode(['error' => $e->getMessage()]) . "\n\n";
                     ob_flush();
                     flush();
+                }
+
+                $latencyMs = (int) round((microtime(true) - $start) * 1000);
+                try {
+                    AiUsageLog::create([
+                        'user_id' => $userId,
+                        'model' => $model,
+                        'source' => 'admin',
+                        'latency_ms' => $latencyMs,
+                        'status' => $status,
+                        'error_message' => $errorMsg,
+                    ]);
+                } catch (\Exception $logEx) {
+                    Log::warning('Failed to write AI usage log: ' . $logEx->getMessage());
                 }
             }, 200, [
                 'Content-Type' => 'text/event-stream',
@@ -106,8 +131,45 @@ class IntelligenceController extends ApplicationApiController
             ]);
         }
 
-        $result = $this->aiService->query($request->input('query'));
+        $model = Setting::get('settings::modules:ai:model', config('modules.ai.model', 'unknown'));
+        $start = microtime(true);
 
-        return response()->json($result);
+        try {
+            $result = $this->aiService->query($request->input('query'));
+            $latencyMs = (int) round((microtime(true) - $start) * 1000);
+            $usage = $this->aiService->getLastUsage();
+
+            try {
+                AiUsageLog::create([
+                    'user_id' => $request->user()?->id,
+                    'model' => $usage['model'] ?? $model,
+                    'source' => 'admin',
+                    'prompt_tokens' => $usage['prompt_tokens'] ?? null,
+                    'completion_tokens' => $usage['completion_tokens'] ?? null,
+                    'total_tokens' => $usage['total_tokens'] ?? null,
+                    'latency_ms' => $latencyMs,
+                    'status' => 'success',
+                ]);
+            } catch (\Exception $logEx) {
+                Log::warning('Failed to write AI usage log: ' . $logEx->getMessage());
+            }
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            $latencyMs = (int) round((microtime(true) - $start) * 1000);
+            try {
+                AiUsageLog::create([
+                    'user_id' => $request->user()?->id,
+                    'model' => $model,
+                    'source' => 'admin',
+                    'latency_ms' => $latencyMs,
+                    'status' => 'error',
+                    'error_message' => $e->getMessage(),
+                ]);
+            } catch (\Exception $logEx) {
+                Log::warning('Failed to write AI usage log: ' . $logEx->getMessage());
+            }
+            throw $e;
+        }
     }
 }

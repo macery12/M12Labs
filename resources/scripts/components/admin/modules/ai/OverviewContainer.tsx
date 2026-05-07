@@ -20,7 +20,7 @@ export default () => {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
-            content: `**Jexactyl AI Admin Console**\n\nUse this chat to test your AI configuration, ask questions about server management, or verify your setup is working correctly.\n\n_Provider: **${ai.mode === 'ollama' ? 'Ollama' : 'OpenAI'}** — Model: **${ai.model || 'default'}**_`,
+            content: `**M12Labs-AI Admin Console**\n\nUse this chat to test your AI configuration, ask questions about server management, or verify your setup is working correctly.\n\n_Provider: **${ai.mode === 'ollama' ? 'Ollama' : 'OpenAI'}** — Model: **${ai.model || 'default'}**_`,
         },
     ]);
     const [input, setInput] = useState('');
@@ -148,7 +148,7 @@ export default () => {
                     <textarea
                         ref={inputRef}
                         className={'flex-1 resize-none bg-transparent text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none'}
-                        placeholder={'Ask Jexactyl AI a question... (Enter to send, Shift+Enter for new line)'}
+                        placeholder={'Ask M12Labs-AI a question... (Enter to send, Shift+Enter for new line)'}
                         rows={2}
                         value={input}
                         onChange={e => setInput(e.target.value)}
@@ -205,8 +205,8 @@ export default () => {
                     </dl>
                 </div>
 
-                <AdminBox title={'Disable Jexactyl AI'}>
-                    Clicking the button below will disable Jexactyl AI for both clients and administrators. Your API key
+                <AdminBox title={'Disable M12Labs-AI'}>
+                    Clicking the button below will disable M12Labs-AI for both clients and administrators. Your API key
                     will remain in the database unless you choose to delete it manually.
                     <div className={'mt-2 text-right'}>
                         <ToggleFeatureButton />

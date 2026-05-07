@@ -298,7 +298,7 @@ export default function ServerAIContainer() {
                 <div className={'flex flex-col items-center justify-center py-20 text-neutral-400'}>
                     <SparklesIcon className={'mb-4 h-12 w-12 opacity-30'} />
                     <p className={'text-lg font-medium'}>AI Assistant is not enabled</p>
-                    <p className={'mt-1 text-sm'}>An administrator must enable Jexactyl AI from the admin panel.</p>
+                    <p className={'mt-1 text-sm'}>An administrator must enable M12Labs-AI from the admin panel.</p>
                 </div>
             </PageContentBlock>
         );

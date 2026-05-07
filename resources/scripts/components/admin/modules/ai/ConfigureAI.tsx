@@ -98,11 +98,11 @@ export default ({ onDismiss }: ConfigureAIProps) => {
     ];
 
     return (
-        <Dialog open onClose={() => onDismiss?.()} title={'Configure Jexactyl AI'}>
+        <Dialog open onClose={() => onDismiss?.()} title={'Configure M12Labs-AI'}>
             <SpinnerOverlay visible={loading} />
             <div className={'mt-2 text-sm text-gray-400'}>
                 <p>
-                    In order to use <span style={{ color: primary }}>Jexactyl AI</span>, you must configure an
+                    In order to use <span style={{ color: primary }}>M12Labs-AI</span>, you must configure an
                     OpenAI-compatible API endpoint.
                 </p>
                 <p className={'my-2 text-gray-400'}>

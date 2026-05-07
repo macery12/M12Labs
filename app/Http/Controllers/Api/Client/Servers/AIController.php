@@ -4,8 +4,10 @@ namespace Everest\Http\Controllers\Api\Client\Servers;
 
 use Everest\Models\Server;
 use Everest\Models\Setting;
+use Everest\Models\AiUsageLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Everest\Services\AI\OpenAIService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -51,7 +53,7 @@ class AIController extends ClientApiController
         );
 
         if (!$enabled) {
-            abort(403, 'The Jexactyl AI module is not enabled.');
+            abort(403, 'The M12Labs-AI module is not enabled.');
         }
 
         // Admins always have access; regular users need user_access enabled
@@ -110,9 +112,19 @@ class AIController extends ClientApiController
 
         $streamOptions = ['messages' => $safeHistory];
 
+        // Capture values needed inside closures / catch blocks.
+        $userId = $request->user()->id;
+        $serverUuid = $server->uuid;
+        $conversationId = $request->input('conversation_id') ? (int) $request->input('conversation_id') : null;
+        $model = Setting::get('settings::modules:ai:model', config('modules.ai.model', 'unknown'));
+
         // Check if streaming is requested
         if ($request->input('stream', false)) {
-            return response()->stream(function () use ($streamOptions) {
+            return response()->stream(function () use ($streamOptions, $userId, $serverUuid, $conversationId, $model) {
+                $start = microtime(true);
+                $status = 'success';
+                $errorMsg = null;
+
                 try {
                     foreach ($this->aiService->queryStream('', $streamOptions) as $chunk) {
                         echo 'data: ' . json_encode(['content' => $chunk]) . "\n\n";
@@ -123,9 +135,27 @@ class AIController extends ClientApiController
                     ob_flush();
                     flush();
                 } catch (\Exception $e) {
+                    $status = 'error';
+                    $errorMsg = $e->getMessage();
                     echo 'data: ' . json_encode(['error' => $e->getMessage()]) . "\n\n";
                     ob_flush();
                     flush();
+                }
+
+                $latencyMs = (int) round((microtime(true) - $start) * 1000);
+                try {
+                    AiUsageLog::create([
+                        'user_id' => $userId,
+                        'server_uuid' => $serverUuid,
+                        'conversation_id' => $conversationId,
+                        'model' => $model,
+                        'source' => 'client',
+                        'latency_ms' => $latencyMs,
+                        'status' => $status,
+                        'error_message' => $errorMsg,
+                    ]);
+                } catch (\Exception $logEx) {
+                    Log::warning('Failed to write AI usage log: ' . $logEx->getMessage());
                 }
             }, 200, [
                 'Content-Type' => 'text/event-stream',
@@ -135,8 +165,48 @@ class AIController extends ClientApiController
         }
 
         $prompt = $this->buildPrompt($server, $rawQuery, $queryType);
-        $result = $this->aiService->query($prompt);
+        $start = microtime(true);
 
-        return response()->json($result);
+        try {
+            $result = $this->aiService->query($prompt);
+            $latencyMs = (int) round((microtime(true) - $start) * 1000);
+            $usage = $this->aiService->getLastUsage();
+
+            try {
+                AiUsageLog::create([
+                    'user_id' => $userId,
+                    'server_uuid' => $serverUuid,
+                    'conversation_id' => $conversationId,
+                    'model' => $usage['model'] ?? $model,
+                    'source' => 'client',
+                    'prompt_tokens' => $usage['prompt_tokens'] ?? null,
+                    'completion_tokens' => $usage['completion_tokens'] ?? null,
+                    'total_tokens' => $usage['total_tokens'] ?? null,
+                    'latency_ms' => $latencyMs,
+                    'status' => 'success',
+                ]);
+            } catch (\Exception $logEx) {
+                Log::warning('Failed to write AI usage log: ' . $logEx->getMessage());
+            }
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            $latencyMs = (int) round((microtime(true) - $start) * 1000);
+            try {
+                AiUsageLog::create([
+                    'user_id' => $userId,
+                    'server_uuid' => $serverUuid,
+                    'conversation_id' => $conversationId,
+                    'model' => $model,
+                    'source' => 'client',
+                    'latency_ms' => $latencyMs,
+                    'status' => 'error',
+                    'error_message' => $e->getMessage(),
+                ]);
+            } catch (\Exception $logEx) {
+                Log::warning('Failed to write AI usage log: ' . $logEx->getMessage());
+            }
+            throw $e;
+        }
     }
 }
