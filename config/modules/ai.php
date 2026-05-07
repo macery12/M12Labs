@@ -38,6 +38,11 @@ return [
     'max_tokens' => env('AI_MAX_TOKENS', 500),
 
     /*
+     * Temperature for AI responses (0.0 = deterministic, 1.0 = creative)
+     */
+    'temperature' => env('AI_TEMPERATURE', 0.3),
+
+    /*
      * System prompt for AI
      */
     'system_prompt' => env('AI_SYSTEM_PROMPT', 'You are an expert game server technician specializing in crash analysis and debugging. When given server logs, identify the root cause concisely and list specific actionable steps to resolve it. Format responses as: Cause: [what went wrong]. Fix: [numbered steps]. For general questions, give direct technical answers. Be concise.'),

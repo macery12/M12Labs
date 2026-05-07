@@ -8,52 +8,17 @@ import { handleQueryStream } from '@/api/routes/server/ai';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import PageContentBlock from '@/elements/PageContentBlock';
-
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-    streaming?: boolean;
-}
+import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
 
 const MAX_LOG_LINES = 100;
 const MAX_LOG_CHARS = 12000;
 
 const QUICK_ACTIONS = [
     { label: '🔍 Analyze recent logs', type: 'log_analysis' as const },
-    { label: '❓ Why won\'t my server start?', query: 'Why won\'t my server start? What should I check?', type: 'freeform' as const },
-    { label: '⚡ How do I improve performance?', query: 'How can I improve this server\'s performance and reduce lag?', type: 'freeform' as const },
+    { label: "❓ Why won't my server start?", query: "Why won't my server start? What should I check?", type: 'freeform' as const },
+    { label: '⚡ How do I improve performance?', query: "How can I improve this server's performance and reduce lag?", type: 'freeform' as const },
     { label: '🔧 Common configuration tips', query: 'What are the most important configuration settings I should know about for this server type?', type: 'freeform' as const },
 ];
-
-function MessageBubble({ message }: { message: Message }) {
-    const isUser = message.role === 'user';
-    return (
-        <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
-            {!isUser && (
-                <div className={'mr-2 mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-violet-600'}>
-                    <SparklesIcon className={'h-4 w-4 text-white'} />
-                </div>
-            )}
-            <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                    isUser
-                        ? 'rounded-tr-sm bg-violet-600 text-white'
-                        : 'rounded-tl-sm bg-neutral-800 text-neutral-100'
-                }`}
-            >
-                <div className={'whitespace-pre-wrap break-words'}>{message.content}</div>
-                {message.streaming && (
-                    <span className={'ml-1 inline-block h-3 w-1.5 animate-pulse rounded-sm bg-current opacity-70'} />
-                )}
-            </div>
-            {isUser && (
-                <div className={'ml-2 mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-neutral-600'}>
-                    <span className={'text-xs font-bold text-white'}>U</span>
-                </div>
-            )}
-        </div>
-    );
-}
 
 export default function ServerAIContainer() {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
@@ -107,57 +72,69 @@ export default function ServerAIContainer() {
         const userMessage: Message = { role: 'user', content: query };
         const assistantMessage: Message = { role: 'assistant', content: '', streaming: true };
 
-        setMessages(prev => [...prev, userMessage, assistantMessage]);
+        // Capture current history (excluding the initial greeting, completed messages only)
+        // before state update so we can send it to the backend for multi-turn context
+        setMessages(prev => {
+            const history = prev
+                .filter(m => !m.streaming && m.content.length > 0)
+                .slice(-10)
+                .map(m => ({ role: m.role, content: m.content }));
+
+            // Kick off the stream with the current history
+            abortRef.current?.abort();
+            abortRef.current = new AbortController();
+
+            handleQueryStream(
+                uuid,
+                query,
+                queryType,
+                chunk => {
+                    setMessages(curr => {
+                        const next = [...curr];
+                        const last = next[next.length - 1];
+                        if (last && last.role === 'assistant') {
+                            next[next.length - 1] = { ...last, content: last.content + chunk };
+                        }
+                        return next;
+                    });
+                },
+                () => {
+                    setMessages(curr => {
+                        const next = [...curr];
+                        const last = next[next.length - 1];
+                        if (last && last.role === 'assistant') {
+                            next[next.length - 1] = { ...last, streaming: false };
+                        }
+                        return next;
+                    });
+                    setLoading(false);
+                    abortRef.current = null;
+                },
+                error => {
+                    setMessages(curr => {
+                        const next = [...curr];
+                        const last = next[next.length - 1];
+                        if (last && last.role === 'assistant') {
+                            next[next.length - 1] = {
+                                ...last,
+                                content: `Error: ${error.message || 'Failed to get a response. Please try again.'}`,
+                                streaming: false,
+                            };
+                        }
+                        return next;
+                    });
+                    setLoading(false);
+                    abortRef.current = null;
+                },
+                abortRef.current.signal,
+                history,
+            );
+
+            return [...prev, userMessage, assistantMessage];
+        });
+
         setInput('');
         setLoading(true);
-
-        abortRef.current?.abort();
-        abortRef.current = new AbortController();
-
-        handleQueryStream(
-            uuid,
-            query,
-            queryType,
-            chunk => {
-                setMessages(prev => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last && last.role === 'assistant') {
-                        next[next.length - 1] = { ...last, content: last.content + chunk };
-                    }
-                    return next;
-                });
-            },
-            () => {
-                setMessages(prev => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last && last.role === 'assistant') {
-                        next[next.length - 1] = { ...last, streaming: false };
-                    }
-                    return next;
-                });
-                setLoading(false);
-                abortRef.current = null;
-            },
-            error => {
-                setMessages(prev => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last && last.role === 'assistant') {
-                        next[next.length - 1] = {
-                            ...last,
-                            content: `Error: ${error.message || 'Failed to get a response. Please try again.'}`,
-                            streaming: false,
-                        };
-                    }
-                    return next;
-                });
-                setLoading(false);
-                abortRef.current = null;
-            },
-            abortRef.current.signal,
-        );
     };
 
     const handleSend = () => {

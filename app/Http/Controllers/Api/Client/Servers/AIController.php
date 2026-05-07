@@ -6,6 +6,7 @@ use Everest\Models\Server;
 use Everest\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\RateLimiter;
 use Everest\Services\AI\OpenAIService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
@@ -63,15 +64,57 @@ class AIController extends ClientApiController
             abort(403, 'AI access has not been enabled for standard users.');
         }
 
+        // Rate limiting: admins get 60 req/10min, regular users get 15 req/10min
+        $isPrivileged = $request->user()->root_admin || $request->user()->admin_role_id;
+        $maxAttempts = $isPrivileged ? 60 : 15;
+        $rateLimitKey = 'ai:' . $request->user()->id;
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
+            $retryAfter = RateLimiter::availableIn($rateLimitKey);
+            return response()->json([
+                'error' => 'Too many AI requests. Please try again in ' . $retryAfter . ' seconds.',
+                'retry_after' => $retryAfter,
+            ], 429);
+        }
+
+        RateLimiter::hit($rateLimitKey, 600); // 10-minute window
+
         $rawQuery = $request->input('query', '');
         $queryType = $request->input('query_type', 'freeform');
-        $prompt = $this->buildPrompt($server, $rawQuery, $queryType);
+
+        // Multi-turn: accept an optional history array from the frontend.
+        // Each element must be {role: 'user'|'assistant', content: string}.
+        // The current query is always the last user message.
+        $history = $request->input('messages', []);
+        $safeHistory = [];
+        if (is_array($history)) {
+            foreach (array_slice($history, -10) as $msg) {
+                if (isset($msg['role'], $msg['content'])
+                    && in_array($msg['role'], ['user', 'assistant'], true)
+                    && is_string($msg['content'])
+                ) {
+                    $safeHistory[] = ['role' => $msg['role'], 'content' => substr($msg['content'], 0, 4000)];
+                }
+            }
+        }
+
+        // Build the context-injected prompt for the final user message, then append to history
+        $finalUserContent = $this->buildPrompt($server, $rawQuery, $queryType);
+        // Replace the last user message in history with the context-enriched version,
+        // or append it if there's no history yet.
+        if (!empty($safeHistory) && end($safeHistory)['role'] === 'user') {
+            $safeHistory[count($safeHistory) - 1]['content'] = $finalUserContent;
+        } else {
+            $safeHistory[] = ['role' => 'user', 'content' => $finalUserContent];
+        }
+
+        $streamOptions = ['messages' => $safeHistory];
 
         // Check if streaming is requested
         if ($request->input('stream', false)) {
-            return response()->stream(function () use ($prompt) {
+            return response()->stream(function () use ($streamOptions) {
                 try {
-                    foreach ($this->aiService->queryStream($prompt) as $chunk) {
+                    foreach ($this->aiService->queryStream('', $streamOptions) as $chunk) {
                         echo 'data: ' . json_encode(['content' => $chunk]) . "\n\n";
                         ob_flush();
                         flush();
@@ -91,6 +134,7 @@ class AIController extends ClientApiController
             ]);
         }
 
+        $prompt = $this->buildPrompt($server, $rawQuery, $queryType);
         $result = $this->aiService->query($prompt);
 
         return response()->json($result);

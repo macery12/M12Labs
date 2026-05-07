@@ -12,8 +12,9 @@ import {
     faHashtag,
     faComment,
     faTrash,
+    faWifi,
 } from '@fortawesome/free-solid-svg-icons';
-import { AISettings, updateSettings } from '@/api/routes/admin/ai/settings';
+import { AISettings, updateSettings, testConnection, type ConnectionTestResult } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
 import { useState } from 'react';
@@ -23,6 +24,17 @@ export default () => {
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
     const ai = useStoreState(s => s.everest.data!.ai);
     const [deletingKey, setDeletingKey] = useState(false);
+    const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
+    const [testing, setTesting] = useState(false);
+
+    const handleTestConnection = () => {
+        setTesting(true);
+        setTestResult(null);
+        testConnection()
+            .then(result => setTestResult(result))
+            .catch(() => setTestResult({ status: 'error', message: 'Request failed. Check endpoint and try again.' }))
+            .finally(() => setTesting(false));
+    };
 
     // Small Ollama models that are solid for debugging/log-reading (Minecraft, server consoles, stack traces)
     const ollamaSmallModelExamples = [
@@ -97,6 +109,7 @@ export default () => {
                 model: ai.model || (ai.mode === 'ollama' ? 'phi3:mini' : 'gpt-3.5-turbo'),
                 mode: ai.mode || 'openai',
                 max_tokens: ai.max_tokens || 500,
+                temperature: ai.temperature ?? 0.3,
                 system_prompt:
                     ai.system_prompt ||
                     'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
@@ -207,6 +220,15 @@ export default () => {
                             </div>
                         </AdminBox>
 
+                        <AdminBox title={'Temperature'} icon={faCog}>
+                            <div>
+                                <Field id={'temperature'} name={'temperature'} type={'number'} min={0} max={1} step={0.1} />
+                                <p className={'mt-1.5 text-xs text-gray-400'}>
+                                    Controls response creativity (0.0–1.0). Lower = more deterministic and factual (recommended for log analysis). Higher = more creative and varied.
+                                </p>
+                            </div>
+                        </AdminBox>
+
                         <AdminBox title={'System Prompt'} icon={faComment} className={'col-span-2'}>
                             <div>
                                 <TextareaField
@@ -227,8 +249,28 @@ export default () => {
                         <div className={'flex text-xs text-gray-500'}>
                             These changes may not apply until this page is reloaded.
                         </div>
-                        <div className={'ml-auto flex'}>
-                            <Button type="submit">Save Changes</Button>
+                        <div className={'ml-auto flex items-center gap-3'}>
+                            {testResult && (
+                                <span
+                                    className={`text-xs font-medium ${
+                                        testResult.status === 'ok' ? 'text-green-400' : 'text-red-400'
+                                    }`}
+                                >
+                                    {testResult.status === 'ok'
+                                        ? `Connected (${testResult.latency_ms}ms)`
+                                        : `Failed: ${testResult.message}`}
+                                </span>
+                            )}
+                            <Button
+                                type={'button'}
+                                variant={'secondary'}
+                                onClick={handleTestConnection}
+                                disabled={testing}
+                            >
+                                <FontAwesomeIcon icon={faWifi} className={'mr-1.5 h-3 w-3'} />
+                                {testing ? 'Testing...' : 'Test Connection'}
+                            </Button>
+                            <Button type={'submit'}>Save Changes</Button>
                         </div>
                     </div>
                 </Form>

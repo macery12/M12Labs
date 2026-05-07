@@ -114,6 +114,7 @@ export interface EverestSettings {
         model?: string;
         mode?: string;
         max_tokens?: number;
+        temperature?: number;
         system_prompt?: string;
     };
     mods: {

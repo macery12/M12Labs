@@ -49,6 +49,29 @@ class IntelligenceController extends ApplicationApiController
     }
 
     /**
+     * Test the connection to the configured AI endpoint.
+     */
+    public function testConnection(): JsonResponse
+    {
+        $start = microtime(true);
+
+        try {
+            $ok = $this->aiService->testConnection();
+            $latencyMs = (int) round((microtime(true) - $start) * 1000);
+
+            if ($ok) {
+                return response()->json(['status' => 'ok', 'latency_ms' => $latencyMs]);
+            }
+
+            return response()->json(['status' => 'error', 'message' => 'AI service returned an unexpected response.'], 502);
+        } catch (\Exception $e) {
+            $latencyMs = (int) round((microtime(true) - $start) * 1000);
+
+            return response()->json(['status' => 'error', 'message' => $e->getMessage(), 'latency_ms' => $latencyMs], 502);
+        }
+    }
+
+    /**
      * Send a query to the AI service using OpenAI-compatible API.
      *
      * @throws \Throwable
