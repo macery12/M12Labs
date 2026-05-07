@@ -246,17 +246,25 @@ class OpenAIService
                 ];
             } else {
                 // Ollama / OpenAI-compatible format — prepend system message
+                $maxTokens = $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500));
                 $payload = [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => array_merge(
                         [['role' => 'system', 'content' => $systemPrompt]],
                         $conversationMessages
                     ),
-                    'max_tokens' => $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500)),
+                    'max_tokens' => $maxTokens,
                     'temperature' => $options['temperature'] ?? $this->temperature,
                     'stream' => true,
                     'options' => [
-                        'num_ctx' => 4096,
+                        // num_ctx: context window. 2048 is enough for our compact prompts
+                        // (~500 input tokens + up to 500 output). Smaller = faster model load
+                        // and scheduling on Ollama; 4096 only needed for multi-turn history.
+                        'num_ctx' => count($conversationMessages) > 2 ? 4096 : 2048,
+                        // num_predict: tell Ollama exactly how many tokens to generate.
+                        // Without this Ollama may use -1 (unlimited) or a model default,
+                        // leading to runaway generation and inflated latency.
+                        'num_predict' => $maxTokens,
                     ],
                 ];
             }

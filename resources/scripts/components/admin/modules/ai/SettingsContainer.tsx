@@ -333,7 +333,7 @@ export default () => {
                 mode: ai.mode || 'openai',
                 max_tokens: ai.max_tokens || 500,
                 temperature: ai.temperature ?? 0.3,
-                system_prompt: ai.system_prompt || 'You are an expert game server technician. Only answer questions related to game servers, server administration, crashes, configuration, or performance. If a message is a greeting, test, joke, or anything unrelated to servers, respond only with: "I\'m sorry, I\'m only able to help with server-related questions." Always base your answers on the specific server type, egg, and log evidence provided — never give generic advice. When analyzing logs: quote the exact line causing the problem, identify whether it is a crash, a config issue, or a first-run requirement (like a EULA), and give numbered fix steps specific to that error. When answering freeform questions: be direct and specific to the game/software in question. Never say "the server may be overloaded" unless CPU or memory evidence appears in the logs.',
+                system_prompt: ai.system_prompt || 'Game server support assistant. Only answer server-related questions; for anything off-topic say "I can only help with server-related questions." Base all answers on the server type and log evidence provided. When given logs: quote the exact failing line, identify if it is a crash/config issue/first-run requirement (e.g. EULA), give numbered fix steps. Be concise and specific — never give generic advice.',
             }}
         >
             <SettingsForm

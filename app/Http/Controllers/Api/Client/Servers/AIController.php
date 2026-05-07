@@ -23,62 +23,64 @@ class AIController extends ClientApiController
     }
 
     /**
-     * Build a structured, context-aware prompt for the AI.
-     * Injecting server metadata significantly improves response quality,
-     * especially for small local models that need clear framing.
+     * Extract only signal lines from raw console output.
+     * Keeps ERROR/EXCEPTION/WARN/FATAL lines + stacktrace markers.
+     * Reduces a 6000-char log to ~1500 chars of actual evidence,
+     * cutting Ollama input tokens by 3-5x and improving TTFT significantly.
+     */
+    private function filterLogLines(string $rawLog): string
+    {
+        $lines = explode("\n", $rawLog);
+
+        $patterns = [
+            'error', 'exception', 'fatal', 'crash', 'warn', 'severe',
+            'caused by', 'java.lang.', 'java.io.', 'java.net.',
+            'outofmemory', 'stackoverflow', 'killed', 'oom',
+            'eula', 'at com.', 'at net.', 'at org.', 'at java.',
+            'noclassdef', 'classnotfound', 'nullpointer',
+            'segfault', 'core dump', 'failed to', 'unable to',
+            'could not', 'no such file', 'permission denied',
+        ];
+
+        $signal = [];
+        foreach ($lines as $line) {
+            $lower = strtolower($line);
+            foreach ($patterns as $p) {
+                if (str_contains($lower, $p)) {
+                    $signal[] = trim($line);
+                    break;
+                }
+            }
+        }
+
+        if (count($signal) >= 3) {
+            $out = implode("\n", array_slice($signal, -60));
+            return substr($out, -3000);
+        }
+
+        // Fallback: raw tail (non-Java servers)
+        $tail = implode("\n", array_slice($lines, -80));
+        return substr($tail, -3000);
+    }
+
+    /**
+     * Build a compact prompt. Short prompts = faster Ollama TTFT.
+     * Every extra input token must be processed before the first output token.
      */
     private function buildPrompt(Server $server, string $rawQuery, string $queryType): string
     {
         $server->loadMissing('egg');
         $eggName = $server->egg?->name ?? 'Unknown';
-        $status = $server->status ?? 'running';
-        $context = "Server: {$server->name} | Type: {$eggName} | Status: {$status} | Memory limit: {$server->memory}MB | Disk limit: {$server->disk}MB | CPU limit: {$server->cpu}%";
+        $status  = $server->status ?? 'running';
+        $ctx     = "{$eggName} | {$status} | {$server->memory}MB RAM | {$server->cpu}% CPU";
 
         if ($queryType === 'log_analysis') {
-            return <<<PROMPT
-You are diagnosing a game server that has stopped or crashed.
-
-{$context}
-
-Recent console output (last lines before shutdown):
----
-{$rawQuery}
----
-
-Instructions:
-- Read the log carefully and identify the SPECIFIC error causing the problem — quote the exact log line that proves it.
-- Do NOT give generic "server overloaded" or "check your config" advice unless those words literally appear in the log.
-- If you see a EULA, license agreement, or first-run setup message, say so clearly — this is NOT a crash.
-- If you see an out-of-memory kill, Java heap error, missing file, port conflict, or plugin exception, name it specifically.
-- Format your response as:
-  **Issue:** [one sentence — what exactly went wrong]
-  **Evidence:** [the exact log line that shows the problem]
-  **Fix:** [numbered steps specific to this issue]
-PROMPT;
+            $log = $this->filterLogLines($rawQuery);
+            return "Server: {$ctx}\n\nLog (errors/exceptions):\n{$log}\n\nDiagnose: quote the exact failing line. State if crash, config issue, or first-run requirement (EULA etc). Format: Issue / Evidence / Fix.";
         }
 
-        // Freeform — include the tail of recent logs as evidence so the AI works
-        // from real data instead of guessing. The frontend passes log data as the
-        // query for log_analysis; for freeform we inject it as context here.
-        $logContext = strlen($rawQuery) > 200
-            ? '' // rawQuery is already a big block of logs — treat as log_analysis
-            : ''; // will be set below via request log if we ever thread it through
-
-        return <<<PROMPT
-You are a game server support assistant with access to this server's context.
-
-{$context}
-
-User question: {$rawQuery}
-
-Instructions:
-- If the question is not related to game servers, server administration, or this specific server — for example greetings, tests, jokes, or random chat — respond ONLY with: "I'm sorry, I'm only able to help with server-related questions. Try asking about crashes, performance, configuration, or how to manage your {$eggName} server."
-- Answer SPECIFICALLY for this server type ({$eggName}) and its current state (status: {$status}).
-- If the question is about performance or crashes, ask yourself: what are the most common causes for {$eggName} servers specifically?
-- Do NOT give generic Linux server advice. Be specific to {$eggName}.
-- If you cannot give a specific answer without more information, ask ONE clarifying question.
-- Keep your response concise and actionable.
-PROMPT;
+        return "Server: {$ctx}\nQ: {$rawQuery}\nAnswer specifically for {$eggName}. If off-topic, say: \"I can only help with server-related questions.\"";
+    }
     }
 
     /**
@@ -123,18 +125,22 @@ PROMPT;
         $rawQuery = $request->input('query', '');
         $queryType = $request->input('query_type', 'freeform');
 
-        // Multi-turn: accept an optional history array from the frontend.
-        // Each element must be {role: 'user'|'assistant', content: string}.
-        // The current query is always the last user message.
-        $history = $request->input('messages', []);
+        // Multi-turn history — only used for freeform conversations.
+        // Log analysis is stateless: the logs ARE the context, so sending prior
+        // chat turns just wastes tokens and increases TTFT. We also cap history
+        // depth to 6 messages and trim each to 800 chars (prior messages are
+        // context clues, not documents — they don't need full content).
         $safeHistory = [];
-        if (is_array($history)) {
-            foreach (array_slice($history, -10) as $msg) {
-                if (isset($msg['role'], $msg['content'])
-                    && in_array($msg['role'], ['user', 'assistant'], true)
-                    && is_string($msg['content'])
-                ) {
-                    $safeHistory[] = ['role' => $msg['role'], 'content' => substr($msg['content'], 0, 4000)];
+        if ($queryType === 'freeform') {
+            $history = $request->input('messages', []);
+            if (is_array($history)) {
+                foreach (array_slice($history, -6) as $msg) {
+                    if (isset($msg['role'], $msg['content'])
+                        && in_array($msg['role'], ['user', 'assistant'], true)
+                        && is_string($msg['content'])
+                    ) {
+                        $safeHistory[] = ['role' => $msg['role'], 'content' => substr($msg['content'], 0, 800)];
+                    }
                 }
             }
         }
