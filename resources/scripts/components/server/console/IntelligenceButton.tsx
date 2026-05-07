@@ -1,5 +1,5 @@
 import stripAnsi from 'strip-ansi';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, KeyboardEvent } from 'react';
 import { ServerContext } from '@/state/server';
 import { Button } from '@/elements/button';
 import { SparklesIcon } from '@heroicons/react/outline';
@@ -9,13 +9,18 @@ import Spinner from '@/elements/Spinner';
 import { handleQueryStream } from '@/api/routes/server/ai';
 import { useStoreState } from '@/state/hooks';
 
-type Visibility = 'none' | 'button' | 'dialog';
+// Only send the most recent lines — small models are easily overwhelmed by huge logs
+const MAX_LOG_LINES = 100;
+
+type Stage = 'input' | 'loading' | 'response';
 
 export default () => {
     const [log, setLog] = useState<string[]>([]);
     const [response, setResponse] = useState<string>('');
-    const [loading, setLoading] = useState<boolean>(false);
-    const [visible, setVisible] = useState<Visibility>('none');
+    const [stage, setStage] = useState<Stage>('input');
+    const [open, setOpen] = useState<boolean>(false);
+    const [hasCrash, setHasCrash] = useState<boolean>(false);
+    const [customQuery, setCustomQuery] = useState<string>('');
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const isEnabled = useStoreState(state => state.everest.data!.ai.enabled);
@@ -23,66 +28,73 @@ export default () => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { connected, instance } = ServerContext.useStoreState(state => state.socket);
 
-    // Cleanup on unmount or when dialog closes
+    // Cleanup when dialog closes
     useEffect(() => {
-        if (visible === 'none' && abortControllerRef.current) {
+        if (!open && abortControllerRef.current) {
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
             setResponse('');
+            setStage('input');
         }
-    }, [visible]);
+    }, [open]);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
+            abortControllerRef.current?.abort();
         };
     }, []);
 
     const cancelRequest = () => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
-        setLoading(false);
-        setVisible('none');
+        abortControllerRef.current?.abort();
+        abortControllerRef.current = null;
+        setStage('input');
     };
 
-    const submit = () => {
-        setVisible('dialog');
-        setLoading(true);
+    const submitQuery = (query: string, queryType: 'log_analysis' | 'freeform') => {
+        setStage('loading');
         setResponse('');
 
-        const data = stripAnsi(log.map(it => it.replace('\r', '')).join('\n')) || '';
-
-        // Cancel any existing request
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-
-        // Create new abort controller
+        abortControllerRef.current?.abort();
         abortControllerRef.current = new AbortController();
 
         handleQueryStream(
             uuid,
-            data,
+            query,
+            queryType,
             chunk => {
                 setResponse(prev => prev + chunk);
             },
             () => {
-                setLoading(false);
+                setStage('response');
                 abortControllerRef.current = null;
             },
             error => {
                 console.error('AI query error:', error);
                 setResponse('Error: Failed to get AI response. Please try again.');
-                setLoading(false);
+                setStage('response');
                 abortControllerRef.current = null;
             },
             abortControllerRef.current.signal,
         );
+    };
+
+    const analyzeLogs = () => {
+        const data = stripAnsi(log.slice(-MAX_LOG_LINES).map(it => it.replace('\r', '')).join('\n')) || '';
+        submitQuery(data, 'log_analysis');
+    };
+
+    const askQuestion = () => {
+        const q = customQuery.trim();
+        if (!q) return;
+        submitQuery(q, 'freeform');
+    };
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            askQuestion();
+        }
     };
 
     useEffect(() => {
@@ -92,7 +104,8 @@ export default () => {
             setLog(prevLog => [...prevLog, line.startsWith('>') ? line.substring(1) : line]);
 
             if (line.toLowerCase().indexOf('detected server process in a crashed state') >= 0) {
-                setVisible('button');
+                setHasCrash(true);
+                setOpen(true);
             }
         };
 
@@ -105,42 +118,97 @@ export default () => {
 
     if (!isEnabled) return <></>;
 
-    return visible === 'button' ? (
-        <Button onClick={submit}>
-            <SparklesIcon className={'mr-1 w-5'} /> Ask AI
-        </Button>
-    ) : visible === 'dialog' ? (
-        <Dialog
-            open={visible === 'dialog'}
-            onClose={() => {
-                cancelRequest();
-                setVisible('none');
-            }}
-            title={'Server Assistant'}
-        >
-            {loading ? (
-                <div className={'space-y-4'}>
-                    <Spinner centered />
-                    {response && (
-                        <div className={'overflow-x-hidden whitespace-pre-wrap rounded-lg bg-black/50 p-3 text-sm'}>
-                            {response}
+    return (
+        <>
+            <Button
+                size={'sm'}
+                variant={hasCrash ? 'danger' : 'secondary'}
+                onClick={() => setOpen(true)}
+                className={hasCrash ? 'animate-pulse' : ''}
+            >
+                <SparklesIcon className={'mr-1 w-4'} />
+                {hasCrash ? 'Crash Detected' : 'Ask AI'}
+            </Button>
+
+            <Dialog
+                open={open}
+                onClose={() => {
+                    cancelRequest();
+                    setOpen(false);
+                    setHasCrash(false);
+                }}
+                title={'Server Assistant'}
+            >
+                {stage === 'input' && (
+                    <div className={'space-y-4'}>
+                        {hasCrash && (
+                            <div className={'rounded bg-red-900/40 p-3 text-sm text-red-300'}>
+                                A crash was detected. Click <strong>Analyze Crash</strong> to diagnose it, or ask a
+                                custom question below.
+                            </div>
+                        )}
+                        <div>
+                            <textarea
+                                className={
+                                    'w-full resize-none rounded bg-black/50 p-3 font-mono text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500'
+                                }
+                                placeholder={'Ask a question about your server... (Enter to send)'}
+                                rows={3}
+                                value={customQuery}
+                                onChange={e => setCustomQuery(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                autoFocus
+                            />
                         </div>
-                    )}
-                    <div className={'flex justify-center'}>
-                        <Button variant={'secondary'} size={'sm'} onClick={cancelRequest}>
-                            Cancel Request
-                        </Button>
+                        <div className={'flex justify-end gap-2'}>
+                            {hasCrash && (
+                                <Button size={'sm'} onClick={analyzeLogs}>
+                                    Analyze Crash
+                                </Button>
+                            )}
+                            <Button size={'sm'} onClick={askQuestion} disabled={customQuery.trim().length < 1}>
+                                Ask AI
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            ) : response ? (
-                <div className={'overflow-x-hidden whitespace-pre-wrap rounded-lg bg-black/50 p-3 text-sm'}>
-                    {response}
-                </div>
-            ) : (
-                <div className={'text-center text-red-400'}>Error: No response received</div>
-            )}
-        </Dialog>
-    ) : (
-        <></>
+                )}
+
+                {(stage === 'loading' || stage === 'response') && (
+                    <div className={'space-y-4'}>
+                        {stage === 'loading' && (
+                            <div className={'flex items-center gap-2'}>
+                                <Spinner size={'small'} />
+                                <span className={'animate-pulse text-sm text-gray-400'}>Thinking...</span>
+                            </div>
+                        )}
+                        {response && (
+                            <div className={'max-h-64 overflow-y-auto whitespace-pre-wrap rounded-lg bg-black/50 p-3 text-sm'}>
+                                {response}
+                            </div>
+                        )}
+                        <div className={'flex justify-end gap-2'}>
+                            {stage === 'loading' ? (
+                                <Button variant={'secondary'} size={'sm'} onClick={cancelRequest}>
+                                    Cancel
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant={'secondary'}
+                                    size={'sm'}
+                                    onClick={() => {
+                                        setStage('input');
+                                        setResponse('');
+                                        setCustomQuery('');
+                                    }}
+                                >
+                                    Ask Another
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </Dialog>
+        </>
     );
 };
+

@@ -26,6 +26,7 @@ export const handleQuery = (server: string, query: string, signal?: AbortSignal)
 export const handleQueryStream = (
     server: string,
     query: string,
+    queryType: 'log_analysis' | 'freeform',
     onChunk: (chunk: string) => void,
     onComplete: () => void,
     onError: (error: Error) => void,
@@ -54,7 +55,7 @@ export const handleQueryStream = (
     fetch(`/api/client/servers/${server}/ai`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ query, stream: true }),
+        body: JSON.stringify({ query, query_type: queryType, stream: true }),
         credentials: 'same-origin',
         signal,
     })

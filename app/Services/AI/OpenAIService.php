@@ -81,7 +81,9 @@ class OpenAIService
                     'max_output_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
                 ];
             } else {
-                // Ollama format (keep existing)
+                // Ollama / OpenAI-compatible format
+                // Lower temperature (0.3) gives more deterministic, factual debugging answers.
+                // num_ctx sets the context window so large logs are not silently truncated.
                 $payload = [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => [
@@ -94,9 +96,12 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
-                    'temperature' => $options['temperature'] ?? 0.7,
+                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 500),
+                    'temperature' => $options['temperature'] ?? 0.3,
                     'stream' => $options['stream'] ?? false,
+                    'options' => [
+                        'num_ctx' => 4096,
+                    ],
                 ];
             }
 
@@ -204,7 +209,7 @@ class OpenAIService
                     'max_output_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
                 ];
             } else {
-                // Ollama format (keep existing)
+                // Ollama / OpenAI-compatible format
                 $payload = [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => [
@@ -217,9 +222,12 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
-                    'temperature' => $options['temperature'] ?? 0.7,
+                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 500),
+                    'temperature' => $options['temperature'] ?? 0.3,
                     'stream' => true,
+                    'options' => [
+                        'num_ctx' => 4096,
+                    ],
                 ];
             }
 
