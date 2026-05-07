@@ -16,6 +16,7 @@ const ADMIN_QUICK_ACTIONS = [
 
 export default () => {
     const ai = useStoreState(s => s.everest.data!.ai);
+    const theme = useStoreState(s => s.theme.data!);
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
@@ -135,7 +136,7 @@ export default () => {
                 </div>
 
                 {/* Messages */}
-                <div className={'flex-1 overflow-y-auto rounded-xl bg-neutral-900 p-4'} style={{ minHeight: '40vh', maxHeight: '60vh' }}>
+                <div className={'flex-1 overflow-y-auto rounded-xl p-4'} style={{ minHeight: '40vh', maxHeight: '60vh', backgroundColor: theme.colors.secondary }}>
                     {messages.map((msg, i) => (
                         <MessageBubble key={i} message={msg} />
                     ))}
@@ -143,7 +144,7 @@ export default () => {
                 </div>
 
                 {/* Input */}
-                <div className={'mt-3 flex items-end gap-2 rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3'}>
+                <div className={'mt-3 flex items-end gap-2 rounded-xl border border-neutral-700 px-4 py-3'} style={{ backgroundColor: theme.colors.secondary }}>
                     <textarea
                         ref={inputRef}
                         className={'flex-1 resize-none bg-transparent text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none'}
@@ -173,7 +174,7 @@ export default () => {
 
             {/* Sidebar */}
             <div className={'col-span-2 space-y-4'}>
-                <div className={'rounded-xl border border-neutral-700 bg-neutral-800/50 p-4'}>
+                <div className={'rounded-xl border border-neutral-700 p-4'} style={{ backgroundColor: theme.colors.secondary }}>
                     <div className={'mb-3 flex items-center gap-2 text-sm font-medium text-neutral-200'}>
                         <SparklesIcon className={'h-4 w-4 text-violet-400'} />
                         Current Configuration

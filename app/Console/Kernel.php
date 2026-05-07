@@ -16,6 +16,7 @@ use Everest\Console\Commands\Maintenance\PruneOrphanedBackupsCommand;
 use Everest\Console\Commands\Billing\CalculateOrderThreatIndexCommand;
 use Everest\Console\Commands\Maintenance\CleanServiceBackupFilesCommand;
 use Everest\Console\Commands\Billing\DeleteScheduledServersCommand;
+use Everest\Console\Commands\AI\PruneAiConversationsCommand;
 
 class Kernel extends ConsoleKernel
 {
@@ -38,6 +39,7 @@ class Kernel extends ConsoleKernel
         // Execute scheduled commands for servers every minute, as if there was a normal cron running.
         $schedule->command(ProcessRunnableCommand::class)->everyMinute()->withoutOverlapping();
         $schedule->command(CleanServiceBackupFilesCommand::class)->daily();
+        $schedule->command(PruneAiConversationsCommand::class)->daily();
 
         if (config('backups.prune_age')) {
             // Every 30 minutes, run the backup pruning command so that any abandoned backups can be deleted.
