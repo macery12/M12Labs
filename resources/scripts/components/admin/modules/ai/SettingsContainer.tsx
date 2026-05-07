@@ -12,10 +12,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // --- Model preset chips ---------------------------------------------------
 
 const OPENAI_PRESETS = [
-    { label: 'GPT-4.1 mini', value: 'gpt-4.1-mini', note: 'Fast & cheap, great for most tasks' },
-    { label: 'GPT-4.1', value: 'gpt-4.1', note: 'Most capable OpenAI model' },
-    { label: 'GPT-4o mini', value: 'gpt-4o-mini', note: 'Good balance of speed and quality' },
-    { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo', note: 'Older, very cheap' },
+    { label: 'GPT-4.1 mini', value: 'gpt-4.1-mini', note: 'Fast & cheap, great for most tasks (recommended)' },
+    { label: 'GPT-4.1', value: 'gpt-4.1', note: 'Most capable GPT-4.1 model' },
+    { label: 'GPT-4o', value: 'gpt-4o', note: 'Flagship multimodal model' },
+    { label: 'GPT-4o mini', value: 'gpt-4o-mini', note: 'Fast and affordable GPT-4o' },
+    { label: 'o4-mini', value: 'o4-mini', note: 'Fast reasoning model' },
+    { label: 'o3', value: 'o3', note: 'Most powerful reasoning model' },
 ];
 
 const OLLAMA_PRESETS = [
@@ -59,6 +61,8 @@ function SettingsForm({
     onTestConnection: () => void;
 }) {
     const { values, setFieldValue } = useFormikContext<AISettings>();
+    const theme = useStoreState(s => s.theme.data!);
+    const accent = theme.colors.primary;
     const presets = values.mode === 'ollama' ? OLLAMA_PRESETS : OPENAI_PRESETS;
     const tempInfo = tempLabel(Number(values.temperature ?? 0.3));
     const systemPromptLen = String(values.system_prompt ?? '').length;
@@ -147,11 +151,8 @@ function SettingsForm({
                                     type="button"
                                     onClick={() => setFieldValue('model', p.value)}
                                     title={p.note}
-                                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
-                                        values.model === p.value
-                                            ? 'border-violet-500 bg-violet-500/20 text-violet-300'
-                                            : 'border-neutral-600 bg-neutral-800 text-neutral-400 hover:border-neutral-400 hover:text-neutral-200'
-                                    }`}
+                                    className={'rounded-full border px-2.5 py-0.5 text-xs transition-colors ' + (values.model === p.value ? 'border-neutral-600' : 'border-neutral-600 bg-neutral-800 text-neutral-400 hover:border-neutral-400 hover:text-neutral-200')}
+                                    style={values.model === p.value ? { borderColor: accent, backgroundColor: accent + '33', color: accent } : undefined}
                                 >
                                     {p.label}
                                 </button>
@@ -166,7 +167,7 @@ function SettingsForm({
                         <div>
                             <div className={'mb-1.5 flex items-center justify-between'}>
                                 <label className={'text-xs font-medium text-neutral-300'}>Max Response Tokens</label>
-                                <span className={'font-mono text-xs text-violet-300'}>{values.max_tokens ?? 500}</span>
+                                <span className={'font-mono text-xs'} style={{ color: accent }}>{values.max_tokens ?? 500}</span>
                             </div>
                             <input
                                 type="range"
@@ -175,7 +176,8 @@ function SettingsForm({
                                 step={50}
                                 value={values.max_tokens ?? 500}
                                 onChange={e => setFieldValue('max_tokens', Number(e.target.value))}
-                                className={'h-1.5 w-full cursor-pointer appearance-none rounded-full bg-neutral-700 accent-violet-500'}
+                                className={'h-1.5 w-full cursor-pointer appearance-none rounded-full bg-neutral-700'}
+                                style={{ accentColor: accent } as React.CSSProperties}
                             />
                             <div className={'mt-1 flex justify-between text-xs text-neutral-600'}>
                                 <span>50 - brief</span>
@@ -186,7 +188,7 @@ function SettingsForm({
                         <div>
                             <div className={'mb-1.5 flex items-center justify-between'}>
                                 <label className={'text-xs font-medium text-neutral-300'}>Temperature</label>
-                                <span className={'font-mono text-xs text-violet-300'}>{Number(values.temperature ?? 0.3).toFixed(1)}</span>
+                                <span className={'font-mono text-xs'} style={{ color: accent }}>{Number(values.temperature ?? 0.3).toFixed(1)}</span>
                             </div>
                             <input
                                 type="range"
@@ -195,10 +197,11 @@ function SettingsForm({
                                 step={0.05}
                                 value={values.temperature ?? 0.3}
                                 onChange={e => setFieldValue('temperature', parseFloat(e.target.value))}
-                                className={'h-1.5 w-full cursor-pointer appearance-none rounded-full bg-neutral-700 accent-violet-500'}
+                                className={'h-1.5 w-full cursor-pointer appearance-none rounded-full bg-neutral-700'}
+                                style={{ accentColor: accent } as React.CSSProperties}
                             />
                             <div className={'mt-1.5 flex items-center gap-2'}>
-                                <span className={'rounded bg-violet-500/20 px-2 py-0.5 text-xs font-medium text-violet-300'}>
+                                <span className={'rounded px-2 py-0.5 text-xs font-medium'} style={{ backgroundColor: accent + '33', color: accent }}>
                                     {tempInfo.label}
                                 </span>
                                 <span className={'text-xs text-neutral-500'}>{tempInfo.hint}</span>
@@ -216,7 +219,8 @@ function SettingsForm({
                             <FormikField
                                 type="checkbox"
                                 name="user_access"
-                                className={'h-4 w-4 cursor-pointer rounded accent-violet-500'}
+                                className={'h-4 w-4 cursor-pointer rounded'}
+                                style={{ accentColor: accent } as React.CSSProperties}
                             />
                             <div>
                                 <p className={'text-sm font-medium text-neutral-200'}>Allow standard users</p>

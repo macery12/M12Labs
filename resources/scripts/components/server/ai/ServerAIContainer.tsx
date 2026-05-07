@@ -352,7 +352,10 @@ export default function ServerAIContainer() {
                                         <span className={'min-w-0 flex-1 truncate'}>{conv.title}</span>
                                         <button
                                             onClick={e => handleToggleSave(e, conv)}
-                                            className={`ml-1 flex-shrink-0 transition-opacity hover:text-violet-400 ${conv.is_saved ? 'text-violet-400 opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                            className={`ml-1 flex-shrink-0 transition-opacity ${conv.is_saved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                            style={conv.is_saved ? { color: theme.colors.primary } : undefined}
+                                            onMouseEnter={e => (e.currentTarget.style.color = theme.colors.primary)}
+                                            onMouseLeave={e => { if (!conv.is_saved) e.currentTarget.style.color = ''; }}
                                             title={conv.is_saved ? 'Unsave chat' : 'Save chat'}
                                         >
                                             <BookmarkIcon className={'h-3 w-3'} />
@@ -392,7 +395,9 @@ export default function ServerAIContainer() {
                                 key={action.label}
                                 onClick={() => handleQuickAction(action)}
                                 disabled={loading}
-                                className={'rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:border-violet-500 hover:bg-neutral-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50'}
+                                className={'rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50'}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = theme.colors.primary; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = ''; }}
                             >
                                 {action.label}
                             </button>
