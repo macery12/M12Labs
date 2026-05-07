@@ -79,6 +79,7 @@ function ServerRouter() {
     const [collapsed, setCollapsed] = usePersistedState<boolean>(`sidebar_user_${user.uuid}`, false);
     const server = ServerContext.useStoreState(state => state.server.data);
     const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.server);
+    const aiEnabled = useStoreState(state => state.everest.data!.ai.enabled);
     const billable = server?.billingProductId;
     const modsEnabled = server?.modsEnabled;
     const extensionsEnabled = server?.extensionsEnabled;
@@ -219,6 +220,7 @@ function ServerRouter() {
                                             modsEnabled,
                                             extensionsEnabled,
                                             supercharged,
+                                            aiEnabled,
                                         })),
                             )
                             .map(route => (
@@ -235,7 +237,7 @@ function ServerRouter() {
                                 route =>
                                     route.category === category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled })),
+                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged, aiEnabled })),
                             );
                             if (categoryRoutes.length === 0) return null;
 
@@ -295,6 +297,7 @@ function ServerRouter() {
                                                 modsEnabled,
                                                 extensionsEnabled,
                                                 supercharged,
+                                                aiEnabled,
                                             })),
                                 )
                                 .map(route => (
@@ -320,6 +323,7 @@ function ServerRouter() {
                                                 modsEnabled,
                                                 extensionsEnabled,
                                                 supercharged,
+                                                aiEnabled,
                                             })),
                                 );
                                 if (categoryRoutes.length === 0) return null;

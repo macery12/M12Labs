@@ -22,18 +22,19 @@ class OpenAIService
      */
     public function __construct()
     {
+        // All settings must be read from the database (via Setting::get) so that values
+        // saved through the admin UI are actually used. Config/env values serve as fallbacks
+        // only — they are NOT updated when settings are changed via the panel.
         $this->apiKey = Setting::get('settings::modules:ai:key', config('modules.ai.key')) ?: '';
-        $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
-        $this->model = config('modules.ai.model') ?: 'gpt-4.1-mini';
-        $this->mode = config('modules.ai.mode') ?: 'openai';
-        $this->systemPrompt = config('modules.ai.system_prompt') ?: 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.';
+        $this->endpoint = Setting::get('settings::modules:ai:endpoint', config('modules.ai.endpoint', 'https://api.openai.com/v1')) ?: 'https://api.openai.com/v1';
+        $this->model = Setting::get('settings::modules:ai:model', config('modules.ai.model', 'gpt-4.1-mini')) ?: 'gpt-4.1-mini';
+        $this->mode = Setting::get('settings::modules:ai:mode', config('modules.ai.mode', 'openai')) ?: 'openai';
+        $this->systemPrompt = Setting::get('settings::modules:ai:system_prompt', config('modules.ai.system_prompt'))
+            ?: 'You are an expert game server technician specializing in crash analysis and debugging. When given server logs, identify the root cause concisely and list specific actionable steps to resolve it. Format responses as: Cause: [what went wrong]. Fix: [numbered steps]. For general questions, give direct technical answers. Be concise.';
 
-        // Initialize client without authorization header to prevent credential exposure in logs
-        // Increase timeout to 120 seconds to handle longer AI responses
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
             'timeout' => 120,
-            // 'stream' => true, // Enable streaming support
         ]);
     }
 
@@ -96,7 +97,7 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 500),
+                    'max_tokens' => $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500)),
                     'temperature' => $options['temperature'] ?? 0.3,
                     'stream' => $options['stream'] ?? false,
                     'options' => [
@@ -206,7 +207,7 @@ class OpenAIService
                             ],
                         ],
                     ],
-                    'max_output_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
+                    'max_output_tokens' => $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500)),
                 ];
             } else {
                 // Ollama / OpenAI-compatible format
@@ -222,7 +223,7 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 500),
+                    'max_tokens' => $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500)),
                     'temperature' => $options['temperature'] ?? 0.3,
                     'stream' => true,
                     'options' => [
@@ -233,7 +234,11 @@ class OpenAIService
 
             $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
 
+            // 'stream' => true tells Guzzle to NOT buffer the response body.
+            // Without this, Guzzle waits for the full Ollama reply before returning,
+            // causing the frontend to spin until the model finishes generating.
             $response = $this->client->post($endpoint, [
+                'stream' => true,
                 'headers' => $headers,
                 'json' => $payload,
             ]);

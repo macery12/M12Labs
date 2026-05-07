@@ -96,7 +96,7 @@ export default () => {
                     ai.endpoint || (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
                 model: ai.model || (ai.mode === 'ollama' ? 'phi3:mini' : 'gpt-3.5-turbo'),
                 mode: ai.mode || 'openai',
-                max_tokens: ai.max_tokens || 200,
+                max_tokens: ai.max_tokens || 500,
                 system_prompt:
                     ai.system_prompt ||
                     'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
@@ -107,7 +107,14 @@ export default () => {
                     <div className={'grid gap-4 lg:grid-cols-4'}>
                         <AdminBox title={'AI Provider Mode'} icon={faServer}>
                             <div>
-                                <FormikField as="select" id={'mode'} name={'mode'}>
+                                <FormikField
+                                    as="select"
+                                    id={'mode'}
+                                    name={'mode'}
+                                    className={
+                                        'w-full rounded border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 focus:border-cyan-400 focus:outline-none'
+                                    }
+                                >
                                     <option value="openai">OpenAI / Standard (HTTPS)</option>
                                     <option value="ollama">Ollama (Local/HTTPS)</option>
                                 </FormikField>

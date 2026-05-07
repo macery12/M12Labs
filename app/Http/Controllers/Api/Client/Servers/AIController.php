@@ -3,6 +3,7 @@
 namespace Everest\Http\Controllers\Api\Client\Servers;
 
 use Everest\Models\Server;
+use Everest\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\AI\OpenAIService;
@@ -27,7 +28,8 @@ class AIController extends ClientApiController
     {
         $server->loadMissing('egg');
         $eggName = $server->egg?->name ?? 'Unknown';
-        $context = "Server: {$server->name} | Type: {$eggName} | Memory: {$server->memory}MB | Disk: {$server->disk}MB";
+        $status = $server->status ?? 'running';
+        $context = "Server: {$server->name} | Type: {$eggName} | Status: {$status} | Memory: {$server->memory}MB | Disk: {$server->disk}MB | CPU: {$server->cpu}%";
 
         if ($queryType === 'log_analysis') {
             return "Server context: {$context}\n\nConsole output:\n---\n{$rawQuery}\n---\n\nIdentify the root cause of the crash/error and provide specific numbered steps to fix it.";
@@ -42,12 +44,27 @@ class AIController extends ClientApiController
      */
     public function index(Request $request, Server $server): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
-        if (!config('modules.ai.enabled')) {
-            throw new \Exception('The Jexactyl AI module is not enabled.');
+        $enabled = filter_var(
+            Setting::get('settings::modules:ai:enabled', config('modules.ai.enabled', false)),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        if (!$enabled) {
+            abort(403, 'The Jexactyl AI module is not enabled.');
+        }
+
+        // Admins always have access; regular users need user_access enabled
+        $userAccess = filter_var(
+            Setting::get('settings::modules:ai:user_access', config('modules.ai.user_access', false)),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        if (!$userAccess && !$request->user()->root_admin && !$request->user()->admin_role_id) {
+            abort(403, 'AI access has not been enabled for standard users.');
         }
 
         $rawQuery = $request->input('query', '');
-        $queryType = $request->input('query_type', 'log_analysis');
+        $queryType = $request->input('query_type', 'freeform');
         $prompt = $this->buildPrompt($server, $rawQuery, $queryType);
 
         // Check if streaming is requested
