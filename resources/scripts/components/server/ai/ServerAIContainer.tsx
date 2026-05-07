@@ -20,7 +20,7 @@ import PageContentBlock from '@/elements/PageContentBlock';
 import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
 
 const MAX_LOG_LINES = 100;
-const MAX_LOG_CHARS = 12000;
+const MAX_LOG_CHARS = 6000; // tail of logs — crash info is always at the end
 
 const QUICK_ACTIONS = [
     { label: '🔍 Analyze recent logs', type: 'log_analysis' as const },

@@ -2,18 +2,15 @@ import stripAnsi from 'strip-ansi';
 import { useEffect, useState, useRef, KeyboardEvent } from 'react';
 import { ServerContext } from '@/state/server';
 import { Button } from '@/elements/button';
-import { SparklesIcon } from '@heroicons/react/outline';
+import { SparklesIcon, XIcon } from '@heroicons/react/outline';
 import { SocketEvent } from '@server/events';
 import Dialog from '@/elements/dialog/Dialog';
 import Spinner from '@/elements/Spinner';
 import { handleQueryStream } from '@/api/routes/server/ai';
 import { useStoreState } from '@/state/hooks';
 
-// Only send the most recent lines — small models are easily overwhelmed by huge logs
 const MAX_LOG_LINES = 100;
-// Hard cap on characters sent to the backend to prevent 413 errors from proxies in front of Ollama.
-// ~12 000 chars ≈ ~3 000 tokens, safely under a 1 MB proxy body limit with room for the system prompt.
-const MAX_LOG_CHARS = 12000;
+const MAX_LOG_CHARS = 6000;
 
 type Stage = 'input' | 'loading' | 'response';
 
@@ -23,10 +20,13 @@ export default () => {
     const [stage, setStage] = useState<Stage>('input');
     const [open, setOpen] = useState<boolean>(false);
     const [hasCrash, setHasCrash] = useState<boolean>(false);
+    const [toastVisible, setToastVisible] = useState<boolean>(false);
     const [customQuery, setCustomQuery] = useState<string>('');
     const abortControllerRef = useRef<AbortController | null>(null);
+    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isEnabled = useStoreState(state => state.everest.data!.ai.enabled);
+    const theme = useStoreState(state => state.theme.data!);
     const status = ServerContext.useStoreState(state => state.status.value);
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { connected, instance } = ServerContext.useStoreState(state => state.socket);
@@ -45,8 +45,22 @@ export default () => {
     useEffect(() => {
         return () => {
             abortControllerRef.current?.abort();
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
         };
     }, []);
+
+    const showCrashToast = () => {
+        setToastVisible(true);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => {
+            setToastVisible(false);
+        }, 10000);
+    };
+
+    const dismissToast = () => {
+        setToastVisible(false);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
 
     const cancelRequest = () => {
         abortControllerRef.current?.abort();
@@ -112,7 +126,7 @@ export default () => {
 
             if (line.toLowerCase().indexOf('detected server process in a crashed state') >= 0) {
                 setHasCrash(true);
-                setOpen(true);
+                showCrashToast();
             }
         };
 
@@ -127,6 +141,33 @@ export default () => {
 
     return (
         <>
+            {/* Crash toast — slides in from bottom-right, auto-hides after 10s */}
+            <div
+                className={'fixed bottom-6 right-6 z-50 transition-all duration-500'}
+                style={{ transform: toastVisible ? 'translateY(0)' : 'translateY(120%)', opacity: toastVisible ? 1 : 0, pointerEvents: toastVisible ? 'auto' : 'none' }}
+            >
+                <div
+                    className={'flex items-center gap-3 rounded-xl border border-red-700/60 px-4 py-3 shadow-2xl'}
+                    style={{ backgroundColor: theme.colors.secondary }}
+                >
+                    <SparklesIcon className={'h-5 w-5 flex-shrink-0 text-red-400'} />
+                    <div>
+                        <p className={'text-sm font-semibold text-red-300'}>Crash Detected</p>
+                        <p className={'text-xs text-neutral-400'}>AI can help diagnose this</p>
+                    </div>
+                    <button
+                        className={'ml-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90'}
+                        style={{ backgroundColor: theme.colors.primary }}
+                        onClick={() => { dismissToast(); setOpen(true); }}
+                    >
+                        Analyze
+                    </button>
+                    <button onClick={dismissToast} className={'ml-1 text-neutral-500 hover:text-neutral-200'}>
+                        <XIcon className={'h-4 w-4'} />
+                    </button>
+                </div>
+            </div>
+
             <Button
                 size={'sm'}
                 variant={hasCrash ? 'danger' : 'secondary'}
