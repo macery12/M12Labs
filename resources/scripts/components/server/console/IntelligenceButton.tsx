@@ -11,6 +11,9 @@ import { useStoreState } from '@/state/hooks';
 
 // Only send the most recent lines — small models are easily overwhelmed by huge logs
 const MAX_LOG_LINES = 100;
+// Hard cap on characters sent to the backend to prevent 413 errors from proxies in front of Ollama.
+// ~12 000 chars ≈ ~3 000 tokens, safely under a 1 MB proxy body limit with room for the system prompt.
+const MAX_LOG_CHARS = 12000;
 
 type Stage = 'input' | 'loading' | 'response';
 
@@ -80,7 +83,11 @@ export default () => {
     };
 
     const analyzeLogs = () => {
-        const data = stripAnsi(log.slice(-MAX_LOG_LINES).map(it => it.replace('\r', '')).join('\n')) || '';
+        let data = stripAnsi(log.slice(-MAX_LOG_LINES).map(it => it.replace('\r', '')).join('\n')) || '';
+        // Truncate from the start so we keep the most recent (most relevant) log lines
+        if (data.length > MAX_LOG_CHARS) {
+            data = data.slice(data.length - MAX_LOG_CHARS);
+        }
         submitQuery(data, 'log_analysis');
     };
 
