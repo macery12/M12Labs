@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Alert } from '@/elements/alert';
 import { useStoreState } from '@/state/hooks';
-import { usePersistedState } from '@/plugins/usePersistedState';
 import { Dialog } from '@/elements/dialog';
 import { ActiveAlert, getActiveAlerts } from '@/api/client/alerts';
 import SlideOutAlert from '@/components/elements/SlideOutAlert';
@@ -10,7 +9,6 @@ import { dismissAlertForUser, isAlertDismissedForUser } from '@/lib/alerts';
 
 export default () => {
     const { uuid: user } = useStoreState(s => s.user.data!);
-    const { alert: legacyAlert } = useStoreState(s => s.everest.data!);
     const [alerts, setAlerts] = useState<ActiveAlert[]>([]);
     const [dialogAlertIndex, setDialogAlertIndex] = useState(0);
 
@@ -22,9 +20,6 @@ export default () => {
             })
             .catch(() => setAlerts([]));
     }, []);
-
-    // Legacy alert support
-    const [open, setOpen] = usePersistedState(`alert_${legacyAlert.uuid}_${user}`, true);
 
     // Helper function to check if an alert is dismissed
     const isAlertDismissed = (alert: ActiveAlert): boolean => isAlertDismissedForUser(alert, user);
@@ -90,25 +85,7 @@ export default () => {
 
     return (
         <>
-            {/* Legacy alert support - keep at top for visibility */}
-            {legacyAlert.enabled && legacyAlert.position === 'top-center' && (
-                <div className="mb-4">
-                    <Alert type={legacyAlert.type}>{legacyAlert.content}</Alert>
-                </div>
-            )}
-            {legacyAlert.enabled && legacyAlert.position === 'center' && open && (
-                <Dialog.Confirm
-                    open
-                    buttonType={legacyAlert.type}
-                    onClose={() => setOpen(false)}
-                    title={capitalize(legacyAlert.type)}
-                    onConfirmed={() => setOpen(false)}
-                >
-                    {legacyAlert.content}
-                </Dialog.Confirm>
-            )}
-
-            {/* New multi-alert system - Top Center with better spacing */}
+            {/* Top Center alerts */}
             {topCenterAlerts.length > 0 && (
                 <div className="mb-4 space-y-3">
                     {topCenterAlerts.map(alert => (

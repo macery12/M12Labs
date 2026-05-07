@@ -106,14 +106,6 @@ export interface EverestSettings {
         };
         plan_change_cooldown_hours?: number;
     };
-    alert: {
-        enabled: boolean;
-        type: AlertType;
-        position: AlertPosition;
-        content: string;
-        uuid: string;
-        title?: string;
-    };
     ai: {
         enabled: boolean;
         key: boolean | string;

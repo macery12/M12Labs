@@ -1,10 +1,8 @@
 import { Route, Routes } from 'react-router-dom';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { EyeIcon, ShieldExclamationIcon, ClipboardListIcon } from '@heroicons/react/outline';
+import { ClipboardListIcon } from '@heroicons/react/outline';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
-import AlertSettings from './AlertSettings';
-import AlertAppearance from './AlertAppearance';
 import AlertList from './AlertList';
 import AlertForm from './AlertForm';
 import { NotFound } from '@/elements/ScreenBlock';
@@ -28,19 +26,11 @@ export default () => (
             <SubNavigationLink to={'/admin/alerts'} name={'Manage Alerts'} base>
                 <ClipboardListIcon />
             </SubNavigationLink>
-            <SubNavigationLink to={'/admin/alerts/legacy'} name={'Legacy'} base>
-                <ShieldExclamationIcon />
-            </SubNavigationLink>
-            <SubNavigationLink to={'/admin/alerts/legacy/view'} name={'Legacy Appearance'}>
-                <EyeIcon />
-            </SubNavigationLink>
         </SubNavigation>
         <Routes>
             <Route path={'/'} element={<AlertList />} />
             <Route path={'/create'} element={<AlertForm />} />
             <Route path={'/edit/:id'} element={<AlertForm />} />
-            <Route path={'/legacy'} element={<AlertSettings />} />
-            <Route path={'/legacy/view'} element={<AlertAppearance />} />
 
             <Route path={'/*'} element={<NotFound />} />
         </Routes>

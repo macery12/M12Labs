@@ -339,10 +339,6 @@ Route::middleware([AdminSubject::class])->group(function () {
     |
     */
     Route::group(['prefix' => '/alerts'], function () {
-        // Legacy settings endpoint
-        Route::patch('/', [Application\Alerts\AlertController::class, 'update']);
-
-        // New CRUD endpoints for multiple alerts
         Route::get('/', [Application\Alerts\AlertController::class, 'index']);
         Route::post('/', [Application\Alerts\AlertController::class, 'store']);
         Route::patch('/{alert:id}', [Application\Alerts\AlertController::class, 'updateAlert']);

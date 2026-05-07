@@ -1,13 +1,6 @@
 import http from '@/api/http';
 import { AlertPosition, AlertType } from '@/state/everest';
 
-export interface AlertSettings {
-    enabled: boolean;
-    type: AlertType;
-    position: AlertPosition;
-    content: string;
-}
-
 export type AlertScope = 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin';
 export type ButtonPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 export type UserTargeting = 'all' | 'specific';
@@ -107,11 +100,4 @@ export const searchUsers = async (query: string): Promise<AlertUser[]> => {
     return data;
 };
 
-// Legacy function for backward compatibility
-export const updateAlertSettings = async (settings: Partial<AlertSettings>): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        http.patch(`/api/application/alerts`, settings)
-            .then(({ data }) => resolve(data))
-            .catch(reject);
-    });
-};
+

@@ -112,13 +112,6 @@ class EverestComposer
                     ],
                 ],
             ],
-            'alert' => [
-                'enabled' => boolval(config('modules.alert.enabled', false)),
-                'type' => config('modules.alert.type'),
-                'position' => config('modules.alert.position'),
-                'content' => config('modules.alert.content'),
-                'uuid' => config('modules.alert.uuid'),
-            ],
             'email' => [
                 'enabled' => $this->emailEnabled(),
                 'resend' => [
