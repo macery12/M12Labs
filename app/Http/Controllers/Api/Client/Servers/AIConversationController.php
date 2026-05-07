@@ -64,8 +64,10 @@ class AIConversationController extends ClientApiController
     /**
      * Load messages for a specific conversation.
      */
-    public function show(Request $request, Server $server, AiConversation $conversation): JsonResponse
+    public function show(Request $request, Server $server, int $conversationId): JsonResponse
     {
+        $conversation = AiConversation::findOrFail($conversationId);
+
         if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
             abort(403);
         }
@@ -83,8 +85,10 @@ class AIConversationController extends ClientApiController
     /**
      * Delete a conversation (and its messages via cascade).
      */
-    public function destroy(Request $request, Server $server, AiConversation $conversation): JsonResponse
+    public function destroy(Request $request, Server $server, int $conversationId): JsonResponse
     {
+        $conversation = AiConversation::findOrFail($conversationId);
+
         if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
             abort(403);
         }
@@ -98,8 +102,10 @@ class AIConversationController extends ClientApiController
      * Toggle the saved state of a conversation.
      * Saving clears expires_at (permanent). Unsaving sets a fresh 7-day expiry.
      */
-    public function toggleSave(Request $request, Server $server, AiConversation $conversation): JsonResponse
+    public function toggleSave(Request $request, Server $server, int $conversationId): JsonResponse
     {
+        $conversation = AiConversation::findOrFail($conversationId);
+
         if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
             abort(403);
         }
@@ -118,8 +124,10 @@ class AIConversationController extends ClientApiController
      * Append messages to an existing conversation.
      * Rolls the 7-day expiry forward on each activity (unless saved).
      */
-    public function appendMessages(Request $request, Server $server, AiConversation $conversation): JsonResponse
+    public function appendMessages(Request $request, Server $server, int $conversationId): JsonResponse
     {
+        $conversation = AiConversation::findOrFail($conversationId);
+
         if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
             abort(403);
         }
