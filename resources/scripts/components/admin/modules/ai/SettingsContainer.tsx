@@ -1,4 +1,4 @@
-import Field, { TextareaField } from '@/elements/Field';
+﻿import Field, { TextareaField } from '@/elements/Field';
 import { Field as FormikField, Form, Formik, useFormikContext } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
@@ -9,7 +9,7 @@ import { Button } from '@/elements/button';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-// ─── Model preset chips ───────────────────────────────────────────────────────
+// --- Model preset chips ---------------------------------------------------
 
 const OPENAI_PRESETS = [
     { label: 'GPT-4.1 mini', value: 'gpt-4.1-mini', note: 'Fast & cheap, great for most tasks' },
@@ -27,7 +27,7 @@ const OLLAMA_PRESETS = [
     { label: 'mistral:7b', value: 'mistral:7b', note: '~4GB, strong general purpose' },
 ];
 
-// ─── Temperature slider ───────────────────────────────────────────────────────
+// --- Temperature slider ---------------------------------------------------
 
 const TEMP_LABELS: [number, string, string][] = [
     [0.0, 'Deterministic', 'Exact, repeatable answers. Best for log analysis.'],
@@ -41,7 +41,7 @@ function tempLabel(val: number): { label: string; hint: string } {
     return { label: closest[1], hint: closest[2] };
 }
 
-// ─── Inner form component (uses useFormikContext) ─────────────────────────────
+// --- Inner form component (uses useFormikContext) -------------------------
 
 function SettingsForm({
     ai,
@@ -66,10 +66,8 @@ function SettingsForm({
 
     return (
         <Form>
-            {/* ── Section 1: Provider ─────────────────────────── */}
             <AdminBox title={'Provider'} icon={faMicrochip} className={'mb-4'}>
                 <div className={'grid gap-4 md:grid-cols-3'}>
-                    {/* Mode */}
                     <div>
                         <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>Provider Mode</label>
                         <FormikField
@@ -88,7 +86,6 @@ function SettingsForm({
                         </p>
                     </div>
 
-                    {/* Endpoint */}
                     <div>
                         <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>API Endpoint</label>
                         <Field
@@ -104,7 +101,6 @@ function SettingsForm({
                         </p>
                     </div>
 
-                    {/* API key (OpenAI only) */}
                     {values.mode === 'openai' ? (
                         <div>
                             <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>
@@ -115,7 +111,7 @@ function SettingsForm({
                                 id={'key'}
                                 name={'key'}
                                 type={'input'}
-                                placeholder={ai.key ? '••••••••  (leave blank to keep current)' : 'sk-...'}
+                                placeholder={ai.key ? '•••••••• (leave blank to keep current)' : 'sk-...'}
                             />
                             {ai.key && (
                                 <button
@@ -125,7 +121,7 @@ function SettingsForm({
                                     className={'mt-1.5 inline-flex items-center gap-1.5 rounded bg-red-600/80 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50'}
                                 >
                                     <FontAwesomeIcon icon={faTrash} className={'h-3 w-3'} />
-                                    {deletingKey ? 'Deleting…' : 'Remove saved key'}
+                                    {deletingKey ? 'Deleting...' : 'Remove saved key'}
                                 </button>
                             )}
                         </div>
@@ -139,10 +135,8 @@ function SettingsForm({
                 </div>
             </AdminBox>
 
-            {/* ── Section 2: Model & Performance ─────────────── */}
             <AdminBox title={'Model & Performance'} icon={faSliders} className={'mb-4'}>
                 <div className={'grid gap-6 md:grid-cols-2'}>
-                    {/* Model */}
                     <div>
                         <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>Model Name</label>
                         <Field id={'model'} name={'model'} type={'input'} />
@@ -168,9 +162,7 @@ function SettingsForm({
                         </p>
                     </div>
 
-                    {/* Max tokens + temperature */}
                     <div className={'space-y-4'}>
-                        {/* Max tokens */}
                         <div>
                             <div className={'mb-1.5 flex items-center justify-between'}>
                                 <label className={'text-xs font-medium text-neutral-300'}>Max Response Tokens</label>
@@ -186,12 +178,11 @@ function SettingsForm({
                                 className={'h-1.5 w-full cursor-pointer appearance-none rounded-full bg-neutral-700 accent-violet-500'}
                             />
                             <div className={'mt-1 flex justify-between text-xs text-neutral-600'}>
-                                <span>50 — brief</span>
-                                <span>4000 — detailed</span>
+                                <span>50 - brief</span>
+                                <span>4000 - detailed</span>
                             </div>
                         </div>
 
-                        {/* Temperature */}
                         <div>
                             <div className={'mb-1.5 flex items-center justify-between'}>
                                 <label className={'text-xs font-medium text-neutral-300'}>Temperature</label>
@@ -217,10 +208,8 @@ function SettingsForm({
                 </div>
             </AdminBox>
 
-            {/* ── Section 3: Access & Behavior ───────────────── */}
             <AdminBox title={'Access & Behavior'} icon={faShieldAlt} className={'mb-4'}>
                 <div className={'grid gap-6 md:grid-cols-2'}>
-                    {/* User access toggle */}
                     <div>
                         <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>User Access</label>
                         <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
@@ -238,12 +227,11 @@ function SettingsForm({
                         </label>
                         <div className={'mt-3 rounded border border-neutral-700/50 bg-neutral-800/30 px-3 py-2'}>
                             <p className={'text-xs text-neutral-500'}>
-                                <span className={'font-medium text-neutral-400'}>Rate limits:</span> Users — 15 requests / 10 min &nbsp;·&nbsp; Admins — 60 requests / 10 min
+                                <span className={'font-medium text-neutral-400'}>Rate limits:</span> Users - 15 requests / 10 min &nbsp;·&nbsp; Admins - 60 requests / 10 min
                             </p>
                         </div>
                     </div>
 
-                    {/* System prompt */}
                     <div>
                         <div className={'mb-1.5 flex items-center justify-between'}>
                             <label className={'text-xs font-medium text-neutral-300'}>
@@ -261,13 +249,12 @@ function SettingsForm({
                             placeholder="You are an expert game server technician specializing in crash analysis and debugging..."
                         />
                         <p className={'mt-1 text-xs text-neutral-500'}>
-                            Sent with every request to define the AI's role and tone. Keep it concise — it counts toward your token budget.
+                            Sent with every request to define the AI's role and tone. Keep it concise - it counts toward your token budget.
                         </p>
                     </div>
                 </div>
             </AdminBox>
 
-            {/* ── Footer ─────────────────────────────────────── */}
             <div className={'flex items-center justify-between'}>
                 <p className={'text-xs text-neutral-600'}>Changes take effect on the next request after saving.</p>
                 <div className={'flex items-center gap-3'}>
@@ -280,7 +267,7 @@ function SettingsForm({
                     )}
                     <Button type={'button'} variant={'secondary'} onClick={onTestConnection} disabled={testing}>
                         <FontAwesomeIcon icon={faWifi} className={'mr-1.5 h-3 w-3'} />
-                        {testing ? 'Testing…' : 'Test Connection'}
+                        {testing ? 'Testing...' : 'Test Connection'}
                     </Button>
                     <Button type={'submit'}>Save Changes</Button>
                 </div>
@@ -289,7 +276,7 @@ function SettingsForm({
     );
 }
 
-// ─── Default export ───────────────────────────────────────────────────────────
+// --- Default export -------------------------------------------------------
 
 export default () => {
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
@@ -353,247 +340,6 @@ export default () => {
                 onDeleteKey={handleDeleteKey}
                 onTestConnection={handleTestConnection}
             />
-        </Formik>
-    );
-};
-
-        'phi3:mini',
-        'phi3:small',
-        'gemma2:2b',
-        'qwen2.5:1.5b',
-        'qwen2.5:3b',
-        'deepseek-coder:1.3b',
-        'starcoder2:3b',
-    ];
-
-    const submit = (values: AISettings) => {
-        clearFlashes();
-
-        updateSettings(values)
-            .then(() => {
-                addFlash({
-                    type: 'success',
-                    key: 'admin:ai:settings',
-                    message: 'Settings have been updated successfully.',
-                });
-                // Reload to apply new settings
-                setTimeout(() => window.location.reload(), 500);
-            })
-            .catch(error => {
-                clearAndAddHttpError({
-                    key: 'admin:ai:settings',
-                    error: error,
-                });
-            });
-    };
-
-    const deleteApiKey = () => {
-        if (
-            !confirm(
-                'Are you sure you want to delete the API key? This will disable AI functionality until a new key is configured.',
-            )
-        ) {
-            return;
-        }
-
-        setDeletingKey(true);
-        clearFlashes();
-
-        updateSettings({ key: '' })
-            .then(() => {
-                addFlash({
-                    type: 'success',
-                    key: 'admin:ai:settings',
-                    message: 'API key has been deleted successfully.',
-                });
-                // Reload to apply new settings
-                setTimeout(() => window.location.reload(), 500);
-            })
-            .catch(error => {
-                setDeletingKey(false);
-                clearAndAddHttpError({
-                    key: 'admin:ai:settings',
-                    error: error,
-                });
-            });
-    };
-
-    return (
-        <Formik
-            onSubmit={submit}
-            initialValues={{
-                user_access: ai.user_access,
-                endpoint:
-                    ai.endpoint || (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
-                model: ai.model || (ai.mode === 'ollama' ? 'phi3:mini' : 'gpt-3.5-turbo'),
-                mode: ai.mode || 'openai',
-                max_tokens: ai.max_tokens || 500,
-                temperature: ai.temperature ?? 0.3,
-                system_prompt:
-                    ai.system_prompt ||
-                    'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.',
-            }}
-        >
-            {({ values }) => (
-                <Form>
-                    <div className={'grid gap-4 lg:grid-cols-4'}>
-                        <AdminBox title={'AI Provider Mode'} icon={faServer}>
-                            <div>
-                                <FormikField
-                                    as="select"
-                                    id={'mode'}
-                                    name={'mode'}
-                                    className={
-                                        'w-full rounded border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 focus:border-cyan-400 focus:outline-none'
-                                    }
-                                >
-                                    <option value="openai">OpenAI / Standard (HTTPS)</option>
-                                    <option value="ollama">Ollama (Local/HTTPS)</option>
-                                </FormikField>
-                                <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    {values.mode === 'ollama'
-                                        ? 'Ollama mode allows HTTP for local connections and does not require an API key.'
-                                        : 'Standard mode requires HTTPS endpoint and API key for security.'}
-                                </p>
-                            </div>
-                        </AdminBox>
-
-                        <AdminBox title={'Client-side AI'} icon={faUser}>
-                            <div>
-                                <div className={'inline-flex'}>
-                                    <Label className={'mt-1 mr-2'}>Allow standard users to use AI?</Label>
-                                    <Field
-                                        id={'user_access'}
-                                        name={'user_access'}
-                                        type={'checkbox'}
-                                        defaultChecked={ai.user_access}
-                                    />
-                                </div>
-                                <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    If enabled, standard users will be able to interact with M12Labs-AI as
-                                    well as administrators.
-                                </p>
-                            </div>
-                        </AdminBox>
-
-                        {values.mode === 'openai' && (
-                            <AdminBox title={'Modify API Key'} icon={faKey}>
-                                <div>
-                                    <Field
-                                        id={'key'}
-                                        name={'key'}
-                                        type={'input'}
-                                        placeholder="Enter new API key to update"
-                                    />
-                                    <p className={'mt-1.5 text-xs text-gray-400'}>
-                                        Enter your OpenAI API key or a compatible API key from another provider.
-                                    </p>
-                                    {ai.key && (
-                                        <button
-                                            type="button"
-                                            onClick={deleteApiKey}
-                                            disabled={deletingKey}
-                                            className={
-                                                'mt-2 inline-flex items-center rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                                            }
-                                        >
-                                            <FontAwesomeIcon icon={faTrash} className={'mr-1.5 h-3 w-3'} />
-                                            {deletingKey ? 'Deleting...' : 'Delete API Key'}
-                                        </button>
-                                    )}
-                                </div>
-                            </AdminBox>
-                        )}
-
-                        <AdminBox title={'API Endpoint'} icon={faLink}>
-                            <div>
-                                <Field id={'endpoint'} name={'endpoint'} type={'input'} />
-                                <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    {values.mode === 'ollama'
-                                        ? 'Ollama endpoint (default: http://localhost:11434/v1). Can use HTTP for local or HTTPS for remote.'
-                                        : 'The base URL for the OpenAI-compatible API endpoint. Must use HTTPS. Example: https://api.openai.com/v1'}
-                                </p>
-                            </div>
-                        </AdminBox>
-
-                        <AdminBox title={'Model Configuration'} icon={faCog}>
-                            <div>
-                                <Field id={'model'} name={'model'} type={'input'} />
-                                <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    {values.mode === 'ollama'
-                                        ? `Ollama model name (smaller models recommended for Minecraft log reading / debugging). Examples: ${ollamaSmallModelExamples.join(
-                                              ', ',
-                                          )}`
-                                        : 'The AI model to use (e.g., gpt-3.5-turbo, gpt-4, or any compatible model).'}
-                                </p>
-                            </div>
-                        </AdminBox>
-
-                        <AdminBox title={'Max Tokens'} icon={faHashtag}>
-                            <div>
-                                <Field id={'max_tokens'} name={'max_tokens'} type={'number'} min={50} max={4000} />
-                                <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Maximum number of tokens in the AI response (50-4000). Default: 200. Lower values =
-                                    shorter responses, less cost.
-                                </p>
-                            </div>
-                        </AdminBox>
-
-                        <AdminBox title={'Temperature'} icon={faCog}>
-                            <div>
-                                <Field id={'temperature'} name={'temperature'} type={'number'} min={0} max={1} step={0.1} />
-                                <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Controls response creativity (0.0–1.0). Lower = more deterministic and factual (recommended for log analysis). Higher = more creative and varied.
-                                </p>
-                            </div>
-                        </AdminBox>
-
-                        <AdminBox title={'System Prompt'} icon={faComment} className={'col-span-2'}>
-                            <div>
-                                <TextareaField
-                                    id={'system_prompt'}
-                                    name={'system_prompt'}
-                                    rows={3}
-                                    placeholder="You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses."
-                                />
-                                <p className={'mt-1.5 text-xs text-gray-400'}>
-                                    Customize the AI's behavior and response style. This message is sent with every
-                                    query to define the AI's role and tone. (10-1000 characters)
-                                </p>
-                            </div>
-                        </AdminBox>
-                    </div>
-
-                    <div className={'mt-6 flex w-full flex-row items-center'}>
-                        <div className={'flex text-xs text-gray-500'}>
-                            These changes may not apply until this page is reloaded.
-                        </div>
-                        <div className={'ml-auto flex items-center gap-3'}>
-                            {testResult && (
-                                <span
-                                    className={`text-xs font-medium ${
-                                        testResult.status === 'ok' ? 'text-green-400' : 'text-red-400'
-                                    }`}
-                                >
-                                    {testResult.status === 'ok'
-                                        ? `Connected (${testResult.latency_ms}ms)`
-                                        : `Failed: ${testResult.message}`}
-                                </span>
-                            )}
-                            <Button
-                                type={'button'}
-                                variant={'secondary'}
-                                onClick={handleTestConnection}
-                                disabled={testing}
-                            >
-                                <FontAwesomeIcon icon={faWifi} className={'mr-1.5 h-3 w-3'} />
-                                {testing ? 'Testing...' : 'Test Connection'}
-                            </Button>
-                            <Button type={'submit'}>Save Changes</Button>
-                        </div>
-                    </div>
-                </Form>
-            )}
         </Formik>
     );
 };
