@@ -33,7 +33,19 @@ export default ({ onDismiss }: ConfigureAIProps) => {
     const { addFlash, clearAndAddHttpError } = useFlashKey('admin:settings:ai');
 
     const validation = object({
-        endpoint: string().required().url(),
+        // Yup's built-in .url() rejects http://localhost:* (no TLD), so use a custom test
+        // that accepts any valid http/https URL including local Ollama endpoints.
+        endpoint: string()
+            .required()
+            .test('is-url', 'Must be a valid URL (e.g. http://localhost:11434/v1)', value => {
+                if (!value) return false;
+                try {
+                    const parsed = new URL(value);
+                    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+                } catch {
+                    return false;
+                }
+            }),
         model: string().required(),
         key: string().optional(),
     });
