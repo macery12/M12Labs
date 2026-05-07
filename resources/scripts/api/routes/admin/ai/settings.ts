@@ -29,3 +29,19 @@ export interface ConnectionTestResult {
 export const testConnection = (): Promise<ConnectionTestResult> => {
     return http.get('/api/application/ai/test').then(({ data }) => data);
 };
+
+export interface DailyStat { date: string; requests: number }
+export interface TopUser { username: string; email: string | null; requests: number }
+
+export interface AIStats {
+    all_time: { total_requests: number; successful: number; errors: number; total_tokens: number; avg_latency_ms: number | null };
+    last_24h: { requests: number; tokens: number };
+    last_7d: { requests: number; tokens: number };
+    daily_series: DailyStat[];
+    top_users: TopUser[];
+    source_breakdown: Record<string, number>;
+}
+
+export const getStats = (): Promise<AIStats> => {
+    return http.get('/api/application/ai/stats').then(({ data }) => data);
+};

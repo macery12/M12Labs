@@ -7,6 +7,7 @@ use Everest\Models\AiUsageLog;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\AI\OpenAIService;
 use Everest\Services\Email\EmailRedactor;
@@ -171,5 +172,81 @@ class IntelligenceController extends ApplicationApiController
             }
             throw $e;
         }
+    }
+
+    /**
+     * Return aggregated usage statistics from ai_usage_logs.
+     */
+    public function stats(): JsonResponse
+    {
+        $now = now();
+
+        // All-time totals
+        $allTime = AiUsageLog::selectRaw('
+            COUNT(*) as total_requests,
+            SUM(CASE WHEN status = "success" THEN 1 ELSE 0 END) as successful,
+            SUM(CASE WHEN status = "error" THEN 1 ELSE 0 END) as errors,
+            SUM(COALESCE(total_tokens, 0)) as total_tokens,
+            ROUND(AVG(latency_ms)) as avg_latency_ms
+        ')->first();
+
+        // Last 24 hours
+        $last24h = AiUsageLog::where('created_at', '>=', $now->copy()->subDay())
+            ->selectRaw('COUNT(*) as requests, SUM(COALESCE(total_tokens, 0)) as tokens')
+            ->first();
+
+        // Last 7 days
+        $last7d = AiUsageLog::where('created_at', '>=', $now->copy()->subDays(7))
+            ->selectRaw('COUNT(*) as requests, SUM(COALESCE(total_tokens, 0)) as tokens')
+            ->first();
+
+        // Requests per day for the last 7 days (for sparkline)
+        $dailySeries = AiUsageLog::where('created_at', '>=', $now->copy()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as requests')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Fill missing days with 0
+        $series = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $now->copy()->subDays($i)->format('Y-m-d');
+            $series[] = [
+                'date' => $date,
+                'requests' => $dailySeries[$date]->requests ?? 0,
+            ];
+        }
+
+        // Top 5 active users by request count (last 7 days)
+        $topUsers = AiUsageLog::where('created_at', '>=', $now->copy()->subDays(7))
+            ->whereNotNull('user_id')
+            ->selectRaw('user_id, COUNT(*) as requests')
+            ->groupBy('user_id')
+            ->orderByDesc('requests')
+            ->limit(5)
+            ->with('user:id,username,email')
+            ->get()
+            ->map(fn ($row) => [
+                'username' => $row->user?->username ?? 'unknown',
+                'email' => $row->user?->email ?? null,
+                'requests' => $row->requests,
+            ]);
+
+        // Source breakdown (client vs admin, last 7 days)
+        $sourceBreakdown = AiUsageLog::where('created_at', '>=', $now->copy()->subDays(7))
+            ->selectRaw('source, COUNT(*) as requests')
+            ->groupBy('source')
+            ->get()
+            ->pluck('requests', 'source');
+
+        return response()->json([
+            'all_time' => $allTime,
+            'last_24h' => $last24h,
+            'last_7d' => $last7d,
+            'daily_series' => $series,
+            'top_users' => $topUsers,
+            'source_breakdown' => $sourceBreakdown,
+        ]);
     }
 }
