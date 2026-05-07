@@ -357,25 +357,6 @@ export default () => {
     );
 };
 
-
-export default () => {
-    const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
-    const ai = useStoreState(s => s.everest.data!.ai);
-    const [deletingKey, setDeletingKey] = useState(false);
-    const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
-    const [testing, setTesting] = useState(false);
-
-    const handleTestConnection = () => {
-        setTesting(true);
-        setTestResult(null);
-        testConnection()
-            .then(result => setTestResult(result))
-            .catch(() => setTestResult({ status: 'error', message: 'Request failed. Check endpoint and try again.' }))
-            .finally(() => setTesting(false));
-    };
-
-    // Small Ollama models that are solid for debugging/log-reading (Minecraft, server consoles, stack traces)
-    const ollamaSmallModelExamples = [
         'phi3:mini',
         'phi3:small',
         'gemma2:2b',
