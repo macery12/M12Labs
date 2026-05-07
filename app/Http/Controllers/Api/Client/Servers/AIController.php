@@ -81,7 +81,6 @@ class AIController extends ClientApiController
 
         return "Server: {$ctx}\nQ: {$rawQuery}\nAnswer specifically for {$eggName}. If off-topic, say: \"I can only help with server-related questions.\"";
     }
-    }
 
     /**
      * Send an AI generated response to debug a server error.
