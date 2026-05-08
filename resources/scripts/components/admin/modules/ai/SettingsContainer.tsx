@@ -269,6 +269,8 @@ function SettingsForm({
                             </label>
                         </div>
                     </div>
+
+                    <div>
                         <div className={'mb-1.5 flex items-center justify-between'}>
                             <label className={'text-xs font-medium text-neutral-300'}>
                                 <FontAwesomeIcon icon={faRobot} className={'mr-1.5 opacity-60'} />

@@ -1,4 +1,4 @@
-import TransferListener from '@server/TransferListener';
+﻿import TransferListener from '@server/TransferListener';
 import { Fragment, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { NavLink, Route, Routes, useParams } from 'react-router-dom';
 import WebsocketHandler from '@server/WebsocketHandler';
@@ -80,6 +80,7 @@ function ServerRouter() {
     const server = ServerContext.useStoreState(state => state.server.data);
     const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.server);
     const aiEnabled = useStoreState(state => state.everest.data!.ai.enabled);
+    const aiAssistantEnabled = useStoreState(state => state.everest.data!.ai.feature_server_assistant ?? true);
     const billable = server?.billingProductId;
     const modsEnabled = server?.modsEnabled;
     const extensionsEnabled = server?.extensionsEnabled;
@@ -221,6 +222,7 @@ function ServerRouter() {
                                             extensionsEnabled,
                                             supercharged,
                                             aiEnabled,
+                                            aiAssistantEnabled,
                                         })),
                             )
                             .map(route => (
@@ -237,7 +239,7 @@ function ServerRouter() {
                                 route =>
                                     route.category === category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged, aiEnabled })),
+                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged, aiEnabled, aiAssistantEnabled })),
                             );
                             if (categoryRoutes.length === 0) return null;
 
@@ -298,6 +300,7 @@ function ServerRouter() {
                                                 extensionsEnabled,
                                                 supercharged,
                                                 aiEnabled,
+                                                aiAssistantEnabled,
                                             })),
                                 )
                                 .map(route => (
@@ -324,6 +327,7 @@ function ServerRouter() {
                                                 extensionsEnabled,
                                                 supercharged,
                                                 aiEnabled,
+                                                aiAssistantEnabled,
                                             })),
                                 );
                                 if (categoryRoutes.length === 0) return null;

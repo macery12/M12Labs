@@ -45,7 +45,7 @@ const server: ServerRouteDefinition[] = [
     route('ai/*', ServerAIContainer, {
         name: 'AI Assistant',
         icon: SparklesIcon,
-        condition: flags => flags.aiEnabled,
+        condition: flags => flags.aiEnabled && flags.aiAssistantEnabled,
     }),
     route('files/*', FileManagerContainer, {
         permission: 'file.*',

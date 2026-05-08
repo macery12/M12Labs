@@ -144,7 +144,8 @@ export default () => {
 
     return (
         <>
-            {/* Crash toast — slides in from bottom-right, auto-hides after 10s */}
+            {/* Crash toast — only shown when crash_analysis feature is enabled */}
+            {crashEnabled && (
             <div
                 className={'fixed bottom-6 right-6 z-50 transition-all duration-500'}
                 style={{ transform: toastVisible ? 'translateY(0)' : 'translateY(120%)', opacity: toastVisible ? 1 : 0, pointerEvents: toastVisible ? 'auto' : 'none' }}
@@ -170,7 +171,10 @@ export default () => {
                     </button>
                 </div>
             </div>
+            )}
 
+            {/* Ask AI button — only shown when server_assistant feature is enabled */}
+            {assistantEnabled && (
             <Button
                 size={'sm'}
                 variant={hasCrash ? 'danger' : 'secondary'}
@@ -180,6 +184,7 @@ export default () => {
                 <SparklesIcon className={'mr-1 w-4'} />
                 {hasCrash ? 'Crash Detected' : 'Ask AI'}
             </Button>
+            )}
 
             <Dialog
                 open={open}
@@ -212,7 +217,7 @@ export default () => {
                             />
                         </div>
                         <div className={'flex justify-end gap-2'}>
-                            {hasCrash && (
+                            {hasCrash && crashEnabled && (
                                 <Button size={'sm'} onClick={analyzeLogs}>
                                     Analyze Crash
                                 </Button>
