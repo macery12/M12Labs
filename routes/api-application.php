@@ -181,6 +181,7 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/query', [Application\IntelligenceController::class, 'query']);
         Route::get('/test', [Application\IntelligenceController::class, 'testConnection']);
         Route::get('/stats', [Application\IntelligenceController::class, 'stats']);
+        Route::get('/logs', [Application\IntelligenceController::class, 'recentLogs']);
     });
 
     /*

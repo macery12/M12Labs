@@ -45,3 +45,20 @@ export interface AIStats {
 export const getStats = (): Promise<AIStats> => {
     return http.get('/api/application/ai/stats').then(({ data }) => data);
 };
+
+export interface AILogEntry {
+    id: number;
+    created_at: string;
+    username: string;
+    server_name: string | null;
+    model: string;
+    source: 'client' | 'admin';
+    status: 'success' | 'error';
+    total_tokens: number | null;
+    latency_ms: number | null;
+    error_message: string | null;
+}
+
+export const getRecentLogs = (): Promise<AILogEntry[]> => {
+    return http.get('/api/application/ai/logs').then(({ data }) => data);
+};

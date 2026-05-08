@@ -249,4 +249,29 @@ class IntelligenceController extends ApplicationApiController
             'source_breakdown' => $sourceBreakdown,
         ]);
     }
+
+    /**
+     * Return the most recent 30 usage log entries for the admin log table.
+     */
+    public function recentLogs(): JsonResponse
+    {
+        $logs = AiUsageLog::with('user:id,username,email', 'server:uuid,name')
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get()
+            ->map(fn ($log) => [
+                'id' => $log->id,
+                'created_at' => $log->created_at?->toIso8601String(),
+                'username' => $log->user?->username ?? 'system',
+                'server_name' => $log->server?->name ?? null,
+                'model' => $log->model,
+                'source' => $log->source,
+                'status' => $log->status,
+                'total_tokens' => $log->total_tokens,
+                'latency_ms' => $log->latency_ms,
+                'error_message' => $log->error_message,
+            ]);
+
+        return response()->json($logs);
+    }
 }

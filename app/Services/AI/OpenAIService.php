@@ -116,6 +116,7 @@ class OpenAIService
                     'stream' => $options['stream'] ?? false,
                     'options' => [
                         'num_ctx' => 4096,
+                        'keep_alive' => '10m',
                     ],
                 ];
             }
@@ -265,6 +266,7 @@ class OpenAIService
                         // Without this Ollama may use -1 (unlimited) or a model default,
                         // leading to runaway generation and inflated latency.
                         'num_predict' => $maxTokens,
+                        'keep_alive' => '10m',
                     ],
                 ];
             }
