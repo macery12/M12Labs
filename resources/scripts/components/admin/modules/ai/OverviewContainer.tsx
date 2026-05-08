@@ -9,12 +9,6 @@ import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
 
-const ADMIN_QUICK_ACTIONS = [
-    { label: '🔍 Test connection', query: 'Say "Connection successful! I am ready to help with your panel." and nothing else.' },
-    { label: '⚙️ Best models?', query: 'What AI models work best for game server log analysis and debugging? Compare OpenAI and Ollama options briefly.' },
-    { label: '📋 System prompt tips', query: 'Give me 3 tips for writing an effective system prompt for a game server support assistant.' },
-];
-
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
     const theme = useStoreState(s => s.theme.data!);
     return (
@@ -428,20 +422,6 @@ export default () => {
             {/* ── Chat + config sidebar ── */}
             <div className={'grid gap-4 lg:grid-cols-5'}>
                 <div className={'col-span-3 flex flex-col'}>
-                    <div className={'mb-2 flex flex-wrap gap-2'}>
-                        {ADMIN_QUICK_ACTIONS.map(action => (
-                            <button
-                                key={action.label}
-                                onClick={() => sendQuery(action.query)}
-                                disabled={loading}
-                                className={'rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50'}
-                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = theme.colors.primary; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = ''; }}
-                            >
-                                {action.label}
-                            </button>
-                        ))}
-                    </div>
                     <div className={'flex-1 overflow-y-auto rounded-xl p-4'} style={{ minHeight: '28vh', maxHeight: '44vh', backgroundColor: theme.colors.secondary }}>
                         {messages.map((msg, i) => (
                             <MessageBubble key={i} message={msg} />

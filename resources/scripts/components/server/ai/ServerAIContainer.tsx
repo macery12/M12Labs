@@ -1,9 +1,7 @@
-import stripAnsi from 'strip-ansi';
 import { useEffect, useRef, useState, KeyboardEvent, useCallback } from 'react';
 import { ServerContext } from '@/state/server';
 import { useStoreState } from '@/state/hooks';
 import { PlusIcon, SparklesIcon, TrashIcon, MenuIcon, BookmarkIcon } from '@heroicons/react/outline';
-import { SocketEvent } from '@server/events';
 import { handleQueryStream } from '@/api/routes/server/ai';
 import {
     listConversations,
@@ -19,23 +17,12 @@ import { Button } from '@/elements/button';
 import PageContentBlock from '@/elements/PageContentBlock';
 import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
 
-const MAX_LOG_LINES = 100;
-const MAX_LOG_CHARS = 6000; // tail of logs — crash info is always at the end
-
-const QUICK_ACTIONS = [
-    { label: '🔍 Analyze recent logs', type: 'log_analysis' as const },
-    { label: "❓ Why won't my server start?", query: "Why won't my server start? What should I check?", type: 'freeform' as const },
-    { label: '⚡ How do I improve performance?', query: "How can I improve this server's performance and reduce lag?", type: 'freeform' as const },
-    { label: '🔧 Common configuration tips', query: 'What are the most important configuration settings I should know about for this server type?', type: 'freeform' as const },
-];
-
 const GREETING = (name: string) =>
-    `Hello! I'm your server assistant for **${name}**. I can help you diagnose crashes, answer configuration questions, and provide guidance specific to your server setup.\n\nYou can type a question below or use one of the quick actions to get started.`;
+    `Hello! I'm your server assistant for **${name}**. I can help you diagnose crashes, answer configuration questions, and provide guidance specific to your server setup.\n\nType a question below to get started.`;
 
 export default function ServerAIContainer() {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const serverName = ServerContext.useStoreState(state => state.server.data!.name);
-    const { connected, instance } = ServerContext.useStoreState(state => state.socket);
 
     const isEnabled = useStoreState(state => state.everest.data!.ai.enabled);
     const userAccess = useStoreState(state => state.everest.data!.ai.user_access);
@@ -47,7 +34,6 @@ export default function ServerAIContainer() {
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const [log, setLog] = useState<string[]>([]);
 
     // Conversation sidebar state
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -72,18 +58,6 @@ export default function ServerAIContainer() {
     useEffect(() => {
         refreshConversations();
     }, [refreshConversations]);
-
-    // Collect console logs for log analysis
-    useEffect(() => {
-        if (!connected || !instance) return;
-
-        const listener = (line: string) => {
-            setLog(prev => [...prev.slice(-MAX_LOG_LINES), line.startsWith('>') ? line.substring(1) : line]);
-        };
-
-        instance.addListener(SocketEvent.CONSOLE_OUTPUT, listener);
-        return () => instance.removeListener(SocketEvent.CONSOLE_OUTPUT, listener);
-    }, [connected, instance]);
 
     // Scroll to bottom when new messages arrive
     useEffect(() => {
@@ -247,29 +221,6 @@ export default function ServerAIContainer() {
         sendQuery(q, 'freeform');
     };
 
-    const handleQuickAction = (action: (typeof QUICK_ACTIONS)[number]) => {
-        if (loading) return;
-        if (action.type === 'log_analysis') {
-            let logData = stripAnsi(log.map(l => l.replace('\r', '')).join('\n'));
-            if (!logData.trim()) {
-                setMessages(prev => [
-                    ...prev,
-                    {
-                        role: 'assistant',
-                        content: 'No console output has been captured yet. Start or interact with your server first, then try again.',
-                    },
-                ]);
-                return;
-            }
-            if (logData.length > MAX_LOG_CHARS) {
-                logData = logData.slice(logData.length - MAX_LOG_CHARS);
-            }
-            sendQuery(logData, 'log_analysis');
-        } else {
-            sendQuery(action.query!, action.type);
-        }
-    };
-
     const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -381,8 +332,8 @@ export default function ServerAIContainer() {
 
                 {/* Main chat */}
                 <div className={'flex min-w-0 flex-1 flex-col'}>
-                    {/* Top bar: sidebar toggle + quick actions */}
-                    <div className={'mb-3 flex flex-wrap items-center gap-2'}>
+                    {/* Top bar: sidebar toggle */}
+                    <div className={'mb-3 flex items-center'}>
                         <button
                             onClick={() => setSidebarOpen(o => !o)}
                             className={'rounded-full border border-neutral-700 bg-neutral-800 p-1.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-white'}
@@ -390,18 +341,6 @@ export default function ServerAIContainer() {
                         >
                             <MenuIcon className={'h-3.5 w-3.5'} />
                         </button>
-                        {QUICK_ACTIONS.map(action => (
-                            <button
-                                key={action.label}
-                                onClick={() => handleQuickAction(action)}
-                                disabled={loading}
-                                className={'rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50'}
-                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = theme.colors.primary; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = ''; }}
-                            >
-                                {action.label}
-                            </button>
-                        ))}
                     </div>
 
                     {/* Messages */}
