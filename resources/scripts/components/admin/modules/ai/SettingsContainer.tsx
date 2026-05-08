@@ -212,7 +212,7 @@ function SettingsForm({
             </AdminBox>
 
             <AdminBox title={'Access & Behavior'} icon={faShieldAlt} className={'mb-4'}>
-                <div className={'grid gap-6 md:grid-cols-3'}>
+                <div className={'grid gap-6 md:grid-cols-2'}>
                     <div>
                         <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>User Access</label>
                         <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
@@ -231,7 +231,7 @@ function SettingsForm({
                         </label>
                         <div className={'mt-3 rounded border border-neutral-700/50 bg-neutral-800/30 px-3 py-2'}>
                             <p className={'text-xs text-neutral-500'}>
-                                <span className={'font-medium text-neutral-400'}>Rate limits:</span> Users - 15 requests / 10 min &nbsp;·&nbsp; Admins - 60 requests / 10 min
+                                <span className={'font-medium text-neutral-400'}>Rate limits:</span> Users - 15 req / 10 min &nbsp;·&nbsp; Admins - 60 req / 10 min
                             </p>
                         </div>
                     </div>
@@ -248,9 +248,7 @@ function SettingsForm({
                                 />
                                 <div>
                                     <p className={'text-sm font-medium text-neutral-200'}>Server AI Assistant</p>
-                                    <p className={'text-xs text-neutral-500'}>
-                                        The AI chat tab and "Ask AI" button on server pages.
-                                    </p>
+                                    <p className={'text-xs text-neutral-500'}>AI chat tab and "Ask AI" button on server pages.</p>
                                 </div>
                             </label>
                             <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
@@ -262,35 +260,29 @@ function SettingsForm({
                                 />
                                 <div>
                                     <p className={'text-sm font-medium text-neutral-200'}>Crash Analysis</p>
-                                    <p className={'text-xs text-neutral-500'}>
-                                        Auto-detect crashes and offer AI diagnosis via a slide-in toast.
-                                    </p>
+                                    <p className={'text-xs text-neutral-500'}>Auto-detect crashes and offer AI diagnosis via a toast.</p>
                                 </div>
                             </label>
                         </div>
                     </div>
-
-                    <div>
-                        <div className={'mb-1.5 flex items-center justify-between'}>
-                            <label className={'text-xs font-medium text-neutral-300'}>
-                                <FontAwesomeIcon icon={faRobot} className={'mr-1.5 opacity-60'} />
-                                System Prompt
-                            </label>
-                            <span className={`text-xs ${systemPromptLen > MAX_PROMPT ? 'text-red-400' : 'text-neutral-500'}`}>
-                                {systemPromptLen} / {MAX_PROMPT}
-                            </span>
-                        </div>
-                        <TextareaField
-                            id={'system_prompt'}
-                            name={'system_prompt'}
-                            rows={5}
-                            placeholder="You are an expert game server technician specializing in crash analysis and debugging..."
-                        />
-                        <p className={'mt-1 text-xs text-neutral-500'}>
-                            Sent with every request to define the AI's role and tone. Keep it concise - it counts toward your token budget.
-                        </p>
-                    </div>
                 </div>
+            </AdminBox>
+
+            <AdminBox title={'System Prompt'} icon={faRobot} className={'mb-4'}>
+                <div className={'flex items-start justify-between gap-2 mb-2'}>
+                    <p className={'text-xs text-neutral-500'}>
+                        Sent with every request to define the AI's role and tone. Keep it concise — it counts toward your token budget.
+                    </p>
+                    <span className={`flex-shrink-0 text-xs tabular-nums ${systemPromptLen > MAX_PROMPT ? 'text-red-400' : 'text-neutral-500'}`}>
+                        {systemPromptLen} / {MAX_PROMPT}
+                    </span>
+                </div>
+                <TextareaField
+                    id={'system_prompt'}
+                    name={'system_prompt'}
+                    rows={5}
+                    placeholder="You are an expert game server technician specializing in crash analysis and debugging..."
+                />
             </AdminBox>
 
             <div className={'flex items-center justify-between'}>
