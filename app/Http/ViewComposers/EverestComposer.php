@@ -128,6 +128,8 @@ class EverestComposer
                 'mode' => config('modules.ai.mode', 'openai'),
                 'max_tokens' => (int) config('modules.ai.max_tokens', 200),
                 'system_prompt' => config('modules.ai.system_prompt', 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.'),
+                'feature_server_assistant' => boolval(config('modules.ai.feature_server_assistant', true)),
+                'feature_crash_analysis' => boolval(config('modules.ai.feature_crash_analysis', true)),
             ],
             'webhooks' => [
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),

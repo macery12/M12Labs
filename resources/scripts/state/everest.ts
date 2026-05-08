@@ -116,6 +116,8 @@ export interface EverestSettings {
         max_tokens?: number;
         temperature?: number;
         system_prompt?: string;
+        feature_server_assistant?: boolean;
+        feature_crash_analysis?: boolean;
     };
     mods: {
         enabled: boolean;

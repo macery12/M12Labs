@@ -212,7 +212,7 @@ function SettingsForm({
             </AdminBox>
 
             <AdminBox title={'Access & Behavior'} icon={faShieldAlt} className={'mb-4'}>
-                <div className={'grid gap-6 md:grid-cols-2'}>
+                <div className={'grid gap-6 md:grid-cols-3'}>
                     <div>
                         <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>User Access</label>
                         <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
@@ -237,6 +237,38 @@ function SettingsForm({
                     </div>
 
                     <div>
+                        <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>Feature Toggles</label>
+                        <div className={'space-y-2'}>
+                            <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
+                                <FormikField
+                                    type="checkbox"
+                                    name="feature_server_assistant"
+                                    className={'h-4 w-4 cursor-pointer rounded'}
+                                    style={{ accentColor: accent } as React.CSSProperties}
+                                />
+                                <div>
+                                    <p className={'text-sm font-medium text-neutral-200'}>Server AI Assistant</p>
+                                    <p className={'text-xs text-neutral-500'}>
+                                        The AI chat tab and "Ask AI" button on server pages.
+                                    </p>
+                                </div>
+                            </label>
+                            <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
+                                <FormikField
+                                    type="checkbox"
+                                    name="feature_crash_analysis"
+                                    className={'h-4 w-4 cursor-pointer rounded'}
+                                    style={{ accentColor: accent } as React.CSSProperties}
+                                />
+                                <div>
+                                    <p className={'text-sm font-medium text-neutral-200'}>Crash Analysis</p>
+                                    <p className={'text-xs text-neutral-500'}>
+                                        Auto-detect crashes and offer AI diagnosis via a slide-in toast.
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                         <div className={'mb-1.5 flex items-center justify-between'}>
                             <label className={'text-xs font-medium text-neutral-300'}>
                                 <FontAwesomeIcon icon={faRobot} className={'mr-1.5 opacity-60'} />
@@ -334,6 +366,8 @@ export default () => {
                 max_tokens: ai.max_tokens || 500,
                 temperature: ai.temperature ?? 0.3,
                 system_prompt: ai.system_prompt || 'You are a game server support assistant. Help with anything related to game servers: setup, configuration, plugins, mods, gameplay mechanics, commands, world management, and troubleshooting. When given logs: quote the exact failing line, identify if it is a crash/config issue/first-run requirement (e.g. EULA), give numbered fix steps. Be concise and specific — never give generic advice. Only decline if the question is completely unrelated to gaming or servers (e.g. cooking, finance).',
+                feature_server_assistant: ai.feature_server_assistant ?? true,
+                feature_crash_analysis: ai.feature_crash_analysis ?? true,
             }}
         >
             <SettingsForm

@@ -26,6 +26,8 @@ export default () => {
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isEnabled = useStoreState(state => state.everest.data!.ai.enabled);
+    const assistantEnabled = useStoreState(state => state.everest.data!.ai.feature_server_assistant ?? true);
+    const crashEnabled = useStoreState(state => state.everest.data!.ai.feature_crash_analysis ?? true);
     const theme = useStoreState(state => state.theme.data!);
     const status = ServerContext.useStoreState(state => state.status.value);
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
@@ -126,7 +128,7 @@ export default () => {
 
             if (line.toLowerCase().indexOf('detected server process in a crashed state') >= 0) {
                 setHasCrash(true);
-                showCrashToast();
+                if (crashEnabled) showCrashToast();
             }
         };
 
@@ -137,7 +139,8 @@ export default () => {
         };
     }, [connected, instance, status]);
 
-    if (!isEnabled) return <></>;
+    if (!isEnabled) return <></>;    
+    if (!assistantEnabled && !crashEnabled) return <></>;
 
     return (
         <>

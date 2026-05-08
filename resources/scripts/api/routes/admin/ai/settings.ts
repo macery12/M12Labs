@@ -10,6 +10,8 @@ export interface AISettings {
     max_tokens?: number;
     temperature?: number;
     system_prompt?: string;
+    feature_server_assistant?: boolean;
+    feature_crash_analysis?: boolean;
 }
 
 export const updateSettings = (settings: AISettings): Promise<void> => {

@@ -69,6 +69,8 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
                     }
                 },
             ],
+            'feature_server_assistant' => 'nullable|bool',
+            'feature_crash_analysis' => 'nullable|bool',
         ];
     }
 
