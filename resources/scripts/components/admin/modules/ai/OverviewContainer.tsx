@@ -162,7 +162,7 @@ function LogsModal({ onClose }: { onClose: () => void }) {
         return () => window.removeEventListener('keydown', handler);
     }, [onClose]);
 
-    const selectClass = 'rounded border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-neutral-500';
+    const selectClass = 'rounded border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-neutral-500';
 
     return (
         <div className={'fixed inset-0 z-50 flex items-center justify-center'} style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
@@ -186,7 +186,10 @@ function LogsModal({ onClose }: { onClose: () => void }) {
 
                 {/* Filter bar */}
                 <div className={'flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-neutral-700/40 px-5 py-3'}>
-                    <div className={'flex items-center gap-1.5 rounded border border-neutral-700 bg-neutral-800 px-2 py-1.5'}>
+                    <div
+                        className={'flex items-center gap-1.5 rounded border border-neutral-700 px-2 py-1.5'}
+                        style={{ backgroundColor: theme.colors.background }}
+                    >
                         <SearchIcon className={'h-3.5 w-3.5 text-neutral-500'} />
                         <input
                             type={'text'}
@@ -201,12 +204,22 @@ function LogsModal({ onClose }: { onClose: () => void }) {
                             </button>
                         )}
                     </div>
-                    <select value={source} onChange={e => setSource(e.target.value as GetLogsParams['source'])} className={selectClass}>
+                    <select
+                        value={source}
+                        onChange={e => setSource(e.target.value as GetLogsParams['source'])}
+                        className={selectClass}
+                        style={{ backgroundColor: theme.colors.background }}
+                    >
                         <option value={''}>All sources</option>
                         <option value={'client'}>Client</option>
                         <option value={'admin'}>Admin</option>
                     </select>
-                    <select value={status} onChange={e => setStatus(e.target.value as GetLogsParams['status'])} className={selectClass}>
+                    <select
+                        value={status}
+                        onChange={e => setStatus(e.target.value as GetLogsParams['status'])}
+                        className={selectClass}
+                        style={{ backgroundColor: theme.colors.background }}
+                    >
                         <option value={''}>All statuses</option>
                         <option value={'success'}>Success</option>
                         <option value={'error'}>Error</option>
