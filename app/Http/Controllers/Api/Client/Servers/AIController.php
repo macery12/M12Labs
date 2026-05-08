@@ -79,7 +79,7 @@ class AIController extends ClientApiController
             return "Server: {$ctx}\n\nLog (errors/exceptions):\n{$log}\n\nDiagnose: quote the exact failing line. State if crash, config issue, or first-run requirement (EULA etc). Format: Issue / Evidence / Fix.";
         }
 
-        return "Server: {$ctx}\nQ: {$rawQuery}\nAnswer specifically for {$eggName}. If off-topic, say: \"I can only help with server-related questions.\"";
+        return "Server: {$ctx}\nQ: {$rawQuery}\nAnswer specifically for {$eggName}.";
     }
 
     /**

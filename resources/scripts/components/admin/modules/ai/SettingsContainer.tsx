@@ -21,12 +21,12 @@ const OPENAI_PRESETS = [
 ];
 
 const OLLAMA_PRESETS = [
+    { label: 'qwen2.5:7b', value: 'qwen2.5:7b', note: '~4.7GB, best instruction following — recommended' },
+    { label: 'qwen2.5:3b', value: 'qwen2.5:3b', note: '~2GB, strong reasoning, lower VRAM' },
     { label: 'phi3:mini', value: 'phi3:mini', note: '~2GB, fast, great for log reading' },
-    { label: 'qwen2.5:3b', value: 'qwen2.5:3b', note: '~2GB, strong reasoning' },
-    { label: 'gemma2:2b', value: 'gemma2:2b', note: '~1.6GB, good all-rounder' },
     { label: 'llama3.2:3b', value: 'llama3.2:3b', note: '~2GB, Meta latest small model' },
-    { label: 'deepseek-coder:1.3b', value: 'deepseek-coder:1.3b', note: '~1GB, code & config focused' },
     { label: 'mistral:7b', value: 'mistral:7b', note: '~4GB, strong general purpose' },
+    { label: 'deepseek-coder:1.3b', value: 'deepseek-coder:1.3b', note: '~1GB, code & config focused' },
 ];
 
 // --- Temperature slider ---------------------------------------------------
@@ -329,11 +329,11 @@ export default () => {
             initialValues={{
                 user_access: ai.user_access,
                 endpoint: ai.endpoint || (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
-                model: ai.model || (ai.mode === 'ollama' ? 'phi3:mini' : 'gpt-4.1-mini'),
+                model: ai.model || (ai.mode === 'ollama' ? 'qwen2.5:7b' : 'gpt-4.1-mini'),
                 mode: ai.mode || 'openai',
                 max_tokens: ai.max_tokens || 500,
                 temperature: ai.temperature ?? 0.3,
-                system_prompt: ai.system_prompt || 'Game server support assistant. Only answer server-related questions; for anything off-topic say "I can only help with server-related questions." Base all answers on the server type and log evidence provided. When given logs: quote the exact failing line, identify if it is a crash/config issue/first-run requirement (e.g. EULA), give numbered fix steps. Be concise and specific — never give generic advice.',
+                system_prompt: ai.system_prompt || 'You are a game server support assistant. Help with anything related to game servers: setup, configuration, plugins, mods, gameplay mechanics, commands, world management, and troubleshooting. When given logs: quote the exact failing line, identify if it is a crash/config issue/first-run requirement (e.g. EULA), give numbered fix steps. Be concise and specific — never give generic advice. Only decline if the question is completely unrelated to gaming or servers (e.g. cooking, finance).',
             }}
         >
             <SettingsForm
