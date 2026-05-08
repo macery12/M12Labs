@@ -34,6 +34,9 @@ export default function ServerAIContainer() {
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [slowHint, setSlowHint] = useState(false);
+    const slowHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasFirstToken = useRef(false);
 
     // Conversation sidebar state
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -134,6 +137,14 @@ export default function ServerAIContainer() {
 
         pendingExchangeRef.current = { userContent: query, assistantContent: '' };
 
+        // Show "spinning up" hint if no token arrives within 5s (Ollama cold start)
+        hasFirstToken.current = false;
+        setSlowHint(false);
+        if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
+        slowHintTimer.current = setTimeout(() => {
+            if (!hasFirstToken.current) setSlowHint(true);
+        }, 5000);
+
         // Capture current activeConversationId synchronously for the closure
         const currentConvId = activeConversationId;
 
@@ -151,6 +162,8 @@ export default function ServerAIContainer() {
                 query,
                 queryType,
                 chunk => {
+                    hasFirstToken.current = true;
+                    setSlowHint(false);
                     if (pendingExchangeRef.current) {
                         pendingExchangeRef.current.assistantContent += chunk;
                     }
@@ -173,6 +186,8 @@ export default function ServerAIContainer() {
                         return next;
                     });
                     setLoading(false);
+                    setSlowHint(false);
+                    if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
                     abortRef.current = null;
 
                     // Persist to DB
@@ -201,6 +216,8 @@ export default function ServerAIContainer() {
                         return next;
                     });
                     setLoading(false);
+                    setSlowHint(false);
+                    if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
                     abortRef.current = null;
                     pendingExchangeRef.current = null;
                 },
@@ -232,6 +249,8 @@ export default function ServerAIContainer() {
         abortRef.current?.abort();
         abortRef.current = null;
         setLoading(false);
+        setSlowHint(false);
+        if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
         pendingExchangeRef.current = null;
         setMessages(prev => {
             const next = [...prev];
@@ -355,6 +374,11 @@ export default function ServerAIContainer() {
                     </div>
 
                     {/* Input area */}
+                    {slowHint && (
+                        <p className={'mb-2 animate-pulse text-center text-xs text-neutral-500'}>
+                            ⏳ Ollama is loading the model — this first response may take 20–60 seconds…
+                        </p>
+                    )}
                     <div
                         className={'mt-3 flex items-end gap-2 rounded-xl border border-neutral-700 px-4 py-3'}
                         style={{ backgroundColor: theme.colors.secondary }}

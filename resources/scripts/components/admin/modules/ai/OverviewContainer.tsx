@@ -297,6 +297,9 @@ export default () => {
     const [logs, setLogs] = useState<AILogEntry[]>([]);
     const [logsLoading, setLogsLoading] = useState(true);
     const [showLogsModal, setShowLogsModal] = useState(false);
+    const [slowHint, setSlowHint] = useState(false);
+    const slowHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasFirstToken = useRef(false);
 
     useEffect(() => {
         getStats().then(setStats).catch(() => undefined).finally(() => setStatsLoading(false));
@@ -317,14 +320,26 @@ export default () => {
         abortRef.current?.abort();
         abortRef.current = new AbortController();
 
+        // Show "spinning up" hint if no token arrives within 5s (Ollama cold start)
+        hasFirstToken.current = false;
+        setSlowHint(false);
+        if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
+        slowHintTimer.current = setTimeout(() => {
+            if (!hasFirstToken.current) setSlowHint(true);
+        }, 5000);
+
         handleQueryStream(
             query,
-            chunk => setMessages(prev => {
-                const next = [...prev];
-                const last = next[next.length - 1];
-                if (last?.role === 'assistant') next[next.length - 1] = { ...last, content: last.content + chunk };
-                return next;
-            }),
+            chunk => {
+                hasFirstToken.current = true;
+                setSlowHint(false);
+                setMessages(prev => {
+                    const next = [...prev];
+                    const last = next[next.length - 1];
+                    if (last?.role === 'assistant') next[next.length - 1] = { ...last, content: last.content + chunk };
+                    return next;
+                });
+            },
             () => {
                 setMessages(prev => {
                     const next = [...prev];
@@ -333,6 +348,8 @@ export default () => {
                     return next;
                 });
                 setLoading(false);
+                setSlowHint(false);
+                if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
                 abortRef.current = null;
             },
             (error: Error) => {
@@ -343,6 +360,8 @@ export default () => {
                     return next;
                 });
                 setLoading(false);
+                setSlowHint(false);
+                if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
                 abortRef.current = null;
             },
             abortRef.current.signal,
@@ -357,6 +376,8 @@ export default () => {
         abortRef.current?.abort();
         abortRef.current = null;
         setLoading(false);
+        setSlowHint(false);
+        if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
         setMessages(prev => {
             const next = [...prev];
             const last = next[next.length - 1];
@@ -428,6 +449,11 @@ export default () => {
                         ))}
                         <div ref={bottomRef} />
                     </div>
+                    {slowHint && ai.mode === 'ollama' && (
+                        <p className={'mb-2 animate-pulse text-center text-xs text-neutral-500'}>
+                            ⏳ Ollama is loading the model — this first response may take 20–60 seconds…
+                        </p>
+                    )}
                     <div className={'mt-3 flex items-end gap-2 rounded-xl border border-neutral-700 px-4 py-3'} style={{ backgroundColor: theme.colors.secondary }}>
                         <textarea
                             ref={inputRef}

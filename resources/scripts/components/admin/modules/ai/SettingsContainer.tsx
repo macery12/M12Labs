@@ -161,6 +161,11 @@ function SettingsForm({
                         <p className={'mt-2 text-xs text-neutral-500'}>
                             Click a preset or type a custom model name. Hover presets for details.
                         </p>
+                        {values.mode === 'ollama' && (
+                            <p className={'mt-1.5 text-xs text-neutral-600'}>
+                                💡 Ollama keeps the model loaded for <span className={'text-neutral-400'}>10 minutes</span> after each request. The <span className={'text-neutral-400'}>first request</span> after a cold start may take 20–60 seconds while the model loads into memory.
+                            </p>
+                        )}
                     </div>
 
                     <div className={'space-y-4'}>
