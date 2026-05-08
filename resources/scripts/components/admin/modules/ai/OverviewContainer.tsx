@@ -1,10 +1,10 @@
 ﻿import AdminBox from '@/elements/AdminBox';
 import ToggleFeatureButton from '@admin/modules/ai/ToggleFeatureButton';
-import { SparklesIcon, RefreshIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/outline';
+import { SparklesIcon, RefreshIcon, CheckCircleIcon, XCircleIcon, SearchIcon, XIcon } from '@heroicons/react/outline';
 import { useStoreState } from '@/state/hooks';
 import { KeyboardEvent as ReactKeyboardEvent, useState, useRef, useEffect, useCallback } from 'react';
 import { handleQueryStream } from '@/api/routes/admin/ai/handleQuery';
-import { getStats, getRecentLogs, testConnection, type AIStats, type AILogEntry } from '@/api/routes/admin/ai/settings';
+import { getStats, getRecentLogs, getLogs, testConnection, type AIStats, type AILogEntry, type GetLogsParams } from '@/api/routes/admin/ai/settings';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
@@ -91,13 +91,165 @@ function ConnectionCard({ ai }: { ai: any }) {
     );
 }
 
-function RecentLogsTable({ logs, loading }: { logs: AILogEntry[]; loading: boolean }) {
+function LogRow({ log }: { log: AILogEntry }) {
+    return (
+        <tr className={'border-b border-neutral-700/20 hover:bg-neutral-800/30'}>
+            <td className={'whitespace-nowrap px-3 py-1.5 font-mono text-neutral-500'}>
+                {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <span className={'ml-1 text-neutral-700'}>{new Date(log.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+            </td>
+            <td className={'px-3 py-1.5 text-neutral-300'}>{log.username}</td>
+            <td className={'px-3 py-1.5 text-neutral-500'}>{log.server_name ?? <span className={'italic text-neutral-700'}>—</span>}</td>
+            <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.model}</td>
+            <td className={'px-3 py-1.5'}>
+                <span className={'rounded px-1.5 py-0.5 ' + (log.source === 'admin' ? 'bg-purple-900/40 text-purple-300' : 'bg-blue-900/40 text-blue-300')}>
+                    {log.source}
+                </span>
+            </td>
+            <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.total_tokens ?? '—'}</td>
+            <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.latency_ms != null ? `${log.latency_ms}ms` : '—'}</td>
+            <td className={'px-3 py-1.5'}>
+                {log.status === 'success'
+                    ? <span className={'text-green-400'}>✓</span>
+                    : <span className={'text-red-400'} title={log.error_message ?? undefined}>✗</span>
+                }
+            </td>
+        </tr>
+    );
+}
+
+const LOG_TABLE_HEADERS = ['Time', 'User', 'Server', 'Model', 'Src', 'Tokens', 'Latency', 'Status'];
+
+function LogTableHead() {
+    return (
+        <thead>
+            <tr className={'border-b border-neutral-700/40 text-left text-neutral-500'}>
+                {LOG_TABLE_HEADERS.map(h => <th key={h} className={'px-3 py-2 font-normal'}>{h}</th>)}
+            </tr>
+        </thead>
+    );
+}
+
+function LogsModal({ onClose }: { onClose: () => void }) {
+    const theme = useStoreState(s => s.theme.data!);
+    const [logs, setLogs] = useState<AILogEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [source, setSource] = useState<GetLogsParams['source']>('');
+    const [status, setStatus] = useState<GetLogsParams['status']>('');
+
+    useEffect(() => {
+        setLoading(true);
+        getLogs({ source, status, search: search || undefined })
+            .then(setLogs)
+            .catch(() => setLogs([]))
+            .finally(() => setLoading(false));
+    }, [source, status, search]);
+
+    // debounce search input
+    const [searchInput, setSearchInput] = useState('');
+    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleSearchChange = (v: string) => {
+        setSearchInput(v);
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => setSearch(v), 400);
+    };
+
+    // close on Escape
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [onClose]);
+
+    const selectClass = 'rounded border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-neutral-500';
+
+    return (
+        <div className={'fixed inset-0 z-50 flex items-center justify-center'} style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <div
+                className={'relative mx-4 flex w-full max-w-5xl flex-col rounded-xl border border-neutral-700 shadow-2xl'}
+                style={{ backgroundColor: theme.colors.secondary, maxHeight: '85vh' }}
+            >
+                {/* Header */}
+                <div className={'flex flex-shrink-0 items-center justify-between border-b border-neutral-700/60 px-5 py-4'}>
+                    <div>
+                        <p className={'text-sm font-semibold text-neutral-200'}>AI Request Logs</p>
+                        <p className={'text-xs text-neutral-500'}>Up to 500 most recent records</p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className={'rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200'}
+                    >
+                        <XIcon className={'h-5 w-5'} />
+                    </button>
+                </div>
+
+                {/* Filter bar */}
+                <div className={'flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-neutral-700/40 px-5 py-3'}>
+                    <div className={'flex items-center gap-1.5 rounded border border-neutral-700 bg-neutral-800 px-2 py-1.5'}>
+                        <SearchIcon className={'h-3.5 w-3.5 text-neutral-500'} />
+                        <input
+                            type={'text'}
+                            placeholder={'Search by username…'}
+                            value={searchInput}
+                            onChange={e => handleSearchChange(e.target.value)}
+                            className={'w-44 bg-transparent text-xs text-neutral-300 placeholder-neutral-600 focus:outline-none'}
+                        />
+                        {searchInput && (
+                            <button onClick={() => { setSearchInput(''); setSearch(''); }} className={'text-neutral-600 hover:text-neutral-400'}>
+                                <XIcon className={'h-3 w-3'} />
+                            </button>
+                        )}
+                    </div>
+                    <select value={source} onChange={e => setSource(e.target.value as GetLogsParams['source'])} className={selectClass}>
+                        <option value={''}>All sources</option>
+                        <option value={'client'}>Client</option>
+                        <option value={'admin'}>Admin</option>
+                    </select>
+                    <select value={status} onChange={e => setStatus(e.target.value as GetLogsParams['status'])} className={selectClass}>
+                        <option value={''}>All statuses</option>
+                        <option value={'success'}>Success</option>
+                        <option value={'error'}>Error</option>
+                    </select>
+                    <span className={'ml-auto text-xs text-neutral-600'}>
+                        {loading ? 'Loading…' : `${logs.length} record${logs.length !== 1 ? 's' : ''}`}
+                    </span>
+                </div>
+
+                {/* Table */}
+                <div className={'min-h-0 flex-1 overflow-y-auto'}>
+                    {loading ? (
+                        <div className={'flex justify-center py-10'}><Spinner size={'small'} /></div>
+                    ) : logs.length === 0 ? (
+                        <p className={'px-5 py-10 text-center text-xs text-neutral-600'}>No records match your filters</p>
+                    ) : (
+                        <div className={'overflow-x-auto'}>
+                            <table className={'w-full text-xs'}>
+                                <LogTableHead />
+                                <tbody>
+                                    {logs.map(log => <LogRow key={log.id} log={log} />)}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function RecentLogsTable({ logs, loading, onViewAll }: { logs: AILogEntry[]; loading: boolean; onViewAll: () => void }) {
     const theme = useStoreState(s => s.theme.data!);
     return (
         <div className={'rounded-xl border border-neutral-700/60 overflow-hidden'} style={{ backgroundColor: theme.colors.secondary }}>
             <div className={'flex items-center justify-between border-b border-neutral-700/60 px-4 py-2.5'}>
                 <p className={'text-xs font-medium text-neutral-300'}>Recent Requests</p>
-                <p className={'text-xs text-neutral-600'}>Last 30</p>
+                <button
+                    onClick={onViewAll}
+                    className={'text-xs text-neutral-500 transition-colors hover:text-neutral-300'}
+                >
+                    View all →
+                </button>
             </div>
             {loading ? (
                 <div className={'flex justify-center py-6'}><Spinner size={'small'} /></div>
@@ -106,43 +258,9 @@ function RecentLogsTable({ logs, loading }: { logs: AILogEntry[]; loading: boole
             ) : (
                 <div className={'overflow-x-auto'}>
                     <table className={'w-full text-xs'}>
-                        <thead>
-                            <tr className={'border-b border-neutral-700/40 text-left text-neutral-500'}>
-                                <th className={'px-3 py-2 font-normal'}>Time</th>
-                                <th className={'px-3 py-2 font-normal'}>User</th>
-                                <th className={'px-3 py-2 font-normal'}>Server</th>
-                                <th className={'px-3 py-2 font-normal'}>Model</th>
-                                <th className={'px-3 py-2 font-normal'}>Src</th>
-                                <th className={'px-3 py-2 font-normal'}>Tokens</th>
-                                <th className={'px-3 py-2 font-normal'}>Latency</th>
-                                <th className={'px-3 py-2 font-normal'}>Status</th>
-                            </tr>
-                        </thead>
+                        <LogTableHead />
                         <tbody>
-                            {logs.map(log => (
-                                <tr key={log.id} className={'border-b border-neutral-700/20 hover:bg-neutral-800/30'}>
-                                    <td className={'whitespace-nowrap px-3 py-1.5 font-mono text-neutral-500'}>
-                                        {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        <span className={'ml-1 text-neutral-700'}>{new Date(log.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                                    </td>
-                                    <td className={'px-3 py-1.5 text-neutral-300'}>{log.username}</td>
-                                    <td className={'px-3 py-1.5 text-neutral-500'}>{log.server_name ?? <span className={'italic text-neutral-700'}>—</span>}</td>
-                                    <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.model}</td>
-                                    <td className={'px-3 py-1.5'}>
-                                        <span className={'rounded px-1.5 py-0.5 ' + (log.source === 'admin' ? 'bg-purple-900/40 text-purple-300' : 'bg-blue-900/40 text-blue-300')}>
-                                            {log.source}
-                                        </span>
-                                    </td>
-                                    <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.total_tokens ?? '—'}</td>
-                                    <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.latency_ms != null ? `${log.latency_ms}ms` : '—'}</td>
-                                    <td className={'px-3 py-1.5'}>
-                                        {log.status === 'success'
-                                            ? <span className={'text-green-400'}>✓</span>
-                                            : <span className={'text-red-400'} title={log.error_message ?? undefined}>✗</span>
-                                        }
-                                    </td>
-                                </tr>
-                            ))}
+                            {logs.map(log => <LogRow key={log.id} log={log} />)}
                         </tbody>
                     </table>
                 </div>
@@ -171,6 +289,7 @@ export default () => {
     const [statsLoading, setStatsLoading] = useState(true);
     const [logs, setLogs] = useState<AILogEntry[]>([]);
     const [logsLoading, setLogsLoading] = useState(true);
+    const [showLogsModal, setShowLogsModal] = useState(false);
 
     useEffect(() => {
         getStats().then(setStats).catch(() => undefined).finally(() => setStatsLoading(false));
@@ -245,6 +364,7 @@ export default () => {
 
     return (
         <div className={'space-y-4'}>
+            {showLogsModal && <LogsModal onClose={() => setShowLogsModal(false)} />}
             {/* ── Connection status + stat cards ── */}
             <div className={'grid grid-cols-1 gap-3 sm:grid-cols-5'}>
                 <div className={'sm:col-span-2'}>
@@ -290,7 +410,7 @@ export default () => {
             )}
 
             {/* ── Recent request log ── */}
-            <RecentLogsTable logs={logs} loading={logsLoading} />
+            <RecentLogsTable logs={logs} loading={logsLoading} onViewAll={() => setShowLogsModal(true)} />
 
             {/* ── Chat + config sidebar ── */}
             <div className={'grid gap-4 lg:grid-cols-5'}>

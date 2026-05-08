@@ -5,6 +5,7 @@ namespace Everest\Http\Controllers\Api\Application;
 use Everest\Models\Setting;
 use Everest\Models\AiUsageLog;
 use Everest\Facades\Activity;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -253,24 +254,39 @@ class IntelligenceController extends ApplicationApiController
     /**
      * Return the most recent 30 usage log entries for the admin log table.
      */
-    public function recentLogs(): JsonResponse
+    public function recentLogs(Request $request): JsonResponse
     {
-        $logs = AiUsageLog::with('user:id,username,email', 'server:uuid,name')
-            ->orderByDesc('created_at')
-            ->limit(30)
-            ->get()
-            ->map(fn ($log) => [
-                'id' => $log->id,
-                'created_at' => $log->created_at?->toIso8601String(),
-                'username' => $log->user?->username ?? 'system',
-                'server_name' => $log->server?->name ?? null,
-                'model' => $log->model,
-                'source' => $log->source,
-                'status' => $log->status,
-                'total_tokens' => $log->total_tokens,
-                'latency_ms' => $log->latency_ms,
-                'error_message' => $log->error_message,
-            ]);
+        $limit  = min((int) $request->query('limit', 10), 500);
+        $source = $request->query('source');
+        $status = $request->query('status');
+        $search = $request->query('search');
+
+        $query = AiUsageLog::with('user:id,username,email', 'server:uuid,name')
+            ->orderByDesc('created_at');
+
+        if (in_array($source, ['client', 'admin'], true)) {
+            $query->where('source', $source);
+        }
+        if (in_array($status, ['success', 'error'], true)) {
+            $query->where('status', $status);
+        }
+        if ($search) {
+            $query->whereHas('user', fn ($q) => $q->where('username', 'like', '%' . $search . '%')
+                ->orWhere('email', 'like', '%' . $search . '%'));
+        }
+
+        $logs = $query->limit($limit)->get()->map(fn ($log) => [
+            'id'            => $log->id,
+            'created_at'    => $log->created_at?->toIso8601String(),
+            'username'      => $log->user?->username ?? 'system',
+            'server_name'   => $log->server?->name ?? null,
+            'model'         => $log->model,
+            'source'        => $log->source,
+            'status'        => $log->status,
+            'total_tokens'  => $log->total_tokens,
+            'latency_ms'    => $log->latency_ms,
+            'error_message' => $log->error_message,
+        ]);
 
         return response()->json($logs);
     }

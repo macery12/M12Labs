@@ -62,5 +62,20 @@ export interface AILogEntry {
 }
 
 export const getRecentLogs = (): Promise<AILogEntry[]> => {
-    return http.get('/api/application/ai/logs').then(({ data }) => data);
+    return http.get('/api/application/ai/logs', { params: { limit: 10 } }).then(({ data }) => data);
+};
+
+export interface GetLogsParams {
+    limit?: number;
+    source?: 'client' | 'admin' | '';
+    status?: 'success' | 'error' | '';
+    search?: string;
+}
+
+export const getLogs = (params: GetLogsParams = {}): Promise<AILogEntry[]> => {
+    const p: Record<string, string | number> = { limit: params.limit ?? 500 };
+    if (params.source) p.source = params.source;
+    if (params.status) p.status = params.status;
+    if (params.search) p.search = params.search;
+    return http.get('/api/application/ai/logs', { params: p }).then(({ data }) => data);
 };
