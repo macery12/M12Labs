@@ -15,7 +15,6 @@ use Everest\Http\Requests\Api\Application\Roles\GetRolesRequest;
 use Everest\Http\Requests\Api\Application\Roles\StoreRoleRequest;
 use Everest\Http\Requests\Api\Application\Roles\DeleteRoleRequest;
 use Everest\Http\Requests\Api\Application\Roles\UpdateRoleRequest;
-use Everest\Http\Requests\Api\Application\Roles\UpdateRolePermissionsRequest;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
 class RoleController extends ApplicationApiController
@@ -101,7 +100,7 @@ class RoleController extends ApplicationApiController
     /**
      * Updates the assigned permissions to a role.
      */
-    public function updatePermissions(UpdateRolePermissionsRequest $request, AdminRole $role): array
+    public function updatePermissions(UpdateRoleRequest $request, AdminRole $role): array
     {
         $role->update(['permissions' => $request->input('permissions', [])]);
 
