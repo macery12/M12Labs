@@ -4,12 +4,12 @@ namespace Everest\Http\Controllers\Api\Application\Auth;
 
 use Everest\Models\User;
 use Everest\Models\Setting;
-use Illuminate\Http\Request;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Models\JGuardEntry;
 use Illuminate\Http\JsonResponse;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
+use Everest\Http\Requests\Api\Application\Auth\GetJGuardRequest;
 use Everest\Http\Requests\Api\Application\Auth\UpdateAuthModuleRequest;
 
 class JGuardController extends ApplicationApiController
@@ -22,7 +22,7 @@ class JGuardController extends ApplicationApiController
     /**
      * Return a list of all users with a jGuard entry (pending, approved, or rejected).
      */
-    public function index(Request $request): JsonResponse
+    public function index(GetJGuardRequest $request): JsonResponse
     {
         $status = $request->query('status', 'pending');
 
