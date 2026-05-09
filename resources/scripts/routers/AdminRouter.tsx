@@ -13,6 +13,7 @@ import { NotFound } from '@/elements/ScreenBlock';
 import { PuzzleIcon, ReplyIcon } from '@heroicons/react/outline';
 import { Fragment } from 'react';
 import ScopedAlert from '@account/ScopedAlert';
+import RequireAdminPermission from '@/elements/RequireAdminPermission';
 
 function AdminRouter() {
     const theme = useStoreState(state => state.theme.data!);
@@ -137,13 +138,19 @@ function AdminRouter() {
                     <div className={'mx-auto flex w-full flex-col'} style={{ maxWidth: '86rem' }}>
                         <ErrorBoundary>
                             <Routes>
-                                {routes.admin.map(({ route, component: Component }) => (
+                                {routes.admin.map(({ route, component: Component, permission }) => (
                                     <Route
                                         key={route}
                                         path={route}
                                         element={
                                             <Spinner.Suspense>
-                                                <Component />
+                                                {permission ? (
+                                                    <RequireAdminPermission permission={permission}>
+                                                        <Component />
+                                                    </RequireAdminPermission>
+                                                ) : (
+                                                    <Component />
+                                                )}
                                             </Spinner.Suspense>
                                         }
                                     />

@@ -18,6 +18,8 @@ export interface ServerRouteDefinition extends RouteDefinition {
 export interface AdminRouteDefinition extends RouteDefinition {
     category?: 'general' | 'modules' | 'appearance' | 'management' | 'services' | 'developers';
     advanced?: boolean;
+    /** Permission string required to view this route (e.g. 'roles.read'). Root admins always pass. */
+    permission?: string;
 }
 
 export const normalize = (route: string): string => route.replace(/[:*].*$/, '').replace(/\/+$/, '');
