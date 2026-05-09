@@ -141,6 +141,16 @@ class AIController extends ClientApiController
 
         RateLimiter::hit($rateLimitKey, 600); // 10-minute window
 
+        $request->validate([
+            'query'               => 'required|string|min:1|max:4000',
+            'query_type'          => 'nullable|string|in:freeform,log_analysis',
+            'conversation_id'     => 'nullable|integer',
+            'messages'            => 'nullable|array|max:10',
+            'messages.*.role'     => 'required_with:messages|in:user,assistant',
+            'messages.*.content'  => 'required_with:messages|string|max:800',
+            'stream'              => 'nullable|boolean',
+        ]);
+
         $rawQuery = $request->input('query', '');
         // $queryType already set above for feature gating
 
@@ -179,7 +189,20 @@ class AIController extends ClientApiController
         // Capture values needed inside closures / catch blocks.
         $userId = $request->user()->id;
         $serverUuid = $server->uuid;
-        $conversationId = $request->input('conversation_id') ? (int) $request->input('conversation_id') : null;
+
+        // Verify conversation ownership before accepting the ID to prevent
+        // cross-user conversation association in the usage log.
+        $conversationId = null;
+        if ($request->input('conversation_id')) {
+            $rawConvId = (int) $request->input('conversation_id');
+            $ownsConversation = \Everest\Models\AiConversation::where('id', $rawConvId)
+                ->where('user_id', $userId)
+                ->where('server_uuid', $serverUuid)
+                ->exists();
+            if ($ownsConversation) {
+                $conversationId = $rawConvId;
+            }
+        }
         $model = Setting::get('settings::modules:ai:model', config('modules.ai.model', 'unknown'));
 
         // Check if streaming is requested
@@ -212,7 +235,8 @@ class AIController extends ClientApiController
                 } catch (\Exception $e) {
                     $status = 'error';
                     $errorMsg = $e->getMessage();
-                    echo 'data: ' . json_encode(['error' => $e->getMessage()]) . "\n\n";
+                    Log::error('AI stream error for user ' . $userId . ': ' . $e->getMessage());
+                    echo 'data: ' . json_encode(['error' => 'AI service error. Please try again.']) . "\n\n";
                     ob_flush();
                     flush();
                 }

@@ -10,7 +10,8 @@ class QueryRequest extends ApplicationApiRequest
     public function rules(): array
     {
         return [
-            'query' => 'required|string|min:3',
+            'query' => 'required|string|min:3|max:4000',
+            'stream' => 'nullable|boolean',
         ];
     }
 

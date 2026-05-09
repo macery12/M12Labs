@@ -10,6 +10,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Everest\Services\AI\OpenAIService;
 use Everest\Services\Email\EmailRedactor;
 use Everest\Http\Requests\Api\Application\Intelligence;
@@ -82,9 +83,25 @@ class IntelligenceController extends ApplicationApiController
      */
     public function query(Intelligence\QueryRequest $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
-        if (!config('modules.ai.enabled')) {
-            throw new \Exception('The M12Labs-AI module is not enabled.');
+        $enabled = filter_var(
+            Setting::get('settings::modules:ai:enabled', config('modules.ai.enabled', false)),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        if (!$enabled) {
+            return response()->json(['error' => 'The M12Labs-AI module is not enabled.'], 403);
         }
+
+        // Rate-limit admin queries (60 per 10 minutes).
+        $rateLimitKey = 'ai:admin:' . ($request->user()?->id ?? 'anon');
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 60)) {
+            $retryAfter = RateLimiter::availableIn($rateLimitKey);
+            return response()->json([
+                'error' => 'Too many AI requests. Please try again in ' . $retryAfter . ' seconds.',
+                'retry_after' => $retryAfter,
+            ], 429);
+        }
+        RateLimiter::hit($rateLimitKey, 600);
 
         // Check if streaming is requested
         if ($request->input('stream', false)) {
@@ -260,6 +277,9 @@ class IntelligenceController extends ApplicationApiController
         $source = $request->query('source');
         $status = $request->query('status');
         $search = $request->query('search');
+        if ($search !== null) {
+            $search = mb_substr((string) $search, 0, 100);
+        }
 
         $query = AiUsageLog::with('user:id,username,email', 'server:uuid,name')
             ->orderByDesc('created_at');
