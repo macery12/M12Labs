@@ -227,7 +227,7 @@ class AdminRole extends Model
                 'update' => 'Update billing settings.',
                 'export' => 'Export current billing configuration to JSON.',
                 'import' => 'Import current billing configuration from JSON.',
-                'delete-keys' => 'Delete Stripe API billing keys used for payment.',
+                'delete-keys' => 'Delete payment provider API keys (Stripe, Mollie, PayPal, etc.).',
             ],
         ],
         'tickets' => [
