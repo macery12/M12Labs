@@ -12,7 +12,7 @@ module.exports = {
                 slate: colors.slate,
                 // "primary" and "neutral" are deprecated, prefer the use of "blue" and "gray"
                 // in new code.
-                primary: colors.green,
+                primary: colors.blue,
                 neutral: colors.slate,
                 cyan: colors.cyan,
                 zinc: colors.zinc,

@@ -12,7 +12,7 @@ return [
     |
     */
     'colors' => [
-        'primary' => env('THEME_COLORS_PRIMARY', '#16a34a'),
+        'primary' => env('THEME_COLORS_PRIMARY', '#0047fc'),
         'secondary' => env('THEME_COLORS_SECONDARY', '#27272a'),
 
         'background' => env('THEME_COLORS_BACKGROUND', '#141414'),

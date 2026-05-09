@@ -360,6 +360,13 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::put('/colors', [Application\Theme\ThemeController::class, 'colors']);
 
         Route::post('/reset', [Application\Theme\ThemeController::class, 'reset']);
+
+        Route::group(['prefix' => '/presets'], function () {
+            Route::get('/', [Application\Theme\ThemePresetController::class, 'index']);
+            Route::post('/', [Application\Theme\ThemePresetController::class, 'store']);
+            Route::post('/{theme_preset:id}/apply', [Application\Theme\ThemePresetController::class, 'apply']);
+            Route::delete('/{theme_preset:id}', [Application\Theme\ThemePresetController::class, 'delete']);
+        });
     });
 
     /*

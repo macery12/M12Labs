@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
 import updateColors from '@/api/routes/admin/theme/updateColors';
+import applyPreset from '@/api/routes/admin/theme/applyPreset';
+import getPresets, { ThemePreset } from '@/api/routes/admin/theme/getPresets';
 import useStatus from '@/plugins/useStatus';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import AdminBox from '@/elements/AdminBox';
@@ -7,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { CheckCircleIcon } from '@heroicons/react/outline';
 
 const colorOptions = [
+    { hex: '#0047fc', name: 'M12Labs Blue' },
     { hex: '#16a34a', name: 'Jexactyl Green' },
     { hex: '#12aaaa', name: 'Microsoft Teal' },
     { hex: '#ff0000', name: 'Brick Red' },
@@ -21,6 +25,13 @@ export default ({ defaultColor }: { defaultColor: string }) => {
     const { status, setStatus } = useStatus();
     const theme = useStoreState(state => state.theme.data!);
     const setTheme = useStoreActions(actions => actions.theme.setTheme);
+    const [presets, setPresets] = useState<ThemePreset[]>([]);
+    const [applyingId, setApplyingId] = useState<number | null>(null);
+    const [appliedId, setAppliedId] = useState<number | null>(null);
+
+    useEffect(() => {
+        getPresets().then(setPresets).catch(() => undefined);
+    }, []);
 
     const changeColor = (hex: string) => {
         setStatus('loading');
@@ -35,6 +46,17 @@ export default ({ defaultColor }: { defaultColor: string }) => {
                 },
             });
         });
+    };
+
+    const handleApplyPreset = (preset: ThemePreset) => {
+        setApplyingId(preset.id);
+        applyPreset(preset.id)
+            .then(colors => {
+                setTheme({ ...theme, colors });
+                setAppliedId(preset.id);
+                setTimeout(() => setAppliedId(null), 2000);
+            })
+            .finally(() => setApplyingId(null));
     };
 
     return (
@@ -78,6 +100,53 @@ export default ({ defaultColor }: { defaultColor: string }) => {
                 </div>
             </AdminBox>
             <p className={'mt-2 text-right text-gray-400'}>Select a color from the options to apply it.</p>
+
+            {presets.length > 0 && (
+                <div className={'mt-6'}>
+                    <AdminBox title={'Apply a Full Preset'}>
+                        <p className={'mb-4 text-sm text-gray-400'}>
+                            Presets apply all five colors at once — primary, secondary, background, headers and sidebar.
+                        </p>
+                        <div className={'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'}>
+                            {presets.map(preset => (
+                                <button
+                                    key={preset.id}
+                                    type={'button'}
+                                    onClick={() => handleApplyPreset(preset)}
+                                    disabled={applyingId === preset.id}
+                                    className={
+                                        'flex flex-col gap-2 rounded-lg border p-3 text-left transition-colors ' +
+                                        (appliedId === preset.id
+                                            ? 'border-green-500 bg-green-900/20'
+                                            : 'border-neutral-700 bg-neutral-900/40 hover:border-neutral-500')
+                                    }
+                                >
+                                    <div className={'flex items-center justify-between'}>
+                                        <span className={'truncate text-sm font-semibold text-neutral-100'}>
+                                            {preset.name}
+                                        </span>
+                                        {appliedId === preset.id && (
+                                            <CheckCircleIcon className={'ml-2 h-4 w-4 shrink-0 text-green-400'} />
+                                        )}
+                                    </div>
+                                    <div className={'flex items-center gap-1.5'}>
+                                        {(['primary', 'secondary', 'background', 'headers', 'sidebar'] as const).map(
+                                            k => (
+                                                <span
+                                                    key={k}
+                                                    className={'inline-block h-4 w-4 rounded-full border border-black/30'}
+                                                    style={{ background: preset.colors[k] }}
+                                                    title={k}
+                                                />
+                                            ),
+                                        )}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </AdminBox>
+                </div>
+            )}
         </div>
     );
 };
