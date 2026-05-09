@@ -26,34 +26,27 @@ import NestDeleteButton from '@admin/service/nests/NestDeleteButton';
 import NestEggTable from '@admin/service/nests/NestEggTable';
 import type { ApplicationStore } from '@/state';
 
-interface ctx {
+interface Ctx {
     nest: Nest | undefined;
-    setNest: Action<ctx, Nest | undefined>;
-
+    setNest: Action<Ctx, Nest | undefined>;
     selectedEggs: number[];
-
-    setSelectedEggs: Action<ctx, number[]>;
-    appendSelectedEggs: Action<ctx, number>;
-    removeSelectedEggs: Action<ctx, number>;
+    setSelectedEggs: Action<Ctx, number[]>;
+    appendSelectedEggs: Action<Ctx, number>;
+    removeSelectedEggs: Action<Ctx, number>;
 }
 
-export const Context = createContextStore<ctx>({
+export const Context = createContextStore<Ctx>({
     nest: undefined,
-
     setNest: action((state, payload) => {
         state.nest = payload;
     }),
-
     selectedEggs: [],
-
     setSelectedEggs: action((state, payload) => {
         state.selectedEggs = payload;
     }),
-
     appendSelectedEggs: action((state, payload) => {
         state.selectedEggs = state.selectedEggs.filter(id => id !== payload).concat(payload);
     }),
-
     removeSelectedEggs: action((state, payload) => {
         state.selectedEggs = state.selectedEggs.filter(id => id !== payload);
     }),
@@ -64,9 +57,11 @@ interface Values {
     description: string;
 }
 
-const NestSettings = () => {
+const EditInformationContainer = () => {
     const navigate = useNavigate();
-    const { clearFlashes, clearAndAddHttpError } = useStoreActions((actions: Actions<ApplicationStore>) => actions.flashes);
+    const { clearFlashes, clearAndAddHttpError } = useStoreActions(
+        (actions: Actions<ApplicationStore>) => actions.flashes,
+    );
 
     const nest = Context.useStoreState(state => state.nest);
     const setNest = Context.useStoreActions(actions => actions.setNest);
@@ -99,18 +94,23 @@ const NestSettings = () => {
             })}
         >
             {({ isSubmitting, isValid }) => (
-                <AdminBox title={'Nest Settings'} css={tw`relative`}>
+                <AdminBox title={'Edit Nest'} css={tw`flex-1 self-start w-full relative mb-8 lg:mb-0 mr-0 lg:mr-4`}>
                     <SpinnerOverlay visible={isSubmitting} />
 
                     <Form>
                         <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-6`} />
                         <Field id={'description'} name={'description'} label={'Description'} type={'text'} css={tw`mb-6`} />
 
-                        <div css={tw`flex items-center gap-3`}>
-                            <NestDeleteButton nestId={nest.id} onDeleted={() => navigate('/admin/nests')} />
-                            <Button type="submit" className={'ml-auto'} disabled={isSubmitting || !isValid}>
-                                Save Changes
-                            </Button>
+                        <div css={tw`w-full flex flex-row items-center mt-6`}>
+                            <div css={tw`flex`}>
+                                <NestDeleteButton nestId={nest.id} onDeleted={() => navigate('/admin/nests')} />
+                            </div>
+
+                            <div css={tw`flex ml-auto`}>
+                                <Button type="submit" disabled={isSubmitting || !isValid}>
+                                    Save Changes
+                                </Button>
+                            </div>
                         </div>
                     </Form>
                 </AdminBox>
@@ -119,7 +119,7 @@ const NestSettings = () => {
     );
 };
 
-const NestSidebar = () => {
+const ViewDetailsContainer = () => {
     const nest = Context.useStoreState(state => state.nest);
 
     if (!nest) {
@@ -127,9 +127,9 @@ const NestSidebar = () => {
     }
 
     return (
-        <div css={tw`sticky top-6 space-y-4`}>
-            <AdminBox title={'Nest Details'}>
-                <div css={tw`space-y-4`}>
+        <AdminBox title={'Nest Details'} css={tw`flex-1 w-full relative ml-0 lg:ml-4`}>
+            <div>
+                <div>
                     <div>
                         <Label>ID</Label>
                         <CopyOnClick text={nest.id.toString()}>
@@ -137,35 +137,37 @@ const NestSidebar = () => {
                         </CopyOnClick>
                     </div>
 
-                    <div>
+                    <div css={tw`mt-6`}>
                         <Label>UUID</Label>
                         <CopyOnClick text={nest.uuid}>
                             <Input type={'text'} value={nest.uuid} readOnly />
                         </CopyOnClick>
                     </div>
 
-                    <div>
+                    <div css={tw`mt-6`}>
                         <Label>Author</Label>
                         <CopyOnClick text={nest.author}>
                             <Input type={'text'} value={nest.author} readOnly />
                         </CopyOnClick>
                     </div>
-                </div>
-            </AdminBox>
 
-            <AdminBox title={'Stats'}>
-                <div css={tw`text-sm text-neutral-300`}>{nest.relations.eggs?.length || 0} eggs in this nest</div>
-            </AdminBox>
-        </div>
+                    <div css={tw`mt-6 mb-2`}>
+                        <Label>Eggs In Nest</Label>
+                        <Input type={'text'} value={(nest.relations.eggs?.length || 0).toString()} readOnly />
+                    </div>
+                </div>
+            </div>
+        </AdminBox>
     );
 };
 
 const NestEditContainer = () => {
     const params = useParams<'nestId'>();
 
-    const { clearFlashes, clearAndAddHttpError } = useStoreActions((actions: Actions<ApplicationStore>) => actions.flashes);
+    const { clearFlashes, clearAndAddHttpError } = useStoreActions(
+        (actions: Actions<ApplicationStore>) => actions.flashes,
+    );
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'eggs' | 'settings'>('eggs');
 
     const nest = Context.useStoreState(state => state.nest);
     const setNest = Context.useStoreActions(actions => actions.setNest);
@@ -206,7 +208,15 @@ const NestEditContainer = () => {
             <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>{nest.name}</h2>
-                    <p css={tw`text-base text-neutral-400`}>{nest.description || 'No description'}</p>
+                    {(nest.description || '').length < 1 ? (
+                        <p css={tw`text-base text-neutral-400`}>
+                            <span css={tw`italic`}>No description</span>
+                        </p>
+                    ) : (
+                        <p css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}>
+                            {nest.description}
+                        </p>
+                    )}
                 </div>
 
                 <div css={tw`flex flex-row ml-auto pl-4`}>
@@ -222,22 +232,12 @@ const NestEditContainer = () => {
 
             <FlashMessageRender byKey={'nest'} css={tw`mb-4`} />
 
-            <div css={tw`grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-6 mb-8`}>
-                <div>
-                    <div css={tw`flex gap-2 mb-4`}>
-                        <Button.Text type={'button'} onClick={() => setActiveTab('eggs')}>
-                            Eggs
-                        </Button.Text>
-                        <Button.Text type={'button'} onClick={() => setActiveTab('settings')}>
-                            Settings
-                        </Button.Text>
-                    </div>
-
-                    {activeTab === 'eggs' ? <NestEggTable /> : <NestSettings />}
-                </div>
-
-                <NestSidebar />
+            <div css={tw`flex flex-col lg:flex-row mb-8`}>
+                <EditInformationContainer />
+                <ViewDetailsContainer />
             </div>
+
+            <NestEggTable />
         </AdminContentBlock>
     );
 };
