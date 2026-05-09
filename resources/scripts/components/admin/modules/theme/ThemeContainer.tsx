@@ -5,6 +5,7 @@ import { Dialog } from '@/elements/dialog';
 import Preview from '@admin/modules/theme/Preview';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import ColorSelect from '@admin/modules/theme/ColorSelect';
+import PresetManager from '@admin/modules/theme/PresetManager';
 import resetTheme from '@/api/routes/admin/theme/resetTheme';
 
 export default () => {
@@ -57,6 +58,9 @@ export default () => {
                         Reset to Defaults
                     </Button>
                 </div>
+            </div>
+            <div className={'mb-4'}>
+                <PresetManager onApplied={() => setReload(r => !r)} />
             </div>
             <div className={'grid gap-4 md:grid-cols-2 xl:grid-cols-3'}>
                 <ColorSelect setReload={setReload} />
