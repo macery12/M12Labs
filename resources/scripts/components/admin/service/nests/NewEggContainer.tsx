@@ -3,7 +3,7 @@ import { Form, Formik } from 'formik';
 import { useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
-import { object } from 'yup';
+import { object, string } from 'yup';
 
 import createEgg from '@/api/routes/admin/eggs/createEgg';
 import AdminContentBlock from '@/elements/AdminContentBlock';
@@ -89,7 +89,29 @@ export default () => {
                     configStartup: '{}',
                     configFiles: '{}',
                 }}
-                validationSchema={object().shape({})}
+                validationSchema={object().shape({
+                    name: string().required('An egg name is required.').min(1).max(191),
+                    startup: string().required('A startup command is required.'),
+                    dockerImages: string()
+                        .required('At least one Docker image is required.')
+                        .test('valid-images', 'Each line must be a valid Docker image (no spaces).', value =>
+                            (value || '')
+                                .split('\n')
+                                .filter(l => l.trim().length > 0)
+                                .every(l => /^[^\s]+$/.test(l.split('|')[0].trim())),
+                        ),
+                    configStop: string().required('A stop command is required.'),
+                    configStartup: string()
+                        .required()
+                        .test('valid-json', 'Startup configuration must be valid JSON.', value => {
+                            try { JSON.parse(value || ''); return true; } catch { return false; }
+                        }),
+                    configFiles: string()
+                        .required()
+                        .test('valid-json', 'Files configuration must be valid JSON.', value => {
+                            try { JSON.parse(value || ''); return true; } catch { return false; }
+                        }),
+                })}
             >
                 {({ isSubmitting, isValid }) => (
                     <Form>

@@ -32,8 +32,6 @@ export const validationSchema = object().shape({
 });
 
 export function EggVariableForm({ prefix, variable }: { prefix: string; variable?: EggVariable }) {
-    console.log(variable?.id === 5 && variable);
-
     return (
         <>
             <Field id={`${prefix}name`} name={`${prefix}name`} label={'Name'} type={'text'} css={tw`mb-6`} />
@@ -208,7 +206,7 @@ export default function EggVariablesContainer() {
                                                         relationships: {
                                                             ...egg!.relationships,
                                                             variables: egg!.relationships.variables!.filter(
-                                                                v2 => v.id === v2.id,
+                                                                v2 => v.id !== v2.id,
                                                             ),
                                                         },
                                                     }));
