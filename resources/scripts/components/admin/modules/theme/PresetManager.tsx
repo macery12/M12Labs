@@ -139,6 +139,7 @@ export default ({ onApplied }: Props) => {
                                         onClick={() => handleApply(preset)}
                                         disabled={applying === preset.id}
                                         className={'flex-1 whitespace-nowrap'}
+                                        style={{ backgroundColor: preset.colors.primary }}
                                     >
                                         {applying === preset.id ? (
                                             <Spinner size={'small'} />
