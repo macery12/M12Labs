@@ -9,6 +9,6 @@ class DeleteCustomDomainApiKeyRequest extends ApplicationApiRequest
 {
     public function permission(): string
     {
-        return AdminRole::BILLING_UPDATE;
+        return AdminRole::CUSTOM_DOMAINS_DELETE;
     }
 }

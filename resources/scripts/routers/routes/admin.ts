@@ -80,7 +80,7 @@ const admin: AdminRouteDefinition[] = [
         icon: Icon.GlobeAltIcon,
         category: 'modules',
         advanced: true,
-        permission: 'billing.read',
+        permission: 'custom-domains.read',
     }),
     route('tickets/*', TicketRouter, { name: 'Tickets', icon: Icon.TicketIcon, category: 'modules', advanced: true, permission: 'tickets.read' }),
     route('ai/*', AIRouter, { name: 'AI', icon: Icon.SparklesIcon, category: 'modules', advanced: true, permission: 'ai.read' }),
