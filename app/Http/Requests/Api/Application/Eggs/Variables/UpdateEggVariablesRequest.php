@@ -20,6 +20,7 @@ class UpdateEggVariablesRequest extends ApplicationApiRequest
             '*.user_viewable' => 'boolean',
             '*.user_editable' => 'boolean',
             '*.rules' => 'string',
+            '*.field_type' => 'sometimes|string|in:text,password,number,boolean',
         ];
     }
 

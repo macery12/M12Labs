@@ -1,19 +1,10 @@
 import { useContext, useEffect } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
+
 import type { Filters } from '@/api/routes/admin/nests/getEggs';
 import getEggs, { Context as EggsContext } from '@/api/routes/admin/nests/getEggs';
-import AdminTable, {
-    TableBody,
-    TableHead,
-    TableHeader,
-    TableRow,
-    Pagination,
-    Loading,
-    NoItems,
-    ContentWrapper,
-    useTableHooks,
-} from '@/elements/AdminTable';
+import AdminTable, { Pagination, Loading, NoItems, ContentWrapper, useTableHooks } from '@/elements/AdminTable';
 import CopyOnClick from '@/elements/CopyOnClick';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
@@ -21,10 +12,10 @@ import { useStoreState } from '@/state/hooks';
 const EggsTable = () => {
     const params = useParams<'nestId' | 'id'>();
 
-    const { setPage, setFilters, sort, setSort, sortDirection } = useContext(EggsContext);
+    const { setPage, setFilters } = useContext(EggsContext);
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { colors } = useStoreState(state => state.theme.data!);
-    const { data: eggs, error, isValidating } = getEggs(Number(params.nestId));
+    const { data: eggs, error, isValidating } = getEggs(Number(params.nestId), ['variables', 'servers']);
 
     useEffect(() => {
         if (!error) {
@@ -52,57 +43,47 @@ const EggsTable = () => {
         <AdminTable>
             <ContentWrapper onSearch={onSearch}>
                 <Pagination data={eggs} onPageSelect={setPage}>
-                    <div css={tw`overflow-x-auto`}>
-                        <table css={tw`w-full table-auto`}>
-                            <TableHead>
-                                <TableHeader
-                                    name={'ID'}
-                                    direction={sort === 'id' ? (sortDirection ? 1 : 2) : null}
-                                    onClick={() => setSort('id')}
-                                />
-                                <TableHeader
-                                    name={'Name'}
-                                    direction={sort === 'name' ? (sortDirection ? 1 : 2) : null}
-                                    onClick={() => setSort('name')}
-                                />
-                                <TableHeader name={'Description'} />
-                            </TableHead>
+                    {eggs === undefined || (error && isValidating) ? (
+                        <Loading />
+                    ) : length < 1 ? (
+                        <NoItems />
+                    ) : (
+                        <div css={tw`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5`}>
+                            {eggs.items.map(egg => (
+                                <div
+                                    key={egg.id}
+                                    css={tw`rounded-lg border border-neutral-700 bg-neutral-800/70 p-4 hover:border-neutral-500 transition`}
+                                >
+                                    <div css={tw`flex items-start justify-between gap-2`}>
+                                        <NavLink
+                                            to={`/admin/nests/${params.nestId}/eggs/${egg.id}`}
+                                            style={{ color: colors.primary }}
+                                            className={'text-base font-semibold hover:brightness-125'}
+                                        >
+                                            {egg.name}
+                                        </NavLink>
+                                        <CopyOnClick text={egg.id.toString()}>
+                                            <span css={tw`text-xs rounded bg-neutral-900 px-2 py-1 cursor-pointer`}>#{egg.id}</span>
+                                        </CopyOnClick>
+                                    </div>
 
-                            <TableBody>
-                                {eggs !== undefined &&
-                                    !error &&
-                                    !isValidating &&
-                                    length > 0 &&
-                                    eggs.items.map(egg => (
-                                        <TableRow key={egg.id}>
-                                            <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                <CopyOnClick text={egg.id.toString()}>
-                                                    <code css={tw`font-mono bg-neutral-900 rounded py-1 px-2`}>
-                                                        {egg.id}
-                                                    </code>
-                                                </CopyOnClick>
-                                            </td>
+                                    <p css={tw`text-sm text-neutral-400 mt-2 h-10 overflow-hidden`}>
+                                        {egg.description || 'No description'}
+                                    </p>
 
-                                            <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                <NavLink
-                                                    to={`/admin/nests/${params.nestId}/eggs/${egg.id}`}
-                                                    style={{ color: colors.primary }}
-                                                    className={'duration-300 hover:brightness-125'}
-                                                >
-                                                    {egg.name}
-                                                </NavLink>
-                                            </td>
-
-                                            <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                {egg.description}
-                                            </td>
-                                        </TableRow>
-                                    ))}
-                            </TableBody>
-                        </table>
-
-                        {eggs === undefined || (error && isValidating) ? <Loading /> : length < 1 ? <NoItems /> : null}
-                    </div>
+                                    <div css={tw`flex flex-wrap gap-2 mt-3 text-xs`}>
+                                        <span css={tw`rounded bg-neutral-900 px-2 py-1`}>{Object.keys(egg.dockerImages).length} Images</span>
+                                        <span css={tw`rounded bg-neutral-900 px-2 py-1`}>
+                                            {egg.relations.variables?.length || 0} Variables
+                                        </span>
+                                        <span css={tw`rounded bg-neutral-900 px-2 py-1`}>
+                                            {egg.relations.servers?.length || 0} Servers
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </Pagination>
             </ContentWrapper>
         </AdminTable>

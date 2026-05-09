@@ -21,6 +21,22 @@ export default ({ className }: { className?: string }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [content, setContent] = useState<string | undefined>(undefined);
 
+    const download = () => {
+        if (!content) {
+            return;
+        }
+
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `egg-${params.id}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    };
+
     useEffect(() => {
         if (!visible) {
             return;
@@ -66,10 +82,11 @@ export default ({ className }: { className?: string }) => {
 
                     <Button
                         css={tw`w-full sm:w-auto mt-4 sm:mt-0`}
-                        // onClick={submit}
-                        // TODO: When clicked, save as a JSON file.
+                        type={'button'}
+                        onClick={download}
+                        disabled={!content}
                     >
-                        Save
+                        Download JSON
                     </Button>
                 </div>
             </Modal>

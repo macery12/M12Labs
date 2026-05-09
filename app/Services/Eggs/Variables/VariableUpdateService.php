@@ -62,6 +62,7 @@ class VariableUpdateService
         }
 
         $options = array_get($data, 'options') ?? [];
+        $fieldType = array_get($data, 'field_type', 'text');
 
         $egg->variables()->where('egg_variables.id', $data['id'])->update([
             'name' => $data['name'] ?? '',
@@ -71,6 +72,7 @@ class VariableUpdateService
             'user_viewable' => $data['user_viewable'],
             'user_editable' => $data['user_editable'],
             'rules' => $data['rules'] ?? '',
+            'field_type' => in_array($fieldType, ['text', 'password', 'number', 'boolean']) ? $fieldType : 'text',
         ]);
     }
 }

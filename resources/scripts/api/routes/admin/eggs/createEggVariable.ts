@@ -12,6 +12,7 @@ export default async (eggId: number, variable: CreateEggVariable): Promise<EggVa
         default_value: variable.defaultValue,
         user_viewable: variable.isUserViewable,
         user_editable: variable.isUserEditable,
+        field_type: variable.fieldType,
         rules: variable.rules,
     });
 

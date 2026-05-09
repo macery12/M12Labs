@@ -46,6 +46,7 @@ class VariableCreationService
         }
 
         $options = array_get($data, 'options') ?? [];
+        $fieldType = array_get($data, 'field_type', 'text');
 
         return $this->repository->create([
             'egg_id' => $egg,
@@ -56,6 +57,7 @@ class VariableCreationService
             'user_viewable' => in_array('user_viewable', $options),
             'user_editable' => in_array('user_editable', $options),
             'rules' => $data['rules'] ?? '',
+            'field_type' => in_array($fieldType, ['text', 'password', 'number', 'boolean']) ? $fieldType : 'text',
         ]);
     }
 }

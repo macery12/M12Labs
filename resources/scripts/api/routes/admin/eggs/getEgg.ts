@@ -12,6 +12,7 @@ export interface EggVariable {
     defaultValue: string;
     userViewable: boolean;
     userEditable: boolean;
+    fieldType: 'text' | 'password' | 'number' | 'boolean';
     rules: string;
     createdAt: Date;
     updatedAt: Date;
@@ -26,6 +27,7 @@ export const rawDataToEggVariable = ({ attributes }: FractalResponseData): EggVa
     defaultValue: attributes.default_value,
     userViewable: attributes.user_viewable,
     userEditable: attributes.user_editable,
+    fieldType: attributes.field_type || 'text',
     rules: attributes.rules,
     createdAt: new Date(attributes.created_at),
     updatedAt: new Date(attributes.updated_at),
@@ -40,6 +42,9 @@ export interface Egg {
     description: string | null;
     features: string[] | null;
     dockerImages: Record<string, string>;
+    fileDenylist: string[];
+    forceOutgoingIp: boolean;
+    updateUrl: string | null;
     configFiles: Record<string, any> | null;
     configStartup: Record<string, any> | null;
     configStop: string | null;
@@ -69,6 +74,9 @@ export const rawDataToEgg = ({ attributes }: FractalResponseData): Egg => ({
     description: attributes.description,
     features: attributes.features,
     dockerImages: attributes.docker_images,
+    fileDenylist: attributes.config?.file_denylist || [],
+    forceOutgoingIp: !!attributes.force_outgoing_ip,
+    updateUrl: attributes.update_url ?? null,
     configFiles: attributes.config?.files,
     configStartup: attributes.config?.startup,
     configStop: attributes.config?.stop,

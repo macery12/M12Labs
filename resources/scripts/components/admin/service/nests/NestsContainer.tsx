@@ -1,20 +1,11 @@
 import { useContext, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
+
 import type { Filters } from '@/api/routes/admin/nests/getNests';
 import getNests, { Context as NestsContext } from '@/api/routes/admin/nests/getNests';
 import AdminContentBlock from '@/elements/AdminContentBlock';
-import AdminTable, {
-    TableBody,
-    TableHead,
-    TableHeader,
-    TableRow,
-    Pagination,
-    Loading,
-    NoItems,
-    ContentWrapper,
-    useTableHooks,
-} from '@/elements/AdminTable';
+import AdminTable, { Pagination, Loading, NoItems, ContentWrapper, useTableHooks } from '@/elements/AdminTable';
 import CopyOnClick from '@/elements/CopyOnClick';
 import NewNestButton from '@admin/service/nests/NewNestButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -22,10 +13,10 @@ import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 
 const NestsContainer = () => {
-    const { setPage, setFilters, sort, setSort, sortDirection } = useContext(NestsContext);
+    const { setPage, setFilters } = useContext(NestsContext);
     const { colors } = useStoreState(state => state.theme.data!);
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const { data: nests, error, isValidating } = getNests();
+    const { data: nests, error, isValidating } = getNests(['eggs']);
 
     useEffect(() => {
         if (!error) {
@@ -54,11 +45,7 @@ const NestsContainer = () => {
             <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>Nests</h2>
-                    <p
-                        css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
-                    >
-                        All nests currently available on this system.
-                    </p>
+                    <p css={tw`hidden md:block text-base text-neutral-400`}>Browse nests and jump directly into egg management.</p>
                 </div>
 
                 <div css={tw`flex ml-auto pl-4`}>
@@ -71,61 +58,52 @@ const NestsContainer = () => {
             <AdminTable>
                 <ContentWrapper onSearch={onSearch}>
                     <Pagination data={nests} onPageSelect={setPage}>
-                        <div css={tw`overflow-x-auto`}>
-                            <table css={tw`w-full table-auto`}>
-                                <TableHead>
-                                    <TableHeader
-                                        name={'ID'}
-                                        direction={sort === 'id' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('id')}
-                                    />
-                                    <TableHeader
-                                        name={'Name'}
-                                        direction={sort === 'name' ? (sortDirection ? 1 : 2) : null}
-                                        onClick={() => setSort('name')}
-                                    />
-                                    <TableHeader name={'Description'} />
-                                </TableHead>
+                        {nests === undefined || (error && isValidating) ? (
+                            <Loading />
+                        ) : length < 1 ? (
+                            <NoItems />
+                        ) : (
+                            <div css={tw`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5`}>
+                                {nests.items.map(nest => (
+                                    <div
+                                        key={nest.id}
+                                        css={tw`rounded-lg border border-neutral-700 bg-neutral-800/60 p-4 hover:border-neutral-500 transition`}
+                                    >
+                                        <div css={tw`flex items-start gap-3 mb-3`}>
+                                            <div css={tw`text-xl`}>Egg</div>
+                                            <div css={tw`flex-1 min-w-0`}>
+                                                <NavLink
+                                                    to={`/admin/nests/${nest.id}`}
+                                                    style={{ color: colors.primary }}
+                                                    className={'text-lg font-semibold hover:brightness-125'}
+                                                >
+                                                    {nest.name}
+                                                </NavLink>
+                                                <p css={tw`text-sm text-neutral-400 mt-1 line-clamp-2`}>
+                                                    {nest.description || 'No description'}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                <TableBody>
-                                    {nests !== undefined &&
-                                        !error &&
-                                        !isValidating &&
-                                        length > 0 &&
-                                        nests.items.map(nest => (
-                                            <TableRow key={nest.id}>
-                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                    <CopyOnClick text={nest.id.toString()}>
-                                                        <code css={tw`font-mono bg-neutral-900 rounded py-1 px-2`}>
-                                                            {nest.id}
-                                                        </code>
-                                                    </CopyOnClick>
-                                                </td>
+                                        <div css={tw`flex items-center gap-3 text-xs text-neutral-300 mb-3`}>
+                                            <span css={tw`rounded bg-neutral-900 px-2 py-1`}>{nest.relations.eggs?.length || 0} Eggs</span>
+                                            <CopyOnClick text={nest.id.toString()}>
+                                                <span css={tw`rounded bg-neutral-900 px-2 py-1 cursor-pointer`}>ID #{nest.id}</span>
+                                            </CopyOnClick>
+                                        </div>
 
-                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                    <NavLink
-                                                        to={`/admin/nests/${nest.id}`}
-                                                        style={{ color: colors.primary }}
-                                                        className={'duration-300 hover:brightness-125'}
-                                                    >
-                                                        {nest.name}
-                                                    </NavLink>
-                                                </td>
-
-                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                    {nest.description}
-                                                </td>
-                                            </TableRow>
-                                        ))}
-                                </TableBody>
-                            </table>
-
-                            {nests === undefined || (error && isValidating) ? (
-                                <Loading />
-                            ) : length < 1 ? (
-                                <NoItems />
-                            ) : null}
-                        </div>
+                                        <NavLink to={`/admin/nests/${nest.id}`}>
+                                            <button
+                                                type={'button'}
+                                                css={tw`w-full rounded px-3 py-2 text-sm bg-neutral-900 border border-neutral-600 hover:border-neutral-400`}
+                                            >
+                                                View Nest
+                                            </button>
+                                        </NavLink>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </Pagination>
                 </ContentWrapper>
             </AdminTable>

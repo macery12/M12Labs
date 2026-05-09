@@ -18,6 +18,7 @@ class StoreEggVariableRequest extends ApplicationApiRequest
             'user_viewable' => 'required|boolean',
             'user_editable' => 'required|boolean',
             'rules' => 'bail|required|string',
+            'field_type' => 'sometimes|string|in:text,password,number,boolean',
         ];
     }
 

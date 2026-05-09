@@ -1,0 +1,118 @@
+import { TrashIcon } from '@heroicons/react/outline';
+import { useFormikContext } from 'formik';
+import { useEffect, useMemo, useState } from 'react';
+import tw from 'twin.macro';
+
+import Label from '@/elements/Label';
+import Input from '@/elements/Input';
+import { Button } from '@/elements/button';
+
+interface DockerRow {
+    image: string;
+    alias: string;
+}
+
+interface Props {
+    name: string;
+    label?: string;
+}
+
+const parseRows = (raw: string): DockerRow[] => {
+    const lines = raw
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    if (lines.length < 1) {
+        return [{ image: '', alias: '' }];
+    }
+
+    return lines.map(line => {
+        const [imageRaw, aliasRaw] = line.split('|');
+        const image = (imageRaw || '').trim();
+        const alias = (aliasRaw || image).trim();
+
+        return { image, alias };
+    });
+};
+
+const stringifyRows = (rows: DockerRow[]): string => {
+    return rows
+        .filter(row => row.image.trim().length > 0)
+        .map(row => {
+            const image = row.image.trim();
+            const alias = row.alias.trim() || image;
+
+            return `${image}|${alias}`;
+        })
+        .join('\n');
+};
+
+export default function DockerImageManager({ name, label = 'Docker Images' }: Props) {
+    const { values, setFieldValue } = useFormikContext<any>();
+    const value = useMemo(() => String(values[name] || ''), [values, name]);
+    const [rows, setRows] = useState<DockerRow[]>(() => parseRows(value));
+
+    useEffect(() => {
+        setRows(parseRows(value));
+    }, [value]);
+
+    const updateRows = (next: DockerRow[]) => {
+        setRows(next);
+        setFieldValue(name, stringifyRows(next));
+    };
+
+    const setRow = (index: number, patch: Partial<DockerRow>) => {
+        const next = [...rows];
+        next[index] = { ...next[index], ...patch };
+        updateRows(next);
+    };
+
+    return (
+        <div>
+            <Label>{label}</Label>
+
+            <div css={tw`space-y-3 mt-2`}>
+                {rows.map((row, index) => (
+                    <div key={index} css={tw`grid grid-cols-1 md:grid-cols-[2fr_1.5fr_auto] gap-2 items-center`}>
+                        <Input
+                            type={'text'}
+                            placeholder={'ghcr.io/pterodactyl/yolks:java_17'}
+                            value={row.image}
+                            onChange={e => setRow(index, { image: e.currentTarget.value })}
+                        />
+
+                        <Input
+                            type={'text'}
+                            placeholder={'Alias (defaults to image)'}
+                            value={row.alias}
+                            onChange={e => setRow(index, { alias: e.currentTarget.value })}
+                        />
+
+                        <Button.Text
+                            type={'button'}
+                            css={tw`px-3 py-2 justify-center`}
+                            disabled={rows.length < 2}
+                            onClick={() => updateRows(rows.filter((_, i) => i !== index))}
+                        >
+                            <TrashIcon className={'h-4 w-4'} />
+                        </Button.Text>
+                    </div>
+                ))}
+            </div>
+
+            <div css={tw`flex items-center mt-3 gap-3`}>
+                <Button.Text
+                    type={'button'}
+                    onClick={() => updateRows([...rows, { image: '', alias: '' }])}
+                    css={tw`px-3 py-2`}
+                >
+                    Add Image
+                </Button.Text>
+                <p css={tw`text-xs text-neutral-400`}>
+                    The first valid row is treated as default when aliases are duplicated.
+                </p>
+            </div>
+        </div>
+    );
+}
