@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Requests\Api\Application\Extensions;
 
+use Everest\Models\AdminRole;
 use Everest\Http\Requests\Api\Application\ApplicationApiRequest;
 
 class UpdateExtensionRequest extends ApplicationApiRequest
@@ -16,5 +17,10 @@ class UpdateExtensionRequest extends ApplicationApiRequest
             'allowed_eggs.*' => 'integer|exists:eggs,id',
             'settings' => 'sometimes|array',
         ];
+    }
+
+    public function permission(): string
+    {
+        return AdminRole::EXTENSIONS_UPDATE;
     }
 }

@@ -47,12 +47,12 @@ class EmailController extends ApplicationApiController
     /**
      * Get current email settings from database.
      */
-    public function getSettings(): JsonResponse
+    public function getSettings(GetEmailNotificationSettingsRequest $request): JsonResponse
     {
         return response()->json($this->settings->adminSettings());
     }
 
-    public function getVerificationRules(): JsonResponse
+    public function getVerificationRules(GetEmailNotificationSettingsRequest $request): JsonResponse
     {
         return response()->json($this->verificationGate->getRules());
     }

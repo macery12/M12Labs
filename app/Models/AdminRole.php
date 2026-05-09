@@ -163,6 +163,12 @@ class AdminRole extends Model
     public const MOUNTS_UPDATE = 'mounts.update';
     public const MOUNTS_DELETE = 'mounts.delete';
 
+    public const EXTENSIONS_READ = 'extensions.read';
+    public const EXTENSIONS_INSTALL = 'extensions.install';
+    public const EXTENSIONS_UPDATE = 'extensions.update';
+    public const EXTENSIONS_DELETE = 'extensions.delete';
+    public const EXTENSIONS_REPOSITORIES = 'extensions.repositories';
+
     /**
      * All the permissions available on the system. You should use self::permissions()
      * to retrieve them, and not directly access this array as it is subject to change.
@@ -367,6 +373,16 @@ class AdminRole extends Model
                 'create' => 'Create a new mount.',
                 'update' => 'Update an existing mount.',
                 'delete' => 'Delete an existing mount.',
+            ],
+        ],
+        'extensions' => [
+            'description' => 'Permissions to configure extensions.',
+            'keys' => [
+                'read' => 'View the current extensions and repositories.',
+                'install' => 'Install or update an extension.',
+                'update' => 'Update extension settings or toggle extensions.',
+                'delete' => 'Uninstall an extension.',
+                'repositories' => 'Add, edit, or remove extension repositories.',
             ],
         ],
     ];

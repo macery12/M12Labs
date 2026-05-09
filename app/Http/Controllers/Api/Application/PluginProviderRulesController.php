@@ -7,13 +7,14 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\PluginProviderRule;
 use Illuminate\Support\Facades\Cache;
 use Everest\Http\Requests\Api\Application\Plugins\UpdatePluginProviderRulesRequest;
+use Everest\Http\Requests\Api\Application\Mods\GetModsAnalyticsRequest;
 
 class PluginProviderRulesController extends ApplicationApiController
 {
     private const CACHE_KEY = 'plugins:nests-eggs';
     private const CACHE_SECONDS = 300;
 
-    public function index(): JsonResponse
+    public function index(GetModsAnalyticsRequest $request): JsonResponse
     {
         $nests = Cache::remember(self::CACHE_KEY, self::CACHE_SECONDS, function () {
             return Nest::query()->with('eggs:id,nest_id,name')->get(['id', 'name']);

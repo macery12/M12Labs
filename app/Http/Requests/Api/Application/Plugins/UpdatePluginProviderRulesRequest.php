@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Requests\Api\Application\Plugins;
 
+use Everest\Models\AdminRole;
 use Everest\Http\Requests\Api\Application\ApplicationApiRequest;
 
 class UpdatePluginProviderRulesRequest extends ApplicationApiRequest
@@ -16,5 +17,10 @@ class UpdatePluginProviderRulesRequest extends ApplicationApiRequest
             'allowed_egg_ids' => 'array',
             'allowed_egg_ids.*' => 'integer',
         ];
+    }
+
+    public function permission(): string
+    {
+        return AdminRole::MODS_UPDATE;
     }
 }
