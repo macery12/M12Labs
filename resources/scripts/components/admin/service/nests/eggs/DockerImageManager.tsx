@@ -72,33 +72,52 @@ export default function DockerImageManager({ name, label = 'Docker Images' }: Pr
         <div>
             <Label>{label}</Label>
 
-            <div css={tw`space-y-3 mt-2`}>
-                {rows.map((row, index) => (
-                    <div key={index} css={tw`grid grid-cols-1 md:grid-cols-[2fr_1.5fr_auto] gap-2 items-center`}>
-                        <Input
-                            type={'text'}
-                            placeholder={'ghcr.io/pterodactyl/yolks:java_17'}
-                            value={row.image}
-                            onChange={e => setRow(index, { image: e.currentTarget.value })}
-                        />
+            <div css={tw`mt-2 rounded border border-neutral-700 overflow-x-auto`}>
+                <table css={tw`w-full text-sm`}>
+                    <thead css={tw`bg-neutral-900/80 border-b border-neutral-700`}>
+                        <tr>
+                            <th css={tw`text-left font-medium text-neutral-300 px-3 py-2 w-3/5`}>Image URL</th>
+                            <th css={tw`text-left font-medium text-neutral-300 px-3 py-2 w-1/3`}>Label</th>
+                            <th css={tw`text-center font-medium text-neutral-300 px-3 py-2 w-16`}>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((row, index) => (
+                            <tr key={index} css={tw`border-b border-neutral-800 last:border-b-0`}>
+                                <td css={tw`px-3 py-2`}>
+                                    <Input
+                                        type={'text'}
+                                        css={tw`h-9 text-sm`}
+                                        placeholder={'ghcr.io/pterodactyl/yolks:java_17'}
+                                        value={row.image}
+                                        onChange={e => setRow(index, { image: e.currentTarget.value })}
+                                    />
+                                </td>
 
-                        <Input
-                            type={'text'}
-                            placeholder={'Alias (defaults to image)'}
-                            value={row.alias}
-                            onChange={e => setRow(index, { alias: e.currentTarget.value })}
-                        />
+                                <td css={tw`px-3 py-2`}>
+                                    <Input
+                                        type={'text'}
+                                        css={tw`h-9 text-sm`}
+                                        placeholder={'java_17'}
+                                        value={row.alias}
+                                        onChange={e => setRow(index, { alias: e.currentTarget.value })}
+                                    />
+                                </td>
 
-                        <Button.Text
-                            type={'button'}
-                            css={tw`px-3 py-2 justify-center`}
-                            disabled={rows.length < 2}
-                            onClick={() => updateRows(rows.filter((_, i) => i !== index))}
-                        >
-                            <TrashIcon className={'h-4 w-4'} />
-                        </Button.Text>
-                    </div>
-                ))}
+                                <td css={tw`px-3 py-2 text-center`}>
+                                    <Button.Text
+                                        type={'button'}
+                                        css={tw`px-2 py-2 justify-center`}
+                                        disabled={rows.length < 2}
+                                        onClick={() => updateRows(rows.filter((_, i) => i !== index))}
+                                    >
+                                        <TrashIcon className={'h-4 w-4'} />
+                                    </Button.Text>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
 
             <div css={tw`flex items-center mt-3 gap-3`}>

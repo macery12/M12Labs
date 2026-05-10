@@ -41,6 +41,20 @@ function parseRules(input: string): string[] {
         .filter(rule => rule.length > 0);
 }
 
+function typeBadgeStyles(type: EggVariable['fieldType']) {
+    switch (type) {
+        case 'password':
+            return tw`bg-red-500/10 text-red-300 border border-red-500/40`;
+        case 'number':
+            return tw`bg-blue-500/10 text-blue-300 border border-blue-500/40`;
+        case 'boolean':
+            return tw`bg-yellow-500/10 text-yellow-300 border border-yellow-500/40`;
+        case 'text':
+        default:
+            return tw`bg-green-500/10 text-green-300 border border-green-500/40`;
+    }
+}
+
 function RulesBuilder({ prefix }: { prefix: string }) {
     const { values, setFieldValue } = useFormikContext<any>();
     const current = parseRules(values[`${prefix}rules`] || '');
@@ -241,16 +255,47 @@ function EggVariableBox({
     onDrop: (index: number) => void;
 }) {
     const { isSubmitting } = useFormikContext();
+    const rules = parseRules(variable.rules || '');
+    const isRequired = rules.includes('required');
+    const defaultValue = variable.defaultValue?.trim() || 'none';
 
     return (
         <div draggable onDragStart={() => onDragStart(index)} onDragOver={e => e.preventDefault()} onDrop={() => onDrop(index)}>
             <AdminBox
                 css={tw`relative w-full`}
                 title={
-                    <button type={'button'} onClick={onToggle} css={tw`w-full flex items-center text-left`}>
-                        <div css={tw`text-sm uppercase font-semibold`}>{variable.environmentVariable || variable.name}</div>
-                        <div css={tw`ml-3 text-xs text-neutral-400`}>{variable.fieldType}</div>
-                        <div css={tw`ml-auto`}>{expanded ? <ChevronUpIcon className={'h-4 w-4'} /> : <ChevronDownIcon className={'h-4 w-4'} />}</div>
+                    <button type={'button'} onClick={onToggle} css={tw`w-full flex items-start text-left`}>
+                        <div css={tw`min-w-0`}>
+                            <div css={tw`text-sm uppercase font-semibold truncate`}>
+                                {variable.environmentVariable || variable.name}
+                            </div>
+                            <div css={tw`mt-2 flex flex-wrap gap-2 text-xs`}>
+                                <span css={[tw`px-2 py-0.5 rounded`, typeBadgeStyles(variable.fieldType)]}>
+                                    {variable.fieldType}
+                                </span>
+                                <span css={tw`px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700`}>
+                                    default: {defaultValue}
+                                </span>
+                                {isRequired ? (
+                                    <span css={tw`px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/40`}>
+                                        Required
+                                    </span>
+                                ) : null}
+                                {variable.isUserViewable ? (
+                                    <span css={tw`px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/40`}>
+                                        Viewable
+                                    </span>
+                                ) : null}
+                                {variable.isUserEditable ? (
+                                    <span css={tw`px-2 py-0.5 rounded bg-green-500/10 text-green-300 border border-green-500/40`}>
+                                        Editable
+                                    </span>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div css={tw`ml-auto mt-1`}>
+                            {expanded ? <ChevronUpIcon className={'h-4 w-4'} /> : <ChevronDownIcon className={'h-4 w-4'} />}
+                        </div>
                     </button>
                 }
                 button={<EggVariableDeleteButton onClick={onDeleteClick} />}
@@ -292,7 +337,7 @@ export default function EggVariablesContainer() {
                         {values?.length === 0 ? (
                             <NoItems css={tw`bg-neutral-700 rounded-md shadow-md`} />
                         ) : (
-                            <div css={tw`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-6`}>
+                            <div css={tw`space-y-4`}>
                                 {values.map((v, i) => (
                                     <EggVariableBox
                                         key={v.id || i}

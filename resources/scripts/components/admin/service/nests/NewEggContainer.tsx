@@ -1,13 +1,11 @@
 import type { FormikHelpers } from 'formik';
 import { Form, Formik } from 'formik';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
 import { array, object, string } from 'yup';
 
 import createEgg from '@/api/routes/admin/eggs/createEgg';
-import type { Egg as EggType } from '@/api/routes/admin/egg';
-import { searchEggs } from '@/api/routes/admin/egg';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import type { EggProcessContainerRef } from '@admin/service/nests/eggs/EggSettingsContainer';
 import {
@@ -21,7 +19,6 @@ import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
 import Field from '@/elements/Field';
-import Label from '@/elements/Label';
 
 interface Values {
     name: string;
@@ -31,8 +28,6 @@ interface Values {
     configStop: string;
     configStartup: string;
     configFiles: string;
-    configFrom: number | null;
-    copyScriptFrom: number | null;
     updateUrl: string;
     features: string[];
     fileDenylist: string[];
@@ -43,41 +38,11 @@ interface Values {
     scriptIsPrivileged: boolean;
 }
 
-function EggSelectionContainer({
-    inheritanceOptions,
-}: {
-    inheritanceOptions: EggType[];
-}) {
+function EggSelectionContainer() {
     return (
-        <AdminBox title={'Egg Selection & Inheritance'} css={tw`mb-6`}>
+        <AdminBox title={'Egg Details'} css={tw`mb-6`}>
             <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-6`} />
             <Field id={'description'} name={'description'} label={'Description'} type={'text'} css={tw`mb-6`} />
-
-            <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6`}>
-                <div>
-                    <Label htmlFor={'configFrom'}>Inherit Configuration From</Label>
-                    <Field as={'select'} id={'configFrom'} name={'configFrom'} css={tw`w-full mt-2`}>
-                        <option value={''}>None</option>
-                        {inheritanceOptions.map(opt => (
-                            <option key={opt.id} value={opt.id}>
-                                {opt.name} (#{opt.id})
-                            </option>
-                        ))}
-                    </Field>
-                </div>
-
-                <div>
-                    <Label htmlFor={'copyScriptFrom'}>Inherit Script From</Label>
-                    <Field as={'select'} id={'copyScriptFrom'} name={'copyScriptFrom'} css={tw`w-full mt-2`}>
-                        <option value={''}>None</option>
-                        {inheritanceOptions.map(opt => (
-                            <option key={opt.id} value={opt.id}>
-                                {opt.name} (#{opt.id})
-                            </option>
-                        ))}
-                    </Field>
-                </div>
-            </div>
         </AdminBox>
     );
 }
@@ -89,18 +54,6 @@ export default function NewEggContainer() {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
 
     const ref = useRef<EggProcessContainerRef>();
-    const [inheritanceOptions, setInheritanceOptions] = useState<EggType[]>([]);
-
-    useEffect(() => {
-        const nestId = Number(params.nestId);
-        if (!nestId) {
-            return;
-        }
-
-        searchEggs(nestId, { perPage: 200 })
-            .then(setInheritanceOptions)
-            .catch(() => setInheritanceOptions([]));
-    }, [params.nestId]);
 
     const submit = async (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes('egg:create');
@@ -156,8 +109,6 @@ export default function NewEggContainer() {
                     configStop: 'stop',
                     configStartup: JSON.stringify({ done: [], strip_ansi: false, user_interaction: [] }, null, 2),
                     configFiles: '{}',
-                    configFrom: null,
-                    copyScriptFrom: null,
                     updateUrl: '',
                     features: [],
                     fileDenylist: [],
@@ -184,7 +135,7 @@ export default function NewEggContainer() {
             >
                 {({ isSubmitting, isValid }) => (
                     <Form>
-                        <EggSelectionContainer inheritanceOptions={inheritanceOptions} />
+                        <EggSelectionContainer />
 
                         <EggStartupContainer css={tw`mb-6`} />
 
