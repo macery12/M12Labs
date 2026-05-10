@@ -234,6 +234,8 @@ interface AboutValues {
     updateUrl: string;
     startup: string;
     configStop: string;
+    configStartup: string;
+    configFiles: string;
 }
 
 interface DockerValues {
@@ -452,8 +454,8 @@ export default function EggSettingsContainer() {
             updateUrl: values.updateUrl || null,
             startup: values.startup,
             configStop: values.configStop,
-            configStartup: (await ref.current?.getStartupConfiguration()) ?? '',
-            configFiles: (await ref.current?.getFilesConfiguration()) ?? '',
+            configStartup: (await ref.current?.getStartupConfiguration()) ?? values.configStartup,
+            configFiles: (await ref.current?.getFilesConfiguration()) ?? values.configFiles,
         })
             .catch(error => {
                 clearAndAddHttpError({ key: 'egg', error });
@@ -473,6 +475,8 @@ export default function EggSettingsContainer() {
                 updateUrl: egg.updateUrl || '',
                 startup: egg.startup,
                 configStop: egg.configStop || '',
+                configStartup: JSON.stringify(egg.configStartup, null, '\t') || '',
+                configFiles: JSON.stringify(egg.configFiles, null, '\t') || '',
             }}
             validationSchema={object().shape({
                 name: string().required().min(1).max(191),
