@@ -15,6 +15,7 @@ import NewVariableButton from '@admin/service/nests/eggs/NewVariableButton';
 import AdminBox from '@/elements/AdminBox';
 import { Button } from '@/elements/button';
 import Field, { FieldRow, TextareaField } from '@/elements/Field';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import useFlash from '@/plugins/useFlash';
 import Label from '@/elements/Label';
@@ -308,7 +309,7 @@ function EggVariableBox({
 }
 
 export default function EggVariablesContainer() {
-    const { clearAndAddHttpError } = useFlash();
+    const { addFlash, clearAndAddHttpError } = useFlash();
     const { data: egg, mutate } = useEggFromRoute();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
     const [expanded, setExpanded] = useState<number[]>([]);
@@ -322,7 +323,10 @@ export default function EggVariablesContainer() {
         updateEggVariables(egg.id, values)
             .then(async () => await mutate())
             .catch(error => clearAndAddHttpError({ key: 'egg', error }))
-            .then(() => setSubmitting(false));
+            .then(() => {
+                addFlash({ key: 'egg', type: 'success', title: 'Saved', message: 'Variables saved successfully.' });
+                setSubmitting(false);
+            });
     };
 
     return (
@@ -333,58 +337,11 @@ export default function EggVariablesContainer() {
         >
             {({ isSubmitting, isValid, values, setValues }) => (
                 <Form>
-                    <div css={tw`flex flex-col mb-16`}>
-                        {values?.length === 0 ? (
-                            <NoItems css={tw`bg-neutral-700 rounded-md shadow-md`} />
-                        ) : (
-                            <div css={tw`space-y-4`}>
-                                {values.map((v, i) => (
-                                    <EggVariableBox
-                                        key={v.id || i}
-                                        index={i}
-                                        prefix={`[${i}].`}
-                                        variable={v}
-                                        expanded={expanded.includes(i)}
-                                        onToggle={() =>
-                                            setExpanded(list =>
-                                                list.includes(i) ? list.filter(item => item !== i) : [...list, i],
-                                            )
-                                        }
-                                        onDragStart={index => setDragging(index)}
-                                        onDrop={index => {
-                                            if (dragging === null || dragging === index) {
-                                                return;
-                                            }
+                    <FlashMessageRender byKey={'egg'} className={'mb-4'} />
 
-                                            const next = [...values];
-                                            const [moved] = next.splice(dragging, 1);
-                                            next.splice(index, 0, moved);
-                                            setValues(next);
-                                            setDragging(null);
-                                        }}
-                                        onDeleteClick={success => {
-                                            deleteEggVariable(egg.id, v.id)
-                                                .then(async () => {
-                                                    await mutate(current => ({
-                                                        ...current!,
-                                                        relationships: {
-                                                            ...current!.relationships,
-                                                            variables: current!.relationships.variables!.filter(
-                                                                variable => variable.id !== v.id,
-                                                            ),
-                                                        },
-                                                    }));
-                                                    success();
-                                                })
-                                                .catch(error => clearAndAddHttpError({ key: 'egg', error }));
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        )}
-
-                        <div css={tw`rounded shadow-md py-2 px-4 mt-6`} style={{ backgroundColor: secondary }}>
-                            <div css={tw`flex flex-row gap-3 flex-wrap`}>
+                    <div css={tw`rounded-lg border border-neutral-700 shadow-lg overflow-hidden mb-16`} style={{ backgroundColor: secondary }}>
+                        <div css={tw`px-4 xl:px-5 py-3 border-b border-neutral-700`}>
+                            <div css={tw`flex flex-row gap-3 flex-wrap items-center`}>
                                 <NewVariableButton />
 
                                 <Button.Text type={'button'} onClick={() => setExpanded(values.map((_, i) => i))}>
@@ -399,6 +356,57 @@ export default function EggVariablesContainer() {
                                     Save Changes
                                 </Button>
                             </div>
+                        </div>
+
+                        <div css={tw`px-4 xl:px-5 py-5`}>
+                            {values?.length === 0 ? (
+                                <NoItems css={tw`bg-neutral-700 rounded-md shadow-md`} />
+                            ) : (
+                                <div css={tw`space-y-4`}>
+                                    {values.map((v, i) => (
+                                        <EggVariableBox
+                                            key={v.id || i}
+                                            index={i}
+                                            prefix={`[${i}].`}
+                                            variable={v}
+                                            expanded={expanded.includes(i)}
+                                            onToggle={() =>
+                                                setExpanded(list =>
+                                                    list.includes(i) ? list.filter(item => item !== i) : [...list, i],
+                                                )
+                                            }
+                                            onDragStart={index => setDragging(index)}
+                                            onDrop={index => {
+                                                if (dragging === null || dragging === index) {
+                                                    return;
+                                                }
+
+                                                const next = [...values];
+                                                const [moved] = next.splice(dragging, 1);
+                                                next.splice(index, 0, moved);
+                                                setValues(next);
+                                                setDragging(null);
+                                            }}
+                                            onDeleteClick={success => {
+                                                deleteEggVariable(egg.id, v.id)
+                                                    .then(async () => {
+                                                        await mutate(current => ({
+                                                            ...current!,
+                                                            relationships: {
+                                                                ...current!.relationships,
+                                                                variables: current!.relationships.variables!.filter(
+                                                                    variable => variable.id !== v.id,
+                                                                ),
+                                                            },
+                                                        }));
+                                                        success();
+                                                    })
+                                                    .catch(error => clearAndAddHttpError({ key: 'egg', error }));
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </Form>

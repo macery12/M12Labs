@@ -19,6 +19,7 @@ import EggDeleteButton from '@admin/service/nests/eggs/EggDeleteButton';
 import DockerImageManager from '@admin/service/nests/eggs/DockerImageManager';
 import EggExportButton from '@admin/service/nests/eggs/EggExportButton';
 import Label from '@/elements/Label';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
@@ -244,8 +245,6 @@ interface AdvancedValues {
     scriptIsPrivileged: boolean;
     features: string[];
     fileDenylistText: string;
-    configStartup: string;
-    configFiles: string;
 }
 
 function withStringifiedJson(value: Record<string, unknown> | null): string {
@@ -253,7 +252,7 @@ function withStringifiedJson(value: Record<string, unknown> | null): string {
 }
 
 export function EggDockerContainer() {
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const { data: egg } = useEggFromRoute();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
@@ -270,7 +269,10 @@ export function EggDockerContainer() {
             .catch(error => {
                 clearAndAddHttpError({ key: 'egg', error });
             })
-            .then(() => setSubmitting(false));
+            .then(() => {
+                addFlash({ key: 'egg', type: 'success', title: 'Saved', message: 'Docker images saved successfully.' });
+                setSubmitting(false);
+            });
     };
 
     return (
@@ -287,6 +289,8 @@ export function EggDockerContainer() {
         >
             {({ isSubmitting, isValid }) => (
                 <Form>
+                    <FlashMessageRender byKey={'egg'} className={'mb-4'} />
+
                     <AdminBox icon={faDocker} title={'Docker'}>
                         <SectionHint text={'Use compact rows to manage image URL and label pairs.'} />
                         <DockerImageManager name={'dockerImages'} label={'Image URL | Label'} />
@@ -306,8 +310,7 @@ export function EggDockerContainer() {
 }
 
 export function EggAdvancedContainer() {
-    const ref = useRef<EggProcessContainerRef>();
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const { data: egg } = useEggFromRoute();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
@@ -318,21 +321,19 @@ export function EggAdvancedContainer() {
     const submit = async (values: AdvancedValues, { setSubmitting }: FormikHelpers<AdvancedValues>) => {
         clearFlashes('egg');
 
-        values.configStartup = (await ref.current?.getStartupConfiguration()) ?? values.configStartup;
-        values.configFiles = (await ref.current?.getFilesConfiguration()) ?? values.configFiles;
-
         updateEgg(egg.id, {
             forceOutgoingIp: values.forceOutgoingIp,
             scriptIsPrivileged: values.scriptIsPrivileged,
             features: values.features,
             fileDenylist: parseDenylist(values.fileDenylistText),
-            configStartup: values.configStartup,
-            configFiles: values.configFiles,
         })
             .catch(error => {
                 clearAndAddHttpError({ key: 'egg', error });
             })
-            .then(() => setSubmitting(false));
+            .then(() => {
+                addFlash({ key: 'egg', type: 'success', title: 'Saved', message: 'Advanced settings saved successfully.' });
+                setSubmitting(false);
+            });
     };
 
     return (
@@ -343,8 +344,6 @@ export function EggAdvancedContainer() {
                 scriptIsPrivileged: egg.scriptIsPrivileged,
                 features: egg.features || [],
                 fileDenylistText: stringifyDenylist(egg.fileDenylist || []),
-                configStartup: withStringifiedJson(egg.configStartup),
-                configFiles: withStringifiedJson(egg.configFiles),
             }}
         >
             {({ isSubmitting, isValid, values, setFieldValue }) => {
@@ -364,6 +363,8 @@ export function EggAdvancedContainer() {
 
                 return (
                     <Form>
+                        <FlashMessageRender byKey={'egg'} className={'mb-4'} />
+
                         <AdminBox icon={faShieldAlt} title={'Advanced'} css={tw`mb-6`}>
                             <SectionHint text={'Rarely used controls are grouped here so they do not clutter the About tab.'} />
 
@@ -419,8 +420,6 @@ export function EggAdvancedContainer() {
                             />
                         </AdminBox>
 
-                        <EggProcessContainer ref={ref} />
-
                         <div css={tw`rounded shadow-md px-4 xl:px-5 py-3 mb-16 mt-6`} style={{ backgroundColor: secondary }}>
                             <div css={tw`flex flex-row`}>
                                 <Button type={'submit'} css={tw`ml-auto`} disabled={isSubmitting || !isValid}>
@@ -436,7 +435,8 @@ export function EggAdvancedContainer() {
 }
 
 export default function EggSettingsContainer() {
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
+    const ref = useRef<EggProcessContainerRef>();
     const { data: egg } = useEggFromRoute();
 
     if (!egg) {
@@ -452,11 +452,16 @@ export default function EggSettingsContainer() {
             updateUrl: values.updateUrl || null,
             startup: values.startup,
             configStop: values.configStop,
+            configStartup: (await ref.current?.getStartupConfiguration()) ?? '',
+            configFiles: (await ref.current?.getFilesConfiguration()) ?? '',
         })
             .catch(error => {
                 clearAndAddHttpError({ key: 'egg', error });
             })
-            .then(() => setSubmitting(false));
+            .then(() => {
+                addFlash({ key: 'egg', type: 'success', title: 'Saved', message: 'About settings saved successfully.' });
+                setSubmitting(false);
+            });
     };
 
     return (
@@ -478,6 +483,8 @@ export default function EggSettingsContainer() {
         >
             {({ isSubmitting, isValid }) => (
                 <Form>
+                    <FlashMessageRender byKey={'egg'} className={'mb-4'} />
+
                     <QuickReferenceRow />
 
                     <AdminBox icon={faInfoCircle} title={'About'}>
@@ -488,6 +495,8 @@ export default function EggSettingsContainer() {
                         <Field id={'startup'} name={'startup'} label={'Startup Command'} type={'text'} css={tw`mb-6`} />
                         <Field id={'configStop'} name={'configStop'} label={'Stop Command'} type={'text'} css={tw`mb-2`} />
                     </AdminBox>
+
+                    <EggProcessContainer ref={ref} />
 
                     <ActionsBox isSubmitting={isSubmitting} isValid={isValid} />
                 </Form>
