@@ -63,6 +63,7 @@ function SettingsForm({
     const { values, setFieldValue } = useFormikContext<AISettings>();
     const theme = useStoreState(s => s.theme.data!);
     const accent = theme.colors.primary;
+    const bgColor = theme.colors.background;
     const presets = values.mode === 'ollama' ? OLLAMA_PRESETS : OPENAI_PRESETS;
     const tempInfo = tempLabel(Number(values.temperature ?? 0.3));
     const systemPromptLen = String(values.system_prompt ?? '').length;
@@ -78,7 +79,10 @@ function SettingsForm({
                             as="select"
                             id={'mode'}
                             name={'mode'}
-                            className={'w-full rounded border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 focus:border-cyan-400 focus:outline-none'}
+                            className={'w-full rounded border border-neutral-600 px-3 py-2 text-sm text-neutral-100 focus:outline-none'}
+                            style={{ backgroundColor: bgColor, borderColor: 'transparent' }}
+                            onFocus={(e: React.FocusEvent<HTMLSelectElement>) => (e.currentTarget.style.borderColor = accent)}
+                            onBlur={(e: React.FocusEvent<HTMLSelectElement>) => (e.currentTarget.style.borderColor = 'transparent')}
                         >
                             <option value="openai">OpenAI / Standard (HTTPS)</option>
                             <option value="ollama">Ollama (Local / HTTPS)</option>
@@ -130,7 +134,7 @@ function SettingsForm({
                             )}
                         </div>
                     ) : (
-                        <div className={'flex items-start rounded border border-neutral-700/50 bg-neutral-800/30 px-3 py-2.5'}>
+                        <div className={'flex items-start rounded border border-neutral-700/50 px-3 py-2.5'} style={{ backgroundColor: bgColor }}>
                             <p className={'text-xs text-neutral-500'}>
                                 Ollama does not require an API key. Leave the key field blank.
                             </p>
@@ -151,8 +155,8 @@ function SettingsForm({
                                     type="button"
                                     onClick={() => setFieldValue('model', p.value)}
                                     title={p.note}
-                                    className={'rounded-full border px-2.5 py-0.5 text-xs transition-colors ' + (values.model === p.value ? 'border-neutral-600' : 'border-neutral-600 bg-neutral-800 text-neutral-400 hover:border-neutral-400 hover:text-neutral-200')}
-                                    style={values.model === p.value ? { borderColor: accent, backgroundColor: accent + '33', color: accent } : undefined}
+                                    className={'rounded-full border px-2.5 py-0.5 text-xs transition-colors ' + (values.model === p.value ? 'border-neutral-600' : 'border-neutral-600 text-neutral-400 hover:border-neutral-400 hover:text-neutral-200')}
+                                    style={values.model === p.value ? { borderColor: accent, backgroundColor: accent + '33', color: accent } : { backgroundColor: bgColor }}
                                 >
                                     {p.label}
                                 </button>
@@ -217,59 +221,38 @@ function SettingsForm({
             </AdminBox>
 
             <AdminBox title={'Access & Behavior'} icon={faShieldAlt} className={'mb-4'}>
-                <div className={'grid gap-6 md:grid-cols-2'}>
-                    <div>
-                        <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>User Access</label>
-                        <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
-                            <FormikField
-                                type="checkbox"
-                                name="user_access"
-                                className={'h-4 w-4 cursor-pointer rounded'}
-                                style={{ accentColor: accent } as React.CSSProperties}
-                            />
-                            <div>
-                                <p className={'text-sm font-medium text-neutral-200'}>Allow standard users</p>
-                                <p className={'text-xs text-neutral-500'}>
-                                    Standard users can chat with M12Labs-AI from their server page. Admins always have access.
-                                </p>
-                            </div>
-                        </label>
-                        <div className={'mt-3 rounded border border-neutral-700/50 bg-neutral-800/30 px-3 py-2'}>
-                            <p className={'text-xs text-neutral-500'}>
-                                <span className={'font-medium text-neutral-400'}>Rate limits:</span> Users - 15 req / 10 min &nbsp;·&nbsp; Admins - 60 req / 10 min
-                            </p>
+                <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>Feature Toggles</label>
+                <div className={'space-y-2'}>
+                    <label
+                        className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 px-3 py-2.5 transition-opacity hover:opacity-80'}
+                        style={{ backgroundColor: bgColor }}
+                    >
+                        <FormikField
+                            type="checkbox"
+                            name="feature_server_assistant"
+                            className={'h-4 w-4 cursor-pointer rounded'}
+                            style={{ accentColor: accent } as React.CSSProperties}
+                        />
+                        <div>
+                            <p className={'text-sm font-medium text-neutral-200'}>Server AI Assistant</p>
+                            <p className={'text-xs text-neutral-500'}>AI chat tab and "Ask AI" button on server pages.</p>
                         </div>
-                    </div>
-
-                    <div>
-                        <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>Feature Toggles</label>
-                        <div className={'space-y-2'}>
-                            <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
-                                <FormikField
-                                    type="checkbox"
-                                    name="feature_server_assistant"
-                                    className={'h-4 w-4 cursor-pointer rounded'}
-                                    style={{ accentColor: accent } as React.CSSProperties}
-                                />
-                                <div>
-                                    <p className={'text-sm font-medium text-neutral-200'}>Server AI Assistant</p>
-                                    <p className={'text-xs text-neutral-500'}>AI chat tab and "Ask AI" button on server pages.</p>
-                                </div>
-                            </label>
-                            <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 bg-neutral-800/40 px-3 py-2.5 transition-colors hover:bg-neutral-800/70'}>
-                                <FormikField
-                                    type="checkbox"
-                                    name="feature_crash_analysis"
-                                    className={'h-4 w-4 cursor-pointer rounded'}
-                                    style={{ accentColor: accent } as React.CSSProperties}
-                                />
-                                <div>
-                                    <p className={'text-sm font-medium text-neutral-200'}>Crash Analysis</p>
-                                    <p className={'text-xs text-neutral-500'}>Auto-detect crashes and offer AI diagnosis via a toast.</p>
-                                </div>
-                            </label>
+                    </label>
+                    <label
+                        className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 px-3 py-2.5 transition-opacity hover:opacity-80'}
+                        style={{ backgroundColor: bgColor }}
+                    >
+                        <FormikField
+                            type="checkbox"
+                            name="feature_crash_analysis"
+                            className={'h-4 w-4 cursor-pointer rounded'}
+                            style={{ accentColor: accent } as React.CSSProperties}
+                        />
+                        <div>
+                            <p className={'text-sm font-medium text-neutral-200'}>Crash Analysis</p>
+                            <p className={'text-xs text-neutral-500'}>Auto-detect crashes and offer AI diagnosis via a toast.</p>
                         </div>
-                    </div>
+                    </label>
                 </div>
             </AdminBox>
 
@@ -358,7 +341,6 @@ export default () => {
         <Formik
             onSubmit={submit}
             initialValues={{
-                user_access: ai.user_access,
                 endpoint: ai.endpoint || (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
                 model: ai.model || (ai.mode === 'ollama' ? 'qwen2.5:7b' : 'gpt-4.1-mini'),
                 mode: ai.mode || 'openai',
