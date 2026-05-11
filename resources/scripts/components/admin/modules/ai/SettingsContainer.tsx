@@ -1,15 +1,14 @@
-﻿import Field, { TextareaField } from '@/elements/Field';
+import Field, { TextareaField } from '@/elements/Field';
 import { Field as FormikField, Form, Formik, useFormikContext } from 'formik';
 import AdminBox from '@/elements/AdminBox';
 import { useStoreState } from '@/state/hooks';
 import { faKey, faTrash, faWifi, faMicrochip, faShieldAlt, faSliders, faRobot } from '@fortawesome/free-solid-svg-icons';
-import { AISettings, updateSettings, testConnection, type ConnectionTestResult } from '@/api/routes/admin/ai/settings';
+import { AIAdminSettings, AISettings, fetchSettings, updateSettings, testConnection, type ConnectionTestResult } from '@/api/routes/admin/ai/settings';
 import useFlash from '@/plugins/useFlash';
 import { Button } from '@/elements/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
-// --- Model preset chips ---------------------------------------------------
+import Spinner from '@/elements/Spinner';
 
 const OPENAI_PRESETS = [
     { label: 'GPT-4.1 mini', value: 'gpt-4.1-mini', note: 'Fast & cheap, great for most tasks (recommended)' },
@@ -29,8 +28,6 @@ const OLLAMA_PRESETS = [
     { label: 'deepseek-coder:1.3b', value: 'deepseek-coder:1.3b', note: '~1GB, code & config focused' },
 ];
 
-// --- Temperature slider ---------------------------------------------------
-
 const TEMP_LABELS: [number, string, string][] = [
     [0.0, 'Deterministic', 'Exact, repeatable answers. Best for log analysis.'],
     [0.3, 'Focused', 'Mostly factual with slight variation. Recommended.'],
@@ -43,8 +40,6 @@ function tempLabel(val: number): { label: string; hint: string } {
     return { label: closest[1], hint: closest[2] };
 }
 
-// --- Inner form component (uses useFormikContext) -------------------------
-
 function SettingsForm({
     ai,
     deletingKey,
@@ -53,7 +48,7 @@ function SettingsForm({
     onDeleteKey,
     onTestConnection,
 }: {
-    ai: ReturnType<typeof useStoreState<any>>;
+    ai: AIAdminSettings;
     deletingKey: boolean;
     testing: boolean;
     testResult: ConnectionTestResult | null;
@@ -103,9 +98,7 @@ function SettingsForm({
                             placeholder={values.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'}
                         />
                         <p className={'mt-1 text-xs text-neutral-500'}>
-                            {values.mode === 'ollama'
-                                ? 'Default: http://localhost:11434/v1'
-                                : 'Must end in /v1'}
+                            {values.mode === 'ollama' ? 'Default: http://localhost:11434/v1' : 'Must end in /v1'}
                         </p>
                     </div>
 
@@ -135,9 +128,7 @@ function SettingsForm({
                         </div>
                     ) : (
                         <div className={'flex items-start rounded border border-neutral-700/50 px-3 py-2.5'} style={{ backgroundColor: bgColor }}>
-                            <p className={'text-xs text-neutral-500'}>
-                                Ollama does not require an API key. Leave the key field blank.
-                            </p>
+                            <p className={'text-xs text-neutral-500'}>Ollama does not require an API key. Leave the key field blank.</p>
                         </div>
                     )}
                 </div>
@@ -162,9 +153,7 @@ function SettingsForm({
                                 </button>
                             ))}
                         </div>
-                        <p className={'mt-2 text-xs text-neutral-500'}>
-                            Click a preset or type a custom model name. Hover presets for details.
-                        </p>
+                        <p className={'mt-2 text-xs text-neutral-500'}>Click a preset or type a custom model name. Hover presets for details.</p>
                         {values.mode === 'ollama' && (
                             <p className={'mt-1.5 text-xs text-neutral-600'}>
                                 💡 Ollama keeps the model loaded for <span className={'text-neutral-400'}>10 minutes</span> after each request. The <span className={'text-neutral-400'}>first request</span> after a cold start may take 20–60 seconds while the model loads into memory.
@@ -210,9 +199,7 @@ function SettingsForm({
                                 style={{ accentColor: accent } as React.CSSProperties}
                             />
                             <div className={'mt-1.5 flex items-center gap-2'}>
-                                <span className={'rounded px-2 py-0.5 text-xs font-medium'} style={{ backgroundColor: accent + '33', color: accent }}>
-                                    {tempInfo.label}
-                                </span>
+                                <span className={'rounded px-2 py-0.5 text-xs font-medium'} style={{ backgroundColor: accent + '33', color: accent }}>{tempInfo.label}</span>
                                 <span className={'text-xs text-neutral-500'}>{tempInfo.hint}</span>
                             </div>
                         </div>
@@ -223,31 +210,15 @@ function SettingsForm({
             <AdminBox title={'Access & Behavior'} icon={faShieldAlt} className={'mb-4'}>
                 <label className={'mb-1.5 block text-xs font-medium text-neutral-300'}>Feature Toggles</label>
                 <div className={'space-y-2'}>
-                    <label
-                        className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 px-3 py-2.5 transition-opacity hover:opacity-80'}
-                        style={{ backgroundColor: bgColor }}
-                    >
-                        <FormikField
-                            type="checkbox"
-                            name="feature_server_assistant"
-                            className={'h-4 w-4 cursor-pointer rounded'}
-                            style={{ accentColor: accent } as React.CSSProperties}
-                        />
+                    <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 px-3 py-2.5 transition-opacity hover:opacity-80'} style={{ backgroundColor: bgColor }}>
+                        <FormikField type="checkbox" name="feature_server_assistant" className={'h-4 w-4 cursor-pointer rounded'} style={{ accentColor: accent } as React.CSSProperties} />
                         <div>
                             <p className={'text-sm font-medium text-neutral-200'}>Server AI Assistant</p>
                             <p className={'text-xs text-neutral-500'}>AI chat tab and "Ask AI" button on server pages.</p>
                         </div>
                     </label>
-                    <label
-                        className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 px-3 py-2.5 transition-opacity hover:opacity-80'}
-                        style={{ backgroundColor: bgColor }}
-                    >
-                        <FormikField
-                            type="checkbox"
-                            name="feature_crash_analysis"
-                            className={'h-4 w-4 cursor-pointer rounded'}
-                            style={{ accentColor: accent } as React.CSSProperties}
-                        />
+                    <label className={'flex cursor-pointer items-center gap-3 rounded border border-neutral-700 px-3 py-2.5 transition-opacity hover:opacity-80'} style={{ backgroundColor: bgColor }}>
+                        <FormikField type="checkbox" name="feature_crash_analysis" className={'h-4 w-4 cursor-pointer rounded'} style={{ accentColor: accent } as React.CSSProperties} />
                         <div>
                             <p className={'text-sm font-medium text-neutral-200'}>Crash Analysis</p>
                             <p className={'text-xs text-neutral-500'}>Auto-detect crashes and offer AI diagnosis via a toast.</p>
@@ -258,9 +229,7 @@ function SettingsForm({
 
             <AdminBox title={'System Prompt'} icon={faRobot} className={'mb-4'}>
                 <div className={'flex items-start justify-between gap-2 mb-2'}>
-                    <p className={'text-xs text-neutral-500'}>
-                        Sent with every request to define the AI's role and tone. Keep it concise — it counts toward your token budget.
-                    </p>
+                    <p className={'text-xs text-neutral-500'}>Sent with every request to define the AI's role and tone. Keep it concise — it counts toward your token budget.</p>
                     <span className={`flex-shrink-0 text-xs tabular-nums ${systemPromptLen > MAX_PROMPT ? 'text-red-400' : 'text-neutral-500'}`}>
                         {systemPromptLen} / {MAX_PROMPT}
                     </span>
@@ -278,9 +247,7 @@ function SettingsForm({
                 <div className={'flex items-center gap-3'}>
                     {testResult && (
                         <span className={`text-xs font-medium ${testResult.status === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
-                            {testResult.status === 'ok'
-                                ? `✓ Connected (${testResult.latency_ms}ms)`
-                                : `✗ ${testResult.message}`}
+                            {testResult.status === 'ok' ? `✓ Connected (${testResult.latency_ms}ms)` : `✗ ${testResult.message}`}
                         </span>
                     )}
                     <Button type={'button'} variant={'secondary'} onClick={onTestConnection} disabled={testing}>
@@ -294,14 +261,20 @@ function SettingsForm({
     );
 }
 
-// --- Default export -------------------------------------------------------
-
 export default () => {
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
-    const ai = useStoreState(s => s.everest.data!.ai);
+    const [settings, setSettings] = useState<AIAdminSettings | null>(null);
+    const [loading, setLoading] = useState(true);
     const [deletingKey, setDeletingKey] = useState(false);
     const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
     const [testing, setTesting] = useState(false);
+
+    useEffect(() => {
+        fetchSettings()
+            .then(setSettings)
+            .catch(error => clearAndAddHttpError({ key: 'admin:ai:settings', error }))
+            .finally(() => setLoading(false));
+    }, []);
 
     const handleTestConnection = () => {
         setTesting(true);
@@ -314,11 +287,12 @@ export default () => {
 
     const handleDeleteKey = () => {
         if (!confirm('Remove the saved API key? AI will stop working until you add a new one.')) return;
+
         setDeletingKey(true);
         clearFlashes();
         updateSettings({ key: '' })
             .then(() => {
-                addFlash({ type: 'success', key: 'admin:ai:settings', message: 'API key removed.' });
+                addFlash({ type: 'success', key: 'admin:ai:settings', message: 'API key has been deleted successfully.' });
                 setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
@@ -329,30 +303,47 @@ export default () => {
 
     const submit = (values: AISettings) => {
         clearFlashes();
-        updateSettings(values)
+        const payload: AISettings = { ...values };
+        if (!payload.key?.trim()) {
+            delete payload.key;
+        }
+
+        updateSettings(payload)
             .then(() => {
-                addFlash({ type: 'success', key: 'admin:ai:settings', message: 'Settings saved successfully.' });
+                addFlash({ type: 'success', key: 'admin:ai:settings', message: 'Settings have been updated successfully.' });
                 setTimeout(() => window.location.reload(), 500);
             })
-            .catch(error => clearAndAddHttpError({ key: 'admin:ai:settings', error }));
+            .catch(error => {
+                clearAndAddHttpError({ key: 'admin:ai:settings', error });
+            });
     };
+
+    if (loading) {
+        return <Spinner size={'large'} centered />;
+    }
+
+    if (!settings) {
+        return null;
+    }
 
     return (
         <Formik
             onSubmit={submit}
             initialValues={{
-                endpoint: ai.endpoint || (ai.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
-                model: ai.model || (ai.mode === 'ollama' ? 'qwen2.5:7b' : 'gpt-4.1-mini'),
-                mode: ai.mode || 'openai',
-                max_tokens: ai.max_tokens || 500,
-                temperature: ai.temperature ?? 0.3,
-                system_prompt: ai.system_prompt || 'You are a game server support assistant. Help with anything related to game servers: setup, configuration, plugins, mods, gameplay mechanics, commands, world management, and troubleshooting. When given logs: quote the exact failing line, identify if it is a crash/config issue/first-run requirement (e.g. EULA), give numbered fix steps. Be concise and specific — never give generic advice. Only decline if the question is completely unrelated to gaming or servers (e.g. cooking, finance).',
-                feature_server_assistant: ai.feature_server_assistant ?? true,
-                feature_crash_analysis: ai.feature_crash_analysis ?? true,
+                key: '',
+                enabled: settings.enabled,
+                endpoint: settings.endpoint || (settings.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'),
+                model: settings.model || (settings.mode === 'ollama' ? 'qwen2.5:7b' : 'gpt-4.1-mini'),
+                mode: settings.mode || 'openai',
+                max_tokens: settings.max_tokens ?? 500,
+                temperature: settings.temperature ?? 0.3,
+                system_prompt: settings.system_prompt || 'You are a game server support assistant. Help with anything related to game servers: setup, configuration, plugins, mods, gameplay mechanics, commands, world management, and troubleshooting. When given logs: quote the exact failing line, identify if it is a crash/config issue/first-run requirement (e.g. EULA), give numbered fix steps. Be concise and specific — never give generic advice. Only decline if the question is completely unrelated to gaming or servers (e.g. cooking, finance).',
+                feature_server_assistant: settings.feature_server_assistant ?? true,
+                feature_crash_analysis: settings.feature_crash_analysis ?? true,
             }}
         >
             <SettingsForm
-                ai={ai}
+                ai={settings}
                 deletingKey={deletingKey}
                 testing={testing}
                 testResult={testResult}

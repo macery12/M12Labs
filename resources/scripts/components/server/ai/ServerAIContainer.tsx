@@ -25,8 +25,12 @@ export default function ServerAIContainer() {
     const serverName = ServerContext.useStoreState(state => state.server.data!.name);
 
     const isEnabled = useStoreState(state => state.everest.data!.ai.enabled);
-    const userAccess = useStoreState(state => state.everest.data!.ai.user_access);
+    const assistantEnabled = useStoreState(state => state.everest.data!.ai.feature_server_assistant);
+    const crashEnabled = useStoreState(state => state.everest.data!.ai.feature_crash_analysis);
     const user = useStoreState(state => state.user.data!);
+    const isAdmin = user.rootAdmin || Boolean(user.admin_role_id);
+    const canUseAssistant = isAdmin || assistantEnabled;
+    const canUseCrash = isAdmin || crashEnabled;
     const theme = useStoreState(state => state.theme.data!);
 
     const [messages, setMessages] = useState<Message[]>([
@@ -274,13 +278,13 @@ export default function ServerAIContainer() {
         );
     }
 
-    if (!userAccess && !user.rootAdmin && !user.admin_role_id) {
+    if (!canUseAssistant && !canUseCrash) {
         return (
             <PageContentBlock title={'AI Assistant'}>
                 <div className={'flex flex-col items-center justify-center py-20 text-neutral-400'}>
                     <SparklesIcon className={'mb-4 h-12 w-12 opacity-30'} />
                     <p className={'text-lg font-medium'}>Access restricted</p>
-                    <p className={'mt-1 text-sm'}>AI access for standard users has not been enabled by your administrator.</p>
+                    <p className={'mt-1 text-sm'}>AI features for standard users have not been enabled by your administrator.</p>
                 </div>
             </PageContentBlock>
         );

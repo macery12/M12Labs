@@ -14,11 +14,12 @@ class UpdateIntelligenceSettingsRequest extends ApplicationApiRequest
         return [
             'enabled' => 'nullable|bool',
             'key' => 'nullable',
-            'user_access' => 'nullable|bool',
             'mode' => 'nullable|string|in:openai,ollama',
             'max_tokens' => 'nullable|integer|min:50|max:4000',
             'temperature' => 'nullable|numeric|min:0|max:1',
             'system_prompt' => 'nullable|string|min:10|max:1000',
+            'feature_server_assistant' => 'nullable|bool',
+            'feature_crash_analysis' => 'nullable|bool',
             'endpoint' => [
                 'nullable',
                 function ($attribute, $value, $fail) use ($mode) {

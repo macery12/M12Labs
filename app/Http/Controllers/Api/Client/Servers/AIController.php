@@ -96,38 +96,31 @@ class AIController extends ClientApiController
             abort(403, 'The M12Labs-AI module is not enabled.');
         }
 
-        // Admins always have access; regular users need user_access enabled
-        $userAccess = filter_var(
-            Setting::get('settings::modules:ai:user_access', config('modules.ai.user_access', false)),
-            FILTER_VALIDATE_BOOLEAN
-        );
-
-        if (!$userAccess && !$request->user()->root_admin && !$request->user()->admin_role_id) {
-            abort(403, 'AI access has not been enabled for standard users.');
-        }
+        $isPrivileged = $request->user()->root_admin || $request->user()->admin_role_id;
 
         // Feature-level gating — check the individual component toggle
         $queryType = $request->input('query_type', 'freeform');
-        if ($queryType === 'log_analysis') {
-            $crashEnabled = filter_var(
-                Setting::get('settings::modules:ai:feature_crash_analysis', config('modules.ai.feature_crash_analysis', true)),
-                FILTER_VALIDATE_BOOLEAN
-            );
-            if (!$crashEnabled) {
-                abort(403, 'AI crash analysis has been disabled by the administrator.');
-            }
-        } else {
-            $assistantEnabled = filter_var(
-                Setting::get('settings::modules:ai:feature_server_assistant', config('modules.ai.feature_server_assistant', true)),
-                FILTER_VALIDATE_BOOLEAN
-            );
-            if (!$assistantEnabled) {
-                abort(403, 'The AI server assistant has been disabled by the administrator.');
+        if (!$isPrivileged) {
+            if ($queryType === 'log_analysis') {
+                $crashEnabled = filter_var(
+                    Setting::get('settings::modules:ai:feature_crash_analysis', config('modules.ai.feature_crash_analysis', true)),
+                    FILTER_VALIDATE_BOOLEAN
+                );
+                if (!$crashEnabled) {
+                    abort(403, 'AI crash analysis has been disabled by the administrator.');
+                }
+            } else {
+                $assistantEnabled = filter_var(
+                    Setting::get('settings::modules:ai:feature_server_assistant', config('modules.ai.feature_server_assistant', true)),
+                    FILTER_VALIDATE_BOOLEAN
+                );
+                if (!$assistantEnabled) {
+                    abort(403, 'The AI server assistant has been disabled by the administrator.');
+                }
             }
         }
 
         // Rate limiting: admins get 60 req/10min, regular users get 15 req/10min
-        $isPrivileged = $request->user()->root_admin || $request->user()->admin_role_id;
         $maxAttempts = $isPrivileged ? 60 : 15;
         $rateLimitKey = 'ai:' . $request->user()->id;
 

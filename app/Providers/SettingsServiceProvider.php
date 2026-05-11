@@ -82,11 +82,11 @@ class SettingsServiceProvider extends ServiceProvider
         // AI module settings
         'modules:ai:enabled',
         'modules:ai:key',
-        'modules:ai:user_access',
         'modules:ai:endpoint',
         'modules:ai:model',
         'modules:ai:mode',
         'modules:ai:max_tokens',
+        'modules:ai:temperature',
         'modules:ai:system_prompt',
         'modules:ai:feature_server_assistant',
         'modules:ai:feature_crash_analysis',

@@ -26,6 +26,25 @@ class IntelligenceController extends ApplicationApiController
     }
 
     /**
+     * Get the current AI settings for the admin panel.
+     */
+    public function index(): JsonResponse
+    {
+        return response()->json([
+            'enabled' => boolval(config('modules.ai.enabled', false)),
+            'key' => !empty(config('modules.ai.key')),
+            'endpoint' => config('modules.ai.endpoint', 'https://api.openai.com/v1'),
+            'model' => config('modules.ai.model', 'gpt-4.1-mini'),
+            'mode' => config('modules.ai.mode', 'openai'),
+            'max_tokens' => (int) config('modules.ai.max_tokens', 200),
+            'temperature' => (float) config('modules.ai.temperature', 0.3),
+            'system_prompt' => config('modules.ai.system_prompt', 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.'),
+            'feature_server_assistant' => boolval(config('modules.ai.feature_server_assistant', true)),
+            'feature_crash_analysis' => boolval(config('modules.ai.feature_crash_analysis', true)),
+        ]);
+    }
+
+    /**
      * Update the AI settings for the Panel.
      *
      * @throws \Throwable

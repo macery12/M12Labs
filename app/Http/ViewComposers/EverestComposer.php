@@ -22,14 +22,15 @@ class EverestComposer
     public function compose(View $view): void
     {
         $processorConfig = $this->processorConfigService->getProcessorConfig();
-        $view->with('everestConfiguration', [
+        
+        // Build public configuration (slim, essential fields only)
+        $configuration = [
             'auth' => [
                 'registration' => [
                     'enabled' => boolval(config('modules.auth.registration.enabled', false)),
                 ],
                 'security' => [
                     'force2fa' => boolval(config('modules.auth.security.force2fa', false)),
-                    'attempts' => config('modules.auth.security.attempts', 3),
                 ],
                 'captcha' => [
                     'provider' => Setting::get('settings::modules:auth:captcha:provider', 'disabled'),
@@ -67,18 +68,6 @@ class EverestComposer
                 'processor' => config('modules.billing.processor', 'stripe'),
                 'processors' => $processorConfig,
                 'donations_enabled' => boolval(Setting::get('settings::modules:billing:donations_enabled', config('modules.billing.donations_enabled', true))),
-                'paypal' => config('modules.billing.paypal'),
-                'link' => config('modules.billing.link'),
-                'keys' => [
-                    'publishable' => boolval(config('modules.billing.keys.publishable')),
-                    'secret' => boolval(config('modules.billing.keys.secret')),
-                ],
-                'mollie' => [
-                    'api_key' => !empty(config('modules.billing.mollie.api_key')),
-                ],
-                'paypal_standalone' => [
-                    'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
-                ],
                 'currency' => [
                     'symbol' => config('modules.billing.currency.symbol'),
                     'code' => config('modules.billing.currency.code'),
@@ -87,19 +76,6 @@ class EverestComposer
                     'terms' => config('modules.billing.links.terms'),
                     'privacy' => config('modules.billing.links.privacy'),
                 ],
-                'renewal' => [
-                    'days' => config('modules.billing.renewal.days', 30),
-                    'free_renewal_days' => config('modules.billing.renewal.free_renewal_days', 30),
-                    'suspension_threshold' => config('modules.billing.renewal.suspension_threshold', 7),
-                    'suspension_threshold_percentage' => config('modules.billing.renewal.suspension_threshold_percentage', 0.20),
-                    'min_suspension_threshold_days' => config('modules.billing.renewal.min_suspension_threshold_days', 3),
-                    'max_suspension_threshold_days' => config('modules.billing.renewal.max_suspension_threshold_days', 7),
-                    'free_suspension_days' => config('modules.billing.renewal.free_suspension_days', 7),
-                    'paid_suspension_days' => config('modules.billing.renewal.paid_suspension_days', 30),
-                    'default_billing_days' => (int) Setting::get('settings::modules:billing:renewal:default_billing_days', config('modules.billing.renewal.default_billing_days', 30)),
-                    'multiplier_steps' => Setting::get('settings::modules:billing:renewal:multiplier_steps', config('modules.billing.renewal.multiplier_steps')),
-                ],
-                'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
                 'integrations' => [
                     'stripe' => [
                         'enabled' => boolval(config('modules.billing.integrations.stripe.enabled', false)),
@@ -121,13 +97,6 @@ class EverestComposer
             ],
             'ai' => [
                 'enabled' => boolval(config('modules.ai.enabled', false)),
-                'key' => !empty(config('modules.ai.key')),
-                'user_access' => boolval(config('modules.ai.user_access', false)),
-                'endpoint' => config('modules.ai.endpoint', 'https://api.openai.com/v1'),
-                'model' => config('modules.ai.model', 'gpt-3.5-turbo'),
-                'mode' => config('modules.ai.mode', 'openai'),
-                'max_tokens' => (int) config('modules.ai.max_tokens', 200),
-                'system_prompt' => config('modules.ai.system_prompt', 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.'),
                 'feature_server_assistant' => boolval(config('modules.ai.feature_server_assistant', true)),
                 'feature_crash_analysis' => boolval(config('modules.ai.feature_crash_analysis', true)),
             ],
@@ -146,37 +115,51 @@ class EverestComposer
             ],
             'extensions' => [
                 'enabled' => boolval(config('modules.extensions.enabled', false)),
-                'available' => $this->getAvailableExtensions(),
             ],
-        ]);
+        ];
+        
+        // Merge admin-only configuration if user is authenticated admin
+        $user = auth()->user();
+        if ($user && ($user->root_admin || $user->admin_role_id)) {
+            $configuration = array_merge_recursive($configuration, $this->getAdminConfiguration());
+        }
+        
+        $view->with('everestConfiguration', $configuration);
     }
-
+    
     /**
-     * Get the list of available extensions with their enabled status.
+     * Get admin-only configuration with sensitive/admin-specific fields.
+     * This is only exposed to admin users.
      */
-    private function getAvailableExtensions(): array
+    private function getAdminConfiguration(): array
     {
-        $extensions = config('modules.extensions.available', []);
-        
-        if (!is_array($extensions)) {
-            return [];
-        }
-        
-        $availableExtensions = [];
-
-        foreach ($extensions as $id => $extension) {
-            if (!is_array($extension)) {
-                continue;
-            }
-            $availableExtensions[$id] = [
-                'name' => $extension['name'] ?? $id,
-                'description' => $extension['description'] ?? '',
-                'icon' => $extension['icon'] ?? 'puzzle',
-                'version' => $extension['version'] ?? '1.0.0',
-            ];
-        }
-
-        return $availableExtensions;
+        return [
+            'billing' => [
+                'keys' => [
+                    'publishable' => boolval(config('modules.billing.keys.publishable')),
+                    'secret' => boolval(config('modules.billing.keys.secret')),
+                ],
+                'mollie' => [
+                    'api_key' => !empty(config('modules.billing.mollie.api_key')),
+                ],
+                'paypal_standalone' => [
+                    'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),
+                ],
+                'renewal' => [
+                    'days' => config('modules.billing.renewal.days', 30),
+                    'free_renewal_days' => config('modules.billing.renewal.free_renewal_days', 30),
+                    'suspension_threshold' => config('modules.billing.renewal.suspension_threshold', 7),
+                    'suspension_threshold_percentage' => config('modules.billing.renewal.suspension_threshold_percentage', 0.20),
+                    'min_suspension_threshold_days' => config('modules.billing.renewal.min_suspension_threshold_days', 3),
+                    'max_suspension_threshold_days' => config('modules.billing.renewal.max_suspension_threshold_days', 7),
+                    'free_suspension_days' => config('modules.billing.renewal.free_suspension_days', 7),
+                    'paid_suspension_days' => config('modules.billing.renewal.paid_suspension_days', 30),
+                    'default_billing_days' => (int) Setting::get('settings::modules:billing:renewal:default_billing_days', config('modules.billing.renewal.default_billing_days', 30)),
+                    'multiplier_steps' => Setting::get('settings::modules:billing:renewal:multiplier_steps', config('modules.billing.renewal.multiplier_steps')),
+                ],
+                'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
+            ],
+        ];
     }
 
     private function emailEnabled(): bool

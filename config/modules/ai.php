@@ -12,12 +12,6 @@ return [
     'key' => env('AI_KEY', ''),
 
     /*
-     * Should clients/users be allowed
-     * to use AI features?
-     */
-    'user_access' => env('AI_USER_ACCESS', false),
-
-    /*
      * AI mode: 'openai' or 'ollama'
      */
     'mode' => env('AI_MODE', 'openai'),

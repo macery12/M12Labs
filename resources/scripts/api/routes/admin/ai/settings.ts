@@ -1,9 +1,12 @@
 import http from '@/api/http';
 
-export interface AISettings {
-    key?: string | boolean;
+/**
+ * The full AI settings returned by the admin API.
+ * `key` is a boolean indicating whether a key is currently set (never exposed as a string).
+ */
+export interface AIAdminSettings {
+    key?: boolean;
     enabled?: boolean;
-    user_access?: boolean;
     endpoint?: string;
     model?: string;
     mode?: string;
@@ -14,9 +17,33 @@ export interface AISettings {
     feature_crash_analysis?: boolean;
 }
 
+/**
+ * The settings payload sent when saving. `key` here is a plain string (new value or empty to delete).
+ */
+export interface AISettings {
+    key?: string;
+    enabled?: boolean;
+    endpoint?: string;
+    model?: string;
+    mode?: string;
+    max_tokens?: number;
+    temperature?: number;
+    system_prompt?: string;
+    feature_server_assistant?: boolean;
+    feature_crash_analysis?: boolean;
+}
+
+export const fetchSettings = (): Promise<AIAdminSettings> => {
+    return new Promise((resolve, reject) => {
+        http.get('/api/application/ai/settings')
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
 export const updateSettings = (settings: AISettings): Promise<void> => {
     return new Promise((resolve, reject) => {
-        http.put(`/api/application/ai/settings`, settings)
+        http.put('/api/application/ai/settings', settings)
             .then(() => resolve())
             .catch(reject);
     });

@@ -4,7 +4,7 @@ import { SparklesIcon, RefreshIcon, CheckCircleIcon, XCircleIcon, SearchIcon, XI
 import { useStoreState } from '@/state/hooks';
 import { KeyboardEvent as ReactKeyboardEvent, useState, useRef, useEffect, useCallback } from 'react';
 import { handleQueryStream } from '@/api/routes/admin/ai/handleQuery';
-import { getStats, getRecentLogs, getLogs, testConnection, type AIStats, type AILogEntry, type GetLogsParams } from '@/api/routes/admin/ai/settings';
+import { fetchSettings, getStats, getRecentLogs, getLogs, testConnection, type AIAdminSettings, type AIStats, type AILogEntry, type GetLogsParams } from '@/api/routes/admin/ai/settings';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
@@ -36,7 +36,7 @@ function Sparkline({ series }: { series: { date: string; requests: number }[] })
 
 type ConnStatus = { state: 'idle' | 'testing' | 'ok' | 'error'; latency?: number; message?: string };
 
-function ConnectionCard({ ai }: { ai: any }) {
+function ConnectionCard({ settings }: { settings: AIAdminSettings | null }) {
     const theme = useStoreState(s => s.theme.data!);
     const [conn, setConn] = useState<ConnStatus>({ state: 'idle' });
 
@@ -53,7 +53,7 @@ function ConnectionCard({ ai }: { ai: any }) {
         ? <CheckCircleIcon className={'h-5 w-5 text-green-400'} />
         : conn.state === 'error'
             ? <XCircleIcon className={'h-5 w-5 text-red-400'} />
-            : <span className={'flex h-5 w-5 items-center justify-center'}><Spinner size={'xsmall'} /></span>;
+            : <span className={'flex h-5 w-5 items-center justify-center'}><Spinner size={'small'} /></span>;
 
     const label = conn.state === 'ok'
         ? <span className={'text-green-400'}>Connected{conn.latency !== undefined ? ` · ${conn.latency}ms` : ''}</span>
@@ -67,9 +67,9 @@ function ConnectionCard({ ai }: { ai: any }) {
                 {icon}
                 <div>
                     <p className={'text-xs font-medium text-neutral-200'}>
-                        {ai.mode === 'ollama' ? 'Ollama' : 'OpenAI'} · <span className={'font-mono'}>{ai.model || 'no model'}</span>
+                        {settings?.mode === 'ollama' ? 'Ollama' : 'OpenAI'} · <span className={'font-mono'}>{settings?.model || 'no model'}</span>
                     </p>
-                    <p className={'truncate text-xs text-neutral-500'} style={{ maxWidth: '200px' }}>{ai.endpoint}</p>
+                    <p className={'truncate text-xs text-neutral-500'} style={{ maxWidth: '200px' }}>{settings?.endpoint || 'Not configured'}</p>
                     <p className={'mt-0.5 text-xs'}>{label}</p>
                 </div>
             </div>
@@ -277,13 +277,13 @@ function RecentLogsTable({ logs, loading, onViewAll }: { logs: AILogEntry[]; loa
 }
 
 export default () => {
-    const ai = useStoreState(s => s.everest.data!.ai);
     const theme = useStoreState(s => s.theme.data!);
+    const [settings, setSettings] = useState<AIAdminSettings | null>(null);
 
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
-            content: `**M12Labs-AI Admin Console**\n\nTest your AI configuration or ask questions about server management.\n\n_Provider: **${ai.mode === 'ollama' ? 'Ollama' : 'OpenAI'}** · Model: **${ai.model || 'default'}**_`,
+            content: `**M12Labs-AI Admin Console**\n\nTest your AI configuration or ask questions about server management.\n\n_Provider and model are loaded from the admin settings panel._`,
         },
     ]);
     const [input, setInput] = useState('');
@@ -302,6 +302,7 @@ export default () => {
     const hasFirstToken = useRef(false);
 
     useEffect(() => {
+        fetchSettings().then(setSettings).catch(() => undefined);
         getStats().then(setStats).catch(() => undefined).finally(() => setStatsLoading(false));
         getRecentLogs().then(setLogs).catch(() => undefined).finally(() => setLogsLoading(false));
     }, []);
@@ -396,7 +397,7 @@ export default () => {
             {/* ── Connection status + stat cards ── */}
             <div className={'grid grid-cols-1 gap-3 sm:grid-cols-5'}>
                 <div className={'sm:col-span-2'}>
-                    <ConnectionCard ai={ai} />
+                    <ConnectionCard settings={settings} />
                 </div>
                 <StatCard label={'Requests (24h)'} value={statsLoading ? '…' : (stats?.last_24h?.requests ?? 0)} sub={`${statsLoading ? '…' : (stats?.last_24h?.tokens ?? 0).toLocaleString()} tokens`} />
                 <StatCard label={'Requests (7d)'} value={statsLoading ? '…' : (stats?.last_7d?.requests ?? 0)} sub={`${statsLoading ? '…' : (stats?.last_7d?.tokens ?? 0).toLocaleString()} tokens`} />
@@ -449,7 +450,7 @@ export default () => {
                         ))}
                         <div ref={bottomRef} />
                     </div>
-                    {slowHint && ai.mode === 'ollama' && (
+                    {slowHint && settings?.mode === 'ollama' && (
                         <p className={'mb-2 animate-pulse text-center text-xs text-neutral-500'}>
                             ⏳ Ollama is loading the model — this first response may take 20–60 seconds…
                         </p>
@@ -487,25 +488,35 @@ export default () => {
                         <dl className={'space-y-1.5 text-xs'}>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Provider</dt>
-                                <dd className={'font-medium text-neutral-200'}>{ai.mode === 'ollama' ? 'Ollama' : 'OpenAI'}</dd>
+                                <dd className={'font-medium text-neutral-200'}>{settings?.mode === 'ollama' ? 'Ollama' : 'OpenAI'}</dd>
                             </div>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Model</dt>
-                                <dd className={'font-mono text-neutral-200'}>{ai.model || 'not set'}</dd>
+                                <dd className={'font-mono text-neutral-200'}>{settings?.model || 'not set'}</dd>
                             </div>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Max tokens</dt>
-                                <dd className={'text-neutral-200'}>{ai.max_tokens ?? 500}</dd>
+                                <dd className={'text-neutral-200'}>{settings?.max_tokens ?? 500}</dd>
                             </div>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Temperature</dt>
-                                <dd className={'text-neutral-200'}>{ai.temperature ?? 0.3}</dd>
+                                <dd className={'text-neutral-200'}>{settings?.temperature ?? 0.3}</dd>
                             </div>
                             <div className={'flex justify-between'}>
-                                <dt className={'text-neutral-500'}>User access</dt>
-                                <dd className={ai.user_access ? 'text-green-400' : 'text-neutral-400'}>
-                                    {ai.user_access ? 'Enabled' : 'Disabled'}
+                                <dt className={'text-neutral-500'}>Server AI Assistant</dt>
+                                <dd className={settings?.feature_server_assistant ? 'text-green-400' : 'text-neutral-400'}>
+                                    {settings?.feature_server_assistant ? 'Enabled' : 'Disabled'}
                                 </dd>
+                            </div>
+                            <div className={'flex justify-between'}>
+                                <dt className={'text-neutral-500'}>Crash Analysis</dt>
+                                <dd className={settings?.feature_crash_analysis ? 'text-green-400' : 'text-neutral-400'}>
+                                    {settings?.feature_crash_analysis ? 'Enabled' : 'Disabled'}
+                                </dd>
+                            </div>
+                            <div className={'flex justify-between'}>
+                                <dt className={'text-neutral-500'}>Admins</dt>
+                                <dd className={'text-neutral-200'}>Always allowed</dd>
                             </div>
                         </dl>
                     </div>
