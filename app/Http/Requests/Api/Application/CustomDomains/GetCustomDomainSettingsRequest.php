@@ -9,6 +9,6 @@ class GetCustomDomainSettingsRequest extends ApplicationApiRequest
 {
     public function permission(): string
     {
-        return AdminRole::BILLING_READ;
+        return AdminRole::CUSTOM_DOMAINS_READ;
     }
 }

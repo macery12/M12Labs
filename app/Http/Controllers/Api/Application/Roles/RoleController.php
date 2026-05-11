@@ -60,7 +60,7 @@ class RoleController extends ApplicationApiController
     /**
      * Returns all of the available admin permissions assignable to users.
      */
-    protected function permissions(GetRoleRequest $request): array
+    public function permissions(GetRoleRequest $request): array
     {
         return [
             'object' => 'role_permissions',
@@ -102,7 +102,7 @@ class RoleController extends ApplicationApiController
      */
     public function updatePermissions(UpdateRoleRequest $request, AdminRole $role): array
     {
-        dd($request->input('permissions'));
+        $role->update(['permissions' => $request->input('permissions', [])]);
 
         return $this->fractal->item($role)
             ->transformWith(AdminRoleTransformer::class)

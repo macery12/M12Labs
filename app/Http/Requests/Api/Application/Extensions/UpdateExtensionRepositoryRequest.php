@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Requests\Api\Application\Extensions;
 
+use Everest\Models\AdminRole;
 use Everest\Http\Requests\Api\Application\ApplicationApiRequest;
 
 class UpdateExtensionRepositoryRequest extends ApplicationApiRequest
@@ -14,5 +15,10 @@ class UpdateExtensionRepositoryRequest extends ApplicationApiRequest
             'homepage_url' => 'nullable|string|max:2048',
             'enabled' => 'sometimes|boolean',
         ];
+    }
+
+    public function permission(): string
+    {
+        return AdminRole::EXTENSIONS_REPOSITORIES;
     }
 }

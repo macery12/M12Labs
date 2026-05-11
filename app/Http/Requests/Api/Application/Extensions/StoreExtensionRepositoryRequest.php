@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Requests\Api\Application\Extensions;
 
+use Everest\Models\AdminRole;
 use Everest\Http\Requests\Api\Application\ApplicationApiRequest;
 
 class StoreExtensionRepositoryRequest extends ApplicationApiRequest
@@ -15,5 +16,10 @@ class StoreExtensionRepositoryRequest extends ApplicationApiRequest
             'enabled' => 'sometimes|boolean',
             'acknowledge_risk' => 'required|accepted',
         ];
+    }
+
+    public function permission(): string
+    {
+        return AdminRole::EXTENSIONS_REPOSITORIES;
     }
 }
