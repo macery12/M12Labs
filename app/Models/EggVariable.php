@@ -58,6 +58,7 @@ class EggVariable extends Model
         'egg_id' => 'integer',
         'user_viewable' => 'bool',
         'user_editable' => 'bool',
+        'field_type' => 'string',
     ];
 
     public static array $validationRules = [
@@ -69,6 +70,7 @@ class EggVariable extends Model
         'user_viewable' => 'boolean',
         'user_editable' => 'boolean',
         'rules' => 'required|string',
+        'field_type' => 'sometimes|string|in:text,password,number,boolean',
     ];
 
     protected $attributes = [

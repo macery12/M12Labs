@@ -1,7 +1,7 @@
 import { LanguageDescription } from '@codemirror/language';
 import { json } from '@codemirror/lang-json';
 import { faDocker } from '@fortawesome/free-brands-svg-icons';
-import { faEgg, faFireAlt, faInfoCircle, faMicrochip, faShieldAlt, faTerminal } from '@fortawesome/free-solid-svg-icons';
+import { faFireAlt, faInfoCircle, faMicrochip, faShieldAlt, faTerminal } from '@fortawesome/free-solid-svg-icons';
 import type { FormikHelpers } from 'formik';
 import { Form, Formik, useFormikContext } from 'formik';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
@@ -25,9 +25,12 @@ import useFlash from '@/plugins/useFlash';
 import { useStoreState } from '@/state/hooks';
 import Checkbox from '@/elements/inputs/Checkbox';
 
-const FEATURE_OPTIONS = [
-    { key: 'eula', name: 'EULA Popup', description: 'Prompt users to accept EULA rules.' },
-    { key: 'fastdl', name: 'FastDL', description: 'Enable fast file download behavior where supported.' },
+const IMPLEMENTED_FEATURE_OPTIONS = [
+    { key: 'eula', name: 'EULA Popup', description: 'Prompts users to accept the Minecraft EULA when required.' },
+] as const;
+
+const BLOCKED_FEATURE_OPTIONS = [
+    { key: 'fastdl', name: 'FastDL', description: 'Future Update: not wired to runtime behavior yet.' },
 ] as const;
 
 const parseDenylist = (value: string): string[] => {
@@ -60,58 +63,65 @@ function SectionHint({ text }: { text: string }) {
     return <p css={tw`text-xs text-neutral-400 mt-1 mb-4`}>{text}</p>;
 }
 
+// ─── Quick Reference ─────────────────────────────────────────────────────────
+
 function QuickReferenceRow() {
     const { data: egg } = useEggFromRoute();
 
-    if (!egg) {
-        return null;
-    }
+    if (!egg) return null;
+
+    const stats = [
+        { label: 'ID', value: String(egg.id) },
+        { label: 'UUID', value: egg.uuid, mono: true, truncate: true },
+        { label: 'Author', value: egg.author, truncate: true },
+        { label: 'Created', value: egg.createdAt.toLocaleString() },
+    ];
 
     return (
-        <AdminBox icon={faEgg} title={'Quick Reference'} css={tw`mb-6`}>
-            <div css={tw`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3`}>
-                <div css={tw`rounded bg-neutral-900 border border-neutral-700 px-3 py-2`}>
-                    <p css={tw`text-[10px] uppercase tracking-wide text-neutral-500`}>ID</p>
-                    <p css={tw`text-sm text-neutral-100`}>{egg.id}</p>
+        <div css={tw`grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6`}>
+            {stats.map(stat => (
+                <div
+                    key={stat.label}
+                    css={tw`rounded-lg border border-neutral-700 bg-neutral-800/50 px-4 py-3`}
+                >
+                    <p css={tw`text-xs uppercase tracking-widest text-neutral-500 mb-1`}>{stat.label}</p>
+                    <p
+                        css={[
+                            tw`text-base text-neutral-100`,
+                            stat.mono && tw`font-mono text-sm`,
+                            stat.truncate && tw`truncate`,
+                        ]}
+                    >
+                        {stat.value}
+                    </p>
                 </div>
-                <div css={tw`rounded bg-neutral-900 border border-neutral-700 px-3 py-2`}>
-                    <p css={tw`text-[10px] uppercase tracking-wide text-neutral-500`}>UUID</p>
-                    <p css={tw`text-sm text-neutral-100 truncate`}>{egg.uuid}</p>
-                </div>
-                <div css={tw`rounded bg-neutral-900 border border-neutral-700 px-3 py-2`}>
-                    <p css={tw`text-[10px] uppercase tracking-wide text-neutral-500`}>Author</p>
-                    <p css={tw`text-sm text-neutral-100 truncate`}>{egg.author}</p>
-                </div>
-                <div css={tw`rounded bg-neutral-900 border border-neutral-700 px-3 py-2`}>
-                    <p css={tw`text-[10px] uppercase tracking-wide text-neutral-500`}>Created</p>
-                    <p css={tw`text-sm text-neutral-100`}>{egg.createdAt.toLocaleString()}</p>
-                </div>
-            </div>
-        </AdminBox>
+            ))}
+        </div>
     );
 }
 
-function ActionsBox({ isSubmitting, isValid }: { isSubmitting: boolean; isValid: boolean }) {
-    const navigate = useNavigate();
-    const { data: egg } = useEggFromRoute();
+// ─── Sticky Save Bar ──────────────────────────────────────────────────────────
 
-    if (!egg) {
-        return null;
-    }
+function StickyActionsBar({ isSubmitting, isValid }: { isSubmitting: boolean; isValid: boolean }) {
+    const { data: egg } = useEggFromRoute();
+    const navigate = useNavigate();
+
+    if (!egg) return null;
 
     return (
-        <AdminBox icon={faFireAlt} title={'Actions'} css={tw`mt-6`}>
-            <SectionHint text={'Save is non-destructive. Delete is permanent.'} />
-            <div css={tw`flex flex-col gap-3`}>
-                <Button type={'submit'} disabled={isSubmitting || !isValid}>
-                    Save Changes
-                </Button>
+        <div css={tw`sticky bottom-0 z-10 border-t border-neutral-700 bg-neutral-900/95 backdrop-blur px-4 xl:px-6 py-3 mb-0 -mx-4 xl:-mx-6`}>
+            <div css={tw`flex items-center gap-3`}>
                 <EggExportButton className={''} />
                 <EggDeleteButton eggId={egg.id} onDeleted={() => navigate('/admin/nests')} />
+                <Button type={'submit'} css={tw`ml-auto`} disabled={isSubmitting || !isValid}>
+                    Save Changes
+                </Button>
             </div>
-        </AdminBox>
+        </div>
     );
 }
+
+// ─── Exported sub-containers (used by other tabs) ─────────────────────────────
 
 export function EggStartupContainer({ className }: { className?: string }) {
     return (
@@ -161,6 +171,8 @@ export function EggLifecycleContainer() {
     );
 }
 
+// ─── Process Configuration ────────────────────────────────────────────────────
+
 interface EggProcessSectionProps {
     className?: string;
 }
@@ -201,32 +213,36 @@ export const EggProcessContainer = forwardRef<any, EggProcessSectionProps>(funct
             <SpinnerOverlay visible={isSubmitting} />
             <SectionHint text={'These JSON blocks are used by Wings to detect startup state and parse file updates.'} />
 
-            <div css={tw`mb-5`}>
-                <Label>Startup Configuration</Label>
-                <Editor
-                    childClassName={tw`h-40 rounded`}
-                    initialContent={values.configStartup}
-                    fetchContent={value => {
-                        fetchStartupConfiguration = value;
-                    }}
-                    language={LanguageDescription.of({ name: 'json', support: json() })}
-                />
-            </div>
+            <div css={tw`grid grid-cols-1 xl:grid-cols-2 gap-5`}>
+                <div>
+                    <Label css={tw`mb-2 block`}>Startup Configuration</Label>
+                    <Editor
+                        childClassName={tw`h-40 rounded`}
+                        initialContent={values.configStartup}
+                        fetchContent={value => {
+                            fetchStartupConfiguration = value;
+                        }}
+                        language={LanguageDescription.of({ name: 'json', support: json() })}
+                    />
+                </div>
 
-            <div css={tw`mb-1`}>
-                <Label>Configuration Files</Label>
-                <Editor
-                    childClassName={tw`h-56 rounded`}
-                    initialContent={values.configFiles}
-                    fetchContent={value => {
-                        fetchFilesConfiguration = value;
-                    }}
-                    language={LanguageDescription.of({ name: 'json', support: json() })}
-                />
+                <div>
+                    <Label css={tw`mb-2 block`}>Configuration Files</Label>
+                    <Editor
+                        childClassName={tw`h-40 rounded`}
+                        initialContent={values.configFiles}
+                        fetchContent={value => {
+                            fetchFilesConfiguration = value;
+                        }}
+                        language={LanguageDescription.of({ name: 'json', support: json() })}
+                    />
+                </div>
             </div>
         </AdminBox>
     );
 });
+
+// ─── Interfaces ───────────────────────────────────────────────────────────────
 
 interface AboutValues {
     name: string;
@@ -249,18 +265,14 @@ interface AdvancedValues {
     fileDenylistText: string;
 }
 
-function withStringifiedJson(value: Record<string, unknown> | null): string {
-    return JSON.stringify(value, null, '\t') || '';
-}
+// ─── Docker Tab ───────────────────────────────────────────────────────────────
 
 export function EggDockerContainer() {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const { data: egg } = useEggFromRoute();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
-    if (!egg) {
-        return null;
-    }
+    if (!egg) return null;
 
     const submit = async (values: DockerValues, { setSubmitting }: FormikHelpers<DockerValues>) => {
         clearFlashes('egg');
@@ -311,22 +323,24 @@ export function EggDockerContainer() {
     );
 }
 
+// ─── Advanced Tab ─────────────────────────────────────────────────────────────
+
 export function EggAdvancedContainer() {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const { data: egg } = useEggFromRoute();
     const { secondary } = useStoreState(state => state.theme.data!.colors);
 
-    if (!egg) {
-        return null;
-    }
+    if (!egg) return null;
 
     const submit = async (values: AdvancedValues, { setSubmitting }: FormikHelpers<AdvancedValues>) => {
         clearFlashes('egg');
 
+        const persistedFeatures = values.features.filter(feature => feature !== 'fastdl');
+
         updateEgg(egg.id, {
             forceOutgoingIp: values.forceOutgoingIp,
             scriptIsPrivileged: values.scriptIsPrivileged,
-            features: values.features,
+            features: persistedFeatures,
             fileDenylist: parseDenylist(values.fileDenylistText),
         })
             .catch(error => {
@@ -369,6 +383,8 @@ export function EggAdvancedContainer() {
 
                         <AdminBox icon={faShieldAlt} title={'Advanced'} css={tw`mb-6`}>
                             <SectionHint text={'Rarely used controls are grouped here so they do not clutter the About tab.'} />
+                            <SectionHint text={'Force Outgoing IP passes a node-level networking flag to Wings; the concrete source IP is determined by the node network configuration.'} />
+                            <SectionHint text={'Install Script Is Privileged controls whether the install script can run in privileged mode during provisioning.'} />
 
                             <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6 mb-6`}>
                                 <label css={tw`flex items-center gap-3`}>
@@ -395,7 +411,7 @@ export function EggAdvancedContainer() {
                             </div>
 
                             <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-3 mb-6`}>
-                                {FEATURE_OPTIONS.map(feature => (
+                                {IMPLEMENTED_FEATURE_OPTIONS.map(feature => (
                                     <button
                                         key={feature.key}
                                         type={'button'}
@@ -411,6 +427,22 @@ export function EggAdvancedContainer() {
                                             {hasFeature(feature.key) ? 'Enabled' : 'Disabled'}
                                         </div>
                                     </button>
+                                ))}
+
+                                {BLOCKED_FEATURE_OPTIONS.map(feature => (
+                                    <div
+                                        key={feature.key}
+                                        css={tw`text-left rounded border border-dashed border-neutral-700 px-3 py-3 bg-neutral-900/60`}
+                                    >
+                                        <div css={tw`flex items-center justify-between gap-2`}>
+                                            <div css={tw`text-sm font-medium text-neutral-200`}>{feature.name}</div>
+                                            <span css={tw`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-600`}>
+                                                Future Update
+                                            </span>
+                                        </div>
+                                        <div css={tw`text-xs text-neutral-400 mt-1`}>{feature.description}</div>
+                                        <div css={tw`text-xs mt-2 text-amber-300`}>Blocked from input and not saved.</div>
+                                    </div>
                                 ))}
                             </div>
 
@@ -436,14 +468,14 @@ export function EggAdvancedContainer() {
     );
 }
 
+// ─── About Tab (default export) ───────────────────────────────────────────────
+
 export default function EggSettingsContainer() {
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const ref = useRef<EggProcessContainerRef>();
     const { data: egg } = useEggFromRoute();
 
-    if (!egg) {
-        return null;
-    }
+    if (!egg) return null;
 
     const submit = async (values: AboutValues, { setSubmitting }: FormikHelpers<AboutValues>) => {
         clearFlashes('egg');
@@ -489,20 +521,29 @@ export default function EggSettingsContainer() {
                 <Form>
                     <FlashMessageRender byKey={'egg'} className={'mb-4'} />
 
+                    {/* Quick reference stat row */}
                     <QuickReferenceRow />
 
-                    <AdminBox icon={faInfoCircle} title={'About'}>
+                    {/* About — two column layout on wide screens */}
+                    <AdminBox icon={faInfoCircle} title={'About'} css={tw`mb-6`}>
                         <SectionHint text={'Basic info and commands used most often.'} />
-                        <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-6`} />
-                        <Field id={'description'} name={'description'} label={'Description'} type={'text'} css={tw`mb-6`} />
-                        <Field id={'updateUrl'} name={'updateUrl'} label={'Update URL'} type={'text'} css={tw`mb-6`} />
-                        <Field id={'startup'} name={'startup'} label={'Startup Command'} type={'text'} css={tw`mb-6`} />
-                        <Field id={'configStop'} name={'configStop'} label={'Stop Command'} type={'text'} css={tw`mb-2`} />
+
+                        <div css={tw`grid grid-cols-1 xl:grid-cols-2 gap-x-8`}>
+                            <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-5`} />
+                            <Field id={'description'} name={'description'} label={'Description'} type={'text'} css={tw`mb-5`} />
+                            <Field id={'configStop'} name={'configStop'} label={'Stop Command'} type={'text'} css={tw`mb-5`} />
+                            <Field id={'updateUrl'} name={'updateUrl'} label={'Update URL'} type={'text'} css={tw`mb-5`} />
+                        </div>
+
+                        {/* Startup command spans full width */}
+                        <Field id={'startup'} name={'startup'} label={'Startup Command'} type={'text'} css={tw`mb-5`} />
                     </AdminBox>
 
+                    {/* Process config editors side-by-side */}
                     <EggProcessContainer ref={ref} />
 
-                    <ActionsBox isSubmitting={isSubmitting} isValid={isValid} />
+                    {/* Sticky save / export / delete bar */}
+                    <StickyActionsBar isSubmitting={isSubmitting} isValid={isValid} />
                 </Form>
             )}
         </Formik>
