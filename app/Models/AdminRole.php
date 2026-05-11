@@ -163,6 +163,17 @@ class AdminRole extends Model
     public const MOUNTS_UPDATE = 'mounts.update';
     public const MOUNTS_DELETE = 'mounts.delete';
 
+    public const EXTENSIONS_READ = 'extensions.read';
+    public const EXTENSIONS_INSTALL = 'extensions.install';
+    public const EXTENSIONS_UPDATE = 'extensions.update';
+    public const EXTENSIONS_DELETE = 'extensions.delete';
+    public const EXTENSIONS_REPOSITORIES = 'extensions.repositories';
+
+    public const CUSTOM_DOMAINS_READ = 'custom-domains.read';
+    public const CUSTOM_DOMAINS_CREATE = 'custom-domains.create';
+    public const CUSTOM_DOMAINS_UPDATE = 'custom-domains.update';
+    public const CUSTOM_DOMAINS_DELETE = 'custom-domains.delete';
+
     /**
      * All the permissions available on the system. You should use self::permissions()
      * to retrieve them, and not directly access this array as it is subject to change.
@@ -221,7 +232,7 @@ class AdminRole extends Model
                 'update' => 'Update billing settings.',
                 'export' => 'Export current billing configuration to JSON.',
                 'import' => 'Import current billing configuration from JSON.',
-                'delete-keys' => 'Delete Stripe API billing keys used for payment.',
+                'delete-keys' => 'Delete payment provider API keys (Stripe, Mollie, PayPal, etc.).',
             ],
         ],
         'tickets' => [
@@ -367,6 +378,25 @@ class AdminRole extends Model
                 'create' => 'Create a new mount.',
                 'update' => 'Update an existing mount.',
                 'delete' => 'Delete an existing mount.',
+            ],
+        ],
+        'extensions' => [
+            'description' => 'Permissions to configure extensions.',
+            'keys' => [
+                'read' => 'View the current extensions and repositories.',
+                'install' => 'Install or update an extension.',
+                'update' => 'Update extension settings or toggle extensions.',
+                'delete' => 'Uninstall an extension.',
+                'repositories' => 'Add, edit, or remove extension repositories.',
+            ],
+        ],
+        'custom-domains' => [
+            'description' => 'Permissions to configure the Custom Domains module.',
+            'keys' => [
+                'read' => 'View custom domains, Cloudflare API keys, and settings.',
+                'create' => 'Create a new custom domain.',
+                'update' => 'Update a custom domain, API key, or module settings.',
+                'delete' => 'Delete a custom domain or API key.',
             ],
         ],
     ];
