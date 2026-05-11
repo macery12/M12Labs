@@ -441,7 +441,7 @@ export function EggAdvancedContainer() {
                                             </span>
                                         </div>
                                         <div css={tw`text-xs text-neutral-400 mt-1`}>{feature.description}</div>
-                                        <div css={tw`text-xs mt-2 text-amber-300`}>Blocked from input and not saved.</div>
+                                        <div css={tw`text-xs mt-2 text-yellow-300`}>Blocked from input and not saved.</div>
                                     </div>
                                 ))}
                             </div>
