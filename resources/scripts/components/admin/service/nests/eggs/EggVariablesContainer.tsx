@@ -124,6 +124,8 @@ function RulesBuilder({ prefix }: { prefix: string }) {
 }
 
 export function EggVariableForm({ prefix, variable }: { prefix: string; variable?: EggVariable }) {
+    const { values, setFieldValue } = useFormikContext<any>();
+
     return (
         <>
             <Field id={`${prefix}name`} name={`${prefix}name`} label={'Name'} type={'text'} css={tw`mb-6`} />
@@ -154,18 +156,20 @@ export function EggVariableForm({ prefix, variable }: { prefix: string; variable
 
             <div css={tw`mb-4`}>
                 <Label htmlFor={`${prefix}fieldType`}>Field Type</Label>
-                {/* @ts-expect-error Formik select rendering */}
-                <Field
-                    as="select"
+                <select
                     id={`${prefix}fieldType`}
                     name={`${prefix}fieldType`}
+                    value={values[`${prefix}fieldType`] || 'text'}
+                    onChange={e => {
+                        setFieldValue(`${prefix}fieldType`, e.currentTarget.value);
+                    }}
                     css={tw`w-full mt-2 rounded px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 focus:border-neutral-500 focus:outline-none`}
                 >
                     <option value={'text'}>Text</option>
                     <option value={'password'}>Password</option>
                     <option value={'number'}>Number</option>
                     <option value={'boolean'}>Boolean</option>
-                </Field>
+                </select>
             </div>
 
             <div css={tw`flex flex-row mb-6`}>
@@ -370,14 +374,22 @@ function EggVariableRow({
                 </td>
 
                 <td css={tw`px-3 py-3 w-20 text-right`}>
-                    <button
-                        type={'button'}
-                        css={tw`inline-flex items-center gap-1.5 text-xs text-neutral-400 border border-neutral-600 hover:border-neutral-400 hover:text-neutral-200 rounded px-2 py-1 transition-colors`}
-                        onClick={() => setModalOpen(true)}
-                    >
-                        <PencilIcon className="h-3 w-3" />
-                        Edit
-                    </button>
+                    <div css={tw`flex items-center justify-end gap-2`}>
+                        <button
+                            type={'button'}
+                            css={tw`inline-flex items-center gap-1.5 text-xs text-neutral-400 border border-neutral-600 hover:border-neutral-400 hover:text-neutral-200 rounded px-2 py-1 transition-colors`}
+                            onClick={() => setModalOpen(true)}
+                        >
+                            <PencilIcon className="h-3 w-3" />
+                            Edit
+                        </button>
+
+                        <EggVariableDeleteButton
+                            onClick={success => {
+                                onDeleteClick(success);
+                            }}
+                        />
+                    </div>
                 </td>
             </tr>
 
