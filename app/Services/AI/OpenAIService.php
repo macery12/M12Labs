@@ -4,6 +4,7 @@ namespace Everest\Services\AI;
 
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Exception\GuzzleException;
 use Everest\Exceptions\Service\AI\AIServiceException;
 use Everest\Models\Setting;
@@ -16,24 +17,38 @@ class OpenAIService
     private string $model;
     private string $mode;
     private string $systemPrompt;
+    private float $temperature;
+
+    /**
+     * Token/latency data from the last non-streamed query().
+     * Shape: ['model' => string, 'prompt_tokens' => int|null, 'completion_tokens' => int|null, 'total_tokens' => int|null]
+     */
+    private array $lastUsage = [];
+
+    public function getLastUsage(): array
+    {
+        return $this->lastUsage;
+    }
 
     /**
      * OpenAIService constructor.
      */
     public function __construct()
     {
+        // All settings must be read from the database (via Setting::get) so that values
+        // saved through the admin UI are actually used. Config/env values serve as fallbacks
+        // only — they are NOT updated when settings are changed via the panel.
         $this->apiKey = Setting::get('settings::modules:ai:key', config('modules.ai.key')) ?: '';
-        $this->endpoint = config('modules.ai.endpoint') ?: 'https://api.openai.com/v1';
-        $this->model = config('modules.ai.model') ?: 'gpt-4.1-mini';
-        $this->mode = config('modules.ai.mode') ?: 'openai';
-        $this->systemPrompt = config('modules.ai.system_prompt') ?: 'You are a helpful assistant for a game server hosting panel. Provide clear, concise, and technical responses.';
+        $this->endpoint = Setting::get('settings::modules:ai:endpoint', config('modules.ai.endpoint', 'https://api.openai.com/v1')) ?: 'https://api.openai.com/v1';
+        $this->model = Setting::get('settings::modules:ai:model', config('modules.ai.model', 'gpt-4.1-mini')) ?: 'gpt-4.1-mini';
+        $this->mode = Setting::get('settings::modules:ai:mode', config('modules.ai.mode', 'openai')) ?: 'openai';
+        $this->systemPrompt = Setting::get('settings::modules:ai:system_prompt', config('modules.ai.system_prompt'))
+            ?: 'You are an expert game server technician specializing in crash analysis and debugging. When given server logs, identify the root cause concisely and list specific actionable steps to resolve it. Format responses as: Cause: [what went wrong]. Fix: [numbered steps]. For general questions, give direct technical answers. Be concise.';
+        $this->temperature = (float) (Setting::get('settings::modules:ai:temperature', config('modules.ai.temperature', 0.3)) ?? 0.3);
 
-        // Initialize client without authorization header to prevent credential exposure in logs
-        // Increase timeout to 120 seconds to handle longer AI responses
         $this->client = new Client([
             'base_uri' => rtrim($this->endpoint, '/') . '/',
             'timeout' => 120,
-            // 'stream' => true, // Enable streaming support
         ]);
     }
 
@@ -81,7 +96,9 @@ class OpenAIService
                     'max_output_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
                 ];
             } else {
-                // Ollama format (keep existing)
+                // Ollama / OpenAI-compatible format
+                // Lower temperature (0.3) gives more deterministic, factual debugging answers.
+                // num_ctx sets the context window so large logs are not silently truncated.
                 $payload = [
                     'model' => $options['model'] ?? $this->model,
                     'messages' => [
@@ -94,9 +111,13 @@ class OpenAIService
                             'content' => $prompt,
                         ],
                     ],
-                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
-                    'temperature' => $options['temperature'] ?? 0.7,
+                    'max_tokens' => $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500)),
+                    'temperature' => $options['temperature'] ?? $this->temperature,
                     'stream' => $options['stream'] ?? false,
+                    'options' => [
+                        'num_ctx' => 4096,
+                        'keep_alive' => '10m',
+                    ],
                 ];
             }
 
@@ -118,11 +139,23 @@ class OpenAIService
             if ($this->mode === 'openai') {
                 // OpenAI new API response format
                 if (isset($data['output_text'])) {
+                    $this->lastUsage = [
+                        'model' => $options['model'] ?? $this->model,
+                        'prompt_tokens' => $data['usage']['input_tokens'] ?? null,
+                        'completion_tokens' => $data['usage']['output_tokens'] ?? null,
+                        'total_tokens' => $data['usage']['total_tokens'] ?? null,
+                    ];
                     return trim($data['output_text']);
                 }
             } else {
-                // Ollama response format
+                // Ollama / chat-completions response format
                 if (isset($data['choices'][0]['message']['content'])) {
+                    $this->lastUsage = [
+                        'model' => $options['model'] ?? $this->model,
+                        'prompt_tokens' => $data['usage']['prompt_tokens'] ?? null,
+                        'completion_tokens' => $data['usage']['completion_tokens'] ?? null,
+                        'total_tokens' => $data['usage']['total_tokens'] ?? null,
+                    ];
                     return trim($data['choices'][0]['message']['content']);
                 }
             }
@@ -162,6 +195,9 @@ class OpenAIService
     /**
      * Stream a query to the OpenAI-compatible endpoint and yield chunks.
      *
+     * $options['messages'] — optional pre-built array of {role, content} objects for multi-turn context.
+     * When provided, $prompt is ignored and the messages array is sent directly (with the system prompt prepended).
+     *
      * @throws AIServiceException
      */
     public function queryStream(string $prompt, array $options = []): \Generator
@@ -169,6 +205,14 @@ class OpenAIService
         // Only require API key for OpenAI mode, not for Ollama
         if ($this->mode !== 'ollama' && empty($this->apiKey)) {
             throw new AIServiceException('AI API key is not configured.');
+        }
+
+        $systemPrompt = $options['system_prompt'] ?? $this->systemPrompt;
+
+        // Build the messages array — either from multi-turn history or a single prompt
+        $conversationMessages = $options['messages'] ?? null;
+        if (!is_array($conversationMessages) || count($conversationMessages) === 0) {
+            $conversationMessages = [['role' => 'user', 'content' => $prompt]];
         }
 
         try {
@@ -184,51 +228,77 @@ class OpenAIService
 
             // Build request payload based on mode
             if ($this->mode === 'openai') {
-                // OpenAI new API format
+                // OpenAI new API format — prepend system as first message in input array
+                $inputMessages = array_merge(
+                    [[
+                        'role' => 'system',
+                        'content' => [['type' => 'input_text', 'text' => $systemPrompt]],
+                    ]],
+                    array_map(fn ($m) => [
+                        'role' => $m['role'],
+                        'content' => [['type' => 'input_text', 'text' => $m['content']]],
+                    ], $conversationMessages)
+                );
+
                 $payload = [
                     'model' => $options['model'] ?? $this->model,
-                    'input' => [
-                        [
-                            'role' => 'system',
-                            'content' => [
-                                ['type' => 'input_text', 'text' => $options['system_prompt'] ?? $this->systemPrompt],
-                            ],
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => [
-                                ['type' => 'input_text', 'text' => $prompt],
-                            ],
-                        ],
-                    ],
-                    'max_output_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
+                    'input' => $inputMessages,
+                    'max_output_tokens' => $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500)),
                 ];
             } else {
-                // Ollama format (keep existing)
+                // Ollama / OpenAI-compatible format — prepend system message
+                $maxTokens = $options['max_tokens'] ?? (int) Setting::get('settings::modules:ai:max_tokens', config('modules.ai.max_tokens', 500));
                 $payload = [
                     'model' => $options['model'] ?? $this->model,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $options['system_prompt'] ?? $this->systemPrompt,
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $prompt,
-                        ],
-                    ],
-                    'max_tokens' => $options['max_tokens'] ?? (int) config('modules.ai.max_tokens', 200),
-                    'temperature' => $options['temperature'] ?? 0.7,
+                    'messages' => array_merge(
+                        [['role' => 'system', 'content' => $systemPrompt]],
+                        $conversationMessages
+                    ),
+                    'max_tokens' => $maxTokens,
+                    'temperature' => $options['temperature'] ?? $this->temperature,
                     'stream' => true,
+                    'options' => [
+                        // num_ctx: context window. 2048 is enough for our compact prompts
+                        // (~500 input tokens + up to 500 output). Smaller = faster model load
+                        // and scheduling on Ollama; 4096 only needed for multi-turn history.
+                        'num_ctx' => count($conversationMessages) > 2 ? 4096 : 2048,
+                        // num_predict: tell Ollama exactly how many tokens to generate.
+                        // Without this Ollama may use -1 (unlimited) or a model default,
+                        // leading to runaway generation and inflated latency.
+                        'num_predict' => $maxTokens,
+                        'keep_alive' => '10m',
+                    ],
                 ];
             }
 
             $endpoint = $this->mode === 'openai' ? 'responses' : 'chat/completions';
 
-            $response = $this->client->post($endpoint, [
-                'headers' => $headers,
-                'json' => $payload,
-            ]);
+            // Ollama is single-threaded — serialise concurrent requests with a cache lock
+            // to prevent garbled output when multiple users query simultaneously.
+            // We wrap only the actual HTTP call, not the streaming read, so the lock is
+            // released once the request is established and streaming begins.
+            $lock = $this->mode === 'ollama'
+                ? Cache::lock('ai_ollama_stream_lock', 90)
+                : null;
+
+            if ($lock && !$lock->block(30)) {
+                throw new AIServiceException('AI is currently busy. Please try again in a moment.');
+            }
+
+            try {
+                // 'stream' => true tells Guzzle to NOT buffer the response body.
+                // Without this, Guzzle waits for the full Ollama reply before returning,
+                // causing the frontend to spin until the model finishes generating.
+                $response = $this->client->post($endpoint, [
+                    'stream' => true,
+                    'headers' => $headers,
+                    'json' => $payload,
+                ]);
+            } finally {
+                // Release the lock immediately once the HTTP connection is established —
+                // the streaming read happens outside the lock so others aren't blocked during output.
+                $lock?->release();
+            }
 
             $body = $response->getBody();
             $buffer = '';

@@ -26,10 +26,12 @@ export const handleQuery = (server: string, query: string, signal?: AbortSignal)
 export const handleQueryStream = (
     server: string,
     query: string,
+    queryType: 'log_analysis' | 'freeform',
     onChunk: (chunk: string) => void,
     onComplete: () => void,
     onError: (error: Error) => void,
     signal?: AbortSignal,
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>,
 ): void => {
     // Rate limiting check
     const now = Date.now();
@@ -54,11 +56,16 @@ export const handleQueryStream = (
     fetch(`/api/client/servers/${server}/ai`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ query, stream: true }),
+        body: JSON.stringify({ query, query_type: queryType, stream: true, messages: history ?? [] }),
         credentials: 'same-origin',
         signal,
     })
-        .then(response => {
+        .then(async response => {
+            if (response.status === 429) {
+                const body = await response.json().catch(() => ({}));
+                const retryAfter: number = body.retry_after ?? 60;
+                throw new Error(`Rate limited. Please try again in ${retryAfter} seconds.`);
+            }
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

@@ -14,7 +14,6 @@ export interface EverestSettings {
         };
         security: {
             force2fa: boolean;
-            attempts: number;
         };
         modules: {
             jguard: {
@@ -39,10 +38,8 @@ export interface EverestSettings {
             };
         };
         captcha: {
-            enabled: boolean;
             provider?: string;
             site_key?: string;
-            secret_key?: string;
         };
     };
     tickets: {
@@ -52,8 +49,6 @@ export interface EverestSettings {
     billing: {
         enabled: boolean;
         donations_enabled: boolean;
-        paypal: boolean;
-        link: boolean;
         processor?: string;
         processors?: {
             stripe: {
@@ -69,12 +64,13 @@ export interface EverestSettings {
                 enabled: boolean;
             };
         };
-        keys: {
-            publishable: boolean;
-            secret: boolean;
+        // Admin-only fields (conditionally present)
+        keys?: {
+            publishable?: boolean;
+            secret?: boolean;
         };
         mollie?: {
-            api_key?: string | boolean;
+            api_key?: boolean;
         };
         paypal_standalone?: {
             mode?: string;
@@ -108,13 +104,8 @@ export interface EverestSettings {
     };
     ai: {
         enabled: boolean;
-        key: boolean | string;
-        user_access: boolean;
-        endpoint?: string;
-        model?: string;
-        mode?: string;
-        max_tokens?: number;
-        system_prompt?: string;
+        feature_server_assistant: boolean;
+        feature_crash_analysis: boolean;
     };
     mods: {
         enabled: boolean;
@@ -139,7 +130,7 @@ export interface EverestSettings {
             | boolean;
         verification_rules?: VerificationRules;
     };
-    extensions?: {
+    extensions: {
         enabled: boolean;
     };
 }

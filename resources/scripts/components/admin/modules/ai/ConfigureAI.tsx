@@ -23,17 +23,25 @@ interface Values {
 }
 
 export default ({ onDismiss }: ConfigureAIProps) => {
-    const [mode, setMode] = useState<string>('openai');
-    const [endpoint, setEndpoint] = useState<string>('https://api.openai.com/v1');
-    const [key, setKey] = useState<string>('');
-    const [model, setModel] = useState<string>('gpt-3.5-turbo');
     const [loading, setLoading] = useState<boolean>(false);
     const { primary } = useStoreState(state => state.theme.data!.colors);
 
     const { addFlash, clearAndAddHttpError } = useFlashKey('admin:settings:ai');
 
     const validation = object({
-        endpoint: string().required().url(),
+        // Yup's built-in .url() rejects http://localhost:* (no TLD), so use a custom test
+        // that accepts any valid http/https URL including local Ollama endpoints.
+        endpoint: string()
+            .required()
+            .test('is-url', 'Must be a valid URL (e.g. http://localhost:11434/v1)', value => {
+                if (!value) return false;
+                try {
+                    const parsed = new URL(value);
+                    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+                } catch {
+                    return false;
+                }
+            }),
         model: string().required(),
         key: string().optional(),
     });
@@ -62,19 +70,6 @@ export default ({ onDismiss }: ConfigureAIProps) => {
             });
     };
 
-    const isValidKey = mode === 'ollama' || (key !== undefined && key.length >= 20);
-
-    const handleModeChange = (newMode: string) => {
-        setMode(newMode);
-        if (newMode === 'ollama') {
-            setEndpoint('http://localhost:11434/v1');
-            setModel('phi3:mini');
-        } else {
-            setEndpoint('https://api.openai.com/v1');
-            setModel('gpt-3.5-turbo');
-        }
-    };
-
     const ollamaSmallModelSuggestions = [
         'phi3:mini',
         'phi3:small',
@@ -86,11 +81,11 @@ export default ({ onDismiss }: ConfigureAIProps) => {
     ];
 
     return (
-        <Dialog open onClose={() => onDismiss?.()} title={'Configure Jexactyl AI'}>
+        <Dialog open onClose={() => onDismiss?.()} title={'Configure M12Labs-AI'}>
             <SpinnerOverlay visible={loading} />
             <div className={'mt-2 text-sm text-gray-400'}>
                 <p>
-                    In order to use <span style={{ color: primary }}>Jexactyl AI</span>, you must configure an
+                    In order to use <span style={{ color: primary }}>M12Labs-AI</span>, you must configure an
                     OpenAI-compatible API endpoint.
                 </p>
                 <p className={'my-2 text-gray-400'}>
@@ -123,10 +118,14 @@ export default ({ onDismiss }: ConfigureAIProps) => {
             </div>
 
             <Formik
-                initialValues={{ mode, endpoint, key, model } as Values}
+                initialValues={{
+                    mode: 'openai',
+                    endpoint: 'https://api.openai.com/v1',
+                    key: '',
+                    model: 'gpt-3.5-turbo',
+                } as Values}
                 validationSchema={validation}
                 onSubmit={submit}
-                enableReinitialize
             >
                 {({ isSubmitting, values, setFieldValue }) => (
                     <Form className={'mt-6'}>
@@ -142,7 +141,8 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                                     }`}
                                     onClick={() => {
                                         setFieldValue('mode', 'openai');
-                                        handleModeChange('openai');
+                                        setFieldValue('endpoint', 'https://api.openai.com/v1');
+                                        setFieldValue('model', 'gpt-3.5-turbo');
                                     }}
                                 >
                                     Standard
@@ -156,7 +156,9 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                                     }`}
                                     onClick={() => {
                                         setFieldValue('mode', 'ollama');
-                                        handleModeChange('ollama');
+                                        setFieldValue('endpoint', 'http://localhost:11434/v1');
+                                        setFieldValue('model', 'phi3:mini');
+                                        setFieldValue('key', '');
                                     }}
                                 >
                                     Ollama
@@ -177,13 +179,15 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                             <label className={'block text-sm text-gray-400 mb-1'}>API Endpoint URL</label>
                             <Input
                                 placeholder={
-                                    mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'
+                                    values.mode === 'ollama'
+                                        ? 'http://localhost:11434/v1'
+                                        : 'https://api.openai.com/v1'
                                 }
-                                value={endpoint}
-                                onChange={e => setEndpoint(e.currentTarget.value)}
+                                value={values.endpoint}
+                                onChange={e => setFieldValue('endpoint', e.currentTarget.value)}
                             />
                             <p className={'mt-1 text-xs text-gray-500'}>
-                                {mode === 'ollama'
+                                {values.mode === 'ollama'
                                     ? 'Default Ollama endpoint. Can be HTTP for local or HTTPS for remote.'
                                     : 'The base URL for the OpenAI-compatible API endpoint. Must use HTTPS. Example: https://api.openai.com/v1'}
                             </p>
@@ -192,12 +196,12 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                         <div className={'mb-4'}>
                             <label className={'block text-sm text-gray-400 mb-1'}>Model Name</label>
                             <Input
-                                placeholder={mode === 'ollama' ? 'phi3:mini' : 'gpt-3.5-turbo'}
-                                value={model}
-                                onChange={e => setModel(e.currentTarget.value)}
+                                placeholder={values.mode === 'ollama' ? 'phi3:mini' : 'gpt-3.5-turbo'}
+                                value={values.model}
+                                onChange={e => setFieldValue('model', e.currentTarget.value)}
                             />
                             <p className={'mt-1 text-xs text-gray-500'}>
-                                {mode === 'ollama'
+                                {values.mode === 'ollama'
                                     ? `Ollama model name (smaller models recommended for Minecraft log reading / debugging). Examples: ${ollamaSmallModelSuggestions.join(
                                           ', ',
                                       )}`
@@ -205,20 +209,20 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                             </p>
                         </div>
 
-                        {mode === 'openai' && (
+                        {values.mode === 'openai' && (
                             <div className={'relative mb-6'}>
                                 <label className={'block text-sm text-gray-400 mb-1'}>API Key</label>
                                 <Input
                                     type={'password'}
-                                    value={key}
-                                    onChange={e => setKey(e.currentTarget.value)}
+                                    value={values.key || ''}
+                                    onChange={e => setFieldValue('key', e.currentTarget.value)}
                                     placeholder={'sk-...'}
                                 />
                                 <p className={'mt-1 text-xs text-gray-500'}>
                                     Your API key is stored securely and used to authenticate requests.
                                 </p>
 
-                                {!isValidKey && (
+                                {!(values.mode === 'ollama' || ((values.key || '').length >= 20)) && (
                                     <div className={'mt-2 text-xs text-red-400'}>
                                         API key looks too short. Make sure you pasted the full key.
                                     </div>
@@ -240,14 +244,11 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                                 className={
                                     'px-4 py-2 rounded bg-green-600 text-white hover:bg-green-500 disabled:opacity-50'
                                 }
-                                disabled={isSubmitting || loading || !isValidKey}
-                                onClick={() => {
-                                    // keep Formik values in sync with local state
-                                    setFieldValue('endpoint', endpoint);
-                                    setFieldValue('model', model);
-                                    setFieldValue('key', key);
-                                    setFieldValue('mode', mode);
-                                }}
+                                disabled={
+                                    isSubmitting ||
+                                    loading ||
+                                    !(values.mode === 'ollama' || ((values.key || '').length >= 20))
+                                }
                             >
                                 Save
                             </button>

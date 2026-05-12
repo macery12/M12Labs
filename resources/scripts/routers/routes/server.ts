@@ -10,6 +10,7 @@ import {
     GlobeIcon,
     PlayIcon,
     PuzzleIcon,
+    SparklesIcon,
     TerminalIcon,
     UsersIcon,
     WifiIcon,
@@ -32,6 +33,7 @@ const ServerBillingContainer = lazy(() => import('@server/billing/ServerBillingC
 const ModsAndPluginsPage = lazy(() => import('@server/plugins/ModsAndPluginsPage'));
 const ExtensionsRouter = lazy(() => import('@server/extensions/ExtensionsRouter'));
 const CustomDomainsContainer = lazy(() => import('@server/domains/CustomDomainsContainer'));
+const ServerAIContainer = lazy(() => import('@server/ai/ServerAIContainer'));
 
 const server: ServerRouteDefinition[] = [
     route('', ServerConsoleContainer, {
@@ -39,6 +41,11 @@ const server: ServerRouteDefinition[] = [
         name: 'Console',
         end: true,
         icon: TerminalIcon,
+    }),
+    route('ai/*', ServerAIContainer, {
+        name: 'AI Assistant',
+        icon: SparklesIcon,
+        condition: flags => flags.aiEnabled && flags.aiAssistantEnabled,
     }),
     route('files/*', FileManagerContainer, {
         permission: 'file.*',
