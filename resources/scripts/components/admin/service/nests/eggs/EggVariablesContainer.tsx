@@ -491,6 +491,7 @@ export default function EggVariablesContainer() {
                                                     onDeleteClick={success => {
                                                         deleteEggVariable(egg.id, v.id)
                                                             .then(async () => {
+                                                                setValues(values.filter(variable => variable.id !== v.id));
                                                                 await mutate(current => ({
                                                                     ...current!,
                                                                     relationships: {
