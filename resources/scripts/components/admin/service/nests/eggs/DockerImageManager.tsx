@@ -31,7 +31,7 @@ const parseRows = (raw: string): DockerRow[] => {
     return lines.map(line => {
         const [imageRaw, aliasRaw] = line.split('|');
         const image = (imageRaw || '').trim();
-        const alias = (aliasRaw || image).trim();
+        const alias = (aliasRaw ?? '').trim();
 
         return { image, alias };
     });
@@ -42,7 +42,7 @@ const stringifyRows = (rows: DockerRow[]): string => {
         .filter(row => row.image.trim().length > 0)
         .map(row => {
             const image = row.image.trim();
-            const alias = row.alias.trim() || image;
+            const alias = row.alias.trim();
 
             return `${image}|${alias}`;
         })

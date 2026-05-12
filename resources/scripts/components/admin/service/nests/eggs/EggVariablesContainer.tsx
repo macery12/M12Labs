@@ -1,6 +1,6 @@
 import { TrashIcon, PencilIcon } from '@heroicons/react/outline';
 import type { FormikHelpers } from 'formik';
-import { Form, Formik, useFormikContext } from 'formik';
+import { Form, Formik, getIn, useFormikContext } from 'formik';
 import { useState } from 'react';
 import tw from 'twin.macro';
 import { array, boolean, object, string } from 'yup';
@@ -57,7 +57,7 @@ function typeBadgeStyles(type: EggVariable['fieldType']) {
 
 function RulesBuilder({ prefix }: { prefix: string }) {
     const { values, setFieldValue } = useFormikContext<any>();
-    const current = parseRules(values[`${prefix}rules`] || '');
+    const current = parseRules(getIn(values, `${prefix}rules`) || '');
     const [draft, setDraft] = useState('');
 
     const setRules = (next: string[]) => {
@@ -108,7 +108,12 @@ function RulesBuilder({ prefix }: { prefix: string }) {
                     <Button.Text
                         key={rule}
                         type={'button'}
-                        css={tw`px-2 py-1 text-xs`}
+                        css={[
+                            tw`px-2 py-1 text-xs border border-transparent`,
+                            current.includes(rule)
+                                ? tw`bg-green-500/10 text-green-300 border-green-500/40`
+                                : tw`bg-neutral-800 text-neutral-300 border-neutral-700`,
+                        ]}
                         onClick={() => {
                             if (!current.includes(rule)) {
                                 setRules([...current, rule]);

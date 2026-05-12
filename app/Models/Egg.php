@@ -290,6 +290,15 @@ class Egg extends Model
     }
 
     /**
+     * Alias for variables() — required for Laravel scoped implicit route model binding
+     * on routes like /{egg}/variables/{eggVariable:id}.
+     */
+    public function eggVariables(): HasMany
+    {
+        return $this->hasMany(EggVariable::class, 'egg_id');
+    }
+
+    /**
      * Get the parent egg from which to copy scripts.
      */
     public function scriptFrom(): BelongsTo

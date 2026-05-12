@@ -455,6 +455,7 @@ export function EggAdvancedContainer() {
                                 name={'fileDenylistText'}
                                 label={'File Deny List'}
                                 rows={8}
+                                placeholder={'One path per line, for example:\nfile1.png\nfile2.txt\nlogs/latest.log'}
                             />
                         </AdminBox>
 
