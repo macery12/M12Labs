@@ -74,7 +74,7 @@ export default function DockerImageManager({ name, label = 'Docker Images' }: Pr
 
             <div css={tw`mt-2 rounded border border-neutral-700 overflow-x-auto`}>
                 <table css={tw`w-full text-sm`}>
-                    <thead css={tw`bg-neutral-900/80 border-b border-neutral-700`}>
+                    <thead css={tw`bg-neutral-900 border-b border-neutral-700`}>
                         <tr>
                             <th css={tw`text-left font-medium text-neutral-300 px-3 py-2 w-3/5`}>Image URL</th>
                             <th css={tw`text-left font-medium text-neutral-300 px-3 py-2 w-1/3`}>Label</th>

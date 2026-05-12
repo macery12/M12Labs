@@ -109,7 +109,7 @@ function StickyActionsBar({ isSubmitting, isValid }: { isSubmitting: boolean; is
     if (!egg) return null;
 
     return (
-        <div css={tw`sticky bottom-0 z-10 border-t border-neutral-700 bg-neutral-900/95 backdrop-blur px-4 xl:px-6 py-3 mb-0 -mx-4 xl:-mx-6`}>
+        <div css={tw`sticky bottom-0 z-10 border-t border-neutral-700 bg-neutral-900 px-4 xl:px-6 py-3 mb-0 -mx-4 xl:-mx-6`}>
             <div css={tw`flex items-center gap-3`}>
                 <EggExportButton className={''} />
                 <EggDeleteButton eggId={egg.id} onDeleted={() => navigate('/admin/nests')} />
