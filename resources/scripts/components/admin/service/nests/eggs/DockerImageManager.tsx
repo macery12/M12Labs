@@ -6,6 +6,7 @@ import tw from 'twin.macro';
 import Label from '@/elements/Label';
 import Input from '@/elements/Input';
 import { Button } from '@/elements/button';
+import { useStoreState } from '@/state/hooks';
 
 interface DockerRow {
     image: string;
@@ -50,6 +51,7 @@ const stringifyRows = (rows: DockerRow[]): string => {
 
 export default function DockerImageManager({ name, label = 'Docker Images' }: Props) {
     const { values, setFieldValue } = useFormikContext<any>();
+    const { background } = useStoreState(state => state.theme.data!.colors);
     const value = useMemo(() => String(values[name] || ''), [values, name]);
     const [rows, setRows] = useState<DockerRow[]>(() => parseRows(value));
 
@@ -64,7 +66,11 @@ export default function DockerImageManager({ name, label = 'Docker Images' }: Pr
 
     const setRow = (index: number, patch: Partial<DockerRow>) => {
         const next = [...rows];
-        next[index] = { ...next[index], ...patch };
+        const current = next[index] || { image: '', alias: '' };
+        next[index] = {
+            image: patch.image ?? current.image,
+            alias: patch.alias ?? current.alias,
+        };
         updateRows(next);
     };
 
@@ -74,7 +80,7 @@ export default function DockerImageManager({ name, label = 'Docker Images' }: Pr
 
             <div css={tw`mt-2 rounded border border-neutral-700 overflow-x-auto`}>
                 <table css={tw`w-full text-sm`}>
-                    <thead css={tw`bg-neutral-900 border-b border-neutral-700`}>
+                    <thead css={tw`border-b border-neutral-700`} style={{ backgroundColor: background }}>
                         <tr>
                             <th css={tw`text-left font-medium text-neutral-300 px-3 py-2 w-3/5`}>Image URL</th>
                             <th css={tw`text-left font-medium text-neutral-300 px-3 py-2 w-1/3`}>Label</th>
